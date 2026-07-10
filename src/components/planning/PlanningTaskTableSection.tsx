@@ -41,6 +41,7 @@ import { FaTasks } from "react-icons/fa";
 import { toast } from "sonner";
 
 import { getEvaluationTaskColumns } from "@/components/tables/EvaluationTaskColumn";
+import { usePermissions } from "@/components/permissions/PermissionsProvider";
 import { EvaluationTask } from "@/config/types/evaluation";
 import { useTranslation } from "react-i18next";
 import { TablePagination } from "../tables/Pagination";
@@ -66,6 +67,8 @@ export function PlanningTaskTableSection(props: {
 }) {
   const { isDark, planningId, clientId, evaluationId, ownerId, } = props;
   const { t } = useTranslation();
+  const { canEdit } = usePermissions();
+  const userCanEditTasks = canEdit('planning_evaluation');
 
   const [tasks, setTasks] = useState<EvaluationTask[]>([]);
   const [allCompleted, setAllCompleted] = useState(false);
@@ -167,8 +170,8 @@ export function PlanningTaskTableSection(props: {
 
 
   const columns = useMemo(
-    () => getEvaluationTaskColumns(t, handleOpenAction),
-    [evaluationId, t],
+    () => getEvaluationTaskColumns(t, userCanEditTasks ? handleOpenAction : undefined),
+    [evaluationId, t, userCanEditTasks],
   );
 
   const table = useReactTable({

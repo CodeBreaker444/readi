@@ -172,7 +172,6 @@ export default function DashboardClient({ ownerId, userProfileCode, userId, init
     status: 'Waiting',
   }));
 
-  // Mission table component with useReactTable
   const MissionTable = ({ data, tableType }: { data: MissionData[]; tableType: MissionTableType }) => {
     const [globalFilter, setGlobalFilter] = useState('');
     const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);

@@ -1,5 +1,5 @@
 import { updateComponentMaintenanceCycle } from "@/backend/services/operation/maintenance-cycle-service";
-import { requirePermission } from "@/lib/auth/api-auth";
+import { requireAnyFeatureAccess, requirePermission } from "@/lib/auth/api-auth";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -19,6 +19,12 @@ const bodySchema = z.object({
 export async function POST(req: NextRequest) {
   const { session, error } = await requirePermission('view_operations');
   if (error) return error;
+
+  const { error: featureError } = await requireAnyFeatureAccess(
+    ['operation_daily_board', 'operation_mission_table', 'operation_calendar', 'control_center_recent_flights'],
+    'edit'
+  );
+  if (featureError) return featureError;
 
   let body: unknown;
   try {

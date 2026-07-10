@@ -1,3 +1,4 @@
+import { FeatureGate } from '@/components/permissions/FeatureGate';
 import { SystemFile } from '@/components/system/FilesDownloadModal';
 import { SystemCell } from '@/components/tables/SystemCell';
 import { Button } from '@/components/ui/button';
@@ -173,25 +174,29 @@ export const systemCreateColumns = ({
                         View
                     </Button>
 
-                    <Button
-                        size="sm"
-                        variant="outline"
-                        className={
-                            isDark
-                                ? 'border-gray-700 text-gray-300 hover:bg-gray-800'
-                                : ''
-                        }
-                        onClick={() => onEditSystem(row.original)}
-                    >
-                        Edit
-                    </Button>
-                    <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => onDelete(row.original.tool_id)}
-                    >
-                        Delete
-                    </Button>
+                    <FeatureGate feature="systems_manage" require="edit">
+                        <Button
+                            size="sm"
+                            variant="outline"
+                            className={
+                                isDark
+                                    ? 'border-gray-700 text-gray-300 hover:bg-gray-800'
+                                    : ''
+                            }
+                            onClick={() => onEditSystem(row.original)}
+                        >
+                            Edit
+                        </Button>
+                    </FeatureGate>
+                    <FeatureGate feature="systems_manage" require="delete">
+                        <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => onDelete(row.original.tool_id)}
+                        >
+                            Delete
+                        </Button>
+                    </FeatureGate>
                 </div>
             ),
         },
@@ -256,15 +261,19 @@ export const getModelColumns = ({ isDark, t, onEdit, onDelete }: ModelColumnProp
             header: () => <span className={hd}>{t('systems.manage.columns.model.actions')}</span>,
             cell: ({ row }) => (
                 <div className="flex gap-2">
-                    <Button size="sm" variant="outline"
-                        className={isDark ? 'border-gray-700 text-gray-300 hover:bg-gray-800' : ''}
-                        onClick={() => onEdit(row.original.tool_model_id)}>
-                        {t('systems.manage.columns.model.edit')}
-                    </Button>
-                    <Button size="sm" variant="destructive"
-                        onClick={() => onDelete(row.original.tool_model_id, `${row.original.factory_type} ${row.original.factory_model}`)}>
-                        {t('systems.manage.columns.model.delete')}
-                    </Button>
+                    <FeatureGate feature="systems_manage" require="edit">
+                        <Button size="sm" variant="outline"
+                            className={isDark ? 'border-gray-700 text-gray-300 hover:bg-gray-800' : ''}
+                            onClick={() => onEdit(row.original.tool_model_id)}>
+                            {t('systems.manage.columns.model.edit')}
+                        </Button>
+                    </FeatureGate>
+                    <FeatureGate feature="systems_manage" require="delete">
+                        <Button size="sm" variant="destructive"
+                            onClick={() => onDelete(row.original.tool_model_id, `${row.original.factory_type} ${row.original.factory_model}`)}>
+                            {t('systems.manage.columns.model.delete')}
+                        </Button>
+                    </FeatureGate>
                 </div>
             ),
         },
@@ -381,23 +390,27 @@ export const getComponentColumns = ({ isDark, t, toolCodeMap, modelMap, onView, 
                         onClick={() => onView(row.original)}>
                         {t('systems.manage.columns.component.view')}
                     </Button>
-                    <Button size="sm" variant="outline"
-                        className={isDark ? 'border-gray-700 text-gray-300 hover:bg-gray-800' : ''}
-                        onClick={() => onEdit(row.original.tool_component_id)}>
-                        {t('systems.manage.columns.component.edit')}
-                    </Button>
+                    <FeatureGate feature="systems_manage" require="edit">
+                        <Button size="sm" variant="outline"
+                            className={isDark ? 'border-gray-700 text-gray-300 hover:bg-gray-800' : ''}
+                            onClick={() => onEdit(row.original.tool_component_id)}>
+                            {t('systems.manage.columns.component.edit')}
+                        </Button>
+                    </FeatureGate>
                     <Button size="sm" variant="outline"
                         className={isDark ? 'border-slate-700 text-slate-300 hover:bg-slate-700' : 'border-violet-200 text-violet-700 hover:bg-violet-50'}
                         onClick={() => onLog(row.original)}>
                         {t('systems.manage.columns.component.log')}
                     </Button>
-                    <Button size="sm" variant="destructive"
-                        onClick={() => onDelete(
-                            row.original.tool_component_id,
-                            row.original.component_code || row.original.component_name || `#${row.original.tool_component_id}`
-                        )}>
-                        {t('systems.manage.columns.component.delete')}
-                    </Button>
+                    <FeatureGate feature="systems_manage" require="delete">
+                        <Button size="sm" variant="destructive"
+                            onClick={() => onDelete(
+                                row.original.tool_component_id,
+                                row.original.component_code || row.original.component_name || `#${row.original.tool_component_id}`
+                            )}>
+                            {t('systems.manage.columns.component.delete')}
+                        </Button>
+                    </FeatureGate>
                 </div>
             ),
         },

@@ -1,6 +1,7 @@
 "use client";
 
 import { OrgNode } from "@/backend/services/organization/organization-service";
+import { FeatureGate } from "@/components/permissions/FeatureGate";
 import { Maximize2, Minus, Pencil, Plus } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
 
@@ -95,24 +96,26 @@ function NodeCard({
         </div>
 
         {onEdit && node.userId !== undefined && (
-          <button
-            onClick={(e) => { e.stopPropagation(); onEdit(node); }}
-            title="Edit node"
-            style={{
-              flexShrink: 0,
-              width: 26, height: 26, borderRadius: 7,
-              background: isDark ? "#334155" : "#f1f5f9",
-              border: `1px solid ${border}`,
-              color: textSub,
-              cursor: "pointer",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              transition: "background .15s",
-            }}
-            onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = isDark ? "#475569" : "#e2e8f0"; }}
-            onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = isDark ? "#334155" : "#f1f5f9"; }}
-          >
-            <Pencil size={12} />
-          </button>
+          <FeatureGate feature="org_chart" require="edit">
+            <button
+              onClick={(e) => { e.stopPropagation(); onEdit(node); }}
+              title="Edit node"
+              style={{
+                flexShrink: 0,
+                width: 26, height: 26, borderRadius: 7,
+                background: isDark ? "#334155" : "#f1f5f9",
+                border: `1px solid ${border}`,
+                color: textSub,
+                cursor: "pointer",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                transition: "background .15s",
+              }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = isDark ? "#475569" : "#e2e8f0"; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = isDark ? "#334155" : "#f1f5f9"; }}
+            >
+              <Pencil size={12} />
+            </button>
+          </FeatureGate>
         )}
       </div>
 

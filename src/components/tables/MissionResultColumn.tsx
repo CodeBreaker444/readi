@@ -1,5 +1,6 @@
 'use client';
 
+import { FeatureGate } from '@/components/permissions/FeatureGate';
 import {
   Tooltip,
   TooltipContent,
@@ -66,37 +67,41 @@ export function createMissionResultColumns({
         return (
           <TooltipProvider delayDuration={200}>
             <div className="flex items-center justify-end gap-1">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    onClick={() => onEditClick(result)}
-                    className={`cursor-pointer inline-flex items-center justify-center w-7 h-7 rounded-lg transition-all ${
-                      isDark
-                        ? 'hover:bg-white/[0.08] text-gray-500 hover:text-gray-300'
-                        : 'hover:bg-gray-100 text-gray-400 hover:text-gray-600'
-                    }`}
-                  >
-                    <Pencil size={13} strokeWidth={2} />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="top" className="text-[11px]">{t('common.edit')}</TooltipContent>
-              </Tooltip>
+              <FeatureGate feature="mission_result" require="edit">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => onEditClick(result)}
+                      className={`cursor-pointer inline-flex items-center justify-center w-7 h-7 rounded-lg transition-all ${
+                        isDark
+                          ? 'hover:bg-white/[0.08] text-gray-500 hover:text-gray-300'
+                          : 'hover:bg-gray-100 text-gray-400 hover:text-gray-600'
+                      }`}
+                    >
+                      <Pencil size={13} strokeWidth={2} />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="text-[11px]">{t('common.edit')}</TooltipContent>
+                </Tooltip>
+              </FeatureGate>
 
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    onClick={() => onDelete(result.id)}
-                    className={`cursor-pointer inline-flex items-center justify-center w-7 h-7 rounded-lg transition-all ${
-                      isDark
-                        ? 'hover:bg-rose-500/15 text-gray-500 hover:text-rose-400'
-                        : 'hover:bg-rose-50 text-gray-400 hover:text-rose-500'
-                    }`}
-                  >
-                    <Trash2 size={13} strokeWidth={2} />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="top" className="text-[11px]">{t('common.delete')}</TooltipContent>
-              </Tooltip>
+              <FeatureGate feature="mission_result" require="delete">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => onDelete(result.id)}
+                      className={`cursor-pointer inline-flex items-center justify-center w-7 h-7 rounded-lg transition-all ${
+                        isDark
+                          ? 'hover:bg-rose-500/15 text-gray-500 hover:text-rose-400'
+                          : 'hover:bg-rose-50 text-gray-400 hover:text-rose-500'
+                      }`}
+                    >
+                      <Trash2 size={13} strokeWidth={2} />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="text-[11px]">{t('common.delete')}</TooltipContent>
+                </Tooltip>
+              </FeatureGate>
             </div>
           </TooltipProvider>
         );

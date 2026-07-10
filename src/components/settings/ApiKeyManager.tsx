@@ -1,6 +1,7 @@
 'use client';
 
 import '@/lib/i18n/config';
+import { FeatureGate } from '@/components/permissions/FeatureGate';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -136,13 +137,15 @@ export default function ApiKeyManager() {
             </p>
           </div>
         </div>
-        <Button
-          size="sm"
-          onClick={() => setShowForm((v) => !v)}
-          className="h-8 gap-1.5 text-xs bg-violet-600 hover:bg-violet-500 text-white"
-        >
-          <Plus className="h-3.5 w-3.5" /> {t('settings.security.apiKeys.newKey')}
-        </Button>
+        <FeatureGate feature="settings_security_api_keys" require="edit">
+          <Button
+            size="sm"
+            onClick={() => setShowForm((v) => !v)}
+            className="h-8 gap-1.5 text-xs bg-violet-600 hover:bg-violet-500 text-white"
+          >
+            <Plus className="h-3.5 w-3.5" /> {t('settings.security.apiKeys.newKey')}
+          </Button>
+        </FeatureGate>
       </div>
 
       {revealedKey && (
@@ -193,11 +196,13 @@ export default function ApiKeyManager() {
             </div>
           </div>
           <div className="flex gap-2 pt-1">
-            <Button size="sm" onClick={handleCreate} disabled={creating} className="bg-violet-600 hover:bg-violet-500 text-white text-xs h-8">
-              {creating
-                ? <><Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />{t('settings.security.apiKeys.creating')}</>
-                : t('settings.security.apiKeys.createKey')}
-            </Button>
+            <FeatureGate feature="settings_security_api_keys" require="edit">
+              <Button size="sm" onClick={handleCreate} disabled={creating} className="bg-violet-600 hover:bg-violet-500 text-white text-xs h-8">
+                {creating
+                  ? <><Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />{t('settings.security.apiKeys.creating')}</>
+                  : t('settings.security.apiKeys.createKey')}
+              </Button>
+            </FeatureGate>
             <Button size="sm" variant="outline" onClick={() => setShowForm(false)}
               className={`text-xs h-8 ${isDark ? 'border-slate-600 text-slate-300 hover:bg-slate-700' : ''}`}>
               {t('settings.security.apiKeys.cancel')}
@@ -260,21 +265,25 @@ export default function ApiKeyManager() {
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-1">
                       {k.is_active && (
-                        <button
-                          onClick={() => handleRevoke(k.api_key_id)}
-                          title={t('settings.security.apiKeys.revokeKey')}
-                          className="p-1 rounded text-slate-400 hover:text-orange-500 transition-colors"
-                        >
-                          <XCircle className="h-3.5 w-3.5" />
-                        </button>
+                        <FeatureGate feature="settings_security_api_keys" require="edit">
+                          <button
+                            onClick={() => handleRevoke(k.api_key_id)}
+                            title={t('settings.security.apiKeys.revokeKey')}
+                            className="p-1 rounded text-slate-400 hover:text-orange-500 transition-colors"
+                          >
+                            <XCircle className="h-3.5 w-3.5" />
+                          </button>
+                        </FeatureGate>
                       )}
-                      <button
-                        onClick={() => handleDelete(k.api_key_id)}
-                        title={t('settings.security.apiKeys.deleteKey')}
-                        className="p-1 rounded text-slate-400 hover:text-red-500 transition-colors"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
+                      <FeatureGate feature="settings_security_api_keys" require="delete">
+                        <button
+                          onClick={() => handleDelete(k.api_key_id)}
+                          title={t('settings.security.apiKeys.deleteKey')}
+                          className="p-1 rounded text-slate-400 hover:text-red-500 transition-colors"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </FeatureGate>
                     </div>
                   </td>
                 </tr>

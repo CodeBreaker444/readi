@@ -1,6 +1,6 @@
 import { endIntervention, getTicketAssignee, startIntervention } from '@/backend/services/system/maintenance-ticket';
 import { userHasSubRole } from '@/lib/auth/api-auth';
-import { requireAuth } from '@/lib/auth/api-auth';
+import { requireAuth, requireFeatureAccess } from '@/lib/auth/api-auth';
 import { roleHasPermission } from '@/lib/auth/roles';
 import { forbidden, internalError, zodError } from '@/lib/api-error';
 import { E } from '@/lib/error-codes';
@@ -16,6 +16,9 @@ export async function POST(req: NextRequest) {
   try {
     const { session, error } = await requireAuth();
     if (error) return error;
+
+    const { error: featureError } = await requireFeatureAccess('systems_maintenance_tickets', 'edit');
+    if (featureError) return featureError;
 
     const body = await req.json();
     const validation = interventionSchema.safeParse(body);

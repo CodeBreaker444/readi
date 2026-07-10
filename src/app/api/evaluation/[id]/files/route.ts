@@ -3,7 +3,7 @@ import {
   deleteEvaluationFile,
   getEvaluationFiles
 } from '@/backend/services/planning/evaluation-detail';
-import { requirePermission } from '@/lib/auth/api-auth';
+import { requireFeatureAccess, requirePermission } from '@/lib/auth/api-auth';
 import { apiError, internalError, zodError } from '@/lib/api-error';
 import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
@@ -44,6 +44,10 @@ export async function POST(
   try {
     const { session, error } = await requirePermission('view_planning_advanced');
     if (error) return error;
+
+    const { error: featureError } = await requireFeatureAccess('planning_evaluation', 'edit');
+    if (featureError) return featureError;
+
     const { id } = evaluationIdParamSchema.parse(await params);
 
     const formData = await req.formData();
@@ -86,6 +90,10 @@ export async function DELETE(
   try {
     const { session, error } = await requirePermission('view_planning_advanced');
     if (error) return error;
+
+    const { error: featureError } = await requireFeatureAccess('planning_evaluation', 'delete');
+    if (featureError) return featureError;
+
     const { id } = evaluationIdParamSchema.parse(await params);
     const fileId = Number(req.nextUrl.searchParams.get('fileId'));
 

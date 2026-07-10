@@ -1,5 +1,7 @@
 'use client';
 
+import { FeatureGate } from '@/components/permissions/FeatureGate';
+import { usePermissions } from '@/components/permissions/PermissionsProvider';
 import { DownloadModal } from '@/components/system/DownloadModal';
 import {
   AssignTicketModal,
@@ -20,16 +22,19 @@ import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 interface Props {
-  canClose: boolean;
-  canAssign?: boolean;
-  canCreate?: boolean;
-  canDownload?: boolean;
   canIntervene?: boolean;
 }
 
-export default function MaintenanceLogbookClient({ canClose, canAssign = false, canCreate = false, canDownload = false, canIntervene = false }: Props) {
+export default function MaintenanceLogbookClient({ canIntervene = false }: Props) {
   const { isDark } = useTheme();
   const { t } = useTranslation();
+  const { canEdit } = usePermissions();
+  // Ticket management (create/assign/close/download) is gated on the
+  // 'systems_maintenance_tickets' feature key from the permission matrix.
+  const canManage = canEdit('systems_maintenance_tickets');
+  const canClose = canManage;
+  const canAssign = canManage;
+  const canDownload = canManage;
 
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
@@ -137,7 +142,7 @@ export default function MaintenanceLogbookClient({ canClose, canAssign = false, 
             </div>
           </div>
 
-          {canCreate && (
+          <FeatureGate feature="systems_maintenance_tickets" require="edit">
             <div className="flex items-center gap-2">
               <Button
                 size="sm"
@@ -152,7 +157,7 @@ export default function MaintenanceLogbookClient({ canClose, canAssign = false, 
                 <span>{t('systems.maintenanceLogbook.newTicket')}</span>
               </Button>
             </div>
-          )}
+          </FeatureGate>
         </div>
       </div>
 

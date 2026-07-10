@@ -19,6 +19,7 @@ import { Download, FileWarning, Trash2 } from 'lucide-react';
 export const getEvaluationFileColumns = (
   evaluationId: number,
   onDelete?: (file: EvaluationFile) => void,
+  canDelete: boolean = true,
 ): ColumnDef<EvaluationFile>[] => [
   {
     accessorKey: 'evaluation_file_id',
@@ -90,7 +91,7 @@ export const getEvaluationFileColumns = (
     size: 48,
     cell: ({ row }) => {
       const file = row.original;
-      if (!onDelete) return null;
+      if (!onDelete || !canDelete) return null;
       return (
         <AlertDialog>
           <AlertDialogTrigger asChild>

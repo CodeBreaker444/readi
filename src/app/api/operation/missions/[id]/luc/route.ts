@@ -67,10 +67,13 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 
     const mission = await prisma.pilot_mission.findFirst({
       where: { pilot_mission_id: missionId, fk_owner_id: session!.user.ownerId },
-      select: { luc_procedure_progress: true, fk_luc_procedure_id: true },
+      select: { luc_procedure_progress: true, fk_luc_procedure_id: true, status_name: true },
     });
 
     if (!mission) return NextResponse.json({ code: 0, error: 'Mission not found' }, { status: 404 });
+    if (mission.status_name === 'ABORTED') {
+      return NextResponse.json({ code: 0, error: 'This mission has been aborted and can no longer be edited.' }, { status: 422 });
+    }
 
     const progress: Record<string, Record<string, string>> = (mission.luc_procedure_progress as any) ?? {
       checklist: {},

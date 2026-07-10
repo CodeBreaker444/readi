@@ -1,6 +1,6 @@
 import { getDFlightIntegration } from '@/backend/services/integrations/dflight-settings-service';
 import { internalError } from '@/lib/api-error';
-import { requirePermission } from '@/lib/auth/api-auth';
+import { requireFullAccessRole } from '@/lib/auth/api-auth';
 import { getDFlightDrones, getDFlightToken } from '@/lib/dflight-service';
 import { E } from '@/lib/error-codes';
 import { prisma } from '@/lib/prisma';
@@ -9,7 +9,7 @@ import { NextResponse } from 'next/server';
 
 export async function GET() {
   try {
-    const { session, error } = await requirePermission('view_drone_atc');
+    const { session, error } = await requireFullAccessRole();
     if (error) return error;
 
     const ownerId = session!.user.ownerId;

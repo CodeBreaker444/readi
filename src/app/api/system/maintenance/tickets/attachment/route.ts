@@ -1,13 +1,13 @@
 import { getTicketAttachments } from "@/backend/services/system/maintenance-ticket";
 import { internalError, zodError } from "@/lib/api-error";
-import { requirePermission } from "@/lib/auth/api-auth";
+import { requireAnyPermission } from "@/lib/auth/api-auth";
 import { E } from "@/lib/error-codes";
 import { NextRequest, NextResponse } from "next/server";
 import z from "zod";
 
 export async function GET(req: NextRequest) {
   try {
-      const { session, error } = await requirePermission('view_config');
+      const { session, error } = await requireAnyPermission('view_config', 'view_maintenance_tickets');
       if (error) return error;
 
     const ticketId = req.nextUrl.searchParams.get("ticket_id");

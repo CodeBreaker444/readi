@@ -2,15 +2,14 @@ import MaintenanceLogbookClient from '@/components/system/MaintenanceLogbookClie
 import { userHasActiveSubRole } from '@/backend/services/system/user-subrole';
 import { getUserSession } from '@/lib/auth/server-session';
 
-const MANAGE_TICKET_ROLES = ['RM', 'ADMIN', 'SUPERADMIN'];
-
 export default async function MaintenanceLogbookPage() {
   const session = await getUserSession();
   const role = session?.user?.role ?? '';
-  const canManage = MANAGE_TICKET_ROLES.includes(role);
   const canIntervene = role === 'PIC'
     ? await userHasActiveSubRole(session!.user.userId, 'PIC_TECHNICIAN')
     : false;
 
-  return <MaintenanceLogbookClient canClose={canManage} canAssign={canManage} canCreate={canManage} canDownload={canManage} canIntervene={canIntervene} />;
+  // Ticket management access (close/assign/create/download) is resolved client-side
+  // via usePermissions() against the 'systems_maintenance_tickets' feature key.
+  return <MaintenanceLogbookClient canIntervene={canIntervene} />;
 }

@@ -28,7 +28,7 @@ import {
 } from 'react-icons/hi';
 import { MdFlightTakeoff } from 'react-icons/md';
 import { TbDrone, TbLayoutSidebarFilled, TbRadar } from "react-icons/tb";
-import { Permission, Role, roleHasPermission, ROUTE_PERMISSIONS, RoutePermissionEntry } from '../lib/auth/roles';
+import { canAccessRoute, Role } from '../lib/auth/roles';
 import { supabase } from '../lib/supabase/client';
 
 interface SubNavItem {
@@ -187,7 +187,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
         }] : []),
       ],
     },
-    ...(userData?.dFlightEnabled ? [{
+    ...(userData?.dFlightEnabled && role && ['ADMIN', 'OPM', 'SUPERADMIN'].includes(role) ? [{
       name: t('sidebar.dflight'),
       href: '/dflight/fleet',
       icon: TbDrone,
@@ -253,6 +253,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
         { name: t('sidebar.personnel'), href: '/team/personnel' },
         // { name: t('sidebar.crewShift'), href: '/team/crew-shift' },
         { name: t('sidebar.client'), href: '/team/client' },
+         ...(role && ['ADMIN', 'OPM', 'SUPERADMIN'].includes(role)
+          ? [{ name: 'Roles & Permissions', href: '/team/roles-permissions' }]
+          : []),
       ],
     },
     {
@@ -267,7 +270,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
       icon: HiOutlineShieldCheck,
       subItems: [
         { name: t('sidebar.securityApiKeys'), href: '/settings/security' },
-        { name: t('sidebar.integrations'), href: '/settings/integrations' },
+        ...(role && ['ADMIN', 'OPM', 'SUPERADMIN'].includes(role)
+          ? [{ name: t('sidebar.integrations'), href: '/settings/integrations' }]
+          : []),
       ],
     },
   ];
@@ -291,16 +296,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
     }
   }, [isCollapsed]);
 
-  const getRequiredPermissionForRoute = (href: string): RoutePermissionEntry | null => {
-    return ROUTE_PERMISSIONS[href] ?? null;
-  };
-
-  const canAccessWithRole = (entry: RoutePermissionEntry | null): boolean => {
-    if (!entry) return true;
-    const perms: Permission[] = Array.isArray(entry) ? entry : [entry];
-    return perms.some((p) => roleHasPermission(role, p));
-  };
-
   const isRouteActive = (href: string, subItems?: SubNavItem[]): boolean => {
     if (activeItem === href) return true;
     if (subItems) {
@@ -314,13 +309,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
   const filteredNavigationItems = isClientRole ? [] : navigationItems
     .map((item) => {
       const visibleSubItems =
-        item.subItems?.filter((sub) => {
-          const perm = getRequiredPermissionForRoute(sub.href);
-          return canAccessWithRole(perm);
-        }) ?? [];
+        item.subItems?.filter((sub) => canAccessRoute(role, sub.href)) ?? [];
 
-      const ownPerm = getRequiredPermissionForRoute(item.href);
-      const canSeeOwn = canAccessWithRole(ownPerm);
+      const canSeeOwn = canAccessRoute(role, item.href);
       const hasVisibleSub = visibleSubItems.length > 0;
 
       if (!canSeeOwn && !hasVisibleSub) return null;
@@ -334,13 +325,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
       if (configItem.href === '/releases' && role !== 'SUPERADMIN' && role !== 'ADMIN') return null;
 
       const visibleSubItems =
-        configItem.subItems?.filter((sub) => {
-          const perm = getRequiredPermissionForRoute(sub.href);
-          return canAccessWithRole(perm);
-        }) ?? [];
+        configItem.subItems?.filter((sub) => canAccessRoute(role, sub.href)) ?? [];
 
-      const ownPerm = getRequiredPermissionForRoute(configItem.href);
-      const canSeeOwn = canAccessWithRole(ownPerm);
+      const canSeeOwn = canAccessRoute(role, configItem.href);
       const hasVisibleSub = visibleSubItems.length > 0;
 
       if (!canSeeOwn && !hasVisibleSub) return null;

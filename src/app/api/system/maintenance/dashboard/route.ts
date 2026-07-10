@@ -1,7 +1,7 @@
 // import { sendMaintenanceAlertNotifications } from "@/backend/services/system/maintenance-notification";
 import { getMaintenanceDashboard } from "@/backend/services/system/maintenance-service";
 import { internalError, zodError } from "@/lib/api-error";
-import { requirePermission } from "@/lib/auth/api-auth";
+import { requireAnyPermission } from "@/lib/auth/api-auth";
 import { E } from "@/lib/error-codes";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
@@ -16,7 +16,7 @@ const MaintenanceDashboardSchema = z.object({
 export async function POST(req: NextRequest) {
   try {
     
-    const { session, error } = await requirePermission('view_config');
+    const { session, error } = await requireAnyPermission('view_config', 'view_maintenance_tickets');
     if (error) return error;
     
     const body = await req.json()
@@ -34,7 +34,6 @@ export async function POST(req: NextRequest) {
       threshold_alert: parsed.data.threshold_alert,
     });
 
-    // Maintenance alert notifications moved to cron job - no longer called here
     // sendMaintenanceAlertNotifications(owner_id, data).catch((err) =>
     //   console.error("[maintenance-alert] notification failed:", err)
     // );

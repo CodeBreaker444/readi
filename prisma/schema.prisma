@@ -1672,6 +1672,7 @@ model owner {
   planning_logbook            planning_logbook[]
   planning_test_logbook       planning_test_logbook[]
   repository_file             repository_file[]
+  role_feature_permission     role_feature_permission[]
   safety_report               safety_report[]
   spi_kpi                     spi_kpi[]
   spi_kpi_definition          spi_kpi_definition[]
@@ -1987,6 +1988,7 @@ model planning {
   updated_at                                DateTime?               @default(now()) @db.Timestamp(6)
   assigned_to_user_id                       Int?
   planning_json                             Json?                   @default("{}")
+  planning_result                           String?                 @default("PROGRESS") @db.VarChar(50)
   checklist                                 checklist[]
   flytbase_mission                          flytbase_mission[]
   mission_component                         mission_component[]
@@ -2809,6 +2811,7 @@ model public_users {
   flytbase_org_id                                                            String?
   flytbase_token_name                                                        String?
   flytrelay_access                                                           Boolean?                                 @default(false)
+  has_custom_permissions                                                     Boolean?                                 @default(false)
   alert_log_alert_log_acknowledged_by_user_idTousers                         alert_log[]                              @relation("alert_log_acknowledged_by_user_idTousers")
   alert_log_alert_log_assigned_to_user_idTousers                             alert_log[]                              @relation("alert_log_assigned_to_user_idTousers")
   alert_log_alert_log_resolved_by_user_idTousers                             alert_log[]                              @relation("alert_log_resolved_by_user_idTousers")
@@ -2873,6 +2876,7 @@ model public_users {
   training_attendance                                                        training_attendance[]
   turn_users                                                                 turn_users[]
   user_device                                                                user_device[]
+  user_feature_permission                                                    user_feature_permission[]
   user_owner                                                                 user_owner[]
   user_permessi_user_permessi_fk_user_idTousers                              user_permessi[]                          @relation("user_permessi_fk_user_idTousers")
   user_permessi_user_permessi_granted_byTousers                              user_permessi[]                          @relation("user_permessi_granted_byTousers")
@@ -2898,6 +2902,33 @@ model public_users {
   @@index([user_id], map: "idx_users_user_id")
   @@index([username], map: "idx_users_username")
   @@map("users")
+  @@schema("public")
+}
+
+model role_feature_permission {
+  id          Int      @id @default(autoincrement())
+  role        String   @db.VarChar(50)
+  feature_key String   @db.VarChar(100)
+  access      String   @default("R") @db.Char(1)
+  updated_at  DateTime @default(now()) @updatedAt @db.Timestamp(6)
+  fk_owner_id Int
+  owner       owner    @relation(fields: [fk_owner_id], references: [owner_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([fk_owner_id, role, feature_key], map: "role_feature_permission_owner_role_feature_key_key")
+  @@index([fk_owner_id], map: "idx_role_feature_permission_fk_owner_id")
+  @@schema("public")
+}
+
+model user_feature_permission {
+  id          Int          @id @default(autoincrement())
+  fk_user_id  Int
+  feature_key String       @db.VarChar(100)
+  access      String       @default("R") @db.Char(1)
+  updated_at  DateTime     @default(now()) @updatedAt @db.Timestamp(6)
+  users       public_users @relation(fields: [fk_user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([fk_user_id, feature_key])
+  @@index([fk_user_id], map: "idx_user_feature_permission_fk_user_id")
   @@schema("public")
 }
 

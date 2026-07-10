@@ -12,6 +12,7 @@ interface ColumnOptions {
   onOpen: (row: Planning) => void;
   deleting: boolean;
   t: TFunction;
+  canDelete: boolean;
 }
 
 export function getPlanningColumns({
@@ -20,6 +21,7 @@ export function getPlanningColumns({
   onOpen,
   deleting,
   t,
+  canDelete,
 }: ColumnOptions): ColumnDef<Planning, any>[] {
   return [
     {
@@ -154,7 +156,7 @@ export function getPlanningColumns({
       size: 110,
       cell: ({ row }) => (
         <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-          {row.original.planning_status === "NEW" && (
+          {row.original.planning_status === "NEW" && canDelete && (
             <button
               onClick={() => onDelete(row.original)}
               disabled={deleting}

@@ -3,7 +3,7 @@ import {
   deleteTrainingAttendance,
   getTrainingAttendance,
 } from '@/backend/services/training/training-service';
-import { requirePermission } from '@/lib/auth/api-auth';
+import { requireFeatureAccess, requirePermission } from '@/lib/auth/api-auth';
 import { internalError, zodError } from '@/lib/api-error';
 import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
@@ -72,6 +72,9 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
 
     if (body.action === 'delete') {
+      const { error: featureError } = await requireFeatureAccess('training_courses', 'delete');
+      if (featureError) return featureError;
+
       const parsed = deleteAttendanceSchema.safeParse(body);
       if (!parsed.success) {
         return zodError(E.VL001, parsed.error);
@@ -79,6 +82,9 @@ export async function POST(req: NextRequest) {
       await deleteTrainingAttendance(parsed.data.attendance_id);
       return NextResponse.json({ code: 1, message: 'Deleted' });
     }
+
+    const { error: featureError } = await requireFeatureAccess('training_courses', 'edit');
+    if (featureError) return featureError;
 
     const parsed = addAttendanceSchema.safeParse(body);
     if (!parsed.success) {

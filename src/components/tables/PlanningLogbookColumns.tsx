@@ -11,13 +11,15 @@ interface LogbookColumnsOptions {
   onDelete: (id: number) => void;
   onManage: (row: PlanningLogbookRow) => void;
   onTestLogbook?: (row: PlanningLogbookRow) => void;
-  t: TFunction;  
+  t: TFunction;
+  canDelete: boolean;
 }
 
 export function getLogbookColumns({
   onDelete,
   onTestLogbook,
-  t,  
+  t,
+  canDelete,
 }: LogbookColumnsOptions): ColumnDef<PlanningLogbookRow>[] {
   return [
     {
@@ -90,15 +92,17 @@ export function getLogbookColumns({
                 {t("logbooks.missionPlanning.tests")}
               </Button>
             )}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 text-destructive hover:text-destructive"
-              onClick={() => onDelete(row.original.mission_planning_id)}
-              title={t("planning.actions.delete")}
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
+            {canDelete && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-destructive hover:text-destructive"
+                onClick={() => onDelete(row.original.mission_planning_id)}
+                title={t("planning.actions.delete")}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            )}
           </div>
         );
       },

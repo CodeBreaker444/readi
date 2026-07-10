@@ -1,6 +1,6 @@
 import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { addMissionStatus } from '@/backend/services/mission/status-service';
-import { requirePermission } from '@/lib/auth/api-auth';
+import { requireFeatureAccess, requirePermission } from '@/lib/auth/api-auth';
 import { internalError, zodError } from '@/lib/api-error';
 import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
@@ -18,6 +18,9 @@ export async function POST(request: NextRequest) {
   try {
     const { session, error } = await requirePermission('view_config');
     if (error) return error;
+
+    const { error: featureError } = await requireFeatureAccess('mission_status', 'create');
+    if (featureError) return featureError;
 
     const body = await request.json();
 

@@ -1,6 +1,6 @@
 import { notifyDccDenial } from '@/backend/services/mission/dcc-callback-service';
 import { updateFlightRequestStatus } from '@/backend/services/mission/flight-request-service';
-import { requirePermission } from '@/lib/auth/api-auth';
+import { requireFeatureAccess, requirePermission } from '@/lib/auth/api-auth';
 import { apiError, internalError, zodError } from '@/lib/api-error';
 import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
@@ -16,6 +16,9 @@ export async function POST(req: NextRequest) {
   try {
     const { session, error } = await requirePermission('view_planning_advanced');
     if (error) return error;
+
+    const { error: featureError } = await requireFeatureAccess('operation_flight_requests', 'edit');
+    if (featureError) return featureError;
 
     const body = await req.json();
     const parsed = Schema.safeParse(body);

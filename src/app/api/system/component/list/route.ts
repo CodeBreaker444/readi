@@ -1,12 +1,12 @@
 import { getComponentList } from '@/backend/services/system/system-service';
-import { requirePermission } from '@/lib/auth/api-auth';
+import { requireAnyPermission } from '@/lib/auth/api-auth';
 import { internalError } from '@/lib/api-error';
 import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
   try {
-      const { session, error } = await requirePermission('view_config');
+      const { session, error } = await requireAnyPermission('view_config', 'view_operations');
       if (error) return error;
 
     const body = await request.json();

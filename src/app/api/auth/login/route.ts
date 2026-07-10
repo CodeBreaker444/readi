@@ -27,6 +27,8 @@ export async function POST(request: NextRequest) {
         auth_user_id:  true,
         fk_owner_id:   true,
         fk_client_id:  true,
+        is_viewer:     true,
+        is_manager:    true,
       },
     });
 
@@ -81,6 +83,8 @@ export async function POST(request: NextRequest) {
       username: userData.username!,
       role:  userData.user_role as Role,
       droneAtcEnabled,
+      isViewer: userData.is_viewer === 'N',
+      isManager: userData.is_manager === 'Y',
       ...(userData.fk_client_id ? { clientId: userData.fk_client_id } : {}),
     });
 

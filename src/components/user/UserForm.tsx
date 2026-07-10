@@ -1,0 +1,953 @@
+'use client';
+
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { UserPermissionMatrix } from '@/components/permissions/UserPermissionMatrix';
+import { AccessLevel, ALL_FEATURE_KEYS, FeatureKey } from '@/lib/auth/feature-permissions-types';
+import { Role } from '@/lib/auth/roles';
+import axios from 'axios';
+import { ArrowLeft, CheckCircle, ChevronDown, ChevronRight, Eye, EyeOff, Link2, Link2Off, Loader2, ShieldCheck, XCircle } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
+import { toast } from 'sonner';
+import { Skeleton } from '../ui/skeleton';
+
+const SUBROLE_MANAGER_ROLES = ['RM', 'ADMIN', 'SUPERADMIN'];
+
+const ROLE_OPTIONS = [
+  { value: 8, label: 'Pilot in Command (PIC)' },
+  { value: 9, label: 'Operation Manager (OPM)' },
+  { value: 10, label: 'Safety Manager (SM)' },
+  { value: 11, label: 'Accountable Manager (AM)' },
+  { value: 12, label: 'Compliance Monitoring Manager (CMM)' },
+  { value: 13, label: 'Responsabile Manutenzione (RM)' },
+  { value: 14, label: 'Training Manager (TM)' },
+  { value: 15, label: 'Data Controller (DC)' },
+  { value: 16, label: 'SLA Manager (SLA)' },
+  { value: 17, label: 'Administrator (ADMIN)' },
+  { value: 18, label: 'Operations Manager (OM)' },
+  { value: 19, label: 'Mission Manager (MM)' },
+  { value: 20, label: 'Viewer Manager (VM)' },
+];
+
+// Numeric role IDs (as used by fk_user_profile_id) mapped to the Role code used by the permission matrix.
+const ROLE_ID_TO_CODE: Record<number, Role> = {
+  8: 'PIC', 9: 'OPM', 10: 'SM', 11: 'AM', 12: 'CMM', 13: 'RM',
+  14: 'TM', 15: 'DC', 16: 'SLA', 17: 'ADMIN', 18: 'OM', 19: 'MM', 20: 'VM',
+};
+
+const FULL_ACCESS_ROLE_IDS = [9, 17, 18]; // OPM, ADMIN, OM(*) — OM kept editable in the matrix, only OPM/ADMIN are locked
+const LOCKED_ROLE_IDS = [9, 17]; // OPM, ADMIN — always full access, matrix editing is a no-op for them
+
+interface UserFormProps {
+  clients: { client_id: number; client_name: string }[];
+  owners?: { owner_id: number; owner_name: string }[];
+  isSuperAdmin?: boolean;
+  mode: 'add' | 'edit';
+  userData?: any;
+  onSubmit: (data: any) => Promise<{ fieldErrors?: Record<string, string> } | void> | void;
+  onCancel: () => void;
+  isDark: boolean;
+  canEditEmail?: boolean;
+  sessionRole?: string;
+  companyFlytrelayEnabled?: boolean;
+}
+
+type CcStep = 'idle' | 'verifying' | 'confirmed' | 'saving';
+type UsernameStatus = 'idle' | 'checking' | 'available' | 'taken';
+
+export function UserForm({
+  clients,
+  owners = [],
+  isSuperAdmin = false,
+  mode,
+  userData,
+  onSubmit,
+  onCancel,
+  isDark,
+  canEditEmail = true,
+  companyFlytrelayEnabled = false,
+  sessionRole,
+}: UserFormProps) {
+  const [formData, setFormData] = useState(() => {
+    const defaults = {
+      username: '',
+      fullname: '',
+      email: '',
+      phone: '',
+      fk_user_profile_id: 0,
+      fk_client_id: 0,
+      owner_id: 0,
+      user_type: 'EMPLOYEE',
+      is_manager: 'N',
+      active: 1,
+      flytrelay_access: false,
+    };
+    if (!userData) return defaults;
+    return {
+      ...defaults,
+      ...userData,
+      phone: userData.phone ?? userData.user_phone ?? '',
+      fk_user_profile_id: userData.fk_user_profile_id ?? userData.profile_id ?? 0,
+      fk_client_id: userData.fk_client_id ?? 0,
+      user_type: userData.user_type || 'EMPLOYEE',
+      is_manager: userData.is_manager || 'N',
+      active: userData.active ?? 1,
+      flytrelay_access: userData.flytrelay_access ?? false,
+    };
+  });
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [usernameStatus, setUsernameStatus] = useState<UsernameStatus>('idle');
+
+  // Sub-role section state
+  const [subExpanded, setSubExpanded] = useState(false);
+  const [subLoading, setSubLoading] = useState(false);
+  const [subHasTech, setSubHasTech] = useState<boolean | null>(null);
+  const [subSaving, setSubSaving] = useState(false);
+  const [subGrantOnCreate, setSubGrantOnCreate] = useState(false);
+
+  const [ccExpanded, setCcExpanded] = useState(false);
+  const [ccHasToken, setCcHasToken] = useState<boolean | null>(null);
+  const [ccTokenName, setCcTokenName] = useState<string | null>(null);
+  const [ccTokenInput, setCcTokenInput] = useState('');
+  const [ccOrgIdInput, setCcOrgIdInput] = useState('');
+  const [ccNameInput, setCcNameInput] = useState('');
+  const [ccShowToken, setCcShowToken] = useState(false);
+  const [ccStep, setCcStep] = useState<CcStep>('idle');
+  const [ccVerifiedUser, setCcVerifiedUser] = useState<any>(null);
+  const [ccRemoving, setCcRemoving] = useState(false);
+  const [ccShowForm, setCcShowForm] = useState(false);
+
+  // Permissions section state
+  const [permExpanded, setPermExpanded] = useState(false);
+  const [permLoading, setPermLoading] = useState(false);
+  const [useCustomPermissions, setUseCustomPermissions] = useState(false);
+  const [permValues, setPermValues] = useState<Partial<Record<FeatureKey, AccessLevel>>>({});
+
+  // Debounced username availability check (add mode only)
+  useEffect(() => {
+    if (mode !== 'add') return;
+    const trimmed = formData.username.trim();
+    if (trimmed.length < 3) {
+      setUsernameStatus('idle');
+      return;
+    }
+
+    setUsernameStatus('checking');
+    const timer = setTimeout(async () => {
+      try {
+        const res = await axios.get(`/api/team/user/check-username?username=${encodeURIComponent(trimmed)}`);
+        const taken = !res.data.available;
+        setUsernameStatus(taken ? 'taken' : 'available');
+        setFieldErrors((prev) => {
+          const next = { ...prev };
+          if (taken) {
+            next.username = 'This username is already taken';
+          } else {
+            delete next.username;
+          }
+          return next;
+        });
+      } catch {
+        setUsernameStatus('idle');
+      }
+    }, 600);
+
+    return () => clearTimeout(timer);
+  }, [formData.username, mode]);
+
+  const clearFieldError = (field: string) => {
+    setFieldErrors((prev) => {
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
+  };
+
+  const fetchSubRoleStatus = useCallback(async () => {
+    if (mode !== 'edit' || !userData?.user_id) return;
+    setSubLoading(true);
+    try {
+      const res = await axios.get(`/api/team/user/subrole?user_id=${userData.user_id}`);
+      const active = (res.data.subroles ?? []).some((s: any) => s.subrole === 'PIC_TECHNICIAN');
+      setSubHasTech(active);
+    } catch {
+      setSubHasTech(false);
+    } finally {
+      setSubLoading(false);
+    }
+  }, [mode, userData?.user_id]);
+
+  useEffect(() => {
+    if (subExpanded) fetchSubRoleStatus();
+  }, [subExpanded, fetchSubRoleStatus]);
+
+  const handleSubRoleToggle = async (action: 'grant' | 'revoke') => {
+    if (!userData?.user_id) return;
+    setSubSaving(true);
+    try {
+      await axios.post('/api/team/user/subrole', {
+        user_id: userData.user_id,
+        subrole: 'PIC_TECHNICIAN',
+        action,
+      });
+      setSubHasTech(action === 'grant');
+      toast.success(action === 'grant' ? 'PIC-Technician sub-role granted' : 'PIC-Technician sub-role revoked');
+    } catch (err: any) {
+      const isBlockedByIntervention = err?.response?.status === 409;
+      const message = err?.response?.data?.error ?? 'Failed to update sub-role';
+      if (isBlockedByIntervention) {
+        toast.warning(message, { duration: 6000 });
+      } else {
+        toast.error(message);
+      }
+    } finally {
+      setSubSaving(false);
+    }
+  };
+
+  const fetchCcStatus = useCallback(async () => {
+    if (mode !== 'edit' || !userData?.user_id) return;
+    try {
+      const res = await axios.get(`/api/team/user/control-center-token?user_id=${userData.user_id}`);
+      setCcHasToken(res.data.hasToken ?? false);
+      setCcTokenName(res.data.tokenName ?? null);
+    } catch {
+      setCcHasToken(false);
+    }
+  }, [mode, userData?.user_id]);
+
+  useEffect(() => {
+    if (ccExpanded) fetchCcStatus();
+  }, [ccExpanded, fetchCcStatus]);
+
+  const handleCcVerify = async () => {
+    if (!ccTokenInput.trim()) { toast.error('Please enter the API token'); return; }
+    if (!ccOrgIdInput.trim()) { toast.error('Please enter the Organization ID'); return; }
+    setCcStep('verifying');
+    setCcVerifiedUser(null);
+    try {
+      const res = await axios.post('/api/flytbase/verify', { token: ccTokenInput.trim(), orgId: ccOrgIdInput.trim() });
+      setCcVerifiedUser(res.data.flytbaseUser);
+      setCcStep('confirmed');
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message ?? 'Token verification failed');
+      setCcStep('idle');
+    }
+  };
+
+  const handleCcSave = async () => {
+    if (!ccVerifiedUser || !userData?.user_id) return;
+    setCcStep('saving');
+    try {
+      await axios.post('/api/team/user/control-center-token', {
+        user_id: userData.user_id,
+        token: ccTokenInput.trim(),
+        orgId: ccOrgIdInput.trim(),
+        tokenName: ccNameInput.trim() || undefined,
+      });
+      toast.success('Control Center token saved');
+      setCcHasToken(true);
+      setCcTokenName(ccNameInput.trim() || null);
+      setCcTokenInput(''); setCcOrgIdInput(''); setCcNameInput('');
+      setCcVerifiedUser(null); setCcStep('idle'); setCcShowForm(false);
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message ?? 'Failed to save token');
+      setCcStep('confirmed');
+    }
+  };
+
+  const handleCcRemove = async () => {
+    if (!userData?.user_id) return;
+    setCcRemoving(true);
+    try {
+      await axios.delete('/api/team/user/control-center-token', { data: { user_id: userData.user_id } });
+      toast.success('Control Center token removed');
+      setCcHasToken(false); setCcTokenName(null);
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message ?? 'Failed to remove token');
+    } finally {
+      setCcRemoving(false);
+    }
+  };
+
+  const handleCcCancel = () => {
+    setCcTokenInput(''); setCcOrgIdInput(''); setCcNameInput('');
+    setCcVerifiedUser(null); setCcStep('idle'); setCcShowForm(false);
+  };
+
+  const loadPermissions = useCallback(async () => {
+    const roleId = formData.fk_user_profile_id;
+    if (!roleId) return;
+    setPermLoading(true);
+    try {
+      if (mode === 'edit' && userData?.user_id) {
+        const res = await axios.get(`/api/permissions/user/${userData.user_id}`);
+        setUseCustomPermissions(!!res.data?.data?.hasCustomPermissions);
+        setPermValues(res.data?.data?.permissions ?? {});
+      } else {
+        const roleCode = ROLE_ID_TO_CODE[roleId];
+        const res = await axios.get('/api/permissions/role-defaults');
+        setUseCustomPermissions(false);
+        setPermValues(res.data?.data?.matrix?.[roleCode] ?? {});
+      }
+    } catch {
+      toast.error('Failed to load permissions');
+    } finally {
+      setPermLoading(false);
+    }
+  }, [mode, userData?.user_id, formData.fk_user_profile_id]);
+
+  useEffect(() => {
+    if (permExpanded) loadPermissions();
+  }, [permExpanded, loadPermissions]);
+
+  const isLockedFullAccessRole = LOCKED_ROLE_IDS.includes(formData.fk_user_profile_id);
+
+  const handleSubmit = (e: React.SyntheticEvent) => {
+    e.preventDefault();
+
+    const errors: Record<string, string> = {};
+
+    if (isSuperAdmin && mode === 'add' && (!formData.owner_id || formData.owner_id === 0)) {
+      errors.owner_id = 'Please assign a company to the user';
+    }
+    if (!formData.fk_user_profile_id || formData.fk_user_profile_id === 0) {
+      errors.fk_user_profile_id = 'Please select a role for the user';
+    }
+    if (mode === 'add' && usernameStatus === 'taken') {
+      errors.username = 'This username is already taken';
+    }
+    if (mode === 'add' && usernameStatus === 'checking') {
+      errors.username = 'Please wait while we check username availability';
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      return;
+    }
+
+    const payload: any = { ...formData };
+    if (mode === 'add' && ccStep === 'confirmed' && ccVerifiedUser) {
+      payload.ccToken = ccTokenInput.trim();
+      payload.ccOrgId = ccOrgIdInput.trim();
+      payload.ccTokenName = ccNameInput.trim() || undefined;
+    }
+    if (mode === 'add' && formData.fk_user_profile_id === 8) {
+      payload.grant_pic_technician = subGrantOnCreate;
+    }
+    if (permExpanded && !isLockedFullAccessRole) {
+      payload.permissions = {
+        useCustom: useCustomPermissions,
+        access: useCustomPermissions
+          ? Object.fromEntries(ALL_FEATURE_KEYS.map((k) => [k, permValues[k] ?? 'R']))
+          : undefined,
+      };
+    }
+
+    setIsSubmitting(true);
+    Promise.resolve(onSubmit(payload)).then((result: any) => {
+      if (result?.fieldErrors) {
+        setFieldErrors(result.fieldErrors);
+      }
+    }).finally(() => {
+      setIsSubmitting(false);
+    });
+  };
+
+  const inputError = (field: string) =>
+    fieldErrors[field] ? 'border-red-500 focus-visible:ring-red-500' : '';
+
+  return (
+    <div className={`min-h-screen ${isDark ? 'bg-slate-950' : 'bg-gray-50'}`}>
+      <div className={`border-b px-6 py-4 ${isDark ? 'bg-slate-900/80 border-slate-700/60' : 'bg-white/80 border-gray-200'}`}>
+        <div className="mx-auto flex items-center gap-3">
+          <button type="button" onClick={onCancel} className={`cursor-pointer p-1.5 rounded-md ${isDark ? 'hover:bg-slate-800 text-slate-400' : 'hover:bg-slate-100 text-slate-500'}`}>
+            <ArrowLeft size={16} />
+          </button>
+          <div className="w-1 h-6 rounded-full bg-violet-600" />
+          <div>
+            <h1 className={`font-semibold text-base tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>{mode === 'add' ? 'Add New User' : 'Edit User'}</h1>
+            <p className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{mode === 'add' ? 'Create a new team member and assign their role.' : 'Update this team member\'s details and permissions.'}</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="mx-auto px-6 py-8">
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            {/* Username */}
+            <div>
+              <Label htmlFor="username" className="pb-2">Username *</Label>
+              <div className="relative">
+                <Input
+                  id="username"
+                  value={formData.username}
+                  onChange={(e) => {
+                    setFormData({ ...formData, username: e.target.value.toLowerCase() });
+                    clearFieldError('username');
+                  }}
+                  required
+                  disabled={mode === 'edit'}
+                  className={`pr-8 ${inputError('username')}`}
+                />
+                {mode === 'add' && formData.username.length >= 3 && (
+                  <span className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none">
+                    {usernameStatus === 'checking' && <Loader2 size={14} className="animate-spin text-slate-400" />}
+                    {usernameStatus === 'available' && <CheckCircle size={14} className="text-emerald-500" />}
+                    {usernameStatus === 'taken' && <XCircle size={14} className="text-red-500" />}
+                  </span>
+                )}
+              </div>
+              {fieldErrors.username && (
+                <p className="text-xs text-red-500 mt-1">{fieldErrors.username}</p>
+              )}
+            </div>
+
+            {/* Full Name */}
+            <div>
+              <Label htmlFor="fullname" className="pb-2">Full Name *</Label>
+              <Input
+                id="fullname"
+                value={formData.fullname}
+                onChange={(e) => setFormData({ ...formData, fullname: e.target.value })}
+                required
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            {/* Email */}
+            <div>
+              <Label htmlFor="email" className="pb-2">Email *</Label>
+              <Input
+                id="email"
+                type="email"
+                value={formData.email}
+                onChange={(e) => {
+                  setFormData({ ...formData, email: e.target.value });
+                  clearFieldError('email');
+                }}
+                required
+                disabled={!canEditEmail && mode === 'edit'}
+                readOnly={!canEditEmail && mode === 'edit'}
+                className={`${!canEditEmail && mode === 'edit' ? 'opacity-60 cursor-not-allowed' : ''} ${inputError('email')}`}
+              />
+              {fieldErrors.email && (
+                <p className="text-xs text-red-500 mt-1">{fieldErrors.email}</p>
+              )}
+            </div>
+
+            {/* Phone */}
+            <div>
+              <Label htmlFor="phone" className="pb-2">Phone</Label>
+              <Input
+                id="phone"
+                type="tel"
+                value={formData.phone || ''}
+                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+              />
+            </div>
+          </div>
+
+          {/* Company (super admin add mode) */}
+          {isSuperAdmin && mode === 'add' && (
+            <div>
+              <Label htmlFor="owner_id" className="pb-2">
+                Company <span className="text-red-500">*</span>
+              </Label>
+              <Select
+                value={formData.owner_id?.toString()}
+                onValueChange={(value) => {
+                  setFormData({ ...formData, owner_id: parseInt(value) });
+                  clearFieldError('owner_id');
+                }}
+              >
+                <SelectTrigger className={`${isDark ? 'bg-slate-900 border-slate-700' : ''} ${inputError('owner_id')}`}>
+                  <SelectValue placeholder="Select a Company" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="0">Select a Company</SelectItem>
+                  {owners.map((owner) => (
+                    <SelectItem key={owner.owner_id} value={owner.owner_id.toString()}>
+                      {owner.owner_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {fieldErrors.owner_id && (
+                <p className="text-xs text-red-500 mt-1">{fieldErrors.owner_id}</p>
+              )}
+            </div>
+          )}
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="client">Assign Client</Label>
+              <Select
+                value={formData.fk_client_id?.toString()}
+                onValueChange={(value) => setFormData({ ...formData, fk_client_id: parseInt(value) })}
+              >
+                <SelectTrigger className={isDark ? 'bg-slate-900 border-slate-700' : ''}>
+                  <SelectValue placeholder="Select a Client" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="0">Select a Client</SelectItem>
+                  {clients.map((client) => (
+                    <SelectItem key={client.client_id} value={client.client_id.toString()}>
+                      {client.client_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-36">
+            {/* Role */}
+            <div>
+              <Label htmlFor="role" className="pb-2">Role *</Label>
+              <Select
+                value={formData.fk_user_profile_id?.toString()}
+                onValueChange={(value) => {
+                  const id = parseInt(value);
+                  setFormData({ ...formData, fk_user_profile_id: id });
+                  clearFieldError('fk_user_profile_id');
+                  if (mode === 'add') {
+                    const isPic = id === 8;
+                    setSubExpanded(isPic);
+                    if (!isPic) setSubGrantOnCreate(false);
+                  }
+                }}
+                disabled={mode === 'edit'}
+              >
+                <SelectTrigger className={`${mode === 'edit' ? 'opacity-60 cursor-not-allowed' : ''} ${inputError('fk_user_profile_id')}`}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="0">Select a Role</SelectItem>
+                  {ROLE_OPTIONS.map((role) => (
+                    <SelectItem key={role.value} value={role.value.toString()}>
+                      {role.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {fieldErrors.fk_user_profile_id && (
+                <p className="text-xs text-red-500 mt-1">{fieldErrors.fk_user_profile_id}</p>
+              )}
+            </div>
+
+            <div>
+              <Label htmlFor="user_type" className="pb-2">User Type *</Label>
+              <Select
+                value={formData.user_type}
+                onValueChange={(value) => setFormData({ ...formData, user_type: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="EMPLOYEE">Employee</SelectItem>
+                  <SelectItem value="EXTERNAL">External</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-36">
+            <div>
+              <Label htmlFor="is_manager" className="pb-2">Manager Role</Label>
+              <Select
+                value={formData.is_manager}
+                onValueChange={(value) => setFormData({ ...formData, is_manager: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="N">Not Manager</SelectItem>
+                  <SelectItem value="Y">Manager</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className={`text-xs mt-1.5 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                Managers can delete records on features where this user has Full access.
+              </p>
+            </div>
+
+            {mode === 'edit' && (
+              <div>
+                <Label htmlFor="active" className="pb-2">Status</Label>
+                <Select
+                  value={formData.active?.toString()}
+                  onValueChange={(value) => setFormData({ ...formData, active: parseInt(value) })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1">Active</SelectItem>
+                    <SelectItem value="0">Inactive</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+          </div>
+
+          {/* Permissions section */}
+          {!!formData.fk_user_profile_id && (
+            <div className={`rounded-lg border ${isDark ? 'border-slate-600 bg-slate-900/40' : 'border-slate-200 bg-slate-50'}`}>
+              <button
+                type="button"
+                onClick={() => setPermExpanded((v) => !v)}
+                className={`cursor-pointer w-full flex items-center justify-between px-4 py-3 text-sm font-medium ${isDark ? 'text-slate-200' : 'text-slate-700'}`}
+              >
+                <span className="flex items-center gap-2">
+                  <ShieldCheck size={15} className={isDark ? 'text-slate-500' : 'text-slate-400'} />
+                  Permissions
+                  {isLockedFullAccessRole && (
+                    <span className="text-xs px-1.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 font-normal">Full access — locked</span>
+                  )}
+                  {!isLockedFullAccessRole && useCustomPermissions && (
+                    <span className="text-xs px-1.5 py-0.5 rounded-full bg-violet-500/15 text-violet-600 font-normal">Customized</span>
+                  )}
+                </span>
+                {permExpanded ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
+              </button>
+
+              {permExpanded && (
+                <div className={`px-4 pb-4 space-y-3 border-t ${isDark ? 'border-slate-700' : 'border-slate-200'}`}>
+                  {isLockedFullAccessRole ? (
+                    <p className={`text-xs pt-3 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                      This role always has full access to every feature and is not customizable.
+                    </p>
+                  ) : permLoading ? (
+                    <div className="pt-4 space-y-2">
+                      <Skeleton className="h-3 w-48" />
+                      <Skeleton className="h-40 w-full" />
+                    </div>
+                  ) : (
+                    <div className="pt-3 space-y-3">
+                      <label className={`flex items-center gap-2.5 cursor-pointer select-none text-xs font-medium ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                        <input
+                          type="checkbox"
+                          checked={useCustomPermissions}
+                          onChange={(e) => setUseCustomPermissions(e.target.checked)}
+                          className="w-3.5 h-3.5 accent-violet-600 cursor-pointer"
+                        />
+                        Customize permissions for this user
+                      </label>
+                      <p className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                        {useCustomPermissions
+                          ? 'These overrides apply only to this user. The role\'s default table is ignored for them.'
+                          : 'Following the role\'s default permission table — changes to that table apply to this user automatically.'}
+                      </p>
+                      <UserPermissionMatrix
+                        isDark={isDark}
+                        disabled={!useCustomPermissions}
+                        values={permValues}
+                        onChange={(key, value) => setPermValues((prev) => ({ ...prev, [key]: value }))}
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Flytrelay Access section - only show if company has flytrelay enabled */}
+          {companyFlytrelayEnabled && (
+            <div className={`rounded-lg border ${isDark ? 'border-slate-600 bg-slate-900/40' : 'border-slate-200 bg-slate-50'}`}>
+              <div className="px-4 py-3">
+                <label className={`flex items-center gap-2.5 cursor-pointer select-none text-sm font-medium ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                  <input
+                    type="checkbox"
+                    checked={formData.flytrelay_access}
+                    onChange={(e) => setFormData({ ...formData, flytrelay_access: e.target.checked })}
+                    className="w-4 h-4 accent-violet-600 cursor-pointer"
+                  />
+                  Grant Flytrelay Access
+                </label>
+                <p className={`text-xs mt-2 ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>
+                  Allow this user to access Flytrelay flight logs from Control Center
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* PIC-Technician sub-role section — PIC users only, RM/ADMIN/SUPERADMIN only */}
+          {((mode === 'edit' && userData?.user_role === 'PIC') || (mode === 'add' && formData.fk_user_profile_id === 8)) && SUBROLE_MANAGER_ROLES.includes(sessionRole ?? '') && (
+            <div className={`rounded-lg border ${isDark ? 'border-slate-600 bg-slate-900/40' : 'border-slate-200 bg-slate-50'}`}>
+              <button
+                type="button"
+                onClick={() => setSubExpanded((v) => !v)}
+                className={`cursor-pointer w-full flex items-center justify-between px-4 py-3 text-sm font-medium ${isDark ? 'text-slate-200' : 'text-slate-700'}`}
+              >
+                <span className="flex items-center gap-2">
+                  <ShieldCheck size={15} className={subHasTech ? 'text-violet-500' : isDark ? 'text-slate-500' : 'text-slate-400'} />
+                  Technician Sub-role
+                  {subHasTech === true && (
+                    <span className="text-xs px-1.5 py-0.5 rounded-full bg-violet-500/15 text-violet-600 font-normal">Active</span>
+                  )}
+                  {subHasTech === false && (
+                    <span className={`text-xs px-1.5 py-0.5 rounded-full font-normal ${isDark ? 'bg-slate-700 text-slate-400' : 'bg-slate-200 text-slate-500'}`}>Not assigned</span>
+                  )}
+                  {subHasTech === null && !subExpanded && (
+                    <span className={`text-xs px-1.5 py-0.5 rounded-full font-normal ${isDark ? 'bg-slate-700 text-slate-400' : 'bg-slate-200 text-slate-500'}`}>PIC promotion</span>
+                  )}
+                </span>
+                {subExpanded ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
+              </button>
+
+              {subExpanded && (
+                <div className={`px-4 pb-4 space-y-3 border-t ${isDark ? 'border-slate-700' : 'border-slate-200'}`}>
+                  {mode === 'add' && (
+                    <div className="pt-3 space-y-3">
+                      <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                        Granting <strong>PIC-Technician</strong> allows this pilot to upload maintenance documents and submit intervention reports on tickets assigned to them. Only RM can close the ticket.
+                      </p>
+                      <label className={`flex items-center gap-2.5 cursor-pointer select-none text-xs font-medium ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                        <input
+                          type="checkbox"
+                          checked={subGrantOnCreate}
+                          onChange={(e) => setSubGrantOnCreate(e.target.checked)}
+                          className="w-3.5 h-3.5 accent-violet-600 cursor-pointer"
+                        />
+                        Grant PIC-Technician sub-role on create
+                      </label>
+                    </div>
+                  )}
+
+                  {mode === 'edit' && subLoading && (
+                    <div className="pt-4 space-y-2">
+                      <Skeleton className="h-3 w-48" />
+                      <Skeleton className="h-8 w-32" />
+                    </div>
+                  )}
+
+                  {mode === 'edit' && !subLoading && subHasTech === false && (
+                    <div className="pt-3 space-y-3">
+                      <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                        Granting <strong>PIC-Technician</strong> allows this pilot to upload maintenance documents and submit intervention reports on tickets assigned to them. Only RM can close the ticket.
+                      </p>
+                      <Button
+                        type="button"
+                        size="sm"
+                        disabled={subSaving}
+                        onClick={() => handleSubRoleToggle('grant')}
+                        className="h-7 text-xs bg-violet-600 hover:bg-violet-500 text-white"
+                      >
+                        {subSaving ? <><Loader2 size={12} className="animate-spin mr-1.5" />Saving…</> : 'Grant PIC-Technician'}
+                      </Button>
+                    </div>
+                  )}
+
+                  {mode === 'edit' && !subLoading && subHasTech === true && (
+                    <div className="pt-3 space-y-3">
+                      <div className={`flex items-start gap-2 text-xs rounded-md px-3 py-2.5 ${isDark ? 'bg-violet-900/20 text-violet-300' : 'bg-violet-50 text-violet-700'}`}>
+                        <CheckCircle size={13} className="shrink-0 mt-0.5" />
+                        <span>This pilot has PIC-Technician access — they can upload documents and submit intervention reports on assigned tickets.</span>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={subSaving}
+                        onClick={() => handleSubRoleToggle('revoke')}
+                        className="h-7 text-xs border-rose-400/40 text-rose-500 hover:bg-rose-500/10"
+                      >
+                        {subSaving ? <><Loader2 size={12} className="animate-spin mr-1.5" />Revoking…</> : 'Revoke sub-role'}
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Control Center token section — edit mode only */}
+          {mode === 'edit' && (
+            <div className={`rounded-lg border ${isDark ? 'border-slate-600 bg-slate-900/40' : 'border-slate-200 bg-slate-50'}`}>
+              <button
+                type="button"
+                onClick={() => setCcExpanded((v) => !v)}
+                className={`cursor-pointer w-full flex items-center justify-between px-4 py-3 text-sm font-medium ${isDark ? 'text-slate-200' : 'text-slate-700'}`}
+              >
+                <span className="flex items-center gap-2">
+                  {ccHasToken === true
+                    ? <Link2 size={15} className="text-emerald-500" />
+                    : <Link2Off size={15} className={isDark ? 'text-slate-500' : 'text-slate-400'} />}
+                  Control Center
+                  {ccHasToken === true && (
+                    <span className="text-xs px-1.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 font-normal">Linked</span>
+                  )}
+                  {ccHasToken === false && (
+                    <span className={`text-xs px-1.5 py-0.5 rounded-full font-normal ${isDark ? 'bg-slate-700 text-slate-400' : 'bg-slate-200 text-slate-500'}`}>Not linked</span>
+                  )}
+                </span>
+                {ccExpanded ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
+              </button>
+
+              {ccExpanded && (
+                <div className={`px-4 pb-4 space-y-3 border-t ${isDark ? 'border-slate-700' : 'border-slate-200'}`}>
+                  {ccHasToken === null && (
+                    <div className="pt-4 space-y-4">
+                      <div className="space-y-2">
+                        <Skeleton className="h-3 w-20" />
+                        <Skeleton className="h-8 w-full" />
+                      </div>
+                      <div className="space-y-2">
+                        <Skeleton className="h-3 w-16" />
+                        <Skeleton className="h-8 w-full" />
+                      </div>
+                      <div className="space-y-2">
+                        <Skeleton className="h-3 w-24" />
+                        <Skeleton className="h-8 w-full" />
+                      </div>
+                      <Skeleton className="h-7 w-24 mt-1" />
+                    </div>
+                  )}
+
+                  {ccHasToken === true && !ccShowForm && (
+                    <div className="pt-3 space-y-3">
+                      <div className={`flex items-center gap-2 text-xs rounded-md px-3 py-2 ${isDark ? 'bg-emerald-900/20 text-emerald-400' : 'bg-emerald-50 text-emerald-700'}`}>
+                        <CheckCircle size={13} className="shrink-0" />
+                        <span>Control Center token is linked{ccTokenName ? ` — ${ccTokenName}` : ''}</span>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button type="button" variant="outline" size="sm" className="h-7 text-xs" onClick={() => setCcShowForm(true)}>
+                          Replace token
+                        </Button>
+                        <Button
+                          type="button" variant="outline" size="sm"
+                          disabled={ccRemoving}
+                          className="h-7 text-xs border-red-400/40 text-red-500 hover:bg-red-500/10"
+                          onClick={handleCcRemove}
+                        >
+                          {ccRemoving ? 'Removing…' : 'Remove'}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {(ccHasToken === false || ccShowForm) && ccStep !== 'confirmed' && ccStep !== 'saving' && (
+                    <div className="pt-3 space-y-3">
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Token Name <span className={`font-normal ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>(optional)</span></Label>
+                        <Input
+                          value={ccNameInput}
+                          onChange={(e) => setCcNameInput(e.target.value)}
+                          placeholder="e.g. Production"
+                          disabled={ccStep === 'verifying'}
+                          className={`h-8 text-sm ${isDark ? 'bg-slate-800 border-slate-700' : ''}`}
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">API Token</Label>
+                        <div className="relative">
+                          <Input
+                            type={ccShowToken ? 'text' : 'password'}
+                            value={ccTokenInput}
+                            onChange={(e) => setCcTokenInput(e.target.value.trim())}
+                            placeholder="Paste Control Center long-lived API key"
+                            disabled={ccStep === 'verifying'}
+                            className={`h-8 text-sm pr-9 font-mono ${isDark ? 'bg-slate-800 border-slate-700' : ''}`}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setCcShowToken((v) => !v)}
+                            className={`cursor-pointer absolute right-2.5 top-1/2 -translate-y-1/2 transition-colors hover:text-violet-500 ${isDark ? 'text-slate-400' : 'text-slate-400'}`}
+                          >
+                            {ccShowToken ? <EyeOff size={14} /> : <Eye size={14} />}
+                          </button>
+                        </div>
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Organization ID</Label>
+                        <Input
+                          value={ccOrgIdInput}
+                          onChange={(e) => setCcOrgIdInput(e.target.value.trim())}
+                          placeholder="e.g. 684fbfd4c264f8f677beb444"
+                          disabled={ccStep === 'verifying'}
+                          className={`h-8 text-sm font-mono ${isDark ? 'bg-slate-800 border-slate-700' : ''}`}
+                        />
+                      </div>
+                      <div className="flex gap-2 pt-1">
+                        <Button
+                          type="button" size="sm"
+                          onClick={handleCcVerify}
+                          disabled={ccStep === 'verifying' || !ccTokenInput.trim() || !ccOrgIdInput.trim()}
+                          className="h-7 text-xs bg-violet-600 hover:bg-violet-500 text-white"
+                        >
+                          {ccStep === 'verifying'
+                            ? <><Loader2 size={12} className="animate-spin mr-1.5" />Verifying…</>
+                            : 'Verify token'}
+                        </Button>
+                        {ccShowForm && (
+                          <Button type="button" variant="outline" size="sm" className="h-7 text-xs" onClick={handleCcCancel}>
+                            Cancel
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {(ccStep === 'confirmed' || ccStep === 'saving') && ccVerifiedUser && (
+                    <div className="pt-3 space-y-3">
+                      <div className={`rounded-md border px-3 py-2.5 text-xs space-y-1 ${isDark ? 'bg-slate-800/60 border-slate-700' : 'bg-slate-100 border-slate-200'}`}>
+                        <p className={`font-medium flex items-center gap-1.5 ${isDark ? 'text-emerald-400' : 'text-emerald-700'}`}>
+                          <CheckCircle size={13} /> Token verified
+                        </p>
+                        {ccVerifiedUser.name && <p className={isDark ? 'text-slate-300' : 'text-slate-600'}>{ccVerifiedUser.name}</p>}
+                        {ccVerifiedUser.email && <p className={isDark ? 'text-slate-400' : 'text-slate-500'}>{ccVerifiedUser.email}</p>}
+                        {ccVerifiedUser.organization && <p className={isDark ? 'text-slate-400' : 'text-slate-500'}>{ccVerifiedUser.organization}</p>}
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          type="button" size="sm"
+                          onClick={handleCcSave}
+                          disabled={ccStep === 'saving'}
+                          className="h-7 text-xs bg-emerald-600 hover:bg-emerald-500 text-white"
+                        >
+                          {ccStep === 'saving'
+                            ? <><Loader2 size={12} className="animate-spin mr-1.5" />Saving…</>
+                            : 'Save token'}
+                        </Button>
+                        <Button type="button" variant="outline" size="sm" className="h-7 text-xs" onClick={handleCcCancel} disabled={ccStep === 'saving'}>
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className="flex justify-end gap-3 mt-6">
+            <Button type="button" variant="outline" onClick={onCancel}>
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              disabled={isSubmitting || (mode === 'add' && usernameStatus === 'taken')}
+              className="flex items-center gap-2 bg-violet-600 hover:bg-violet-700 cursor-pointer"
+            >
+              {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
+              {mode === 'add' ? 'Add User' : 'Update User'}
+            </Button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}

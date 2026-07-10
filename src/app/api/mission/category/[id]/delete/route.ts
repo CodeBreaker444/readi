@@ -1,6 +1,6 @@
 import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { deleteMissionCategory } from '@/backend/services/mission/category-service';
-import { requirePermission } from '@/lib/auth/api-auth';
+import { requireFeatureAccess, requirePermission } from '@/lib/auth/api-auth';
 import { internalError } from '@/lib/api-error';
 import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
@@ -12,6 +12,9 @@ export async function POST(
   try {
      const { session, error } = await requirePermission('view_config')
      if (error) return error;
+
+    const { error: featureError } = await requireFeatureAccess('mission_category', 'delete');
+    if (featureError) return featureError;
 
     const ownerId = session!.user.ownerId;
     const { id } = await params;

@@ -1,6 +1,6 @@
 import { deleteLucProcedure, getLucProcedureById, updateLucProcedure } from '@/backend/services/organization/lcu-service';
 import { logEvent } from '@/backend/services/auditLog/audit-log';
-import { requirePermission } from '@/lib/auth/api-auth';
+import { requireFeatureAccess, requirePermission } from '@/lib/auth/api-auth';
 import { internalError, notFound } from '@/lib/api-error';
 import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
@@ -33,6 +33,9 @@ export async function PUT(
     const { id } = await params;
     const { session, error } = await requirePermission('view_config');
     if (error) return error;
+
+    const { error: featureError } = await requireFeatureAccess('org_procedures', 'edit');
+    if (featureError) return featureError;
 
     const body = await request.json();
     const updated = await updateLucProcedure({ ...body, procedure_id: Number(id) });
@@ -67,6 +70,9 @@ export async function DELETE(
     const { id } = await params;
     const { session, error } = await requirePermission('view_config');
     if (error) return error;
+
+    const { error: featureError } = await requireFeatureAccess('org_procedures', 'delete');
+    if (featureError) return featureError;
 
     await deleteLucProcedure(Number(id));
 

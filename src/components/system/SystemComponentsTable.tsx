@@ -1,5 +1,6 @@
 'use client';
 
+import { FeatureGate } from '@/components/permissions/FeatureGate';
 import { DroneToolData } from '@/components/tables/SystemColumn';
 import { SystemCell } from '@/components/tables/SystemCell';
 import { TablePagination } from '@/components/tables/Pagination';
@@ -259,13 +260,19 @@ export default function SystemComponentsTable({
                         <td className="px-3 py-3" onClick={(e) => e.stopPropagation()}>
                           <div className="flex flex-wrap gap-2">
                             <Button size="sm" variant="outline" onClick={() => onViewSystem(system.tool_id)}>{t('systems.components.systemsTable.buttons.view')}</Button>
-                            <Button size="sm" variant="outline" onClick={() => onEditSystem(system)}>{t('systems.components.systemsTable.buttons.edit')}</Button>
-                            <Button size="sm" variant="outline" onClick={() => onDuplicateSystem(system)}>{t('systems.components.systemsTable.buttons.duplicate')}</Button>
+                            <FeatureGate feature="systems_manage" require="edit">
+                              <Button size="sm" variant="outline" onClick={() => onEditSystem(system)}>{t('systems.components.systemsTable.buttons.edit')}</Button>
+                            </FeatureGate>
+                            <FeatureGate feature="systems_manage" require="edit">
+                              <Button size="sm" variant="outline" onClick={() => onDuplicateSystem(system)}>{t('systems.components.systemsTable.buttons.duplicate')}</Button>
+                            </FeatureGate>
                             <Button size="sm" variant="outline" onClick={() => onViewFiles(system)}>{t('systems.components.systemsTable.buttons.files')}</Button>
                             <Button size="sm" variant="outline" onClick={() => onOpenRelations(system.tool_id, system.tool_code)} className="gap-1">
                               <GitBranch size={13} /> {t('systems.components.systemsTable.buttons.relations')}
                             </Button>
-                            <Button size="sm" variant="destructive" onClick={() => onDeleteSystem(system.tool_id)}>{t('systems.components.systemsTable.buttons.delete')}</Button>
+                            <FeatureGate feature="systems_manage" require="delete">
+                              <Button size="sm" variant="destructive" onClick={() => onDeleteSystem(system.tool_id)}>{t('systems.components.systemsTable.buttons.delete')}</Button>
+                            </FeatureGate>
                           </div>
                         </td>
                       </tr>
@@ -300,7 +307,9 @@ export default function SystemComponentsTable({
                               <td className="px-3 py-2.5">
                                 <div className="flex flex-wrap gap-2">
                                   <Button size="sm" variant="outline" onClick={() => onViewComponent(comp)}>{t('systems.components.systemsTable.buttons.view')}</Button>
-                                  <Button size="sm" variant="outline" onClick={() => onEditComponent(comp.tool_component_id)}>{t('systems.components.systemsTable.buttons.edit')}</Button>
+                                  <FeatureGate feature="systems_manage" require="edit">
+                                    <Button size="sm" variant="outline" onClick={() => onEditComponent(comp.tool_component_id)}>{t('systems.components.systemsTable.buttons.edit')}</Button>
+                                  </FeatureGate>
                                   <Button size="sm" variant="outline" onClick={() => onLogComponent(comp)}>{t('systems.components.systemsTable.buttons.log')}</Button>
                                   <Button
                                     size="sm"
@@ -310,13 +319,15 @@ export default function SystemComponentsTable({
                                   >
                                     {t('systems.components.systemsTable.buttons.flights')}
                                   </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="destructive"
-                                    onClick={() => onDeleteComponent(comp.tool_component_id, comp.component_code || comp.component_name || `#${comp.tool_component_id}`)}
-                                  >
-                                    {t('systems.components.systemsTable.buttons.delete')}
-                                  </Button>
+                                  <FeatureGate feature="systems_manage" require="delete">
+                                    <Button
+                                      size="sm"
+                                      variant="destructive"
+                                      onClick={() => onDeleteComponent(comp.tool_component_id, comp.component_code || comp.component_name || `#${comp.tool_component_id}`)}
+                                    >
+                                      {t('systems.components.systemsTable.buttons.delete')}
+                                    </Button>
+                                  </FeatureGate>
                                 </div>
                               </td>
                             </tr>

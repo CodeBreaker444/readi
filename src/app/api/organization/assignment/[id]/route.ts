@@ -3,7 +3,7 @@ import {
     getAssignmentById,
     updateAssignment,
 } from '@/backend/services/organization/assignment-service'
-import { requirePermission } from '@/lib/auth/api-auth'
+import { requireFeatureAccess, requirePermission } from '@/lib/auth/api-auth'
 import { apiError, internalError, zodError } from '@/lib/api-error'
 import { E } from '@/lib/error-codes'
 import { NextRequest, NextResponse } from 'next/server'
@@ -41,8 +41,11 @@ export async function PUT(request: NextRequest,  { params }: { params: Promise<{
     const { session, error } = await requirePermission('view_config')
     if (error) return error
 
+    const { error: featureError } = await requireFeatureAccess('org_assignments', 'edit')
+    if (featureError) return featureError
+
     const id = parseInt((await params).id)
-    
+
 
     const body = await request.json()
     const parsed = updateSchema.safeParse(body)
@@ -69,6 +72,9 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   try {
     const { session, error } = await requirePermission('view_config')
     if (error) return error
+
+    const { error: featureError } = await requireFeatureAccess('org_assignments', 'delete')
+    if (featureError) return featureError
 
     const id = parseInt((await params).id)
     if (isNaN(id)) {

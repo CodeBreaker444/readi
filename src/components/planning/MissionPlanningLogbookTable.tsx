@@ -33,6 +33,7 @@ interface MissionPlanningLogbookTableProps {
   onDelete: (id: number) => void;
   onManage: (row: PlanningLogbookRow) => void;
   onTestLogbook?: (row: PlanningLogbookRow) => void;
+  canDelete: boolean;
 }
 
 export default function MissionPlanningLogbookTable({
@@ -43,14 +44,15 @@ export default function MissionPlanningLogbookTable({
   onDelete,
   onManage,
   onTestLogbook,
+  canDelete,
 }: MissionPlanningLogbookTableProps) {
   const { t } = useTranslation();
   const [sorting, setSorting] = useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
 
   const columns = useMemo(
-    () => getLogbookColumns({ openedRowId, onOpen, onDelete, onManage, onTestLogbook, t }),
-    [openedRowId, onOpen, onDelete, onManage, onTestLogbook, t]
+    () => getLogbookColumns({ openedRowId, onOpen, onDelete, onManage, onTestLogbook, t, canDelete }),
+    [openedRowId, onOpen, onDelete, onManage, onTestLogbook, t, canDelete]
   );
 
   const table = useReactTable({

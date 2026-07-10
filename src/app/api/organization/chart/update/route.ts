@@ -1,5 +1,5 @@
 import { upsertChartOverride, updateUserPosition } from "@/backend/services/organization/chart-override-service";
-import { requirePermission } from "@/lib/auth/api-auth";
+import { requireFeatureAccess, requirePermission } from "@/lib/auth/api-auth";
 import { internalError, zodError } from "@/lib/api-error";
 import { E } from "@/lib/error-codes";
 import { type NextRequest, NextResponse } from "next/server";
@@ -15,6 +15,9 @@ export async function PATCH(request: NextRequest) {
   try {
     const { session, error } = await requirePermission("view_config");
     if (error) return error;
+
+    const { error: featureError } = await requireFeatureAccess("org_chart", "edit");
+    if (featureError) return featureError;
 
     const body = await request.json();
     const parsed = updateNodeSchema.safeParse(body);

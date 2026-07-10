@@ -1,3 +1,4 @@
+import { FeatureGate } from "@/components/permissions/FeatureGate";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { SpiKpiDefinition } from "@/config/types/safetyMng";
@@ -91,32 +92,36 @@ export const getIndicatorColumns = (
               <ClipboardList className="w-3.5 h-3.5" />
             </Button>
           )}
-          <Button
-            size="icon"
-            variant="ghost"
-            onClick={() => onEdit(row.original)}
-            className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-          >
-            <Pencil className="w-3.5 h-3.5" />
-          </Button>
-          <Button
-            size="icon"
-            variant="ghost"
-            onClick={() => onToggle(row.original)}
-            disabled={isToggling === row.original.id}
-            className={`h-8 w-8 ${row.original.is_active === 1
-                ? "text-orange-500 hover:bg-orange-50"
-                : "text-gray-400 hover:bg-gray-100"
-              }`}
-          >
-            {isToggling === row.original.id ? (
-              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-            ) : row.original.is_active === 1 ? (
-              <ToggleRight className="w-5 h-5" />
-            ) : (
-              <ToggleLeft className="w-5 h-5" />
-            )}
-          </Button>
+          <FeatureGate feature="safety_spi_kpi_definitions" require="edit">
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={() => onEdit(row.original)}
+              className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+            >
+              <Pencil className="w-3.5 h-3.5" />
+            </Button>
+          </FeatureGate>
+          <FeatureGate feature="safety_spi_kpi_definitions" require="edit">
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={() => onToggle(row.original)}
+              disabled={isToggling === row.original.id}
+              className={`h-8 w-8 ${row.original.is_active === 1
+                  ? "text-orange-500 hover:bg-orange-50"
+                  : "text-gray-400 hover:bg-gray-100"
+                }`}
+            >
+              {isToggling === row.original.id ? (
+                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+              ) : row.original.is_active === 1 ? (
+                <ToggleRight className="w-5 h-5" />
+              ) : (
+                <ToggleLeft className="w-5 h-5" />
+              )}
+            </Button>
+          </FeatureGate>
         </div>
       ),
     }),

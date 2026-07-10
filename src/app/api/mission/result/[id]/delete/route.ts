@@ -1,6 +1,6 @@
 import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { deleteMissionResult } from '@/backend/services/mission/result-service';
-import { requirePermission } from '@/lib/auth/api-auth';
+import { requireFeatureAccess, requirePermission } from '@/lib/auth/api-auth';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(
@@ -10,6 +10,9 @@ export async function POST(
   try {
     const { session, error } = await requirePermission('view_config')
      if (error) return error;
+
+    const { error: featureError } = await requireFeatureAccess('mission_result', 'delete');
+    if (featureError) return featureError;
 
     const ownerId = session!.user.ownerId;
     const { id } = await params;

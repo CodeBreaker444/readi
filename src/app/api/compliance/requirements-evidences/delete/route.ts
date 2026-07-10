@@ -1,6 +1,6 @@
 import { deleteComplianceRequirement } from '@/backend/services/compliance/compliance-service';
 import { apiError, internalError } from '@/lib/api-error';
-import { requirePermission } from '@/lib/auth/api-auth';
+import { requireFeatureAccess, requirePermission } from '@/lib/auth/api-auth';
 import { zodError } from '@/lib/api-error';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
@@ -14,6 +14,9 @@ export async function POST(req: NextRequest) {
   try {
     const { session, error } = await requirePermission('view_compliance');
     if (error) return error;
+
+    const { error: featureError } = await requireFeatureAccess('compliance_requirements_evidence', 'delete');
+    if (featureError) return featureError;
 
     const body = await req.json();
     const parsed = DeleteSchema.safeParse(body);
