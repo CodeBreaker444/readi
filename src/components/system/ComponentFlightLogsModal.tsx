@@ -77,11 +77,13 @@ export function ComponentFlightLogsModal({ open, onClose, componentId, component
 
     setPreviewLoading(true);
     try {
-      const res = await fetch(
-        `/api/flytbase/flights/preview?flightId=${encodeURIComponent(log.flytbase_flight_id)}`,
-      );
+      // Read from our own S3 archive of the attached log rather than calling
+      // FlytBase live — the flight may since have been deleted/archived on
+      // their side, or credentials may have expired, and we already have a
+      // durable copy from when the log was attached.
+      const res = await fetch(`/api/system/component/flight-logs/${log.log_id}/preview`);
       const body = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(body?.message ?? `Error ${res.status}`);
+      if (!res.ok || !body.success) throw new Error(body?.message ?? `Error ${res.status}`);
       setPreview(body.data);
     } catch (err: any) {
       setPreviewError(err?.message ?? 'Failed to load flight log.');

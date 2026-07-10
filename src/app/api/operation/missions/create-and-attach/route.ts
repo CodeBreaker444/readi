@@ -72,6 +72,9 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     console.error('[POST /api/operation/missions/create-and-attach]', err);
     const message = err instanceof Error ? err.message : 'Unknown error';
+    if (message.startsWith('No system is present')) {
+      return NextResponse.json({ code: 0, message }, { status: 400 });
+    }
     return internalError(E.SV001, err);
   }
 }

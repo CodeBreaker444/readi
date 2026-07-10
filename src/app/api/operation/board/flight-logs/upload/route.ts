@@ -25,7 +25,9 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     console.error('[flight-logs/upload] POST error:', err);
     const message = err instanceof Error ? err.message : 'Unknown error';
-    const status = message.includes('too large') ? 413 : 500;
+    const status = message.includes('too large') ? 413
+      : message.startsWith('No system is present') ? 400
+      : 500;
     return NextResponse.json({ code: 0, message }, { status });
   }
 }

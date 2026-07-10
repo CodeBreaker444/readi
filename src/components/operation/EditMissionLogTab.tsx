@@ -83,8 +83,8 @@ export function EditMissionLogTab({ missionId, isDark }: { missionId: number; is
             } else {
                 toast.error(data.message ?? 'Upload failed')
             }
-        } catch {
-            toast.error('Upload failed')
+        } catch (err: any) {
+            toast.error(err.response?.data?.message ?? 'Upload failed')
         } finally {
             setUploading(false)
             if (fileInputRef.current) fileInputRef.current.value = ''
@@ -129,8 +129,8 @@ export function EditMissionLogTab({ missionId, isDark }: { missionId: number; is
             } else {
                 toast.error(data.message ?? 'Attach failed')
             }
-        } catch {
-            toast.error('Failed to attach flight')
+        } catch (err: any) {
+            toast.error(err.response?.data?.message ?? 'Failed to attach flight')
         } finally {
             setAttachingFlight(false)
             setAutoSyncingFlight(false)

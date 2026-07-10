@@ -2,7 +2,7 @@ import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { getToolName, getUserName } from '@/backend/services/shared/entity-names';
 import { notifyDccMissionCreation } from '@/backend/services/mission/dcc-callback-service';
 import { notifyPilotAssignment } from '@/backend/services/notification/notification-service';
-import { createOperation, createRecurringOperations, deleteOperation, listOperations } from '@/backend/services/operation/operation-service';
+import { createOperation, deleteOperation, listOperations } from '@/backend/services/operation/operation-service';
 import { assertToolNotInMaintenance, assertToolNotNonOperational } from '@/backend/services/system/maintenance-ticket';
 import { CreateOperationSchema, ListOperationsQuerySchema } from '@/config/types/operation';
 import { internalError } from '@/lib/api-error';
@@ -46,28 +46,7 @@ const createOperationSchema = z.object({
   actual_end: z.string().nullable().optional(),
   visual_observer_ids: z.array(z.number().int().positive()).optional().nullable(),
   fk_erp_group_id: z.number().int().positive().nullable().optional(),
-});
-
-const createRecurringSchema = z.object({
-  mission_name: z.string().min(1),
-  mission_code: z.string().optional(),
-  mission_description: z.string().nullable().optional(),
-  scheduled_start: z.string(),
-  actual_end: z.string().nullable().optional(),
-  fk_pilot_user_id: z.number().int().positive(),
-  fk_tool_id: z.number().int().positive().nullable().optional(),
-  fk_client_id: z.number().int().positive().nullable().optional(),
-  fk_planning_id: z.number().int().positive().nullable().optional(),
-  fk_mission_type_id: z.number().int().positive().nullable().optional(),
-  fk_mission_category_id: z.number().int().positive().nullable().optional(),
-  location: z.string().nullable().optional(),
-  notes: z.string().nullable().optional(),
-  days_of_week: z.array(z.number().int().min(0).max(6)).min(1),
-  recur_until: z.string(),
-  mission_group_label: z.string().nullable().optional(),
-  fk_luc_procedure_id: z.number().int().positive(),
-  fk_erp_group_id: z.number().int().positive().nullable().optional(),
-  is_recurring: z.literal(true),
+  flight_mode: z.enum(['RC', 'DOCK']).nullable().optional(),
 });
 
 export async function GET(req: NextRequest) {
@@ -110,55 +89,6 @@ export async function POST(req: NextRequest) {
     const ownerId = session?.user.ownerId;
 
     const body = await req.json();
-
-    if (body.is_recurring === true) {
-      const validated = createRecurringSchema.parse(body);
-      if (validated.fk_tool_id) {
-        try {
-          await assertToolNotNonOperational(validated.fk_tool_id);
-        } catch (err: any) {
-          return NextResponse.json({ error: err.message }, { status: 400 });
-        }
-      }
-      let result: Awaited<ReturnType<typeof createRecurringOperations>>;
-      try {
-        result = await createRecurringOperations(validated, ownerId);
-      } catch (appErr: any) {
-        return NextResponse.json({ success: false, error: appErr.message }, { status: 400 });
-      }
-
-      const dcc = await notifyDccMissionCreation(ownerId, {
-        type: 'SCHEDULED',
-        target: validated.mission_name,
-        missions: result.missions.map((m) => ({
-          missionId:     m.dccMissionId,
-          startDateTime: m.startDateTime,
-        })),
-        notes:    validated.notes ?? undefined,
-        operator: session.user.email ?? undefined,
-      });
-
-      if (dcc.outcome === 'http_error' || dcc.outcome === 'network_error') {
-        console.warn('[POST /api/operation] DCC notification failed (non-fatal):', dcc.message);
-      }
-
-      const [systemName, pilotName] = await Promise.all([
-        validated.fk_tool_id ? getToolName(validated.fk_tool_id) : Promise.resolve(null),
-        validated.fk_pilot_user_id ? getUserName(validated.fk_pilot_user_id) : Promise.resolve(null),
-      ]);
-
-      logEvent({
-        eventType: 'CREATE',
-        entityType: 'operation',
-        description: `Created ${result.count} recurring operation(s) '${validated.mission_name}'${systemName ? ` — ${systemName}` : ''}${pilotName ? `, pilot: ${pilotName}` : ''}${validated.location ? `, location: ${validated.location}` : ''}`,
-        userId: session.user.userId,
-        userName: session.user.fullname,
-        userEmail: session.user.email,
-        userRole: session.user.role,
-        ownerId,
-      });
-      return NextResponse.json({ success: true, count: result.count, first_id: result.first_id, dcc }, { status: 201 });
-    }
 
     const validated = createOperationSchema.parse(body) as CreateOperationSchema;
 

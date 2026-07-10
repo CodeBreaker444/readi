@@ -493,6 +493,8 @@ export function MissionCompleteModal({ open, onClose, onSkip, toolId, missionId,
       if (data.code === 1) {
         toast.success(t("operations.missionComplete.toast.uploadSuccess"));
         loadLogs();
+        loadPostFlight();
+        setPostFlightFromLog(true);
       } else {
         toast.error(data.message ?? t("operations.missionComplete.toast.uploadFailed"));
       }

@@ -3,7 +3,8 @@
 import { env } from '@/backend/config/env';
 import { prisma } from '@/lib/prisma';
 import { getFlytbaseCredentials, getFlytbaseCredentialsForCompany } from '@/backend/services/integrations/flytbase-service';
-import { GutmaWaypoint, parseGutmaFlightData } from '@/backend/services/integrations/gutma-parser';
+import { getOrganizationCredentials } from '@/backend/services/integrations/flytbase-organization-service';
+import { GutmaWaypoint, parseGutmaFlightData, parseGutmaFlightPreview } from '@/backend/services/integrations/gutma-parser';
 import { BUCKET, getPresignedDownloadUrl, s3 } from '@/lib/s3Client';
 import { PutObjectCommand } from '@aws-sdk/client-s3';
 import JSZip from 'jszip';
@@ -82,6 +83,40 @@ export async function getFlightLogWaypoints(missionId: number): Promise<FlightLo
   };
 }
 
+/**
+ * Full GUTMA preview (map, aircraft/GCS/payload info, waypoint table) for an
+ * already-attached flight log, read straight from our own S3 copy — no live
+ * FlytBase call. Used by the "manage system" flight-log viewer so a flight
+ * archived/deleted on FlytBase's side, an expired token, or a rate limit
+ * doesn't break viewing a log we already have a durable copy of.
+ */
+export async function getFlightLogGutmaPreview(logId: number, ownerId: number) {
+  const log = await prisma.mission_flight_logs.findUnique({
+    where: { log_id: BigInt(logId) },
+    select: { log_id: true, fk_mission_id: true, s3_key: true, flytbase_flight_id: true },
+  });
+  if (!log) throw new Error('Flight log not found');
+
+  const mission = await prisma.pilot_mission.findUnique({
+    where: { pilot_mission_id: Number(log.fk_mission_id) },
+    select: { fk_owner_id: true },
+  });
+  if (!mission || mission.fk_owner_id !== ownerId) throw new Error('Access denied');
+
+  const downloadUrl = await getPresignedDownloadUrl(log.s3_key, 300);
+  const res = await fetch(downloadUrl);
+  if (!res.ok) throw new Error('Failed to read the archived flight log from storage.');
+
+  let raw: any;
+  try {
+    raw = await res.json();
+  } catch {
+    throw new Error('The archived flight log is not a readable GUTMA file.');
+  }
+
+  return parseGutmaFlightPreview(log.flytbase_flight_id ?? String(log.log_id), raw);
+}
+
 const ALLOWED_EXTENSIONS = ['.zip', '.json', '.xml', '.gutma'];
 
 async function getDroneSerialNumberForMission(missionId: number): Promise<string | null> {
@@ -109,8 +144,90 @@ async function getDroneSerialNumberForMission(missionId: number): Promise<string
 }
 
 function extractSerialNumberFromGutma(gutma: any): string | null {
-  const sn = gutma?.aircraft?.serial_number || gutma?.flight?.aircraft?.serial_number;
-  return sn?.trim() || null;
+  const sn = parseGutmaFlightData(gutma).aircraft?.serial_number;
+  return typeof sn === 'string' ? sn.trim() || null : null;
+}
+
+/** Parses the GUTMA JSON payload out of a manually uploaded file (.gutma/.json direct, or the first such entry inside a .zip). */
+async function parseGutmaJsonFromFile(file: File): Promise<any | null> {
+  const ext = '.' + (file.name.split('.').pop()?.toLowerCase() ?? '');
+  const buffer = await file.arrayBuffer();
+
+  if (ext === '.gutma' || ext === '.json') {
+    try {
+      return JSON.parse(new TextDecoder().decode(buffer));
+    } catch {
+      return null;
+    }
+  }
+
+  if (ext === '.zip') {
+    try {
+      const zip = await JSZip.loadAsync(buffer);
+      for (const [name, entry] of Object.entries(zip.files)) {
+        if (!entry.dir && (name.endsWith('.gutma') || name.endsWith('.json'))) {
+          const buf = await entry.async('arraybuffer');
+          try {
+            return JSON.parse(new TextDecoder().decode(buf));
+          } catch {
+            continue;
+          }
+        }
+      }
+    } catch {
+      return null;
+    }
+  }
+
+  return null;
+}
+
+/** Reads the drone serial number (and raw aircraft block) out of an uploaded log file, without persisting anything — used to surface it in the UI before the mission is created/attached. */
+export async function previewUploadedFlightLog(
+  file: File
+): Promise<{ serial_number: string | null; aircraft: Record<string, any> | null }> {
+  const gutma = await parseGutmaJsonFromFile(file);
+  if (!gutma) return { serial_number: null, aircraft: null };
+
+  const parsed = parseGutmaFlightData(gutma);
+  const sn = parsed.aircraft?.serial_number;
+  return {
+    serial_number: typeof sn === 'string' ? sn.trim() || null : null,
+    aircraft: parsed.aircraft ?? null,
+  };
+}
+
+/**
+ * Syncs a mission's post-flight fields (actual start/end, duration, distance,
+ * battery) from a parsed GUTMA payload and marks it COMPLETED — an attached
+ * log is proof the flight already happened, regardless of what stage the
+ * mission was in before (e.g. a mission created ad hoc from Control Center).
+ */
+async function syncMissionFromGutma(missionId: number, gutma: any): Promise<void> {
+  const parsed = parseGutmaFlightData(gutma);
+  const missionUpdate: Record<string, unknown> = {
+    status_name: 'COMPLETED',
+    fk_mission_status_id: 3,
+  };
+
+  const startMs = parsed.start_time ? new Date(parsed.start_time).getTime() : NaN;
+  const endMs = parsed.end_time ? new Date(parsed.end_time).getTime() : NaN;
+
+  if (!isNaN(startMs)) missionUpdate.actual_start = new Date(startMs);
+  // Fall back to "now" for the end date so a completed mission always has one,
+  // even if the GUTMA payload is missing an end timestamp.
+  missionUpdate.actual_end = !isNaN(endMs) ? new Date(endMs) : new Date();
+  if (!isNaN(startMs) && !isNaN(endMs) && endMs > startMs) {
+    missionUpdate.flight_duration = Math.round((endMs - startMs) / 60000);
+  }
+  if (parsed.distance_m != null) missionUpdate.distance_flown = parsed.distance_m;
+  if (parsed.battery_charge_start != null) missionUpdate.battery_charge_start = parsed.battery_charge_start;
+  if (parsed.battery_charge_end != null) missionUpdate.battery_charge_end = parsed.battery_charge_end;
+
+  await prisma.pilot_mission.update({
+    where: { pilot_mission_id: missionId },
+    data: missionUpdate,
+  });
 }
 
 async function extractSerialNumberFromFile(file: File): Promise<string | null> {
@@ -179,9 +296,7 @@ export async function uploadManualFlightLog(
   if (missionDroneSn) {
     const logSn = await extractSerialNumberFromFile(file);
     if (logSn && logSn.toLowerCase() !== missionDroneSn.toLowerCase()) {
-      throw new Error(
-        `Serial number mismatch: Log contains serial number "${logSn}" but mission is assigned to drone with serial number "${missionDroneSn}"`
-      );
+      throw new Error(`No system is present with the serial number ${logSn}`);
     }
   }
 
@@ -209,17 +324,33 @@ export async function uploadManualFlightLog(
       uploaded_by: BigInt(userId),
     },
   });
+
+  try {
+    const gutma = await parseGutmaJsonFromFile(file);
+    if (gutma) await syncMissionFromGutma(missionId, gutma);
+  } catch (err) {
+    // Best-effort — a parsing/sync failure shouldn't fail the upload itself.
+    console.error('[uploadManualFlightLog] GUTMA mission sync failed:', err);
+  }
 }
 
 export async function attachFlytbaseFlightLog(
   missionId: number,
   userId: number,
   ownerId: number,
-  flightId: string
+  flightId: string,
+  organizationId: number | null = null
 ): Promise<void> {
-  const creds =
-    (await getFlytbaseCredentials(userId)) ??
-    (await getFlytbaseCredentialsForCompany(ownerId, userId));
+  // A flight log can only ever be attached to one mission — reject if it's already linked
+  const existingLink = await prisma.mission_flight_logs.findFirst({
+    where: { flytbase_flight_id: flightId, log_source: 'flytbase' },
+    select: { log_id: true },
+  });
+  if (existingLink) throw new Error('This flight log is already attached to a mission.');
+
+  const creds = organizationId
+    ? await getOrganizationCredentials(organizationId)
+    : (await getFlytbaseCredentials(userId)) ?? (await getFlytbaseCredentialsForCompany(ownerId, userId));
   if (!creds) throw new Error('No FlytBase integration configured. Please add your API token first.');
 
   const gutmaUrl = `${env.FLYTBASE_URL}/v2/flight/report/download/gutma?${new URLSearchParams({ flightIds: flightId })}`;
@@ -253,14 +384,13 @@ export async function attachFlytbaseFlightLog(
     throw new Error('GUTMA data unavailable for this flight.');
   }
 
-  // Validate serial number from GUTMA matches mission's drone
+  // Block when the GUTMA log's aircraft doesn't match the mission's assigned
+  // drone — a log from one drone must never be attached to a different one.
   const missionDroneSn = await getDroneSerialNumberForMission(missionId);
   if (missionDroneSn) {
     const logSn = extractSerialNumberFromGutma(gutma);
     if (logSn && logSn.toLowerCase() !== missionDroneSn.toLowerCase()) {
-      throw new Error(
-        `Serial number mismatch: FlytBase log contains serial number "${logSn}" but mission is assigned to drone with serial number "${missionDroneSn}"`
-      );
+      throw new Error(`No system is present with the serial number ${logSn}`);
     }
   }
 
@@ -293,27 +423,7 @@ export async function attachFlytbaseFlightLog(
   // Mission's Mission Log / Post Flight tabs reflect the attached flight
   // without requiring a separate manual sync step.
   try {
-    const parsed = parseGutmaFlightData(gutma);
-    const missionUpdate: Record<string, unknown> = {};
-
-    const startMs = parsed.start_time ? new Date(parsed.start_time).getTime() : NaN;
-    const endMs = parsed.end_time ? new Date(parsed.end_time).getTime() : NaN;
-
-    if (!isNaN(startMs)) missionUpdate.actual_start = new Date(startMs);
-    if (!isNaN(endMs)) missionUpdate.actual_end = new Date(endMs);
-    if (!isNaN(startMs) && !isNaN(endMs) && endMs > startMs) {
-      missionUpdate.flight_duration = Math.round((endMs - startMs) / 60000);
-    }
-    if (parsed.distance_m != null) missionUpdate.distance_flown = parsed.distance_m;
-    if (parsed.battery_charge_start != null) missionUpdate.battery_charge_start = parsed.battery_charge_start;
-    if (parsed.battery_charge_end != null) missionUpdate.battery_charge_end = parsed.battery_charge_end;
-
-    if (Object.keys(missionUpdate).length > 0) {
-      await prisma.pilot_mission.update({
-        where: { pilot_mission_id: missionId },
-        data: missionUpdate,
-      });
-    }
+    await syncMissionFromGutma(missionId, gutma);
   } catch (err) {
     // Best-effort — a parsing/sync failure shouldn't fail the attach itself.
     console.error('[attachFlytbaseFlightLog] GUTMA mission sync failed:', err);

@@ -2,7 +2,6 @@
 
 import { useTimezone } from '@/components/TimezoneProvider'
 import { Button } from '@/components/ui/button'
-import { Checkbox } from '@/components/ui/checkbox'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -10,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { nowAsLocalInput } from '@/lib/utils'
 import { zodResolver } from '@hookform/resolvers/zod'
 import axios from 'axios'
-import { Loader2, Plus, RefreshCw } from 'lucide-react'
+import { Loader2, Plus } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
@@ -38,10 +37,6 @@ interface FormData {
     location?: string
     notes?: string
     status_name: string
-    is_recurring: boolean
-    days_of_week: number[]
-    recur_until: string
-    mission_group_label: string
 }
 
 type OptionItem = {
@@ -66,17 +61,7 @@ const createOperationCalendarSchema = z.object({
     location: z.string().optional(),
     notes: z.string().optional(),
     status_name: z.string().min(1),
-    is_recurring: z.boolean().default(false),
-    days_of_week: z.array(z.number()).default([]),
-    recur_until: z.string().default(''),
-    mission_group_label: z.string().default(''),
-}).refine(
-    (d) => !d.is_recurring || d.days_of_week.length > 0,
-    { message: 'Select at least one day of the week', path: ['days_of_week'] }
-).refine(
-    (d) => !d.is_recurring || !!d.recur_until,
-    { message: 'Recurrence end date is required', path: ['recur_until'] }
-)
+})
 
 export function AddOperationModal({ open, onClose, onSuccess, isDark }: AddOperationModalProps) {
     const { t } = useTranslation()
@@ -89,22 +74,11 @@ export function AddOperationModal({ open, onClose, onSuccess, isDark }: AddOpera
     const [lucProcedures, setLucProcedures] = useState<OptionItem[]>([])
     const [addedIds, setAddedIds] = useState<number[]>([])
 
-    const DAYS_OF_WEEK = [
-        { value: 1, label: 'Mon' },
-        { value: 2, label: 'Tue' },
-        { value: 3, label: 'Wed' },
-        { value: 4, label: 'Thu' },
-        { value: 5, label: 'Fri' },
-        { value: 6, label: 'Sat' },
-        { value: 0, label: 'Sun' },
-    ]
-
     const {
         register,
         handleSubmit,
         control,
         reset,
-        watch,
         setValue,
         formState: { errors },
     } = useForm<FormData>({
@@ -118,15 +92,8 @@ export function AddOperationModal({ open, onClose, onSuccess, isDark }: AddOpera
             fk_mission_type_id: null,
             fk_mission_category_id: null,
             fk_planning_id: null,
-            is_recurring: false,
-            days_of_week: [],
-            recur_until: '',
-            mission_group_label: '',
         },
     })
-
-    const isRecurring = watch('is_recurring')
-    const daysOfWeek = watch('days_of_week')
 
     useEffect(() => {
         if (!open) return
@@ -182,10 +149,7 @@ export function AddOperationModal({ open, onClose, onSuccess, isDark }: AddOpera
                 return
             }
             
-            toast.success(data.is_recurring 
-                ? t('operations.table.toast.statusSuccess', { count: '...', status: t('operations.table.status.planned') })
-                : t('operations.table.toast.statusSuccess', { count: 1, status: t('operations.table.status.planned') })
-            )
+            toast.success(t('operations.table.toast.statusSuccess', { count: 1, status: t('operations.table.status.planned') }))
 
             setAddedIds([result.operationId])
             onSuccess()
@@ -349,73 +313,6 @@ export function AddOperationModal({ open, onClose, onSuccess, isDark }: AddOpera
                         options={lucProcedures}
                         placeholder="Select Procedure"
                     />
-
-                    <div className={`rounded-lg border p-4 space-y-4 ${isDark ? 'border-slate-600 bg-slate-700/40' : 'border-slate-200 bg-slate-50'}`}>
-                        <div className="flex items-center gap-2">
-                            <Controller
-                                name="is_recurring"
-                                control={control}
-                                render={({ field }) => (
-                                    <Checkbox
-                                        id="is_recurring"
-                                        checked={field.value}
-                                        onCheckedChange={field.onChange}
-                                        className="border-sky-500 data-[state=checked]:bg-sky-600"
-                                    />
-                                )}
-                            />
-                            <label htmlFor="is_recurring" className={`flex items-center gap-1.5 text-sm font-medium cursor-pointer ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>
-                                <RefreshCw className="w-3.5 h-3.5" />
-                                {t('operations.calendar.calendarButtons.week')} (Weekly)
-                            </label>
-                        </div>
-
-                        {isRecurring && (
-                            <div className="space-y-4 pl-1">
-                                <div>
-                                    <Label className={labelClass}>{t('operations.calendar.calendarButtons.week')}</Label>
-                                    <div className="flex flex-wrap gap-2 mt-2">
-                                        {DAYS_OF_WEEK.map((day) => {
-                                            const checked = daysOfWeek.includes(day.value)
-                                            return (
-                                                <button
-                                                    key={day.value}
-                                                    type="button"
-                                                    onClick={() => {
-                                                        const next = checked
-                                                            ? daysOfWeek.filter((d) => d !== day.value)
-                                                            : [...daysOfWeek, day.value]
-                                                        setValue('days_of_week', next, { shouldValidate: true })
-                                                    }}
-                                                    className={`px-3 cursor-pointer py-1.5 rounded-md text-xs font-semibold border transition-colors ${
-                                                        checked
-                                                            ? 'bg-sky-600 border-sky-600 text-white'
-                                                            : isDark
-                                                            ? 'bg-slate-600 border-slate-500 text-slate-300'
-                                                            : 'bg-white border-slate-300 text-slate-600'
-                                                    }`}
-                                                >
-                                                    {day.label}
-                                                </button>
-                                            )
-                                        })}
-                                    </div>
-                                    {errors.days_of_week && <p className={errorClass}>{errors.days_of_week.message}</p>}
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <Label className={labelClass}>Repeat Until</Label>
-                                        <Input type="date" {...register('recur_until')} className={`mt-1 ${inputClass}`} />
-                                        {errors.recur_until && <p className={errorClass}>{errors.recur_until.message}</p>}
-                                    </div>
-                                    <div>
-                                        <Label className={labelClass}>{t('operations.board.detail.missionGroup')}</Label>
-                                        <Input {...register('mission_group_label')} className={`mt-1 ${inputClass}`} />
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-                    </div>
 
                     <div className="flex justify-end gap-3 pt-2">
                         <Button type="button" variant="outline" onClick={handleClose} className={isDark ? 'border-slate-600 text-slate-300 hover:bg-slate-700' : ''}>

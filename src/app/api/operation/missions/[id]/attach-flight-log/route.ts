@@ -14,19 +14,24 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     const body = await req.json();
     const flightId = String(body.flight_id ?? '').trim();
+    const organizationId = body.organization_id ? Number(body.organization_id) || null : null;
 
     if (!flightId) {
       return NextResponse.json({ code: 0, message: 'flight_id is required' }, { status: 400 });
     }
 
-    await attachFlytbaseFlightLog(missionId, session!.user.userId, session!.user.ownerId, flightId);
-    return NextResponse.json({ code: 1, message: 'Flight log attached to mission' });
+    await attachFlytbaseFlightLog(missionId, session!.user.userId, session!.user.ownerId, flightId, organizationId);
+    return NextResponse.json({
+      code: 1,
+      message: 'Flight log attached to mission',
+    });
   } catch (err: any) {
     console.error('[POST /api/operation/missions/[id]/attach-flight-log] error:', err);
     const message = err instanceof Error ? err.message : 'Unknown error';
     const status =
-      err?.code === 'FLYTBASE_TIMEOUT'   ? 504 :
-      message.includes('No FlytBase')    ? 422 : 500;
+      err?.code === 'FLYTBASE_TIMEOUT'        ? 504 :
+      message.includes('No FlytBase')         ? 422 :
+      message.startsWith('No system is present') ? 400 : 500;
     return NextResponse.json({ code: 0, message }, { status });
   }
 }

@@ -76,13 +76,18 @@ export async function POST(req: NextRequest) {
       typeId:     Number(formData.get('mission_type'))         || 0,
       planId:     formData.get('mission_plan') === 'N'
                     ? null : Number(formData.get('mission_plan')) || null,
+      missionPlanningId: formData.get('mission_planning') === 'N'
+                    ? null : Number(formData.get('mission_planning')) || null,
       statusId:   Number(formData.get('mission_status'))       || 0,
       resultId:   Number(formData.get('mission_result'))       || 0,
       pilotId:    Number(formData.get('pilot_id'))             || 0,
+      lucProcedureId: Number(formData.get('mission_luc_procedure')) || null,
       location:   String(formData.get('mission_location')     ?? ''),
       groupLabel: String(formData.get('mission_group_label')  ?? ''),
       notes:      String(formData.get('mission_notes')        ?? ''),
+      flightMode: String(formData.get('flight_mode')          ?? '').trim() || null,
       userId:     session!.user.userId,
+      missionCode: String(formData.get('mission_code') ?? '').trim() || undefined,
     };
 
     const result = await importMissionFromLog(file, params, flytbaseFlightId || null);

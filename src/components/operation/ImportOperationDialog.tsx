@@ -17,8 +17,10 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Operation } from '@/config/types/operation';
+import { serialsMatch } from '@/lib/serial-number';
 import { cn } from '@/lib/utils';
 import axios from 'axios';
+import { MissionPlanningOption, PlanningOption } from './OperationModalTypes';
 import {
     AlertCircle,
     CheckCircle2,
@@ -28,6 +30,7 @@ import {
     Clock,
     FileText,
     FileUp,
+    Fingerprint,
     Loader2,
     Settings,
     Upload,
@@ -38,8 +41,12 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 interface Client        { client_id: number; client_name: string; client_code: string }
-interface DroneSystem   { tool_id: number; tool_code: string; tool_name: string }
-interface MissionPlan   { mission_planning_id: number; mission_planning_code: string; mission_planning_desc: string }
+interface DroneSystem   {
+    tool_id: number; tool_code: string; tool_name: string;
+    in_maintenance?: boolean; maintenance_due?: boolean;
+    is_non_operational?: boolean; is_dismissed?: boolean;
+    drone_serial_number?: string | null;
+}
 interface SelectOption  { id: number; name: string }
 interface Pilot         { user_id: number; first_name: string; last_name: string }
 interface FlytbaseOrganization { id: number; name: string }
@@ -89,15 +96,18 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
 
     const [clients,    setClients]    = useState<Client[]>([]);
     const [drones,     setDrones]     = useState<DroneSystem[]>([]);
-    const [plans,      setPlans]      = useState<MissionPlan[]>([]);
+    const [plannings,  setPlannings]  = useState<PlanningOption[]>([]);
+    const [missionPlannings, setMissionPlannings] = useState<MissionPlanningOption[]>([]);
     const [categories, setCategories] = useState<SelectOption[]>([]);
     const [types,      setTypes]      = useState<SelectOption[]>([]);
     const [statuses,   setStatuses]   = useState<SelectOption[]>([]);
     const [pilots,     setPilots]     = useState<Pilot[]>([]);
+    const [lucProcedures, setLucProcedures] = useState<SelectOption[]>([]);
     const [loadingClients, setLoadingClients] = useState(false);
     const [loadingDrones, setLoadingDrones] = useState(false);
     const [loadingMissionOptions, setLoadingMissionOptions] = useState(false);
-    const [loadingPlans, setLoadingPlans] = useState(false);
+    const [loadingPlannings, setLoadingPlannings] = useState(false);
+    const [loadingMissionPlannings, setLoadingMissionPlannings] = useState(false);
     const [loadingPilots, setLoadingPilots] = useState(false);
 
     const [clientId,    setClientId]    = useState('');
@@ -111,11 +121,18 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
     const [loadingFlights, setLoadingFlights] = useState(false);
     const [selectedFlightId, setSelectedFlightId] = useState('');
     const [flightsError, setFlightsError] = useState('');
+    const [logSerialNumber, setLogSerialNumber] = useState<string | null>(null);
+    const [loadingSerialNumber, setLoadingSerialNumber] = useState(false);
     const [vehicleId,   setVehicleId]   = useState('');
+    const [missionCode, setMissionCode] = useState('');
     const [categoryId,  setCategoryId]  = useState('');
     const [typeId,      setTypeId]      = useState('');
-    const [planId,      setPlanId]      = useState('N');
+    const [opType,      setOpType]      = useState<'OPEN' | 'PDRA'>('OPEN');
+    const [flightMode,  setFlightMode]  = useState<'RC' | 'DOCK'>('RC');
+    const [planId,      setPlanId]      = useState('');
+    const [missionPlanningId, setMissionPlanningId] = useState('');
     const [statusId,    setStatusId]    = useState('');
+    const [lucProcedureId, setLucProcedureId] = useState('');
     const [location,    setLocation]    = useState('');
     const [groupLabel,  setGroupLabel]  = useState('');
     const [notes,       setNotes]       = useState('');
@@ -130,6 +147,12 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
             .catch(() => toast.error(t(`${ns}.toast.loadClientsError`)))
             .finally(() => setLoadingClients(false));
 
+        setLoadingPlannings(true);
+        axios.get('/api/operation/options')
+            .then((r) => setPlannings(r.data.plannings ?? []))
+            .catch(() => toast.error(t(`${ns}.toast.loadMissionOptionsError`)))
+            .finally(() => setLoadingPlannings(false));
+
         setLoadingOrgs(true);
         axios.get('/api/flytbase/my-organizations')
             .then((r) => {
@@ -143,13 +166,30 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
 
     useEffect(() => {
         if (!clientId) { setDrones([]); setVehicleId(''); return; }
-        setDrones([]); setVehicleId(''); setPlans([]); setPlanId('N');
+        setDrones([]); setVehicleId(''); setPlanId(''); setMissionPlanningId(''); setMissionPlannings([]);
         setLoadingDrones(true);
         axios.get(`/api/operation/import/options?type=drones&client_id=${clientId}`)
             .then((r) => setDrones(r.data.drones ?? []))
             .catch(() => toast.error(t(`${ns}.toast.loadDronesError`)))
             .finally(() => setLoadingDrones(false));
     }, [clientId]);
+
+    const clientPlannings = plannings
+        .filter((p) => String(p.fk_client_id) === clientId)
+        .sort((a, b) => {
+            const aActive = !a.planning_active || a.planning_active === 'Y' ? 0 : 1;
+            const bActive = !b.planning_active || b.planning_active === 'Y' ? 0 : 1;
+            return aActive - bActive;
+        });
+
+    // Once the log's aircraft serial number and the drone list are both known,
+    // auto-select the one matching system — the user must not be able to pick
+    // a different one for a mismatched log.
+    useEffect(() => {
+        if (!logSerialNumber || drones.length === 0) return;
+        const match = drones.find((d) => serialsMatch(d.drone_serial_number, logSerialNumber));
+        if (match && String(match.tool_id) !== vehicleId) setVehicleId(String(match.tool_id));
+    }, [logSerialNumber, drones]);
 
     useEffect(() => {
         if (step !== 3) return;
@@ -158,23 +198,37 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
             axios.get('/api/operation/import/options?type=categories'),
             axios.get('/api/operation/import/options?type=types'),
             axios.get('/api/operation/import/options?type=statuses'),
-        ]).then(([cat, typ, sta]) => {
+            axios.get('/api/operation/import/options?type=lucProcedures'),
+        ]).then(([cat, typ, sta, luc]) => {
             setCategories(cat.data.categories ?? []);
             setTypes(typ.data.types ?? []);
-            setStatuses(sta.data.statuses ?? []);
+            setLucProcedures(luc.data.lucProcedures ?? []);
+            const statusList: SelectOption[] = sta.data.statuses ?? [];
+            setStatuses(statusList);
+            // status to "Completed" instead of making the user pick it.
+            setStatusId((prev) => {
+                if (prev) return prev;
+                const completed = statusList.find((s) => s.name?.toLowerCase() === 'completed');
+                return completed ? String(completed.id) : prev;
+            });
         }).catch(() => toast.error(t(`${ns}.toast.loadMissionOptionsError`)))
           .finally(() => setLoadingMissionOptions(false));
     }, [step]);
 
     useEffect(() => {
-        if (!vehicleId || !clientId) { setPlans([]); setPlanId('N'); return; }
-        setPlans([]); setPlanId('N');
-        setLoadingPlans(true);
-        axios.get(`/api/operation/import/options?type=plans&client_id=${clientId}&vehicle_id=${vehicleId}`)
-            .then((r) => setPlans(r.data.plans ?? []))
+        if (!planId || opType !== 'PDRA') { setMissionPlannings([]); setMissionPlanningId(''); return; }
+        setLoadingMissionPlannings(true);
+        axios.post('/api/evaluation/planning/logbook', { p_id: parseInt(planId) })
+            .then((r) => {
+                const missions = (r.data.data ?? []) as MissionPlanningOption[];
+                setMissionPlannings(missions);
+                if (missions.length > 0 && !missionPlanningId) {
+                    setMissionPlanningId(String(missions[0].mission_planning_id));
+                }
+            })
             .catch(() => toast.error(t(`${ns}.toast.loadMissionOptionsError`)))
-            .finally(() => setLoadingPlans(false));
-    }, [vehicleId, clientId]);
+            .finally(() => setLoadingMissionPlannings(false));
+    }, [planId, opType]);
 
     useEffect(() => {
         if (step !== 4) return;
@@ -189,11 +243,13 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
         setStep(1); setImportedIds([]); setSkippedList([]);
         setClientId(''); setPlatform('FLYTBASE'); setLogFile(null);
         setOrganizations([]); setOrganizationId(''); setLoadingOrgs(false);
-        setVehicleId(''); setCategoryId(''); setTypeId(''); setPlanId('N');
-        setStatusId(''); setLocation(''); setGroupLabel(''); setNotes(''); setPilotId('');
+        setVehicleId(''); setMissionCode(''); setCategoryId(''); setTypeId(''); setPlanId(''); setMissionPlanningId('');
+        setOpType('OPEN'); setFlightMode('RC');
+        setStatusId(''); setLucProcedureId(''); setLocation(''); setGroupLabel(''); setNotes(''); setPilotId('');
         setFbWindow('30'); setFlights([]); setSelectedFlightId(''); setFlightsError('');
-        setDrones([]); setPlans([]); setCategories([]); setTypes([]); setStatuses([]); setPilots([]);
-        setLoadingClients(false); setLoadingDrones(false); setLoadingMissionOptions(false); setLoadingPlans(false); setLoadingPilots(false);
+        setLogSerialNumber(null); setLoadingSerialNumber(false);
+        setDrones([]); setPlannings([]); setMissionPlannings([]); setCategories([]); setTypes([]); setStatuses([]); setPilots([]); setLucProcedures([]);
+        setLoadingClients(false); setLoadingDrones(false); setLoadingMissionOptions(false); setLoadingPlannings(false); setLoadingMissionPlannings(false); setLoadingPilots(false);
     }
 
     const fetchFlytbaseFlights = useCallback(async () => {
@@ -225,13 +281,54 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
         fetchFlytbaseFlights();
     }, [step, platform, organizationId, fetchFlytbaseFlights]);
 
+    // Detect the drone serial number from whichever log source is selected,
+    // so it can be shown as a hint on the Mission Data step.
+    useEffect(() => {
+        if (logFile) {
+            let cancelled = false;
+            setLoadingSerialNumber(true);
+            setLogSerialNumber(null);
+            const fd = new FormData();
+            fd.append('file', logFile);
+            axios.post('/api/operation/import/preview', fd)
+                .then((r) => { if (!cancelled) setLogSerialNumber(r.data.serial_number ?? null); })
+                .catch(() => { if (!cancelled) setLogSerialNumber(null); })
+                .finally(() => { if (!cancelled) setLoadingSerialNumber(false); });
+            return () => { cancelled = true; };
+        }
+        if (selectedFlightId) {
+            let cancelled = false;
+            setLoadingSerialNumber(true);
+            setLogSerialNumber(null);
+            const orgParam = organizationId ? `&organizationId=${organizationId}` : '';
+            axios.get(`/api/flytbase/flights/preview?flightId=${selectedFlightId}${orgParam}`)
+                .then((r) => { if (!cancelled) setLogSerialNumber(r.data?.data?.aircraft?.serial_number?.trim() || null); })
+                .catch(() => { if (!cancelled) setLogSerialNumber(null); })
+                .finally(() => { if (!cancelled) setLoadingSerialNumber(false); });
+            return () => { cancelled = true; };
+        }
+        setLogSerialNumber(null);
+        setLoadingSerialNumber(false);
+    }, [logFile, selectedFlightId, organizationId]);
+
+    // A log's aircraft serial number must match the selected system's — a log
+    // from one drone can never be attached to a different one.
+    const matchingDrone = logSerialNumber
+        ? drones.find((d) => serialsMatch(d.drone_serial_number, logSerialNumber))
+        : undefined;
+    const serialBlocked = !!logSerialNumber && !matchingDrone;
+
     const canNext = useCallback(() => {
         if (step === 1) return !!clientId;
         if (step === 2) return !!logFile || !!selectedFlightId;
-        if (step === 3) return !!vehicleId && !!categoryId && !!typeId && !!statusId;
+        if (step === 3) {
+            if (!vehicleId || !categoryId || !typeId || !statusId || !lucProcedureId || serialBlocked) return false;
+            if (opType === 'PDRA' && (!planId || !missionPlanningId)) return false;
+            return true;
+        }
         if (step === 4) return !!pilotId;
         return true;
-    }, [step, clientId, logFile, vehicleId, categoryId, typeId, statusId, pilotId]);
+    }, [step, clientId, logFile, vehicleId, categoryId, typeId, statusId, lucProcedureId, pilotId, serialBlocked, opType, planId, missionPlanningId]);
 
     async function handleSubmit() {
         if (!logFile && !selectedFlightId) return;
@@ -244,9 +341,13 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
             fd.append('mission_vehicle',     vehicleId);
             fd.append('mission_category',    categoryId);
             fd.append('mission_type',        typeId);
-            fd.append('mission_plan',        planId);
-            fd.append('mission_status',      statusId);    
-            fd.append('mission_location',    location);    
+            fd.append('mission_plan',        opType === 'PDRA' && planId ? planId : 'N');
+            fd.append('mission_planning',    opType === 'PDRA' && missionPlanningId ? missionPlanningId : 'N');
+            fd.append('flight_mode',         opType === 'PDRA' ? flightMode : '');
+            fd.append('mission_status',      statusId);
+            fd.append('mission_luc_procedure', lucProcedureId);
+            fd.append('mission_code',        missionCode.trim());
+            fd.append('mission_location',    location);
             fd.append('mission_group_label', groupLabel);
             fd.append('mission_notes',       notes);
             fd.append('pilot_id',            pilotId);
@@ -502,6 +603,33 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                         <div className="space-y-3">
                             <SectionTitle>{t(`${ns}.sections.missionDetails`)}</SectionTitle>
 
+                            {loadingSerialNumber ? (
+                                <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-xs text-muted-foreground">
+                                    <Loader2 className="h-3.5 w-3.5 animate-spin" /> {t(`${ns}.info.detectingSerialNumber`)}
+                                </div>
+                            ) : logSerialNumber ? (
+                                <div className="flex items-center gap-2 rounded-md border border-emerald-200 bg-emerald-50 dark:bg-emerald-950/20 dark:border-emerald-800 px-3 py-2 text-xs text-emerald-700 dark:text-emerald-400">
+                                    <Fingerprint className="h-3.5 w-3.5 shrink-0" />
+                                    {t(`${ns}.info.detectedSerialNumber`)}: <span className="font-mono font-semibold">{logSerialNumber}</span>
+                                </div>
+                            ) : null}
+
+                            {serialBlocked && (
+                                <div className="flex items-center gap-2 rounded-md border border-red-200 bg-red-50 dark:bg-red-950/20 dark:border-red-800 px-3 py-2 text-xs text-red-700 dark:text-red-400">
+                                    <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                                    {t(`${ns}.info.noSystemWithSerial`, { serial: logSerialNumber })}
+                                </div>
+                            )}
+
+                            <div>
+                                <Label className="mb-1.5 block">
+                                    {t(`${ns}.fields.missionCode`)}
+                                    <span className="ml-1 text-[10px] text-muted-foreground font-normal">{t(`${ns}.fields.optional`)}</span>
+                                </Label>
+                                <Input value={missionCode} onChange={(e) => setMissionCode(e.target.value)}
+                                    placeholder={t(`${ns}.placeholders.missionCode`)} />
+                            </div>
+
                             <div className="grid grid-cols-3 gap-3">
                                 <div>
                                     <Label className="mb-1.5 block">{t(`${ns}.fields.droneSystem`)} <span className="text-red-500">*</span></Label>
@@ -514,9 +642,50 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                                             ) : <SelectValue placeholder={t(`${ns}.placeholders.selectDot`)} />}
                                         </SelectTrigger>
                                         <SelectContent>
-                                            {drones.map((d) => (
-                                                <SelectItem key={d.tool_id} value={String(d.tool_id)}>{d.tool_code}</SelectItem>
-                                            ))}
+                                            {drones.length === 0 ? (
+                                                <div className="px-3 py-2 text-xs text-muted-foreground italic">
+                                                    {t(`${ns}.info.noData`)}
+                                                </div>
+                                            ) : drones.map((d) => {
+                                                const snMismatch = !!logSerialNumber && !serialsMatch(d.drone_serial_number, logSerialNumber);
+                                                return (
+                                                <SelectItem
+                                                    key={d.tool_id}
+                                                    value={String(d.tool_id)}
+                                                    disabled={!!d.is_non_operational || !!d.is_dismissed || !!d.in_maintenance || snMismatch}
+                                                    className={cn((d.is_non_operational || d.is_dismissed || d.in_maintenance || snMismatch) && 'opacity-50')}
+                                                >
+                                                    <span className="flex items-center gap-2">
+                                                        <span>{d.tool_code}</span>
+                                                        {snMismatch && (
+                                                            <span className="text-[10px] font-semibold text-red-600 bg-red-50 border border-red-200 rounded px-1.5 py-0.5 leading-none">
+                                                                {t(`${ns}.info.snMismatch`)}
+                                                            </span>
+                                                        )}
+                                                        {d.is_non_operational && (
+                                                            <span className="text-[10px] font-semibold text-red-600 bg-red-50 border border-red-200 rounded px-1.5 py-0.5 leading-none">
+                                                                {t(`${ns}.info.notOperational`)}
+                                                            </span>
+                                                        )}
+                                                        {!d.is_non_operational && d.is_dismissed && (
+                                                            <span className="text-[10px] font-semibold text-slate-600 bg-slate-100 border border-slate-300 rounded px-1.5 py-0.5 leading-none">
+                                                                {t(`${ns}.info.dismissed`)}
+                                                            </span>
+                                                        )}
+                                                        {!d.is_non_operational && !d.is_dismissed && d.in_maintenance && (
+                                                            <span className="text-[10px] font-semibold text-amber-600 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 leading-none">
+                                                                {t(`${ns}.info.inMaintenance`)}
+                                                            </span>
+                                                        )}
+                                                        {!d.is_non_operational && !d.is_dismissed && !d.in_maintenance && d.maintenance_due && (
+                                                            <span className="text-[10px] font-semibold text-orange-600 bg-orange-50 border border-orange-200 rounded px-1.5 py-0.5 leading-none">
+                                                                {t(`${ns}.info.maintenanceDue`)}
+                                                            </span>
+                                                        )}
+                                                    </span>
+                                                </SelectItem>
+                                                );
+                                            })}
                                         </SelectContent>
                                     </Select>
                                 </div>
@@ -556,7 +725,129 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-3 gap-3">
+                            <div>
+                                <Label className="mb-1.5 block">{t('operations.newOperation.drone.opTypeLabel')} <span className="text-red-500">*</span></Label>
+                                <div className="flex gap-2 mt-1">
+                                    {(['OPEN', 'PDRA'] as const).map((type) => (
+                                        <button
+                                            key={type}
+                                            type="button"
+                                            onClick={() => {
+                                                setOpType(type);
+                                                if (type === 'OPEN') { setPlanId(''); setMissionPlanningId(''); setFlightMode('RC'); }
+                                            }}
+                                            className={cn(
+                                                'px-4 py-2 cursor-pointer rounded-md text-sm font-semibold border transition-colors',
+                                                opType === type
+                                                    ? 'bg-violet-600 border-violet-600 text-white'
+                                                    : 'bg-white border-slate-300 text-slate-600 hover:bg-slate-50 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-600'
+                                            )}
+                                        >
+                                            {type}
+                                        </button>
+                                    ))}
+                                </div>
+                                <p className="text-xs mt-1.5 text-muted-foreground">
+                                    {opType === 'OPEN'
+                                        ? t('operations.newOperation.drone.opTypeOpenDesc')
+                                        : t('operations.newOperation.drone.opTypePdraDesc')}
+                                </p>
+                            </div>
+
+                            {opType === 'PDRA' && (
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <Label className="mb-1.5 block">
+                                            {t(`${ns}.fields.missionPlan`)} <span className="text-red-500">*</span>
+                                            {clientPlannings.length === 0 && !loadingPlannings && (
+                                                <span className="ml-1 text-[11px] text-amber-500 font-normal">{t('operations.newOperation.drone.noPlansForClient')}</span>
+                                            )}
+                                        </Label>
+                                        <Select
+                                            value={planId}
+                                            onValueChange={(v) => { setPlanId(v); setMissionPlanningId(''); }}
+                                            disabled={loadingPlannings || clientPlannings.length === 0}
+                                        >
+                                            <SelectTrigger>
+                                                {loadingPlannings ? (
+                                                    <span className="flex items-center gap-2 text-muted-foreground">
+                                                        <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading...
+                                                    </span>
+                                                ) : (
+                                                    <SelectValue placeholder={
+                                                        clientPlannings.length === 0
+                                                            ? t('operations.newOperation.drone.noPlansAvailable')
+                                                            : t('operations.newOperation.drone.selectMissionPlan')
+                                                    } />
+                                                )}
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {clientPlannings.map((p) => {
+                                                    const isActive = !p.planning_active || p.planning_active === 'Y';
+                                                    return (
+                                                        <SelectItem key={p.planning_id} value={String(p.planning_id)} disabled={!isActive} className={cn(!isActive && 'opacity-50')}>
+                                                            <span className="flex items-center gap-2">
+                                                                <span>{p.planning_name}</span>
+                                                                {!isActive && (
+                                                                    <span className="text-[10px] font-semibold text-slate-500 bg-slate-100 border border-slate-200 rounded px-1.5 py-0.5 leading-none">
+                                                                        Inactive
+                                                                    </span>
+                                                                )}
+                                                            </span>
+                                                        </SelectItem>
+                                                    );
+                                                })}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div>
+                                        <Label className="mb-1.5 block">
+                                            {t('operations.newOperation.drone.missionPlanning')} <span className="text-red-500">*</span>
+                                            {planId && missionPlannings.length === 0 && !loadingMissionPlannings && (
+                                                <span className="ml-1 text-[11px] text-amber-500 font-normal">{t('operations.newOperation.drone.noMissionsForPlan')}</span>
+                                            )}
+                                        </Label>
+                                        <Select
+                                            value={missionPlanningId}
+                                            onValueChange={setMissionPlanningId}
+                                            disabled={loadingMissionPlannings || missionPlannings.length === 0}
+                                        >
+                                            <SelectTrigger>
+                                                {loadingMissionPlannings ? (
+                                                    <span className="flex items-center gap-2 text-muted-foreground">
+                                                        <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading...
+                                                    </span>
+                                                ) : (
+                                                    <SelectValue placeholder={
+                                                        missionPlannings.length === 0
+                                                            ? t('operations.newOperation.drone.noMissionsAvailable')
+                                                            : t('operations.newOperation.drone.selectMission')
+                                                    } />
+                                                )}
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {missionPlannings.map((m) => {
+                                                    const isActive = !m.mission_planning_active || m.mission_planning_active === 'Y';
+                                                    return (
+                                                        <SelectItem key={m.mission_planning_id} value={String(m.mission_planning_id)} disabled={!isActive} className={cn(!isActive && 'opacity-50')}>
+                                                            <span className="flex items-center gap-2">
+                                                                <span>{m.mission_planning_code} — {m.mission_planning_desc}</span>
+                                                                {!isActive && (
+                                                                    <span className="text-[10px] font-semibold text-slate-500 bg-slate-100 border border-slate-200 rounded px-1.5 py-0.5 leading-none">
+                                                                        Inactive
+                                                                    </span>
+                                                                )}
+                                                            </span>
+                                                        </SelectItem>
+                                                    );
+                                                })}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="grid grid-cols-2 gap-3">
                                 <div>
                                     <Label className="mb-1.5 block">{t(`${ns}.fields.missionStatus`)} <span className="text-red-500">*</span></Label>
                                     <Select value={statusId} onValueChange={setStatusId} disabled={loadingMissionOptions}>
@@ -576,39 +867,62 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                                 </div>
                                 <div>
                                     <Label className="mb-1.5 block">
-                                        {t(`${ns}.fields.missionPlan`)}
-                                        <span className="ml-1 text-[10px] text-muted-foreground font-normal">{t(`${ns}.fields.optional`)}</span>
-                                    </Label>
-                                    <Select value={planId} onValueChange={setPlanId} disabled={loadingPlans}>
-                                        <SelectTrigger>
-                                            {loadingPlans ? (
-                                                <span className="flex items-center gap-2 text-muted-foreground">
-                                                    <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading...
-                                                </span>
-                                            ) : <SelectValue placeholder={t(`${ns}.placeholders.selectDot`)} />}
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="N">— {t(`${ns}.info.none`)} —</SelectItem>
-                                            {plans.length === 0 ? (
-                                                <div className="px-3 py-2 text-xs text-muted-foreground italic">
-                                                    {vehicleId ? t(`${ns}.info.noPlansForDrone`) : t(`${ns}.info.selectDroneFirst`)}
-                                                </div>
-                                            ) : plans.map((p) => (
-                                                <SelectItem key={p.mission_planning_id} value={String(p.mission_planning_id)}>
-                                                    {p.mission_planning_code}{p.mission_planning_desc ? ` — ${p.mission_planning_desc}` : ''}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div>
-                                    <Label className="mb-1.5 block">
                                         {t(`${ns}.fields.location`)}
                                         <span className="ml-1 text-[10px] text-muted-foreground font-normal">{t(`${ns}.fields.optional`)}</span>
                                     </Label>
                                     <Input value={location} onChange={(e) => setLocation(e.target.value)}
                                         placeholder={t(`${ns}.placeholders.location`)} />
                                 </div>
+                            </div>
+
+                            {opType === 'PDRA' && (
+                                <div className="max-w-xs">
+                                    <Label className="mb-1.5 block">{t('operations.newOperation.drone.flightMode')}</Label>
+                                    <div className="flex gap-2 mt-1">
+                                        {([
+                                            { value: 'RC' as const, labelKey: 'operations.newOperation.drone.flightModeRC' },
+                                            { value: 'DOCK' as const, labelKey: 'operations.newOperation.drone.flightModeDock' },
+                                        ]).map((fm) => (
+                                            <button
+                                                key={fm.value}
+                                                type="button"
+                                                onClick={() => setFlightMode(fm.value)}
+                                                className={cn(
+                                                    'px-3 py-1.5 cursor-pointer rounded-md text-xs font-semibold border transition-colors',
+                                                    flightMode === fm.value
+                                                        ? 'bg-sky-600 border-sky-600 text-white'
+                                                        : 'bg-white border-slate-300 text-slate-600 hover:bg-slate-50 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-600'
+                                                )}
+                                            >
+                                                {t(fm.labelKey)}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="max-w-xs">
+                                <Label className="mb-1.5 block">
+                                    {t(`${ns}.fields.procedure`)} <span className="text-red-500">*</span>
+                                </Label>
+                                <Select value={lucProcedureId} onValueChange={setLucProcedureId} disabled={loadingMissionOptions}>
+                                    <SelectTrigger>
+                                        {loadingMissionOptions ? (
+                                            <span className="flex items-center gap-2 text-muted-foreground">
+                                                <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading...
+                                            </span>
+                                        ) : <SelectValue placeholder={t(`${ns}.placeholders.selectDot`)} />}
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {lucProcedures.length === 0 ? (
+                                            <div className="px-3 py-2 text-xs text-muted-foreground italic">
+                                                {t(`${ns}.info.noData`)}
+                                            </div>
+                                        ) : lucProcedures.map((p) => (
+                                            <SelectItem key={p.id} value={String(p.id)}>{p.name}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
                             </div>
 
                             <div className="grid grid-cols-2 gap-3">
@@ -684,12 +998,21 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                                         <Row label={t(`${ns}.review.client`)}   value={clients.find((c) => String(c.client_id) === clientId)?.client_name} />
                                         <Row label={t(`${ns}.review.platform`)} value={platform} />
                                         <Row label={t(`${ns}.review.file`)}     value={logFile?.name || flights.find((f) => f.flight_id === selectedFlightId)?.flight_name || selectedFlightId} />
+                                        <Row label={t(`${ns}.review.missionCode`)} value={missionCode.trim() || t(`${ns}.info.autoGenerated`)} />
                                         <Row label={t(`${ns}.review.drone`)}    value={drones.find((d) => String(d.tool_id) === vehicleId)?.tool_code} />
                                         <Row label={t(`${ns}.review.category`)} value={categories.find((c) => String(c.id) === categoryId)?.name} />
                                         <Row label={t(`${ns}.review.type`)}     value={types.find((tp) => String(tp.id) === typeId)?.name} />
                                         <Row label={t(`${ns}.review.status`)}   value={statusLabel} />
+                                        <Row label={t(`${ns}.review.procedure`)} value={lucProcedures.find((p) => String(p.id) === lucProcedureId)?.name} />
                                         <Row label={t(`${ns}.review.location`)} value={location} />
-                                        <Row label={t(`${ns}.review.plan`)}     value={planId === 'N' ? t(`${ns}.info.none`) : plans.find((p) => String(p.mission_planning_id) === planId)?.mission_planning_code} />
+                                        <Row label={t('operations.newOperation.drone.opTypeLabel')} value={opType} />
+                                        {opType === 'PDRA' && (
+                                            <>
+                                                <Row label={t(`${ns}.review.plan`)} value={clientPlannings.find((p) => String(p.planning_id) === planId)?.planning_name} />
+                                                <Row label={t('operations.newOperation.drone.missionPlanning')} value={missionPlannings.find((m) => String(m.mission_planning_id) === missionPlanningId)?.mission_planning_code} />
+                                                <Row label={t('operations.newOperation.drone.flightMode')} value={flightMode} />
+                                            </>
+                                        )}
                                         <Row label={t(`${ns}.review.pilot`)}    value={pilotLabel} />
                                         {groupLabel && <Row label={t(`${ns}.review.group`)} value={groupLabel} />}
                                     </div>

@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
     const result = await createOperationCalendarEntry(body, session!.user.ownerId)
 
     const dcc = await notifyDccMissionCreation(session!.user.ownerId, {
-      type: body.is_recurring ? 'SCHEDULED' : 'ON-DEMAND',
+      type: 'ON-DEMAND',
       target: body.mission_name ?? undefined,
       localization: body.location ? { type: 'POINT', address: body.location } : undefined,
       missions: result.missions.map((m) => ({

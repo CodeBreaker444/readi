@@ -111,7 +111,7 @@ export async function createAndAttachMission(
 export async function getAttachableMissions(droneSerialNumber: string, ownerId: number) {
   const toolComponent = await prisma.tool_component.findFirst({
     where: {
-      serial_number: droneSerialNumber,
+      serial_number: { equals: droneSerialNumber.trim(), mode: 'insensitive' },
       tool: {
         fk_owner_id: ownerId,
       },
@@ -122,11 +122,10 @@ export async function getAttachableMissions(droneSerialNumber: string, ownerId: 
   });
 
   if (!toolComponent) return [];
-
+// If a mission already has a flight log attached (manual or FlytBase),
+// don't allow another log to be attached. We still return it to the UI
+// so it can be shown as disabled instead of being hidden.
   const missionsWithLogs = await prisma.mission_flight_logs.findMany({
-    where: {
-      log_source: 'flytbase',
-    },
     select: {
       fk_mission_id: true,
     },
@@ -140,9 +139,6 @@ export async function getAttachableMissions(droneSerialNumber: string, ownerId: 
       fk_tool_id: toolComponent.fk_tool_id,
       fk_owner_id: ownerId,
       status_name: 'COMPLETED',
-      pilot_mission_id: {
-        notIn: Array.from(missionIdsWithLogs),
-      },
     },
     select: {
       pilot_mission_id: true,
@@ -170,5 +166,43 @@ export async function getAttachableMissions(droneSerialNumber: string, ownerId: 
     take: 50,
   });
 
-  return missions;
+  return missions.map((mission) => ({
+    ...mission,
+    has_flight_log: missionIdsWithLogs.has(mission.pilot_mission_id),
+  }));
+}
+
+/**
+ * Returns the set of FlytBase flight IDs (out of the given list) that already
+ * have a flight log attached to a mission belonging to this owner.
+ */
+export async function getFlightIdsLinkedToMission(
+  flightIds: string[],
+  ownerId: number,
+): Promise<Set<string>> {
+  if (flightIds.length === 0) return new Set();
+
+  const logs = await prisma.mission_flight_logs.findMany({
+    where: {
+      flytbase_flight_id: { in: flightIds },
+      log_source: 'flytbase',
+    },
+    select: { flytbase_flight_id: true, fk_mission_id: true },
+  });
+  if (logs.length === 0) return new Set();
+
+  const missionIds = [...new Set(logs.map((log) => Number(log.fk_mission_id)))];
+  const ownedMissions = await prisma.pilot_mission.findMany({
+    where: { pilot_mission_id: { in: missionIds }, fk_owner_id: ownerId },
+    select: { pilot_mission_id: true },
+  });
+  const ownedMissionIds = new Set(ownedMissions.map((m) => m.pilot_mission_id));
+
+  const linked = new Set<string>();
+  for (const log of logs) {
+    if (log.flytbase_flight_id && ownedMissionIds.has(Number(log.fk_mission_id))) {
+      linked.add(log.flytbase_flight_id);
+    }
+  }
+  return linked;
 }

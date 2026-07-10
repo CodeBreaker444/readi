@@ -111,6 +111,7 @@ export function FlightLogsTab({
 }: FlightLogsTabProps) {
   const { t } = useTranslation();
   const { timezone } = useTimezone();
+  const hasLog = logs.length > 0;
 
   return (
     <div className="space-y-5">
@@ -167,14 +168,15 @@ export function FlightLogsTab({
         <p className={cn("text-xs font-semibold uppercase tracking-wider mb-3", isDark ? "text-slate-500" : "text-slate-400")}>
           {t("operations.missionComplete.logs.manualUpload")}
         </p>
-        <input ref={fileInputRef} type="file" accept=".zip,.json,.xml,.gutma" className="hidden" onChange={onFileChange} />
+        <input ref={fileInputRef} type="file" accept=".zip,.json,.xml,.gutma" className="hidden" onChange={onFileChange} disabled={hasLog} />
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
-          disabled={uploading}
+          disabled={uploading || hasLog}
+          title={hasLog ? t("operations.missionComplete.logs.logAlreadyAttached", "A flight log is already attached to this mission") : undefined}
           className={cn(
             "w-full flex cursor-pointer items-center justify-center gap-2 rounded-lg border-2 border-dashed py-5 text-sm font-medium transition-colors",
-            uploading
+            uploading || hasLog
               ? isDark ? "border-slate-700 text-slate-600 cursor-not-allowed" : "border-slate-200 text-slate-400 cursor-not-allowed"
               : isDark
                 ? "border-slate-700 text-slate-400 hover:border-violet-500/40 hover:text-violet-400"
@@ -186,6 +188,11 @@ export function FlightLogsTab({
             : <><FileUp className="h-4 w-4" /> {t("operations.missionComplete.logs.chooseFile")}</>
           }
         </button>
+        {hasLog && (
+          <p className={cn("text-[11px] mt-2", isDark ? "text-slate-500" : "text-slate-400")}>
+            {t("operations.missionComplete.logs.logAlreadyAttached", "A flight log is already attached to this mission")}
+          </p>
+        )}
       </div>
 
       <div className={cn("h-px", isDark ? "bg-white/6" : "bg-slate-100")} />
@@ -260,13 +267,19 @@ export function FlightLogsTab({
             size="sm"
             variant="outline"
             onClick={onFetchFlights}
-            disabled={loadingFlights || !selectedOrganization}
+            disabled={loadingFlights || !selectedOrganization || hasLog}
             className={cn("h-8 gap-1.5", isDark ? "border-slate-600 text-slate-300 hover:bg-slate-700" : "")}
           >
             {loadingFlights ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
             {t("operations.missionComplete.logs.fetchFlights")}
           </Button>
         </div>
+
+        {hasLog && (
+          <p className={cn("text-[11px] mb-2", isDark ? "text-slate-500" : "text-slate-400")}>
+            {t("operations.missionComplete.logs.logAlreadyAttached", "A flight log is already attached to this mission")}
+          </p>
+        )}
 
         {flightsError && (
           <div className={cn(
@@ -353,7 +366,7 @@ export function FlightLogsTab({
 
             <Button
               onClick={onAttachFlight}
-              disabled={!selectedFlight || attachingFlight || autoSyncingFlight}
+              disabled={!selectedFlight || attachingFlight || autoSyncingFlight || hasLog}
               className="w-full h-9 bg-violet-600 hover:bg-violet-500 text-white text-sm"
             >
               {attachingFlight

@@ -2,7 +2,7 @@
 
 import { Operation } from '@/app/operations/table/page';
 import { SystemCell } from '@/components/tables/SystemCell';
-import { MaintenanceCycleModal } from '@/components/operation/MaintenanceCycleModal';
+import { MissionCompleteModal } from '@/components/operation/MissionCompleteModal';
 import { MissionLucProcedureModal } from '@/components/operation/MissionLucProcedureModal';
 import { ReportIssueModal } from '@/components/operation/ReportIssueModal';
 import { useTimezone } from '@/components/TimezoneProvider';
@@ -490,7 +490,7 @@ export function OperationDetailSheet({
       )}
 
       {operation?.fk_tool_id && (
-        <MaintenanceCycleModal
+        <MissionCompleteModal
           open={maintenanceOpen}
           onClose={() => setMaintenanceOpen(false)}
           toolId={operation.fk_tool_id}

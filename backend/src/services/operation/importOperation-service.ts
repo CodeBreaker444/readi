@@ -1,7 +1,26 @@
+import { parseGutmaFlightData } from '@/backend/services/integrations/gutma-parser';
 import { prisma } from '@/lib/prisma';
+import { serialsMatch } from '@/lib/serial-number';
 import { BUCKET, s3 } from '@/lib/s3Client';
 import { PutObjectCommand } from '@aws-sdk/client-s3';
 import JSZip from 'jszip';
+
+/** Looks up the registered serial number for a tool's drone/aircraft component, if any. */
+async function getDroneSerialNumberForTool(toolId: number): Promise<string | null> {
+  const droneComponent = await prisma.tool_component.findFirst({
+    where: {
+      fk_tool_id: toolId,
+      component_active: 'Y',
+      OR: [
+        { component_type: { equals: 'DRONE', mode: 'insensitive' } },
+        { component_type: { equals: 'AIRCRAFT', mode: 'insensitive' } },
+      ],
+      serial_number: { not: null },
+    },
+    select: { serial_number: true },
+  });
+  return droneComponent?.serial_number?.trim() || null;
+}
 
 
 export interface ImportMissionParams {
@@ -12,13 +31,17 @@ export interface ImportMissionParams {
   categoryId: number;
   typeId: number;
   planId: number | null;
+  missionPlanningId: number | null;
   statusId: number;
   resultId: number;
   pilotId: number;
+  lucProcedureId: number | null;
   groupLabel: string;
   notes: string;
   location: string;
   userId: number;
+  missionCode?: string;
+  flightMode?: string | null;
 }
 
 export interface ImportMissionResult {
@@ -27,67 +50,47 @@ export interface ImportMissionResult {
   skipped: string[];
 }
 
-interface GutmaRoot {
-  flight_logging?: {
-    flight_id?: string;
-    start_dtg?: string;
-    end_dtg?: string;
-    logging_start_dtg?: string;
-    max_altitude_agl?: number;
-    total_distance?: number;
-    [key: string]: any;
-  };
-  flight?: {
-    flight_id?: string;
-    takeoff_time?: string;
-    landing_time?: string;
-    max_altitude?: number;
-    flight_distance?: number;
-    [key: string]: any;
-  };
-  gcs_info?: {
-    registration_id?: string;
-    [key: string]: any;
-  };
-  [key: string]: any;
-}
-
-
-function extractMissionCodeFromFilename(filename: string): string | null {
-  const pattern =
-    /^(.*?)_[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}(?:_.*)?\.[A-Za-z0-9]+$/;
-  const match = filename.match(pattern);
-  return match ? match[1].trim() : null;
-}
-
 function parseDurationSeconds(start?: string | null, end?: string | null): number | null {
   if (!start || !end) return null;
   const ms = new Date(end).getTime() - new Date(start).getTime();
   return isNaN(ms) || ms < 0 ? null : Math.round(ms / 1000);
 }
 
-function resolveTimes(parsed: GutmaRoot): { takeoff: string | null; landing: string | null } {
-  return {
-    takeoff:
-      parsed.flight_logging?.start_dtg ??
-      parsed.flight_logging?.logging_start_dtg ??
-      parsed.flight?.takeoff_time ??
-      null,
-    landing:
-      parsed.flight_logging?.end_dtg ??
-      parsed.flight?.landing_time ??
-      null,
-  };
+const STATUS_NAME_TO_ID: Record<string, number> = {
+  PLANNED: 1,
+  IN_PROGRESS: 2,
+  COMPLETED: 3,
+  CANCELLED: 4,
+  ABORTED: 5,
+};
+
+function normalizeStatusName(rawName: string | null | undefined): string {
+  const s = (rawName ?? '').toLowerCase();
+  if (s.includes('progress')) return 'IN_PROGRESS';
+  if (s.includes('complet')) return 'COMPLETED';
+  if (s.includes('cancel')) return 'CANCELLED';
+  if (s.includes('abort')) return 'ABORTED';
+  return 'PLANNED';
 }
 
-function resolveMissionCode(parsed: GutmaRoot, filename: string): string {
-  return (
-    extractMissionCodeFromFilename(filename) ??
-    parsed.flight_logging?.flight_id ??
-    parsed.flight?.flight_id ??
-    parsed.gcs_info?.registration_id ??
-    `IMPORT-${Date.now()}`
-  );
+// Same 6-char alphanumeric scheme as the normal mission-creation flow
+// (NewOperationModal.generateMissionId) — not derived from the log file.
+const MISSION_CODE_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+
+function randomMissionCode(): string {
+  return Array.from({ length: 6 }, () => MISSION_CODE_CHARS[Math.floor(Math.random() * MISSION_CODE_CHARS.length)]).join('');
+}
+
+async function generateUniqueMissionCode(ownerId: number): Promise<string> {
+  for (let attempts = 0; attempts < 100; attempts++) {
+    const code = randomMissionCode();
+    const existing = await prisma.pilot_mission.findFirst({
+      where: { mission_code: code, fk_owner_id: ownerId },
+      select: { pilot_mission_id: true },
+    });
+    if (!existing) return code;
+  }
+  throw new Error('Failed to generate a unique mission code');
 }
 
 
@@ -95,19 +98,33 @@ async function processGutmaBuffer(
   buffer: ArrayBuffer,
   filename: string,
   params: ImportMissionParams,
-  sourceFlightId: string | null
+  sourceFlightId: string | null,
+  missionCodeOverride?: string
 ): Promise<{ missionId: number; operation: any } | { error: string; duplicate?: boolean }> {
-  let parsed: GutmaRoot;
+  let parsed: any;
   try {
     parsed = JSON.parse(new TextDecoder().decode(buffer));
   } catch (e) {
     return { error: `Failed to parse JSON in "${filename}": ${(e as Error).message}` };
   }
 
-  const missionCode = resolveMissionCode(parsed, filename);
-  const { takeoff, landing } = resolveTimes(parsed);
+  const gutma = parseGutmaFlightData(parsed);
+  const missionCode = missionCodeOverride || await generateUniqueMissionCode(params.ownerId);
+  const takeoff = gutma.start_time;
+  const landing = gutma.end_time;
   const durationSec = parseDurationSeconds(takeoff, landing);
-  const distanceFlown = parsed.flight?.flight_distance ?? parsed.flight_logging?.total_distance ?? null;
+  const distanceFlown = gutma.distance_m;
+
+  const logSerialNumber = typeof gutma.aircraft?.serial_number === 'string'
+    ? gutma.aircraft.serial_number.trim() || null
+    : null;
+
+  if (params.vehicleId && logSerialNumber) {
+    const vehicleSerial = await getDroneSerialNumberForTool(params.vehicleId);
+    if (vehicleSerial && !serialsMatch(vehicleSerial, logSerialNumber)) {
+      return { error: `No system is present with the serial number ${logSerialNumber}` };
+    }
+  }
 
   const existing = await prisma.pilot_mission.findFirst({
     where: { mission_code: missionCode, fk_owner_id: params.ownerId },
@@ -118,13 +135,15 @@ async function processGutmaBuffer(
     return { duplicate: true, error: `Duplicate mission_code "${missionCode}" — skipped` };
   }
 
-  let statusName: string | null = null;
+  // Imports represent flights that already happened, so default to COMPLETED
+  // (matches the wizard's own default status selection) if no status was chosen.
+  let statusName = 'COMPLETED';
   if (params.statusId) {
     const st = await prisma.pilot_mission_status.findUnique({
       where: { status_id: params.statusId },
       select: { status_name: true },
     });
-    statusName = st?.status_name ?? null;
+    if (st?.status_name) statusName = normalizeStatusName(st.status_name);
   }
 
   const notesArr = [
@@ -137,12 +156,15 @@ async function processGutmaBuffer(
   const inserted = await prisma.pilot_mission.create({
     data: {
       fk_owner_id: params.ownerId,
+      fk_client_id: params.clientId || null,
       fk_pilot_user_id: params.pilotId || 1,
       fk_tool_id: params.vehicleId || null,
       fk_planning_id: params.planId || null,
+      fk_mission_planning_id: params.missionPlanningId || null,
       fk_mission_type_id: params.typeId || null,
       fk_mission_category_id: params.categoryId || null,
-      fk_mission_status_id: params.statusId || null,
+      fk_mission_status_id: STATUS_NAME_TO_ID[statusName] ?? 3,
+      fk_luc_procedure_id: params.lucProcedureId || null,
       mission_code: missionCode,
       mission_name: missionCode,
       status_name: statusName,
@@ -154,6 +176,7 @@ async function processGutmaBuffer(
       flight_duration: durationSec,
       distance_flown: distanceFlown,
       notes: notesArr.join(' | ') || null,
+      ...(params.missionPlanningId && params.flightMode && { mission_metadata: { flight_mode: params.flightMode } }),
     } as any,
     select: { pilot_mission_id: true },
   });
@@ -195,6 +218,9 @@ async function processGutmaBuffer(
       mission_name: true,
       status_name: true,
       scheduled_start: true,
+      actual_start: true,
+      actual_end: true,
+      distance_flown: true,
       location: true,
       notes: true,
       users: { select: { first_name: true, last_name: true } },
@@ -226,8 +252,10 @@ export async function importMissionFromLog(
   const errors: string[] = [];
   const duplicates: string[] = [];
 
+  const missionCode = params.missionCode?.trim() || undefined;
+
   if (ext === 'gutma') {
-    const res = await processGutmaBuffer(buffer, file.name, params, flytbaseFlightId);
+    const res = await processGutmaBuffer(buffer, file.name, params, flytbaseFlightId, missionCode);
     if ('error' in res) {
       if (res.duplicate) duplicates.push(res.error);
       else errors.push(res.error);
@@ -248,9 +276,16 @@ export async function importMissionFromLog(
 
     if (gutmaEntries.length === 0) throw new Error('ZIP contains no .gutma files.');
 
+    // A user-provided code only uniquely identifies a single mission, so a
+    // multi-file ZIP gets it suffixed per entry to avoid duplicate codes.
+    let index = 0;
     for (const [name, entry] of gutmaEntries) {
+      index++;
+      const entryCode = missionCode
+        ? (gutmaEntries.length > 1 ? `${missionCode}-${index}` : missionCode)
+        : undefined;
       const buf = await entry.async('arraybuffer');
-      const res = await processGutmaBuffer(buf, name.split('/').pop() ?? name, params, null);
+      const res = await processGutmaBuffer(buf, name.split('/').pop() ?? name, params, null, entryCode);
       if ('error' in res) {
         if (res.duplicate) duplicates.push(res.error);
         else errors.push(res.error);
@@ -283,19 +318,25 @@ export async function importClinets(ownerId: number) {
 }
 
 export async function importDrones(ownerId: number, clientId?: number) {
-  const tools = await prisma.tool.findMany({
+  const allTools = await prisma.tool.findMany({
     where: { fk_owner_id: ownerId, tool_active: 'Y' },
     orderBy: { tool_code: 'asc' },
     select: { tool_id: true, tool_code: true, tool_name: true, tool_metadata: true },
   });
+
+  const tools = clientId
+    ? allTools.filter((t) => (t.tool_metadata as any)?.clientId === clientId)
+    : allTools;
 
   const toolIds = tools.map((t) => t.tool_id);
   const inMaintenanceSet = new Set<number>();
   const maintenanceDueSet = new Set<number>();
   const nonOperationalSet = new Set<number>();
 
+  const droneSerialMap = new Map<number, string | null>();
+
   if (toolIds.length > 0) {
-    const [openTickets, maintComps, expiredComps] = await Promise.all([
+    const [openTickets, maintComps, expiredComps, droneComponents] = await Promise.all([
       prisma.maintenance_ticket.findMany({
         where:  { fk_tool_id: { in: toolIds }, ticket_status: { not: 'CLOSED' } },
         select: { fk_tool_id: true },
@@ -316,6 +357,17 @@ export async function importDrones(ownerId: number, clientId?: number) {
         where:  { fk_tool_id: { in: toolIds }, component_active: 'Y', expiration_date: { lte: new Date(), not: null } },
         select: { fk_tool_id: true },
       }),
+      prisma.tool_component.findMany({
+        where:  {
+          fk_tool_id: { in: toolIds },
+          component_active: 'Y',
+          OR: [
+            { component_type: { equals: 'DRONE', mode: 'insensitive' } },
+            { component_type: { equals: 'AIRCRAFT', mode: 'insensitive' } },
+          ],
+        },
+        select: { fk_tool_id: true, serial_number: true },
+      }),
     ]);
     openTickets.forEach((t) => { if (t.fk_tool_id != null) inMaintenanceSet.add(t.fk_tool_id); });
     expiredComps.forEach((c) => { if (c.fk_tool_id != null) nonOperationalSet.add(c.fk_tool_id); });
@@ -325,6 +377,11 @@ export async function importDrones(ownerId: number, clientId?: number) {
       const hourDue   = Number(c.maintenance_cycle_hour   ?? 0) > 0 && Number(c.current_maintenance_hours)   >= Number(c.maintenance_cycle_hour);
       const flightDue = Number(c.maintenance_cycle_flight ?? 0) > 0 && Number(c.current_maintenance_flights) >= Number(c.maintenance_cycle_flight);
       if (dayDue || hourDue || flightDue) maintenanceDueSet.add(c.fk_tool_id);
+    });
+    droneComponents.forEach((c) => {
+      if (c.fk_tool_id != null && !droneSerialMap.has(c.fk_tool_id)) {
+        droneSerialMap.set(c.fk_tool_id, c.serial_number?.trim() || null);
+      }
     });
   }
 
@@ -336,24 +393,8 @@ export async function importDrones(ownerId: number, clientId?: number) {
     maintenance_due: maintenanceDueSet.has(t.tool_id),
     is_non_operational: nonOperationalSet.has(t.tool_id),
     is_dismissed: (t.tool_metadata as any)?.status === 'DISMISSED',
+    drone_serial_number: droneSerialMap.get(t.tool_id) ?? null,
   }));
-}
-
-export async function importPlans(ownerId: number, clientId?: number, vehicleId?: number) {
-  return prisma.planning_logbook.findMany({
-    where: {
-      fk_owner_id: ownerId,
-      mission_planning_active: 'Y',
-      ...(clientId && { fk_client_id: clientId }),
-      ...(vehicleId && { fk_tool_id: vehicleId }),
-    },
-    orderBy: { mission_planning_code: 'asc' },
-    select: {
-      mission_planning_id: true,
-      mission_planning_code: true,
-      mission_planning_desc: true,
-    },
-  });
 }
 
 export async function importCategories(ownerId: number) {
@@ -377,6 +418,14 @@ export async function importStatus(ownerId: number) {
     where: { fk_owner_id: ownerId, is_active: true },
     orderBy: { status_order: 'asc' },
     select: { status_id: true, status_name: true },
+  });
+}
+
+export async function importLucProcedures(ownerId: number) {
+  return prisma.luc_procedure.findMany({
+    where: { fk_owner_id: ownerId, procedure_status: 'MISSION', procedure_active: 'Y' },
+    orderBy: { procedure_name: 'asc' },
+    select: { procedure_id: true, procedure_name: true, procedure_code: true },
   });
 }
 

@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useTheme } from '@/components/useTheme';
 import axios from 'axios';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -32,6 +32,7 @@ interface Flight {
   pilot_name?: string;
   mission_name?: string;
   status?: string;
+  linked_to_mission?: boolean;
 }
 
 interface Props {
@@ -205,6 +206,7 @@ export function FlytbaseFlights({ isActive = true, selectedOrganization, listCon
     try {
       const res = await axios.post(`/api/operation/missions/${missionId}/attach-flight-log`, {
         flight_id: selectedFlight.flight_id,
+        organization_id: selectedOrganization?.id,
         ...(isPdra && { post_flight_attach: true }), // backend uses this to write the audit warning
       });
       if (res.data.code === 1) {
@@ -224,8 +226,8 @@ export function FlytbaseFlights({ isActive = true, selectedOrganization, listCon
       } else {
         toast.error(res.data.message || 'Failed to attach flight log');
       }
-    } catch {
-      toast.error('Failed to attach flight log');
+    } catch (err: any) {
+      toast.error(err.response?.data?.message ?? 'Failed to attach flight log');
     } finally {
       setAttachingMissionId(null);
     }
@@ -238,11 +240,49 @@ export function FlytbaseFlights({ isActive = true, selectedOrganization, listCon
 
   const handleNewMissionSuccess = () => {
     setNewMissionModalOpen(false);
-    toast.success('Mission created. You can now attach the flight log to it.');
-    setTimeout(() => {
-      handleOpenAttachMissionModal();
-    }, 100);
   };
+
+  // Fires as soon as the mission is created, so the flight log gets attached
+  // immediately instead of relying on the user coming back to manually
+  // attach it from the "Attach Existing Mission" list.
+  const handleNewMissionCreated = async (op: { pilot_mission_id: number }) => {
+    if (!selectedFlight) return;
+    try {
+      const res = await axios.post(`/api/operation/missions/${op.pilot_mission_id}/attach-flight-log`, {
+        flight_id: selectedFlight.flight_id,
+        organization_id: selectedOrganization?.id,
+      });
+      if (res.data.code === 1) {
+        const mismatch = res.data.serialNumberMismatch;
+        if (mismatch) {
+          toast.warning(`Mission created and flight log attached — but the drone's serial number doesn't match the log (log: ${mismatch.logSerialNumber}, mission drone: ${mismatch.missionSerialNumber}).`);
+        } else {
+          toast.success('Mission created and flight log attached.');
+        }
+      } else {
+        toast.error(res.data.message
+          ? `Mission created, but attaching the flight log failed: ${res.data.message}`
+          : 'Mission created, but attaching the flight log failed.');
+      }
+    } catch (err: any) {
+      console.error('Failed to auto-attach flight log to new mission:', err);
+      const message = err?.response?.data?.message ?? '';
+      toast.error(message
+        ? `Mission created, but attaching the flight log failed: ${message}`
+        : 'Mission created, but attaching the flight log failed.');
+    }
+  };
+
+  // Prefill the new-mission form with details already known from the flight
+  // log, so the user isn't re-typing what's already in the GUTMA data.
+  const newMissionPrefill = useMemo(() => {
+    if (!selectedFlight || !preview) return null;
+    return {
+      scheduledStart: preview.start_time ?? null,
+      scheduledEnd: preview.end_time ?? null,
+      distanceFlown: preview.distance_m ?? null,
+    };
+  }, [selectedFlight, preview]);
 
   const card = isDark ? 'bg-[#0c0f1a] border-slate-800' : 'bg-white border-slate-200 shadow-sm';
   const textPrimary = isDark ? 'text-white' : 'text-slate-900';
@@ -318,6 +358,11 @@ export function FlytbaseFlights({ isActive = true, selectedOrganization, listCon
                   </div>
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0">
+                  {flight.linked_to_mission && (
+                    <Badge variant="outline" className={`text-[10px] px-1.5 py-0 h-4 ${isDark ? 'border-violet-800/50 text-violet-400' : 'border-violet-200 text-violet-600'}`}>
+                      Manual Mission
+                    </Badge>
+                  )}
                   {flight.status && (
                     <Badge variant="outline" className={`text-[10px] px-1.5 py-0 h-4 ${isDark ? 'border-slate-700 text-slate-400' : 'border-slate-200 text-slate-500'}`}>
                       {flight.status}
@@ -399,7 +444,8 @@ export function FlytbaseFlights({ isActive = true, selectedOrganization, listCon
               variant="outline"
               size="sm"
               onClick={handleOpenAttachMissionModal}
-              disabled={!selectedFlight || !preview}
+              disabled={!selectedFlight || !preview || !!selectedFlight?.linked_to_mission}
+              title={selectedFlight?.linked_to_mission ? 'This flight log is already attached to a mission' : undefined}
               className={`h-8 gap-1.5 cursor-pointer text-xs ${isDark ? 'border-slate-700 bg-slate-800 text-slate-300' : 'border-slate-200 text-slate-600'}`}
             >
               <HiLink className="h-3.5 w-3.5" />
@@ -519,7 +565,7 @@ export function FlytbaseFlights({ isActive = true, selectedOrganization, listCon
                 ) : attachableMissions.length === 0 ? (
                   <div className="text-center py-8 space-y-3">
                     <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                      No completed missions found without flight logs for this drone.
+                      No completed missions found for this drone.
                     </p>
                     <p className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
                       You can create a new mission and attach this flight log to it.
@@ -537,10 +583,11 @@ export function FlytbaseFlights({ isActive = true, selectedOrganization, listCon
                     {attachableMissions.map((mission) => {
                       const isPdra = mission.op_type === 'PDRA' || !!mission.fk_planning_id;
                       const isAttaching = attachingMissionId === mission.pilot_mission_id;
+                      const hasLog = !!mission.has_flight_log;
                       return (
                         <div
                           key={mission.pilot_mission_id}
-                          className={`rounded-lg border p-4 ${isDark ? 'bg-slate-800/40 border-slate-700/50' : 'bg-slate-50 border-slate-200'}`}
+                          className={`rounded-lg border p-4 ${hasLog ? 'opacity-50' : ''} ${isDark ? 'bg-slate-800/40 border-slate-700/50' : 'bg-slate-50 border-slate-200'}`}
                         >
                           <div className="flex items-center justify-between gap-3">
                             <div className="flex-1 min-w-0">
@@ -560,7 +607,12 @@ export function FlytbaseFlights({ isActive = true, selectedOrganization, listCon
                               <p className={`text-[10px] mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                                 {mission.actual_start && new Date(mission.actual_start).toLocaleString()}
                               </p>
-                              {isPdra && (
+                              {hasLog ? (
+                                <p className={`text-[10px] mt-1 flex items-center gap-1 ${isDark ? 'text-red-400/80' : 'text-red-600'}`}>
+                                  <HiExclamationCircle className="w-3 h-3 shrink-0" />
+                                  This mission already has a flight log attached
+                                </p>
+                              ) : isPdra && (
                                 <p className={`text-[10px] mt-1 flex items-center gap-1 ${isDark ? 'text-amber-400/80' : 'text-amber-600'}`}>
                                   <HiExclamationCircle className="w-3 h-3 shrink-0" />
                                   Post-flight attach — compliance warning will be logged
@@ -570,7 +622,8 @@ export function FlytbaseFlights({ isActive = true, selectedOrganization, listCon
                             <Button
                               size="sm"
                               onClick={() => handleAttachMission(mission.pilot_mission_id, isPdra ? 'PDRA' : 'OPEN')}
-                              disabled={isAttaching}
+                              disabled={isAttaching || hasLog}
+                              title={hasLog ? 'This mission already has a flight log attached' : undefined}
                               className="h-7 text-xs bg-violet-600 hover:bg-violet-500 text-white shrink-0"
                             >
                               {isAttaching ? 'Attaching…' : 'Attach'}
@@ -615,6 +668,9 @@ export function FlytbaseFlights({ isActive = true, selectedOrganization, listCon
         open={newMissionModalOpen}
         onClose={() => setNewMissionModalOpen(false)}
         onSuccess={handleNewMissionSuccess}
+        onSaved={handleNewMissionCreated}
+        logSerialNumber={preview?.aircraft?.serial_number ?? null}
+        createPrefill={newMissionPrefill}
         isDark={isDark}
       />
 

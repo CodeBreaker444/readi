@@ -1,4 +1,4 @@
-import { importCategories, importClinets, importDrones, importPilots, importPlans, importStatus, importTypes } from '@/backend/services/operation/importOperation-service';
+import { importCategories, importClinets, importDrones, importLucProcedures, importPilots, importStatus, importTypes } from '@/backend/services/operation/importOperation-service';
 import { requirePermission } from '@/lib/auth/api-auth';
 import { internalError } from '@/lib/api-error';
 import { E } from '@/lib/error-codes';
@@ -13,7 +13,6 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const type = searchParams.get('type');
     const clientId = Number(searchParams.get('client_id')) || 0;
-    const vehicleId = Number(searchParams.get('vehicle_id')) || 0;
 
     switch (type) {
       case 'clients': {
@@ -24,11 +23,6 @@ export async function GET(req: NextRequest) {
       case 'drones': {
         const data = await importDrones(ownerId, clientId || undefined)
         return NextResponse.json({ drones: data });
-      }
-
-      case 'plans': {
-       const data = await importPlans(ownerId, clientId, vehicleId)
-        return NextResponse.json({ plans: data });
       }
 
       case 'categories': {
@@ -65,6 +59,13 @@ export async function GET(req: NextRequest) {
       case 'pilots': {
        const data = await importPilots(ownerId)
         return NextResponse.json({ pilots: data });
+      }
+
+      case 'lucProcedures': {
+        const data = await importLucProcedures(ownerId)
+        return NextResponse.json({
+          lucProcedures: (data ?? []).map((r: any) => ({ id: r.procedure_id, name: `${r.procedure_code} — ${r.procedure_name}` })),
+        });
       }
 
       default:
