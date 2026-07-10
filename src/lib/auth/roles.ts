@@ -91,8 +91,7 @@ export const ROLE_PERMISSIONS: Record<Role, RolePermission[]> = {
     'view_client'],
   MM: ['view_dashboard', 'view_operations', 'view_logbooks', 'view_drone_atc', 'view_notifications', 'view_repository', 'view_logs', 'view_config',
     'view_erp', 'view_planning'],
-  VM: ['view_dashboard', 'view_drone_atc', 'view_notifications', 'view_repository', 'view_logs',
-    'view_logbooks'],
+  VM: ['view_dashboard', 'view_drone_atc', 'view_notifications', 'view_repository', 'view_logs'],
 };
 
 export function roleHasPermission(role: Role | null | undefined, permission: Permission): boolean {

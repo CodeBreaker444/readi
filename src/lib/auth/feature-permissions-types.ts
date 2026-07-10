@@ -234,7 +234,6 @@ export const DEFAULT_ROLE_FEATURE_ACCESS: Record<string, RoleFeatureMap> = {
   },
   VM: {
     dashboard_analytics: 'R', dashboard_shi_kpi: 'R',
-    logbook_flight: 'R', logbook_battery: 'R',
     drone_atc: 'R',
     notifications: 'A',
     document_repository: 'A',
@@ -242,9 +241,9 @@ export const DEFAULT_ROLE_FEATURE_ACCESS: Record<string, RoleFeatureMap> = {
   },
   PIC: {
     dashboard_analytics: 'R',
-    planning_dashboard: 'A', planning_mission_templates: 'A',
+    planning_evaluation: 'A', planning_dashboard: 'A', planning_mission_templates: 'A',
     operation_mission_table: 'A', operation_daily_board: 'A', operation_calendar: 'R',
-    logbook_planned_mission: 'R', logbook_flight: 'R', logbook_battery: 'R',
+    logbook_planned_mission: 'A', logbook_flight: 'R', logbook_battery: 'R',
     drone_atc: 'R',
     notifications: 'A',
     systems_maintenance_dashboard: 'R', systems_maintenance_tickets: 'A',

@@ -11,6 +11,7 @@ const schema = z.object({
     fk_evaluation_id: z.number(),
     fk_client_id: z.number().optional(),
     planning_status: z.string(),
+    planning_result: z.string().optional(),
     planning_request_date: z.string().default(""),
     planning_desc: z.string().default(""),
     planning_type: z.string().default(""),

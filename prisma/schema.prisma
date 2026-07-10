@@ -1988,6 +1988,7 @@ model planning {
   updated_at                                DateTime?               @default(now()) @db.Timestamp(6)
   assigned_to_user_id                       Int?
   planning_json                             Json?                   @default("{}")
+  planning_result                           String?                 @default("PROGRESS") @db.VarChar(50)
   checklist                                 checklist[]
   flytbase_mission                          flytbase_mission[]
   mission_component                         mission_component[]
