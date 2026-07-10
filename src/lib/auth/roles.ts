@@ -82,7 +82,7 @@ export const ROLE_PERMISSIONS: Record<Role, RolePermission[]> = {
     'view_planning_advanced', 'view_planning', 'view_operations', 'view_logbooks', 'view_drone_atc', 'view_config', 'view_logs', 'manage_users', 'view_client'],
   RM:  ['view_operations', 'view_operations_full', 'view_logs', 'view_logbooks', 'view_notifications', 'view_erp', 'view_config', 'view_drone_atc'],
   TM:  ['view_dashboard', 'view_training', 'view_repository', 'view_notifications', 'view_erp',
-    'view_logbooks', 'view_drone_atc', 'view_logs'],
+    'view_logbooks', 'view_drone_atc', 'view_logs', 'view_operations'],
   DC:  ['view_repository', 'view_config', 'view_notifications', 'view_erp',
     'view_dashboard', 'view_operations', 'view_planning', 'view_logbooks', 'view_drone_atc', 'view_logs'],
   SLA: ['view_dashboard', 'view_logs', 'view_config', 'view_notifications', 'view_erp'],

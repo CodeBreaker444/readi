@@ -146,13 +146,7 @@ export const ALL_FEATURE_KEYS: FeatureKey[] = FEATURE_SECTIONS.flatMap((s) => s.
 
 type RoleFeatureMap = Partial<Record<FeatureKey, AccessLevel>>;
 
-/**
- * Transcribed directly from the permission matrix image supplied by the user.
- * A feature key omitted for a role means that role has no access to it at all
- * (same meaning as today's absence from ROLE_PERMISSIONS).
- * Assumption: "Integrations" was cut off in the source image — defaulted to the
- * same values as its sibling row "Security & API Keys".
- */
+ 
 export const DEFAULT_ROLE_FEATURE_ACCESS: Record<string, RoleFeatureMap> = {
   AM: Object.fromEntries(ALL_FEATURE_KEYS.map((k) => [k, 'R'])) as RoleFeatureMap,
   SM: {
@@ -205,6 +199,7 @@ export const DEFAULT_ROLE_FEATURE_ACCESS: Record<string, RoleFeatureMap> = {
   },
   TM: {
     dashboard_analytics: 'R', dashboard_shi_kpi: 'R',
+    operation_mission_table: 'R',
     logbook_planned_mission: 'R', logbook_flight: 'R', logbook_battery: 'R',
     drone_atc: 'R',
     training_courses: 'A', training_calendar: 'A',
