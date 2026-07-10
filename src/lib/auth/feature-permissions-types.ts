@@ -148,7 +148,7 @@ type RoleFeatureMap = Partial<Record<FeatureKey, AccessLevel>>;
 
  
 export const DEFAULT_ROLE_FEATURE_ACCESS: Record<string, RoleFeatureMap> = {
-  AM: Object.fromEntries(ALL_FEATURE_KEYS.map((k) => [k, 'R'])) as RoleFeatureMap,
+  AM: Object.fromEntries(ALL_FEATURE_KEYS.filter((k) => k !== 'settings_integrations').map((k) => [k, 'R'])) as RoleFeatureMap,
   SM: {
     dashboard_analytics: 'R', dashboard_shi_kpi: 'R',
     planning_new_evaluation: 'A', planning_evaluation: 'A', planning_dashboard: 'A', planning_mission_templates: 'A',
@@ -167,7 +167,7 @@ export const DEFAULT_ROLE_FEATURE_ACCESS: Record<string, RoleFeatureMap> = {
     mission_type: 'R', mission_category: 'R', mission_status: 'R', mission_result: 'R',
     systems_manage: 'R', systems_map: 'R', systems_maintenance_dashboard: 'R', systems_maintenance_tickets: 'R',
     team_personnel: 'A', team_client: 'A',
-    settings_security_api_keys: 'A', settings_integrations: 'A',
+    settings_security_api_keys: 'A',
   },
   OM: {
     dashboard_analytics: 'R', dashboard_shi_kpi: 'R',
@@ -184,7 +184,7 @@ export const DEFAULT_ROLE_FEATURE_ACCESS: Record<string, RoleFeatureMap> = {
     mission_type: 'A', mission_category: 'A', mission_status: 'A', mission_result: 'A',
     systems_manage: 'R', systems_map: 'R', systems_maintenance_dashboard: 'R', systems_maintenance_tickets: 'R',
     team_personnel: 'R', team_client: 'R',
-    settings_security_api_keys: 'A', settings_integrations: 'A',
+    settings_security_api_keys: 'A',
   },
   MM: {
     dashboard_analytics: 'R', dashboard_shi_kpi: 'R',
@@ -195,7 +195,7 @@ export const DEFAULT_ROLE_FEATURE_ACCESS: Record<string, RoleFeatureMap> = {
     document_repository: 'A',
     audit_logs: 'A',
     systems_manage: 'A', systems_map: 'A', systems_maintenance_dashboard: 'A', systems_maintenance_tickets: 'A',
-    settings_security_api_keys: 'A', settings_integrations: 'A',
+    settings_security_api_keys: 'A',
   },
   TM: {
     dashboard_analytics: 'R', dashboard_shi_kpi: 'R',
@@ -206,7 +206,7 @@ export const DEFAULT_ROLE_FEATURE_ACCESS: Record<string, RoleFeatureMap> = {
     notifications: 'A',
     document_repository: 'A',
     audit_logs: 'A',
-    settings_security_api_keys: 'A', settings_integrations: 'A',
+    settings_security_api_keys: 'A',
   },
   CMM: {
     dashboard_analytics: 'R', dashboard_shi_kpi: 'R',
@@ -220,7 +220,7 @@ export const DEFAULT_ROLE_FEATURE_ACCESS: Record<string, RoleFeatureMap> = {
     audit_logs: 'A',
     systems_manage: 'R', systems_map: 'R', systems_maintenance_dashboard: 'R', systems_maintenance_tickets: 'R',
     team_personnel: 'R', team_client: 'R',
-    settings_security_api_keys: 'A', settings_integrations: 'A',
+    settings_security_api_keys: 'A',
   },
   DC: {
     dashboard_analytics: 'R', dashboard_shi_kpi: 'R',
@@ -230,14 +230,14 @@ export const DEFAULT_ROLE_FEATURE_ACCESS: Record<string, RoleFeatureMap> = {
     notifications: 'A',
     document_repository: 'A',
     audit_logs: 'A',
-    settings_security_api_keys: 'A', settings_integrations: 'A',
+    settings_security_api_keys: 'A',
   },
   VM: {
     dashboard_analytics: 'R', dashboard_shi_kpi: 'R',
     drone_atc: 'R',
     notifications: 'A',
     document_repository: 'A',
-    settings_security_api_keys: 'A', settings_integrations: 'A',
+    settings_security_api_keys: 'A',
   },
   PIC: {
     dashboard_analytics: 'R',
@@ -247,7 +247,7 @@ export const DEFAULT_ROLE_FEATURE_ACCESS: Record<string, RoleFeatureMap> = {
     drone_atc: 'R',
     notifications: 'A',
     systems_maintenance_dashboard: 'R', systems_maintenance_tickets: 'A',
-    settings_security_api_keys: 'A', settings_integrations: 'A',
+    settings_security_api_keys: 'A',
   },
 };
 
