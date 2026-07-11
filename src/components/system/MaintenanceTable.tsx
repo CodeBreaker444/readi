@@ -156,6 +156,37 @@ function CycleBadge({ model, isDark }: { model: MaintenanceComponent["model"]; i
   );
 }
 
+function LastMaintenanceCell({
+  basic,
+  standard,
+  extraordinary,
+  isDark,
+}: {
+  basic: string | null;
+  standard: string | null;
+  extraordinary: string | null;
+  isDark?: boolean;
+}) {
+  const rows: { label: string; value: string | null }[] = [
+    { label: "B", value: basic },
+    { label: "S", value: standard },
+    { label: "EO", value: extraordinary },
+  ];
+
+  return (
+    <div className="flex flex-col gap-0.5">
+      {rows.map(({ label, value }) => (
+        <div key={label} className="flex items-center gap-1.5 text-xs">
+          <span className={`w-6 shrink-0 font-semibold ${isDark ? "text-slate-300" : "text-slate-600"}`}>{label}</span>
+          <span className={isDark ? "text-slate-400" : "text-slate-500"}>
+            {value ? new Date(value).toLocaleDateString("en-GB") : <span className={isDark ? "text-slate-600" : "text-slate-300"}>—</span>}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 
 function effectiveStatus(drone: MaintenanceDrone): MaintenanceStatus {
   const all: MaintenanceStatus[] = [drone.status, ...drone.components.map((c) => c.status)];
@@ -522,14 +553,14 @@ function buildColumns(threshold: number, isDark: boolean, t: (key: string) => st
       id: "last_maintenance",
       header: t('systems.maintenanceDashboard.table.lastMaintenance'),
       accessorFn: (row) => row.last_maintenance,
-      cell: ({ getValue }) => {
-        const val = getValue() as string | null;
-        return (
-          <span className={`text-xs ${isDark ? "text-slate-400" : "text-slate-500"}`}>
-            {val ? new Date(val).toLocaleDateString("en-GB") : <span className={isDark ? "text-slate-600" : "text-slate-300"}>—</span>}
-          </span>
-        );
-      },
+      cell: ({ row }) => (
+        <LastMaintenanceCell
+          basic={row.original.last_maintenance_basic}
+          standard={row.original.last_maintenance_standard}
+          extraordinary={row.original.last_maintenance_extraordinary}
+          isDark={isDark}
+        />
+      ),
     },
     {
       id: "next_maintenance",

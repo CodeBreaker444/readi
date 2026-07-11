@@ -30,6 +30,9 @@ export interface MaintenanceDrone {
   serial_number: string;
   description: string | null;
   last_maintenance: string | null;
+  last_maintenance_basic: string | null;
+  last_maintenance_standard: string | null;
+  last_maintenance_extraordinary: string | null;
   activation_date: string | null;
   total_hours: number;
   total_flights: number;
