@@ -517,6 +517,61 @@ import {
 } from '@/app/api/team/user/control-center-token/route';
 import { DELETE as userQualificationDeleteDEL } from '@/app/api/team/user/qualifications/[id]/route';
 import { POST as trainingAttendancePOST } from '@/app/api/training/attendance/route';
+// Permissions
+import { GET as permissionsMeGET } from '@/app/api/permissions/me/route';
+import {
+  GET as permissionsRoleDefaultsGET,
+  PATCH as permissionsRoleDefaultsPATCH,
+} from '@/app/api/permissions/role-defaults/route';
+import {
+  GET as permissionsUserByIdGET,
+  PATCH as permissionsUserByIdPATCH,
+} from '@/app/api/permissions/user/[userId]/route';
+// Settings additional
+import { GET as settingsDflightGET, POST as settingsDflightPOST } from '@/app/api/settings/dflight/route';
+// Team additional
+import { GET as teamSubroleGET, POST as teamSubrolePOST } from '@/app/api/team/user/subrole/route';
+import { POST as teamUpdatePasswordPOST } from '@/app/api/team/user/update-password/route';
+// Client additional
+import { POST as clientUpdatePasswordPOST } from '@/app/api/client/update-password/route';
+// Compliance additional
+import { POST as requirementsUpdatePOST } from '@/app/api/compliance/requirements-evidences/update/route';
+// Evaluation additional
+import { POST as evalMissionCommAddPOST } from '@/app/api/evaluation/mission/communication/add/route';
+import { GET as evalPlanningClientsGET } from '@/app/api/evaluation/planning/clients/route';
+// FlytBase / FlytRelay additional
+import { GET as flytbaseMyOrganizationsGET } from '@/app/api/flytbase/my-organizations/route';
+import { GET as flytrelayFlightsGET } from '@/app/api/flytrelay/flights/route';
+import { GET as flytrelayFlightsGutmaGET } from '@/app/api/flytrelay/flights/gutma/route';
+// D-Flight
+import { GET as dflightFleetGET } from '@/app/api/dflight/fleet/route';
+// Operation additional — flight logs
+import { GET as opBoardFlightLogsGET } from '@/app/api/operation/board/flight-logs/route';
+import { POST as opBoardFlightLogsUploadPOST } from '@/app/api/operation/board/flight-logs/upload/route';
+import { GET as opBoardFlightLogsWaypointsGET } from '@/app/api/operation/board/flight-logs/waypoints/route';
+import { POST as opImportPreviewPOST } from '@/app/api/operation/import/preview/route';
+import { POST as opMissionAttachFlightLogPOST } from '@/app/api/operation/missions/[id]/attach-flight-log/route';
+import { GET as opMissionsAttachableGET } from '@/app/api/operation/missions/attachable/route';
+import { POST as opMissionsCreateAndAttachPOST } from '@/app/api/operation/missions/create-and-attach/route';
+// System additional
+import { GET as systemComponentFlightLogPreviewGET } from '@/app/api/system/component/flight-logs/[logId]/preview/route';
+import { POST as maintenanceTicketInterventionPOST } from '@/app/api/system/maintenance/tickets/intervention/route';
+// Admin — C2 config
+import {
+  DELETE as c2ConfigOrgsDEL,
+  GET as c2ConfigOrgsGET,
+  POST as c2ConfigOrgsPOST,
+  PUT as c2ConfigOrgsPUT,
+} from '@/app/api/admin/c2-config/organizations/route';
+import {
+  DELETE as c2ConfigPermissionsDEL,
+  GET as c2ConfigPermissionsGET,
+  POST as c2ConfigPermissionsPOST,
+} from '@/app/api/admin/c2-config/permissions/route';
+// Cron (Bearer CRON_SECRET auth — not session auth)
+import { GET as cronComponentExpirationGET } from '@/app/api/cron/check-component-expiration/route';
+import { GET as cronMaintenanceAlertsGET } from '@/app/api/cron/check-maintenance-alerts/route';
+import { GET as cronRefreshMaintenanceDaysGET } from '@/app/api/cron/refresh-maintenance-days/route';
 
 const SESSION_SKIP_PATTERNS = [
   'Auth — Login: sets auth cookie on valid credentials',
@@ -3267,6 +3322,335 @@ describeIntegration('Full Platform Integration Flow', () => {
     });
     const res = await trainingAttendancePOST(req);
     expect(res.status).not.toBe(401);
+  });
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // PERMISSIONS
+  // ══════════════════════════════════════════════════════════════════════════
+
+  it('Permissions — me GET', async () => {
+    const res = await permissionsMeGET();
+    expect(res.status).not.toBe(401);
+  });
+
+  it('Permissions — role-defaults GET', async () => {
+    const res = await permissionsRoleDefaultsGET();
+    expect(res.status).not.toBe(401);
+  });
+
+  it('Permissions — role-defaults PATCH', async () => {
+    const req = makeRequest('/api/permissions/role-defaults', {
+      method: 'PATCH',
+      body: { role: 'PIC', access: {} },
+    });
+    const res = await permissionsRoleDefaultsPATCH(req);
+    expect(res.status).not.toBe(401);
+  });
+
+  it('Permissions — user/[userId] GET', async () => {
+    const id = createdUserId ?? 1;
+    const req = makeRequest(`/api/permissions/user/${id}`, { method: 'GET' });
+    const res = await permissionsUserByIdGET(req, { params: Promise.resolve({ userId: String(id) }) });
+    expect(res.status).not.toBe(401);
+  });
+
+  it('Permissions — user/[userId] PATCH (reset to role default)', async () => {
+    const id = createdUserId ?? 1;
+    const req = makeRequest(`/api/permissions/user/${id}`, {
+      method: 'PATCH',
+      body: { useCustom: false },
+    });
+    const res = await permissionsUserByIdPATCH(req, { params: Promise.resolve({ userId: String(id) }) });
+    expect(res.status).not.toBe(401);
+  });
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // SETTINGS — D-Flight & subroles
+  // ══════════════════════════════════════════════════════════════════════════
+
+  it('Settings — dflight GET', async () => {
+    const res = await settingsDflightGET();
+    expect(res.status).not.toBe(401);
+  });
+
+  it('Settings — dflight POST', async () => {
+    const req = makeRequest('/api/settings/dflight', {
+      method: 'POST',
+      body: {
+        base_url: 'https://example-dflight.test',
+        username: 'flow-test-user',
+        password: 'flow-test-pass',
+        client_id: 'flow-test-client',
+      },
+    });
+    const res = await settingsDflightPOST(req);
+    expect(res.status).not.toBe(401);
+  });
+
+  it('D-Flight — fleet GET', async () => {
+    const res = await dflightFleetGET();
+    expect(res.status).not.toBe(401);
+  });
+
+  it('Team — subrole GET', async () => {
+    const req = makeRequest(`/api/team/user/subrole?user_id=${createdUserId ?? 1}`, { method: 'GET' });
+    const res = await teamSubroleGET(req);
+    expect(res.status).not.toBe(401);
+  });
+
+  it('Team — subrole POST (grant then revoke PIC_TECHNICIAN)', async () => {
+    const grantReq = makeRequest('/api/team/user/subrole', {
+      method: 'POST',
+      body: { user_id: createdUserId ?? 1, subrole: 'PIC_TECHNICIAN', action: 'grant' },
+    });
+    const grantRes = await teamSubrolePOST(grantReq);
+    expect(grantRes.status).not.toBe(401);
+
+    const revokeReq = makeRequest('/api/team/user/subrole', {
+      method: 'POST',
+      body: { user_id: createdUserId ?? 1, subrole: 'PIC_TECHNICIAN', action: 'revoke' },
+    });
+    const revokeRes = await teamSubrolePOST(revokeReq);
+    expect(revokeRes.status).not.toBe(401);
+  });
+
+  it('Team — update-password POST', async () => {
+    if (!createdUserId) return;
+    const req = makeRequest('/api/team/user/update-password', {
+      method: 'POST',
+      body: { user_id: createdUserId, new_password: 'FlowPass!2026', email: 'flow-test@readi-test.local' },
+    });
+    const res = await teamUpdatePasswordPOST(req);
+    expect(res.status).not.toBe(401);
+  });
+
+  it('Client — update-password POST', async () => {
+    if (!createdClientId) return;
+    const req = makeRequest('/api/client/update-password', {
+      method: 'POST',
+      body: { client_id: createdClientId, new_password: 'FlowPass!2026', client_name: 'Flow Test Client' },
+    });
+    const res = await clientUpdatePasswordPOST(req);
+    expect(res.status).not.toBe(401);
+  });
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // COMPLIANCE ADDITIONAL
+  // ══════════════════════════════════════════════════════════════════════════
+
+  it('Compliance — requirements-evidences/update POST', async () => {
+    if (!createdComplianceId) return;
+    const req = makeRequest('/api/compliance/requirements-evidences/update', {
+      method: 'POST',
+      body: { requirement_id: createdComplianceId, requirement_title: 'Flow Updated Requirement' },
+    });
+    const res = await requirementsUpdatePOST(req);
+    expect(res.status).not.toBe(401);
+  });
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // EVALUATION ADDITIONAL — communication & planning clients
+  // ══════════════════════════════════════════════════════════════════════════
+
+  it('Evaluation — mission/communication/add POST', async () => {
+    const req = makeFormDataRequest('/api/evaluation/mission/communication/add', {
+      message: 'Flow test mission communication',
+      communication_level: 'info',
+      'communication_to[]': [String(OWNER_ID || 1)],
+    });
+    const res = await evalMissionCommAddPOST(req);
+    expect(res.status).not.toBe(401);
+  });
+
+  it('Evaluation — planning/clients GET', async () => {
+    const res = await evalPlanningClientsGET();
+    expect(res.status).not.toBe(401);
+  });
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // FLYTBASE / FLYTRELAY ADDITIONAL
+  // ══════════════════════════════════════════════════════════════════════════
+
+  it('FlytBase — my-organizations GET', async () => {
+    const res = await flytbaseMyOrganizationsGET();
+    expect(res.status).not.toBe(401);
+  });
+
+  it('FlytRelay — flights GET', async () => {
+    const req = makeRequest('/api/flytrelay/flights', { method: 'GET' });
+    const res = await flytrelayFlightsGET(req);
+    expect(res.status).not.toBe(401);
+  }, 15_000);
+
+  it('FlytRelay — flights/gutma GET requires flightId', async () => {
+    const req = makeRequest('/api/flytrelay/flights/gutma', { method: 'GET' });
+    const res = await flytrelayFlightsGutmaGET(req);
+    expect(res.status).toBe(400);
+  });
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // OPERATION ADDITIONAL — flight logs & mission attachment
+  // ══════════════════════════════════════════════════════════════════════════
+
+  it('Operations — board/flight-logs GET requires mission_id', async () => {
+    const req = makeRequest('/api/operation/board/flight-logs', { method: 'GET' });
+    const res = await opBoardFlightLogsGET(req);
+    expect(res.status).toBe(400);
+  });
+
+  it('Operations — board/flight-logs GET for a mission', async () => {
+    const req = makeRequest(`/api/operation/board/flight-logs?mission_id=${createdOperationId ?? 1}`, { method: 'GET' });
+    const res = await opBoardFlightLogsGET(req);
+    expect(res.status).not.toBe(401);
+  });
+
+  it('Operations — board/flight-logs/upload POST', async () => {
+    const req = makeFormDataRequest('/api/operation/board/flight-logs/upload', {
+      mission_id: String(createdOperationId ?? 1),
+      file: new File(['dummy flight log'], 'flight-log.gutma', { type: 'application/octet-stream' }),
+    });
+    const res = await opBoardFlightLogsUploadPOST(req);
+    expect(res.status).not.toBe(401);
+  });
+
+  it('Operations — board/flight-logs/waypoints GET', async () => {
+    const req = makeRequest(`/api/operation/board/flight-logs/waypoints?mission_id=${createdOperationId ?? 1}`, { method: 'GET' });
+    const res = await opBoardFlightLogsWaypointsGET(req);
+    expect(res.status).not.toBe(401);
+  });
+
+  it('Operations — import/preview POST requires a file', async () => {
+    const req = makeFormDataRequest('/api/operation/import/preview', {});
+    const res = await opImportPreviewPOST(req);
+    expect(res.status).toBe(400);
+  });
+
+  it('Operations — missions/attachable GET requires droneSerialNumber', async () => {
+    const req = makeRequest('/api/operation/missions/attachable', { method: 'GET' });
+    const res = await opMissionsAttachableGET(req);
+    expect(res.status).toBe(400);
+  });
+
+  it('Operations — missions/attachable GET for a drone serial', async () => {
+    const req = makeRequest('/api/operation/missions/attachable?droneSerialNumber=FLOW-SN-001', { method: 'GET' });
+    const res = await opMissionsAttachableGET(req);
+    expect(res.status).not.toBe(401);
+  });
+
+  it('Operations — missions/[id]/attach-flight-log POST', async () => {
+    const id = createdOperationId ?? 1;
+    const req = makeRequest(`/api/operation/missions/${id}/attach-flight-log`, {
+      method: 'POST',
+      body: { flight_id: 'flow-flight-id' },
+    });
+    const res = await opMissionAttachFlightLogPOST(req, { params: Promise.resolve({ id: String(id) }) });
+    expect(res.status).not.toBe(401);
+  });
+
+  it('Operations — missions/create-and-attach POST requires mission_code, flight_id, fk_luc_procedure_id', async () => {
+    const req = makeRequest('/api/operation/missions/create-and-attach', { method: 'POST', body: {} });
+    const res = await opMissionsCreateAndAttachPOST(req);
+    expect(res.status).toBe(400);
+  });
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // SYSTEM ADDITIONAL — flight log preview & maintenance intervention
+  // ══════════════════════════════════════════════════════════════════════════
+
+  it('System — component/flight-logs/[logId]/preview GET', async () => {
+    const req = makeRequest('/api/system/component/flight-logs/99999/preview', { method: 'GET' });
+    const res = await systemComponentFlightLogPreviewGET(req, { params: Promise.resolve({ logId: '99999' }) });
+    expect(res.status).not.toBe(401);
+  });
+
+  it('System — maintenance/tickets/intervention POST', async () => {
+    const req = makeRequest('/api/system/maintenance/tickets/intervention', {
+      method: 'POST',
+      body: { ticket_id: createdMaintenanceTicketId ?? 1, action: 'start' },
+    });
+    const res = await maintenanceTicketInterventionPOST(req);
+    expect(res.status).not.toBe(401);
+  });
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // ADMIN — C2 config (organizations & user access)
+  // ══════════════════════════════════════════════════════════════════════════
+
+  it('Admin — c2-config/organizations GET', async () => {
+    const res = await c2ConfigOrgsGET();
+    expect(res.status).not.toBe(401);
+  });
+
+  it('Admin — c2-config/organizations POST (fake token, expects verification failure not 401)', async () => {
+    const req = makeRequest('/api/admin/c2-config/organizations', {
+      method: 'POST',
+      body: { name: 'Flow Test Org', orgId: 'flow-org-id', apiToken: 'flow-fake-token' },
+    });
+    const res = await c2ConfigOrgsPOST(req);
+    expect(res.status).not.toBe(401);
+  }, 15_000);
+
+  it('Admin — c2-config/organizations PUT (unknown id, expects non-401)', async () => {
+    const req = makeRequest('/api/admin/c2-config/organizations', {
+      method: 'PUT',
+      body: { id: 999999, name: 'Flow Test Org Updated' },
+    });
+    const res = await c2ConfigOrgsPUT(req);
+    expect(res.status).not.toBe(401);
+  });
+
+  it('Admin — c2-config/organizations DELETE (unknown id, expects non-401)', async () => {
+    const req = makeRequest('/api/admin/c2-config/organizations', {
+      method: 'DELETE',
+      body: { id: 999999 },
+    });
+    const res = await c2ConfigOrgsDEL(req);
+    expect(res.status).not.toBe(401);
+  });
+
+  it('Admin — c2-config/permissions GET', async () => {
+    const res = await c2ConfigPermissionsGET();
+    expect(res.status).not.toBe(401);
+  });
+
+  it('Admin — c2-config/permissions POST (invalid ids, expects non-401)', async () => {
+    const req = makeRequest('/api/admin/c2-config/permissions', {
+      method: 'POST',
+      body: { userId: '999999', organizationId: '999999' },
+    });
+    const res = await c2ConfigPermissionsPOST(req);
+    expect(res.status).not.toBe(401);
+  });
+
+  it('Admin — c2-config/permissions DELETE (invalid ids, expects non-401)', async () => {
+    const req = makeRequest('/api/admin/c2-config/permissions', {
+      method: 'DELETE',
+      body: { userId: '999999', organizationId: '999999' },
+    });
+    const res = await c2ConfigPermissionsDEL(req);
+    expect(res.status).not.toBe(401);
+  });
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // CRON — internal jobs, authenticated via Bearer CRON_SECRET (not session)
+  // ══════════════════════════════════════════════════════════════════════════
+
+  it('Cron — check-component-expiration GET without secret returns 401', async () => {
+    const req = makeRequest('/api/cron/check-component-expiration', { method: 'GET' });
+    const res = await cronComponentExpirationGET(req);
+    expect(res.status).toBe(401);
+  });
+
+  it('Cron — check-maintenance-alerts GET without secret returns 401', async () => {
+    const req = makeRequest('/api/cron/check-maintenance-alerts', { method: 'GET' });
+    const res = await cronMaintenanceAlertsGET(req);
+    expect(res.status).toBe(401);
+  });
+
+  it('Cron — refresh-maintenance-days GET without secret returns 401', async () => {
+    const req = makeRequest('/api/cron/refresh-maintenance-days', { method: 'GET' });
+    const res = await cronRefreshMaintenanceDaysGET(req);
+    expect(res.status).toBe(401);
   });
 
   // ══════════════════════════════════════════════════════════════════════════

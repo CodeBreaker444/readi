@@ -64,15 +64,22 @@ export function makeRequest(
 
 export function makeFormDataRequest(
   url: string,
-  fields: Record<string, string | Blob>,
+  fields: Record<string, string | Blob | Array<string | Blob>>,
   method = 'POST'
 ): NextRequest {
   const fd = new FormData();
-  for (const [key, value] of Object.entries(fields)) {
+  const append = (key: string, value: string | Blob) => {
     if (value instanceof Blob) {
       fd.append(key, value, (value as File).name ?? key);
     } else {
       fd.append(key, value);
+    }
+  };
+  for (const [key, value] of Object.entries(fields)) {
+    if (Array.isArray(value)) {
+      for (const v of value) append(key, v);
+    } else {
+      append(key, value);
     }
   }
   return new NextRequest(`http://localhost${url}`, { method, body: fd });
