@@ -192,12 +192,18 @@ export async function addClient(input: CreateClientInput): Promise<{ code: numbe
     const firstName = nameParts[0] ?? clientFields.client_name;
     const lastName = nameParts.slice(1).join(' ') || null;
 
-    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-      email,
-      password: temp_password,
-      email_confirm: true,
-      user_metadata: { first_name: firstName, last_name: lastName ?? '', role: 'CLIENT' },
-    });
+    let authData: Awaited<ReturnType<typeof supabase.auth.admin.createUser>>['data'] | undefined;
+    let authError: Awaited<ReturnType<typeof supabase.auth.admin.createUser>>['error'] | undefined;
+    try {
+      ({ data: authData, error: authError } = await supabase.auth.admin.createUser({
+        email,
+        password: temp_password,
+        email_confirm: true,
+        user_metadata: { first_name: firstName, last_name: lastName ?? '', role: 'CLIENT' },
+      }));
+    } catch (e: any) {
+      authError = { message: e.message } as typeof authError;
+    }
 
     if (authError || !authData?.user) {
       await prisma.client.delete({ where: { client_id: clientRow.client_id } });
