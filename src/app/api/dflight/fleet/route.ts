@@ -4,7 +4,7 @@ import { requireFullAccessRole } from '@/lib/auth/api-auth';
 import { getDFlightDrones, getDFlightToken } from '@/lib/dflight-service';
 import { E } from '@/lib/error-codes';
 import { prisma } from '@/lib/prisma';
-import type { FleetRow } from '@/types/dflight';
+import type { DFlightDroneRow } from '@/types/dflight';
 import { NextResponse } from 'next/server';
 
 export async function GET() {
@@ -27,8 +27,8 @@ export async function GET() {
       select: {
         component_id: true,
         component_name: true,
-        component_type: true,
         serial_number: true,
+        drone_registration_code: true,
         fk_tool_id: true,
         tool: {
           select: { tool_id: true, tool_name: true },
@@ -52,34 +52,52 @@ export async function GET() {
         data: [],
       });
     }
-console.log('dflight drones', dFlightDrones);
-    const droneBySerial = new Map<string, (typeof dFlightDrones)[0]>();
-    for (const drone of dFlightDrones) {
-      if (drone.serialNumber) droneBySerial.set(drone.serialNumber.toLowerCase(), drone);
-      if (drone.fcsSerialNumber) droneBySerial.set(drone.fcsSerialNumber.toLowerCase(), drone);
-      if (drone.gcsSerialNumber) droneBySerial.set(drone.gcsSerialNumber.toLowerCase(), drone);
+
+    // Only consider drones the doc marks as currently valid in d-flight.
+    const activeDrones = dFlightDrones.filter(
+      (d) => d.status === 'ACTIVE' && d.timeOfDelete == null,
+    );
+
+    const componentBySerial = new Map<string, (typeof components)[0]>();
+    for (const c of components) {
+      const sn = c.serial_number?.trim().toLowerCase();
+      if (sn) componentBySerial.set(sn, c);
     }
 
-    const rows: FleetRow[] = components.map((c) => {
-      const sn = c.serial_number?.trim().toLowerCase() ?? null;
-      const match = sn ? droneBySerial.get(sn) ?? null : null;
+    const rows: DFlightDroneRow[] = activeDrones.map((d) => {
+      const candidateSerials = [d.fcsSerialNumber, d.serialNumber, d.gcsSerialNumber]
+        .filter((s): s is string => !!s)
+        .map((s) => s.trim().toLowerCase());
+
+      let match: (typeof components)[0] | null = null;
+      for (const sn of candidateSerials) {
+        const found = componentBySerial.get(sn);
+        if (found) { match = found; break; }
+      }
 
       return {
-        componentId: c.component_id,
-        systemId: c.tool.tool_id,
-        systemName: c.tool.tool_name ?? '',
-        componentName: c.component_name,
-        serialNumber: c.serial_number ?? null,
-        dFlightId: match?.id ?? null,
-        dFlightDroneName: match?.name ?? null,
-        dFlightStatus: match?.status ?? null,
-        dFlightMatriculation: match?.matriculationNumber ?? null,
-        dFlightModel: match?.['model.modelName'] ?? null,
+        dFlightId: d.id,
+        dFlightName: d.name,
+        serialNumber: d.fcsSerialNumber ?? d.serialNumber,
+        gcsSerialNumber: d.gcsSerialNumber,
+        matriculationNumber: d.matriculationNumber,
+        status: d.status,
+        modelName: d['model.modelName'],
+        manufacturerName: d['model.manufacturer.name'],
+        insuranceCompany: d.insuranceCompany,
+        insuranceExpiryDate: d.insuranceExpiryDate,
+        uasClassId: d.uasClassId,
         linked: match !== null,
+        componentId: match?.component_id ?? null,
+        systemId: match?.tool.tool_id ?? null,
+        systemName: match?.tool.tool_name ?? null,
+        componentName: match?.component_name ?? null,
+        storedDrc: match?.drone_registration_code ?? null,
       };
     });
 
-    rows.sort((a, b) => Number(b.linked) - Number(a.linked));
+    // Unlinked rows are the actionable ones — surface them first.
+    rows.sort((a, b) => Number(a.linked) - Number(b.linked));
 
     return NextResponse.json({ code: 1, data: rows });
   } catch (err: any) {

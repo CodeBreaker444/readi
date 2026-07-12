@@ -4895,27 +4895,28 @@
     },
     "fleet": {
       "pageTitle": "D-Flight Fleet",
-      "pageSubtitle": "Systems matched against D-Flight drone registry",
-      "tableTitle": "Fleet Matching",
-      "tableSubtitle": "Readi components matched to D-Flight drones by serial number",
+      "pageSubtitle": "All drones registered in D-Flight, matched against Readi systems",
+      "tableTitle": "D-Flight Drones",
+      "tableSubtitle": "D-Flight drones matched to Readi components by serial number",
       "refresh": "Refresh",
       "loading": "Fetching D-Flight fleet data…",
       "retry": "Try again",
-      "empty": "No components found for this organisation",
+      "empty": "No active drones found in D-Flight for this account",
       "stat": {
-        "total": "Total Components",
-        "linked": "Linked to D-Flight",
-        "unlinked": "Not Found in D-Flight"
+        "total": "Total D-Flight Drones",
+        "linked": "Linked to Readi",
+        "unlinked": "Not in Readi"
       },
       "col": {
         "link": "Linked",
+        "dFlightName": "D-Flight Name",
         "system": "System",
         "component": "Component",
         "serialNumber": "Serial Number",
         "drc": "DRC (D-Flight ID)",
-        "dFlightName": "D-Flight Name",
         "model": "Model",
-        "status": "Status"
+        "status": "Status",
+        "action": "Action"
       },
       "error": {
         "generic": "Failed to load fleet data"
@@ -4924,6 +4925,36 @@
         "title": "D-Flight Not Configured",
         "description": "Please configure your D-Flight integration settings to view the fleet.",
         "setup": "Go to Settings"
+      }
+    },
+    "import": {
+      "title": "Import Drone from D-Flight",
+      "sections": {
+        "system": "New System",
+        "component": "Component",
+        "model": "Brand / Model"
+      },
+      "fields": {
+        "systemCode": "System Code",
+        "systemDescription": "System Description",
+        "componentName": "Component Name",
+        "serialNumber": "Serial Number",
+        "drc": "DRC (D-Flight ID)"
+      },
+      "buttons": {
+        "newModel": "New Model",
+        "import": "Import Drone",
+        "importing": "Importing…"
+      },
+      "noModelMatch": "No matching model found for \"{{manufacturer}} / {{model}}\" in your registry — create it above.",
+      "addClass": "Add:",
+      "toasts": {
+        "systemCodeRequired": "System code is required",
+        "serialRequired": "Serial number is required",
+        "modelRequired": "Please select or create a model",
+        "success": "Drone imported successfully",
+        "failed": "Failed to import drone",
+        "error": "An error occurred while importing the drone"
       }
     }
   }
