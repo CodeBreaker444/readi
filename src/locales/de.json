@@ -3612,6 +3612,8 @@
           "model": "Modell",
           "system": "System",
           "status": "Status",
+          "expiration": "Ablauf",
+          "noExpiration": "Kein Ablauf",
           "active": "Aktiv",
           "actions": "Aktionen",
           "yes": "Ja",
@@ -3968,6 +3970,7 @@
           "clientSerial": "Mandant / S/N",
           "model": "Modell",
           "status": "Status",
+          "expiration": "Ablauf",
           "actions": "Aktionen"
         },
         "noResults": "Keine Ergebnisse.",
@@ -4122,6 +4125,14 @@
         "location": "Standort",
         "locationOptional": "Standort (optional)",
         "autoDecommissionHint": "Komponente wird an diesem Datum automatisch außer Betrieb genommen",
+        "insurance": {
+          "label": "Versicherung",
+          "name": "Versicherungsname",
+          "namePlaceholder": "z. B. Vollkaskoversicherung",
+          "company": "Versicherungsgesellschaft",
+          "companyPlaceholder": "z. B. Allianz",
+          "expiryDate": "Ablaufdatum"
+        },
         "expiryType": {
           "label": "Ablauftyp",
           "expirationDate": "Ablaufdatum",

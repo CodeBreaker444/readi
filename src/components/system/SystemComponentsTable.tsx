@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useTheme } from '@/components/useTheme';
+import { getComponentExpiryInfo } from '@/lib/system/component-expiry';
 import { getCoreRowModel, getPaginationRowModel, useReactTable } from '@tanstack/react-table';
 import { ChevronRight, GitBranch } from 'lucide-react';
 import { Fragment } from 'react';
@@ -42,6 +43,10 @@ interface ComponentRow {
   current_usage_hours?: number;
   current_maintenance_hours?: number;
   current_maintenance_days?: number;
+  expiry_type?: string | null;
+  expiration_date?: string | null;
+  expiration_flights?: number | null;
+  expiration_flight_hours?: number | null;
 }
 
 interface SystemComponentsTableProps {
@@ -194,6 +199,7 @@ export default function SystemComponentsTable({
                   t('systems.components.systemsTable.headers.clientSerial'),
                   t('systems.components.systemsTable.headers.model'),
                   t('systems.components.systemsTable.headers.status'),
+                  t('systems.components.systemsTable.headers.expiration'),
                   t('systems.components.systemsTable.headers.actions'),
                 ].map((h) => (
                   <th key={h} className={`px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wide ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
@@ -210,12 +216,13 @@ export default function SystemComponentsTable({
                     <td className="px-3 py-3"><Skeleton className="h-8 w-full" /></td>
                     <td className="px-3 py-3"><Skeleton className="h-8 w-24" /></td>
                     <td className="px-3 py-3"><Skeleton className="h-8 w-24" /></td>
+                    <td className="px-3 py-3"><Skeleton className="h-8 w-24" /></td>
                     <td className="px-3 py-3"><Skeleton className="h-8 w-full" /></td>
                   </tr>
                 ))
               ) : pagedSystems.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="h-24 text-center text-slate-400">{t('systems.components.systemsTable.noResults')}</td>
+                  <td colSpan={6} className="h-24 text-center text-slate-400">{t('systems.components.systemsTable.noResults')}</td>
                 </tr>
               ) : (
                 pagedSystems.map((system) => {
@@ -257,6 +264,7 @@ export default function SystemComponentsTable({
                         <td className="px-3 py-3">
                           <StatusPill status={system.tool_status} />
                         </td>
+                        <td className="px-3 py-3" />
                         <td className="px-3 py-3" onClick={(e) => e.stopPropagation()}>
                           <div className="flex flex-wrap gap-2">
                             <Button size="sm" variant="outline" onClick={() => onViewSystem(system.tool_id)}>{t('systems.components.systemsTable.buttons.view')}</Button>
@@ -304,6 +312,19 @@ export default function SystemComponentsTable({
                                   : <span className="text-slate-400">—</span>}
                               </td>
                               <td className="px-3 py-2.5"><StatusPill status={comp.component_status} /></td>
+                              <td className="px-3 py-2.5 text-xs">
+                                {(() => {
+                                  const info = getComponentExpiryInfo(comp);
+                                  if (info.parts.length === 0) {
+                                    return <span className="text-slate-400">{t('systems.manage.columns.component.noExpiration')}</span>;
+                                  }
+                                  return (
+                                    <span className={info.expired ? 'text-red-500 font-medium' : (isDark ? 'text-slate-300' : 'text-slate-600')}>
+                                      {info.parts.join(' · ')}
+                                    </span>
+                                  );
+                                })()}
+                              </td>
                               <td className="px-3 py-2.5">
                                 <div className="flex flex-wrap gap-2">
                                   <Button size="sm" variant="outline" onClick={() => onViewComponent(comp)}>{t('systems.components.systemsTable.buttons.view')}</Button>
@@ -334,7 +355,7 @@ export default function SystemComponentsTable({
                           ))
                         ) : (
                           <tr className={`border-t ${isDark ? 'border-slate-700 bg-slate-800/30' : 'border-slate-100 bg-slate-50/70'}`}>
-                            <td colSpan={5} className="px-10 py-3 text-xs text-slate-400">{t('systems.components.systemsTable.noComponentsAttached')}</td>
+                            <td colSpan={6} className="px-10 py-3 text-xs text-slate-400">{t('systems.components.systemsTable.noComponentsAttached')}</td>
                           </tr>
                         ))}
                     </Fragment>

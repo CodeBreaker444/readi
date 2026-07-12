@@ -699,6 +699,7 @@ export async function getComponentList(ownerId: number, toolId?: number, include
     const rawData = await prisma.tool_component.findMany({
       where: { fk_tool_id: toolId },
       orderBy: { component_id: 'desc' },
+      include: { component_insurance: true },
     });
 
     // Only filter out detached components if includeDetached is false
@@ -717,6 +718,7 @@ export async function getComponentList(ownerId: number, toolId?: number, include
   const rawData = await prisma.tool_component.findMany({
     where: { fk_tool_id: { in: allToolIds } },
     orderBy: { component_id: 'desc' },
+    include: { component_insurance: true },
   });
 
   return buildComponentListResult(rawData);
@@ -795,6 +797,9 @@ function buildComponentListResult(data: any[]) {
         expiry_type: expiryType,
         expiration_flights: item.expiration_flights ?? null,
         expiration_flight_hours: item.expiration_flight_hours != null ? Number(item.expiration_flight_hours) : null,
+        insurance_name: item.component_insurance?.insurance_name ?? null,
+        insurance_company: item.component_insurance?.insurance_company ?? null,
+        insurance_expiry_date: item.component_insurance?.expiry_date ?? null,
       };
     }),
   };
@@ -911,6 +916,17 @@ export async function addComponent(componentData: any) {
     },
   });
 
+  if (componentData.insurance_name || componentData.insurance_company || componentData.insurance_expiry_date) {
+    await prisma.component_insurance.create({
+      data: {
+        fk_component_id: data.component_id,
+        insurance_name: componentData.insurance_name || null,
+        insurance_company: componentData.insurance_company || null,
+        expiry_date: componentData.insurance_expiry_date ? new Date(componentData.insurance_expiry_date) : null,
+      },
+    });
+  }
+
   return { code: 1, message: 'Component added successfully', data };
 }
 
@@ -1018,6 +1034,25 @@ export async function updateComponent(componentId: number, componentData: any) {
       } as Prisma.InputJsonValue,
     },
   });
+
+  if (componentData.insurance_name !== undefined || componentData.insurance_company !== undefined || componentData.insurance_expiry_date !== undefined) {
+    const insuranceExpiryDate = componentData.insurance_expiry_date ? new Date(componentData.insurance_expiry_date) : null;
+    await prisma.component_insurance.upsert({
+      where: { fk_component_id: componentId },
+      create: {
+        fk_component_id: componentId,
+        insurance_name: componentData.insurance_name || null,
+        insurance_company: componentData.insurance_company || null,
+        expiry_date: insuranceExpiryDate,
+      },
+      update: {
+        insurance_name: componentData.insurance_name || null,
+        insurance_company: componentData.insurance_company || null,
+        expiry_date: insuranceExpiryDate,
+        updated_at: new Date(),
+      },
+    });
+  }
 
   return { code: 1, message: 'Component updated successfully', data, oldPosition };
 }

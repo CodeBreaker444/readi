@@ -3702,6 +3702,8 @@
           "model": "Model",
           "system": "System",
           "status": "Status",
+          "expiration": "Expiration",
+          "noExpiration": "No expiration",
           "active": "Active",
           "actions": "Actions",
           "yes": "Yes",
@@ -4058,6 +4060,7 @@
           "clientSerial": "Client / Serial",
           "model": "Model",
           "status": "Status",
+          "expiration": "Expiration",
           "actions": "Actions"
         },
         "noResults": "No results.",
@@ -4212,6 +4215,14 @@
         "location": "Location",
         "locationOptional": "Location (optional)",
         "autoDecommissionHint": "Component auto-decommissions on this date",
+        "insurance": {
+          "label": "Insurance",
+          "name": "Insurance Name",
+          "namePlaceholder": "e.g. Comprehensive Cover",
+          "company": "Insurance Company",
+          "companyPlaceholder": "e.g. Allianz",
+          "expiryDate": "Expiry Date"
+        },
         "expiryType": {
           "label": "Expiry Type",
           "expirationDate": "Expiration Date",
