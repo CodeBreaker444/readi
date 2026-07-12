@@ -49,6 +49,10 @@ export default function AddSystemModal({ open, onClose, onSuccess, models, clien
         return;
       }
     }
+    if (!formData.fk_client_id) {
+      toast.error(t('systems.components.addSystem.toasts.clientRequired'));
+      return;
+    }
 
     setLoading(true);
     try {
@@ -155,7 +159,6 @@ export default function AddSystemModal({ open, onClose, onSuccess, models, clien
                 <Select value={formData.fk_client_id} onValueChange={v => handleChange('fk_client_id', v)}>
                   <SelectTrigger className={selectTriggerCls}><SelectValue placeholder={t('systems.components.common.select')} /></SelectTrigger>
                   <SelectContent className={selectContentCls}>
-                    <SelectItem value="0">None</SelectItem>
                     {clients.map((c: any) => (<SelectItem key={c.client_id} value={c.client_id.toString()}>{c.client_name}</SelectItem>))}
                   </SelectContent>
                 </Select>

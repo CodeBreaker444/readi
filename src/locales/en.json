@@ -2025,6 +2025,7 @@
         "opTypePdraDesc": "Pilot flies under risk analysis — mission plan required.",
         "droneLabel": "Drone System",
         "noDronesAssigned": "No drones assigned to this client",
+        "noSystemsForClient": "The selected client doesn't have any systems.",
         "allInMaintenance": "All drones are in maintenance",
         "selectDrone": "Select drone…",
         "allInMaintenanceWarning": "All drones assigned to this client are currently under maintenance.",
@@ -2032,7 +2033,7 @@
         "maintenanceDueTag": "MAINTENANCE DUE",
         "maintenanceDueWarning": "One or more drones have maintenance due. Review before scheduling.",
         "snMismatchTag": "SN Mismatch",
-        "noSystemWithSerial": "No system is present with the serial number {{serial}}",
+        "noSystemWithSerial": "No system belonging to the selected client has the serial number {{serial}}",
         "notOperationalTag": "Not Operational",
         "selectedNonOpWarningPre": "The selected system is",
         "selectedNonOpWarningPost": "— one of its components has expired. Mission creation will be blocked.",
@@ -4101,7 +4102,7 @@
           "activationDate": "Activation Date",
           "active": "Active",
           "status": "Status",
-          "client": "Client",
+          "client": "Client *",
           "location": "Location",
           "attachFiles": "Attach Files (manual, certificate, etc.)"
         },
@@ -4123,6 +4124,7 @@
         "toasts": {
           "latitudeRange": "Latitude must be between -90 and 90",
           "longitudeRange": "Longitude must be between -180 and 180",
+          "clientRequired": "Please select a client",
           "success": "System added successfully",
           "failed": "Failed to add tool",
           "error": "Error adding tool"
@@ -4267,7 +4269,7 @@
           "longitude": "Longitude",
           "status": "Status",
           "active": "Active",
-          "client": "Client",
+          "client": "Client *",
           "location": "Location",
           "activationDate": "Activation Date",
           "maintenanceLogbook": "Maintenance Logbook",
@@ -4299,6 +4301,7 @@
           "componentRemoved": "Component removed from system",
           "removeFailed": "Failed to remove component",
           "removeError": "Error removing component",
+          "clientRequired": "Please select a client",
           "updateSuccess": "System updated successfully",
           "updateFailed": "Failed to update system",
           "updateError": "Error updating system"
@@ -4499,7 +4502,7 @@
           "longitude": "Longitude",
           "status": "Status",
           "activationDate": "Activation Date",
-          "client": "Client",
+          "client": "Client *",
           "location": "Location"
         },
         "componentFields": {
@@ -4539,6 +4542,7 @@
         },
         "toasts": {
           "systemCodeRequired": "System code is required",
+          "clientRequired": "Please select a client",
           "loadSourceFailed": "Failed to load source system",
           "loadComponentsFailed": "Failed to load source components",
           "sourceNotFound": "Source system not found",

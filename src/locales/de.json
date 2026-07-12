@@ -2011,6 +2011,7 @@
         "opTypePdraDesc": "Pilot fliegt unter Risikoanalyse — Missionsplan erforderlich.",
         "droneLabel": "Drohnensystem",
         "noDronesAssigned": "Diesem Kunden sind keine Drohnen zugewiesen",
+        "noSystemsForClient": "Der ausgewählte Kunde hat keine Systeme.",
         "allInMaintenance": "Alle Drohnen befinden sich in der Wartung",
         "selectDrone": "Drohne auswählen…",
         "allInMaintenanceWarning": "Alle diesem Kunden zugewiesenen Drohnen befinden sich derzeit in der Wartung.",
@@ -2018,7 +2019,7 @@
         "maintenanceDueTag": "WARTUNG FÄLLIG",
         "maintenanceDueWarning": "Bei einer oder mehreren Drohnen ist eine Wartung fällig. Vor der Planung prüfen.",
         "snMismatchTag": "SN-Abweichung",
-        "noSystemWithSerial": "Es ist kein System mit der Seriennummer {{serial}} vorhanden",
+        "noSystemWithSerial": "Kein System des ausgewählten Kunden hat die Seriennummer {{serial}}",
         "notOperationalTag": "Nicht betriebsbereit",
         "selectedNonOpWarningPre": "Das ausgewählte System ist",
         "selectedNonOpWarningPost": "— eine seiner Komponenten ist abgelaufen. Die Missionserstellung wird gesperrt.",
@@ -4011,7 +4012,7 @@
           "activationDate": "Aktivierungsdatum",
           "active": "Aktiv",
           "status": "Status",
-          "client": "Mandant",
+          "client": "Mandant *",
           "location": "Standort",
           "attachFiles": "Dateien anhängen (Handbuch, Zertifikat, etc.)"
         },
@@ -4033,6 +4034,7 @@
         "toasts": {
           "latitudeRange": "Breitengrad muss zwischen -90 und 90 liegen",
           "longitudeRange": "Längengrad muss zwischen -180 und 180 liegen",
+          "clientRequired": "Bitte einen Mandanten auswählen",
           "success": "System erfolgreich hinzugefügt",
           "failed": "Gerät konnte nicht hinzugefügt werden",
           "error": "Fehler beim Hinzufügen des Geräts"
@@ -4176,7 +4178,7 @@
           "longitude": "Längengrad",
           "status": "Status",
           "active": "Aktiv",
-          "client": "Mandant",
+          "client": "Mandant *",
           "location": "Standort",
           "activationDate": "Aktivierungsdatum",
           "maintenanceLogbook": "Wartungslogbuch",
@@ -4208,6 +4210,7 @@
           "componentRemoved": "Komponente vom System entfernt",
           "removeFailed": "Komponente konnte nicht entfernt werden",
           "removeError": "Fehler beim Entfernen der Komponente",
+          "clientRequired": "Bitte einen Mandanten auswählen",
           "updateSuccess": "System erfolgreich aktualisiert",
           "updateFailed": "System konnte nicht aktualisiert werden",
           "updateError": "Fehler beim Aktualisieren des Systems"
@@ -4408,7 +4411,7 @@
           "longitude": "Längengrad",
           "status": "Status",
           "activationDate": "Aktivierungsdatum",
-          "client": "Mandant",
+          "client": "Mandant *",
           "location": "Standort"
         },
         "componentFields": {
@@ -4448,6 +4451,7 @@
         },
         "toasts": {
           "systemCodeRequired": "Systemcode ist erforderlich",
+          "clientRequired": "Bitte einen Mandanten auswählen",
           "loadSourceFailed": "Quellsystem konnte nicht geladen werden",
           "loadComponentsFailed": "Quellkomponenten konnten nicht geladen werden",
           "sourceNotFound": "Quellsystem nicht gefunden",

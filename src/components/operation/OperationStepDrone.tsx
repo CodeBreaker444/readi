@@ -55,6 +55,7 @@ export function OperationStepDrone({
         ? drones.find(d => serialsMatch(d.drone_serial_number, logSerialNumber))
         : undefined
     const serialBlocked = !!logSerialNumber && !matchingDrone
+    const noSystemsForClient = !loadingDrones && drones.length === 0
 
     useEffect(() => {
         if (!logSerialNumber || drones.length === 0 || !matchingDrone) return
@@ -209,7 +210,18 @@ export function OperationStepDrone({
                         {t('operations.newOperation.drone.maintenanceDueWarning')}
                     </p>
                 )}
-                {serialBlocked && (
+                {noSystemsForClient && (
+                    <div className={cn(
+                        'mt-2 flex items-start gap-2 rounded-lg border px-3 py-2.5',
+                        isDark ? 'border-red-800 bg-red-950/40' : 'border-red-200 bg-red-50'
+                    )}>
+                        <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-red-500" />
+                        <p className={cn('text-xs leading-snug', isDark ? 'text-red-400' : 'text-red-700')}>
+                            {t('operations.newOperation.drone.noSystemsForClient')}
+                        </p>
+                    </div>
+                )}
+                {!noSystemsForClient && serialBlocked && (
                     <div className={cn(
                         'mt-2 flex items-start gap-2 rounded-lg border px-3 py-2.5',
                         isDark ? 'border-red-800 bg-red-950/40' : 'border-red-200 bg-red-50'

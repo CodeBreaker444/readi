@@ -2013,6 +2013,7 @@
         "opTypePdraDesc": "Il pilota vola sotto analisi del rischio — piano di missione richiesto.",
         "droneLabel": "Sistema Drone",
         "noDronesAssigned": "Nessun drone assegnato a questo cliente",
+        "noSystemsForClient": "Il cliente selezionato non ha alcun sistema.",
         "allInMaintenance": "Tutti i droni sono in manutenzione",
         "selectDrone": "Seleziona drone…",
         "allInMaintenanceWarning": "Tutti i droni assegnati a questo cliente sono attualmente in manutenzione.",
@@ -2020,7 +2021,7 @@
         "maintenanceDueTag": "MANUTENZIONE SCADUTA",
         "maintenanceDueWarning": "Uno o più droni richiedono manutenzione. Verifica prima di pianificare.",
         "snMismatchTag": "SN non corrispondente",
-        "noSystemWithSerial": "Nessun sistema è presente con il numero di serie {{serial}}",
+        "noSystemWithSerial": "Nessun sistema del cliente selezionato ha il numero di serie {{serial}}",
         "notOperationalTag": "Non Operativo",
         "selectedNonOpWarningPre": "Il sistema selezionato è",
         "selectedNonOpWarningPost": "— uno dei suoi componenti è scaduto. La creazione della missione sarà bloccata.",
@@ -4091,7 +4092,7 @@
           "activationDate": "Data di Attivazione",
           "active": "Attivo",
           "status": "Stato",
-          "client": "Cliente",
+          "client": "Cliente *",
           "location": "Posizione",
           "attachFiles": "Allega File (manuale, certificato, ecc.)"
         },
@@ -4113,6 +4114,7 @@
         "toasts": {
           "latitudeRange": "La latitudine deve essere tra -90 e 90",
           "longitudeRange": "La longitudine deve essere tra -180 e 180",
+          "clientRequired": "Seleziona un cliente",
           "success": "Sistema aggiunto con successo",
           "failed": "Aggiunta strumento fallita",
           "error": "Errore durante l'aggiunta dello strumento"
@@ -4257,7 +4259,7 @@
           "longitude": "Longitudine",
           "status": "Stato",
           "active": "Attivo",
-          "client": "Cliente",
+          "client": "Cliente *",
           "location": "Posizione",
           "activationDate": "Data Attivazione",
           "maintenanceLogbook": "Logbook Manutenzione",
@@ -4289,6 +4291,7 @@
           "componentRemoved": "Componente rimosso dal sistema",
           "removeFailed": "Rimozione componente fallita",
           "removeError": "Errore durante la rimozione del componente",
+          "clientRequired": "Seleziona un cliente",
           "updateSuccess": "Sistema aggiornato con successo",
           "updateFailed": "Aggiornamento sistema fallito",
           "updateError": "Errore durante l'aggiornamento del sistema"
@@ -4489,7 +4492,7 @@
           "longitude": "Longitudine",
           "status": "Stato",
           "activationDate": "Data Attivazione",
-          "client": "Cliente",
+          "client": "Cliente *",
           "location": "Posizione"
         },
         "componentFields": {
@@ -4529,6 +4532,7 @@
         },
         "toasts": {
           "systemCodeRequired": "Il codice sistema è obbligatorio",
+          "clientRequired": "Seleziona un cliente",
           "loadSourceFailed": "Caricamento sistema sorgente fallito",
           "loadComponentsFailed": "Caricamento componenti sorgente fallito",
           "sourceNotFound": "Sistema sorgente non trovato",
