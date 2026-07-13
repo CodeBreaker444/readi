@@ -2,33 +2,56 @@ import { prisma } from '@/lib/prisma';
 import { dateConversionUtcToLocal, getCurrentYear } from '../../utils/date-utils';
 import { MissionListItem, MissionTotal } from './dashboard';
 
+/**
+ * Single shared select covering everything getReadiTotalMission,
+ * getChartReadiTotalMission and getChartReadiTotalMissionResult need, so the
+ * dashboard can fetch a year of missions once and derive all three views
+ * from that one result set instead of hitting the DB three times.
+ */
+export function getYearMissions(ownerId: number, fkUserId: number, year: number) {
+  return prisma.pilot_mission.findMany({
+    where: {
+      fk_owner_id: ownerId,
+      scheduled_start: {
+        gte: new Date(`${year}-01-01`),
+        lte: new Date(`${year}-12-31`),
+      },
+      ...(fkUserId !== 0 && { fk_pilot_user_id: fkUserId }),
+    },
+    select: {
+      pilot_mission_id: true,
+      flight_duration: true,
+      distance_flown: true,
+      scheduled_start: true,
+      actual_start: true,
+      fk_tool_id: true,
+      fk_planning_id: true,
+      tool: {
+        select: {
+          tool_id: true,
+          tool_code: true,
+        },
+      },
+      pilot_mission_result: {
+        select: {
+          result_id: true,
+          result_type: true,
+        },
+        take: 1,
+      },
+    },
+  });
+}
+
+export type YearMission = Awaited<ReturnType<typeof getYearMissions>>[number];
+
 export async function getReadiTotalMission(
+  missions: YearMission[],
   ownerId: number,
   fkClientId: number,
-  fkUserId: number,
   year: number
 ): Promise<MissionTotal> {
   try {
-    const missions = await prisma.pilot_mission.findMany({
-      where: {
-        fk_owner_id: ownerId,
-        scheduled_start: {
-          gte: new Date(`${year}-01-01`),
-          lte: new Date(`${year}-12-31`),
-        },
-        ...(fkUserId !== 0 && { fk_pilot_user_id: fkUserId }),
-      },
-      select: {
-        pilot_mission_id: true,
-        flight_duration: true,
-        distance_flown: true,
-        scheduled_start: true,
-        actual_start: true,
-        fk_tool_id: true,
-        fk_planning_id: true,
-      },
-    });
-
     if (!missions || missions.length === 0) {
       return {
         status: 'success',

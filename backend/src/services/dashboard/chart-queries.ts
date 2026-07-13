@@ -1,36 +1,13 @@
 import { prisma } from '@/lib/prisma';
 import { ChartData, MissionResultChart } from './dashboard';
+import { YearMission } from './mission-queries';
 
 export async function getChartReadiTotalMission(
+  missions: YearMission[],
   ownerId: number,
-  fkClientId: number,
-  fkUserId: number,
-  year: number
+  fkClientId: number
 ): Promise<ChartData> {
   try {
-    const missions = await prisma.pilot_mission.findMany({
-      where: {
-        fk_owner_id: ownerId,
-        scheduled_start: {
-          gte: new Date(`${year}-01-01`),
-          lte: new Date(`${year}-12-31`),
-        },
-        ...(fkUserId !== 0 && { fk_pilot_user_id: fkUserId }),
-      },
-      select: {
-        pilot_mission_id: true,
-        scheduled_start: true,
-        fk_tool_id: true,
-        fk_planning_id: true,
-        tool: {
-          select: {
-            tool_id: true,
-            tool_code: true,
-          },
-        },
-      },
-    });
-
     let filteredData = missions;
 
     if (fkClientId !== 0 && filteredData.length > 0) {
@@ -85,35 +62,11 @@ export async function getChartReadiTotalMission(
 }
 
 export async function getChartReadiTotalMissionResult(
+  missions: YearMission[],
   ownerId: number,
-  fkClientId: number,
-  fkUserId: number,
-  year: number
+  fkClientId: number
 ): Promise<MissionResultChart> {
   try {
-    const missions = await prisma.pilot_mission.findMany({
-      where: {
-        fk_owner_id: ownerId,
-        scheduled_start: {
-          gte: new Date(`${year}-01-01`),
-          lte: new Date(`${year}-12-31`),
-        },
-        ...(fkUserId !== 0 && { fk_pilot_user_id: fkUserId }),
-      },
-      select: {
-        pilot_mission_id: true,
-        scheduled_start: true,
-        fk_planning_id: true,
-        pilot_mission_result: {
-          select: {
-            result_id: true,
-            result_type: true,
-          },
-          take: 1,
-        },
-      },
-    });
-
     let filteredData = missions;
 
     if (fkClientId !== 0 && filteredData.length > 0) {

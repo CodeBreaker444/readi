@@ -121,7 +121,6 @@ export async function getFlightLogGutmaPreview(logId: number, ownerId: number) {
 
 const ALLOWED_EXTENSIONS = ['.zip', '.json', '.xml', '.gutma'];
 
-/** A mission's assigned tool (system) can have more than one active drone/aircraft component (e.g. a dock with several swappable airframes), so this returns all of their serial numbers rather than picking just one. */
 async function getDroneSerialNumbersForMission(missionId: number): Promise<string[]> {
   const mission = await prisma.pilot_mission.findUnique({
     where: { pilot_mission_id: missionId },

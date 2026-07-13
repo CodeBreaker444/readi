@@ -2,7 +2,7 @@ import { prisma } from '@/lib/prisma';
 import { triggerMaintenanceAlertCheck } from '../system/maintenance-notification';
 import { TOKEN_LIMITS } from '@/lib/token-limits';
 import { getChartReadiTotalMission, getChartReadiTotalMissionResult } from './chart-queries';
-import { getReadiLastNextMissionList, getReadiTotalMission } from './mission-queries';
+import { getReadiLastNextMissionList, getReadiTotalMission, getYearMissions } from './mission-queries';
 import { getPilotTotal } from './pilot-queries';
 
 export interface DashboardRequestParams {
@@ -210,21 +210,25 @@ export async function getDashboardData(params: DashboardRequestParams) {
 
   try {
     const [
+      yearMissions,
       pilotTotal,
-      readiMissionTotal,
       readiMissionSchedulerExecuted,
       readiMissionSchedulerPlanned,
-      readiMissionChart,
-      readiMissionResultChart,
       agentUsage,
     ] = await Promise.all([
+      getYearMissions(owner_id, pilotUserId, currentYear),
       isPilot ? getPilotTotal(user_id, owner_id) : Promise.resolve(null),
-      getReadiTotalMission(owner_id, 0, pilotUserId, currentYear),
       getReadiLastNextMissionList(owner_id, 0, pilotUserId, 0, 10, user_timezone),
       getReadiLastNextMissionList(owner_id, 0, pilotUserId, 1, 10, user_timezone),
-      getChartReadiTotalMission(owner_id, 0, pilotUserId, currentYear),
-      getChartReadiTotalMissionResult(owner_id, 0, pilotUserId, currentYear),
       fetchAgentUsage(owner_id, user_profile_code),
+    ]);
+
+    // Derived from the single yearMissions fetch above instead of three
+    // separate identical queries against pilot_mission.
+    const [readiMissionTotal, readiMissionChart, readiMissionResultChart] = await Promise.all([
+      getReadiTotalMission(yearMissions, owner_id, 0, currentYear),
+      getChartReadiTotalMission(yearMissions, owner_id, 0),
+      getChartReadiTotalMissionResult(yearMissions, owner_id, 0),
     ]);
 
     return {
