@@ -198,6 +198,11 @@ export function FlytbaseFlights({ isActive = true, selectedOrganization, listCon
     }
   };
 
+  const markFlightAsLinked = useCallback((flightId: string) => {
+    setSelectedFlight((prev) => (prev && prev.flight_id === flightId ? { ...prev, linked_to_mission: true } : prev));
+    setFlights((prev) => prev.map((f) => (f.flight_id === flightId ? { ...f, linked_to_mission: true } : f)));
+  }, []);
+
   const handleAttachMission = async (missionId: number, missionType?: string, missionCode?: string) => {
     if (!selectedFlight) return;
 
@@ -236,6 +241,7 @@ export function FlytbaseFlights({ isActive = true, selectedOrganization, listCon
         } else {
           toast.success('Flight log attached to mission — post-flight data has been filled in automatically.');
         }
+        markFlightAsLinked(selectedFlight.flight_id);
         setAttachMissionModalOpen(false);
         const droneSerialNumber = preview?.aircraft?.serial_number;
         if (droneSerialNumber) {
@@ -255,6 +261,12 @@ export function FlytbaseFlights({ isActive = true, selectedOrganization, listCon
   };
 
   const handleOpenNewMission = async () => {
+    if (selectedFlight?.linked_to_mission) {
+      toast.error('This flight log is already attached to a mission.');
+      setAttachMissionModalOpen(false);
+      return;
+    }
+
     try {
       await requireAuthorization({
         actionType: 'mission_create_from_flight',
@@ -288,6 +300,7 @@ export function FlytbaseFlights({ isActive = true, selectedOrganization, listCon
         organization_id: selectedOrganization?.id,
       });
       if (res.data.code === 1) {
+        markFlightAsLinked(selectedFlight.flight_id);
         const mismatch = res.data.serialNumberMismatch;
         if (mismatch) {
           toast.warning(`Mission created and flight log attached — but the drone's serial number doesn't match the log (log: ${mismatch.logSerialNumber}, mission drone: ${mismatch.missionSerialNumber}).`);
