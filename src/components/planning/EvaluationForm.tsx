@@ -75,7 +75,7 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ onSubmit, isDark }) => 
 
   const loadClients = async () => {
     try {
-      const response = await axios.get('/api/client/list');
+      const response = await axios.get('/api/evaluation/planning/clients');
       if (!response.data) { toast.error(t('planning.validation.loadClientsError')); return; }
       const clientList = (response.data.data || []).map((c: any) => ({
         id: c.client_id,

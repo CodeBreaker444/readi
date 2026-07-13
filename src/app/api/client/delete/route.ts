@@ -1,5 +1,6 @@
 import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { deleteClient } from '@/backend/services/client/client-service';
+import { requireFeatureAccess } from '@/lib/auth/api-auth';
 import { getUserSession } from '@/lib/auth/server-session';
 import { internalError, unauthorized, zodError } from '@/lib/api-error';
 import { E } from '@/lib/error-codes';
@@ -18,6 +19,10 @@ export async function DELETE(req: NextRequest) {
         if (!session) {
             return unauthorized(E.AU001);
         }
+
+        const { error: featureError } = await requireFeatureAccess('team_client', 'delete');
+        if (featureError) return featureError;
+
         const body = await req.json();
         const parsed = schema.safeParse(body);
 

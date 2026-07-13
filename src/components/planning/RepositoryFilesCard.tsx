@@ -10,6 +10,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { FeatureGate } from "@/components/permissions/FeatureGate";
 import { RepositoryFile } from "@/config/types/evaluation-planning";
 import { getFileDownloadUrl } from "@/lib/get-download-url";
 import axios from "axios";
@@ -158,20 +159,22 @@ function FileTable({
                           <Download className="h-4 w-4" />
                         )}
                       </Button>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        className={isDark ? "bg-red-950/50 text-red-400 border border-red-900/50 hover:bg-red-900/50" : ""}
-                        disabled={deleting === file.file_id}
-                        onClick={() => confirmDelete(file)}
-                        title={t("planning.actions.delete")}
-                      >
-                        {deleting === file.file_id ? (
-                          <Loader2 className="h-3 w-3 animate-spin" />
-                        ) : (
-                          <Trash2 className="h-4 w-4" />
-                        )}
-                      </Button>
+                      <FeatureGate feature="logbook_planned_mission" require="delete">
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          className={isDark ? "bg-red-950/50 text-red-400 border border-red-900/50 hover:bg-red-900/50" : ""}
+                          disabled={deleting === file.file_id}
+                          onClick={() => confirmDelete(file)}
+                          title={t("planning.actions.delete")}
+                        >
+                          {deleting === file.file_id ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </FeatureGate>
                     </div>
                   </TableCell>
                 </TableRow>

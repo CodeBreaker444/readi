@@ -1,5 +1,5 @@
 import { toggleSpiKpiDefinition } from '@/backend/services/safetyManagement/spi-kpi-service';
-import { requirePermission } from '@/lib/auth/api-auth';
+import { requireFeatureAccess, requirePermission } from '@/lib/auth/api-auth';
 import { internalError, zodError } from '@/lib/api-error';
 import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
@@ -14,6 +14,10 @@ export async function POST(req: NextRequest) {
   try {
     const { session: _session, error } = await requirePermission('view_safety_mgmt');
     if (error) return error;
+
+    const { error: featureError } = await requireFeatureAccess('safety_spi_kpi_definitions', 'edit');
+    if (featureError) return featureError;
+
     const body = await req.json()
 
     const parsed = spiKpiToggleSchema.safeParse(body)

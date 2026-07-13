@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useTheme } from '@/components/useTheme';
 import axios from 'axios';
-import { Loader2, Pencil, Search, X } from 'lucide-react';
+import { ChevronDown, ChevronRight, Loader2, Pencil, Search, Shield, X } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -83,6 +83,9 @@ const EMPTY_FORM = {
   initial_usage_hours: '',
   initial_maintenance_hours: '',
   initial_maintenance_flights: '',
+  insurance_name: '',
+  insurance_company: '',
+  insurance_expiry_date: '',
 };
 interface ComponentType {
   type_id: number;
@@ -107,6 +110,7 @@ export default function EditComponentModal({
   const [loadingParent, setLoadingParent] = useState<boolean>(false);
   const [originalFkToolId, setOriginalFkToolId] = useState<number | null>(null);
   const [drcSyncedAt, setDrcSyncedAt] = useState<string | null>(null);
+  const [insuranceExpanded, setInsuranceExpanded] = useState(false);
 
     const [formData, setFormData] = useState(EMPTY_FORM);
 
@@ -190,6 +194,9 @@ export default function EditComponentModal({
       initial_usage_hours: comp.current_usage_hours != null && comp.current_usage_hours !== 0 ? String(comp.current_usage_hours) : '',
       initial_maintenance_hours: comp.current_maintenance_hours != null && comp.current_maintenance_hours !== 0 ? String(comp.current_maintenance_hours) : '',
       initial_maintenance_flights: comp.current_maintenance_flights != null && comp.current_maintenance_flights !== 0 ? String(comp.current_maintenance_flights) : '',
+      insurance_name: comp.insurance_name || '',
+      insurance_company: comp.insurance_company || '',
+      insurance_expiry_date: comp.insurance_expiry_date?.split('T')[0] || '',
     });
   };
 
@@ -319,6 +326,9 @@ export default function EditComponentModal({
         initial_usage_hours: formData.initial_usage_hours !== '' ? Number(formData.initial_usage_hours) : null,
         initial_maintenance_hours: formData.initial_maintenance_hours !== '' ? Number(formData.initial_maintenance_hours) : null,
         initial_maintenance_flights: formData.initial_maintenance_flights !== '' ? Number(formData.initial_maintenance_flights) : null,
+        insurance_name: formData.insurance_name || null,
+        insurance_company: formData.insurance_company || null,
+        insurance_expiry_date: formData.insurance_expiry_date || null,
       };
 
       const res = await fetch(`/api/system/component/${selectedComponentId}/update`, {
@@ -835,6 +845,53 @@ export default function EditComponentModal({
                     <Label className={labelCls}>{t('systems.components.addComponent.fields.batteryRatio')}</Label>
                     <Input type="number" step="0.01" min={0} max={1} placeholder="0.00 – 1.00" className={inputCls} value={formData.battery_cycle_ratio} onChange={e => handleChange('battery_cycle_ratio', e.target.value)} />
                   </div>
+                </div>
+
+                <div className={`rounded-lg border ${isDark ? 'border-slate-600 bg-slate-900/40' : 'border-slate-200 bg-slate-50'}`}>
+                  <button
+                    type="button"
+                    onClick={() => setInsuranceExpanded((v) => !v)}
+                    className={`cursor-pointer w-full flex items-center justify-between px-4 py-3 text-sm font-medium ${isDark ? 'text-slate-200' : 'text-slate-700'}`}
+                  >
+                    <span className="flex items-center gap-2">
+                      <Shield size={15} className={isDark ? 'text-slate-500' : 'text-slate-400'} />
+                      {t('systems.components.common.insurance.label')}
+                      <span className={`text-xs font-normal ${isDark ? 'text-slate-500' : 'text-muted-foreground'}`}>{t('systems.components.common.optional')}</span>
+                    </span>
+                    {insuranceExpanded ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
+                  </button>
+
+                  {insuranceExpanded && (
+                    <div className={`px-4 pb-4 grid grid-cols-1 sm:grid-cols-12 gap-3 pt-3 border-t ${isDark ? 'border-slate-700' : 'border-slate-200'}`}>
+                      <div className="col-span-1 sm:col-span-4">
+                        <Label className={labelCls}>{t('systems.components.common.insurance.name')}</Label>
+                        <Input
+                          className={inputCls}
+                          value={formData.insurance_name}
+                          onChange={e => handleChange('insurance_name', e.target.value)}
+                          placeholder={t('systems.components.common.insurance.namePlaceholder')}
+                        />
+                      </div>
+                      <div className="col-span-1 sm:col-span-4">
+                        <Label className={labelCls}>{t('systems.components.common.insurance.company')}</Label>
+                        <Input
+                          className={inputCls}
+                          value={formData.insurance_company}
+                          onChange={e => handleChange('insurance_company', e.target.value)}
+                          placeholder={t('systems.components.common.insurance.companyPlaceholder')}
+                        />
+                      </div>
+                      <div className="col-span-1 sm:col-span-4">
+                        <Label className={labelCls}>{t('systems.components.common.insurance.expiryDate')}</Label>
+                        <Input
+                          type="date"
+                          className={inputCls}
+                          value={formData.insurance_expiry_date}
+                          onChange={e => handleChange('insurance_expiry_date', e.target.value)}
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
               </>
             )}

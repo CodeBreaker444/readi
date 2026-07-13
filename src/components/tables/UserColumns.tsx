@@ -1,6 +1,7 @@
 'use client';
 
 import '@/lib/i18n/config';
+import { FeatureGate } from '@/components/permissions/FeatureGate';
 import { ColumnDef } from '@tanstack/react-table';
 import { KeyRound, Loader2, Mail, Pencil, RotateCcw, Trash2 } from 'lucide-react';
 import {
@@ -201,6 +202,23 @@ export function getUserColumns({
                 </Tooltip>
               )}
 
+              <FeatureGate feature="team_personnel" require="edit">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => onEdit(user)}
+                      className={`cursor-pointer p-1.5 rounded-lg transition-all duration-150 ${
+                        isDark
+                          ? 'bg-indigo-500/10 hover:bg-indigo-500/25 text-indigo-400 hover:text-indigo-300 border border-indigo-700/40 hover:border-indigo-500/60'
+                          : 'bg-indigo-50 hover:bg-indigo-100 text-indigo-500 hover:text-indigo-700 border border-indigo-200 hover:border-indigo-300'
+                      }`}
+                    >
+                      <Pencil size={14} strokeWidth={2} />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="text-xs">{t('team.editUser')}</TooltipContent>
+                </Tooltip>
+              </FeatureGate>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button
@@ -217,37 +235,23 @@ export function getUserColumns({
                 <TooltipContent side="top" className="text-xs">{t('team.updatePassword')}</TooltipContent>
               </Tooltip>
 
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    onClick={() => onEdit(user)}
-                    className={`cursor-pointer p-1.5 rounded-lg transition-all duration-150 ${
-                      isDark
-                        ? 'bg-indigo-500/10 hover:bg-indigo-500/25 text-indigo-400 hover:text-indigo-300 border border-indigo-700/40 hover:border-indigo-500/60'
-                        : 'bg-indigo-50 hover:bg-indigo-100 text-indigo-500 hover:text-indigo-700 border border-indigo-200 hover:border-indigo-300'
-                    }`}
-                  >
-                    <Pencil size={14} strokeWidth={2} />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="top" className="text-xs">{t('team.editUser')}</TooltipContent>
-              </Tooltip>
-
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    onClick={() => onDelete(user)}
-                    className={`cursor-pointer p-1.5 rounded-lg transition-all duration-150 ${
-                      isDark
-                        ? 'bg-rose-500/10 hover:bg-rose-500/25 text-rose-400 hover:text-rose-300 border border-rose-700/40 hover:border-rose-500/60'
-                        : 'bg-rose-50 hover:bg-rose-100 text-rose-500 hover:text-rose-600 border border-rose-200 hover:border-rose-300'
-                    }`}
-                  >
-                    <Trash2 size={14} strokeWidth={2} />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="top" className="text-xs">{t('team.deleteUser')}</TooltipContent>
-              </Tooltip>
+              <FeatureGate feature="team_personnel" require="delete">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => onDelete(user)}
+                      className={`cursor-pointer p-1.5 rounded-lg transition-all duration-150 ${
+                        isDark
+                          ? 'bg-rose-500/10 hover:bg-rose-500/25 text-rose-400 hover:text-rose-300 border border-rose-700/40 hover:border-rose-500/60'
+                          : 'bg-rose-50 hover:bg-rose-100 text-rose-500 hover:text-rose-600 border border-rose-200 hover:border-rose-300'
+                      }`}
+                    >
+                      <Trash2 size={14} strokeWidth={2} />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="text-xs">{t('team.deleteUser')}</TooltipContent>
+                </Tooltip>
+              </FeatureGate>
             </div>
           </TooltipProvider>
         );

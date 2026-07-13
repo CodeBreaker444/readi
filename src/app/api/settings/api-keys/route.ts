@@ -1,6 +1,6 @@
 import { createApiKey, listApiKeys } from '@/backend/services/mission/flight-request-service';
 import { internalError, zodError } from '@/lib/api-error';
-import { requireAuth } from '@/lib/auth/api-auth';
+import { requireAuth, requireFeatureAccess } from '@/lib/auth/api-auth';
 import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
@@ -26,6 +26,9 @@ export async function POST(req: NextRequest) {
   try {
    const { session, error } = await requireAuth();
     if (error) return error;
+
+    const { error: featureError } = await requireFeatureAccess('settings_security_api_keys', 'edit');
+    if (featureError) return featureError;
 
     const body = await req.json();
     const parsed = CreateSchema.safeParse(body);

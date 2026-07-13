@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import axios from 'axios';
-import { Loader2, Pencil, Search, X } from 'lucide-react';
+import { ChevronDown, ChevronRight, Loader2, Pencil, Search, Shield, X } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -53,6 +53,9 @@ const INITIAL_FORM = {
   initial_usage_hours: '',
   initial_maintenance_hours: '',
   initial_maintenance_flights: '',
+  insurance_name: '',
+  insurance_company: '',
+  insurance_expiry_date: '',
 };
 export interface ComponentType {
   type_id: number;
@@ -127,6 +130,7 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
   const [customClassInput, setCustomClassInput] = useState('');
   const [parentComponents, setParentComponents] = useState<any[]>([]);
   const [parentLoading, setParentLoading] = useState<boolean>(false);
+  const [insuranceExpanded, setInsuranceExpanded] = useState(false);
 
   const selectedModel = models.find((m) => String(m.tool_model_id) === formData.fk_tool_model_id);
   const selectedModelLabel = selectedModel
@@ -240,6 +244,9 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
         initial_usage_hours: formData.initial_usage_hours ? Number(formData.initial_usage_hours) : null,
         initial_maintenance_hours: formData.initial_maintenance_hours ? Number(formData.initial_maintenance_hours) : null,
         initial_maintenance_flights: formData.initial_maintenance_flights ? Number(formData.initial_maintenance_flights) : null,
+        insurance_name: formData.insurance_name || null,
+        insurance_company: formData.insurance_company || null,
+        insurance_expiry_date: formData.insurance_expiry_date || null,
       };
 
       const response = await axios.post('/api/system/component/add', payload);
@@ -707,6 +714,50 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+
+            <div className="rounded-lg border border-slate-200 bg-slate-50">
+              <button
+                type="button"
+                onClick={() => setInsuranceExpanded((v) => !v)}
+                className="cursor-pointer w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-slate-700"
+              >
+                <span className="flex items-center gap-2">
+                  <Shield size={15} className="text-slate-400" />
+                  {t('systems.components.common.insurance.label')}
+                  <span className="text-xs font-normal text-muted-foreground">{t('systems.components.common.optional')}</span>
+                </span>
+                {insuranceExpanded ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
+              </button>
+
+              {insuranceExpanded && (
+                <div className="px-4 pb-4 grid grid-cols-1 sm:grid-cols-12 gap-3 border-t border-slate-200 pt-3">
+                  <div className="col-span-1 sm:col-span-4">
+                    <Label className="pb-2">{t('systems.components.common.insurance.name')}</Label>
+                    <Input
+                      value={formData.insurance_name}
+                      onChange={(e) => handleChange('insurance_name', e.target.value)}
+                      placeholder={t('systems.components.common.insurance.namePlaceholder')}
+                    />
+                  </div>
+                  <div className="col-span-1 sm:col-span-4">
+                    <Label className="pb-2">{t('systems.components.common.insurance.company')}</Label>
+                    <Input
+                      value={formData.insurance_company}
+                      onChange={(e) => handleChange('insurance_company', e.target.value)}
+                      placeholder={t('systems.components.common.insurance.companyPlaceholder')}
+                    />
+                  </div>
+                  <div className="col-span-1 sm:col-span-4">
+                    <Label className="pb-2">{t('systems.components.common.insurance.expiryDate')}</Label>
+                    <Input
+                      type="date"
+                      value={formData.insurance_expiry_date}
+                      onChange={(e) => handleChange('insurance_expiry_date', e.target.value)}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="flex justify-end gap-2 pt-2">

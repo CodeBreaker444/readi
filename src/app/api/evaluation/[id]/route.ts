@@ -3,14 +3,12 @@ import {
   getEvaluationById,
   updateEvaluation,
 } from '@/backend/services/planning/evaluation-detail';
-import { getUserSession } from '@/lib/auth/server-session';
-import { forbidden, internalError, unauthorized, zodError } from '@/lib/api-error';
+import { requireFeatureAccess, requirePermission } from '@/lib/auth/api-auth';
+import { internalError, zodError } from '@/lib/api-error';
 import { E } from '@/lib/error-codes';
 
 import { NextRequest, NextResponse } from 'next/server';
 import z from 'zod';
-
-const ALLOWED_ROLES = ['SUPERADMIN', 'ADMIN', 'OPM'];
 
 const evaluationIdParamSchema = z.object({
   id: z.coerce.number().int().positive('Invalid evaluation ID'),
@@ -21,12 +19,11 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const session = await getUserSession()
-    if (!session) return unauthorized(E.AU001);
-    if (!ALLOWED_ROLES.includes(session.user.role)) return forbidden(E.PX001);
+    const { session, error } = await requirePermission('view_planning_advanced');
+    if (error) return error;
     const {id: evaluationId } = evaluationIdParamSchema.parse(await params);
 
-    const data = await getEvaluationById(session.user.ownerId, evaluationId);
+    const data = await getEvaluationById(session!.user.ownerId, evaluationId);
     return NextResponse.json({ success: true, data });
   } catch (err: any) {
     if (err.name === 'ZodError') {
@@ -57,14 +54,17 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const session = await getUserSession()
-    if (!session) return unauthorized(E.AU001);
-    if (!ALLOWED_ROLES.includes(session.user.role)) return forbidden(E.PX001);
+    const { session, error } = await requirePermission('view_planning_advanced');
+    if (error) return error;
+
+    const { error: featureError } = await requireFeatureAccess('planning_evaluation', 'edit');
+    if (featureError) return featureError;
+
     evaluationIdParamSchema.parse(await params);
 
     const body = await req.json();
     const validated = evaluationUpdateSchema.parse(body);
-    const ownerId = session.user.ownerId
+    const ownerId = session!.user.ownerId
 
     const result = await updateEvaluation({...validated,fk_owner_id:ownerId});
 
@@ -93,12 +93,15 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const session = await getUserSession()
-    if (!session) return unauthorized(E.AU001);
-    if (!ALLOWED_ROLES.includes(session.user.role)) return forbidden(E.PX001);
+    const { session, error } = await requirePermission('view_planning_advanced');
+    if (error) return error;
+
+    const { error: featureError } = await requireFeatureAccess('planning_evaluation', 'delete');
+    if (featureError) return featureError;
+
     const { id: evaluationId } = evaluationIdParamSchema.parse(await params);
 
-    const result = await deleteEvaluation(session.user.ownerId, evaluationId);
+    const result = await deleteEvaluation(session!.user.ownerId, evaluationId);
 
     if (!result.success) {
       return NextResponse.json(

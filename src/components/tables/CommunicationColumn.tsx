@@ -1,5 +1,6 @@
 "use client";
 
+import { FeatureGate } from "@/components/permissions/FeatureGate";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Communication } from "@/config/types/communication";
@@ -96,16 +97,19 @@ export function getCommunicationColumns(
         const comm = row.original;
         return (
           <div className="flex items-center justify-end gap-1">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => onEdit(comm)}
-              className="h-7 w-7 text-slate-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-colors"
-              title="Edit protocol"
-            >
-              <HiPencil className="w-3.5 h-3.5" />
-            </Button>
+            <FeatureGate feature="org_communication" require="edit">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => onEdit(comm)}
+                className="h-7 w-7 text-slate-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-colors"
+                title="Edit protocol"
+              >
+                <HiPencil className="w-3.5 h-3.5" />
+              </Button>
+            </FeatureGate>
 
+            <FeatureGate feature="org_communication" require="delete">
               <Button
                 variant="ghost"
                 size="icon"
@@ -115,6 +119,7 @@ export function getCommunicationColumns(
               >
                 <HiTrash className="w-3.5 h-3.5" />
               </Button>
+            </FeatureGate>
           </div>
         );
       },

@@ -1,5 +1,5 @@
 import { internalError } from '@/lib/api-error';
-import { requirePermission } from '@/lib/auth/api-auth';
+import { requireFeatureAccess, requirePermission } from '@/lib/auth/api-auth';
 import { E } from '@/lib/error-codes';
 import { prisma } from '@/lib/prisma';
 import { NextRequest, NextResponse } from 'next/server';
@@ -14,6 +14,9 @@ export async function POST(
   try {
     const { error } = await requirePermission('view_config');
     if (error) return error;
+
+    const { error: featureError } = await requireFeatureAccess('systems_manage', 'edit');
+    if (featureError) return featureError;
 
     const { id } = await params;
     const body = await request.json();

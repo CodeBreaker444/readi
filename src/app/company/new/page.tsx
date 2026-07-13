@@ -34,6 +34,8 @@ const initialForm = {
     owner_website: '',
     owner_active: 'Y',
     drone_atc_enabled: false,
+    d_flight_enabled: false,
+    flytrelay_enabled: false,
     email_notifications_enabled: false,
     easa_operator_code: '',
     tax_id: '',
@@ -331,6 +333,7 @@ export default function NewCompanyPage() {
                             <div className="space-y-1.5">
                                 <Label htmlFor="owner_phone" className="text-xs font-medium text-muted-foreground">Phone</Label>
                                 <Input id="owner_phone" name="owner_phone" value={form.owner_phone} onChange={handleChange} onBlur={() => form.owner_phone && checkUnique('owner_phone', 'owner', 'owner_phone', form.owner_phone)} placeholder="+1 555 000 0000" className="h-9 text-sm" />
+                                {inputErr('owner_phone')}
                             </div>
                             <div className="space-y-1.5 sm:col-span-2 lg:col-span-3">
                                 <Label htmlFor="owner_website" className="text-xs font-medium text-muted-foreground">
@@ -428,6 +431,32 @@ export default function NewCompanyPage() {
                                         className="data-[state=checked]:bg-green-500"
                                     />
                                 </div>
+                                <div className="flex items-center justify-between gap-4 py-1">
+                                    <div>
+                                        <div className="flex items-center gap-2">
+                                            <p className={`text-sm font-medium ${isDark ? 'text-white' : 'text-slate-900'}`}>D-Flight</p>
+                                        </div>
+                                        <p className="text-xs text-muted-foreground mt-0.5">D-Flight USSP integration for drone registration and fleet management</p>
+                                    </div>
+                                    <Switch
+                                        checked={form.d_flight_enabled}
+                                        onCheckedChange={(v) => setField('d_flight_enabled', v)}
+                                        className="data-[state=checked]:bg-green-500"
+                                    />
+                                </div>
+                                <div className="flex items-center justify-between gap-4 py-1">
+                                    <div>
+                                        <div className="flex items-center gap-2">
+                                            <p className={`text-sm font-medium ${isDark ? 'text-white' : 'text-slate-900'}`}>FlytRelay</p>
+                                        </div>
+                                        <p className="text-xs text-muted-foreground mt-0.5">FlytRelay drone flight logs and telemetry integration</p>
+                                    </div>
+                                    <Switch
+                                        checked={form.flytrelay_enabled}
+                                        onCheckedChange={(v) => setField('flytrelay_enabled', v)}
+                                        className="data-[state=checked]:bg-green-500"
+                                    />
+                                </div>
                             </div>
                         </div>
                     </SectionCard>
@@ -463,6 +492,7 @@ export default function NewCompanyPage() {
                             <div className="space-y-1.5">
                                 <Label htmlFor="admin_phone" className="text-xs font-medium text-muted-foreground">Phone</Label>
                                 <Input id="admin_phone" name="admin_phone" value={form.admin_phone} onChange={handleChange} onBlur={() => form.admin_phone && checkUnique('admin_phone', 'users', 'phone', form.admin_phone)} placeholder="+1 555 000 0000" className="h-9 text-sm" />
+                                {inputErr('admin_phone')}
                             </div>
                             <div className="space-y-1.5 sm:col-span-1 lg:col-span-2">
                                 <Label className="text-xs font-medium text-muted-foreground">Timezone</Label>

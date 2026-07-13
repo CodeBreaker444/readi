@@ -1,5 +1,5 @@
 import { addFlatTraining, updateFlatTraining } from '@/backend/services/training/training-service';
-import { requirePermission } from '@/lib/auth/api-auth';
+import { requireFeatureAccess, requirePermission } from '@/lib/auth/api-auth';
 import { internalError, zodError } from '@/lib/api-error';
 import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
@@ -34,6 +34,9 @@ export async function POST(req: NextRequest) {
   try {
     const { session, error } = await requirePermission('view_training');
     if (error) return error;
+
+    const { error: featureError } = await requireFeatureAccess('training_courses', 'edit');
+    if (featureError) return featureError;
 
     const body = await req.json();
 

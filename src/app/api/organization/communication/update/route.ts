@@ -1,5 +1,5 @@
 import { updateCommunication } from "@/backend/services/organization/communication-service";
-import { requirePermission } from "@/lib/auth/api-auth";
+import { requireFeatureAccess, requirePermission } from "@/lib/auth/api-auth";
 import { internalError, zodError } from "@/lib/api-error";
 import { E } from "@/lib/error-codes";
 import { type NextRequest, NextResponse } from "next/server";
@@ -27,6 +27,9 @@ export async function PUT(request: NextRequest) {
   try {
     const { session, error } = await requirePermission('view_config');
     if (error) return error;
+
+    const { error: featureError } = await requireFeatureAccess('org_communication', 'edit');
+    if (featureError) return featureError;
 
     const body = await request.json();
 

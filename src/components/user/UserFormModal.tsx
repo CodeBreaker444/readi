@@ -35,7 +35,34 @@ const ROLE_OPTIONS = [
   { value: 15, label: 'Data Controller (DC)' },
   { value: 16, label: 'SLA Manager (SLA)' },
   { value: 17, label: 'Administrator (ADMIN)' },
+  { value: 18, label: 'Operations Manager (OM)' },
+  { value: 19, label: 'Mission Manager (MM)' },
+  { value: 20, label: 'Viewer Manager (VM)' },
 ];
+
+// Role-based access level mapping
+const ROLE_ACCESS_MAPPING: Record<number, { is_viewer: string; is_manager: string }> = {
+  8: { is_viewer: 'Y', is_manager: 'N' },  // PIC
+  10: { is_viewer: 'Y', is_manager: 'N' }, // SM
+  11: { is_viewer: 'Y', is_manager: 'N' }, // AM
+  20: { is_viewer: 'Y', is_manager: 'N' }, // VM
+
+  18: { is_viewer: 'N', is_manager: 'Y' }, // OM
+
+  12: { is_viewer: 'N', is_manager: 'Y' }, // CMM
+  14: { is_viewer: 'N', is_manager: 'Y' }, // TM
+  15: { is_viewer: 'N', is_manager: 'Y' }, // DC
+  19: { is_viewer: 'N', is_manager: 'Y' }, // MM
+
+  9: { is_viewer: 'N', is_manager: 'Y' },  // OPM
+  13: { is_viewer: 'N', is_manager: 'Y' }, // RM
+  16: { is_viewer: 'N', is_manager: 'Y' }, // SLA
+  17: { is_viewer: 'N', is_manager: 'Y' }, // ADMIN
+};
+
+function getRoleAccessLevel(roleId: number): { is_viewer: string; is_manager: string } {
+  return ROLE_ACCESS_MAPPING[roleId] || { is_viewer: 'N', is_manager: 'Y' };
+}
 
 interface UserFormModalProps {
   isOpen: boolean;
@@ -479,6 +506,15 @@ export function UserFormModal({
                     const isPic = id === 8;
                     setSubExpanded(isPic);
                     if (!isPic) setSubGrantOnCreate(false);
+
+                    // Auto-set is_viewer and is_manager based on role
+                    const accessLevel = getRoleAccessLevel(id);
+                    setFormData((prev: any) => ({
+                      ...prev,
+                      fk_user_profile_id: id,
+                      is_viewer: accessLevel.is_viewer,
+                      is_manager: accessLevel.is_manager,
+                    }));
                   }
                 }}
                 disabled={mode === 'edit'}

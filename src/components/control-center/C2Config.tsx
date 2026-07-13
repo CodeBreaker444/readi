@@ -297,6 +297,9 @@ export default function C2Config() {
                     <SelectItem value="TM">TM</SelectItem>
                     <SelectItem value="DC">DC</SelectItem>
                     <SelectItem value="SLA">SLA</SelectItem>
+                    <SelectItem value="OM">OM</SelectItem>
+                    <SelectItem value="MM">MM</SelectItem>
+                    <SelectItem value="VM">VM</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

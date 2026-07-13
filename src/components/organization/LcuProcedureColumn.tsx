@@ -1,5 +1,6 @@
 'use client';
 
+import { FeatureGate } from '@/components/permissions/FeatureGate';
 import { Badge } from '@/components/ui/badge';
 import { LucProcedure } from '@/config/types/lcuProcedures';
 import { ColumnDef } from '@tanstack/react-table';
@@ -122,20 +123,24 @@ export function getLucProcedureColumns(
         const proc = row.original;
         return (
           <div className="flex items-center gap-1">
-            <button
-              onClick={() => onEdit(proc)}
-              className="cursor-pointer p-1.5 rounded-lg transition-colors text-blue-600 hover:bg-blue-500/10 dark:text-blue-400 dark:hover:bg-blue-500/15"
-              title="Edit"
-            >
-              <Pencil className="h-3.5 w-3.5" />
-            </button>
-            <button
-              onClick={() => onDelete(proc)}
-              className="cursor-pointer p-1.5 rounded-lg transition-colors text-rose-600 hover:bg-rose-500/10 dark:text-rose-400 dark:hover:bg-rose-500/15"
-              title="Delete"
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-            </button>
+            <FeatureGate feature="org_procedures" require="edit">
+              <button
+                onClick={() => onEdit(proc)}
+                className="cursor-pointer p-1.5 rounded-lg transition-colors text-blue-600 hover:bg-blue-500/10 dark:text-blue-400 dark:hover:bg-blue-500/15"
+                title="Edit"
+              >
+                <Pencil className="h-3.5 w-3.5" />
+              </button>
+            </FeatureGate>
+            <FeatureGate feature="org_procedures" require="delete">
+              <button
+                onClick={() => onDelete(proc)}
+                className="cursor-pointer p-1.5 rounded-lg transition-colors text-rose-600 hover:bg-rose-500/10 dark:text-rose-400 dark:hover:bg-rose-500/15"
+                title="Delete"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            </FeatureGate>
           </div>
         );
       },

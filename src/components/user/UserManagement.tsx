@@ -54,6 +54,8 @@ interface UserManagementProps {
   session: Session;
 }
 
+const ASSIGNABLE_ROLES = ['ADMIN', 'PIC', 'OPM', 'SM', 'AM', 'CMM', 'RM', 'TM', 'DC', 'SLA', 'OM', 'MM', 'VM'];
+
 const STAT_CONFIG = [
   { key: 'total', accent: { dark: 'from-slate-800 to-slate-900 border-slate-700', light: 'from-white to-slate-50 border-slate-200' }, valueColor: { dark: 'text-white', light: 'text-slate-800' } },
   { key: 'active', accent: { dark: 'from-emerald-900/40 to-emerald-900/10 border-emerald-900/30', light: 'from-emerald-50 to-white border-emerald-100' }, valueColor: { dark: 'text-emerald-400', light: 'text-emerald-600' } },
@@ -290,7 +292,10 @@ export default function UserManagement({ session }: UserManagementProps) {
     }
   };
 
-  const uniqueRoles = useMemo(() => [...new Set(users.map((u) => u.user_role))].filter(Boolean), [users]);
+  const uniqueRoles = useMemo(() => {
+    const extra = users.map((u) => u.user_role).filter((r) => r && !ASSIGNABLE_ROLES.includes(r));
+    return [...ASSIGNABLE_ROLES, ...new Set(extra)];
+  }, [users]);
   const uniqueCompanies = useMemo(() => [...new Set(users.map((u) => u.owner_name).filter(Boolean))].sort() as string[], [users]);
 
   const stats = useMemo(() => ({

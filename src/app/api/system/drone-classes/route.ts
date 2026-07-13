@@ -1,6 +1,6 @@
 import { createDroneClass, getDroneClasses } from '@/backend/services/system/drone-class-service';
 import { internalError } from '@/lib/api-error';
-import { requirePermission } from '@/lib/auth/api-auth';
+import { requireFeatureAccess, requirePermission } from '@/lib/auth/api-auth';
 import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -19,6 +19,10 @@ export async function POST(req: NextRequest) {
   try {
     const { session, error } = await requirePermission('view_config');
     if (error) return error;
+
+    const { error: featureError } = await requireFeatureAccess('systems_manage', 'create');
+    if (featureError) return featureError;
+
     const { class_value, class_label } = await req.json();
     if (!class_value || !class_label) return NextResponse.json({ code: 0, message: 'class_value and class_label required' }, { status: 400 });
     const created = await createDroneClass(session!.user.ownerId, class_value, class_label);

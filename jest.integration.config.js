@@ -5,4 +5,5 @@ module.exports = {
   ...base,
   testMatch: ['**/backend/src/tests/platform-flow.test.ts'],
   testPathIgnorePatterns: ['/node_modules/', '/.next/'],
+  setupFiles: [...base.setupFiles, '<rootDir>/backend/src/tests/jest.setup.integration.ts'],
 };

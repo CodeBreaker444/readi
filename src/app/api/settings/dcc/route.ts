@@ -1,6 +1,6 @@
 import { getDccIntegration, upsertDccIntegration } from '@/backend/services/mission/dcc-settings-service';
 import { internalError, zodError } from '@/lib/api-error';
-import { requireAuth } from '@/lib/auth/api-auth';
+import { requireFullAccessRole } from '@/lib/auth/api-auth';
 import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
@@ -12,7 +12,7 @@ const SaveSchema = z.object({
 
 export async function GET() {
   try {
-    const { session, error } = await requireAuth();
+    const { session, error } = await requireFullAccessRole();
     if (error) return error;
 
     const integration = await getDccIntegration(session!.user.ownerId);
@@ -24,7 +24,7 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
-    const { session, error } = await requireAuth();
+    const { session, error } = await requireFullAccessRole();
     if (error) return error;
 
     const body = await req.json();

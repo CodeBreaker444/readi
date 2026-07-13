@@ -1,5 +1,5 @@
 import { updateMissionType } from '@/backend/services/mission/mission-type';
-import { requirePermission } from '@/lib/auth/api-auth';
+import { requireFeatureAccess, requirePermission } from '@/lib/auth/api-auth';
 import { apiError, internalError, zodError } from '@/lib/api-error';
 import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
@@ -18,6 +18,9 @@ export async function PUT(
   try {
     const { session, error } = await requirePermission('view_config');
     if (error) return error;
+
+    const { error: featureError } = await requireFeatureAccess('mission_type', 'edit');
+    if (featureError) return featureError;
 
     const { typeId } = await params;
     const id = Number(typeId);

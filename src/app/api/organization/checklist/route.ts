@@ -1,6 +1,6 @@
 import { createChecklist, getChecklistsByOwner } from '@/backend/services/organization/checklist-service'
 import type { ChecklistCreatePayload } from '@/config/types/checklist'
-import { requirePermission } from '@/lib/auth/api-auth'
+import { requireFeatureAccess, requirePermission } from '@/lib/auth/api-auth'
 import { NextRequest, NextResponse } from 'next/server'
 import z from 'zod'
 
@@ -35,6 +35,8 @@ export async function POST(request: NextRequest) {
         const { session, error } = await requirePermission('view_config')
         if (error) return error
 
+        const { error: featureError } = await requireFeatureAccess('org_checklist', 'create')
+        if (featureError) return featureError
 
         const validationResult = checklistSchema.safeParse(body)
 

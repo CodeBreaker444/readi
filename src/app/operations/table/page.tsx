@@ -215,23 +215,30 @@ const table = useReactTable({
 
   async function handleBatchStatus(status: string) {
     if (!selectedRows.length) return;
+    const eligibleRows = selectedRows.filter((r) => r.status_name !== 'ABORTED');
+    const skipped = selectedRows.length - eligibleRows.length;
+    if (!eligibleRows.length) {
+      toast.warning('Aborted missions cannot be updated.');
+      return;
+    }
     setBatchUpdating(true);
     try {
       await Promise.all(
-        selectedRows.map((op) =>
+        eligibleRows.map((op) =>
           axios.put(`/api/operation/${op.pilot_mission_id}`, { status_name: status })
         )
       );
       setOperations((prev) =>
         prev.map((o) =>
-          selectedRows.some((s) => s.pilot_mission_id === o.pilot_mission_id)
+          eligibleRows.some((s) => s.pilot_mission_id === o.pilot_mission_id)
             ? { ...o, status_name: status }
             : o
         )
       );
       setRowSelection({});
       toast.success(
-        t('operations.table.toast.statusSuccess', { count: selectedRows.length, status })
+        t('operations.table.toast.statusSuccess', { count: eligibleRows.length, status }) +
+          (skipped > 0 ? ` ${skipped} aborted mission(s) skipped.` : '')
       );
     } catch {
       toast.error(t('operations.table.toast.statusError'));

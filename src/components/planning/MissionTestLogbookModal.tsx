@@ -10,6 +10,7 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { FeatureGate } from "@/components/permissions/FeatureGate";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -100,7 +101,7 @@ export default function MissionTestLogbookModal({
             setTests(testsRes.data.data ?? []);
             setPilots(pilotsRes.data.data ?? []);
         } catch (err) {
-            toast.error(t("testLogbook.loadError"));
+            toast.error(t("planning.testLogbook.loadError"));
         } finally {
             setLoading(false);
         }
@@ -122,17 +123,17 @@ export default function MissionTestLogbookModal({
         const newErrors: Record<string, string> = {};
 
         if (!form.fk_pic_id || form.fk_pic_id === "0")
-            newErrors.fk_pic_id = t("testLogbook.picRequired");
+            newErrors.fk_pic_id = t("planning.testLogbook.picRequired");
         if (!form.fk_observer_id || form.fk_observer_id === "0")
-            newErrors.fk_observer_id = t("testLogbook.observerRequired");
+            newErrors.fk_observer_id = t("planning.testLogbook.observerRequired");
         if (form.fk_pic_id && form.fk_observer_id && form.fk_pic_id === form.fk_observer_id)
-            newErrors.fk_observer_id = t("testLogbook.observerDiff");
+            newErrors.fk_observer_id = t("planning.testLogbook.observerDiff");
         if (!form.mission_test_code.trim())
-            newErrors.mission_test_code = t("testLogbook.testCodeRequired");
+            newErrors.mission_test_code = t("planning.testLogbook.testCodeRequired");
         if (!form.mission_test_date_start)
-            newErrors.mission_test_date_start = t("testLogbook.startDateRequired");
+            newErrors.mission_test_date_start = t("planning.testLogbook.startDateRequired");
         if (!form.mission_test_date_end)
-            newErrors.mission_test_date_end = t("testLogbook.endDateRequired");
+            newErrors.mission_test_date_end = t("planning.testLogbook.endDateRequired");
 
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
@@ -161,7 +162,7 @@ export default function MissionTestLogbookModal({
             const res = await axios.post("/api/evaluation/mission/mission-test", formData);
 
             if (res.data.success) {
-                toast.success(t("testLogbook.addSuccess"));
+                toast.success(t("planning.testLogbook.addSuccess"));
                 setForm({
                     fk_pic_id: "",
                     fk_observer_id: "",
@@ -186,10 +187,10 @@ export default function MissionTestLogbookModal({
             await axios.post("/api/evaluation/mission/delete-test", {
                 test_id: testIdToDelete,
             });
-            toast.success(t("testLogbook.deleteSuccess"));
+            toast.success(t("planning.testLogbook.deleteSuccess"));
             setTests((prev) => prev.filter((t) => t.test_id !== testIdToDelete));
         } catch (err) {
-            toast.error(t("testLogbook.deleteFailed"));
+            toast.error(t("planning.testLogbook.deleteFailed"));
         } finally {
             setTestIdToDelete(null);
             setDeleteDialogOpen(false);
@@ -205,10 +206,10 @@ export default function MissionTestLogbookModal({
                 status: newStatus,
             });
             setActiveStatus(newStatus);
-            toast.success(newStatus === "Y" ? t("testLogbook.setActive") : t("testLogbook.setHold"));
+            toast.success(newStatus === "Y" ? t("planning.testLogbook.setActive") : t("planning.testLogbook.setHold"));
             onStatusChanged?.();
         } catch (err) {
-            toast.error(t("testLogbook.statusFailed"));
+            toast.error(t("planning.testLogbook.statusFailed"));
         } finally {
             setUpdatingStatus(false);
         }
@@ -250,7 +251,7 @@ export default function MissionTestLogbookModal({
                             </div>
                         ) : (
                             <div className="max-w-7xl mx-auto space-y-8">
-
+                                <FeatureGate feature="logbook_planned_mission" require="edit">
                                 <section className={`rounded-xl border shadow-sm p-6 ${isDark ? "bg-slate-900/50 border-slate-800" : "bg-card"}`}>
                                     <div className={`flex items-center gap-2 mb-6 border-b pb-4 ${isDark ? "border-slate-800" : ""}`}>
                                         <h4 className="text-md font-semibold uppercase tracking-tight text-muted-foreground">{t("planning.testLogbook.addNewTest")}</h4>
@@ -337,6 +338,7 @@ export default function MissionTestLogbookModal({
                                         </Button>
                                     </div>
                                 </section>
+                                </FeatureGate>
 
                                 <div className={`rounded-xl border shadow-sm overflow-hidden ${isDark ? "bg-slate-900/50 border-slate-800" : "bg-card"}`}>
                                     <div className={`bg-muted/30 px-6 py-4 border-b ${isDark ? "bg-slate-950/50 border-slate-800" : ""}`}>
@@ -378,9 +380,11 @@ export default function MissionTestLogbookModal({
                                                             </Badge>
                                                         </TableCell>
                                                         <TableCell className="text-right">
-                                                            <Button variant="ghost" size="icon" className="text-destructive hover:bg-destructive/10" onClick={() => { setTestIdToDelete(test.test_id); setDeleteDialogOpen(true); }}>
-                                                                <Trash2 className="h-4 w-4" />
-                                                            </Button>
+                                                            <FeatureGate feature="logbook_planned_mission" require="delete">
+                                                                <Button variant="ghost" size="icon" className="text-destructive hover:bg-destructive/10" onClick={() => { setTestIdToDelete(test.test_id); setDeleteDialogOpen(true); }}>
+                                                                    <Trash2 className="h-4 w-4" />
+                                                                </Button>
+                                                            </FeatureGate>
                                                         </TableCell>
                                                     </TableRow>
                                                 ))
@@ -390,19 +394,23 @@ export default function MissionTestLogbookModal({
                                 </div>
 
                                 <div className="flex justify-between items-center pt-4 border-t border-dashed">
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        disabled={updatingStatus}
-                                        className={`transition-all ${activeStatus === "N"
-                                            ? "border-emerald-600/50 text-emerald-600 hover:bg-emerald-600/10"
-                                            : "border-amber-500/50 text-amber-500 hover:bg-amber-500/10"
-                                            }`}
-                                        onClick={handleToggleActive}
-                                    >
-                                        {updatingStatus ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : activeStatus === "N" ? <Play className="mr-2 h-4 w-4" /> : <Pause className="mr-2 h-4 w-4" />}
-                                        {activeStatus === "N" ? t("planning.testLogbook.activateMission") : t("planning.testLogbook.putOnHold")}
-                                    </Button>
+                                    <div>
+                                        <FeatureGate feature="logbook_planned_mission" require="edit">
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                disabled={updatingStatus}
+                                                className={`transition-all ${activeStatus === "N"
+                                                    ? "border-emerald-600/50 text-emerald-600 hover:bg-emerald-600/10"
+                                                    : "border-amber-500/50 text-amber-500 hover:bg-amber-500/10"
+                                                    }`}
+                                                onClick={handleToggleActive}
+                                            >
+                                                {updatingStatus ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : activeStatus === "N" ? <Play className="mr-2 h-4 w-4" /> : <Pause className="mr-2 h-4 w-4" />}
+                                                {activeStatus === "N" ? t("planning.testLogbook.activateMission") : t("planning.testLogbook.putOnHold")}
+                                            </Button>
+                                        </FeatureGate>
+                                    </div>
 
                                     <Button variant="secondary" className="px-8 bg-violet-600 hover:bg-violet-700 text-white" onClick={() => handleClose(false)}>
                                         {t("planning.testLogbook.finishClose")}

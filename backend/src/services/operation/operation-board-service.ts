@@ -1,6 +1,8 @@
 import { Mission, MissionBoardData, MissionStatusCode, UpdateMissionStatusPayload } from '@/config/types/operation';
 import { prisma } from '@/lib/prisma';
+import { autoAbortStaleMissions } from './auto-abort-service';
 import { getToolMaintenanceStatus } from './maintenance-cycle-service';
+import { assertMissionEditable } from './mission-lock';
 
 const BOARD_STATUS_ID_TO_CODE: Record<number, MissionStatusCode> = {
   1: '00',
@@ -64,6 +66,8 @@ export async function getMissionBoard(
   userId: number,
   userProfileCode: string
 ): Promise<MissionBoardData> {
+  await autoAbortStaleMissions(ownerId);
+
   const pilotFilter = userProfileCode === 'PIC' ? userId : null;
   const today = new Date();
   const todayStart = new Date(today.toISOString().split('T')[0] + 'T00:00:00.000Z');
@@ -242,6 +246,12 @@ function transformMissionRow(row: MissionRow | null): Mission | null {
 export async function updateMissionStatus(
   payload: UpdateMissionStatusPayload
 ): Promise<{ code: number; message: string; check_daily_declaration?: string }> {
+  const current = await prisma.pilot_mission.findUnique({
+    where: { pilot_mission_id: payload.mission_id },
+    select: { status_name: true },
+  });
+  assertMissionEditable(current?.status_name);
+
   let updateFields: Record<string, unknown>;
 
   if (payload.workflow_mission_status === '_START') {

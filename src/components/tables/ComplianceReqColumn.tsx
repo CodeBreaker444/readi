@@ -1,4 +1,6 @@
 
+import { FeatureGate } from '@/components/permissions/FeatureGate';
+import { FeatureKey } from '@/lib/auth/feature-permissions-types';
 import { ColumnDef } from '@tanstack/react-table';
 import { format, parseISO } from 'date-fns';
 import type { TFunction } from 'i18next';
@@ -68,7 +70,8 @@ export function getComplianceRequirementsColumns(
     isDark: boolean,
     onEdit: (row: ComplianceRequirement) => void,
     onDelete: (row: ComplianceRequirement) => void,
-    t: TFunction
+    t: TFunction,
+    featureKey: FeatureKey
 ): ColumnDef<ComplianceRequirement>[] {
     const muted = isDark ? 'text-slate-500' : 'text-slate-400';
     const primary = isDark ? 'text-slate-200' : 'text-slate-800';
@@ -153,26 +156,30 @@ export function getComplianceRequirementsColumns(
             size: 80,
             cell: ({ row }) => (
                 <div className="flex items-center gap-1 justify-end pr-1">
-                    <button
-                        onClick={() => onEdit(row.original)}
-                        className={`cursor-pointer p-1.5 rounded-md transition-colors ${isDark
-                            ? 'text-slate-500 hover:text-violet-400 hover:bg-white/6'
-                            : 'text-slate-400 hover:text-violet-600 hover:bg-violet-50'
-                        }`}
-                        title={t('compliance.requirementsEvidences.table.tooltips.edit')}
-                    >
-                        <Pencil size={13} strokeWidth={2} />
-                    </button>
-                    <button
-                        onClick={() => onDelete(row.original)}
-                        className={`cursor-pointer p-1.5 rounded-md transition-colors ${isDark
-                            ? 'text-slate-500 hover:text-red-400 hover:bg-red-500/8'
-                            : 'text-slate-400 hover:text-red-500 hover:bg-red-50'
-                        }`}
-                        title={t('compliance.requirementsEvidences.table.tooltips.delete')}
-                    >
-                        <Trash2 size={13} strokeWidth={2} />
-                    </button>
+                    <FeatureGate feature={featureKey} require="edit">
+                        <button
+                            onClick={() => onEdit(row.original)}
+                            className={`cursor-pointer p-1.5 rounded-md transition-colors ${isDark
+                                ? 'text-slate-500 hover:text-violet-400 hover:bg-white/6'
+                                : 'text-slate-400 hover:text-violet-600 hover:bg-violet-50'
+                            }`}
+                            title={t('compliance.requirementsEvidences.table.tooltips.edit')}
+                        >
+                            <Pencil size={13} strokeWidth={2} />
+                        </button>
+                    </FeatureGate>
+                    <FeatureGate feature={featureKey} require="delete">
+                        <button
+                            onClick={() => onDelete(row.original)}
+                            className={`cursor-pointer p-1.5 rounded-md transition-colors ${isDark
+                                ? 'text-slate-500 hover:text-red-400 hover:bg-red-500/8'
+                                : 'text-slate-400 hover:text-red-500 hover:bg-red-50'
+                            }`}
+                            title={t('compliance.requirementsEvidences.table.tooltips.delete')}
+                        >
+                            <Trash2 size={13} strokeWidth={2} />
+                        </button>
+                    </FeatureGate>
                 </div>
             ),
         },

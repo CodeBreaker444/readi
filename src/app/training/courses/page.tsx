@@ -1,6 +1,7 @@
 'use client';
 
 import { FlatTrainingRecord } from '@/backend/services/training/training-service';
+import { FeatureGate } from '@/components/permissions/FeatureGate';
 import { TablePagination } from '@/components/tables/Pagination';
 import { getTrainingCoursesColumns } from '@/components/tables/TrainingCoursesColumn';
 import { Badge } from '@/components/ui/badge';
@@ -337,21 +338,25 @@ export default function TrainingCoursesPage() {
             >
               <RefreshCw size={13} className={loading ? 'animate-spin' : ''} strokeWidth={2.5} />
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleRecompute}
-              disabled={recomputing}
-              className={`h-8 gap-1.5 text-xs ${btnOutline}`}
-            >
-              <ShieldCheck size={13} strokeWidth={2.5} className={recomputing ? 'animate-spin' : ''} />
-              {recomputing ? t('training.courses.updating') : t('training.courses.recomputeKpi')}
-            </Button>
+            <FeatureGate feature="training_courses" require="edit">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRecompute}
+                disabled={recomputing}
+                className={`h-8 gap-1.5 text-xs ${btnOutline}`}
+              >
+                <ShieldCheck size={13} strokeWidth={2.5} className={recomputing ? 'animate-spin' : ''} />
+                {recomputing ? t('training.courses.updating') : t('training.courses.recomputeKpi')}
+              </Button>
+            </FeatureGate>
 
-            <Button size="sm" onClick={openCreate} className="h-8 gap-1.5 text-xs bg-violet-600 hover:bg-violet-700 text-white">
-              <Plus size={14} strokeWidth={2.5} />
-              {t('training.courses.new')}
-            </Button>
+            <FeatureGate feature="training_courses" require="edit">
+              <Button size="sm" onClick={openCreate} className="h-8 gap-1.5 text-xs bg-violet-600 hover:bg-violet-700 text-white">
+                <Plus size={14} strokeWidth={2.5} />
+                {t('training.courses.new')}
+              </Button>
+            </FeatureGate>
           </div>
         </div>
       </div>

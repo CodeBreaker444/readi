@@ -78,6 +78,9 @@ export const E = {
   /** Login — CLIENT user's linked client record has client_active "N". */
   AU012: { code: 'AU012', category: 'Authentication', message: 'Your client account has been deactivated. Please contact your administrator.', detail: 'POST /api/auth/login: user_role is CLIENT and client.client_active is "N"; login blocked.' },
 
+  /** requireFeatureAccess: session absent before feature-permission check. */
+  AU013: { code: 'AU013', category: 'Authentication', message: 'Authentication required', detail: 'requireFeatureAccess: getUserSession returned null; evaluated before feature access check.' },
+
   // ── Permission (PX) ──────────────────────────────────────────────────────
 
   /** requirePermission: role does not have the required permission flag. */
@@ -94,6 +97,9 @@ export const E = {
 
   /** API key provided is invalid or revoked. */
   PX005: { code: 'PX005', category: 'Permission', message: 'Access denied', detail: 'api-key-auth.ts: provided API key not found in valid-keys store or has been revoked.' },
+
+  /** requireFeatureAccess: effective feature access is not sufficient for the requested mutation. */
+  PX006: { code: 'PX006', category: 'Permission', message: 'You do not have permission to perform this action', detail: 'requireFeatureAccess: resolved feature access is "R" (or delete attempted without Manager flag).' },
 
   // ── Validation (VL) ──────────────────────────────────────────────────────
 

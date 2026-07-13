@@ -135,7 +135,7 @@ export default function DuplicateSystemModal({
           tool_desc: sourceSystem.tool_desc || '',
           tool_status: sourceSystem.tool_status || 'OPERATIONAL',
           tool_active: sourceSystem.active || 'Y',
-          fk_client_id: sourceSystem.fk_client_id ? String(sourceSystem.fk_client_id) : '0',
+          fk_client_id: sourceSystem.fk_client_id ? String(sourceSystem.fk_client_id) : '',
           tool_latitude: sourceSystem.tool_latitude != null ? String(sourceSystem.tool_latitude) : '',
           tool_longitude: sourceSystem.tool_longitude != null ? String(sourceSystem.tool_longitude) : '',
           date_activation: sourceSystem.date_activation || '',
@@ -221,7 +221,7 @@ export default function DuplicateSystemModal({
           tool_name: candidateCode,
           tool_description: systemDraft.tool_desc || null,
           tool_active: systemDraft.tool_active,
-          fk_client_id: systemDraft.fk_client_id && systemDraft.fk_client_id !== '0' ? Number(systemDraft.fk_client_id) : null,
+          fk_client_id: Number(systemDraft.fk_client_id),
           location: systemDraft.location || null,
           latitude: systemDraft.tool_latitude ? Number(systemDraft.tool_latitude) : null,
           longitude: systemDraft.tool_longitude ? Number(systemDraft.tool_longitude) : null,
@@ -248,6 +248,10 @@ export default function DuplicateSystemModal({
     if (!systemDraft) return;
     if (!systemDraft.tool_code.trim()) {
       toast.error(t('systems.components.duplicateSystem.toasts.systemCodeRequired'));
+      return;
+    }
+    if (!systemDraft.fk_client_id) {
+      toast.error(t('systems.components.duplicateSystem.toasts.clientRequired'));
       return;
     }
 
@@ -400,7 +404,6 @@ export default function DuplicateSystemModal({
                       <SelectValue placeholder={t('systems.components.duplicateSystem.placeholders.selectClient')} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="0">{t('systems.components.common.none')}</SelectItem>
                       {clients.map((client: any) => (
                         <SelectItem key={client.client_id} value={String(client.client_id)}>
                           {client.client_name}

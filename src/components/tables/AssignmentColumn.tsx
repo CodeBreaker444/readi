@@ -1,3 +1,4 @@
+import { FeatureGate } from '@/components/permissions/FeatureGate';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { formatDateInTz } from '@/lib/utils';
@@ -114,13 +115,15 @@ export const getAssignmentColumns = (
       const a = row.original
       return (
         <div className="flex items-center gap-1">
-          <button
-            onClick={() => onEdit(a)}
-            className="cursor-pointer p-1.5 rounded-lg transition-colors text-blue-600 hover:bg-blue-500/10 dark:text-blue-400 dark:hover:bg-blue-500/15"
-            title={t('organization.common.saveChanges')}
-          >
-            <Pencil size={14} />
-          </button>
+          <FeatureGate feature="org_assignments" require="edit">
+            <button
+              onClick={() => onEdit(a)}
+              className="cursor-pointer p-1.5 rounded-lg transition-colors text-blue-600 hover:bg-blue-500/10 dark:text-blue-400 dark:hover:bg-blue-500/15"
+              title={t('organization.common.saveChanges')}
+            >
+              <Pencil size={14} />
+            </button>
+          </FeatureGate>
           <button
             onClick={() => onPreview(a)}
             className="cursor-pointer p-1.5 rounded-lg transition-colors text-emerald-600 hover:bg-emerald-500/10 dark:text-emerald-400 dark:hover:bg-emerald-500/15"
@@ -128,13 +131,15 @@ export const getAssignmentColumns = (
           >
             <Play size={14} />
           </button>
-          <button
-            onClick={() => onDelete(a)}
-            className="cursor-pointer p-1.5 rounded-lg transition-colors text-rose-600 hover:bg-rose-500/10 dark:text-rose-400 dark:hover:bg-rose-500/15"
-            title={t('organization.common.delete')}
-          >
-            <Trash2 size={14} />
-          </button>
+          <FeatureGate feature="org_assignments" require="delete">
+            <button
+              onClick={() => onDelete(a)}
+              className="cursor-pointer p-1.5 rounded-lg transition-colors text-rose-600 hover:bg-rose-500/10 dark:text-rose-400 dark:hover:bg-rose-500/15"
+              title={t('organization.common.delete')}
+            >
+              <Trash2 size={14} />
+            </button>
+          </FeatureGate>
         </div>
       )
     },

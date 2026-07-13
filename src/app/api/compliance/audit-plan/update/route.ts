@@ -2,7 +2,7 @@
 import {
     updateComplianceRequirement,
 } from '@/backend/services/compliance/compliance-service';
-import { requirePermission } from '@/lib/auth/api-auth';
+import { requireFeatureAccess, requirePermission } from '@/lib/auth/api-auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { apiError, internalError, zodError } from '@/lib/api-error';
@@ -29,6 +29,9 @@ export async function POST(req: NextRequest) {
     try {
         const { session, error } = await requirePermission('view_compliance');
         if (error) return error;
+
+        const { error: featureError } = await requireFeatureAccess('compliance_general_audit_plan', 'edit');
+        if (featureError) return featureError;
 
         const body = await req.json();
         const parsed = UpdateSchema.safeParse(body);

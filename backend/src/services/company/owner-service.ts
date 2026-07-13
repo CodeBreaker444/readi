@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcrypt';
 import { sendAdminPasswordChangedEmail, sendUserActivationEmail } from '../../../../lib/resend/mail';
 import { generateActivationToken, generateUniqueCode } from '../user/user-management';
+import { ALL_FEATURE_KEYS, DEFAULT_ROLE_FEATURE_ACCESS, MATRIX_ROLES } from '@/lib/auth/feature-permissions-types';
 
 export interface OwnerData {
     owner_id: number;
@@ -35,6 +36,7 @@ export interface AddOwnerWithAdminPayload {
     owner_website: string;
     owner_active: string;
     drone_atc_enabled?: boolean;
+    d_flight_enabled?: boolean;
     flytrelay_enabled?: boolean;
     email_notifications_enabled?: boolean;
     easa_operator_code?: string;
@@ -409,6 +411,25 @@ export async function deleteOwner(id: string, deletedByUserId: number) {
     return true;
 }
 
+/** Seeds the default per-role feature permission matrix for a newly created company. */
+export async function seedDefaultRolePermissions(ownerId: number): Promise<void> {
+    const rows = MATRIX_ROLES.flatMap((role) =>
+        ALL_FEATURE_KEYS
+            .filter((feature_key) => DEFAULT_ROLE_FEATURE_ACCESS[role]?.[feature_key] !== undefined)
+            .map((feature_key) => ({
+                fk_owner_id: ownerId,
+                role,
+                feature_key,
+                access: DEFAULT_ROLE_FEATURE_ACCESS[role]![feature_key]!,
+            })),
+    );
+
+    await prisma.role_feature_permission.createMany({
+        data: rows,
+        skipDuplicates: true,
+    });
+}
+
 export async function addOwnerWithAdmin(payload: AddOwnerWithAdminPayload) {
     const existing = await prisma.owner.findFirst({
         where: { owner_code: payload.owner_code },
@@ -450,6 +471,7 @@ export async function addOwnerWithAdmin(payload: AddOwnerWithAdminPayload) {
             owner_website: payload.owner_website,
             owner_active: payload.owner_active,
             drone_atc_enabled: payload.drone_atc_enabled ?? false,
+            d_flight_enabled: payload.d_flight_enabled ?? false,
             flytrelay_enabled: payload.flytrelay_enabled ?? false,
             email_notifications_enabled: payload.email_notifications_enabled ?? false,
             tax_id: payload.tax_id || null,
@@ -460,6 +482,8 @@ export async function addOwnerWithAdmin(payload: AddOwnerWithAdminPayload) {
     });
 
     try {
+        await seedDefaultRolePermissions(owner.owner_id);
+
         const uid = generateUniqueCode();
         const key = generateActivationToken(128);
         const nameParts = payload.admin_fullname.trim().split(' ');

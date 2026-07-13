@@ -1,0 +1,2 @@
+ALTER TABLE planning
+ADD COLUMN planning_result VARCHAR(50) DEFAULT 'PROGRESS';

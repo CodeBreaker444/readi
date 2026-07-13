@@ -1,6 +1,7 @@
 'use client';
 
 import '@/lib/i18n/config';
+import { FeatureGate } from '@/components/permissions/FeatureGate';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -197,19 +198,21 @@ export default function DccIntegrationSettings() {
         )}
 
         <div className="flex items-center gap-2 pt-1">
-          <Button
-            size="sm"
-            onClick={handleSave}
-            disabled={saving || loading}
-            className="h-8 text-xs bg-violet-600 hover:bg-violet-500 text-white gap-1.5"
-          >
-            {saving
-              ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              : saved
-                ? <CheckCircle2 className="h-3.5 w-3.5" />
-                : <Save className="h-3.5 w-3.5" />}
-            {saved ? t('settings.integrations.dcc.saved') : t('settings.integrations.dcc.save')}
-          </Button>
+          <FeatureGate feature="settings_integrations" require="edit">
+            <Button
+              size="sm"
+              onClick={handleSave}
+              disabled={saving || loading}
+              className="h-8 text-xs bg-violet-600 hover:bg-violet-500 text-white gap-1.5"
+            >
+              {saving
+                ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                : saved
+                  ? <CheckCircle2 className="h-3.5 w-3.5" />
+                  : <Save className="h-3.5 w-3.5" />}
+              {saved ? t('settings.integrations.dcc.saved') : t('settings.integrations.dcc.save')}
+            </Button>
+          </FeatureGate>
         </div>
       </div>
 

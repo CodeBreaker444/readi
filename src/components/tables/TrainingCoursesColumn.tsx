@@ -1,6 +1,7 @@
 'use client';
 
 import { FlatTrainingRecord } from '@/backend/services/training/training-service';
+import { FeatureGate } from '@/components/permissions/FeatureGate';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ColumnDef } from '@tanstack/react-table';
@@ -154,22 +155,26 @@ export function getTrainingCoursesColumns(
               <Eye size={13} />
             </Button>
           )}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => onEdit(row.original)}
-            className={`h-7 w-7 ${isDark ? 'text-gray-500 hover:text-white hover:bg-white/8' : 'text-gray-400 hover:text-gray-700 hover:bg-gray-100'}`}
-          >
-            <Pencil size={13} />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => onDelete(row.original)}
-            className="h-7 w-7 text-gray-400 hover:text-red-500 hover:bg-red-500/10"
-          >
-            <Trash2 size={13} />
-          </Button>
+          <FeatureGate feature="training_courses" require="edit">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => onEdit(row.original)}
+              className={`h-7 w-7 ${isDark ? 'text-gray-500 hover:text-white hover:bg-white/8' : 'text-gray-400 hover:text-gray-700 hover:bg-gray-100'}`}
+            >
+              <Pencil size={13} />
+            </Button>
+          </FeatureGate>
+          <FeatureGate feature="training_courses" require="delete">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => onDelete(row.original)}
+              className="h-7 w-7 text-gray-400 hover:text-red-500 hover:bg-red-500/10"
+            >
+              <Trash2 size={13} />
+            </Button>
+          </FeatureGate>
         </div>
       ),
     },

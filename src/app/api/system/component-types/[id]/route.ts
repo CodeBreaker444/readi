@@ -1,5 +1,5 @@
 import { deleteComponentType, getComponentTypes, getComponentsUsingType, updateComponentType } from '@/backend/services/system/component-type-service';
-import { requirePermission } from '@/lib/auth/api-auth';
+import { requireFeatureAccess, requirePermission } from '@/lib/auth/api-auth';
 import { internalError } from '@/lib/api-error';
 import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
@@ -8,6 +8,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   try {
     const { session, error } = await requirePermission('view_operations');
     if (error) return error;
+
+    const { error: featureError } = await requireFeatureAccess('systems_manage', 'edit');
+    if (featureError) return featureError;
 
     const { type_label, confirm_impact } = await req.json();
     const id = (await params).id;
@@ -38,6 +41,10 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   try {
     const { session, error } = await requirePermission('view_operations');
     if (error) return error;
+
+    const { error: featureError } = await requireFeatureAccess('systems_manage', 'delete');
+    if (featureError) return featureError;
+
     const id = (await params).id;
 
     await deleteComponentType(session!.user.ownerId, Number(id));

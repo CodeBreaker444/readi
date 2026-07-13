@@ -1,5 +1,5 @@
 import { createComponentType, getComponentTypes } from '@/backend/services/system/component-type-service';
-import { requirePermission } from '@/lib/auth/api-auth';
+import { requireFeatureAccess, requirePermission } from '@/lib/auth/api-auth';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET() {
@@ -19,6 +19,9 @@ export async function POST(req: NextRequest) {
   try {
     const { session, error } = await requirePermission('view_operations');
     if (error) return error;
+
+    const { error: featureError } = await requireFeatureAccess('systems_manage', 'create');
+    if (featureError) return featureError;
 
     const { type_value, type_label } = await req.json();
     if (!type_value?.trim() || !type_label?.trim()) {

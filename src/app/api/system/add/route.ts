@@ -1,6 +1,6 @@
 import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { addSystem } from '@/backend/services/system/system-service';
-import { requirePermission } from '@/lib/auth/api-auth';
+import { requireFeatureAccess, requirePermission } from '@/lib/auth/api-auth';
 import { internalError, zodError } from '@/lib/api-error';
 import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
@@ -11,7 +11,7 @@ const toolSchema = z.object({
   tool_name: z.string().optional(),
   tool_description: z.string().optional().nullable(),
   tool_active: z.string().default('Y'),
-  clientId: z.number().positive().optional().nullable(),
+  clientId: z.number().positive(),
   location: z.string().optional().nullable(),
   latitude: z.number().optional().nullable(),
   longitude: z.number().optional().nullable(),
@@ -21,6 +21,9 @@ export async function POST(request: NextRequest) {
   try {
     const { session, error } = await requirePermission('view_config');
     if (error) return error;
+
+    const { error: featureError } = await requireFeatureAccess('systems_manage', 'create');
+    if (featureError) return featureError;
 
     const formData = await request.formData();
     const body = JSON.parse(formData.get('data') as string);

@@ -1,6 +1,6 @@
 import { deleteFlightRequest, updateFlightRequestStatus, verifyFlightRequestOwnership } from '@/backend/services/mission/flight-request-service';
 import { apiError, internalError, zodError } from '@/lib/api-error';
-import { requirePermission } from '@/lib/auth/api-auth';
+import { requireFeatureAccess, requirePermission } from '@/lib/auth/api-auth';
 import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
@@ -14,6 +14,9 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
   try {
     const { session, error } = await requirePermission('view_planning_advanced');
     if (error) return error;
+
+    const { error: featureError } = await requireFeatureAccess('operation_flight_requests', 'edit');
+    if (featureError) return featureError;
 
     const id = Number(params.id);
     if (isNaN(id) || id <= 0) return apiError(E.VL001, 400);
@@ -38,6 +41,9 @@ export async function DELETE(_req: NextRequest, props: { params: Promise<{ id: s
   try {
     const { session, error } = await requirePermission('view_planning_advanced');
     if (error) return error;
+
+    const { error: featureError } = await requireFeatureAccess('operation_flight_requests', 'delete');
+    if (featureError) return featureError;
 
     const id = Number(params.id);
     if (isNaN(id) || id <= 0) return apiError(E.VL001, 400);

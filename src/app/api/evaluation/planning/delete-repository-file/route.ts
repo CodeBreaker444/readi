@@ -1,5 +1,5 @@
 import { deleteRepositoryFile } from "@/backend/services/planning/planning-dashboard";
-import { requirePermission } from "@/lib/auth/api-auth";
+import { requireFeatureAccess, requirePermission } from "@/lib/auth/api-auth";
 import { internalError, zodError } from "@/lib/api-error";
 import { E } from "@/lib/error-codes";
 import { NextResponse } from "next/server";
@@ -15,6 +15,9 @@ export async function POST(request: Request) {
   try {
     const { session, error } = await requirePermission('view_planning');
     if (error) return error;
+
+    const { error: featureError } = await requireFeatureAccess('logbook_planned_mission', 'delete');
+    if (featureError) return featureError;
 
     const body = await request.json();
     const parsed = schema.safeParse(body);

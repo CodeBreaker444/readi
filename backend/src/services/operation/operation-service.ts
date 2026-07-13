@@ -1,4 +1,5 @@
 import { seedLucProcedureProgressFromSteps } from '@/backend/services/operation/luc-procedure-progress';
+import { assertMissionEditable } from '@/backend/services/operation/mission-lock';
 import { AttachmentUploadResponse, CreateOperationSchema, ListOperationsQuerySchema, Operation, OperationAttachment, OperationsListResponse, UpdateOperationSchema } from '@/config/types/operation';
 import { prisma } from '@/lib/prisma';
 import { buildS3Url, deleteFileFromS3, getPresignedDownloadUrl, REGION, uploadFileToS3 } from '@/lib/s3Client';
@@ -266,6 +267,12 @@ export async function createOperation(input: CreateOperationSchema, ownerId: num
 }
 
 export async function updateOperation(id: number, input: UpdateOperationSchema): Promise<Operation> {
+  const current = await prisma.pilot_mission.findUnique({
+    where: { pilot_mission_id: id },
+    select: { status_name: true },
+  });
+  assertMissionEditable(current?.status_name);
+
   const updatePayload: Record<string, unknown> = {};
   if (input.mission_code !== undefined) updatePayload.mission_code = input.mission_code;
   if (input.mission_name !== undefined) updatePayload.mission_name = input.mission_name;

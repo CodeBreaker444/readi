@@ -109,9 +109,17 @@ export async function createAndAttachMission(
 }
 
 export async function getAttachableMissions(droneSerialNumber: string, ownerId: number) {
-  const toolComponent = await prisma.tool_component.findFirst({
+  // A system (tool) can have more than one active drone/aircraft component
+  // (e.g. a dock with several swappable airframes), so find every tool that
+  // has a component matching this serial rather than just the first one.
+  const toolComponents = await prisma.tool_component.findMany({
     where: {
       serial_number: { equals: droneSerialNumber.trim(), mode: 'insensitive' },
+      component_active: 'Y',
+      OR: [
+        { component_type: { equals: 'DRONE', mode: 'insensitive' } },
+        { component_type: { equals: 'AIRCRAFT', mode: 'insensitive' } },
+      ],
       tool: {
         fk_owner_id: ownerId,
       },
@@ -121,7 +129,8 @@ export async function getAttachableMissions(droneSerialNumber: string, ownerId: 
     },
   });
 
-  if (!toolComponent) return [];
+  const toolIds = [...new Set(toolComponents.map((c) => c.fk_tool_id).filter((id): id is number => id != null))];
+  if (toolIds.length === 0) return [];
 // If a mission already has a flight log attached (manual or FlytBase),
 // don't allow another log to be attached. We still return it to the UI
 // so it can be shown as disabled instead of being hidden.
@@ -136,7 +145,7 @@ export async function getAttachableMissions(droneSerialNumber: string, ownerId: 
 
   const missions = await prisma.pilot_mission.findMany({
     where: {
-      fk_tool_id: toolComponent.fk_tool_id,
+      fk_tool_id: { in: toolIds },
       fk_owner_id: ownerId,
       status_name: 'COMPLETED',
     },

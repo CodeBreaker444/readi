@@ -10,6 +10,7 @@ export type UpdatePlanning = {
   fk_client_id?: number;
   planning_desc: string;
   planning_status: string;
+  planning_result?: string;
   planning_request_date: string;
   planning_type: string;
   planning_active?: string;
@@ -73,6 +74,7 @@ export async function getPlanningList(ownerId: number) {
       planning_description: true,
       planning_type: true,
       planning_status: true,
+      planning_result: true,
       planned_date: true,
       planning_active: true,
       created_at: true,
@@ -116,7 +118,7 @@ export async function getPlanningList(ownerId: number) {
       planning_year: new Date().getFullYear(),
       planning_ver: '1.0',
       planning_folder: '',
-      planning_result: 'PROGRESS',
+      planning_result: row.planning_result ?? 'PROGRESS',
       planning_active: row.planning_active ?? 'Y',
       last_update: row.updated_at?.toISOString() ?? row.created_at?.toISOString() ?? '',
       client_name: client?.client_name ?? '',
@@ -174,6 +176,7 @@ export async function getPlanningData(ownerId: number, planningId: number) {
       planning_description: true,
       planning_type: true,
       planning_status: true,
+      planning_result: true,
       planned_date: true,
       planning_active: true,
       assigned_to_user_id: true,
@@ -220,6 +223,7 @@ export async function getPlanningData(ownerId: number, planningId: number) {
     planning_code: data.planning_code ?? '',
     planning_desc: data.planning_description ?? '',
     planning_status: data.planning_status ?? '',
+    planning_result: data.planning_result ?? 'PROGRESS',
     planning_type: data.planning_type ?? '',
     planning_request_date: data.planned_date?.toISOString().split('T')[0] ?? '',
     planning_active: data.planning_active ?? 'Y',
@@ -250,6 +254,7 @@ export async function updatePlanning(payload: UpdatePlanning, ownerId: number) {
   if (updates.planning_active !== undefined) updateObj.planning_active = updates.planning_active;
   if (updates.fk_evaluation_id !== undefined) updateObj.fk_evaluation_id = updates.fk_evaluation_id;
   if (updates.fk_client_id !== undefined) updateObj.fk_client_id = updates.fk_client_id;
+  if (updates.planning_result !== undefined) updateObj.planning_result = updates.planning_result;
 
   const result = await prisma.planning.updateMany({
     where: { planning_id, fk_owner_id: ownerId },

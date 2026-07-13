@@ -1,7 +1,7 @@
 
 import { addPlanningWithAssignment, deletePlanning, getPlanningData, getPlanningList, updatePlanning } from "@/backend/services/planning/planning-dashboard";
-import { forbidden, internalError, zodError } from "@/lib/api-error";
-import { requirePermission } from "@/lib/auth/api-auth";
+import { internalError, zodError } from "@/lib/api-error";
+import { requireFeatureAccess, requirePermission } from "@/lib/auth/api-auth";
 import { E } from "@/lib/error-codes";
 import { NextRequest, NextResponse } from "next/server";
 import z from "zod";
@@ -66,6 +66,9 @@ export async function POST(req: NextRequest) {
     const { session, error } = await requirePermission('view_planning');
     if (error) return error;
 
+    const { error: featureError } = await requireFeatureAccess('planning_evaluation', 'edit');
+    if (featureError) return featureError;
+
     const body = await req.json();
     const parsed = addEvaluationPlanningSchema.safeParse(body);
 
@@ -76,8 +79,8 @@ export async function POST(req: NextRequest) {
     const data = await addPlanningWithAssignment(
       {
         ...parsed.data,
-        assigned_by_user_id: session!.user.userId, 
-        assigned_to_user_id: parsed.data.assigned_to_user_id,  
+        assigned_by_user_id: session!.user.userId,
+        assigned_to_user_id: parsed.data.assigned_to_user_id,
       },
       session!.user.userId,
       session!.user.ownerId
@@ -97,13 +100,13 @@ const updatePlanningSchema = addEvaluationPlanningSchema.extend({
   planning_id: z.number().int().positive("Planning ID is required"),
 });
 
-const PLANNING_ALLOWED_ROLES = ['SUPERADMIN', 'ADMIN', 'OPM'];
-
 export async function PUT(req: NextRequest) {
     try {
         const { session, error } = await requirePermission('view_planning');
         if (error) return error;
-        if (!PLANNING_ALLOWED_ROLES.includes(session!.user.role)) return forbidden(E.PX004);
+
+        const { error: featureError } = await requireFeatureAccess('planning_evaluation', 'edit');
+        if (featureError) return featureError;
 
         const body = await req.json();
         const parsed = updatePlanningSchema.safeParse(body);
@@ -124,6 +127,9 @@ export async function DELETE(req: NextRequest) {
     try {
         const { session, error } = await requirePermission('view_planning');
         if (error) return error;
+
+        const { error: featureError } = await requireFeatureAccess('planning_evaluation', 'delete');
+        if (featureError) return featureError;
 
         const body = await req.json();
         const parsed = deletePlanningSchema.safeParse(body);

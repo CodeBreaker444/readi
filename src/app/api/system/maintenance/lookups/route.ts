@@ -1,5 +1,5 @@
 import { getComponentList, getDroneList, getUserList } from '@/backend/services/system/maintenance-ticket';
-import { requirePermission } from '@/lib/auth/api-auth';
+import { requireAnyPermission } from '@/lib/auth/api-auth';
 import { apiError, internalError, zodError } from '@/lib/api-error';
 import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
 
-    const { session, error } = await requirePermission('view_config');
+    const { session, error } = await requireAnyPermission('view_config', 'view_maintenance_tickets');
     if (error) return error;
 
     const validation = getLookupsSchema.safeParse({

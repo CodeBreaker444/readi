@@ -1,7 +1,7 @@
 import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { addComponent, getOrCreateWarehouseTool, getToolCode } from '@/backend/services/system/system-service';
 import { internalError, zodError } from '@/lib/api-error';
-import { requirePermission } from '@/lib/auth/api-auth';
+import { requireFeatureAccess, requirePermission } from '@/lib/auth/api-auth';
 import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
@@ -41,6 +41,9 @@ const ComponentSchema = z
     initial_usage_hours: z.number().min(0).optional().nullable(),
     initial_maintenance_hours: z.number().min(0).optional().nullable(),
     initial_maintenance_flights: z.number().min(0).optional().nullable(),
+    insurance_name: z.string().optional().nullable(),
+    insurance_company: z.string().optional().nullable(),
+    insurance_expiry_date: z.string().optional().nullable(),
   })
   .refine((data) => !!data.fk_tool_id || !!data.warehouse, {
     message: 'Either fk_tool_id or warehouse:true is required',
@@ -54,6 +57,9 @@ export async function POST(req: NextRequest) {
 
     const { session, error } = await requirePermission('view_config');
     if (error) return error;
+
+    const { error: featureError } = await requireFeatureAccess('systems_manage', 'create');
+    if (featureError) return featureError;
 
     if (!validation.success) return zodError(E.VL008, validation.error);
 
@@ -97,6 +103,9 @@ export async function POST(req: NextRequest) {
       initial_usage_hours: d.initial_usage_hours ?? null,
       initial_maintenance_hours: d.initial_maintenance_hours ?? null,
       initial_maintenance_flights: d.initial_maintenance_flights ?? null,
+      insurance_name: d.insurance_name ?? null,
+      insurance_company: d.insurance_company ?? null,
+      insurance_expiry_date: d.insurance_expiry_date ?? null,
     });
 
     if (result.code === 1) {

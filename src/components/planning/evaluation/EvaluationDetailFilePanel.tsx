@@ -11,6 +11,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
+import { FeatureGate } from '@/components/permissions/FeatureGate';
+import { usePermissions } from '@/components/permissions/PermissionsProvider';
 import { getEvaluationFileColumns } from '@/components/tables/EvaluationFileColumn';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -36,7 +38,9 @@ export function EvaluationDetailFilePanel({ evaluationId, clientId }: Props) {
   const [files, setFiles] = useState<EvaluationFile[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-  const { t } = useTranslation();  
+  const { t } = useTranslation();
+  const { canDelete } = usePermissions();
+  const userCanDeleteFile = canDelete('planning_evaluation');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const descRef = useRef<HTMLInputElement>(null);
@@ -101,8 +105,8 @@ export function EvaluationDetailFilePanel({ evaluationId, clientId }: Props) {
   }
 
   const columns = useMemo(
-    () => getEvaluationFileColumns(evaluationId, handleDelete),
-    [evaluationId],
+    () => getEvaluationFileColumns(evaluationId, handleDelete, userCanDeleteFile),
+    [evaluationId, userCanDeleteFile],
   );
 
   const table = useReactTable({
@@ -177,6 +181,7 @@ export function EvaluationDetailFilePanel({ evaluationId, clientId }: Props) {
         </Table>
       </div>
 
+      <FeatureGate feature="planning_evaluation" require="edit">
       <form
         onSubmit={handleUpload}
         className="border border-dashed border-slate-300 rounded-lg p-4"
@@ -221,6 +226,7 @@ export function EvaluationDetailFilePanel({ evaluationId, clientId }: Props) {
           </Button>
         </div>
       </form>
+      </FeatureGate>
     </div>
   );
 }

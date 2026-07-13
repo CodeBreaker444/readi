@@ -17,7 +17,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Operation } from '@/config/types/operation';
-import { serialsMatch } from '@/lib/serial-number';
+import { serialInList } from '@/lib/serial-number';
 import { cn } from '@/lib/utils';
 import axios from 'axios';
 import { MissionPlanningOption, PlanningOption } from './OperationModalTypes';
@@ -45,7 +45,7 @@ interface DroneSystem   {
     tool_id: number; tool_code: string; tool_name: string;
     in_maintenance?: boolean; maintenance_due?: boolean;
     is_non_operational?: boolean; is_dismissed?: boolean;
-    drone_serial_number?: string | null;
+    drone_serial_numbers?: string[];
 }
 interface SelectOption  { id: number; name: string }
 interface Pilot         { user_id: number; first_name: string; last_name: string }
@@ -187,7 +187,7 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
     // a different one for a mismatched log.
     useEffect(() => {
         if (!logSerialNumber || drones.length === 0) return;
-        const match = drones.find((d) => serialsMatch(d.drone_serial_number, logSerialNumber));
+        const match = drones.find((d) => serialInList(d.drone_serial_numbers, logSerialNumber));
         if (match && String(match.tool_id) !== vehicleId) setVehicleId(String(match.tool_id));
     }, [logSerialNumber, drones]);
 
@@ -314,7 +314,7 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
     // A log's aircraft serial number must match the selected system's — a log
     // from one drone can never be attached to a different one.
     const matchingDrone = logSerialNumber
-        ? drones.find((d) => serialsMatch(d.drone_serial_number, logSerialNumber))
+        ? drones.find((d) => serialInList(d.drone_serial_numbers, logSerialNumber))
         : undefined;
     const serialBlocked = !!logSerialNumber && !matchingDrone;
 
@@ -647,7 +647,7 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                                                     {t(`${ns}.info.noData`)}
                                                 </div>
                                             ) : drones.map((d) => {
-                                                const snMismatch = !!logSerialNumber && !serialsMatch(d.drone_serial_number, logSerialNumber);
+                                                const snMismatch = !!logSerialNumber && !serialInList(d.drone_serial_numbers, logSerialNumber);
                                                 return (
                                                 <SelectItem
                                                     key={d.tool_id}

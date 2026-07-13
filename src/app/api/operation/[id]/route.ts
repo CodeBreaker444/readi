@@ -4,7 +4,7 @@ import { notifyPilotAssignment } from '@/backend/services/notification/notificat
 import { deleteOperation, getOperation, updateOperation } from '@/backend/services/operation/operation-service';
 import { UpdateOperationSchema } from '@/config/types/operation';
 import { apiError, dbError, internalError, notFound, zodError } from '@/lib/api-error';
-import { requirePermission } from '@/lib/auth/api-auth';
+import { requireFeatureAccess, requirePermission } from '@/lib/auth/api-auth';
 import { getUserSession } from '@/lib/auth/server-session';
 import { E } from '@/lib/error-codes';
 import type { DccCallbackResult } from '@/types/dcc-callback';
@@ -66,6 +66,9 @@ export async function PUT(req: NextRequest, { params }: Params) {
     const { session, error } = await requirePermission('view_operations');
     if (error) return error;
 
+    const { error: featureError } = await requireFeatureAccess('operation_mission_table', 'edit');
+    if (featureError) return featureError;
+
     const id = parseInt((await params).id, 10);
     if (isNaN(id)) return apiError(E.VL002, 400);
 
@@ -113,6 +116,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
     const msg = err instanceof Error ? err.message : '';
     if (msg === 'OPERATION_NOT_FOUND') return notFound(E.NF004);
     const pgCode: string | undefined = err?.code;
+    if (pgCode === 'MISSION_LOCKED') return apiError(E.BL003, 422);
     if (pgCode === '23505') return apiError({ code: 'DB005', category: 'Database', message: 'Mission code is already in use by another operation', detail: 'Unique constraint violation on pilot_mission.mission_code during UPDATE.' }, 409);
     if (pgCode === '23503') return dbError(E.DB003, err);
     return internalError(E.SV001, err);
@@ -121,6 +125,9 @@ export async function PUT(req: NextRequest, { params }: Params) {
 
 export async function DELETE(_req: NextRequest, { params }: Params) {
   try {
+    const { error: featureError } = await requireFeatureAccess('operation_mission_table', 'delete');
+    if (featureError) return featureError;
+
     const id = parseInt((await params).id, 10);
     if (isNaN(id)) return zodError(E.VL002, { flatten: () => ({ fieldErrors: {} }) });
 

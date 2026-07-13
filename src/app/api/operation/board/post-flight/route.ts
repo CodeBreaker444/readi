@@ -1,7 +1,7 @@
 import { getPostFlightData, updatePostFlightData, upsertMissionResult } from "@/backend/services/mission/post-flight-service";
 import { getMissionResultList } from "@/backend/services/mission/result-service";
 import { apiError, dbError, internalError, notFound, zodError } from "@/lib/api-error";
-import { requirePermission } from "@/lib/auth/api-auth";
+import { requireFeatureAccess, requirePermission } from "@/lib/auth/api-auth";
 import { E } from "@/lib/error-codes";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
@@ -56,6 +56,9 @@ const postFlightSchema = z.object({
 export async function POST(req: NextRequest) {
   const { error } = await requirePermission("view_operations");
   if (error) return error;
+
+  const { error: featureError } = await requireFeatureAccess("operation_daily_board", "edit");
+  if (featureError) return featureError;
 
   let body: unknown;
   try {

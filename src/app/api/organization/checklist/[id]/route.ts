@@ -1,6 +1,6 @@
 import { deleteChecklist, getChecklistById, updateChecklist } from '@/backend/services/organization/checklist-service'
 import type { ChecklistUpdatePayload } from '@/config/types/checklist'
-import { requirePermission } from '@/lib/auth/api-auth'
+import { requireFeatureAccess, requirePermission } from '@/lib/auth/api-auth'
 import { NextRequest, NextResponse } from 'next/server'
 import z from 'zod'
 
@@ -34,6 +34,8 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         const { session, error } = await requirePermission('view_config')
         if (error) return error
 
+        const { error: featureError } = await requireFeatureAccess('org_checklist', 'edit')
+        if (featureError) return featureError
 
         let body: Omit<ChecklistUpdatePayload, 'checklist_id'>
 
@@ -78,6 +80,9 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
      const { id } = await params
         const { session, error } = await requirePermission('view_config')
         if (error) return error
+
+        const { error: featureError } = await requireFeatureAccess('org_checklist', 'delete')
+        if (featureError) return featureError
     const ownerId = session!.user.ownerId
 
     const result = await deleteChecklist(ownerId, Number(id))
