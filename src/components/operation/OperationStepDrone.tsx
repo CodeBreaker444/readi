@@ -3,7 +3,7 @@
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { LocationGroup } from '@/config/types/erp'
-import { serialsMatch } from '@/lib/serial-number'
+import { serialInList } from '@/lib/serial-number'
 import { cn } from '@/lib/utils'
 import { AlertTriangle, Shield } from 'lucide-react'
 import { useEffect } from 'react'
@@ -52,7 +52,7 @@ export function OperationStepDrone({
     const selectedIsNonOp = (selectedDrone?.is_non_operational || selectedDrone?.is_dismissed) ?? false
     const selectedIsDismissed = selectedDrone?.is_dismissed ?? false
     const matchingDrone = logSerialNumber
-        ? drones.find(d => serialsMatch(d.drone_serial_number, logSerialNumber))
+        ? drones.find(d => serialInList(d.drone_serial_numbers, logSerialNumber))
         : undefined
     const serialBlocked = !!logSerialNumber && !matchingDrone
     const noSystemsForClient = !loadingDrones && drones.length === 0
@@ -119,7 +119,7 @@ export function OperationStepDrone({
                     </SelectTrigger>
                     <SelectContent className={scCls(isDark)}>
                         {drones.map(d => {
-                            const snMismatch = !!logSerialNumber && !serialsMatch(d.drone_serial_number, logSerialNumber)
+                            const snMismatch = !!logSerialNumber && !serialInList(d.drone_serial_numbers, logSerialNumber)
                             return (
                             <SelectItem
                                 key={d.tool_id}

@@ -1,13 +1,13 @@
 import { parseGutmaFlightData } from '@/backend/services/integrations/gutma-parser';
 import { prisma } from '@/lib/prisma';
-import { serialsMatch } from '@/lib/serial-number';
+import { serialInList } from '@/lib/serial-number';
 import { BUCKET, s3 } from '@/lib/s3Client';
 import { PutObjectCommand } from '@aws-sdk/client-s3';
 import JSZip from 'jszip';
 
-/** Looks up the registered serial number for a tool's drone/aircraft component, if any. */
-async function getDroneSerialNumberForTool(toolId: number): Promise<string | null> {
-  const droneComponent = await prisma.tool_component.findFirst({
+/** Looks up the registered serial numbers for ALL of a tool's active drone/aircraft components — a tool (system) can have more than one, e.g. a dock with several swappable airframes. */
+async function getDroneSerialNumbersForTool(toolId: number): Promise<string[]> {
+  const droneComponents = await prisma.tool_component.findMany({
     where: {
       fk_tool_id: toolId,
       component_active: 'Y',
@@ -19,7 +19,9 @@ async function getDroneSerialNumberForTool(toolId: number): Promise<string | nul
     },
     select: { serial_number: true },
   });
-  return droneComponent?.serial_number?.trim() || null;
+  return droneComponents
+    .map((c) => c.serial_number?.trim() || null)
+    .filter((s): s is string => !!s);
 }
 
 
@@ -120,8 +122,8 @@ async function processGutmaBuffer(
     : null;
 
   if (params.vehicleId && logSerialNumber) {
-    const vehicleSerial = await getDroneSerialNumberForTool(params.vehicleId);
-    if (vehicleSerial && !serialsMatch(vehicleSerial, logSerialNumber)) {
+    const vehicleSerials = await getDroneSerialNumbersForTool(params.vehicleId);
+    if (vehicleSerials.length > 0 && !serialInList(vehicleSerials, logSerialNumber)) {
       return { error: `No system is present with the serial number ${logSerialNumber}` };
     }
   }
@@ -333,7 +335,7 @@ export async function importDrones(ownerId: number, clientId?: number) {
   const maintenanceDueSet = new Set<number>();
   const nonOperationalSet = new Set<number>();
 
-  const droneSerialMap = new Map<number, string | null>();
+  const droneSerialMap = new Map<number, string[]>();
 
   if (toolIds.length > 0) {
     const [openTickets, maintComps, expiredComps, droneComponents] = await Promise.all([
@@ -379,9 +381,11 @@ export async function importDrones(ownerId: number, clientId?: number) {
       if (dayDue || hourDue || flightDue) maintenanceDueSet.add(c.fk_tool_id);
     });
     droneComponents.forEach((c) => {
-      if (c.fk_tool_id != null && !droneSerialMap.has(c.fk_tool_id)) {
-        droneSerialMap.set(c.fk_tool_id, c.serial_number?.trim() || null);
-      }
+      const serial = c.serial_number?.trim();
+      if (c.fk_tool_id == null || !serial) return;
+      const existing = droneSerialMap.get(c.fk_tool_id);
+      if (existing) existing.push(serial);
+      else droneSerialMap.set(c.fk_tool_id, [serial]);
     });
   }
 
@@ -393,7 +397,7 @@ export async function importDrones(ownerId: number, clientId?: number) {
     maintenance_due: maintenanceDueSet.has(t.tool_id),
     is_non_operational: nonOperationalSet.has(t.tool_id),
     is_dismissed: (t.tool_metadata as any)?.status === 'DISMISSED',
-    drone_serial_number: droneSerialMap.get(t.tool_id) ?? null,
+    drone_serial_numbers: droneSerialMap.get(t.tool_id) ?? [],
   }));
 }
 
