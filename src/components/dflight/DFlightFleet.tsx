@@ -14,11 +14,12 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import Link from 'next/link';
 
-import type { FleetRow } from '@/types/dflight';
+import type { DFlightDroneRow } from '@/types/dflight';
 import { ColumnMeta, fleetColumns } from '../tables/DFlightColumn';
 import { TablePagination } from '../tables/Pagination';
 import { Skeleton } from '../ui/skeleton';
 import { useTheme } from '../useTheme';
+import ImportDroneModal from './ImportDroneModal';
 
 
 export default function DFlightFleet() {
@@ -26,9 +27,11 @@ export default function DFlightFleet() {
   const { isDark } = useTheme();
 
   const [loading, setLoading] = useState(true);
-  const [rows, setRows]       = useState<FleetRow[]>([]);
+  const [rows, setRows]       = useState<DFlightDroneRow[]>([]);
+  const [models, setModels]   = useState<any[]>([]);
   const [error, setError]     = useState<string | null>(null);
   const [notConfigured, setNotConfigured] = useState(false);
+  const [importDrone, setImportDrone] = useState<DFlightDroneRow | null>(null);
 
   const [page, setPage]         = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(8);
@@ -37,12 +40,21 @@ export default function DFlightFleet() {
   const th   = `px-4 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider ${isDark ? 'text-slate-500' : 'text-gray-400'}`;
   const td   = `px-4 py-3 text-xs align-middle ${isDark ? 'text-slate-300' : 'text-gray-700'}`;
 
+  const loadModels = useCallback(async () => {
+    try {
+      const { data } = await axios.post('/api/system/model/list', {});
+      if (data.code === 1) setModels(data.data ?? []);
+    } catch {
+      setModels([]);
+    }
+  }, []);
+
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     setNotConfigured(false);
     try {
-      const { data } = await axios.get<{ code: number; data: FleetRow[]; message?: string }>(
+      const { data } = await axios.get<{ code: number; data: DFlightDroneRow[]; message?: string }>(
         '/api/dflight/fleet',
       );
       if (data.code === 0) {
@@ -66,12 +78,18 @@ export default function DFlightFleet() {
     }
   }, [t]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { load(); loadModels(); }, [load, loadModels]);
 
-  const table = useReactTable<FleetRow>({
+  const handleImported = useCallback(() => {
+    setImportDrone(null);
+    load();
+    loadModels();
+  }, [load, loadModels]);
+
+  const table = useReactTable<DFlightDroneRow>({
     data:     rows,
     columns:  fleetColumns,
-    meta:     { isDark } satisfies ColumnMeta,
+    meta:     { isDark, onImport: setImportDrone } satisfies ColumnMeta,
     manualPagination: false,
     state: {
       pagination: { pageIndex: page, pageSize: rowsPerPage },
@@ -144,7 +162,7 @@ export default function DFlightFleet() {
           <button
             onClick={load}
             disabled={loading}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors disabled:opacity-50 ${
+            className={`flex cursor-pointer items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors disabled:opacity-50 ${
               isDark
                 ? 'bg-slate-700 hover:bg-slate-600 text-slate-300'
                 : 'bg-gray-100 hover:bg-gray-200 text-gray-600'
@@ -242,6 +260,15 @@ export default function DFlightFleet() {
           </>
         )}
       </div>
+
+      <ImportDroneModal
+        open={!!importDrone}
+        onClose={() => setImportDrone(null)}
+        onImported={handleImported}
+        drone={importDrone}
+        models={models}
+        onModelsRefresh={loadModels}
+      />
     </div>
   );
 }

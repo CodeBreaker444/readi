@@ -1,13 +1,19 @@
-export interface FleetRow {
-  componentId: number;
-  systemId: number;
-  systemName: string;
-  componentName: string;
+export interface DFlightDroneRow {
+  dFlightId: string;
+  dFlightName: string;
   serialNumber: string | null;
-  dFlightId: string | null;
-  dFlightDroneName: string | null;
-  dFlightStatus: string | null;
-  dFlightMatriculation: string | null;
-  dFlightModel: string | null;
+  gcsSerialNumber: string | null;
+  matriculationNumber: string | null;
+  status: string | null;
+  modelName: string | null;
+  manufacturerName: string | null;
+  insuranceCompany: string | null;
+  insuranceExpiryDate: string | null;
+  uasClassId: string | null;
   linked: boolean;
+  componentId: number | null;
+  systemId: number | null;
+  systemName: string | null;
+  componentName: string | null;
+  storedDrc: string | null;
 }

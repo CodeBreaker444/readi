@@ -11,7 +11,7 @@ const toolSchema = z.object({
   tool_name: z.string().optional(),
   tool_description: z.string().optional().nullable(),
   tool_active: z.string().default('Y'),
-  clientId: z.number().positive().optional().nullable(),
+  clientId: z.number().positive(),
   location: z.string().optional().nullable(),
   latitude: z.number().optional().nullable(),
   longitude: z.number().optional().nullable(),

@@ -140,15 +140,32 @@ export async function getMaintenanceDashboard(
       fk_tool_id: { in: toolIds },
       maintenance_status: 'COMPLETED',
     },
-    select: { fk_tool_id: true, completed_date: true },
+    select: { fk_tool_id: true, completed_date: true, maintenance_type: true },
     orderBy: { completed_date: 'desc' },
   });
 
   const lastMaintenanceMap: Record<number, string> = {};
+  const lastMaintenanceByTypeMap: Record<number, { basic: string | null; standard: string | null; extraordinary: string | null }> = {};
   for (const rec of maintenanceRecords) {
     if (!lastMaintenanceMap[rec.fk_tool_id] && rec.completed_date) {
       lastMaintenanceMap[rec.fk_tool_id] = rec.completed_date.toISOString().slice(0, 10);
     }
+
+    if (!rec.completed_date) continue;
+    const byType = lastMaintenanceByTypeMap[rec.fk_tool_id] ?? { basic: null, standard: null, extraordinary: null };
+    const dateStr = rec.completed_date.toISOString().slice(0, 10);
+    switch (rec.maintenance_type) {
+      case 'BASIC':
+        if (!byType.basic) byType.basic = dateStr;
+        break;
+      case 'STANDARD':
+        if (!byType.standard) byType.standard = dateStr;
+        break;
+      case 'EXTRAORDINARY':
+        if (!byType.extraordinary) byType.extraordinary = dateStr;
+        break;
+    }
+    lastMaintenanceByTypeMap[rec.fk_tool_id] = byType;
   }
 
   const missionStats = await prisma.pilot_mission.findMany({
@@ -254,12 +271,16 @@ export async function getMaintenanceDashboard(
       : computed.status;
 
     const toolMeta = (tool.tool_metadata ?? {}) as Record<string, unknown>;
+    const lastMaintByType = lastMaintenanceByTypeMap[toolId] ?? { basic: null, standard: null, extraordinary: null };
     return {
       tool_id: toolId,
       code: String(tool.tool_code ?? `#${toolId}`),
       serial_number: String(tool.tool_name ?? ""),
       description: tool.tool_description ?? null,
       last_maintenance: lastMaint,
+      last_maintenance_basic: lastMaintByType.basic,
+      last_maintenance_standard: lastMaintByType.standard,
+      last_maintenance_extraordinary: lastMaintByType.extraordinary,
       activation_date: (toolMeta.activationDate as string | null) ?? null,
       total_hours: Math.round(stats.totalHours * 100) / 100,
       total_flights: stats.totalFlights,

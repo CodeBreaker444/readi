@@ -6,7 +6,7 @@
     "dev": "next dev",
     "dev:docs": "cd fumadocs && npm run dev",
     "test": "jest",
-    "test:integration": "jest --config jest.integration.config.js --no-coverage --env-file=.env.test.local",
+    "test:integration": "jest --config jest.integration.config.js --no-coverage",
     "build": "next build",
     "build:docs": "cd fumadocs && npm run build",
     "prenext:build": "npm run build:docs",

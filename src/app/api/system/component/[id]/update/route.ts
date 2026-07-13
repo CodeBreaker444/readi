@@ -42,6 +42,9 @@ const schema = z.object({
   initial_usage_hours: z.number().min(0).optional().nullable(),
   initial_maintenance_hours: z.number().min(0).optional().nullable(),
   initial_maintenance_flights: z.number().min(0).optional().nullable(),
+  insurance_name: z.string().optional().nullable(),
+  insurance_company: z.string().optional().nullable(),
+  insurance_expiry_date: z.string().optional().nullable(),
 });
 
 export async function POST(

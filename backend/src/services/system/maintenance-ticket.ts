@@ -307,7 +307,7 @@ export async function closeTicket(payload: CloseTicketPayload): Promise<void> {
   await prisma.tool_maintenance.create({
     data: {
       fk_tool_id:              ticket.fk_tool_id!,
-      maintenance_type:        'CORRECTIVE',
+      maintenance_type:        ticket.ticket_type ?? 'STANDARD',
       maintenance_description: payload.note ?? 'Maintenance completed via ticket closure',
       completed_date:          new Date(todayDate),
       performed_by_user_id:    payload.closed_by ?? null,

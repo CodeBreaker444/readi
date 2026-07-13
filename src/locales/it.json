@@ -2013,6 +2013,7 @@
         "opTypePdraDesc": "Il pilota vola sotto analisi del rischio — piano di missione richiesto.",
         "droneLabel": "Sistema Drone",
         "noDronesAssigned": "Nessun drone assegnato a questo cliente",
+        "noSystemsForClient": "Il cliente selezionato non ha alcun sistema.",
         "allInMaintenance": "Tutti i droni sono in manutenzione",
         "selectDrone": "Seleziona drone…",
         "allInMaintenanceWarning": "Tutti i droni assegnati a questo cliente sono attualmente in manutenzione.",
@@ -2020,7 +2021,7 @@
         "maintenanceDueTag": "MANUTENZIONE SCADUTA",
         "maintenanceDueWarning": "Uno o più droni richiedono manutenzione. Verifica prima di pianificare.",
         "snMismatchTag": "SN non corrispondente",
-        "noSystemWithSerial": "Nessun sistema è presente con il numero di serie {{serial}}",
+        "noSystemWithSerial": "Nessun sistema del cliente selezionato ha il numero di serie {{serial}}",
         "notOperationalTag": "Non Operativo",
         "selectedNonOpWarningPre": "Il sistema selezionato è",
         "selectedNonOpWarningPost": "— uno dei suoi componenti è scaduto. La creazione della missione sarà bloccata.",
@@ -3692,6 +3693,8 @@
           "model": "Modello",
           "system": "Sistema",
           "status": "Stato",
+          "expiration": "Scadenza",
+          "noExpiration": "Nessuna scadenza",
           "active": "Attivo",
           "actions": "Azioni",
           "yes": "Sì",
@@ -3766,6 +3769,9 @@
           "hours": "Ore",
           "flights": "Voli",
           "lastMaintenance": "Ultima Manutenzione",
+          "lastMaintenanceBasic": "Ultima Manutenzione (B)",
+          "lastMaintenanceStandard": "Ultima Manutenzione (S)",
+          "lastMaintenanceExtraordinary": "Ultima Manutenzione (EO)",
           "nextMaintenance": "Prossima Manutenzione",
           "triggers": "Trigger",
           "system": "Sistema",
@@ -4045,6 +4051,7 @@
           "clientSerial": "Cliente / Seriale",
           "model": "Modello",
           "status": "Stato",
+          "expiration": "Scadenza",
           "actions": "Azioni"
         },
         "noResults": "Nessun risultato.",
@@ -4085,7 +4092,7 @@
           "activationDate": "Data di Attivazione",
           "active": "Attivo",
           "status": "Stato",
-          "client": "Cliente",
+          "client": "Cliente *",
           "location": "Posizione",
           "attachFiles": "Allega File (manuale, certificato, ecc.)"
         },
@@ -4107,6 +4114,7 @@
         "toasts": {
           "latitudeRange": "La latitudine deve essere tra -90 e 90",
           "longitudeRange": "La longitudine deve essere tra -180 e 180",
+          "clientRequired": "Seleziona un cliente",
           "success": "Sistema aggiunto con successo",
           "failed": "Aggiunta strumento fallita",
           "error": "Errore durante l'aggiunta dello strumento"
@@ -4199,6 +4207,14 @@
         "location": "Posizione",
         "locationOptional": "Posizione (opzionale)",
         "autoDecommissionHint": "Il componente viene automaticamente dismesso in questa data",
+        "insurance": {
+          "label": "Assicurazione",
+          "name": "Nome assicurazione",
+          "namePlaceholder": "es. Copertura completa",
+          "company": "Compagnia assicurativa",
+          "companyPlaceholder": "es. Allianz",
+          "expiryDate": "Data di scadenza"
+        },
         "expiryType": {
           "label": "Tipo di scadenza",
           "expirationDate": "Data di scadenza",
@@ -4243,7 +4259,7 @@
           "longitude": "Longitudine",
           "status": "Stato",
           "active": "Attivo",
-          "client": "Cliente",
+          "client": "Cliente *",
           "location": "Posizione",
           "activationDate": "Data Attivazione",
           "maintenanceLogbook": "Logbook Manutenzione",
@@ -4275,6 +4291,7 @@
           "componentRemoved": "Componente rimosso dal sistema",
           "removeFailed": "Rimozione componente fallita",
           "removeError": "Errore durante la rimozione del componente",
+          "clientRequired": "Seleziona un cliente",
           "updateSuccess": "Sistema aggiornato con successo",
           "updateFailed": "Aggiornamento sistema fallito",
           "updateError": "Errore durante l'aggiornamento del sistema"
@@ -4475,7 +4492,7 @@
           "longitude": "Longitudine",
           "status": "Stato",
           "activationDate": "Data Attivazione",
-          "client": "Cliente",
+          "client": "Cliente *",
           "location": "Posizione"
         },
         "componentFields": {
@@ -4515,6 +4532,7 @@
         },
         "toasts": {
           "systemCodeRequired": "Il codice sistema è obbligatorio",
+          "clientRequired": "Seleziona un cliente",
           "loadSourceFailed": "Caricamento sistema sorgente fallito",
           "loadComponentsFailed": "Caricamento componenti sorgente fallito",
           "sourceNotFound": "Sistema sorgente non trovato",
@@ -4869,27 +4887,28 @@
     },
     "fleet": {
       "pageTitle": "Flotta D-Flight",
-      "pageSubtitle": "Sistemi abbinati al registro droni D-Flight",
-      "tableTitle": "Abbinamento Flotta",
-      "tableSubtitle": "Componenti Readi abbinati ai droni D-Flight tramite numero di serie",
+      "pageSubtitle": "Tutti i droni registrati in D-Flight, abbinati ai sistemi Readi",
+      "tableTitle": "Droni D-Flight",
+      "tableSubtitle": "Droni D-Flight abbinati ai componenti Readi tramite numero di serie",
       "refresh": "Aggiorna",
       "loading": "Recupero dati flotta D-Flight…",
       "retry": "Riprova",
-      "empty": "Nessun componente trovato per questa organizzazione",
+      "empty": "Nessun drone attivo trovato in D-Flight per questo account",
       "stat": {
-        "total": "Componenti Totali",
-        "linked": "Collegati a D-Flight",
-        "unlinked": "Non Trovati in D-Flight"
+        "total": "Droni D-Flight Totali",
+        "linked": "Collegati a Readi",
+        "unlinked": "Non presenti in Readi"
       },
       "col": {
         "link": "Collegato",
+        "dFlightName": "Nome D-Flight",
         "system": "Sistema",
         "component": "Componente",
         "serialNumber": "Numero di Serie",
         "drc": "DRC (ID D-Flight)",
-        "dFlightName": "Nome D-Flight",
         "model": "Modello",
-        "status": "Stato"
+        "status": "Stato",
+        "action": "Azione"
       },
       "error": {
         "generic": "Caricamento dati flotta non riuscito"
@@ -4898,6 +4917,36 @@
         "title": "D-Flight non configurato",
         "description": "Configura le impostazioni di integrazione D-Flight per visualizzare la flotta.",
         "setup": "Vai alle Impostazioni"
+      }
+    },
+    "import": {
+      "title": "Importa Drone da D-Flight",
+      "sections": {
+        "system": "Nuovo Sistema",
+        "component": "Componente",
+        "model": "Marca / Modello"
+      },
+      "fields": {
+        "systemCode": "Codice Sistema",
+        "systemDescription": "Descrizione Sistema",
+        "componentName": "Nome Componente",
+        "serialNumber": "Numero di Serie",
+        "drc": "DRC (ID D-Flight)"
+      },
+      "buttons": {
+        "newModel": "Nuovo Modello",
+        "import": "Importa Drone",
+        "importing": "Importazione…"
+      },
+      "noModelMatch": "Nessun modello corrispondente a \"{{manufacturer}} / {{model}}\" trovato nel tuo registro — creane uno sopra.",
+      "addClass": "Aggiungi:",
+      "toasts": {
+        "systemCodeRequired": "Il codice sistema è obbligatorio",
+        "serialRequired": "Il numero di serie è obbligatorio",
+        "modelRequired": "Seleziona o crea un modello",
+        "success": "Drone importato con successo",
+        "failed": "Importazione del drone non riuscita",
+        "error": "Si è verificato un errore durante l'importazione del drone"
       }
     }
   }

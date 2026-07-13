@@ -20,6 +20,7 @@ interface AddModelModalProps {
   open: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  initialValues?: Partial<typeof INITIAL_FORM>;
 }
 
 const INITIAL_FORM = {
@@ -49,7 +50,7 @@ const INITIAL_FORM = {
   maintenance_cycle_flight: '',
 };
 
-export default function AddModelModal({ open, onClose, onSuccess }: AddModelModalProps) {
+export default function AddModelModal({ open, onClose, onSuccess, initialValues }: AddModelModalProps) {
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState(INITIAL_FORM);
@@ -71,8 +72,9 @@ export default function AddModelModal({ open, onClose, onSuccess }: AddModelModa
 
   useEffect(() => {
     if (open) {
-      setFormData(INITIAL_FORM);
+      setFormData({ ...INITIAL_FORM, ...initialValues });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   const handleChange = (field: string, value: string) => {

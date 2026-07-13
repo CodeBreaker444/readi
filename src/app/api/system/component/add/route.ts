@@ -41,6 +41,9 @@ const ComponentSchema = z
     initial_usage_hours: z.number().min(0).optional().nullable(),
     initial_maintenance_hours: z.number().min(0).optional().nullable(),
     initial_maintenance_flights: z.number().min(0).optional().nullable(),
+    insurance_name: z.string().optional().nullable(),
+    insurance_company: z.string().optional().nullable(),
+    insurance_expiry_date: z.string().optional().nullable(),
   })
   .refine((data) => !!data.fk_tool_id || !!data.warehouse, {
     message: 'Either fk_tool_id or warehouse:true is required',
@@ -100,6 +103,9 @@ export async function POST(req: NextRequest) {
       initial_usage_hours: d.initial_usage_hours ?? null,
       initial_maintenance_hours: d.initial_maintenance_hours ?? null,
       initial_maintenance_flights: d.initial_maintenance_flights ?? null,
+      insurance_name: d.insurance_name ?? null,
+      insurance_company: d.insurance_company ?? null,
+      insurance_expiry_date: d.insurance_expiry_date ?? null,
     });
 
     if (result.code === 1) {

@@ -2025,6 +2025,7 @@
         "opTypePdraDesc": "Pilot flies under risk analysis — mission plan required.",
         "droneLabel": "Drone System",
         "noDronesAssigned": "No drones assigned to this client",
+        "noSystemsForClient": "The selected client doesn't have any systems.",
         "allInMaintenance": "All drones are in maintenance",
         "selectDrone": "Select drone…",
         "allInMaintenanceWarning": "All drones assigned to this client are currently under maintenance.",
@@ -2032,7 +2033,7 @@
         "maintenanceDueTag": "MAINTENANCE DUE",
         "maintenanceDueWarning": "One or more drones have maintenance due. Review before scheduling.",
         "snMismatchTag": "SN Mismatch",
-        "noSystemWithSerial": "No system is present with the serial number {{serial}}",
+        "noSystemWithSerial": "No system belonging to the selected client has the serial number {{serial}}",
         "notOperationalTag": "Not Operational",
         "selectedNonOpWarningPre": "The selected system is",
         "selectedNonOpWarningPost": "— one of its components has expired. Mission creation will be blocked.",
@@ -3702,6 +3703,8 @@
           "model": "Model",
           "system": "System",
           "status": "Status",
+          "expiration": "Expiration",
+          "noExpiration": "No expiration",
           "active": "Active",
           "actions": "Actions",
           "yes": "Yes",
@@ -3776,6 +3779,9 @@
           "hours": "Hours",
           "flights": "Flights",
           "lastMaintenance": "Last Maintenance",
+          "lastMaintenanceBasic": "Last Maintenance (B)",
+          "lastMaintenanceStandard": "Last Maintenance (S)",
+          "lastMaintenanceExtraordinary": "Last Maintenance (EO)",
           "nextMaintenance": "Next Maintenance",
           "triggers": "Triggers",
           "system": "System",
@@ -4055,6 +4061,7 @@
           "clientSerial": "Client / Serial",
           "model": "Model",
           "status": "Status",
+          "expiration": "Expiration",
           "actions": "Actions"
         },
         "noResults": "No results.",
@@ -4095,7 +4102,7 @@
           "activationDate": "Activation Date",
           "active": "Active",
           "status": "Status",
-          "client": "Client",
+          "client": "Client *",
           "location": "Location",
           "attachFiles": "Attach Files (manual, certificate, etc.)"
         },
@@ -4117,6 +4124,7 @@
         "toasts": {
           "latitudeRange": "Latitude must be between -90 and 90",
           "longitudeRange": "Longitude must be between -180 and 180",
+          "clientRequired": "Please select a client",
           "success": "System added successfully",
           "failed": "Failed to add tool",
           "error": "Error adding tool"
@@ -4209,6 +4217,14 @@
         "location": "Location",
         "locationOptional": "Location (optional)",
         "autoDecommissionHint": "Component auto-decommissions on this date",
+        "insurance": {
+          "label": "Insurance",
+          "name": "Insurance Name",
+          "namePlaceholder": "e.g. Comprehensive Cover",
+          "company": "Insurance Company",
+          "companyPlaceholder": "e.g. Allianz",
+          "expiryDate": "Expiry Date"
+        },
         "expiryType": {
           "label": "Expiry Type",
           "expirationDate": "Expiration Date",
@@ -4253,7 +4269,7 @@
           "longitude": "Longitude",
           "status": "Status",
           "active": "Active",
-          "client": "Client",
+          "client": "Client *",
           "location": "Location",
           "activationDate": "Activation Date",
           "maintenanceLogbook": "Maintenance Logbook",
@@ -4285,6 +4301,7 @@
           "componentRemoved": "Component removed from system",
           "removeFailed": "Failed to remove component",
           "removeError": "Error removing component",
+          "clientRequired": "Please select a client",
           "updateSuccess": "System updated successfully",
           "updateFailed": "Failed to update system",
           "updateError": "Error updating system"
@@ -4485,7 +4502,7 @@
           "longitude": "Longitude",
           "status": "Status",
           "activationDate": "Activation Date",
-          "client": "Client",
+          "client": "Client *",
           "location": "Location"
         },
         "componentFields": {
@@ -4525,6 +4542,7 @@
         },
         "toasts": {
           "systemCodeRequired": "System code is required",
+          "clientRequired": "Please select a client",
           "loadSourceFailed": "Failed to load source system",
           "loadComponentsFailed": "Failed to load source components",
           "sourceNotFound": "Source system not found",
@@ -4881,27 +4899,28 @@
     },
     "fleet": {
       "pageTitle": "D-Flight Fleet",
-      "pageSubtitle": "Systems matched against D-Flight drone registry",
-      "tableTitle": "Fleet Matching",
-      "tableSubtitle": "Readi components matched to D-Flight drones by serial number",
+      "pageSubtitle": "All drones registered in D-Flight, matched against Readi systems",
+      "tableTitle": "D-Flight Drones",
+      "tableSubtitle": "D-Flight drones matched to Readi components by serial number",
       "refresh": "Refresh",
       "loading": "Fetching D-Flight fleet data…",
       "retry": "Try again",
-      "empty": "No components found for this organisation",
+      "empty": "No active drones found in D-Flight for this account",
       "stat": {
-        "total": "Total Components",
-        "linked": "Linked to D-Flight",
-        "unlinked": "Not Found in D-Flight"
+        "total": "Total D-Flight Drones",
+        "linked": "Linked to Readi",
+        "unlinked": "Not in Readi"
       },
       "col": {
         "link": "Linked",
+        "dFlightName": "D-Flight Name",
         "system": "System",
         "component": "Component",
         "serialNumber": "Serial Number",
         "drc": "DRC (D-Flight ID)",
-        "dFlightName": "D-Flight Name",
         "model": "Model",
-        "status": "Status"
+        "status": "Status",
+        "action": "Action"
       },
       "error": {
         "generic": "Failed to load fleet data"
@@ -4910,6 +4929,36 @@
         "title": "D-Flight Not Configured",
         "description": "Please configure your D-Flight integration settings to view the fleet.",
         "setup": "Go to Settings"
+      }
+    },
+    "import": {
+      "title": "Import Drone from D-Flight",
+      "sections": {
+        "system": "New System",
+        "component": "Component",
+        "model": "Brand / Model"
+      },
+      "fields": {
+        "systemCode": "System Code",
+        "systemDescription": "System Description",
+        "componentName": "Component Name",
+        "serialNumber": "Serial Number",
+        "drc": "DRC (D-Flight ID)"
+      },
+      "buttons": {
+        "newModel": "New Model",
+        "import": "Import Drone",
+        "importing": "Importing…"
+      },
+      "noModelMatch": "No matching model found for \"{{manufacturer}} / {{model}}\" in your registry — create it above.",
+      "addClass": "Add:",
+      "toasts": {
+        "systemCodeRequired": "System code is required",
+        "serialRequired": "Serial number is required",
+        "modelRequired": "Please select or create a model",
+        "success": "Drone imported successfully",
+        "failed": "Failed to import drone",
+        "error": "An error occurred while importing the drone"
       }
     }
   }

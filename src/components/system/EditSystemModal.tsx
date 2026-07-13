@@ -156,6 +156,11 @@ export default function EditSystemModal({ open, toolId, onClose, onSuccess, clie
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
+    if (!formData.fk_client_id) {
+      toast.error(t('systems.components.editSystem.toasts.clientRequired'));
+      return;
+    }
+
     if (formData.tool_status === 'OPERATIONAL' && originalStatus !== 'OPERATIONAL') {
       try {
         await requireAuthorization({
@@ -330,7 +335,6 @@ export default function EditSystemModal({ open, toolId, onClose, onSuccess, clie
                     <Select value={formData.fk_client_id} onValueChange={v => handleChange('fk_client_id', v)}>
                       <SelectTrigger className={selectTriggerCls}><SelectValue placeholder={t('systems.components.common.select')} /></SelectTrigger>
                       <SelectContent className={selectContentCls}>
-                        <SelectItem value="0">None</SelectItem>
                         {clients.map((c: any) => (
                           <SelectItem key={c.client_id} value={c.client_id.toString()}>{c.client_name}</SelectItem>
                         ))}

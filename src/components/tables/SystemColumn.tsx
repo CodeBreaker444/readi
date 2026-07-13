@@ -2,6 +2,7 @@ import { FeatureGate } from '@/components/permissions/FeatureGate';
 import { SystemFile } from '@/components/system/FilesDownloadModal';
 import { SystemCell } from '@/components/tables/SystemCell';
 import { Button } from '@/components/ui/button';
+import { getComponentExpiryInfo } from '@/lib/system/component-expiry';
 import { ColumnDef } from '@tanstack/react-table';
 import { FileDown, Paperclip } from 'lucide-react';
 
@@ -363,6 +364,21 @@ export const getComponentColumns = ({ isDark, t, toolCodeMap, modelMap, onView, 
                     DECOMMISSIONED: isDark ? 'bg-gray-800 text-gray-400 border border-gray-700' : 'bg-gray-100 text-gray-600',
                 };
                 return <span className={`px-2 py-0.5 rounded text-xs font-medium ${cls[s] || ''}`}>{s}</span>;
+            },
+        },
+        {
+            header: () => <span className={hd}>{t('systems.manage.columns.component.expiration')}</span>,
+            id: 'expiration',
+            cell: ({ row }) => {
+                const info = getComponentExpiryInfo(row.original);
+                if (info.parts.length === 0) {
+                    return <span className={isDark ? 'text-slate-600 text-xs' : 'text-slate-300 text-xs'}>{t('systems.manage.columns.component.noExpiration')}</span>;
+                }
+                return (
+                    <span className={`text-xs ${info.expired ? (isDark ? 'text-red-400 font-medium' : 'text-red-600 font-medium') : text}`}>
+                        {info.parts.join(' · ')}
+                    </span>
+                );
             },
         },
         {
