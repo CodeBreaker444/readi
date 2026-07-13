@@ -34,6 +34,8 @@ interface Flight {
   mission_name?: string;
   status?: string;
   linked_to_mission?: boolean;
+  linked_mission_code?: string | null;
+  linked_mission_name?: string | null;
 }
 
 interface Props {
@@ -198,9 +200,10 @@ export function FlytbaseFlights({ isActive = true, selectedOrganization, listCon
     }
   };
 
-  const markFlightAsLinked = useCallback((flightId: string) => {
-    setSelectedFlight((prev) => (prev && prev.flight_id === flightId ? { ...prev, linked_to_mission: true } : prev));
-    setFlights((prev) => prev.map((f) => (f.flight_id === flightId ? { ...f, linked_to_mission: true } : f)));
+  const markFlightAsLinked = useCallback((flightId: string, missionCode?: string) => {
+    const patch = { linked_to_mission: true as const, linked_mission_code: missionCode ?? null };
+    setSelectedFlight((prev) => (prev && prev.flight_id === flightId ? { ...prev, ...patch } : prev));
+    setFlights((prev) => prev.map((f) => (f.flight_id === flightId ? { ...f, ...patch } : f)));
   }, []);
 
   const handleAttachMission = async (missionId: number, missionType?: string, missionCode?: string) => {
@@ -292,7 +295,7 @@ export function FlytbaseFlights({ isActive = true, selectedOrganization, listCon
   // Fires as soon as the mission is created, so the flight log gets attached
   // immediately instead of relying on the user coming back to manually
   // attach it from the "Attach Existing Mission" list.
-  const handleNewMissionCreated = async (op: { pilot_mission_id: number }) => {
+  const handleNewMissionCreated = async (op: { pilot_mission_id: number; mission_code?: string }) => {
     if (!selectedFlight) return;
     try {
       const res = await axios.post(`/api/operation/missions/${op.pilot_mission_id}/attach-flight-log`, {
@@ -300,7 +303,7 @@ export function FlytbaseFlights({ isActive = true, selectedOrganization, listCon
         organization_id: selectedOrganization?.id,
       });
       if (res.data.code === 1) {
-        markFlightAsLinked(selectedFlight.flight_id);
+        markFlightAsLinked(selectedFlight.flight_id, op.mission_code);
         const mismatch = res.data.serialNumberMismatch;
         if (mismatch) {
           toast.warning(`Mission created and flight log attached — but the drone's serial number doesn't match the log (log: ${mismatch.logSerialNumber}, mission drone: ${mismatch.missionSerialNumber}).`);
@@ -491,7 +494,9 @@ export function FlytbaseFlights({ isActive = true, selectedOrganization, listCon
             {selectedFlight?.linked_to_mission ? (
               <span className={`flex items-center gap-1.5 h-8 px-3 rounded-md border text-xs font-medium ${isDark ? 'border-slate-700 bg-slate-800 text-slate-400' : 'border-slate-200 bg-slate-50 text-slate-500'}`}>
                 <HiLink className="h-3.5 w-3.5" />
-                Log already attached
+                {selectedFlight.linked_mission_code || selectedFlight.linked_mission_name
+                  ? `Log already attached to ${selectedFlight.linked_mission_code ?? selectedFlight.linked_mission_name}`
+                  : 'Log already attached'}
               </span>
             ) : (
               <Button
