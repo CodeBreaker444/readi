@@ -488,17 +488,23 @@ export function FlytbaseFlights({ isActive = true, selectedOrganization, listCon
               <HiRefresh className="h-3.5 w-3.5" />
               {t('flytbase.flights.refresh')}
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleOpenAttachMissionModal}
-              disabled={!selectedFlight || !preview || !!selectedFlight?.linked_to_mission}
-              title={selectedFlight?.linked_to_mission ? 'This flight log is already attached to a mission' : undefined}
-              className={`h-8 gap-1.5 cursor-pointer text-xs ${isDark ? 'border-slate-700 bg-slate-800 text-slate-300' : 'border-slate-200 text-slate-600'}`}
-            >
-              <HiLink className="h-3.5 w-3.5" />
-              Attach Mission
-            </Button>
+            {selectedFlight?.linked_to_mission ? (
+              <span className={`flex items-center gap-1.5 h-8 px-3 rounded-md border text-xs font-medium ${isDark ? 'border-slate-700 bg-slate-800 text-slate-400' : 'border-slate-200 bg-slate-50 text-slate-500'}`}>
+                <HiLink className="h-3.5 w-3.5" />
+                Log already attached
+              </span>
+            ) : (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleOpenAttachMissionModal}
+                disabled={!selectedFlight || !preview}
+                className={`h-8 gap-1.5 cursor-pointer text-xs ${isDark ? 'border-slate-700 bg-slate-800 text-slate-300' : 'border-slate-200 text-slate-600'}`}
+              >
+                <HiLink className="h-3.5 w-3.5" />
+                Attach Mission
+              </Button>
+            )}
           </div>
         </div>
 
