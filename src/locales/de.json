@@ -4940,6 +4940,7 @@
         "importing": "Importiere…"
       },
       "noModelMatch": "Kein passendes Modell für \"{{manufacturer}} / {{model}}\" in Ihrem Register gefunden — erstellen Sie es oben.",
+      "prefillingModel": "Modelldetails werden von D-Flight abgerufen…",
       "addClass": "Hinzufügen:",
       "toasts": {
         "systemCodeRequired": "Systemcode ist erforderlich",

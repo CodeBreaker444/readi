@@ -4945,6 +4945,7 @@
         "importing": "Importazione…"
       },
       "noModelMatch": "Nessun modello corrispondente a \"{{manufacturer}} / {{model}}\" trovato nel tuo registro — creane uno sopra.",
+      "prefillingModel": "Recupero dei dettagli del modello da D-Flight…",
       "addClass": "Aggiungi:",
       "toasts": {
         "systemCodeRequired": "Il codice sistema è obbligatorio",

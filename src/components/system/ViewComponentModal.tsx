@@ -8,6 +8,7 @@ interface ViewComponentModalProps {
     component: any | null;
     systemCode?: string;
     onClose: () => void;
+    dFlightEnabled?: boolean;
 }
 
 function InfoRow({ label, value }: { label: string; value?: string | number | null }) {
@@ -26,7 +27,7 @@ const statusColors: Record<string, string> = {
     DECOMMISSIONED: 'bg-gray-100 text-gray-600 border border-gray-200',
 };
 
-export default function ViewComponentModal({ open, component, systemCode, onClose }: ViewComponentModalProps) {
+export default function ViewComponentModal({ open, component, systemCode, onClose, dFlightEnabled = false }: ViewComponentModalProps) {
     if (!component) return null;
 
     const statusCls = statusColors[component.component_status] ?? 'bg-slate-100 text-slate-600';
@@ -78,6 +79,25 @@ export default function ViewComponentModal({ open, component, systemCode, onClos
                             <InfoRow label="Installation Date" value={component.component_activation_date} />
                         </div>
                     </div>
+
+                    {dFlightEnabled && component.qr_code_image && (
+                        <>
+                            <div className="border-t border-slate-100" />
+                            <div>
+                                <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-2">Additional Information</p>
+                                <div>
+                                    <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">QR Code</p>
+                                    <img
+                                        src={component.qr_code_image.startsWith('http') || component.qr_code_image.startsWith('data:')
+                                            ? component.qr_code_image
+                                            : `data:image/png;base64,${component.qr_code_image}`}
+                                        alt="QR Code"
+                                        className="w-28 h-28 object-contain rounded border border-slate-200 bg-white"
+                                    />
+                                </div>
+                            </div>
+                        </>
+                    )}
 
                     {hasMaintCycle && (
                         <>

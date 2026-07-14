@@ -11,6 +11,8 @@ export interface DFlightDroneRow {
   insuranceExpiryDate: string | null;
   uasClassId: string | null;
   qrCodeImage: string | null;
+  modelId: string | null;
+  manufacturerId: string | null;
   linked: boolean;
   componentId: number | null;
   systemId: number | null;

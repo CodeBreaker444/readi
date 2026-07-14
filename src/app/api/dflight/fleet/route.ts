@@ -88,6 +88,8 @@ export async function GET() {
         insuranceExpiryDate: d.insuranceExpiryDate,
         uasClassId: d.uasClassId,
         qrCodeImage: d.qrCodeImage,
+        modelId: d.modelId,
+        manufacturerId: d.manufacturerId,
         linked: match !== null,
         componentId: match?.component_id ?? null,
         systemId: match?.tool.tool_id ?? null,

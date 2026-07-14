@@ -106,7 +106,7 @@ export async function POST(req: NextRequest) {
       insurance_name: d.insurance_name ?? null,
       insurance_company: d.insurance_company ?? null,
       insurance_expiry_date: d.insurance_expiry_date ?? null,
-    });
+    }, session!.user.ownerId);
 
     if (result.code === 1) {
       const systemCode = d.warehouse ? null : await getToolCode(toolId, session!.user.ownerId);

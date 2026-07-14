@@ -9,7 +9,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useTheme } from '@/components/useTheme';
 import axios from 'axios';
 import { ChevronDown, ChevronRight, Loader2, Pencil, Search, Shield, X } from 'lucide-react';
-import { QRCodeSVG } from 'qrcode.react';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -906,9 +905,12 @@ export default function EditComponentModal({
                     </div>
                     <div className={`px-4 pb-4 pt-3 border-t ${isDark ? 'border-slate-700' : 'border-slate-200'}`}>
                       <Label className={labelCls}>{t('systems.components.common.additionalInformation.qrCode')}</Label>
-                      <div className="w-56 h-56 rounded border border-slate-200 bg-white flex items-center justify-center">
-                        <QRCodeSVG value={qrCodeImage} size={220} marginSize={4} level="L" />
-                      </div>
+                      {/* d-flight returns a pre-rendered QR PNG as raw base64 (no data: prefix) — render it directly */}
+                      <img
+                        src={qrCodeImage.startsWith('http') || qrCodeImage.startsWith('data:') ? qrCodeImage : `data:image/png;base64,${qrCodeImage}`}
+                        alt={t('systems.components.common.additionalInformation.qrCode')}
+                        className="w-32 h-32 object-contain rounded border border-slate-200 bg-white"
+                      />
                       <p className={`mt-1 text-[11px] ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
                         {t('systems.components.common.additionalInformation.qrCodeHint')}
                       </p>
