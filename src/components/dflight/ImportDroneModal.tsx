@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import axios from 'axios';
-import { ChevronDown, ChevronRight, PlusCircle, Shield, X } from 'lucide-react';
+import { ChevronDown, ChevronRight, Loader2, PlusCircle, Shield, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -50,6 +50,15 @@ export default function ImportDroneModal({ open, onClose, onImported, drone, mod
   const [classesExpanded, setClassesExpanded] = useState(false);
   const [droneClasses, setDroneClasses] = useState<{ class_id: number; class_value: string }[]>([]);
   const [customClassInput, setCustomClassInput] = useState('');
+  const [modelPrefill, setModelPrefill] = useState({
+    manufacturer: '',
+    model_name: '',
+    model_code: '',
+    mtom: '',
+    temp_min: '',
+    temp_max: '',
+  });
+  const [modelPrefillLoading, setModelPrefillLoading] = useState(false);
 
   const matchModel = useCallback((list: any[]) => {
     if (!drone) return null;
@@ -80,20 +89,76 @@ export default function ImportDroneModal({ open, onClose, onImported, drone, mod
     setInsuranceExpanded(!!(drone.insuranceCompany || drone.insuranceExpiryDate));
     setClassesExpanded(false);
 
+    // Seed with the flat strings already present on the row; each lookup below
+    // overwrites its own fields once (and if) the dedicated d-flight API resolves.
+    setModelPrefill({
+      manufacturer: drone.manufacturerName || '',
+      model_name: drone.modelName || '',
+      model_code: drone.modelName || '',
+      mtom: '',
+      temp_min: '',
+      temp_max: '',
+    });
+
     axios.get('/api/system/drone-classes')
       .then(({ data }) => { if (data.code === 1) setDroneClasses(data.data ?? []); })
       .catch(() => setDroneClasses([]));
 
+    const lookups: Promise<void>[] = [];
+
     if (drone.uasClassId) {
-      axios.get(`/api/dflight/uas-class?id=${encodeURIComponent(drone.uasClassId)}`)
-        .then(({ data }) => {
-          const label = data?.data?.label;
-          if (label) {
-            setFormData((prev) => prev.drone_classes.includes(label) ? prev : { ...prev, drone_classes: [...prev.drone_classes, label] });
-            setClassesExpanded(true);
-          }
-        })
-        .catch(() => {});
+      lookups.push(
+        axios.get(`/api/dflight/uas-class?id=${encodeURIComponent(drone.uasClassId)}`)
+          .then(({ data }) => {
+            const result = data?.data;
+            if (result?.label) {
+              setFormData((prev) => prev.drone_classes.includes(result.label) ? prev : { ...prev, drone_classes: [...prev.drone_classes, result.label] });
+              setClassesExpanded(true);
+            }
+            if (result && (result.mtom || result.tempMin || result.tempMax)) {
+              setModelPrefill((prev) => ({
+                ...prev,
+                mtom: result.mtom ?? prev.mtom,
+                temp_min: result.tempMin ?? prev.temp_min,
+                temp_max: result.tempMax ?? prev.temp_max,
+              }));
+            }
+          })
+          .catch(() => {}),
+      );
+    }
+
+    if (drone.modelId) {
+      lookups.push(
+        axios.get(`/api/dflight/model-search?id=${encodeURIComponent(drone.modelId)}`)
+          .then(({ data }) => {
+            const result = data?.data;
+            if (result?.modelName || result?.modelCode) {
+              setModelPrefill((prev) => ({
+                ...prev,
+                model_name: result.modelName ?? prev.model_name,
+                model_code: result.modelCode ?? prev.model_code,
+              }));
+            }
+          })
+          .catch(() => {}),
+      );
+    }
+
+    if (drone.manufacturerId) {
+      lookups.push(
+        axios.get(`/api/dflight/manufacturer?id=${encodeURIComponent(drone.manufacturerId)}`)
+          .then(({ data }) => {
+            const name = data?.data?.name;
+            if (name) setModelPrefill((prev) => ({ ...prev, manufacturer: name }));
+          })
+          .catch(() => {}),
+      );
+    }
+
+    if (lookups.length) {
+      setModelPrefillLoading(true);
+      Promise.allSettled(lookups).finally(() => setModelPrefillLoading(false));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, drone]);
@@ -237,15 +302,27 @@ export default function ImportDroneModal({ open, onClose, onImported, drone, mod
                   </Select>
                 </div>
                 <div className="col-span-1 sm:col-span-4">
-                  <Button type="button" variant="outline" onClick={() => setShowAddModel(true)} className="w-full gap-1.5">
-                    <PlusCircle className="h-3.5 w-3.5" />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setShowAddModel(true)}
+                    disabled={modelPrefillLoading}
+                    className="w-full gap-1.5"
+                  >
+                    {modelPrefillLoading ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <PlusCircle className="h-3.5 w-3.5" />
+                    )}
                     {t('dflight.import.buttons.newModel')}
                   </Button>
                 </div>
               </div>
               {noModelMatch && (
                 <p className="text-xs text-amber-600 mt-2">
-                  {t('dflight.import.noModelMatch', { manufacturer: drone.manufacturerName ?? '—', model: drone.modelName ?? '—' })}
+                  {modelPrefillLoading
+                    ? t('dflight.import.prefillingModel')
+                    : t('dflight.import.noModelMatch', { manufacturer: drone.manufacturerName ?? '—', model: drone.modelName ?? '—' })}
                 </p>
               )}
             </div>
@@ -343,9 +420,12 @@ export default function ImportDroneModal({ open, onClose, onImported, drone, mod
         initialValues={{
           model_category: 'AIRCRAFT',
           model_subtype: 'MULTIROTOR',
-          manufacturer: drone.manufacturerName ?? '',
-          model_name: drone.modelName ?? '',
-          model_code: drone.modelName ?? '',
+          manufacturer: modelPrefill.manufacturer,
+          model_name: modelPrefill.model_name,
+          model_code: modelPrefill.model_code,
+          mtom: modelPrefill.mtom,
+          temp_min: modelPrefill.temp_min,
+          temp_max: modelPrefill.temp_max,
         }}
       />
     </>

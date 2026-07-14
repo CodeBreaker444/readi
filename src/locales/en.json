@@ -4957,6 +4957,7 @@
         "importing": "Importing…"
       },
       "noModelMatch": "No matching model found for \"{{manufacturer}} / {{model}}\" in your registry — create it above.",
+      "prefillingModel": "Fetching model details from D-Flight…",
       "addClass": "Add:",
       "toasts": {
         "systemCodeRequired": "System code is required",

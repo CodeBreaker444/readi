@@ -43,6 +43,27 @@ export interface DFlightDroneResult {
   insuranceExpiryDate: string | null;
   uasClassId: string | null;
   qrCodeImage: string | null;
+  modelId: string | null;
+  manufacturerId: string | null;
+}
+
+export interface DFlightModelResult {
+  id: string;
+  modelCode: string | null;
+  modelName: string | null;
+}
+
+export interface DFlightManufacturerResult {
+  id: string;
+  name: string | null;
+}
+
+export interface DFlightUasClassResult {
+  id: string;
+  label: string | null;
+  mtom: string | null;
+  tempMin: string | null;
+  tempMax: string | null;
 }
 
 export interface DFlightDronePageResult {
@@ -137,6 +158,8 @@ function mapDroneResultView(v: Record<string, string | null>): DFlightDroneResul
     insuranceCompany:          v['insurance.company']         ?? null,
     insuranceExpiryDate:       v['insurance.expiryDate']      ?? null,
     uasClassId:                v['droneClass.id']             ?? null,
+    modelId:                   v['model.id']                  ?? null,
+    manufacturerId:            v['model.manufacturer.id']      ?? null,
   };
 }
 
@@ -189,7 +212,7 @@ export async function getDFlightUasClass(
   baseUrl:     string,
   accessToken: string,
   classId:     string,
-): Promise<{ id: string; label: string | null } | null> {
+): Promise<DFlightUasClassResult | null> {
   const res = await dFetch(
     `${baseUrl}/drone-management/v2/api/uas-class/${encodeURIComponent(classId)}`,
     {
@@ -205,6 +228,74 @@ export async function getDFlightUasClass(
 
   // Best-effort: exact response shape unverified against a live payload.
   const json = (await res.json()) as Record<string, unknown>;
-  const label = (json['className'] ?? json['name'] ?? json['label']) as string | undefined;
-  return { id: classId, label: label ?? null };
+  console.log(`D-Flight uas-class raw response (id=${classId}):`, JSON.stringify(json));
+  const label   = (json['className'] ?? json['name'] ?? json['label']) as string | undefined;
+  const mtom    = (json['mtow'] ?? json['MTOW'] ?? json['mtom'])       as string | number | undefined;
+  const tempMin = (json['minTemp'] ?? json['temperatureMin'])         as string | number | undefined;
+  const tempMax = (json['maxTemp'] ?? json['temperatureMax'])         as string | number | undefined;
+
+  return {
+    id:      classId,
+    label:   label   != null ? String(label)   : null,
+    mtom:    mtom    != null ? String(mtom)    : null,
+    tempMin: tempMin != null ? String(tempMin) : null,
+    tempMax: tempMax != null ? String(tempMax) : null,
+  };
+}
+
+export async function getDFlightModel(
+  baseUrl:     string,
+  accessToken: string,
+  modelId:     string,
+): Promise<DFlightModelResult | null> {
+  const res = await dFetch(
+    `${baseUrl}/drone-management/v2/api/models/search?id=${encodeURIComponent(modelId)}`,
+    {
+      method:  'GET',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        Accept:        'application/json',
+      },
+    },
+  );
+
+  if (!res.ok) return null;
+
+  const json = (await res.json()) as { data?: unknown[] };
+  const record = Array.isArray(json.data) ? (json.data[0] as Record<string, unknown> | undefined) : undefined;
+  if (!record) return null;
+
+  const modelCode = record['code']  as string | undefined;
+  const modelName = record['model'] as string | undefined;
+
+  return {
+    id:        modelId,
+    modelCode: modelCode ?? null,
+    modelName: modelName ?? null,
+  };
+}
+
+export async function getDFlightManufacturer(
+  baseUrl:        string,
+  accessToken:    string,
+  manufacturerId: string,
+): Promise<DFlightManufacturerResult | null> {
+  const res = await dFetch(
+    `${baseUrl}/drone-management/v2/api/manufacturer/${encodeURIComponent(manufacturerId)}`,
+    {
+      method:  'GET',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        Accept:        'application/json',
+      },
+    },
+  );
+
+  if (!res.ok) return null;
+
+  const json = (await res.json()) as Record<string, unknown>;
+  console.log(`D-Flight manufacturer raw response (id=${manufacturerId}):`, JSON.stringify(json));
+  const name = (json['name'] ?? json['manufacturerName']) as string | undefined;
+
+  return { id: manufacturerId, name: name ?? null };
 }
