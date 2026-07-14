@@ -555,6 +555,7 @@ export default function DroneToolPage({ dFlightEnabled }: DroneToolPageProps) {
                 component={selectedComponent}
                 systemCode={selectedComponent ? toolCodeMap[selectedComponent.fk_tool_id] : undefined}
                 onClose={() => { setShowViewComponent(false); setSelectedComponent(null); }}
+                dFlightEnabled={dFlightEnabled}
             />
 
             <ComponentLogModal

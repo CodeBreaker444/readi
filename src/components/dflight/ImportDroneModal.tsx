@@ -145,7 +145,6 @@ export default function ImportDroneModal({ open, onClose, onImported, drone, mod
         insurance_expiry_date: formData.insurance_expiry_date || null,
         qr_code_image: drone.qrCodeImage || null,
       };
-
       const { data } = await axios.post('/api/dflight/import', payload);
       if (data.code === 1) {
         toast.success(t('dflight.import.toasts.success'));
