@@ -121,7 +121,6 @@ export async function getFlightLogGutmaPreview(logId: number, ownerId: number) {
 
 const ALLOWED_EXTENSIONS = ['.zip', '.json', '.xml', '.gutma'];
 
-/** A mission's assigned tool (system) can have more than one active drone/aircraft component (e.g. a dock with several swappable airframes), so this returns all of their serial numbers rather than picking just one. */
 async function getDroneSerialNumbersForMission(missionId: number): Promise<string[]> {
   const mission = await prisma.pilot_mission.findUnique({
     where: { pilot_mission_id: missionId },
@@ -203,17 +202,29 @@ export async function previewUploadedFlightLog(
 }
 
 /**
- * Syncs a mission's post-flight fields (actual start/end, duration, distance,
- * battery) from a parsed GUTMA payload and marks it COMPLETED — an attached
- * log is proof the flight already happened, regardless of what stage the
- * mission was in before (e.g. a mission created ad hoc from Control Center).
+ * Marks a mission COMPLETED — an attached log is proof the flight already
+ * happened, regardless of what stage the mission was in before (e.g. a
+ * mission created ad hoc from Control Center). Kept separate from the
+ * best-effort GUTMA field enrichment below so a malformed/unparseable log
+ * can never silently leave the mission stuck at SCHEDULED.
  */
-async function syncMissionFromGutma(missionId: number, gutma: any): Promise<string | null> {
+async function markMissionCompleted(missionId: number): Promise<string | null> {
+  const updated = await prisma.pilot_mission.update({
+    where: { pilot_mission_id: missionId },
+    data: { status_name: 'COMPLETED', fk_mission_status_id: 3 },
+    select: { mission_code: true },
+  });
+  return updated.mission_code ?? null;
+}
+
+/**
+ * Best-effort sync of a mission's post-flight fields (actual start/end,
+ * duration, distance, battery) from a parsed GUTMA payload. Failures here
+ * must not affect the COMPLETED status set by markMissionCompleted.
+ */
+async function syncPostFlightFieldsFromGutma(missionId: number, gutma: any): Promise<void> {
   const parsed = parseGutmaFlightData(gutma);
-  const missionUpdate: Record<string, unknown> = {
-    status_name: 'COMPLETED',
-    fk_mission_status_id: 3,
-  };
+  const missionUpdate: Record<string, unknown> = {};
 
   const startMs = parsed.start_time ? new Date(parsed.start_time).getTime() : NaN;
   const endMs = parsed.end_time ? new Date(parsed.end_time).getTime() : NaN;
@@ -229,12 +240,10 @@ async function syncMissionFromGutma(missionId: number, gutma: any): Promise<stri
   if (parsed.battery_charge_start != null) missionUpdate.battery_charge_start = parsed.battery_charge_start;
   if (parsed.battery_charge_end != null) missionUpdate.battery_charge_end = parsed.battery_charge_end;
 
-  const updated = await prisma.pilot_mission.update({
+  await prisma.pilot_mission.update({
     where: { pilot_mission_id: missionId },
     data: missionUpdate,
-    select: { mission_code: true },
   });
-  return updated.mission_code ?? null;
 }
 
 async function extractSerialNumberFromFile(file: File): Promise<string | null> {
@@ -338,12 +347,14 @@ export async function uploadManualFlightLog(
     },
   });
 
+  await markMissionCompleted(missionId);
+
   try {
     const gutma = await parseGutmaJsonFromFile(file);
-    if (gutma) await syncMissionFromGutma(missionId, gutma);
+    if (gutma) await syncPostFlightFieldsFromGutma(missionId, gutma);
   } catch (err) {
     // Best-effort — a parsing/sync failure shouldn't fail the upload itself.
-    console.error('[uploadManualFlightLog] GUTMA mission sync failed:', err);
+    console.error('[uploadManualFlightLog] GUTMA field sync failed:', err);
   }
 }
 
@@ -440,15 +451,16 @@ export async function attachFlytbaseFlightLog(
     },
   });
 
+  const missionCode = await markMissionCompleted(missionId);
+
   // Prefill the mission's post-flight fields from the GUTMA log so Edit
   // Mission's Mission Log / Post Flight tabs reflect the attached flight
   // without requiring a separate manual sync step.
-  let missionCode: string | null = null;
   try {
-    missionCode = await syncMissionFromGutma(missionId, gutma);
+    await syncPostFlightFieldsFromGutma(missionId, gutma);
   } catch (err) {
     // Best-effort — a parsing/sync failure shouldn't fail the attach itself.
-    console.error('[attachFlytbaseFlightLog] GUTMA mission sync failed:', err);
+    console.error('[attachFlytbaseFlightLog] GUTMA field sync failed:', err);
   }
 
   return { missionCode };

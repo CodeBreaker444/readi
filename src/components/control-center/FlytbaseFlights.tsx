@@ -34,6 +34,8 @@ interface Flight {
   mission_name?: string;
   status?: string;
   linked_to_mission?: boolean;
+  linked_mission_code?: string | null;
+  linked_mission_name?: string | null;
 }
 
 interface Props {
@@ -198,6 +200,12 @@ export function FlytbaseFlights({ isActive = true, selectedOrganization, listCon
     }
   };
 
+  const markFlightAsLinked = useCallback((flightId: string, missionCode?: string) => {
+    const patch = { linked_to_mission: true as const, linked_mission_code: missionCode ?? null };
+    setSelectedFlight((prev) => (prev && prev.flight_id === flightId ? { ...prev, ...patch } : prev));
+    setFlights((prev) => prev.map((f) => (f.flight_id === flightId ? { ...f, ...patch } : f)));
+  }, []);
+
   const handleAttachMission = async (missionId: number, missionType?: string, missionCode?: string) => {
     if (!selectedFlight) return;
 
@@ -236,6 +244,7 @@ export function FlytbaseFlights({ isActive = true, selectedOrganization, listCon
         } else {
           toast.success('Flight log attached to mission — post-flight data has been filled in automatically.');
         }
+        markFlightAsLinked(selectedFlight.flight_id);
         setAttachMissionModalOpen(false);
         const droneSerialNumber = preview?.aircraft?.serial_number;
         if (droneSerialNumber) {
@@ -255,6 +264,12 @@ export function FlytbaseFlights({ isActive = true, selectedOrganization, listCon
   };
 
   const handleOpenNewMission = async () => {
+    if (selectedFlight?.linked_to_mission) {
+      toast.error('This flight log is already attached to a mission.');
+      setAttachMissionModalOpen(false);
+      return;
+    }
+
     try {
       await requireAuthorization({
         actionType: 'mission_create_from_flight',
@@ -280,7 +295,7 @@ export function FlytbaseFlights({ isActive = true, selectedOrganization, listCon
   // Fires as soon as the mission is created, so the flight log gets attached
   // immediately instead of relying on the user coming back to manually
   // attach it from the "Attach Existing Mission" list.
-  const handleNewMissionCreated = async (op: { pilot_mission_id: number }) => {
+  const handleNewMissionCreated = async (op: { pilot_mission_id: number; mission_code?: string }) => {
     if (!selectedFlight) return;
     try {
       const res = await axios.post(`/api/operation/missions/${op.pilot_mission_id}/attach-flight-log`, {
@@ -288,6 +303,7 @@ export function FlytbaseFlights({ isActive = true, selectedOrganization, listCon
         organization_id: selectedOrganization?.id,
       });
       if (res.data.code === 1) {
+        markFlightAsLinked(selectedFlight.flight_id, op.mission_code);
         const mismatch = res.data.serialNumberMismatch;
         if (mismatch) {
           toast.warning(`Mission created and flight log attached — but the drone's serial number doesn't match the log (log: ${mismatch.logSerialNumber}, mission drone: ${mismatch.missionSerialNumber}).`);
@@ -465,7 +481,7 @@ export function FlytbaseFlights({ isActive = true, selectedOrganization, listCon
               {t('flytbase.flights.latest20')}
             </button>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-start gap-2">
             <Button
               variant="outline"
               size="sm"
@@ -475,17 +491,25 @@ export function FlytbaseFlights({ isActive = true, selectedOrganization, listCon
               <HiRefresh className="h-3.5 w-3.5" />
               {t('flytbase.flights.refresh')}
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleOpenAttachMissionModal}
-              disabled={!selectedFlight || !preview || !!selectedFlight?.linked_to_mission}
-              title={selectedFlight?.linked_to_mission ? 'This flight log is already attached to a mission' : undefined}
-              className={`h-8 gap-1.5 cursor-pointer text-xs ${isDark ? 'border-slate-700 bg-slate-800 text-slate-300' : 'border-slate-200 text-slate-600'}`}
-            >
-              <HiLink className="h-3.5 w-3.5" />
-              Attach Mission
-            </Button>
+            <div className="flex flex-col items-end gap-1">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleOpenAttachMissionModal}
+                disabled={!selectedFlight || !preview || !!selectedFlight?.linked_to_mission}
+                className={`h-8 gap-1.5 cursor-pointer text-xs ${isDark ? 'border-slate-700 bg-slate-800 text-slate-300' : 'border-slate-200 text-slate-600'}`}
+              >
+                <HiLink className="h-3.5 w-3.5" />
+                Attach Mission
+              </Button>
+              {selectedFlight?.linked_to_mission && (
+                <span className={`text-[10px] ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                  {selectedFlight.linked_mission_code || selectedFlight.linked_mission_name
+                    ? `Log already attached to ${selectedFlight.linked_mission_code ?? selectedFlight.linked_mission_name}`
+                    : 'Log already attached'}
+                </span>
+              )}
+            </div>
           </div>
         </div>
 

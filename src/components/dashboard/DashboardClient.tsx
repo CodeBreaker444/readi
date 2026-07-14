@@ -60,11 +60,21 @@ interface MissionData {
 type MissionTableType = 'past' | 'next';
 
 const PIE_COLORS = ['#ef4444', '#10b981', '#f59e0b'];
+
+// Curated palette used first (keeps the on-brand look for the common case).
+// Once a company has more series than this, getBarColor falls back to
+// generated hues so extra series never collide with an existing color.
 const BAR_COLORS = [
   '#6366f1', '#10b981', '#f59e0b', '#ef4444',
   '#3b82f6', '#8b5cf6', '#ec4899', '#06b6d4',
   '#f97316', '#84cc16',
 ];
+
+function getBarColor(index: number): string {
+  if (index < BAR_COLORS.length) return BAR_COLORS[index];
+  const hue = (index * 137.508) % 360; // golden-angle spacing avoids repeats/clashes
+  return `hsl(${hue.toFixed(1)}, 65%, 55%)`;
+}
 
 const STATS = (data: any, t: any) => [
   {
@@ -314,7 +324,7 @@ export default function DashboardClient({ ownerId, userProfileCode, userId, init
   const chartConfig: ChartConfig = (data?.readi_mission_chart?.series || []).reduce(
     (acc: ChartConfig, drone: any, i: number) => {
       const key = sanitizeKey(drone.name);
-      acc[key] = { label: drone.name, color: BAR_COLORS[i % BAR_COLORS.length] };
+      acc[key] = { label: drone.name, color: getBarColor(i) };
       return acc;
     },
     {} as ChartConfig
@@ -446,7 +456,7 @@ export default function DashboardClient({ ownerId, userProfileCode, userId, init
           </div>
           <div className="px-5 pb-5">
             <ChartContainer config={chartConfig} className="h-72 w-full">
-              <BarChart data={barChartData} barCategoryGap="18%" barGap={4}>
+              <BarChart data={barChartData} barCategoryGap="10%" barGap={3}>
                 <CartesianGrid strokeDasharray="3 3" stroke={gridColor} vertical={false} />
                 <XAxis dataKey="month" stroke={axisColor} tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
                 <YAxis stroke={axisColor} tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
@@ -456,7 +466,7 @@ export default function DashboardClient({ ownerId, userProfileCode, userId, init
                 />
                 <ChartLegend content={<ChartLegendContent />} />
                 {droneKeys.map((key) => (
-                  <Bar key={key} dataKey={key} fill={`var(--color-${key})`} radius={[5, 5, 0, 0]} maxBarSize={64} />
+                  <Bar key={key} dataKey={key} fill={`var(--color-${key})`} radius={[0, 0, 0, 0]} maxBarSize={84} />
                 ))}
               </BarChart>
             </ChartContainer>

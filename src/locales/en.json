@@ -4217,6 +4217,11 @@
         "location": "Location",
         "locationOptional": "Location (optional)",
         "autoDecommissionHint": "Component auto-decommissions on this date",
+        "additionalInformation": {
+          "label": "Additional Information",
+          "qrCode": "QR Code",
+          "qrCodeHint": "Synced from D-Flight"
+        },
         "insurance": {
           "label": "Insurance",
           "name": "Insurance Name",
@@ -4943,7 +4948,8 @@
         "systemDescription": "System Description",
         "componentName": "Component Name",
         "serialNumber": "Serial Number",
-        "drc": "DRC (D-Flight ID)"
+        "drc": "DRC (D-Flight ID)",
+        "client": "Client"
       },
       "buttons": {
         "newModel": "New Model",
@@ -4956,6 +4962,7 @@
         "systemCodeRequired": "System code is required",
         "serialRequired": "Serial number is required",
         "modelRequired": "Please select or create a model",
+        "clientRequired": "Please select a client",
         "success": "Drone imported successfully",
         "failed": "Failed to import drone",
         "error": "An error occurred while importing the drone"

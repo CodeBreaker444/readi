@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useTheme } from '@/components/useTheme';
 import axios from 'axios';
 import { ChevronDown, ChevronRight, Loader2, Pencil, Search, Shield, X } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -51,6 +52,7 @@ interface EditComponentModalProps {
   clients: any[];
   tools: any[];
   initialComponentId?: number | null;
+  dFlightEnabled?: boolean;
 }
 
 const EMPTY_FORM = {
@@ -93,7 +95,7 @@ interface ComponentType {
   type_label: string;
 }
 export default function EditComponentModal({
-  open, toolId, onClose, onSuccess, models, clients, tools, initialComponentId,
+  open, toolId, onClose, onSuccess, models, clients, tools, initialComponentId, dFlightEnabled = false,
 }: EditComponentModalProps) {
   const { isDark } = useTheme();
   const { t } = useTranslation();
@@ -110,6 +112,7 @@ export default function EditComponentModal({
   const [loadingParent, setLoadingParent] = useState<boolean>(false);
   const [originalFkToolId, setOriginalFkToolId] = useState<number | null>(null);
   const [drcSyncedAt, setDrcSyncedAt] = useState<string | null>(null);
+  const [qrCodeImage, setQrCodeImage] = useState<string | null>(null);
   const [insuranceExpanded, setInsuranceExpanded] = useState(false);
 
     const [formData, setFormData] = useState(EMPTY_FORM);
@@ -157,6 +160,7 @@ export default function EditComponentModal({
       setFormData(EMPTY_FORM);
       setOriginalFkToolId(null);
       setDrcSyncedAt(null);
+      setQrCodeImage(null);
       setSystemSearch('');
     }
   }, [open, toolId, initialComponentId]);
@@ -164,6 +168,7 @@ export default function EditComponentModal({
   const populateForm = (comp: any) => {
     setOriginalFkToolId(comp.fk_tool_id ?? null);
     setDrcSyncedAt(comp.drc_synced_at ?? null);
+    setQrCodeImage(comp.qr_code_image ?? null);
     setFormData({
       fk_tool_id: (comp.system_detached || !comp.fk_tool_id) ? '_none' : String(comp.fk_tool_id),
       component_type: comp.component_type || '',
@@ -893,6 +898,23 @@ export default function EditComponentModal({
                     </div>
                   )}
                 </div>
+
+                {dFlightEnabled && qrCodeImage && (
+                  <div className={`rounded-lg border ${isDark ? 'border-slate-600 bg-slate-900/40' : 'border-slate-200 bg-slate-50'}`}>
+                    <div className={`px-4 py-3 text-sm font-medium ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>
+                      {t('systems.components.common.additionalInformation.label')}
+                    </div>
+                    <div className={`px-4 pb-4 pt-3 border-t ${isDark ? 'border-slate-700' : 'border-slate-200'}`}>
+                      <Label className={labelCls}>{t('systems.components.common.additionalInformation.qrCode')}</Label>
+                      <div className="w-56 h-56 rounded border border-slate-200 bg-white flex items-center justify-center">
+                        <QRCodeSVG value={qrCodeImage} size={220} marginSize={4} level="L" />
+                      </div>
+                      <p className={`mt-1 text-[11px] ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                        {t('systems.components.common.additionalInformation.qrCodeHint')}
+                      </p>
+                    </div>
+                  </div>
+                )}
               </>
             )}
 

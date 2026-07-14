@@ -181,15 +181,21 @@ export async function getAttachableMissions(droneSerialNumber: string, ownerId: 
   }));
 }
 
+export interface LinkedMissionInfo {
+  pilot_mission_id: number;
+  mission_code: string | null;
+  mission_name: string | null;
+}
+
 /**
- * Returns the set of FlytBase flight IDs (out of the given list) that already
- * have a flight log attached to a mission belonging to this owner.
+ * Returns a map of FlytBase flight ID -> the mission it's already attached to
+ * (out of the given list), for missions belonging to this owner.
  */
 export async function getFlightIdsLinkedToMission(
   flightIds: string[],
   ownerId: number,
-): Promise<Set<string>> {
-  if (flightIds.length === 0) return new Set();
+): Promise<Map<string, LinkedMissionInfo>> {
+  if (flightIds.length === 0) return new Map();
 
   const logs = await prisma.mission_flight_logs.findMany({
     where: {
@@ -198,19 +204,20 @@ export async function getFlightIdsLinkedToMission(
     },
     select: { flytbase_flight_id: true, fk_mission_id: true },
   });
-  if (logs.length === 0) return new Set();
+  if (logs.length === 0) return new Map();
 
   const missionIds = [...new Set(logs.map((log) => Number(log.fk_mission_id)))];
   const ownedMissions = await prisma.pilot_mission.findMany({
     where: { pilot_mission_id: { in: missionIds }, fk_owner_id: ownerId },
-    select: { pilot_mission_id: true },
+    select: { pilot_mission_id: true, mission_code: true, mission_name: true },
   });
-  const ownedMissionIds = new Set(ownedMissions.map((m) => m.pilot_mission_id));
+  const ownedMissionsById = new Map(ownedMissions.map((m) => [m.pilot_mission_id, m]));
 
-  const linked = new Set<string>();
+  const linked = new Map<string, LinkedMissionInfo>();
   for (const log of logs) {
-    if (log.flytbase_flight_id && ownedMissionIds.has(Number(log.fk_mission_id))) {
-      linked.add(log.flytbase_flight_id);
+    const mission = ownedMissionsById.get(Number(log.fk_mission_id));
+    if (log.flytbase_flight_id && mission) {
+      linked.set(log.flytbase_flight_id, mission);
     }
   }
   return linked;

@@ -29,6 +29,7 @@ export default function DFlightFleet() {
   const [loading, setLoading] = useState(true);
   const [rows, setRows]       = useState<DFlightDroneRow[]>([]);
   const [models, setModels]   = useState<any[]>([]);
+  const [clients, setClients] = useState<any[]>([]);
   const [error, setError]     = useState<string | null>(null);
   const [notConfigured, setNotConfigured] = useState(false);
   const [importDrone, setImportDrone] = useState<DFlightDroneRow | null>(null);
@@ -46,6 +47,15 @@ export default function DFlightFleet() {
       if (data.code === 1) setModels(data.data ?? []);
     } catch {
       setModels([]);
+    }
+  }, []);
+
+  const loadClients = useCallback(async () => {
+    try {
+      const { data } = await axios.get('/api/client/list');
+      if (data.code === 1) setClients(data.data ?? []);
+    } catch {
+      setClients([]);
     }
   }, []);
 
@@ -78,7 +88,7 @@ export default function DFlightFleet() {
     }
   }, [t]);
 
-  useEffect(() => { load(); loadModels(); }, [load, loadModels]);
+  useEffect(() => { load(); loadModels(); loadClients(); }, [load, loadModels, loadClients]);
 
   const handleImported = useCallback(() => {
     setImportDrone(null);
@@ -267,6 +277,7 @@ export default function DFlightFleet() {
         onImported={handleImported}
         drone={importDrone}
         models={models}
+        clients={clients}
         onModelsRefresh={loadModels}
       />
     </div>

@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 
 export interface ImportDFlightDroneInput {
   fk_owner_id: number;
+  fk_client_id: number;
   dFlightId: string;
   tool_code: string;
   tool_description?: string | null;
@@ -12,6 +13,7 @@ export interface ImportDFlightDroneInput {
   drone_classes?: string[] | null;
   insurance_company?: string | null;
   insurance_expiry_date?: string | null;
+  qr_code_image?: string | null;
 }
 
 export async function importDFlightDrone(input: ImportDFlightDroneInput) {
@@ -44,7 +46,7 @@ export async function importDFlightDrone(input: ImportDFlightDroneInput) {
         tool_description: input.tool_description || null,
         tool_active: 'Y',
         tool_metadata: {
-          clientId: null,
+          clientId: input.fk_client_id,
           latitude: null,
           longitude: null,
           activationDate: null,
@@ -65,6 +67,7 @@ export async function importDFlightDrone(input: ImportDFlightDroneInput) {
         component_active: 'Y',
         drone_registration_code: input.dFlightId,
         drc_synced_at: new Date(),
+        qr_code_image: input.qr_code_image || null,
         component_metadata: {
           cc_platform: null,
           gcs_type: null,
