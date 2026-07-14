@@ -80,7 +80,7 @@ export async function POST(
       initial_usage_hours: parsed.data.initial_usage_hours ?? null,
       initial_maintenance_hours: parsed.data.initial_maintenance_hours ?? null,
       initial_maintenance_flights: parsed.data.initial_maintenance_flights ?? null,
-    });
+    }, session!.user.ownerId);
 
     if (result.code === 1) {
       const systemCode = await getToolCode(parsed.data.fk_tool_id, session!.user.ownerId);

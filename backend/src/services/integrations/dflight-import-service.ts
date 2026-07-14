@@ -29,7 +29,10 @@ export async function importDFlightDrone(input: ImportDFlightDroneInput) {
   const normalizedSerial = input.component_sn.trim();
   if (normalizedSerial) {
     const duplicate = await prisma.tool_component.findFirst({
-      where: { serial_number: { equals: normalizedSerial, mode: 'insensitive' } },
+      where: {
+        serial_number: { equals: normalizedSerial, mode: 'insensitive' },
+        tool: { fk_owner_id: input.fk_owner_id },
+      },
       select: { component_id: true },
     });
     if (duplicate) {

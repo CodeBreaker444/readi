@@ -808,14 +808,17 @@ function buildComponentListResult(data: any[]) {
 }
 
 
-export async function addComponent(componentData: any) {
+export async function addComponent(componentData: any, ownerId: number) {
   const normalizedSerial = typeof componentData.component_sn === 'string'
     ? componentData.component_sn.trim()
     : '';
 
   if (normalizedSerial) {
     const duplicate = await prisma.tool_component.findFirst({
-      where: { serial_number: { equals: normalizedSerial, mode: 'insensitive' } },
+      where: {
+        serial_number: { equals: normalizedSerial, mode: 'insensitive' },
+        tool: { fk_owner_id: ownerId },
+      },
       select: { component_id: true },
     });
 
@@ -933,7 +936,7 @@ export async function addComponent(componentData: any) {
 }
 
 
-export async function updateComponent(componentId: number, componentData: any) {
+export async function updateComponent(componentId: number, componentData: any, ownerId: number) {
   const normalizedSerial = typeof componentData.component_sn === 'string'
     ? componentData.component_sn.trim()
     : '';
@@ -943,6 +946,7 @@ export async function updateComponent(componentId: number, componentData: any) {
       where: {
         serial_number: { equals: normalizedSerial, mode: 'insensitive' },
         component_id: { not: componentId },
+        tool: { fk_owner_id: ownerId },
       },
       select: { component_id: true },
     });
