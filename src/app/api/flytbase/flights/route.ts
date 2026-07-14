@@ -15,9 +15,17 @@ import { NextRequest, NextResponse } from 'next/server';
 async function withMissionLinkFlags<T extends { flight_id: string }>(
   flights: T[],
   ownerId: number,
-): Promise<(T & { linked_to_mission: boolean })[]> {
-  const linkedIds = await getFlightIdsLinkedToMission(flights.map((f) => f.flight_id), ownerId);
-  return flights.map((f) => ({ ...f, linked_to_mission: linkedIds.has(f.flight_id) }));
+): Promise<(T & { linked_to_mission: boolean; linked_mission_code?: string | null; linked_mission_name?: string | null })[]> {
+  const linkedMissions = await getFlightIdsLinkedToMission(flights.map((f) => f.flight_id), ownerId);
+  return flights.map((f) => {
+    const mission = linkedMissions.get(f.flight_id);
+    return {
+      ...f,
+      linked_to_mission: !!mission,
+      linked_mission_code: mission?.mission_code ?? null,
+      linked_mission_name: mission?.mission_name ?? null,
+    };
+  });
 }
 
 export async function GET(req: NextRequest) {
