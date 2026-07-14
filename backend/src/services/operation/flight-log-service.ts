@@ -372,11 +372,21 @@ export async function attachFlytbaseFlightLog(
   assertMissionEditable(mission?.status_name);
 
   // A flight log can only ever be attached to one mission — reject if it's already linked
+  // to a mission within this same company (mission_flight_logs has no owner column of its
+  // own, so we resolve it through the mission it's linked to).
   const existingLink = await prisma.mission_flight_logs.findFirst({
     where: { flytbase_flight_id: flightId, log_source: 'flytbase' },
-    select: { log_id: true },
+    select: { log_id: true, fk_mission_id: true },
   });
-  if (existingLink) throw new Error('This flight log is already attached to a mission.');
+  if (existingLink) {
+    const existingMission = await prisma.pilot_mission.findUnique({
+      where: { pilot_mission_id: Number(existingLink.fk_mission_id) },
+      select: { fk_owner_id: true },
+    });
+    if (existingMission?.fk_owner_id === ownerId) {
+      throw new Error('This flight log is already attached to a mission.');
+    }
+  }
 
   const creds = organizationId
     ? await getOrganizationCredentials(organizationId)
