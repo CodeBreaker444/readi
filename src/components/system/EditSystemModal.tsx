@@ -23,6 +23,7 @@ interface EditSystemModalProps {
   clients: any[];
   models?: any[];
   tools?: any[];
+  dFlightEnabled?: boolean;
 }
 
 const EMPTY_FORM = {
@@ -47,7 +48,7 @@ const STATUS_STYLES_DARK: Record<string, string> = {
   DECOMMISSIONED: 'bg-gray-800 text-gray-400 border border-gray-700',
 };
 
-export default function EditSystemModal({ open, toolId, onClose, onSuccess, clients, models = [], tools = [] }: EditSystemModalProps) {
+export default function EditSystemModal({ open, toolId, onClose, onSuccess, clients, models = [], tools = [], dFlightEnabled = false }: EditSystemModalProps) {
   const { isDark } = useTheme();
   const { t } = useTranslation();
   const { requireAuthorization } = useAuthorization();
@@ -508,6 +509,7 @@ export default function EditSystemModal({ open, toolId, onClose, onSuccess, clie
           models={models}
           clients={clients}
           tools={tools}
+          dFlightEnabled={dFlightEnabled}
         />
       )}
     </>

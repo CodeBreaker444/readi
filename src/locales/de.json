@@ -4127,6 +4127,11 @@
         "location": "Standort",
         "locationOptional": "Standort (optional)",
         "autoDecommissionHint": "Komponente wird an diesem Datum automatisch außer Betrieb genommen",
+        "additionalInformation": {
+          "label": "Zusätzliche Informationen",
+          "qrCode": "QR-Code",
+          "qrCodeHint": "Synchronisiert von D-Flight"
+        },
         "insurance": {
           "label": "Versicherung",
           "name": "Versicherungsname",
@@ -4926,7 +4931,8 @@
         "systemDescription": "Systembeschreibung",
         "componentName": "Komponentenname",
         "serialNumber": "Seriennummer",
-        "drc": "DRC (D-Flight-ID)"
+        "drc": "DRC (D-Flight-ID)",
+        "client": "Kunde"
       },
       "buttons": {
         "newModel": "Neues Modell",
@@ -4939,6 +4945,7 @@
         "systemCodeRequired": "Systemcode ist erforderlich",
         "serialRequired": "Seriennummer ist erforderlich",
         "modelRequired": "Bitte wählen oder erstellen Sie ein Modell",
+        "clientRequired": "Bitte wählen Sie einen Kunden aus",
         "success": "Drohne erfolgreich importiert",
         "failed": "Import der Drohne fehlgeschlagen",
         "error": "Beim Importieren der Drohne ist ein Fehler aufgetreten"

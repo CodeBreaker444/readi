@@ -8,6 +8,7 @@ import { z } from 'zod';
 
 const ImportSchema = z.object({
   dFlightId: z.string().min(1),
+  fk_client_id: z.number().positive(),
   tool_code: z.string().min(1).max(50),
   tool_description: z.string().optional().nullable(),
   component_code: z.string().min(1),
@@ -16,6 +17,7 @@ const ImportSchema = z.object({
   drone_classes: z.array(z.string()).optional().nullable(),
   insurance_company: z.string().optional().nullable(),
   insurance_expiry_date: z.string().optional().nullable(),
+  qr_code_image: z.string().optional().nullable(),
 });
 
 export async function POST(req: NextRequest) {
@@ -34,6 +36,7 @@ export async function POST(req: NextRequest) {
 
     const result = await importDFlightDrone({
       fk_owner_id: session!.user.ownerId,
+      fk_client_id: d.fk_client_id,
       dFlightId: d.dFlightId,
       tool_code: d.tool_code,
       tool_description: d.tool_description ?? null,
@@ -43,6 +46,7 @@ export async function POST(req: NextRequest) {
       drone_classes: d.drone_classes ?? null,
       insurance_company: d.insurance_company ?? null,
       insurance_expiry_date: d.insurance_expiry_date ?? null,
+      qr_code_image: d.qr_code_image ?? null,
     });
 
     if (result.code === 1) {

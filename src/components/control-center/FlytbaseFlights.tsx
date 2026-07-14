@@ -481,7 +481,7 @@ export function FlytbaseFlights({ isActive = true, selectedOrganization, listCon
               {t('flytbase.flights.latest20')}
             </button>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-start gap-2">
             <Button
               variant="outline"
               size="sm"
@@ -491,25 +491,25 @@ export function FlytbaseFlights({ isActive = true, selectedOrganization, listCon
               <HiRefresh className="h-3.5 w-3.5" />
               {t('flytbase.flights.refresh')}
             </Button>
-            {selectedFlight?.linked_to_mission ? (
-              <span className={`flex items-center gap-1.5 h-8 px-3 rounded-md border text-xs font-medium ${isDark ? 'border-slate-700 bg-slate-800 text-slate-400' : 'border-slate-200 bg-slate-50 text-slate-500'}`}>
-                <HiLink className="h-3.5 w-3.5" />
-                {selectedFlight.linked_mission_code || selectedFlight.linked_mission_name
-                  ? `Log already attached to ${selectedFlight.linked_mission_code ?? selectedFlight.linked_mission_name}`
-                  : 'Log already attached'}
-              </span>
-            ) : (
+            <div className="flex flex-col items-end gap-1">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={handleOpenAttachMissionModal}
-                disabled={!selectedFlight || !preview}
+                disabled={!selectedFlight || !preview || !!selectedFlight?.linked_to_mission}
                 className={`h-8 gap-1.5 cursor-pointer text-xs ${isDark ? 'border-slate-700 bg-slate-800 text-slate-300' : 'border-slate-200 text-slate-600'}`}
               >
                 <HiLink className="h-3.5 w-3.5" />
                 Attach Mission
               </Button>
-            )}
+              {selectedFlight?.linked_to_mission && (
+                <span className={`text-[10px] ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                  {selectedFlight.linked_mission_code || selectedFlight.linked_mission_name
+                    ? `Log already attached to ${selectedFlight.linked_mission_code ?? selectedFlight.linked_mission_name}`
+                    : 'Log already attached'}
+                </span>
+              )}
+            </div>
           </div>
         </div>
 

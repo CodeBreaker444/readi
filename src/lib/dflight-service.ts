@@ -42,6 +42,7 @@ export interface DFlightDroneResult {
   insuranceCompany: string | null;
   insuranceExpiryDate: string | null;
   uasClassId: string | null;
+  qrCodeImage: string | null;
 }
 
 export interface DFlightDronePageResult {
@@ -127,6 +128,7 @@ function mapDroneResultView(v: Record<string, string | null>): DFlightDroneResul
     matriculationNumber:       v['matriculationNumber']       ?? null,
     status:                    v['status']                    ?? null,
     qrCodeActivationStatus:    v['qrCodeActivationStatus']    ?? null,
+    qrCodeImage:               v['qrCode']                    ?? v['qrCodeImage'] ?? null,
     usage:                     v['usage']                     ?? null,
     takeOffMass:               v['takeOffMass']               ?? null,
     'model.modelName':         v['model.modelName']           ?? null,

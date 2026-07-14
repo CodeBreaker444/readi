@@ -20,6 +20,7 @@ interface ImportDroneModalProps {
   onImported: () => void;
   drone: DFlightDroneRow | null;
   models: any[];
+  clients: any[];
   onModelsRefresh: () => Promise<void>;
 }
 
@@ -34,12 +35,13 @@ const EMPTY_FORM = {
   component_code: '',
   component_sn: '',
   fk_tool_model_id: '',
+  fk_client_id: '',
   drone_classes: [] as string[],
   insurance_company: '',
   insurance_expiry_date: '',
 };
 
-export default function ImportDroneModal({ open, onClose, onImported, drone, models, onModelsRefresh }: ImportDroneModalProps) {
+export default function ImportDroneModal({ open, onClose, onImported, drone, models, clients, onModelsRefresh }: ImportDroneModalProps) {
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState(EMPTY_FORM);
@@ -70,6 +72,7 @@ export default function ImportDroneModal({ open, onClose, onImported, drone, mod
       component_code: drone.dFlightName || '',
       component_sn: drone.serialNumber || '',
       fk_tool_model_id: matched ? String(matched.tool_model_id) : '',
+      fk_client_id: '',
       drone_classes: [],
       insurance_company: drone.insuranceCompany || '',
       insurance_expiry_date: drone.insuranceExpiryDate || '',
@@ -125,11 +128,13 @@ export default function ImportDroneModal({ open, onClose, onImported, drone, mod
     if (!formData.tool_code.trim()) { toast.error(t('dflight.import.toasts.systemCodeRequired')); return; }
     if (!formData.component_sn.trim()) { toast.error(t('dflight.import.toasts.serialRequired')); return; }
     if (!formData.fk_tool_model_id) { toast.error(t('dflight.import.toasts.modelRequired')); return; }
+    if (!formData.fk_client_id) { toast.error(t('dflight.import.toasts.clientRequired')); return; }
 
     setLoading(true);
     try {
       const payload = {
         dFlightId: drone.dFlightId,
+        fk_client_id: Number(formData.fk_client_id),
         tool_code: formData.tool_code.trim(),
         tool_description: formData.tool_description || null,
         component_code: formData.component_code.trim() || formData.tool_code.trim(),
@@ -138,6 +143,7 @@ export default function ImportDroneModal({ open, onClose, onImported, drone, mod
         drone_classes: formData.drone_classes.length ? formData.drone_classes : null,
         insurance_company: formData.insurance_company || null,
         insurance_expiry_date: formData.insurance_expiry_date || null,
+        qr_code_image: drone.qrCodeImage || null,
       };
 
       const { data } = await axios.post('/api/dflight/import', payload);
@@ -168,13 +174,24 @@ export default function ImportDroneModal({ open, onClose, onImported, drone, mod
             <div>
               <p className="text-sm font-medium text-muted-foreground mb-2">{t('dflight.import.sections.system')}</p>
               <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
-                <div className="col-span-1 sm:col-span-6">
+                <div className="col-span-1 sm:col-span-4">
                   <Label className="pb-2">{t('dflight.import.fields.systemCode')}</Label>
                   <Input value={formData.tool_code} onChange={(e) => handleChange('tool_code', e.target.value)} required />
                 </div>
-                <div className="col-span-1 sm:col-span-6">
+                <div className="col-span-1 sm:col-span-4">
                   <Label className="pb-2">{t('dflight.import.fields.systemDescription')} <span className="text-muted-foreground font-normal">{t('systems.components.common.optional')}</span></Label>
                   <Input value={formData.tool_description} onChange={(e) => handleChange('tool_description', e.target.value)} />
+                </div>
+                <div className="col-span-1 sm:col-span-4">
+                  <Label className="pb-2">{t('dflight.import.fields.client')}</Label>
+                  <Select value={formData.fk_client_id} onValueChange={(v) => handleChange('fk_client_id', v)}>
+                    <SelectTrigger className="w-full"><SelectValue placeholder={t('systems.components.common.select')} /></SelectTrigger>
+                    <SelectContent>
+                      {clients.map((c: any) => (
+                        <SelectItem key={c.client_id} value={c.client_id.toString()}>{c.client_name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             </div>

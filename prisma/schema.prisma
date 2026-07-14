@@ -2445,11 +2445,12 @@ model tool_component {
   expiry_type                 String                    @default("EXPIRATION_DATE")
   expiration_flights          Int?
   expiration_flight_hours     Decimal?                  @db.Decimal(7, 2)
+  qr_code_image               String?
+  component_insurance         component_insurance?
   luc_document                luc_document[]
   maintenance_ticket          maintenance_ticket[]
   maintenance_ticket_item     maintenance_ticket_item[]
   tool                        tool                      @relation(fields: [fk_tool_id], references: [tool_id], onDelete: Cascade, onUpdate: NoAction)
-  component_insurance         component_insurance?
 
   @@index([fk_tool_id, component_active], map: "idx_tool_component_tool")
   @@schema("public")
