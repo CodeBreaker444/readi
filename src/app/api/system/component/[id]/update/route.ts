@@ -52,6 +52,8 @@ const schema = z.object({
   insurance_name: z.string().optional().nullable(),
   insurance_company: z.string().optional().nullable(),
   insurance_expiry_date: z.string().optional().nullable(),
+  alert_recipients: z.array(z.string().email()).optional().nullable(),
+  alert_days_before: z.number().int().min(1).max(365).optional().nullable(),
 });
 
 export async function POST(

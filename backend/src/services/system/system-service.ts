@@ -818,9 +818,39 @@ function buildComponentListResult(data: any[]) {
         insurance_name: item.component_insurance?.insurance_name ?? null,
         insurance_company: item.component_insurance?.insurance_company ?? null,
         insurance_expiry_date: item.component_insurance?.expiry_date ?? null,
+        alert_recipients: Array.isArray(item.component_insurance?.alert_recipients)
+          ? item.component_insurance.alert_recipients
+          : [],
+        alert_days_before: item.component_insurance?.alert_days_before ?? 30,
       };
     }),
   };
+}
+
+// Users of the owner's organization eligible to be picked as insurance-expiry alert
+// recipients. Inactive users are included (not filtered out) so the UI can show them
+// grayed out rather than silently hiding accounts that used to be selectable.
+export async function getOwnerUsersForAlerts(ownerId: number) {
+  const users = await prisma.public_users.findMany({
+    where: { fk_owner_id: ownerId },
+    orderBy: [{ user_active: 'desc' }, { first_name: 'asc' }],
+    select: {
+      user_id: true,
+      first_name: true,
+      last_name: true,
+      email: true,
+      user_role: true,
+      user_active: true,
+    },
+  });
+
+  return users.map((u) => ({
+    user_id: u.user_id,
+    fullname: `${u.first_name ?? ''} ${u.last_name ?? ''}`.trim() || u.email || `User #${u.user_id}`,
+    email: u.email,
+    user_role: u.user_role ?? null,
+    active: u.user_active === 'Y',
+  }));
 }
 
 
@@ -944,13 +974,20 @@ export async function addComponent(componentData: any, ownerId: number) {
     },
   });
 
-  if (componentData.insurance_name || componentData.insurance_company || componentData.insurance_expiry_date) {
+  if (
+    componentData.insurance_name || componentData.insurance_company || componentData.insurance_expiry_date ||
+    (componentData.alert_recipients && componentData.alert_recipients.length > 0) || componentData.alert_days_before != null
+  ) {
     await prisma.component_insurance.create({
       data: {
         fk_component_id: data.component_id,
         insurance_name: componentData.insurance_name || null,
         insurance_company: componentData.insurance_company || null,
         expiry_date: componentData.insurance_expiry_date ? new Date(componentData.insurance_expiry_date) : null,
+        alert_recipients: componentData.alert_recipients && componentData.alert_recipients.length > 0
+          ? (componentData.alert_recipients as Prisma.InputJsonValue)
+          : Prisma.JsonNull,
+        alert_days_before: componentData.alert_days_before ?? 30,
       },
     });
   }
@@ -1086,8 +1123,15 @@ export async function updateComponent(componentId: number, componentData: any, o
     },
   });
 
-  if (componentData.insurance_name !== undefined || componentData.insurance_company !== undefined || componentData.insurance_expiry_date !== undefined) {
+  if (
+    componentData.insurance_name !== undefined || componentData.insurance_company !== undefined ||
+    componentData.insurance_expiry_date !== undefined || componentData.alert_recipients !== undefined ||
+    componentData.alert_days_before !== undefined
+  ) {
     const insuranceExpiryDate = componentData.insurance_expiry_date ? new Date(componentData.insurance_expiry_date) : null;
+    const alertRecipients = componentData.alert_recipients && componentData.alert_recipients.length > 0
+      ? (componentData.alert_recipients as Prisma.InputJsonValue)
+      : Prisma.JsonNull;
     await prisma.component_insurance.upsert({
       where: { fk_component_id: componentId },
       create: {
@@ -1095,11 +1139,15 @@ export async function updateComponent(componentId: number, componentData: any, o
         insurance_name: componentData.insurance_name || null,
         insurance_company: componentData.insurance_company || null,
         expiry_date: insuranceExpiryDate,
+        alert_recipients: alertRecipients,
+        alert_days_before: componentData.alert_days_before ?? 30,
       },
       update: {
         insurance_name: componentData.insurance_name || null,
         insurance_company: componentData.insurance_company || null,
         expiry_date: insuranceExpiryDate,
+        alert_recipients: alertRecipients,
+        alert_days_before: componentData.alert_days_before ?? 30,
         updated_at: new Date(),
       },
     });

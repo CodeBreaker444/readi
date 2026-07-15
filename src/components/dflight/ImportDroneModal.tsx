@@ -13,6 +13,7 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 import type { DFlightDroneRow } from '@/types/dflight';
+import { InsuranceAlertRecipients } from '@/components/system/InsuranceAlertRecipients';
 
 interface ImportDroneModalProps {
   open: boolean;
@@ -43,7 +44,7 @@ const EMPTY_FORM = {
   insurance_name: '',
   insurance_company: '',
   insurance_expiry_date: '',
-  insurance_alert_recipients: '',
+  insurance_alert_recipients: [] as string[],
   insurance_alert_days_before: '30',
   enac_authorizations: '',
   sts_declarations: '',
@@ -102,7 +103,7 @@ export default function ImportDroneModal({ open, onClose, onImported, drone, mod
       insurance_name: '',
       insurance_company: drone.insuranceCompany || '',
       insurance_expiry_date: drone.insuranceExpiryDate?.slice(0, 10) || '',
-      insurance_alert_recipients: '',
+      insurance_alert_recipients: [],
       insurance_alert_days_before: '30',
       enac_authorizations: '',
       sts_declarations: '',
@@ -222,11 +223,6 @@ export default function ImportDroneModal({ open, onClose, onImported, drone, mod
     if (!formData.fk_tool_model_id) { toast.error(t('dflight.import.toasts.modelRequired')); return; }
     if (!formData.fk_client_id) { toast.error(t('dflight.import.toasts.clientRequired')); return; }
 
-    const alertRecipients = formData.insurance_alert_recipients
-      .split(',')
-      .map((s) => s.trim())
-      .filter(Boolean);
-
     const enacAuthorizations = formData.enac_authorizations.trim();
     const stsDeclarations = formData.sts_declarations.trim();
     const certifications = enacAuthorizations || stsDeclarations
@@ -250,7 +246,7 @@ export default function ImportDroneModal({ open, onClose, onImported, drone, mod
         insurance_name: formData.insurance_name || null,
         insurance_company: formData.insurance_company || null,
         insurance_expiry_date: formData.insurance_expiry_date || null,
-        insurance_alert_recipients: alertRecipients.length ? alertRecipients : null,
+        insurance_alert_recipients: formData.insurance_alert_recipients.length ? formData.insurance_alert_recipients : null,
         insurance_alert_days_before: formData.insurance_alert_days_before
           ? Number(formData.insurance_alert_days_before)
           : null,
@@ -462,24 +458,12 @@ export default function ImportDroneModal({ open, onClose, onImported, drone, mod
                     <Label className="pb-2">{t('systems.components.common.insurance.expiryDate')}</Label>
                     <Input type="date" value={formData.insurance_expiry_date} onChange={(e) => handleChange('insurance_expiry_date', e.target.value)} />
                   </div>
-                  <div className="col-span-1 sm:col-span-8">
-                    <Label className="pb-2">{t('dflight.import.fields.alertRecipients')}</Label>
-                    <Input
-                      value={formData.insurance_alert_recipients}
-                      onChange={(e) => handleChange('insurance_alert_recipients', e.target.value)}
-                      placeholder={t('dflight.import.fields.alertRecipientsPlaceholder')}
-                    />
-                  </div>
-                  <div className="col-span-1 sm:col-span-4">
-                    <Label className="pb-2">{t('dflight.import.fields.alertDaysBefore')}</Label>
-                    <Input
-                      type="number"
-                      min={1}
-                      max={365}
-                      value={formData.insurance_alert_days_before}
-                      onChange={(e) => handleChange('insurance_alert_days_before', e.target.value)}
-                    />
-                  </div>
+                  <InsuranceAlertRecipients
+                    emails={formData.insurance_alert_recipients}
+                    onEmailsChange={(emails) => handleChange('insurance_alert_recipients', emails)}
+                    alertDaysBefore={formData.insurance_alert_days_before}
+                    onAlertDaysBeforeChange={(v) => handleChange('insurance_alert_days_before', v)}
+                  />
                 </div>
               )}
             </div>

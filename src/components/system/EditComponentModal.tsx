@@ -15,6 +15,7 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import type { DFlightDroneRow } from '@/types/dflight';
 import { Skeleton } from '../ui/skeleton';
+import { InsuranceAlertRecipients } from './InsuranceAlertRecipients';
 import { ManageComponentTypesModal } from './ManageComponentTypesModal';
 import { DroneClassRow, ManageDroneClassesModal } from './ManageDroneClassesModal';
 
@@ -92,6 +93,8 @@ const EMPTY_FORM = {
   insurance_name: '',
   insurance_company: '',
   insurance_expiry_date: '',
+  alert_recipients: [] as string[],
+  alert_days_before: '30',
   enac_authorizations: '',
   sts_declarations: '',
 };
@@ -212,6 +215,8 @@ export default function EditComponentModal({
       insurance_name: comp.insurance_name || '',
       insurance_company: comp.insurance_company || '',
       insurance_expiry_date: comp.insurance_expiry_date?.split('T')[0] || '',
+      alert_recipients: Array.isArray(comp.alert_recipients) ? comp.alert_recipients : [],
+      alert_days_before: comp.alert_days_before != null ? String(comp.alert_days_before) : '30',
       enac_authorizations: comp.certifications?.enac_authorizations || '',
       sts_declarations: comp.certifications?.sts_declarations || '',
     });
@@ -384,6 +389,8 @@ export default function EditComponentModal({
         insurance_name: formData.insurance_name || null,
         insurance_company: formData.insurance_company || null,
         insurance_expiry_date: formData.insurance_expiry_date || null,
+        alert_recipients: formData.alert_recipients.length > 0 ? formData.alert_recipients : null,
+        alert_days_before: formData.alert_days_before !== '' ? Number(formData.alert_days_before) : null,
         certifications: (formData.enac_authorizations.trim() || formData.sts_declarations.trim())
           ? {
               enac_authorizations: formData.enac_authorizations.trim() || null,
@@ -977,6 +984,13 @@ export default function EditComponentModal({
                           onChange={e => handleChange('insurance_expiry_date', e.target.value)}
                         />
                       </div>
+                      <InsuranceAlertRecipients
+                        emails={formData.alert_recipients}
+                        onEmailsChange={(emails) => setFormData(prev => ({ ...prev, alert_recipients: emails }))}
+                        alertDaysBefore={formData.alert_days_before}
+                        onAlertDaysBeforeChange={(v) => handleChange('alert_days_before', v)}
+                        isDark={isDark}
+                      />
                     </div>
                   )}
                 </div>
