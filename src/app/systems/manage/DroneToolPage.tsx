@@ -542,7 +542,7 @@ export default function DroneToolPage({ dFlightEnabled }: DroneToolPageProps) {
 
             {showAddComponent && (
                 <AddComponentModal open={showAddComponent} onClose={() => setShowAddComponent(false)}
-                    onSuccess={() => { setShowAddComponent(false); fetchAllComponents(); fetchToolData(); }} tools={tools} models={models} />
+                    onSuccess={() => { setShowAddComponent(false); fetchAllComponents(); fetchToolData(); }} tools={tools} models={models} dFlightEnabled={dFlightEnabled} />
             )}
 
             {showViewTool && selectedToolId && (

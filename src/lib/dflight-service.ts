@@ -186,7 +186,7 @@ export async function getDFlightDrones(
       },
     );
 
-    console.log(`D-Flight drones status (page ${pageNumber}): ${res.status}`);
+    // console.log(`D-Flight drones status (page ${pageNumber}): ${res.status}`);
     if (!res.ok) {
       const text = await res.text();
       throw new Error(`D-Flight drones request failed (${res.status}): ${text}`);
@@ -194,6 +194,11 @@ export async function getDFlightDrones(
 
     const json = (await res.json()) as DFlightDronePageResult;
     const pageItems = Array.isArray(json.data) ? json.data : [];
+
+    // if (pageNumber === 0 && pageItems[0]) {
+    //   console.log('D-Flight raw drone resultView keys:', Object.keys(pageItems[0].resultView ?? {}));
+    //   console.log('D-Flight raw drone resultView (first item):', JSON.stringify(pageItems[0].resultView, null, 2));
+    // }
 
     drones.push(...pageItems.map((item) => mapDroneResultView(item.resultView ?? {})));
 

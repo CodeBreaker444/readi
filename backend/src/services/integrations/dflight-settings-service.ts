@@ -42,23 +42,32 @@ export async function upsertDFlightIntegration(
     easa_operator_code?: string | null;
   },
 ): Promise<void> {
-  await prisma.d_flight_integrations.upsert({
-    where: { fk_owner_id: ownerId },
-    update: {
-      base_url: data.base_url,
-      username: data.username,
-      password: data.password,
-      client_id: data.client_id,
-      easa_operator_code: data.easa_operator_code ?? null,
-      updated_at: new Date(),
-    },
-    create: {
-      fk_owner_id: ownerId,
-      base_url: data.base_url,
-      username: data.username,
-      password: data.password,
-      client_id: data.client_id,
-      easa_operator_code: data.easa_operator_code ?? null,
-    },
-  });
+  await prisma.$transaction([
+    prisma.d_flight_integrations.upsert({
+      where: { fk_owner_id: ownerId },
+      update: {
+        base_url: data.base_url,
+        username: data.username,
+        password: data.password,
+        client_id: data.client_id,
+        easa_operator_code: data.easa_operator_code ?? null,
+        updated_at: new Date(),
+      },
+      create: {
+        fk_owner_id: ownerId,
+        base_url: data.base_url,
+        username: data.username,
+        password: data.password,
+        client_id: data.client_id,
+        easa_operator_code: data.easa_operator_code ?? null,
+      },
+    }),
+    // The EASA operator code identifies the ReADI "operator subject" (the owner/company),
+    // not just the d-flight connection — keep the owner record in sync so the rest of
+    // the app (company profile, exports, etc.) sees the same value.
+    prisma.owner.update({
+      where: { owner_id: ownerId },
+      data: { easa_operator_code: data.easa_operator_code ?? null },
+    }),
+  ]);
 }

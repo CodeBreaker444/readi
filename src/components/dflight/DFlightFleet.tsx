@@ -36,6 +36,7 @@ export default function DFlightFleet() {
 
   const [page, setPage]         = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(8);
+  const [syncingComponentId, setSyncingComponentId] = useState<number | null>(null);
 
   const card = isDark ? 'bg-slate-800/80 border-slate-700/60' : 'bg-white border-gray-200';
   const th   = `px-4 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider ${isDark ? 'text-slate-500' : 'text-gray-400'}`;
@@ -96,10 +97,37 @@ export default function DFlightFleet() {
     loadModels();
   }, [load, loadModels]);
 
+  const handleSync = useCallback(async (row: DFlightDroneRow) => {
+    if (!row.componentId || !row.dFlightId) return;
+    setSyncingComponentId(row.componentId);
+    try {
+      const { data } = await axios.post('/api/dflight/sync', {
+        componentId: row.componentId,
+        dFlightId: row.dFlightId,
+        uas_serial_number: row.uasSerialNumber ?? null,
+        gcs_serial_number: row.gcsSerialNumber ?? null,
+        license_plate: row.matriculationNumber ?? null,
+        insurance_company: row.insuranceCompany ?? null,
+        insurance_expiry_date: row.insuranceExpiryDate ?? null,
+        qr_code_image: row.qrCodeImage ?? null,
+      });
+      if (data.code === 1) {
+        toast.success(t('dflight.fleet.sync.success', { defaultValue: 'Component synced from D-Flight' }));
+        load();
+      } else {
+        toast.error(data.message || t('dflight.fleet.sync.failed', { defaultValue: 'Failed to sync component' }));
+      }
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || t('dflight.fleet.sync.error', { defaultValue: 'An error occurred while syncing' }));
+    } finally {
+      setSyncingComponentId(null);
+    }
+  }, [load, t]);
+
   const table = useReactTable<DFlightDroneRow>({
     data:     rows,
     columns:  fleetColumns,
-    meta:     { isDark, onImport: setImportDrone } satisfies ColumnMeta,
+    meta:     { isDark, onImport: setImportDrone, onSync: handleSync, syncingComponentId } satisfies ColumnMeta,
     manualPagination: false,
     state: {
       pagination: { pageIndex: page, pageSize: rowsPerPage },
@@ -115,8 +143,10 @@ export default function DFlightFleet() {
     getPaginationRowModel: getPaginationRowModel(),
   });
 
-  const linked   = rows.filter((r) => r.linked).length;
-  const unlinked = rows.filter((r) => !r.linked).length;
+  const dFlightRows = rows.filter((r) => r.origin !== 'READI_ONLY');
+  const linked      = dFlightRows.filter((r) => r.linked).length;
+  const unlinked    = dFlightRows.filter((r) => !r.linked).length;
+  const readiOnly   = rows.length - dFlightRows.length;
 
   const handleChangePage = (_: unknown, newPage: number) => {
     setPage(newPage);
@@ -136,9 +166,9 @@ export default function DFlightFleet() {
   return (
     <div className="space-y-6">
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {loading ? (
-          [1, 2, 3].map((i) => (
+          [1, 2, 3, 4].map((i) => (
             <div key={i} className={`rounded-xl border p-4 ${card}`}>
               <Skeleton className="h-7 w-12 mb-2" />
               <Skeleton className="h-3 w-20" />
@@ -146,9 +176,10 @@ export default function DFlightFleet() {
           ))
         ) : (
           [
-            { label: t('dflight.fleet.stat.total'),    value: rows.length, color: isDark ? 'text-white'       : 'text-slate-900' },
-            { label: t('dflight.fleet.stat.linked'),   value: linked,      color: 'text-emerald-500' },
-            { label: t('dflight.fleet.stat.unlinked'), value: unlinked,    color: 'text-amber-500'   },
+            { label: t('dflight.fleet.stat.total'),     value: rows.length, color: isDark ? 'text-white'       : 'text-slate-900' },
+            { label: t('dflight.fleet.stat.linked'),    value: linked,      color: 'text-emerald-500' },
+            { label: t('dflight.fleet.stat.unlinked'),  value: unlinked,    color: 'text-amber-500'   },
+            { label: t('dflight.fleet.stat.readiOnly', { defaultValue: 'ReADI Only' }), value: readiOnly, color: 'text-slate-400' },
           ].map((s) => (
             <div key={s.label} className={`rounded-xl border p-4 ${card}`}>
               <p className={`text-xl font-bold ${s.color}`}>{s.value}</p>

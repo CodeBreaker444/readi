@@ -2788,10 +2788,10 @@
       "title": "Safety Targets Review",
       "subtitle": "SPI / KPI",
       "monthsSelector": {
-        "label": "Analyse last",
         "3": "3 Months",
         "6": "6 Months",
-        "12": "12 Months"
+        "12": "12 Months",
+        "label": "Analyse last"
       },
       "generate": "Generate",
       "generating": "Generating…",
@@ -4914,7 +4914,8 @@
       "stat": {
         "total": "Total D-Flight Drones",
         "linked": "Linked to Readi",
-        "unlinked": "Not in Readi"
+        "unlinked": "Not in Readi",
+        "readiOnly": "ReADI Only"
       },
       "col": {
         "link": "Linked",
@@ -4925,7 +4926,8 @@
         "drc": "DRC (D-Flight ID)",
         "model": "Model",
         "status": "Status",
-        "action": "Action"
+        "action": "Action",
+        "licensePlate": "License Plate"
       },
       "error": {
         "generic": "Failed to load fleet data"
@@ -4934,6 +4936,11 @@
         "title": "D-Flight Not Configured",
         "description": "Please configure your D-Flight integration settings to view the fleet.",
         "setup": "Go to Settings"
+      },
+      "sync": {
+        "success": "Component synced from D-Flight",
+        "failed": "Failed to sync component",
+        "error": "An error occurred while syncing"
       }
     },
     "import": {
@@ -4941,7 +4948,8 @@
       "sections": {
         "system": "New System",
         "component": "Component",
-        "model": "Brand / Model"
+        "model": "Brand / Model",
+        "certifications": "Certifications"
       },
       "fields": {
         "systemCode": "System Code",
@@ -4949,7 +4957,17 @@
         "componentName": "Component Name",
         "serialNumber": "Serial Number",
         "drc": "DRC (D-Flight ID)",
-        "client": "Client"
+        "client": "Client",
+        "uasSerialNumber": "UAS Serial Number",
+        "gcsSerialNumber": "GCS Serial Number",
+        "licensePlate": "License Plate",
+        "alertRecipients": "Alert Recipients (Email)",
+        "alertRecipientsPlaceholder": "comma-separated emails",
+        "alertDaysBefore": "Alert Days Before Expiry",
+        "enacAuthorizations": "ENAC Authorizations",
+        "enacAuthorizationsPlaceholder": "e.g. ENAC Authorization No. 12345, issued 2026-01-10",
+        "stsDeclarations": "STS Declarations",
+        "stsDeclarationsPlaceholder": "e.g. STS-01 Declaration, submitted 2026-01-10"
       },
       "buttons": {
         "newModel": "New Model",
@@ -4967,7 +4985,22 @@
         "success": "Drone imported successfully",
         "failed": "Failed to import drone",
         "error": "An error occurred while importing the drone"
-      }
+      },
+      "certificationsHint": "D-Flight does not expose these yet — enter manually for now."
+    },
+    "insuranceAlert": {
+      "title": "Insurance Expiring Soon",
+      "dismiss": "Dismiss",
+      "view": "View Components"
+    },
+    "plateSearch": {
+      "label": "Align with D-Flight by License Plate",
+      "placeholder": "e.g. IT-A1B2C3",
+      "search": "Search",
+      "matched": "Matched \"{{name}}\" — fields pre-filled below",
+      "notFound": "No matching D-Flight drone found",
+      "error": "Failed to search D-Flight",
+      "aligned": "Component aligned with D-Flight"
     }
   }
 }

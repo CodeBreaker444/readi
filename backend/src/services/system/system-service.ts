@@ -791,6 +791,10 @@ function buildComponentListResult(data: any[]) {
         drone_registration_code: item.drone_registration_code ?? null,
         drc_synced_at: item.drc_synced_at ?? null,
         qr_code_image: item.qr_code_image ?? null,
+        uas_serial_number: item.uas_serial_number ?? null,
+        gcs_serial_number: item.gcs_serial_number ?? null,
+        license_plate: item.license_plate ?? null,
+        certifications: item.certifications ?? null,
         latitude: item.component_metadata?.latitude ?? null,
         longitude: item.component_metadata?.longitude ?? null,
         drone_classes: item.component_metadata?.drone_classes ?? null,
@@ -876,6 +880,13 @@ export async function addComponent(componentData: any, ownerId: number) {
       current_maintenance_flights: componentData.initial_maintenance_flights ?? 0,
       dcc_drone_id: componentData.dcc_drone_id || null,
       drone_registration_code: componentData.drone_registration_code || null,
+      uas_serial_number: componentData.uas_serial_number || null,
+      gcs_serial_number: componentData.gcs_serial_number || null,
+      license_plate: componentData.license_plate || null,
+      // ENAC Authorizations / STS Declarations — manual entry until d-flight exposes an endpoint.
+      certifications: componentData.certifications?.enac_authorizations || componentData.certifications?.sts_declarations
+        ? (componentData.certifications as Prisma.InputJsonValue)
+        : Prisma.JsonNull,
       expiration_date: componentData.expiration_date ? new Date(componentData.expiration_date) : null,
       expiry_type: componentData.expiry_type || 'EXPIRATION_DATE',
       expiration_flights: componentData.expiration_flights ?? null,
@@ -1009,6 +1020,13 @@ export async function updateComponent(componentId: number, componentData: any, o
       installation_date: componentData.component_activation_date ? new Date(componentData.component_activation_date) : null,
       dcc_drone_id: componentData.dcc_drone_id ?? null,
       drone_registration_code: componentData.drone_registration_code || null,
+      uas_serial_number: componentData.uas_serial_number || null,
+      gcs_serial_number: componentData.gcs_serial_number || null,
+      license_plate: componentData.license_plate || null,
+      // ENAC Authorizations / STS Declarations — manual entry until d-flight exposes an endpoint.
+      certifications: componentData.certifications?.enac_authorizations || componentData.certifications?.sts_declarations
+        ? (componentData.certifications as Prisma.InputJsonValue)
+        : Prisma.JsonNull,
       expiration_date: componentData.expiration_date ? new Date(componentData.expiration_date) : null,
       expiry_type: componentData.expiry_type || 'EXPIRATION_DATE',
       expiration_flights: componentData.expiration_flights ?? null,
