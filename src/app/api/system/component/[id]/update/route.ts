@@ -29,6 +29,13 @@ const schema = z.object({
   gcs_type: z.string().optional().nullable(),
   dcc_drone_id: z.string().uuid().optional().nullable(),
   drone_registration_code: z.string().optional().nullable(),
+  uas_serial_number: z.string().optional().nullable(),
+  gcs_serial_number: z.string().optional().nullable(),
+  license_plate: z.string().optional().nullable(),
+  certifications: z.object({
+    enac_authorizations: z.string().optional().nullable(),
+    sts_declarations: z.string().optional().nullable(),
+  }).optional().nullable(),
   maintenance_cycle: z.string().optional().nullable(),
   maintenance_cycle_hour: z.number().optional().nullable(),
   maintenance_cycle_day: z.number().optional().nullable(),
@@ -45,6 +52,8 @@ const schema = z.object({
   insurance_name: z.string().optional().nullable(),
   insurance_company: z.string().optional().nullable(),
   insurance_expiry_date: z.string().optional().nullable(),
+  alert_recipients: z.array(z.string().email()).optional().nullable(),
+  alert_days_before: z.number().int().min(1).max(365).optional().nullable(),
 });
 
 export async function POST(
@@ -80,7 +89,7 @@ export async function POST(
       initial_usage_hours: parsed.data.initial_usage_hours ?? null,
       initial_maintenance_hours: parsed.data.initial_maintenance_hours ?? null,
       initial_maintenance_flights: parsed.data.initial_maintenance_flights ?? null,
-    });
+    }, session!.user.ownerId);
 
     if (result.code === 1) {
       const systemCode = await getToolCode(parsed.data.fk_tool_id, session!.user.ownerId);

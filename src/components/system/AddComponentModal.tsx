@@ -1,16 +1,19 @@
 'use client';
 
+import DFlightPlateSearch from '@/components/dflight/DFlightPlateSearch';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
+import type { DFlightDroneRow } from '@/types/dflight';
 import axios from 'axios';
-import { ChevronDown, ChevronRight, Loader2, Pencil, Search, Shield, X } from 'lucide-react';
+import { BadgeCheck, ChevronDown, ChevronRight, Loader2, Pencil, Search, Shield, X } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
+import { InsuranceAlertRecipients } from './InsuranceAlertRecipients';
 import LocationPicker from './LocationPicker';
 import { ManageComponentTypesModal } from './ManageComponentTypesModal';
 import { DroneClassRow, ManageDroneClassesModal } from './ManageDroneClassesModal';
@@ -21,6 +24,7 @@ interface AddComponentModalProps {
   onSuccess: () => void;
   tools: any[];
   models: any[];
+  dFlightEnabled?: boolean;
 }
 
 const INITIAL_FORM = {
@@ -35,6 +39,9 @@ const INITIAL_FORM = {
   gcs_type: '',
   dcc_drone_id: '',
   drone_registration_code: '',
+  uas_serial_number: '',
+  gcs_serial_number: '',
+  license_plate: '',
   component_activation_date: '',
   component_purchase_date: '',
   expiration_date: '',
@@ -56,6 +63,10 @@ const INITIAL_FORM = {
   insurance_name: '',
   insurance_company: '',
   insurance_expiry_date: '',
+  alert_recipients: [] as string[],
+  alert_days_before: '30',
+  enac_authorizations: '',
+  sts_declarations: '',
 };
 export interface ComponentType {
   type_id: number;
@@ -118,10 +129,11 @@ function ModelOptionLabel({ model }: { model: any }) {
   );
 }
 
-export default function AddComponentModal({ open, onClose, onSuccess, tools, models }: AddComponentModalProps) {
+export default function AddComponentModal({ open, onClose, onSuccess, tools, models, dFlightEnabled = false }: AddComponentModalProps) {
   const { t } = useTranslation();
   const [loading, setLoading] = useState<boolean>(false);
   const [formData, setFormData] = useState(INITIAL_FORM);
+  const [matchedDFlightDrone, setMatchedDFlightDrone] = useState<DFlightDroneRow | null>(null);
   const [systemSearch, setSystemSearch] = useState('');
   const [showManageTypes, setShowManageTypes] = useState<boolean>(false);
   const [showManageClasses, setShowManageClasses] = useState<boolean>(false);
@@ -131,6 +143,7 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
   const [parentComponents, setParentComponents] = useState<any[]>([]);
   const [parentLoading, setParentLoading] = useState<boolean>(false);
   const [insuranceExpanded, setInsuranceExpanded] = useState(false);
+  const [certificationsExpanded, setCertificationsExpanded] = useState(false);
 
   const selectedModel = models.find((m) => String(m.tool_model_id) === formData.fk_tool_model_id);
   const selectedModelLabel = selectedModel
@@ -138,7 +151,7 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
     : '';
 
   useEffect(() => {
-    if (open) { setFormData(INITIAL_FORM); setSystemSearch(''); }
+    if (open) { setFormData(INITIAL_FORM); setSystemSearch(''); setMatchedDFlightDrone(null); }
   }, [open]);
 
   useEffect(() => {
@@ -192,6 +205,20 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
     setFormData(prev => ({ ...prev, fk_tool_model_id: modelId }));
   };
 
+  const handleDFlightMatch = (drone: DFlightDroneRow) => {
+    setMatchedDFlightDrone(drone);
+    setFormData(prev => ({
+      ...prev,
+      component_sn: prev.component_sn || drone.serialNumber || '',
+      drone_registration_code: drone.dFlightId || prev.drone_registration_code,
+      uas_serial_number: drone.uasSerialNumber || prev.uas_serial_number,
+      gcs_serial_number: drone.gcsSerialNumber || prev.gcs_serial_number,
+      license_plate: drone.matriculationNumber || prev.license_plate,
+      insurance_company: drone.insuranceCompany || prev.insurance_company,
+      insurance_expiry_date: drone.insuranceExpiryDate?.slice(0, 10) || prev.insurance_expiry_date,
+    }));
+  };
+
   const selectedModelCycle = selectedModel?.maintenance_cycle || '';
   const showHours = selectedModelCycle === 'HOURS' || selectedModelCycle === 'MIXED';
   const showFlights = selectedModelCycle === 'FLIGHTS' || selectedModelCycle === 'MIXED';
@@ -226,6 +253,9 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
         gcs_type: formData.gcs_type || null,
         dcc_drone_id: formData.dcc_drone_id || null,
         drone_registration_code: formData.drone_registration_code || null,
+        uas_serial_number: formData.uas_serial_number || null,
+        gcs_serial_number: formData.gcs_serial_number || null,
+        license_plate: formData.license_plate || null,
         component_activation_date: formData.component_activation_date || null,
         component_purchase_date: formData.component_purchase_date || null,
         expiration_date: formData.expiration_date || null,
@@ -247,12 +277,39 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
         insurance_name: formData.insurance_name || null,
         insurance_company: formData.insurance_company || null,
         insurance_expiry_date: formData.insurance_expiry_date || null,
+        alert_recipients: formData.alert_recipients.length > 0 ? formData.alert_recipients : null,
+        alert_days_before: formData.alert_days_before !== '' ? Number(formData.alert_days_before) : null,
+        certifications: (formData.enac_authorizations.trim() || formData.sts_declarations.trim())
+          ? {
+              enac_authorizations: formData.enac_authorizations.trim() || null,
+              sts_declarations: formData.sts_declarations.trim() || null,
+            }
+          : null,
       };
 
       const response = await axios.post('/api/system/component/add', payload);
       if (response.data.code === 1) {
         toast.success(t('systems.components.addComponent.toasts.success'));
+
+      // Populate D-Flight-specific fields after creating the component.
+        const newComponentId = response.data.data?.component_id;
+        if (newComponentId && matchedDFlightDrone?.dFlightId) {
+          try {
+            await axios.post('/api/dflight/sync', {
+              componentId: newComponentId,
+              dFlightId: matchedDFlightDrone.dFlightId,
+              uas_serial_number: matchedDFlightDrone.uasSerialNumber ?? null,
+              gcs_serial_number: matchedDFlightDrone.gcsSerialNumber ?? null,
+              license_plate: matchedDFlightDrone.matriculationNumber ?? null,
+              insurance_company: matchedDFlightDrone.insuranceCompany ?? null,
+              insurance_expiry_date: matchedDFlightDrone.insuranceExpiryDate ?? null,
+              qr_code_image: matchedDFlightDrone.qrCodeImage ?? null,
+            });
+          } catch { /* non-fatal — component was still created successfully */ }
+        }
+
         setFormData(INITIAL_FORM);
+        setMatchedDFlightDrone(null);
         onSuccess();
       } else {
         toast.error(response.data.message || t('systems.components.addComponent.toasts.failed'));
@@ -388,7 +445,12 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
               </div>
               <div className="col-span-1 sm:col-span-3">
                 <Label className="pb-2">{t('systems.components.addComponent.fields.serialNumber')}</Label>
-                <Input value={formData.component_sn} onChange={(e) => handleChange('component_sn', e.target.value)} />
+                <Input
+                  value={formData.component_sn}
+                  onChange={(e) => handleChange('component_sn', e.target.value)}
+                  disabled={!!matchedDFlightDrone}
+                  className={matchedDFlightDrone ? 'opacity-70' : ''}
+                />
               </div>
             </div>
 
@@ -427,6 +489,10 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
                 <Input value={formData.component_desc} onChange={(e) => handleChange('component_desc', e.target.value)} placeholder={t('systems.components.addComponent.placeholders.componentDesc')} />
               </div>
             </div>
+
+            {formData.component_type === 'DRONE' && dFlightEnabled && (
+              <DFlightPlateSearch onFound={handleDFlightMatch} />
+            )}
 
             {formData.component_type === 'DRONE' && (
               <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 overflow-visible">
@@ -468,6 +534,18 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
                     onChange={(e) => handleChange('drone_registration_code', e.target.value)}
                     placeholder={t('systems.components.addComponent.placeholders.regCode')}
                   />
+                </div>
+                <div className="col-span-1 sm:col-span-3">
+                  <Label className="pb-2">{t('dflight.import.fields.uasSerialNumber')} <span className="text-muted-foreground font-normal">{t('systems.components.common.optional')}</span></Label>
+                  <Input value={formData.uas_serial_number} onChange={(e) => handleChange('uas_serial_number', e.target.value)} />
+                </div>
+                <div className="col-span-1 sm:col-span-3">
+                  <Label className="pb-2">{t('dflight.import.fields.gcsSerialNumber')} <span className="text-muted-foreground font-normal">{t('systems.components.common.optional')}</span></Label>
+                  <Input value={formData.gcs_serial_number} onChange={(e) => handleChange('gcs_serial_number', e.target.value)} />
+                </div>
+                <div className="col-span-1 sm:col-span-3">
+                  <Label className="pb-2">{t('dflight.import.fields.licensePlate')} <span className="text-muted-foreground font-normal">{t('systems.components.common.optional')}</span></Label>
+                  <Input value={formData.license_plate} onChange={(e) => handleChange('license_plate', e.target.value)} />
                 </div>
               </div>
             )}
@@ -756,9 +834,60 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
                       onChange={(e) => handleChange('insurance_expiry_date', e.target.value)}
                     />
                   </div>
+                  <InsuranceAlertRecipients
+                    emails={formData.alert_recipients}
+                    onEmailsChange={(emails) => setFormData(prev => ({ ...prev, alert_recipients: emails }))}
+                    alertDaysBefore={formData.alert_days_before}
+                    onAlertDaysBeforeChange={(v) => handleChange('alert_days_before', v)}
+                  />
                 </div>
               )}
             </div>
+
+            {formData.component_type === 'DRONE' && (
+              <div className="rounded-lg border border-slate-200 bg-slate-50">
+                <button
+                  type="button"
+                  onClick={() => setCertificationsExpanded((v) => !v)}
+                  className="cursor-pointer w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-slate-700"
+                >
+                  <span className="flex items-center gap-2">
+                    <BadgeCheck size={15} className="text-slate-400" />
+                    {t('dflight.import.sections.certifications')}
+                    <span className="text-xs font-normal text-muted-foreground">{t('systems.components.common.optional')}</span>
+                  </span>
+                  {certificationsExpanded ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
+                </button>
+
+                {certificationsExpanded && (
+                  <div className="px-4 pb-4 grid grid-cols-1 sm:grid-cols-2 gap-3 border-t border-slate-200 pt-3">
+                    <p className="col-span-1 sm:col-span-2 text-[11px] text-muted-foreground -mt-1">
+                      {t('dflight.import.certificationsHint')}
+                    </p>
+                    <div className="col-span-1">
+                      <Label className="pb-2">{t('dflight.import.fields.enacAuthorizations')}</Label>
+                      <textarea
+                        value={formData.enac_authorizations}
+                        onChange={(e) => handleChange('enac_authorizations', e.target.value)}
+                        placeholder={t('dflight.import.fields.enacAuthorizationsPlaceholder')}
+                        rows={3}
+                        className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-xs outline-none focus:ring-1 focus:ring-violet-500/30 bg-background resize-y"
+                      />
+                    </div>
+                    <div className="col-span-1">
+                      <Label className="pb-2">{t('dflight.import.fields.stsDeclarations')}</Label>
+                      <textarea
+                        value={formData.sts_declarations}
+                        onChange={(e) => handleChange('sts_declarations', e.target.value)}
+                        placeholder={t('dflight.import.fields.stsDeclarationsPlaceholder')}
+                        rows={3}
+                        className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-xs outline-none focus:ring-1 focus:ring-violet-500/30 bg-background resize-y"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             <div className="flex justify-end gap-2 pt-2">
               <Button type="button" variant="outline" onClick={onClose}>{t('systems.components.addComponent.buttons.cancel')}</Button>

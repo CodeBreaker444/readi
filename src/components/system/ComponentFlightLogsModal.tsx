@@ -271,8 +271,8 @@ export function ComponentFlightLogsModal({ open, onClose, componentId, component
         </DialogHeader>
 
         <div className={`flex-1 min-h-0 flex flex-col overflow-hidden ${bg}`}>
-          <div className="hidden md:flex flex-1 min-h-0 gap-5 p-5">
-            <div className="w-72 lg:w-80 shrink-0 flex flex-col min-h-0">
+          <div className="hidden min-[1233px]:flex flex-1 min-h-0 gap-5 p-5">
+            <div className="w-72 xl:w-80 shrink-0 flex flex-col min-h-0">
               {LogList}
             </div>
             <div className="flex-1 min-w-0 min-h-0 overflow-y-auto">
@@ -280,7 +280,7 @@ export function ComponentFlightLogsModal({ open, onClose, componentId, component
             </div>
           </div>
 
-          <div className="flex md:hidden flex-col flex-1 min-h-0 p-4">
+          <div className="flex min-[1233px]:hidden flex-col flex-1 min-h-0 p-3 sm:p-4">
             {mobileView === 'list' ? (
               LogList
             ) : (

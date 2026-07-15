@@ -146,7 +146,7 @@ export function GutmaPreviewPanel({
     return (
       <button
         onClick={() => setTab(id)}
-        className={`cursor-pointer flex items-center gap-1.5 px-3 py-2 text-xs font-medium border-b-2 transition-colors ${
+        className={`cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap px-3 py-2 text-xs font-medium border-b-2 transition-colors ${
           active
             ? 'border-violet-500 text-violet-500'
             : `border-transparent ${textSecondary} hover:${textPrimary}`
@@ -160,20 +160,20 @@ export function GutmaPreviewPanel({
 
   return (
     <div className={`rounded-xl border overflow-hidden ${card}`}>
-      <div className={`flex items-center justify-between px-5 py-3.5 border-b ${tabBorder}`}>
-        <div className="flex items-center gap-2">
-          <HiOutlineDocumentText className={`w-4 h-4 ${textSecondary}`} />
-          <span className={`text-xs font-semibold ${textPrimary}`}>
+      <div className={`flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5 px-3 sm:px-5 py-3 sm:py-3.5 border-b ${tabBorder}`}>
+        <div className="flex items-center gap-2 min-w-0">
+          <HiOutlineDocumentText className={`w-4 h-4 shrink-0 ${textSecondary}`} />
+          <span className={`text-xs font-semibold truncate ${textPrimary}`}>
             {flight.flight_name ?? flight.flight_id}
           </span>
         </div>
         <div className="flex items-center gap-3">
           {/* File name + size */}
           {preview?.filename && (
-            <div className="flex items-center gap-1.5">
-              <span className={`text-[10px] font-mono ${textSecondary}`}>{preview.filename}</span>
-              <span className={`text-[10px] ${isDark ? 'text-slate-600' : 'text-slate-400'}`}>·</span>
-              <span className={`text-[10px] font-mono ${textSecondary}`}>
+            <div className="hidden sm:flex items-center gap-1.5 min-w-0">
+              <span className={`text-[10px] font-mono truncate max-w-37.5 ${textSecondary}`}>{preview.filename}</span>
+              <span className={`text-[10px] shrink-0 ${isDark ? 'text-slate-600' : 'text-slate-400'}`}>·</span>
+              <span className={`text-[10px] font-mono shrink-0 ${textSecondary}`}>
                 {formatBytes(JSON.stringify(preview).length)}
               </span>
             </div>
@@ -233,14 +233,14 @@ export function GutmaPreviewPanel({
       )}
 
       {!loading && preview && (
-        <div className={`flex border-b ${tabBorder} px-3`}>
+        <div className={`flex overflow-x-auto scrollbar-thin border-b ${tabBorder} px-2 sm:px-3`}>
           <TabButton id="map"   icon={<HiMap               className="w-3.5 h-3.5" />} label={t('flytbase.preview.tabs.map')} />
           <TabButton id="gutma" icon={<HiTable             className="w-3.5 h-3.5" />} label={t('flytbase.preview.tabs.gutmaLog')} />
           <TabButton id="info"  icon={<HiInformationCircle className="w-3.5 h-3.5" />} label={t('flytbase.preview.tabs.flightInfo')} />
         </div>
       )}
 
-      <div className="p-5">
+      <div className="p-3 sm:p-5">
         {loading && (
           <div className="space-y-4">
             <div className={`flex items-center gap-2.5 text-xs ${textSecondary}`}>

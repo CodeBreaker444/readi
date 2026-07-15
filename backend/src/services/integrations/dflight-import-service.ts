@@ -11,8 +11,15 @@ export interface ImportDFlightDroneInput {
   component_sn: string;
   fk_tool_model_id: number;
   drone_classes?: string[] | null;
+  uas_serial_number?: string | null;
+  gcs_serial_number?: string | null;
+  license_plate?: string | null;
+  insurance_name?: string | null;
   insurance_company?: string | null;
   insurance_expiry_date?: string | null;
+  insurance_alert_recipients?: string[] | null;
+  insurance_alert_days_before?: number | null;
+  certifications?: { enac_authorizations?: string | null; sts_declarations?: string | null } | null;
   qr_code_image?: string | null;
 }
 
@@ -29,7 +36,10 @@ export async function importDFlightDrone(input: ImportDFlightDroneInput) {
   const normalizedSerial = input.component_sn.trim();
   if (normalizedSerial) {
     const duplicate = await prisma.tool_component.findFirst({
-      where: { serial_number: { equals: normalizedSerial, mode: 'insensitive' } },
+      where: {
+        serial_number: { equals: normalizedSerial, mode: 'insensitive' },
+        tool: { fk_owner_id: input.fk_owner_id },
+      },
       select: { component_id: true },
     });
     if (duplicate) {
@@ -68,6 +78,13 @@ export async function importDFlightDrone(input: ImportDFlightDroneInput) {
         drone_registration_code: input.dFlightId,
         drc_synced_at: new Date(),
         qr_code_image: input.qr_code_image || null,
+        uas_serial_number: input.uas_serial_number || null,
+        gcs_serial_number: input.gcs_serial_number || null,
+        license_plate: input.license_plate || null,
+        // Manual entry for now — d-flight has no documented endpoint for these.
+        certifications: input.certifications?.enac_authorizations || input.certifications?.sts_declarations
+          ? (input.certifications as unknown as Prisma.InputJsonValue)
+          : Prisma.JsonNull,
         component_metadata: {
           cc_platform: null,
           gcs_type: null,
@@ -91,9 +108,13 @@ export async function importDFlightDrone(input: ImportDFlightDroneInput) {
       await tx.component_insurance.create({
         data: {
           fk_component_id: component.component_id,
-          insurance_name: null,
+          insurance_name: input.insurance_name || null,
           insurance_company: input.insurance_company || null,
           expiry_date: input.insurance_expiry_date ? new Date(input.insurance_expiry_date) : null,
+          alert_recipients: input.insurance_alert_recipients?.length
+            ? (input.insurance_alert_recipients as unknown as Prisma.InputJsonValue)
+            : Prisma.JsonNull,
+          alert_days_before: input.insurance_alert_days_before ?? 30,
         },
       });
     }

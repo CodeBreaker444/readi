@@ -1,5 +1,6 @@
 'use client';
 
+import DFlightPlateSearch from '@/components/dflight/DFlightPlateSearch';
 import LocationPicker from '@/components/system/LocationPicker';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -8,12 +9,13 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useTheme } from '@/components/useTheme';
 import axios from 'axios';
-import { ChevronDown, ChevronRight, Loader2, Pencil, Search, Shield, X } from 'lucide-react';
-import { QRCodeSVG } from 'qrcode.react';
+import { BadgeCheck, ChevronDown, ChevronRight, Loader2, Pencil, Search, Shield, X } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
+import type { DFlightDroneRow } from '@/types/dflight';
 import { Skeleton } from '../ui/skeleton';
+import { InsuranceAlertRecipients } from './InsuranceAlertRecipients';
 import { ManageComponentTypesModal } from './ManageComponentTypesModal';
 import { DroneClassRow, ManageDroneClassesModal } from './ManageDroneClassesModal';
 
@@ -68,6 +70,9 @@ const EMPTY_FORM = {
   gcs_type: '',
   dcc_drone_id: '',
   drone_registration_code: '',
+  uas_serial_number: '',
+  gcs_serial_number: '',
+  license_plate: '',
   component_activation_date: '',
   component_purchase_date: '',
   expiration_date: '',
@@ -88,6 +93,10 @@ const EMPTY_FORM = {
   insurance_name: '',
   insurance_company: '',
   insurance_expiry_date: '',
+  alert_recipients: [] as string[],
+  alert_days_before: '30',
+  enac_authorizations: '',
+  sts_declarations: '',
 };
 interface ComponentType {
   type_id: number;
@@ -114,6 +123,7 @@ export default function EditComponentModal({
   const [drcSyncedAt, setDrcSyncedAt] = useState<string | null>(null);
   const [qrCodeImage, setQrCodeImage] = useState<string | null>(null);
   const [insuranceExpanded, setInsuranceExpanded] = useState(false);
+  const [certificationsExpanded, setCertificationsExpanded] = useState(false);
 
     const [formData, setFormData] = useState(EMPTY_FORM);
 
@@ -182,6 +192,9 @@ export default function EditComponentModal({
       gcs_type: comp.gcs_type || '',
       dcc_drone_id: comp.dcc_drone_id || '',
       drone_registration_code: comp.drone_registration_code || '',
+      uas_serial_number: comp.uas_serial_number || '',
+      gcs_serial_number: comp.gcs_serial_number || '',
+      license_plate: comp.license_plate || '',
       component_activation_date: comp.component_activation_date?.split('T')[0] || '',
       component_purchase_date: comp.component_purchase_date?.split('T')[0] || '',
       expiration_date: comp.expiration_date?.split('T')[0] || '',
@@ -202,7 +215,46 @@ export default function EditComponentModal({
       insurance_name: comp.insurance_name || '',
       insurance_company: comp.insurance_company || '',
       insurance_expiry_date: comp.insurance_expiry_date?.split('T')[0] || '',
+      alert_recipients: Array.isArray(comp.alert_recipients) ? comp.alert_recipients : [],
+      alert_days_before: comp.alert_days_before != null ? String(comp.alert_days_before) : '30',
+      enac_authorizations: comp.certifications?.enac_authorizations || '',
+      sts_declarations: comp.certifications?.sts_declarations || '',
     });
+  };
+
+  const handleDFlightMatch = async (drone: DFlightDroneRow) => {
+    if (!selectedComponentId || !drone.dFlightId) return;
+    try {
+      const { data } = await axios.post('/api/dflight/sync', {
+        componentId: Number(selectedComponentId),
+        dFlightId: drone.dFlightId,
+        uas_serial_number: drone.uasSerialNumber ?? null,
+        gcs_serial_number: drone.gcsSerialNumber ?? null,
+        license_plate: drone.matriculationNumber ?? null,
+        insurance_company: drone.insuranceCompany ?? null,
+        insurance_expiry_date: drone.insuranceExpiryDate ?? null,
+        qr_code_image: drone.qrCodeImage ?? null,
+      });
+      if (data.code === 1) {
+        toast.success(t('dflight.plateSearch.aligned', { defaultValue: 'Component aligned with D-Flight' }));
+        setDrcSyncedAt(data.data.drc_synced_at ?? null);
+        setQrCodeImage(data.data.qr_code_image ?? null);
+        setFormData((prev) => ({
+          ...prev,
+          drone_registration_code: data.data.drone_registration_code || prev.drone_registration_code,
+          uas_serial_number: data.data.uas_serial_number || prev.uas_serial_number,
+          gcs_serial_number: data.data.gcs_serial_number || prev.gcs_serial_number,
+          license_plate: data.data.license_plate || prev.license_plate,
+          component_sn: prev.component_sn || drone.serialNumber || '',
+          insurance_company: drone.insuranceCompany || prev.insurance_company,
+          insurance_expiry_date: drone.insuranceExpiryDate?.slice(0, 10) || prev.insurance_expiry_date,
+        }));
+      } else {
+        toast.error(data.message || t('dflight.plateSearch.error', { defaultValue: 'Failed to search D-Flight' }));
+      }
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || t('dflight.plateSearch.error', { defaultValue: 'Failed to search D-Flight' }));
+    }
   };
 
   const fetchAllComponentsAndSelect = async (componentId: number) => {
@@ -314,6 +366,9 @@ export default function EditComponentModal({
         gcs_type: formData.gcs_type || null,
         dcc_drone_id: formData.dcc_drone_id || null,
         drone_registration_code: formData.drone_registration_code || null,
+        uas_serial_number: formData.uas_serial_number || null,
+        gcs_serial_number: formData.gcs_serial_number || null,
+        license_plate: formData.license_plate || null,
         component_activation_date: formData.component_activation_date || null,
         component_purchase_date: formData.component_purchase_date || null,
         expiration_date: formData.expiration_date || null,
@@ -334,6 +389,14 @@ export default function EditComponentModal({
         insurance_name: formData.insurance_name || null,
         insurance_company: formData.insurance_company || null,
         insurance_expiry_date: formData.insurance_expiry_date || null,
+        alert_recipients: formData.alert_recipients.length > 0 ? formData.alert_recipients : null,
+        alert_days_before: formData.alert_days_before !== '' ? Number(formData.alert_days_before) : null,
+        certifications: (formData.enac_authorizations.trim() || formData.sts_declarations.trim())
+          ? {
+              enac_authorizations: formData.enac_authorizations.trim() || null,
+              sts_declarations: formData.sts_declarations.trim() || null,
+            }
+          : null,
       };
 
       const res = await fetch(`/api/system/component/${selectedComponentId}/update`, {
@@ -519,7 +582,17 @@ export default function EditComponentModal({
                   </div>
                   <div className="col-span-1 sm:col-span-3">
                     <Label className={labelCls}>{t('systems.components.addComponent.fields.serialNumber')}</Label>
-                    <Input className={inputCls} value={formData.component_sn} onChange={e => handleChange('component_sn', e.target.value)} />
+                    <Input
+                      className={`${inputCls} ${formData.drone_registration_code ? 'opacity-70' : ''}`}
+                      value={formData.component_sn}
+                      onChange={e => handleChange('component_sn', e.target.value)}
+                      disabled={!!formData.drone_registration_code}
+                    />
+                    {formData.drone_registration_code && (
+                      <p className={`mt-1 text-[11px] ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                        Locked — linked to D-Flight
+                      </p>
+                    )}
                   </div>
                 </div>
 
@@ -652,6 +725,10 @@ export default function EditComponentModal({
                   </div>
                 )}
 
+                {formData.component_type === 'DRONE' && dFlightEnabled && selectedComponentId && (
+                  <DFlightPlateSearch isDark={isDark} onFound={handleDFlightMatch} />
+                )}
+
                 {formData.component_type === 'DRONE' && (
                   <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
                     <div className="col-span-1 sm:col-span-3">
@@ -689,6 +766,18 @@ export default function EditComponentModal({
                           Synced from dFlight &middot; {new Date(drcSyncedAt).toLocaleString()}
                         </p>
                       )}
+                    </div>
+                    <div className="col-span-1 sm:col-span-3">
+                      <Label className={labelCls}>{t('dflight.import.fields.uasSerialNumber')} <span className="font-normal opacity-60">{t('systems.components.common.optional')}</span></Label>
+                      <Input className={inputCls} value={formData.uas_serial_number} onChange={e => handleChange('uas_serial_number', e.target.value)} />
+                    </div>
+                    <div className="col-span-1 sm:col-span-3">
+                      <Label className={labelCls}>{t('dflight.import.fields.gcsSerialNumber')} <span className="font-normal opacity-60">{t('systems.components.common.optional')}</span></Label>
+                      <Input className={inputCls} value={formData.gcs_serial_number} onChange={e => handleChange('gcs_serial_number', e.target.value)} />
+                    </div>
+                    <div className="col-span-1 sm:col-span-3">
+                      <Label className={labelCls}>{t('dflight.import.fields.licensePlate')} <span className="font-normal opacity-60">{t('systems.components.common.optional')}</span></Label>
+                      <Input className={inputCls} value={formData.license_plate} onChange={e => handleChange('license_plate', e.target.value)} />
                     </div>
                   </div>
                 )}
@@ -895,9 +984,61 @@ export default function EditComponentModal({
                           onChange={e => handleChange('insurance_expiry_date', e.target.value)}
                         />
                       </div>
+                      <InsuranceAlertRecipients
+                        emails={formData.alert_recipients}
+                        onEmailsChange={(emails) => setFormData(prev => ({ ...prev, alert_recipients: emails }))}
+                        alertDaysBefore={formData.alert_days_before}
+                        onAlertDaysBeforeChange={(v) => handleChange('alert_days_before', v)}
+                        isDark={isDark}
+                      />
                     </div>
                   )}
                 </div>
+
+                {formData.component_type === 'DRONE' && (
+                  <div className={`rounded-lg border ${isDark ? 'border-slate-600 bg-slate-900/40' : 'border-slate-200 bg-slate-50'}`}>
+                    <button
+                      type="button"
+                      onClick={() => setCertificationsExpanded((v) => !v)}
+                      className={`cursor-pointer w-full flex items-center justify-between px-4 py-3 text-sm font-medium ${isDark ? 'text-slate-200' : 'text-slate-700'}`}
+                    >
+                      <span className="flex items-center gap-2">
+                        <BadgeCheck size={15} className={isDark ? 'text-slate-500' : 'text-slate-400'} />
+                        {t('dflight.import.sections.certifications')}
+                        <span className={`text-xs font-normal ${isDark ? 'text-slate-500' : 'text-muted-foreground'}`}>{t('systems.components.common.optional')}</span>
+                      </span>
+                      {certificationsExpanded ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
+                    </button>
+
+                    {certificationsExpanded && (
+                      <div className={`px-4 pb-4 grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3 border-t ${isDark ? 'border-slate-700' : 'border-slate-200'}`}>
+                        <p className={`col-span-1 sm:col-span-2 text-[11px] -mt-1 ${isDark ? 'text-slate-500' : 'text-muted-foreground'}`}>
+                          {t('dflight.import.certificationsHint')}
+                        </p>
+                        <div className="col-span-1">
+                          <Label className={labelCls}>{t('dflight.import.fields.enacAuthorizations')}</Label>
+                          <textarea
+                            value={formData.enac_authorizations}
+                            onChange={(e) => handleChange('enac_authorizations', e.target.value)}
+                            placeholder={t('dflight.import.fields.enacAuthorizationsPlaceholder')}
+                            rows={3}
+                            className={`w-full rounded-md border px-2.5 py-1.5 text-xs outline-none focus:ring-1 focus:ring-violet-500/30 resize-y ${isDark ? 'bg-slate-900 border-slate-600 text-slate-200 placeholder:text-slate-500' : 'bg-background border-slate-300'}`}
+                          />
+                        </div>
+                        <div className="col-span-1">
+                          <Label className={labelCls}>{t('dflight.import.fields.stsDeclarations')}</Label>
+                          <textarea
+                            value={formData.sts_declarations}
+                            onChange={(e) => handleChange('sts_declarations', e.target.value)}
+                            placeholder={t('dflight.import.fields.stsDeclarationsPlaceholder')}
+                            rows={3}
+                            className={`w-full rounded-md border px-2.5 py-1.5 text-xs outline-none focus:ring-1 focus:ring-violet-500/30 resize-y ${isDark ? 'bg-slate-900 border-slate-600 text-slate-200 placeholder:text-slate-500' : 'bg-background border-slate-300'}`}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {dFlightEnabled && qrCodeImage && (
                   <div className={`rounded-lg border ${isDark ? 'border-slate-600 bg-slate-900/40' : 'border-slate-200 bg-slate-50'}`}>
@@ -906,9 +1047,12 @@ export default function EditComponentModal({
                     </div>
                     <div className={`px-4 pb-4 pt-3 border-t ${isDark ? 'border-slate-700' : 'border-slate-200'}`}>
                       <Label className={labelCls}>{t('systems.components.common.additionalInformation.qrCode')}</Label>
-                      <div className="w-56 h-56 rounded border border-slate-200 bg-white flex items-center justify-center">
-                        <QRCodeSVG value={qrCodeImage} size={220} marginSize={4} level="L" />
-                      </div>
+                      {/* d-flight returns a pre-rendered QR PNG as raw base64 (no data: prefix) — render it directly */}
+                      <img
+                        src={qrCodeImage.startsWith('http') || qrCodeImage.startsWith('data:') ? qrCodeImage : `data:image/png;base64,${qrCodeImage}`}
+                        alt={t('systems.components.common.additionalInformation.qrCode')}
+                        className="w-32 h-32 object-contain rounded border border-slate-200 bg-white"
+                      />
                       <p className={`mt-1 text-[11px] ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
                         {t('systems.components.common.additionalInformation.qrCodeHint')}
                       </p>

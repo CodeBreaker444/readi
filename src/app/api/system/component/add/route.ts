@@ -29,6 +29,13 @@ const ComponentSchema = z
     gcs_type: z.string().optional().nullable(),
     dcc_drone_id: z.string().uuid().optional().nullable(),
     drone_registration_code: z.string().optional().nullable(),
+    uas_serial_number: z.string().optional().nullable(),
+    gcs_serial_number: z.string().optional().nullable(),
+    license_plate: z.string().optional().nullable(),
+    certifications: z.object({
+      enac_authorizations: z.string().optional().nullable(),
+      sts_declarations: z.string().optional().nullable(),
+    }).optional().nullable(),
     maintenance_cycle: z.string().optional().nullable(),
     maintenance_cycle_hour: z.number().optional().nullable(),
     maintenance_cycle_day: z.number().optional().nullable(),
@@ -44,6 +51,8 @@ const ComponentSchema = z
     insurance_name: z.string().optional().nullable(),
     insurance_company: z.string().optional().nullable(),
     insurance_expiry_date: z.string().optional().nullable(),
+    alert_recipients: z.array(z.string().email()).optional().nullable(),
+    alert_days_before: z.number().int().min(1).max(365).optional().nullable(),
   })
   .refine((data) => !!data.fk_tool_id || !!data.warehouse, {
     message: 'Either fk_tool_id or warehouse:true is required',
@@ -91,6 +100,10 @@ export async function POST(req: NextRequest) {
       gcs_type: d.gcs_type,
       dcc_drone_id: d.dcc_drone_id,
       drone_registration_code: d.drone_registration_code,
+      uas_serial_number: d.uas_serial_number,
+      gcs_serial_number: d.gcs_serial_number,
+      license_plate: d.license_plate,
+      certifications: d.certifications ?? null,
       maintenance_cycle: d.maintenance_cycle,
       maintenance_cycle_hour: d.maintenance_cycle_hour,
       maintenance_cycle_day: d.maintenance_cycle_day,
@@ -106,7 +119,9 @@ export async function POST(req: NextRequest) {
       insurance_name: d.insurance_name ?? null,
       insurance_company: d.insurance_company ?? null,
       insurance_expiry_date: d.insurance_expiry_date ?? null,
-    });
+      alert_recipients: d.alert_recipients ?? null,
+      alert_days_before: d.alert_days_before ?? null,
+    }, session!.user.ownerId);
 
     if (result.code === 1) {
       const systemCode = d.warehouse ? null : await getToolCode(toolId, session!.user.ownerId);

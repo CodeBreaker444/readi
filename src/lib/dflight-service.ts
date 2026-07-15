@@ -32,17 +32,34 @@ export interface DFlightDroneResult {
   takeOffMass: string | null;
   'model.modelName': string | null;
   'model.manufacturer.name': string | null;
-  /**
-   * Best-effort fields below: no live d-flight sandbox payload was available to confirm
-   * these key paths against the flat `resultView` map. They default to null and never
-   * break the page if the guess is wrong — verify against a real account and correct
-   * the extraction in getDFlightDrones() below once confirmed.
-   */
+  uasClassId: string | null;
+  manufacturerId: string | null;
   timeOfDelete: string | null;
   insuranceCompany: string | null;
   insuranceExpiryDate: string | null;
-  uasClassId: string | null;
   qrCodeImage: string | null;
+  modelId: string | null;
+}
+
+export interface DFlightModelResult {
+  id: string;
+  modelCode: string | null;
+  modelName: string | null;
+  manufacturerId: string | null;
+  uasClassId: string | null;
+  mtom: string | null;
+  tempMin: string | null;
+  tempMax: string | null;
+}
+
+export interface DFlightManufacturerResult {
+  id: string;
+  name: string | null;
+}
+
+export interface DFlightUasClassResult {
+  id: string;
+  label: string | null;
 }
 
 export interface DFlightDronePageResult {
@@ -131,12 +148,14 @@ function mapDroneResultView(v: Record<string, string | null>): DFlightDroneResul
     qrCodeImage:               v['qrCode']                    ?? v['qrCodeImage'] ?? null,
     usage:                     v['usage']                     ?? null,
     takeOffMass:               v['takeOffMass']               ?? null,
-    'model.modelName':         v['model.modelName']           ?? null,
-    'model.manufacturer.name': v['model.manufacturer.name']  ?? null,
+    'model.modelName':         null,
+    'model.manufacturer.name': null,
     timeOfDelete:              v['timeOfDelete']              ?? null,
-    insuranceCompany:          v['insurance.company']         ?? null,
-    insuranceExpiryDate:       v['insurance.expiryDate']      ?? null,
-    uasClassId:                v['droneClass.id']             ?? null,
+    insuranceCompany:          v['companyName']               ?? null,
+    insuranceExpiryDate:       v['insuranceExpireDate']       ?? null,
+    uasClassId:                null,
+    modelId:                   v['model.id']                  ?? null,
+    manufacturerId:            null,
   };
 }
 
@@ -176,6 +195,11 @@ export async function getDFlightDrones(
     const json = (await res.json()) as DFlightDronePageResult;
     const pageItems = Array.isArray(json.data) ? json.data : [];
 
+    if (pageNumber === 0 && pageItems[0]) {
+      console.log('D-Flight raw drone resultView keys:', Object.keys(pageItems[0].resultView ?? {}));
+      console.log('D-Flight raw drone resultView (first item):', JSON.stringify(pageItems[0].resultView, null, 2));
+    }
+
     drones.push(...pageItems.map((item) => mapDroneResultView(item.resultView ?? {})));
 
     if (pageItems.length < pageSize) break;
@@ -189,7 +213,7 @@ export async function getDFlightUasClass(
   baseUrl:     string,
   accessToken: string,
   classId:     string,
-): Promise<{ id: string; label: string | null } | null> {
+): Promise<DFlightUasClassResult | null> {
   const res = await dFetch(
     `${baseUrl}/drone-management/v2/api/uas-class/${encodeURIComponent(classId)}`,
     {
@@ -203,8 +227,78 @@ export async function getDFlightUasClass(
 
   if (!res.ok) return null;
 
-  // Best-effort: exact response shape unverified against a live payload.
-  const json = (await res.json()) as Record<string, unknown>;
-  const label = (json['className'] ?? json['name'] ?? json['label']) as string | undefined;
+  const json = (await res.json()) as { data?: Record<string, unknown> };
+  const record = json.data;
+  if (!record) return null;
+
+  const label = record['name'] as string | undefined;
   return { id: classId, label: label ?? null };
+}
+
+export async function getDFlightModel(
+  baseUrl:     string,
+  accessToken: string,
+  modelId:     string,
+): Promise<DFlightModelResult | null> {
+  const res = await dFetch(
+    `${baseUrl}/drone-management/v2/api/models/search?id=${encodeURIComponent(modelId)}`,
+    {
+      method:  'GET',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        Accept:        'application/json',
+      },
+    },
+  );
+
+  if (!res.ok) return null;
+
+  const json = (await res.json()) as { data?: unknown[] };
+  const record = Array.isArray(json.data) ? (json.data[0] as Record<string, unknown> | undefined) : undefined;
+  if (!record) return null;
+
+  const modelCode      = record['code']           as string | undefined;
+  const modelName      = record['model']          as string | undefined;
+  const manufacturerId = record['manufacturerId'] as string | number | undefined;
+  const uasClassId     = record['id_uas_class']   as string | number | undefined;
+  const mtom           = record['mtow']           as string | number | undefined;
+  const tempMin        = record['minTemp']        as string | number | undefined;
+  const tempMax        = record['maxTemp']        as string | number | undefined;
+
+  return {
+    id:             modelId,
+    modelCode:      modelCode ?? null,
+    modelName:      modelName ?? null,
+    manufacturerId: manufacturerId != null ? String(manufacturerId) : null,
+    uasClassId:     uasClassId     != null ? String(uasClassId)     : null,
+    mtom:           mtom          != null ? String(mtom)           : null,
+    tempMin:        tempMin       != null ? String(tempMin)        : null,
+    tempMax:        tempMax       != null ? String(tempMax)        : null,
+  };
+}
+
+export async function getDFlightManufacturer(
+  baseUrl:        string,
+  accessToken:    string,
+  manufacturerId: string,
+): Promise<DFlightManufacturerResult | null> {
+  const res = await dFetch(
+    `${baseUrl}/drone-management/v2/api/manufacturer/${encodeURIComponent(manufacturerId)}`,
+    {
+      method:  'GET',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        Accept:        'application/json',
+      },
+    },
+  );
+
+  if (!res.ok) return null;
+
+  const json = (await res.json()) as { data?: Record<string, unknown> };
+  const record = json.data;
+  if (!record) return null;
+
+  const name = record['name'] as string | undefined;
+  return { id: manufacturerId, name: name ?? null };
 }

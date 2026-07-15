@@ -725,6 +725,39 @@ export async function getComponentList(ownerId: number, toolId?: number, include
   return buildComponentListResult(rawData);
 }
 
+export function computeEffectiveComponentStatus(item: {
+  component_metadata: any;
+  expiration_date: Date | string | null;
+  expiry_type: string | null;
+  expiration_flights: number | null;
+  expiration_flight_hours: number | Prisma.Decimal | null;
+  current_maintenance_flights: number | Prisma.Decimal | null;
+  current_usage_hours: number | Prisma.Decimal | null;
+}, today: string = new Date().toISOString().split('T')[0]): string {
+  const expiryType: string = item.expiry_type || 'EXPIRATION_DATE';
+  const isDateExpired = item.expiration_date && item.expiration_date <= today;
+  const isFlightExpired =
+    item.expiration_flights != null &&
+    Number(item.current_maintenance_flights) >= item.expiration_flights;
+  const isFlightHoursExpired =
+    item.expiration_flight_hours != null &&
+    Number(item.current_usage_hours) >= Number(item.expiration_flight_hours);
+  const isExpired =
+    expiryType === 'FLIGHTS'
+      ? isFlightExpired
+      : expiryType === 'FLIGHT_HOURS'
+        ? isFlightHoursExpired
+        : expiryType === 'MIXED'
+          ? isDateExpired || isFlightExpired || isFlightHoursExpired
+          : isDateExpired;
+  const storedStatus = item.component_metadata?.component_status;
+  return storedStatus === 'DISMISSED'
+    ? 'DISMISSED'
+    : isExpired
+      ? 'DECOMMISSIONED'
+      : (storedStatus || 'OPERATIONAL');
+}
+
 function buildComponentListResult(data: any[]) {
   const today = new Date().toISOString().split('T')[0];
   return {
@@ -732,28 +765,7 @@ function buildComponentListResult(data: any[]) {
     message: 'Success',
     dataRows: data.length,
     data: data.map((item) => {
-      const expiryType: string = item.expiry_type || 'EXPIRATION_DATE';
-      const isDateExpired = item.expiration_date && item.expiration_date <= today;
-      const isFlightExpired =
-        item.expiration_flights != null &&
-        Number(item.current_maintenance_flights) >= item.expiration_flights;
-      const isFlightHoursExpired =
-        item.expiration_flight_hours != null &&
-        Number(item.current_usage_hours) >= Number(item.expiration_flight_hours);
-      const isExpired =
-        expiryType === 'FLIGHTS'
-          ? isFlightExpired
-          : expiryType === 'FLIGHT_HOURS'
-            ? isFlightHoursExpired
-            : expiryType === 'MIXED'
-              ? isDateExpired || isFlightExpired || isFlightHoursExpired
-              : isDateExpired;
-      const storedStatus = item.component_metadata?.component_status;
-      const effectiveStatus = storedStatus === 'DISMISSED'
-        ? 'DISMISSED'
-        : isExpired
-          ? 'DECOMMISSIONED'
-          : (storedStatus || 'OPERATIONAL');
+      const effectiveStatus = computeEffectiveComponentStatus(item, today);
       return {
         tool_component_id: item.component_id,
         fk_tool_id: item.fk_tool_id,
@@ -791,31 +803,68 @@ function buildComponentListResult(data: any[]) {
         drone_registration_code: item.drone_registration_code ?? null,
         drc_synced_at: item.drc_synced_at ?? null,
         qr_code_image: item.qr_code_image ?? null,
+        uas_serial_number: item.uas_serial_number ?? null,
+        gcs_serial_number: item.gcs_serial_number ?? null,
+        license_plate: item.license_plate ?? null,
+        certifications: item.certifications ?? null,
         latitude: item.component_metadata?.latitude ?? null,
         longitude: item.component_metadata?.longitude ?? null,
         drone_classes: item.component_metadata?.drone_classes ?? null,
         is_primary: item.component_metadata?.is_primary ?? false,
         expiration_date: item.expiration_date || null,
-        expiry_type: expiryType,
+        expiry_type: item.expiry_type || 'EXPIRATION_DATE',
         expiration_flights: item.expiration_flights ?? null,
         expiration_flight_hours: item.expiration_flight_hours != null ? Number(item.expiration_flight_hours) : null,
         insurance_name: item.component_insurance?.insurance_name ?? null,
         insurance_company: item.component_insurance?.insurance_company ?? null,
         insurance_expiry_date: item.component_insurance?.expiry_date ?? null,
+        alert_recipients: Array.isArray(item.component_insurance?.alert_recipients)
+          ? item.component_insurance.alert_recipients
+          : [],
+        alert_days_before: item.component_insurance?.alert_days_before ?? 30,
       };
     }),
   };
 }
 
+// Users of the owner's organization eligible to be picked as insurance-expiry alert
+// recipients. Inactive users are included (not filtered out) so the UI can show them
+// grayed out rather than silently hiding accounts that used to be selectable.
+export async function getOwnerUsersForAlerts(ownerId: number) {
+  const users = await prisma.public_users.findMany({
+    where: { fk_owner_id: ownerId },
+    orderBy: [{ user_active: 'desc' }, { first_name: 'asc' }],
+    select: {
+      user_id: true,
+      first_name: true,
+      last_name: true,
+      email: true,
+      user_role: true,
+      user_active: true,
+    },
+  });
 
-export async function addComponent(componentData: any) {
+  return users.map((u) => ({
+    user_id: u.user_id,
+    fullname: `${u.first_name ?? ''} ${u.last_name ?? ''}`.trim() || u.email || `User #${u.user_id}`,
+    email: u.email,
+    user_role: u.user_role ?? null,
+    active: u.user_active === 'Y',
+  }));
+}
+
+
+export async function addComponent(componentData: any, ownerId: number) {
   const normalizedSerial = typeof componentData.component_sn === 'string'
     ? componentData.component_sn.trim()
     : '';
 
   if (normalizedSerial) {
     const duplicate = await prisma.tool_component.findFirst({
-      where: { serial_number: { equals: normalizedSerial, mode: 'insensitive' } },
+      where: {
+        serial_number: { equals: normalizedSerial, mode: 'insensitive' },
+        tool: { fk_owner_id: ownerId },
+      },
       select: { component_id: true },
     });
 
@@ -873,6 +922,13 @@ export async function addComponent(componentData: any) {
       current_maintenance_flights: componentData.initial_maintenance_flights ?? 0,
       dcc_drone_id: componentData.dcc_drone_id || null,
       drone_registration_code: componentData.drone_registration_code || null,
+      uas_serial_number: componentData.uas_serial_number || null,
+      gcs_serial_number: componentData.gcs_serial_number || null,
+      license_plate: componentData.license_plate || null,
+      // ENAC Authorizations / STS Declarations — manual entry until d-flight exposes an endpoint.
+      certifications: componentData.certifications?.enac_authorizations || componentData.certifications?.sts_declarations
+        ? (componentData.certifications as Prisma.InputJsonValue)
+        : Prisma.JsonNull,
       expiration_date: componentData.expiration_date ? new Date(componentData.expiration_date) : null,
       expiry_type: componentData.expiry_type || 'EXPIRATION_DATE',
       expiration_flights: componentData.expiration_flights ?? null,
@@ -918,13 +974,20 @@ export async function addComponent(componentData: any) {
     },
   });
 
-  if (componentData.insurance_name || componentData.insurance_company || componentData.insurance_expiry_date) {
+  if (
+    componentData.insurance_name || componentData.insurance_company || componentData.insurance_expiry_date ||
+    (componentData.alert_recipients && componentData.alert_recipients.length > 0) || componentData.alert_days_before != null
+  ) {
     await prisma.component_insurance.create({
       data: {
         fk_component_id: data.component_id,
         insurance_name: componentData.insurance_name || null,
         insurance_company: componentData.insurance_company || null,
         expiry_date: componentData.insurance_expiry_date ? new Date(componentData.insurance_expiry_date) : null,
+        alert_recipients: componentData.alert_recipients && componentData.alert_recipients.length > 0
+          ? (componentData.alert_recipients as Prisma.InputJsonValue)
+          : Prisma.JsonNull,
+        alert_days_before: componentData.alert_days_before ?? 30,
       },
     });
   }
@@ -933,16 +996,37 @@ export async function addComponent(componentData: any) {
 }
 
 
-export async function updateComponent(componentId: number, componentData: any) {
-  const normalizedSerial = typeof componentData.component_sn === 'string'
-    ? componentData.component_sn.trim()
-    : '';
+export async function updateComponent(componentId: number, componentData: any, ownerId: number) {
+  const existing = await prisma.tool_component.findUnique({
+    where: { component_id: componentId },
+    select: {
+      component_metadata: true,
+      fk_tool_id: true,
+      current_usage_hours: true,
+      current_maintenance_hours: true,
+      current_maintenance_flights: true,
+      serial_number: true,
+      drone_registration_code: true,
+    },
+  });
+
+  // Once a component is linked to d-flight (drone_registration_code set), its serial
+  // number is the key the d-flight fleet sync matches on — never let it drift, even if
+  // the client bypasses the disabled UI field.
+  const lockedToDFlight = !!existing?.drone_registration_code;
+
+  const normalizedSerial = lockedToDFlight
+    ? (existing!.serial_number ?? '')
+    : typeof componentData.component_sn === 'string'
+      ? componentData.component_sn.trim()
+      : '';
 
   if (normalizedSerial) {
     const duplicate = await prisma.tool_component.findFirst({
       where: {
         serial_number: { equals: normalizedSerial, mode: 'insensitive' },
         component_id: { not: componentId },
+        tool: { fk_owner_id: ownerId },
       },
       select: { component_id: true },
     });
@@ -955,11 +1039,6 @@ export async function updateComponent(componentId: number, componentData: any) {
   if (componentData.fk_tool_id) {
     await refreshMaintenanceDaysForTool(componentData.fk_tool_id);
   }
-
-  const existing = await prisma.tool_component.findUnique({
-    where: { component_id: componentId },
-    select: { component_metadata: true, fk_tool_id: true, current_usage_hours: true, current_maintenance_hours: true, current_maintenance_flights: true },
-  });
 
   const existingMeta = (existing?.component_metadata as Record<string, unknown>) || {};
   const { system_detached: _ignored, ...existingMetaWithoutDetached } = existingMeta;
@@ -1005,6 +1084,13 @@ export async function updateComponent(componentId: number, componentData: any) {
       installation_date: componentData.component_activation_date ? new Date(componentData.component_activation_date) : null,
       dcc_drone_id: componentData.dcc_drone_id ?? null,
       drone_registration_code: componentData.drone_registration_code || null,
+      uas_serial_number: componentData.uas_serial_number || null,
+      gcs_serial_number: componentData.gcs_serial_number || null,
+      license_plate: componentData.license_plate || null,
+      // ENAC Authorizations / STS Declarations — manual entry until d-flight exposes an endpoint.
+      certifications: componentData.certifications?.enac_authorizations || componentData.certifications?.sts_declarations
+        ? (componentData.certifications as Prisma.InputJsonValue)
+        : Prisma.JsonNull,
       expiration_date: componentData.expiration_date ? new Date(componentData.expiration_date) : null,
       expiry_type: componentData.expiry_type || 'EXPIRATION_DATE',
       expiration_flights: componentData.expiration_flights ?? null,
@@ -1037,8 +1123,15 @@ export async function updateComponent(componentId: number, componentData: any) {
     },
   });
 
-  if (componentData.insurance_name !== undefined || componentData.insurance_company !== undefined || componentData.insurance_expiry_date !== undefined) {
+  if (
+    componentData.insurance_name !== undefined || componentData.insurance_company !== undefined ||
+    componentData.insurance_expiry_date !== undefined || componentData.alert_recipients !== undefined ||
+    componentData.alert_days_before !== undefined
+  ) {
     const insuranceExpiryDate = componentData.insurance_expiry_date ? new Date(componentData.insurance_expiry_date) : null;
+    const alertRecipients = componentData.alert_recipients && componentData.alert_recipients.length > 0
+      ? (componentData.alert_recipients as Prisma.InputJsonValue)
+      : Prisma.JsonNull;
     await prisma.component_insurance.upsert({
       where: { fk_component_id: componentId },
       create: {
@@ -1046,11 +1139,15 @@ export async function updateComponent(componentId: number, componentData: any) {
         insurance_name: componentData.insurance_name || null,
         insurance_company: componentData.insurance_company || null,
         expiry_date: insuranceExpiryDate,
+        alert_recipients: alertRecipients,
+        alert_days_before: componentData.alert_days_before ?? 30,
       },
       update: {
         insurance_name: componentData.insurance_name || null,
         insurance_company: componentData.insurance_company || null,
         expiry_date: insuranceExpiryDate,
+        alert_recipients: alertRecipients,
+        alert_days_before: componentData.alert_days_before ?? 30,
         updated_at: new Date(),
       },
     });

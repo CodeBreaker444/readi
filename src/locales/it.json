@@ -2065,6 +2065,7 @@
         "category": "Categoria",
         "status": "Stato",
         "scheduled": "Pianificato",
+        "completed": "Completato",
         "procedure": "Procedura",
         "procedureNone": "Nessuna disponibile",
         "selectProcedure": "Seleziona procedura…",
@@ -2778,10 +2779,10 @@
       "title": "Revisione Obiettivi di Sicurezza",
       "subtitle": "SPI / KPI",
       "monthsSelector": {
-        "label": "Analizza gli ultimi",
         "3": "3 Mesi",
         "6": "6 Mesi",
-        "12": "12 Mesi"
+        "12": "12 Mesi",
+        "label": "Analizza gli ultimi"
       },
       "generate": "Genera",
       "generating": "Generazione…",
@@ -4218,7 +4219,20 @@
           "namePlaceholder": "es. Copertura completa",
           "company": "Compagnia assicurativa",
           "companyPlaceholder": "es. Allianz",
-          "expiryDate": "Data di scadenza"
+          "expiryDate": "Data di scadenza",
+          "notifyUsers": "Notifica utenti",
+          "notifyUsersPlaceholder": "Seleziona utenti…",
+          "notifyUsersEmpty": "Nessun utente trovato",
+          "notifyUsersSelected_one": "{{count}} utente selezionato",
+          "notifyUsersSelected_other": "{{count}} utenti selezionati",
+          "inactiveUser": "Inattivo",
+          "additionalEmails": "Email aggiuntive",
+          "additionalEmailsHint": "Destinatari senza un account di sistema",
+          "addEmailPlaceholder": "nome@esempio.com",
+          "addEmail": "Aggiungi",
+          "invalidEmail": "Inserisci un indirizzo email valido",
+          "daysBefore": "Notifica prima di (giorni)",
+          "daysBeforeHint": "Quanti giorni prima della scadenza inviare la notifica"
         },
         "expiryType": {
           "label": "Tipo di scadenza",
@@ -4902,7 +4916,8 @@
       "stat": {
         "total": "Droni D-Flight Totali",
         "linked": "Collegati a Readi",
-        "unlinked": "Non presenti in Readi"
+        "unlinked": "Non presenti in Readi",
+        "readiOnly": "Solo ReADI"
       },
       "col": {
         "link": "Collegato",
@@ -4913,7 +4928,8 @@
         "drc": "DRC (ID D-Flight)",
         "model": "Modello",
         "status": "Stato",
-        "action": "Azione"
+        "action": "Azione",
+        "licensePlate": "Targa"
       },
       "error": {
         "generic": "Caricamento dati flotta non riuscito"
@@ -4922,6 +4938,11 @@
         "title": "D-Flight non configurato",
         "description": "Configura le impostazioni di integrazione D-Flight per visualizzare la flotta.",
         "setup": "Vai alle Impostazioni"
+      },
+      "sync": {
+        "success": "Componente sincronizzato da D-Flight",
+        "failed": "Sincronizzazione del componente non riuscita",
+        "error": "Si è verificato un errore durante la sincronizzazione"
       }
     },
     "import": {
@@ -4929,7 +4950,8 @@
       "sections": {
         "system": "Nuovo Sistema",
         "component": "Componente",
-        "model": "Marca / Modello"
+        "model": "Marca / Modello",
+        "certifications": "Certificazioni"
       },
       "fields": {
         "systemCode": "Codice Sistema",
@@ -4937,7 +4959,14 @@
         "componentName": "Nome Componente",
         "serialNumber": "Numero di Serie",
         "drc": "DRC (ID D-Flight)",
-        "client": "Cliente"
+        "client": "Cliente",
+        "uasSerialNumber": "Numero di Serie UAS",
+        "gcsSerialNumber": "Numero di Serie GCS",
+        "licensePlate": "Targa",
+        "enacAuthorizations": "Autorizzazioni ENAC",
+        "enacAuthorizationsPlaceholder": "es. Autorizzazione ENAC n. 12345, rilasciata il 10/01/2026",
+        "stsDeclarations": "Dichiarazioni STS",
+        "stsDeclarationsPlaceholder": "es. Dichiarazione STS-01, presentata il 10/01/2026"
       },
       "buttons": {
         "newModel": "Nuovo Modello",
@@ -4945,6 +4974,7 @@
         "importing": "Importazione…"
       },
       "noModelMatch": "Nessun modello corrispondente a \"{{manufacturer}} / {{model}}\" trovato nel tuo registro — creane uno sopra.",
+      "prefillingModel": "Recupero dei dettagli del modello da D-Flight…",
       "addClass": "Aggiungi:",
       "toasts": {
         "systemCodeRequired": "Il codice sistema è obbligatorio",
@@ -4954,7 +4984,22 @@
         "success": "Drone importato con successo",
         "failed": "Importazione del drone non riuscita",
         "error": "Si è verificato un errore durante l'importazione del drone"
-      }
+      },
+      "certificationsHint": "D-Flight non espone ancora questi dati — inseriscili manualmente per ora."
+    },
+    "insuranceAlert": {
+      "title": "Assicurazione in Scadenza",
+      "dismiss": "Ignora",
+      "view": "Visualizza Componenti"
+    },
+    "plateSearch": {
+      "label": "Allinea con D-Flight tramite Targa",
+      "placeholder": "es. IT-A1B2C3",
+      "search": "Cerca",
+      "matched": "Trovata corrispondenza \"{{name}}\" — campi precompilati sotto",
+      "notFound": "Nessun drone D-Flight corrispondente trovato",
+      "error": "Ricerca su D-Flight non riuscita",
+      "aligned": "Componente allineato con D-Flight"
     }
   }
 }
