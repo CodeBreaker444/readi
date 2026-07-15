@@ -1,6 +1,7 @@
 'use client';
 
 import { AuthorizationProvider } from '@/components/authorization/AuthorizationProvider';
+import InsuranceExpiryAlertModal from '@/components/dflight/InsuranceExpiryAlertModal';
 import { PermissionsProvider } from '@/components/permissions/PermissionsProvider';
 import { Session, SessionUser } from '@/lib/auth/server-session';
 import axios from 'axios';
@@ -99,6 +100,8 @@ const ClientLayoutWrapper: React.FC<ClientLayoutWrapperProps> = ({
           </div>
 
           <MobileSidebar isDark={isDark} role={role} userData={userData} />
+
+          <InsuranceExpiryAlertModal enabled={!loading && !!userData?.dFlightEnabled} />
 
           <div className="flex-1 flex flex-col overflow-hidden pt-1">
             <TopBar isDark={isDark} toggleTheme={toggleTheme} userData={userData} loading={loading} />
