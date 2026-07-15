@@ -1,3 +1,4 @@
+import { computeEffectiveComponentStatus } from '@/backend/services/system/system-service';
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
 
@@ -21,10 +22,24 @@ export interface SyncDFlightDroneInput {
 export async function syncDFlightDrone(input: SyncDFlightDroneInput) {
   const component = await prisma.tool_component.findFirst({
     where: { component_id: input.component_id, tool: { fk_owner_id: input.fk_owner_id } },
-    select: { component_id: true, component_metadata: true },
+    select: {
+      component_id: true,
+      component_metadata: true,
+      expiration_date: true,
+      expiry_type: true,
+      expiration_flights: true,
+      expiration_flight_hours: true,
+      current_maintenance_flights: true,
+      current_usage_hours: true,
+    },
   });
   if (!component) {
     return { code: 0, message: 'Component not found for this owner.' };
+  }
+
+  const status = computeEffectiveComponentStatus(component);
+  if (status !== 'OPERATIONAL') {
+    return { code: 0, message: `Component must be Operational to sync from D-Flight (currently ${status}).` };
   }
 
   const baseMeta = (component.component_metadata as Record<string, unknown>) ?? {};

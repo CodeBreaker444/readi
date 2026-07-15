@@ -20,10 +20,10 @@ export interface DFlightDroneRow {
   systemName: string | null;
   componentName: string | null;
   storedDrc: string | null;
-  /** Present when the row was already matched — the values currently stored on the ReADI component. */
   storedLicensePlate?: string | null;
   storedUasSerial?: string | null;
   storedGcsSerial?: string | null;
-  /** 'DFLIGHT' rows come from the d-flight fleet; 'READI_ONLY' rows are ReADI drone components with no d-flight counterpart. */
-  origin?: 'DFLIGHT' | 'READI_ONLY';
+  storedDccDroneId?: string | null;
+  componentStatus?: string | null;
+  origin?: 'DFLIGHT';
 }

@@ -1,4 +1,5 @@
 import { getDFlightIntegration } from '@/backend/services/integrations/dflight-settings-service';
+import { computeEffectiveComponentStatus } from '@/backend/services/system/system-service';
 import { internalError } from '@/lib/api-error';
 import { requireFullAccessRole } from '@/lib/auth/api-auth';
 import { getDFlightDrones, getDFlightToken } from '@/lib/dflight-service';
@@ -23,6 +24,7 @@ export async function GET() {
       where: {
         tool: { fk_owner_id: ownerId },
         component_type: 'DRONE',
+        component_active: 'Y',
       },
       select: {
         component_id: true,
@@ -32,12 +34,33 @@ export async function GET() {
         gcs_serial_number: true,
         license_plate: true,
         drone_registration_code: true,
+        dcc_drone_id: true,
+        component_metadata: true,
+        expiration_date: true,
+        expiry_type: true,
+        expiration_flights: true,
+        expiration_flight_hours: true,
+        current_maintenance_flights: true,
+        current_usage_hours: true,
         fk_tool_id: true,
         tool: {
           select: { tool_id: true, tool_name: true },
         },
       },
     });
+
+    const modelIds = [...new Set(
+      components
+        .map((c) => (c.component_metadata as { fk_tool_model_id?: number } | null)?.fk_tool_model_id)
+        .filter((id): id is number => !!id),
+    )];
+    const models = modelIds.length
+      ? await prisma.tool_model.findMany({
+          where: { model_id: { in: modelIds } },
+          select: { model_id: true, model_name: true, manufacturer: true },
+        })
+      : [];
+    const modelById = new Map(models.map((m) => [m.model_id, m]));
 
     let dFlightDrones: Awaited<ReturnType<typeof getDFlightDrones>> = [];
     try {
@@ -56,10 +79,9 @@ export async function GET() {
       });
     }
 
-    // Only consider drones the doc marks as currently valid in d-flight.
-    const activeDrones = dFlightDrones.filter(
-      (d) => d.status === 'ACTIVE' && d.timeOfDelete == null,
-    );
+    // Any drone in d-flight can be listed here, regardless of status — only
+    // exclude ones actually deleted in d-flight.
+    const listedDrones = dFlightDrones.filter((d) => d.timeOfDelete == null);
 
     const componentBySerial = new Map<string, (typeof components)[0]>();
     for (const c of components) {
@@ -67,9 +89,7 @@ export async function GET() {
       if (sn) componentBySerial.set(sn, c);
     }
 
-    const matchedComponentIds = new Set<number>();
-
-    const dFlightRows: DFlightDroneRow[] = activeDrones.map((d) => {
+    const dFlightRows: DFlightDroneRow[] = listedDrones.map((d) => {
       const candidateSerials = [d.fcsSerialNumber, d.serialNumber, d.gcsSerialNumber]
         .filter((s): s is string => !!s)
         .map((s) => s.trim().toLowerCase());
@@ -79,7 +99,10 @@ export async function GET() {
         const found = componentBySerial.get(sn);
         if (found) { match = found; break; }
       }
-      if (match) matchedComponentIds.add(match.component_id);
+
+      const matchedModelId = (match?.component_metadata as { fk_tool_model_id?: number } | null)?.fk_tool_model_id;
+      const matchedModel = matchedModelId ? modelById.get(matchedModelId) : undefined;
+      const componentStatus = match ? computeEffectiveComponentStatus(match) : null;
 
       return {
         dFlightId: d.id,
@@ -89,8 +112,8 @@ export async function GET() {
         gcsSerialNumber: d.gcsSerialNumber,
         matriculationNumber: d.matriculationNumber,
         status: d.status,
-        modelName: d['model.modelName'],
-        manufacturerName: d['model.manufacturer.name'],
+        modelName: matchedModel?.model_name ?? d['model.modelName'],
+        manufacturerName: matchedModel?.manufacturer ?? d['model.manufacturer.name'],
         insuranceCompany: d.insuranceCompany,
         insuranceExpiryDate: d.insuranceExpiryDate,
         uasClassId: d.uasClassId,
@@ -106,47 +129,16 @@ export async function GET() {
         storedLicensePlate: match?.license_plate ?? null,
         storedUasSerial: match?.uas_serial_number ?? null,
         storedGcsSerial: match?.gcs_serial_number ?? null,
+        storedDccDroneId: match?.dcc_drone_id ?? null,
+        componentStatus,
         origin: 'DFLIGHT',
       };
     });
 
-    // Components that exist in ReADI but have no counterpart in the (active) d-flight
-    // fleet — the spec requires the listing to show all drone components "regardless
-    // of their origin", not just the ones that came from d-flight.
-    const readiOnlyRows: DFlightDroneRow[] = components
-      .filter((c) => !matchedComponentIds.has(c.component_id))
-      .map((c) => ({
-        dFlightId: null,
-        dFlightName: c.component_name,
-        serialNumber: c.serial_number,
-        uasSerialNumber: c.uas_serial_number,
-        gcsSerialNumber: c.gcs_serial_number,
-        matriculationNumber: c.license_plate,
-        status: null,
-        modelName: null,
-        manufacturerName: null,
-        insuranceCompany: null,
-        insuranceExpiryDate: null,
-        uasClassId: null,
-        qrCodeImage: null,
-        modelId: null,
-        manufacturerId: null,
-        linked: false,
-        componentId: c.component_id,
-        systemId: c.tool.tool_id,
-        systemName: c.tool.tool_name,
-        componentName: c.component_name,
-        storedDrc: c.drone_registration_code,
-        storedLicensePlate: c.license_plate,
-        storedUasSerial: c.uas_serial_number,
-        storedGcsSerial: c.gcs_serial_number,
-        origin: 'READI_ONLY',
-      }));
-
     // Unlinked d-flight rows are the actionable ones — surface them first, then
-    // already-linked d-flight rows, then components ReADI has that d-flight doesn't.
-    const rows = [...dFlightRows, ...readiOnlyRows].sort((a, b) => {
-      const rank = (r: DFlightDroneRow) => (r.origin === 'READI_ONLY' ? 2 : r.linked ? 1 : 0);
+    // already-linked d-flight rows.
+    const rows = [...dFlightRows].sort((a, b) => {
+      const rank = (r: DFlightDroneRow) => (r.linked ? 1 : 0);
       return rank(a) - rank(b);
     });
 

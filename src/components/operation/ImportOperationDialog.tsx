@@ -49,7 +49,7 @@ interface DroneSystem   {
 }
 interface SelectOption  { id: number; name: string }
 interface Pilot         { user_id: number; first_name: string; last_name: string }
-interface FlytbaseOrganization { id: number; name: string }
+interface FlytbaseOrganization { organization_id: number; org_name: string }
 interface FlytbaseFlight {
     flight_id: string;
     flight_name?: string;
@@ -158,7 +158,7 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
             .then((r) => {
                 const orgs = r.data.organizations ?? [];
                 setOrganizations(orgs);
-                if (orgs.length > 0) setOrganizationId(String(orgs[0].id));
+                if (orgs.length > 0) setOrganizationId(String(orgs[0].organization_id));
             })
             .catch(() => {})
             .finally(() => setLoadingOrgs(false));
@@ -522,7 +522,7 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                                             </SelectTrigger>
                                             <SelectContent>
                                                 {organizations.map((o) => (
-                                                    <SelectItem key={o.id} value={String(o.id)}>{o.name}</SelectItem>
+                                                    <SelectItem key={o.organization_id} value={String(o.organization_id)}>{o.org_name}</SelectItem>
                                                 ))}
                                             </SelectContent>
                                         </Select>

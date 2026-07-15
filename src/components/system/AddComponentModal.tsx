@@ -13,6 +13,7 @@ import { BadgeCheck, ChevronDown, ChevronRight, Loader2, Pencil, Search, Shield,
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
+import { InsuranceAlertRecipients } from './InsuranceAlertRecipients';
 import LocationPicker from './LocationPicker';
 import { ManageComponentTypesModal } from './ManageComponentTypesModal';
 import { DroneClassRow, ManageDroneClassesModal } from './ManageDroneClassesModal';
@@ -62,6 +63,8 @@ const INITIAL_FORM = {
   insurance_name: '',
   insurance_company: '',
   insurance_expiry_date: '',
+  alert_recipients: [] as string[],
+  alert_days_before: '30',
   enac_authorizations: '',
   sts_declarations: '',
 };
@@ -274,6 +277,8 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
         insurance_name: formData.insurance_name || null,
         insurance_company: formData.insurance_company || null,
         insurance_expiry_date: formData.insurance_expiry_date || null,
+        alert_recipients: formData.alert_recipients.length > 0 ? formData.alert_recipients : null,
+        alert_days_before: formData.alert_days_before !== '' ? Number(formData.alert_days_before) : null,
         certifications: (formData.enac_authorizations.trim() || formData.sts_declarations.trim())
           ? {
               enac_authorizations: formData.enac_authorizations.trim() || null,
@@ -440,7 +445,12 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
               </div>
               <div className="col-span-1 sm:col-span-3">
                 <Label className="pb-2">{t('systems.components.addComponent.fields.serialNumber')}</Label>
-                <Input value={formData.component_sn} onChange={(e) => handleChange('component_sn', e.target.value)} />
+                <Input
+                  value={formData.component_sn}
+                  onChange={(e) => handleChange('component_sn', e.target.value)}
+                  disabled={!!matchedDFlightDrone}
+                  className={matchedDFlightDrone ? 'opacity-70' : ''}
+                />
               </div>
             </div>
 
@@ -824,6 +834,12 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
                       onChange={(e) => handleChange('insurance_expiry_date', e.target.value)}
                     />
                   </div>
+                  <InsuranceAlertRecipients
+                    emails={formData.alert_recipients}
+                    onEmailsChange={(emails) => setFormData(prev => ({ ...prev, alert_recipients: emails }))}
+                    alertDaysBefore={formData.alert_days_before}
+                    onAlertDaysBeforeChange={(v) => handleChange('alert_days_before', v)}
+                  />
                 </div>
               )}
             </div>

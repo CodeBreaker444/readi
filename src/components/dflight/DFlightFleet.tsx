@@ -143,10 +143,8 @@ export default function DFlightFleet() {
     getPaginationRowModel: getPaginationRowModel(),
   });
 
-  const dFlightRows = rows.filter((r) => r.origin !== 'READI_ONLY');
-  const linked      = dFlightRows.filter((r) => r.linked).length;
-  const unlinked    = dFlightRows.filter((r) => !r.linked).length;
-  const readiOnly   = rows.length - dFlightRows.length;
+  const linked   = rows.filter((r) => r.linked).length;
+  const unlinked = rows.length - linked;
 
   const handleChangePage = (_: unknown, newPage: number) => {
     setPage(newPage);
@@ -166,9 +164,9 @@ export default function DFlightFleet() {
   return (
     <div className="space-y-6">
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-3 gap-3">
         {loading ? (
-          [1, 2, 3, 4].map((i) => (
+          [1, 2, 3].map((i) => (
             <div key={i} className={`rounded-xl border p-4 ${card}`}>
               <Skeleton className="h-7 w-12 mb-2" />
               <Skeleton className="h-3 w-20" />
@@ -179,7 +177,6 @@ export default function DFlightFleet() {
             { label: t('dflight.fleet.stat.total'),     value: rows.length, color: isDark ? 'text-white'       : 'text-slate-900' },
             { label: t('dflight.fleet.stat.linked'),    value: linked,      color: 'text-emerald-500' },
             { label: t('dflight.fleet.stat.unlinked'),  value: unlinked,    color: 'text-amber-500'   },
-            { label: t('dflight.fleet.stat.readiOnly', { defaultValue: 'ReADI Only' }), value: readiOnly, color: 'text-slate-400' },
           ].map((s) => (
             <div key={s.label} className={`rounded-xl border p-4 ${card}`}>
               <p className={`text-xl font-bold ${s.color}`}>{s.value}</p>

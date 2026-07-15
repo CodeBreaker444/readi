@@ -676,7 +676,11 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                             form={schedulerForm}
                             onChange={handleSchedulerChange}
                             isEdit={isEdit}
-                            statusName={editOperation?.status_name ?? ''}
+                            statusName={isEdit
+                                ? (editOperation?.status_name ?? '')
+                                : (createPrefill
+                                    ? t('operations.newOperation.scheduler.completed')
+                                    : t('operations.newOperation.scheduler.scheduled'))}
                             generatingId={generatingId}
                             onRefreshMissionId={refreshMissionId}
                             loadingConflicts={loadingConflicts}

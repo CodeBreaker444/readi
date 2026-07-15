@@ -51,6 +51,8 @@ const ComponentSchema = z
     insurance_name: z.string().optional().nullable(),
     insurance_company: z.string().optional().nullable(),
     insurance_expiry_date: z.string().optional().nullable(),
+    alert_recipients: z.array(z.string().email()).optional().nullable(),
+    alert_days_before: z.number().int().min(1).max(365).optional().nullable(),
   })
   .refine((data) => !!data.fk_tool_id || !!data.warehouse, {
     message: 'Either fk_tool_id or warehouse:true is required',
@@ -117,6 +119,8 @@ export async function POST(req: NextRequest) {
       insurance_name: d.insurance_name ?? null,
       insurance_company: d.insurance_company ?? null,
       insurance_expiry_date: d.insurance_expiry_date ?? null,
+      alert_recipients: d.alert_recipients ?? null,
+      alert_days_before: d.alert_days_before ?? null,
     }, session!.user.ownerId);
 
     if (result.code === 1) {
