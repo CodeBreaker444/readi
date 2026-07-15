@@ -2077,6 +2077,7 @@
         "category": "Category",
         "status": "Status",
         "scheduled": "Scheduled",
+        "completed": "Completed",
         "procedure": "Procedure",
         "procedureNone": "None available",
         "selectProcedure": "Select procedure…",

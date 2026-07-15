@@ -2063,6 +2063,7 @@
         "category": "Kategorie",
         "status": "Status",
         "scheduled": "Geplant",
+        "completed": "Abgeschlossen",
         "procedure": "Verfahren",
         "procedureNone": "Keine verfügbar",
         "selectProcedure": "Verfahren auswählen…",

@@ -2065,6 +2065,7 @@
         "category": "Categoria",
         "status": "Stato",
         "scheduled": "Pianificato",
+        "completed": "Completato",
         "procedure": "Procedura",
         "procedureNone": "Nessuna disponibile",
         "selectProcedure": "Seleziona procedura…",
