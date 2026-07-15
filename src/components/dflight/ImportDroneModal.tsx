@@ -316,7 +316,7 @@ export default function ImportDroneModal({ open, onClose, onImported, drone, mod
                 </div>
                 <div className="col-span-1 sm:col-span-4">
                   <Label className="pb-2">{t('dflight.import.fields.serialNumber')}</Label>
-                  <Input value={formData.component_sn} onChange={(e) => handleChange('component_sn', e.target.value)} required />
+                  <Input value={formData.component_sn} disabled className="opacity-70" required />
                 </div>
                 <div className="col-span-1 sm:col-span-4">
                   <Label className="pb-2">{t('dflight.import.fields.drc')}</Label>

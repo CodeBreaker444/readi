@@ -440,7 +440,12 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
               </div>
               <div className="col-span-1 sm:col-span-3">
                 <Label className="pb-2">{t('systems.components.addComponent.fields.serialNumber')}</Label>
-                <Input value={formData.component_sn} onChange={(e) => handleChange('component_sn', e.target.value)} />
+                <Input
+                  value={formData.component_sn}
+                  onChange={(e) => handleChange('component_sn', e.target.value)}
+                  disabled={!!matchedDFlightDrone}
+                  className={matchedDFlightDrone ? 'opacity-70' : ''}
+                />
               </div>
             </div>
 

@@ -725,6 +725,39 @@ export async function getComponentList(ownerId: number, toolId?: number, include
   return buildComponentListResult(rawData);
 }
 
+export function computeEffectiveComponentStatus(item: {
+  component_metadata: any;
+  expiration_date: Date | string | null;
+  expiry_type: string | null;
+  expiration_flights: number | null;
+  expiration_flight_hours: number | Prisma.Decimal | null;
+  current_maintenance_flights: number | Prisma.Decimal | null;
+  current_usage_hours: number | Prisma.Decimal | null;
+}, today: string = new Date().toISOString().split('T')[0]): string {
+  const expiryType: string = item.expiry_type || 'EXPIRATION_DATE';
+  const isDateExpired = item.expiration_date && item.expiration_date <= today;
+  const isFlightExpired =
+    item.expiration_flights != null &&
+    Number(item.current_maintenance_flights) >= item.expiration_flights;
+  const isFlightHoursExpired =
+    item.expiration_flight_hours != null &&
+    Number(item.current_usage_hours) >= Number(item.expiration_flight_hours);
+  const isExpired =
+    expiryType === 'FLIGHTS'
+      ? isFlightExpired
+      : expiryType === 'FLIGHT_HOURS'
+        ? isFlightHoursExpired
+        : expiryType === 'MIXED'
+          ? isDateExpired || isFlightExpired || isFlightHoursExpired
+          : isDateExpired;
+  const storedStatus = item.component_metadata?.component_status;
+  return storedStatus === 'DISMISSED'
+    ? 'DISMISSED'
+    : isExpired
+      ? 'DECOMMISSIONED'
+      : (storedStatus || 'OPERATIONAL');
+}
+
 function buildComponentListResult(data: any[]) {
   const today = new Date().toISOString().split('T')[0];
   return {
@@ -732,28 +765,7 @@ function buildComponentListResult(data: any[]) {
     message: 'Success',
     dataRows: data.length,
     data: data.map((item) => {
-      const expiryType: string = item.expiry_type || 'EXPIRATION_DATE';
-      const isDateExpired = item.expiration_date && item.expiration_date <= today;
-      const isFlightExpired =
-        item.expiration_flights != null &&
-        Number(item.current_maintenance_flights) >= item.expiration_flights;
-      const isFlightHoursExpired =
-        item.expiration_flight_hours != null &&
-        Number(item.current_usage_hours) >= Number(item.expiration_flight_hours);
-      const isExpired =
-        expiryType === 'FLIGHTS'
-          ? isFlightExpired
-          : expiryType === 'FLIGHT_HOURS'
-            ? isFlightHoursExpired
-            : expiryType === 'MIXED'
-              ? isDateExpired || isFlightExpired || isFlightHoursExpired
-              : isDateExpired;
-      const storedStatus = item.component_metadata?.component_status;
-      const effectiveStatus = storedStatus === 'DISMISSED'
-        ? 'DISMISSED'
-        : isExpired
-          ? 'DECOMMISSIONED'
-          : (storedStatus || 'OPERATIONAL');
+      const effectiveStatus = computeEffectiveComponentStatus(item, today);
       return {
         tool_component_id: item.component_id,
         fk_tool_id: item.fk_tool_id,
@@ -800,7 +812,7 @@ function buildComponentListResult(data: any[]) {
         drone_classes: item.component_metadata?.drone_classes ?? null,
         is_primary: item.component_metadata?.is_primary ?? false,
         expiration_date: item.expiration_date || null,
-        expiry_type: expiryType,
+        expiry_type: item.expiry_type || 'EXPIRATION_DATE',
         expiration_flights: item.expiration_flights ?? null,
         expiration_flight_hours: item.expiration_flight_hours != null ? Number(item.expiration_flight_hours) : null,
         insurance_name: item.component_insurance?.insurance_name ?? null,
@@ -948,9 +960,29 @@ export async function addComponent(componentData: any, ownerId: number) {
 
 
 export async function updateComponent(componentId: number, componentData: any, ownerId: number) {
-  const normalizedSerial = typeof componentData.component_sn === 'string'
-    ? componentData.component_sn.trim()
-    : '';
+  const existing = await prisma.tool_component.findUnique({
+    where: { component_id: componentId },
+    select: {
+      component_metadata: true,
+      fk_tool_id: true,
+      current_usage_hours: true,
+      current_maintenance_hours: true,
+      current_maintenance_flights: true,
+      serial_number: true,
+      drone_registration_code: true,
+    },
+  });
+
+  // Once a component is linked to d-flight (drone_registration_code set), its serial
+  // number is the key the d-flight fleet sync matches on — never let it drift, even if
+  // the client bypasses the disabled UI field.
+  const lockedToDFlight = !!existing?.drone_registration_code;
+
+  const normalizedSerial = lockedToDFlight
+    ? (existing!.serial_number ?? '')
+    : typeof componentData.component_sn === 'string'
+      ? componentData.component_sn.trim()
+      : '';
 
   if (normalizedSerial) {
     const duplicate = await prisma.tool_component.findFirst({
@@ -970,11 +1002,6 @@ export async function updateComponent(componentId: number, componentData: any, o
   if (componentData.fk_tool_id) {
     await refreshMaintenanceDaysForTool(componentData.fk_tool_id);
   }
-
-  const existing = await prisma.tool_component.findUnique({
-    where: { component_id: componentId },
-    select: { component_metadata: true, fk_tool_id: true, current_usage_hours: true, current_maintenance_hours: true, current_maintenance_flights: true },
-  });
 
   const existingMeta = (existing?.component_metadata as Record<string, unknown>) || {};
   const { system_detached: _ignored, ...existingMetaWithoutDetached } = existingMeta;

@@ -575,7 +575,17 @@ export default function EditComponentModal({
                   </div>
                   <div className="col-span-1 sm:col-span-3">
                     <Label className={labelCls}>{t('systems.components.addComponent.fields.serialNumber')}</Label>
-                    <Input className={inputCls} value={formData.component_sn} onChange={e => handleChange('component_sn', e.target.value)} />
+                    <Input
+                      className={`${inputCls} ${formData.drone_registration_code ? 'opacity-70' : ''}`}
+                      value={formData.component_sn}
+                      onChange={e => handleChange('component_sn', e.target.value)}
+                      disabled={!!formData.drone_registration_code}
+                    />
+                    {formData.drone_registration_code && (
+                      <p className={`mt-1 text-[11px] ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                        Locked — linked to D-Flight
+                      </p>
+                    )}
                   </div>
                 </div>
 
