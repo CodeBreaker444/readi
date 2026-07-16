@@ -9,6 +9,7 @@ import z from 'zod';
 
 const createTicketSchema = z.object({
   fk_tool_id: z.number(),
+  components: z.array(z.number()).optional(),
   issue_description: z.string().optional(),
   latitude:  z.number().min(-90).max(90).optional().nullable(),
   longitude: z.number().min(-180).max(180).optional().nullable(),
