@@ -4,23 +4,26 @@ import {
   Head,
   Html,
   Img,
+  Link,
   Preview,
   Section,
   Tailwind,
   Text,
 } from '@react-email/components';
 
-import { LOGO_BASE64 as LOGO_URL } from './logo-base64';
+import { LOGO_URL } from './logo-base64';
 
 interface TicketClosedEmailProps {
   systemCode: string;
   ticketTitle: string;
+  ticketId: number;
   note?: string | null;
 }
 
 export const TicketClosedEmail = ({
   systemCode,
   ticketTitle,
+  ticketId,
   note,
 }: TicketClosedEmailProps) => (
   <Html>
@@ -81,6 +84,14 @@ export const TicketClosedEmail = ({
                 </Text>
               </div>
 
+              {/* View details link */}
+              <div style={actionCard}>
+                <Text style={actionLabel}>View ticket details</Text>
+                <Link href={`${process.env.APP_URL || 'https://app.readi.ai'}/systems/maintenance-tickets`} style={actionLink}>
+                  View Ticket #{ticketId}
+                </Link>
+              </div>
+
               <div style={divider} />
 
               <Text style={cautionText}>
@@ -106,6 +117,7 @@ export const TicketClosedEmail = ({
 TicketClosedEmail.PreviewProps = {
   systemCode: 'DRN-001',
   ticketTitle: 'Motor replacement — System #42',
+  ticketId: 123,
   note: 'Replaced motor and recalibrated sensors.',
 } as TicketClosedEmailProps;
 
@@ -271,6 +283,31 @@ const infoText = {
   color: '#1e40af',
   lineHeight: '20px',
   margin: '0',
+};
+
+const actionCard = {
+  backgroundColor: '#eff6ff',
+  border: '1px solid #bfdbfe',
+  borderRadius: '6px',
+  padding: '14px 18px',
+  margin: '16px 0',
+};
+
+const actionLabel = {
+  fontSize: '11px',
+  fontWeight: '700',
+  color: '#1e40af',
+  textTransform: 'uppercase' as const,
+  letterSpacing: '0.5px',
+  margin: '0 0 6px',
+};
+
+const actionLink = {
+  fontSize: '13px',
+  color: '#7c3aed',
+  textDecoration: 'none',
+  wordBreak: 'break-all' as const,
+  fontWeight: '500',
 };
 
 const divider = {

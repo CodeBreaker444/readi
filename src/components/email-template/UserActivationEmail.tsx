@@ -12,7 +12,7 @@ import {
   Text,
 } from '@react-email/components';
 
-import { LOGO_BASE64 as LOGO_URL } from './logo-base64';
+import { LOGO_URL } from './logo-base64';
 
 interface UserActivationEmailProps {
   organization: string;

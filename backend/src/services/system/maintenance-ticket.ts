@@ -378,7 +378,7 @@ export async function closeTicket(payload: CloseTicketPayload): Promise<void> {
         });
         if (opmUsers.length) {
           const emails = opmUsers.map((u) => u.email).filter(Boolean) as string[];
-          await sendTicketClosedEmail(emails, systemCode, ticket.ticket_title, payload.note);
+          await sendTicketClosedEmail(emails, systemCode, ticket.ticket_title, payload.ticket_id, payload.note);
         }
       } catch {}
     })();

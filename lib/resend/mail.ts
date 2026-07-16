@@ -53,12 +53,13 @@ export const sendTicketClosedEmail = async (
   emails: string[],
   systemCode: string,
   ticketTitle: string,
+  ticketId: number,
   note?: string | null
 ) => {
   if (!emails.length) return;
   try {
     const emailHtml = await render(
-      TicketClosedEmail({ systemCode, ticketTitle, note })
+      TicketClosedEmail({ systemCode, ticketTitle, ticketId, note })
     );
 
     const { error } = await resend.emails.send({
