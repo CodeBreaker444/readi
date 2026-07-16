@@ -295,8 +295,27 @@ export async function closeTicket(payload: CloseTicketPayload): Promise<void> {
   const now = new Date();
   const todayDate = now.toISOString().split('T')[0];
 
-  await prisma.maintenance_ticket.update({
-    where: { ticket_id: payload.ticket_id },
+  // Finding all open tickets for this system
+  const openTickets = await prisma.maintenance_ticket.findMany({
+    where: {
+      fk_tool_id: ticket.fk_tool_id,
+      ticket_status: { not: 'CLOSED' },
+    },
+    select: {
+      ticket_id: true,
+      fk_component_id: true,
+      ticket_type: true,
+      reported_by_user_id: true,
+      ticket_title: true,
+    },
+  });
+
+  // Close all open tickets for this system
+  await prisma.maintenance_ticket.updateMany({
+    where: {
+      fk_tool_id: ticket.fk_tool_id,
+      ticket_status: { not: 'CLOSED' },
+    },
     data: {
       ticket_status:    'CLOSED',
       closed_at:        now,
@@ -316,22 +335,31 @@ export async function closeTicket(payload: CloseTicketPayload): Promise<void> {
     },
   });
 
-  await resetComponentCounters(ticket.fk_tool_id!, now.toISOString(), ticket.fk_component_id ?? null, ticket.ticket_type ?? undefined);
+  // Reset counters for all components of this system
+  await resetComponentCounters(ticket.fk_tool_id!, now.toISOString(), null, ticket.ticket_type ?? undefined);
 
   await setSystemOperationalStatus(ticket.fk_tool_id!, 'OPERATIONAL');
 
   await setAllComponentsOperational(ticket.fk_tool_id!);
 
-  await addTicketEvent(payload.ticket_id, 'CLOSED', payload.note ?? 'Ticket closed');
+  // Add close event to all tickets
+  await Promise.all(
+    openTickets.map((t) =>
+      addTicketEvent(t.ticket_id, 'CLOSED', payload.note ?? 'Ticket closed')
+    )
+  );
 
   const systemCode = await getToolName(ticket.fk_tool_id!);
   const notifTitle = `Maintenance Complete — ${systemCode}`;
   const notifMsg = `Maintenance ticket closed. ${systemCode} is now operational.${payload.note ? ` Note: ${payload.note}` : ''}`;
   const actionUrl = '/systems/maintenance-tickets';
 
-  if (ticket.reported_by_user_id) {
-    sendNotificationToUser(ticket.reported_by_user_id, notifTitle, notifMsg, actionUrl).catch(() => {});
+  // Notify all reporters of the closed tickets
+  const reporterIds = [...new Set(openTickets.map((t) => t.reported_by_user_id).filter(Boolean))];
+  for (const reporterId of reporterIds) {
+    sendNotificationToUser(reporterId!, notifTitle, notifMsg, actionUrl).catch(() => {});
   }
+
   if (ticket.fk_tool_id && ticket.fk_owner_id) {
     sendNotificationToClientManagers(ticket.fk_tool_id, ticket.fk_owner_id, notifTitle, notifMsg, actionUrl).catch(() => {});
   }
