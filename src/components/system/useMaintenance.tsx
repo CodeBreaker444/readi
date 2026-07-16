@@ -208,7 +208,12 @@ export function useMaintenanceLogbook() {
     setModalLoading(true);
     try {
       const res = await axios.post(`/api/system/maintenance/tickets/create`, {
-        ...newTicket,
+        fk_tool_id: newTicket.fk_tool_id,
+        components: newTicket.components,
+        type: newTicket.type,
+        priority: newTicket.priority,
+        assigned_to: newTicket.assigned_to,
+        note: newTicket.note,
         opened_by: 'web',
         latitude:  newTicket.latitude  ? Number(newTicket.latitude)  : null,
         longitude: newTicket.longitude ? Number(newTicket.longitude) : null,

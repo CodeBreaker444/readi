@@ -44,6 +44,7 @@ export interface ImportMissionParams {
   userId: number;
   missionCode?: string;
   flightMode?: string | null;
+  userTimezone?: string;
 }
 
 export interface ImportMissionResult {
@@ -155,6 +156,34 @@ async function processGutmaBuffer(
     `Source: ${filename}`,
   ].filter(Boolean);
 
+  // Convert dates to user's timezone for storage
+  let scheduledStart: Date | null = null;
+  let actualStart: Date | null = null;
+  let actualEnd: Date | null = null;
+  
+  if (takeoff) {
+    const takeoffDate = new Date(takeoff);
+    if (params.userTimezone) {
+      // Parse the date in the user's timezone and store as UTC
+      const userTzDate = new Date(takeoffDate.toLocaleString('en-US', { timeZone: params.userTimezone }));
+      scheduledStart = userTzDate;
+      actualStart = userTzDate;
+    } else {
+      scheduledStart = takeoffDate;
+      actualStart = takeoffDate;
+    }
+  }
+  
+  if (landing) {
+    const landingDate = new Date(landing);
+    if (params.userTimezone) {
+      const userTzDate = new Date(landingDate.toLocaleString('en-US', { timeZone: params.userTimezone }));
+      actualEnd = userTzDate;
+    } else {
+      actualEnd = landingDate;
+    }
+  }
+
   const inserted = await prisma.pilot_mission.create({
     data: {
       fk_owner_id: params.ownerId,
@@ -172,9 +201,9 @@ async function processGutmaBuffer(
       status_name: statusName,
       location: params.location || null,
       mission_description: params.notes || null,
-      scheduled_start: takeoff ? new Date(takeoff) : null,
-      actual_start: takeoff ? new Date(takeoff) : null,
-      actual_end: landing ? new Date(landing) : null,
+      scheduled_start: scheduledStart,
+      actual_start: actualStart,
+      actual_end: actualEnd,
       flight_duration: durationSec,
       distance_flown: distanceFlown,
       notes: notesArr.join(' | ') || null,

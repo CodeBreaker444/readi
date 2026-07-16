@@ -346,11 +346,13 @@ export function MaintenanceTab({
                                 placeholder="0.00"
                                 value={cyclesRaw[comp.component_id] ?? ""}
                                 onChange={(e) => onCyclesChange(comp.component_id, e.target.value)}
+                                disabled={isAutoSynced}
                                 className={cn(
                                   "h-7 w-20 rounded-md text-xs font-semibold border transition-colors text-center tabular-nums outline-none",
                                   isDark
                                     ? "border-slate-600 bg-slate-700 text-slate-200 placeholder:text-slate-600 focus:border-violet-500 focus:ring-1 focus:ring-violet-500/30"
-                                    : "border-slate-200 bg-white text-slate-700 placeholder:text-slate-300 focus:border-violet-500 focus:ring-1 focus:ring-violet-500/30"
+                                    : "border-slate-200 bg-white text-slate-700 placeholder:text-slate-300 focus:border-violet-500 focus:ring-1 focus:ring-violet-500/30",
+                                  isAutoSynced && "opacity-50 cursor-not-allowed"
                                 )}
                               />
                             </>
@@ -362,11 +364,13 @@ export function MaintenanceTab({
                               <button
                                 type="button"
                                 onClick={() => onToggleFlight(comp.component_id)}
+                                disabled={isAutoSynced}
                                 className={cn(
                                   "h-7 px-3 cursor-pointer rounded-md text-xs font-semibold border transition-colors",
                                   inp?.add_flights === 1
                                     ? isDark ? "border-violet-500 bg-violet-500/20 text-violet-300" : "border-violet-500 bg-violet-50 text-violet-700"
-                                    : isDark ? "border-slate-600 bg-slate-700 text-slate-200 hover:bg-slate-600" : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                                    : isDark ? "border-slate-600 bg-slate-700 text-slate-200 hover:bg-slate-600" : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50",
+                                  isAutoSynced && "opacity-50 cursor-not-allowed"
                                 )}
                               >+1</button>
                             </>
@@ -396,11 +400,13 @@ export function MaintenanceTab({
                             placeholder="0.00"
                             value={hoursRaw[comp.component_id] ?? ""}
                             onChange={(e) => onHoursChange(comp.component_id, e.target.value)}
+                            disabled={isAutoSynced}
                             className={cn(
                               "h-7 w-20 rounded-md text-xs font-semibold border transition-colors text-center tabular-nums outline-none",
                               isDark
                                 ? "border-slate-600 bg-slate-700 text-slate-200 placeholder:text-slate-600 focus:border-violet-500 focus:ring-1 focus:ring-violet-500/30"
-                                : "border-slate-200 bg-white text-slate-700 placeholder:text-slate-300 focus:border-violet-500 focus:ring-1 focus:ring-violet-500/30"
+                                : "border-slate-200 bg-white text-slate-700 placeholder:text-slate-300 focus:border-violet-500 focus:ring-1 focus:ring-violet-500/30",
+                              isAutoSynced && "opacity-50 cursor-not-allowed"
                             )}
                           />
                         </div>

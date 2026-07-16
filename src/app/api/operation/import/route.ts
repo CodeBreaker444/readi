@@ -89,6 +89,7 @@ export async function POST(req: NextRequest) {
       flightMode: String(formData.get('flight_mode')          ?? '').trim() || null,
       userId:     session!.user.userId,
       missionCode: String(formData.get('mission_code') ?? '').trim() || undefined,
+      userTimezone: session!.user.timezone || undefined,
     };
 
     const result = await importMissionFromLog(file, params, flytbaseFlightId || null);
