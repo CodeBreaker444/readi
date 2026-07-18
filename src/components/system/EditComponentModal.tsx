@@ -124,6 +124,7 @@ export default function EditComponentModal({
   const [qrCodeImage, setQrCodeImage] = useState<string | null>(null);
   const [insuranceExpanded, setInsuranceExpanded] = useState(false);
   const [certificationsExpanded, setCertificationsExpanded] = useState(false);
+  const [stsSyncing, setStsSyncing] = useState(false);
 
     const [formData, setFormData] = useState(EMPTY_FORM);
 
@@ -218,7 +219,17 @@ export default function EditComponentModal({
       alert_recipients: Array.isArray(comp.alert_recipients) ? comp.alert_recipients : [],
       alert_days_before: comp.alert_days_before != null ? String(comp.alert_days_before) : '30',
       enac_authorizations: comp.certifications?.enac_authorizations || '',
-      sts_declarations: comp.certifications?.sts_declarations || '',
+      sts_declarations: (() => {
+        // If component_metadata has structured STS data, format it as text
+        const metaSts = comp.component_metadata?.sts_declarations;
+        if (Array.isArray(metaSts) && metaSts.length > 0) {
+          return metaSts
+            .map((sts: any) => `${sts.stsType} (Start: ${sts.startDate ? new Date(sts.startDate).toLocaleDateString() : 'N/A'})`)
+            .join('\n');
+        }
+        // Otherwise fall back to certifications text field
+        return comp.certifications?.sts_declarations || '';
+      })(),
     });
   };
 
@@ -254,6 +265,37 @@ export default function EditComponentModal({
       }
     } catch (error: any) {
       toast.error(error.response?.data?.message || t('dflight.plateSearch.error', { defaultValue: 'Failed to search D-Flight' }));
+    }
+  };
+
+  const handleStsSync = async () => {
+    if (!selectedComponentId || !formData.drone_registration_code) {
+      toast.error('Component must be linked to D-Flight to sync STS declarations');
+      return;
+    }
+    setStsSyncing(true);
+    try {
+      const { data } = await axios.post('/api/dflight/sts-sync', {
+        componentId: Number(selectedComponentId),
+      });
+      if (data.code === 1) {
+        if (data.data.hasDeclarations) {
+          toast.success('STS declarations synced successfully');
+          // Update the STS declarations in the form
+          const stsText = data.data.declarations
+            .map((d: any) => `${d.stsType} (Start: ${d.startDate ? new Date(d.startDate).toLocaleDateString() : 'N/A'})`)
+            .join('\n');
+          setFormData(prev => ({ ...prev, sts_declarations: stsText }));
+        } else {
+          toast.info('No STS declarations found for this drone');
+        }
+      } else {
+        toast.error(data.message || 'Failed to sync STS declarations');
+      }
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to sync STS declarations');
+    } finally {
+      setStsSyncing(false);
     }
   };
 
@@ -1026,7 +1068,31 @@ export default function EditComponentModal({
                           />
                         </div>
                         <div className="col-span-1">
-                          <Label className={labelCls}>{t('dflight.import.fields.stsDeclarations')}</Label>
+                          <div className="flex items-center justify-between mb-2">
+                            <Label className={labelCls}>{t('dflight.import.fields.stsDeclarations')}</Label>
+                            {dFlightEnabled && formData.drone_registration_code && (
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={handleStsSync}
+                                disabled={stsSyncing}
+                                className="h-6 px-2 text-xs"
+                              >
+                                {stsSyncing ? (
+                                  <>
+                                    <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                                    Syncing...
+                                  </>
+                                ) : (
+                                  <>
+                                    <Search className="h-3 w-3 mr-1" />
+                                    Sync from D-Flight
+                                  </>
+                                )}
+                              </Button>
+                            )}
+                          </div>
                           <textarea
                             value={formData.sts_declarations}
                             onChange={(e) => handleChange('sts_declarations', e.target.value)}
