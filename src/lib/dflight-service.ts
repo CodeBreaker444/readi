@@ -325,10 +325,11 @@ export async function getDFlightUserInfo(
   if (!res.ok) {
     throw new Error(`D-Flight userinfo request failed (${res.status})`);
   }
-
   const json = (await res.json()) as Record<string, unknown>;
+  console.log('userinfo dflight:',json)
+  const userData = json['userData'] as Record<string, unknown> | undefined;
   return {
-    operatorRegistrationNumber: (json['OperatorRegistrationNumber'] as string | undefined) ?? null,
+    operatorRegistrationNumber: (userData?.['OperatorRegistrationNumber'] as string | undefined) ?? null,
   };
 }
 
@@ -355,6 +356,9 @@ export async function getDFlightDroneDeclarations(
     statusHistory: 'true',
   });
 
+  console.log(`Fetching drone declarations for operator: ${operatorRegistrationNumber}, drone: ${droneId}`);
+  console.log(`URL: ${baseUrl}/user-management/users/dronedeclarations/operators/${encodeURIComponent(operatorRegistrationNumber)}?${params.toString()}`);
+
   const res = await dFetch(
     `${baseUrl}/user-management/users/dronedeclarations/operators/${encodeURIComponent(operatorRegistrationNumber)}?${params.toString()}`,
     {
@@ -367,7 +371,9 @@ export async function getDFlightDroneDeclarations(
   );
 
   if (!res.ok) {
-    throw new Error(`D-Flight drone declarations request failed (${res.status})`);
+    const errorText = await res.text();
+    console.error('D-Flight drone declarations error:', errorText);
+    throw new Error(`D-Flight drone declarations request failed (${res.status}): ${errorText}`);
   }
 
   const json = (await res.json()) as { data?: unknown[] };
@@ -410,10 +416,6 @@ export async function getDFlightDeclarationPdf(
     throw new Error(`D-Flight declaration PDF request failed (${res.status})`);
   }
 
-  const buffer = await res.body?.bytes();
-  if (!buffer) {
-    throw new Error('Failed to read PDF response body');
-  }
-
-  return buffer;
+  const arrayBuffer = await res.arrayBuffer();
+  return new Uint8Array(arrayBuffer);
 }
