@@ -292,6 +292,7 @@
     "companyDirectory": "Company Directory",
     "releaseLogs": "Release Logs",
     "securityApiKeys": "Security & API Keys",
+    "securityEmailConfig": "Email Configuration",
     "integrations": "Integrations",
     "configuration": "Configuration",
     "droneAtc": "Drone ATC",
