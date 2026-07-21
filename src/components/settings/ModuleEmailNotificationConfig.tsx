@@ -254,7 +254,7 @@ export function ModuleEmailNotificationConfig({
       <Card>
         <CardContent className="p-6">
           <p className="text-sm text-muted-foreground">
-            Email notifications are disabled at the company level. Enable them in company settings to configure module-specific email notifications.
+            Email notifications are disabled at the company level. Contact your administrator to enable them.
           </p>
         </CardContent>
       </Card>

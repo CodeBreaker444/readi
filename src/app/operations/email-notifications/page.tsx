@@ -143,7 +143,7 @@ export default function OperationsEmailNotificationsPage() {
               <p className={`text-xs mt-1 ${isDark ? "text-slate-400" : "text-slate-500"}`}>
                 {ownerData.emailEnabled
                   ? "Company-level email notifications are enabled. You can configure specific operations events below."
-                  : "Company-level email notifications are disabled. Enable them in company settings to configure operations-specific email notifications."}
+                  : "Company-level email notifications are disabled. Contact your administrator to enable them."}
               </p>
             </div>
             <span
