@@ -1,1 +1,0 @@
-﻿export const LOGO_URL = process.env.APP_URL ? `${process.env.APP_URL}/logo-sm.png` : 'https://readi.theun1t.com/logo-sm.png';

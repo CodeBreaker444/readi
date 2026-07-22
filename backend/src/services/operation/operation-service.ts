@@ -3,6 +3,7 @@ import { assertMissionEditable } from '@/backend/services/operation/mission-lock
 import { AttachmentUploadResponse, CreateOperationSchema, ListOperationsQuerySchema, Operation, OperationAttachment, OperationsListResponse, UpdateOperationSchema } from '@/config/types/operation';
 import { prisma } from '@/lib/prisma';
 import { buildS3Url, deleteFileFromS3, getPresignedDownloadUrl, REGION, uploadFileToS3 } from '@/lib/s3Client';
+import { sendMissionCreatedModuleEmail } from '../settings/module-email-notification-service';
 
 // Keys must match the `status_name` values actually sent by callers
 // (the OperationStatus enum: PLANNED | IN_PROGRESS | COMPLETED | CANCELLED | ABORTED).
@@ -260,6 +261,48 @@ export async function createOperation(input: CreateOperationSchema, ownerId: num
     data: baseInsert,
     select: { pilot_mission_id: true },
   });
+
+  // Send mission created email notification
+  try {
+    console.log('[createOperation] Attempting to send mission created email for ownerId:', ownerId, 'missionCode:', codeToChild);
+    
+    const missionType = input.fk_mission_type_id 
+      ? await prisma.pilot_mission_type.findUnique({
+          where: { mission_type_id: input.fk_mission_type_id },
+          select: { type_name: true },
+        })
+      : null;
+    
+    const user = await prisma.public_users.findUnique({
+      where: { user_id: input.fk_pilot_user_id || 0 },
+      select: { first_name: true, last_name: true },
+    });
+
+    const createdBy = user 
+      ? `${user.first_name} ${user.last_name}`.trim() 
+      : 'System';
+
+    console.log('[createOperation] Email data:', {
+      missionCode: codeToChild,
+      missionType: missionType?.type_name || 'Unknown',
+      createdBy,
+      scheduledDate: input.scheduled_start,
+      description: input.mission_name || input.mission_description || input.notes || undefined,
+    });
+
+    await sendMissionCreatedModuleEmail(ownerId, {
+      missionCode: codeToChild,
+      missionType: missionType?.type_name || 'Unknown',
+      createdBy,
+      scheduledDate: input.scheduled_start,
+      description: input.mission_name || input.mission_description || input.notes || undefined,
+    });
+    
+    console.log('[createOperation] Mission created email sent successfully');
+  } catch (emailError) {
+    console.error('[createOperation] Failed to send mission created email:', emailError);
+    // Don't fail the operation creation if email fails
+  }
 
   const full = await getOperation(inserted.pilot_mission_id);
   if (!full) throw new Error('Failed to fetch created operation');

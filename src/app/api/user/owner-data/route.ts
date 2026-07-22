@@ -18,6 +18,8 @@ export async function GET(request: NextRequest) {
       select: { 
         owner_id: true,
         email_notifications_enabled: true,
+        operation_email_enabled: true,
+        system_email_enabled: true,
       },
     });
 
@@ -31,6 +33,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       ownerId: owner.owner_id,
       emailNotificationsEnabled: owner.email_notifications_enabled,
+      operationEmailEnabled: owner.operation_email_enabled,
+      systemEmailEnabled: owner.system_email_enabled,
     });
   } catch (error: any) {
     console.error('Error fetching owner data:', error);

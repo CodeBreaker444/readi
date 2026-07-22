@@ -1669,6 +1669,8 @@ model owner {
   email_notifications_enabled      Boolean                            @default(false)
   d_flight_enabled                 Boolean                            @default(false)
   flytrelay_enabled                Boolean?                           @default(false)
+  operation_email_enabled          Boolean                            @default(false)
+  system_email_enabled             Boolean                            @default(false)
   api_keys                         api_keys[]
   assignment                       assignment[]
   calendar_shift                   calendar_shift[]

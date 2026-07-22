@@ -11,7 +11,6 @@ import {
   Text,
 } from '@react-email/components';
 
-import { LOGO_URL } from './logo-base64';
 
 interface InterventionEndedEmailProps {
   systemCode: string;
@@ -38,10 +37,12 @@ export const InterventionEndedEmail = ({
 
         <div style={outer}>
           {/* Header */}
-          <div style={header}>
-            <Img src={LOGO_URL} alt="ReADI" width={36} height={36} style={logoImg} />
-            <span style={headerTitle}>ReADI Control Center</span>
-          </div>
+          <Container style={headerContainer}>
+            <div style={header}>
+              <Img src='https://readi.theun1t.com/logo-sm.png' alt="ReADI" width={36} height={36} style={logoImg} />
+              <span style={headerTitle}>ReADI Control Center</span>
+            </div>
+          </Container>
 
           {/* Card body */}
           <Container style={card}>
@@ -158,9 +159,12 @@ const outer = {
   margin: '32px auto',
 };
 
-const header = {
+const headerContainer = {
   backgroundColor: '#7c3aed',
   borderRadius: '8px 8px 0 0',
+};
+
+const header = {
   padding: '20px 32px',
   display: 'flex',
   alignItems: 'center',

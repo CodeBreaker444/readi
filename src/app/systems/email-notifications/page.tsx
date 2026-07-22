@@ -30,7 +30,7 @@ export default function SystemsEmailNotificationsPage() {
       if (data) {
         setOwnerData({
           ownerId: data.ownerId,
-          emailEnabled: data.emailNotificationsEnabled || false,
+          emailEnabled: data.systemEmailEnabled || false,
         });
       }
       setLoading(false);
@@ -142,8 +142,8 @@ export default function SystemsEmailNotificationsPage() {
               </h3>
               <p className={`text-xs mt-1 ${isDark ? "text-slate-400" : "text-slate-500"}`}>
                 {ownerData.emailEnabled
-                  ? "Company-level email notifications are enabled. You can configure specific system events below."
-                  : "Company-level email notifications are disabled. Contact your administrator to enable them."}
+                  ? "System email notifications are enabled. You can configure specific system events below."
+                  : "System email notifications are disabled. Contact your administrator to enable them."}
               </p>
             </div>
             <span

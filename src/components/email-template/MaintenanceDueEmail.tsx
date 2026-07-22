@@ -11,7 +11,6 @@ import {
   Text,
 } from '@react-email/components';
 
-import { LOGO_URL } from './logo-base64';
 
 interface MaintenanceDueEmailProps {
   systemCode: string;
@@ -33,7 +32,7 @@ export const MaintenanceDueEmail = ({
         <div style={outer}>
           {/* Header */}
           <div style={header}>
-            <Img src={LOGO_URL} alt="ReADI" width={36} height={36} style={logoImg} />
+            <Img src='https://readi.theun1t.com/logo-sm.png' alt="ReADI" width={36} height={36} style={logoImg} />
             <span style={headerTitle}>ReADI Control Center</span>
           </div>
 

@@ -73,13 +73,43 @@ export async function isModuleEventEmailEnabled(
   moduleName: string,
   eventType: string
 ): Promise<boolean> {
-  // First check if company-level email notifications are enabled
+  console.log('[isModuleEventEmailEnabled] Checking email enabled for ownerId:', ownerId, 'moduleName:', moduleName, 'eventType:', eventType);
+  
+  // Check the appropriate company-level email flag based on module
   const owner = await prisma.owner.findUnique({
     where: { owner_id: ownerId },
-    select: { email_notifications_enabled: true },
+    select: {
+      email_notifications_enabled: true,
+      operation_email_enabled: true,
+      system_email_enabled: true,
+    },
   });
 
-  if (!owner?.email_notifications_enabled) {
+  if (!owner) {
+    console.log('[isModuleEventEmailEnabled] Owner not found for ownerId:', ownerId);
+    return false;
+  }
+
+  console.log('[isModuleEventEmailEnabled] Owner settings:', {
+    email_notifications_enabled: owner.email_notifications_enabled,
+    operation_email_enabled: owner.operation_email_enabled,
+    system_email_enabled: owner.system_email_enabled,
+  });
+
+  let moduleEmailEnabled = false;
+  if (moduleName === 'operations') {
+    moduleEmailEnabled = owner.operation_email_enabled;
+  } else if (moduleName === 'maintenance') {
+    moduleEmailEnabled = owner.system_email_enabled;
+  } else {
+    // For other modules, use the default email flag
+    moduleEmailEnabled = owner.email_notifications_enabled;
+  }
+
+  console.log('[isModuleEventEmailEnabled] Module email enabled for', moduleName, ':', moduleEmailEnabled);
+
+  if (!moduleEmailEnabled) {
+    console.log('[isModuleEventEmailEnabled] Module email is disabled, returning false');
     return false;
   }
 
@@ -94,7 +124,10 @@ export async function isModuleEventEmailEnabled(
     select: { is_enabled: true },
   });
 
-  return config?.is_enabled === true;
+  console.log('[isModuleEventEmailEnabled] Event config:', config);
+  const result = config?.is_enabled === true;
+  console.log('[isModuleEventEmailEnabled] Final result:', result);
+  return result;
 }
 
 /**
@@ -190,9 +223,14 @@ async function getRecipientEmails(
   moduleName: string,
   eventType: string
 ): Promise<string[]> {
+  console.log('[getRecipientEmails] Getting recipient emails for ownerId:', ownerId, 'moduleName:', moduleName, 'eventType:', eventType);
+  
   const config = await getModuleEmailConfig(ownerId, moduleName, eventType);
   
+  console.log('[getRecipientEmails] Config:', config);
+  
   if (!config || !config.is_enabled) {
+    console.log('[getRecipientEmails] Config not found or not enabled, returning empty emails');
     return [];
   }
 
@@ -201,6 +239,7 @@ async function getRecipientEmails(
 
   // Add users from specified roles
   if (config.notification_roles.length > 0) {
+    console.log('[getRecipientEmails] Looking for users with roles:', config.notification_roles);
     const roleUsers = await prisma.public_users.findMany({
       where: {
         fk_owner_id: ownerId,
@@ -209,6 +248,8 @@ async function getRecipientEmails(
       },
       select: { user_id: true, email: true },
     });
+
+    console.log('[getRecipientEmails] Found role users:', roleUsers.length);
 
     for (const user of roleUsers) {
       if (user.email) {
@@ -220,6 +261,7 @@ async function getRecipientEmails(
 
   // Add specific user IDs
   if (config.notification_user_ids.length > 0) {
+    console.log('[getRecipientEmails] Looking for specific user IDs:', config.notification_user_ids);
     const specificUsers = await prisma.public_users.findMany({
       where: {
         user_id: { in: config.notification_user_ids },
@@ -227,6 +269,8 @@ async function getRecipientEmails(
       },
       select: { user_id: true, email: true },
     });
+
+    console.log('[getRecipientEmails] Found specific users:', specificUsers.length);
 
     for (const user of specificUsers) {
       if (user.email && !userIds.has(user.user_id)) {
@@ -236,6 +280,7 @@ async function getRecipientEmails(
     }
   }
 
+  console.log('[getRecipientEmails] Final recipient emails:', emails);
   return emails;
 }
 
