@@ -98,12 +98,12 @@ export async function isModuleEventEmailEnabled(
 
   let moduleEmailEnabled = false;
   if (moduleName === 'operations') {
-    moduleEmailEnabled = owner.operation_email_enabled;
+    moduleEmailEnabled = owner.operation_email_enabled === true;
   } else if (moduleName === 'maintenance') {
-    moduleEmailEnabled = owner.system_email_enabled;
+    moduleEmailEnabled = owner.system_email_enabled === true;
   } else {
     // For other modules, use the default email flag
-    moduleEmailEnabled = owner.email_notifications_enabled;
+    moduleEmailEnabled = owner.email_notifications_enabled === true;
   }
 
   console.log('[isModuleEventEmailEnabled] Module email enabled for', moduleName, ':', moduleEmailEnabled);
@@ -293,15 +293,18 @@ async function sendMaintenanceModuleEmail(
   emailFn: (emails: string[], ...args: any[]) => Promise<void>,
   ...emailArgs: any[]
 ): Promise<void> {
-  const isEnabled = await isModuleEventEmailEnabled(ownerId, 'maintenance', eventType);
   
+  const isEnabled = await isModuleEventEmailEnabled(ownerId, 'maintenance', eventType);
+  console.log('isEnabled:',isEnabled)
   if (!isEnabled) {
+    console.log('[sendMaintenanceModuleEmail] Email is not enabled, skipping email send');
     return;
   }
 
   const emails = await getRecipientEmails(ownerId, 'maintenance', eventType);
-  
+  console.log('emails:',emails)
   if (emails.length === 0) {
+    console.log('[sendMaintenanceModuleEmail] No recipient emails found, skipping email send');
     return;
   }
 

@@ -67,21 +67,31 @@ export const sendTicketClosedEmail = async (
   ticketId: number,
   note?: string | null
 ) => {
-  if (!emails.length) return;
+  if (!emails.length) {
+    console.log('[sendTicketClosedEmail] No emails provided, skipping');
+    return;
+  }
   try {
     const emailHtml = await render(
       TicketClosedEmail({ systemCode, ticketTitle, ticketId, note })
     );
 
-    const { error } = await resend.emails.send({
+    const emailPayload = {
       from: 'ReADI <no-reply@readi.theun1t.com>',
       to: emails,
       subject: `Maintenance Complete — ${systemCode}`,
       html: emailHtml,
-    });
-    if (error) console.error('sendTicketClosedEmail error:', error);
+    };
+
+    const { data, error } = await resend.emails.send(emailPayload);
+    
+    if (error) {
+      console.error('[sendTicketClosedEmail] Resend API error:', JSON.stringify(error));
+    } else {
+      console.log('[sendTicketClosedEmail] Email sent successfully. Resend ID:', data?.id);
+    }
   } catch (err) {
-    console.error('sendTicketClosedEmail exception:', err);
+    console.error('[sendTicketClosedEmail] Exception:', err);
   }
 };
 
