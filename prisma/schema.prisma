@@ -2490,7 +2490,6 @@ model tool_component {
   qr_code_image               String?
   uas_serial_number           String?                   @db.VarChar(100)
   gcs_serial_number           String?                   @db.VarChar(100)
-  license_plate               String?                   @db.VarChar(100)
   certifications              Json?
   component_insurance         component_insurance?
   luc_document                luc_document[]
@@ -2498,7 +2497,6 @@ model tool_component {
   maintenance_ticket_item     maintenance_ticket_item[]
   tool                        tool                      @relation(fields: [fk_tool_id], references: [tool_id], onDelete: Cascade, onUpdate: NoAction)
 
-  @@index([license_plate], map: "idx_tool_component_license_plate")
   @@index([fk_tool_id, component_active], map: "idx_tool_component_tool")
   @@schema("public")
 }

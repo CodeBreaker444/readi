@@ -97,6 +97,9 @@ export default function ViewComponentModal({ open, component, systemCode, onClos
                             <InfoRow label="Serial No." value={component.component_sn} />
                             <InfoRow label="Vendor" value={component.component_vendor} />
                             <InfoRow label="Installation Date" value={component.component_activation_date} />
+                            {component.drone_registration_code && (
+                                <InfoRow label="DRC" value={component.drone_registration_code} />
+                            )}
                         </div>
                     </div>
 
@@ -104,17 +107,14 @@ export default function ViewComponentModal({ open, component, systemCode, onClos
                         <>
                             <div className="border-t border-slate-100" />
                             <div>
-                                <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-2">Additional Information</p>
-                                <div>
-                                    <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">QR Code</p>
-                                    <img
-                                        src={component.qr_code_image.startsWith('http') || component.qr_code_image.startsWith('data:')
-                                            ? component.qr_code_image
-                                            : `data:image/png;base64,${component.qr_code_image}`}
-                                        alt="QR Code"
-                                        className="w-28 h-28 object-contain rounded border border-slate-200 bg-white"
-                                    />
-                                </div>
+                                <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">QR Code</p>
+                                <img
+                                    src={component.qr_code_image.startsWith('http') || component.qr_code_image.startsWith('data:')
+                                        ? component.qr_code_image
+                                        : `data:image/png;base64,${component.qr_code_image}`}
+                                    alt="QR Code"
+                                    className="w-28 h-28 object-contain rounded border border-slate-200 bg-white"
+                                />
                             </div>
                         </>
                     )}

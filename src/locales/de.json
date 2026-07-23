@@ -4924,8 +4924,7 @@
         "drc": "DRC (D-Flight-ID)",
         "model": "Modell",
         "status": "Status",
-        "action": "Aktion",
-        "licensePlate": "Kennzeichen"
+        "action": "Aktion"
       },
       "error": {
         "generic": "Flottendaten konnten nicht geladen werden"
@@ -4958,7 +4957,6 @@
         "client": "Kunde",
         "uasSerialNumber": "UAS-Seriennummer",
         "gcsSerialNumber": "GCS-Seriennummer",
-        "licensePlate": "Kennzeichen",
         "enacAuthorizations": "ENAC-Genehmigungen",
         "enacAuthorizationsPlaceholder": "z. B. ENAC-Genehmigung Nr. 12345, ausgestellt am 10.01.2026",
         "stsDeclarations": "STS-Erklärungen",

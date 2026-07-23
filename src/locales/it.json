@@ -4929,8 +4929,7 @@
         "drc": "DRC (ID D-Flight)",
         "model": "Modello",
         "status": "Stato",
-        "action": "Azione",
-        "licensePlate": "Targa"
+        "action": "Azione"
       },
       "error": {
         "generic": "Caricamento dati flotta non riuscito"
@@ -4963,7 +4962,6 @@
         "client": "Cliente",
         "uasSerialNumber": "Numero di Serie UAS",
         "gcsSerialNumber": "Numero di Serie GCS",
-        "licensePlate": "Targa",
         "enacAuthorizations": "Autorizzazioni ENAC",
         "enacAuthorizationsPlaceholder": "es. Autorizzazione ENAC n. 12345, rilasciata il 10/01/2026",
         "stsDeclarations": "Dichiarazioni STS",

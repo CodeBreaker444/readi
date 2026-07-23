@@ -31,7 +31,6 @@ const schema = z.object({
   drone_registration_code: z.string().optional().nullable(),
   uas_serial_number: z.string().optional().nullable(),
   gcs_serial_number: z.string().optional().nullable(),
-  license_plate: z.string().optional().nullable(),
   certifications: z.object({
     enac_authorizations: z.string().optional().nullable(),
     sts_declarations: z.string().optional().nullable(),

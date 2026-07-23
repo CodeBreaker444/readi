@@ -13,13 +13,12 @@ export interface ImportDFlightDroneInput {
   drone_classes?: string[] | null;
   uas_serial_number?: string | null;
   gcs_serial_number?: string | null;
-  license_plate?: string | null;
   insurance_name?: string | null;
   insurance_company?: string | null;
   insurance_expiry_date?: string | null;
   insurance_alert_recipients?: string[] | null;
   insurance_alert_days_before?: number | null;
-  certifications?: { enac_authorizations?: string | null; sts_declarations?: string | null } | null;
+  certifications?: { sts_declarations?: string | null } | null;
   qr_code_image?: string | null;
 }
 
@@ -80,9 +79,8 @@ export async function importDFlightDrone(input: ImportDFlightDroneInput) {
         qr_code_image: input.qr_code_image || null,
         uas_serial_number: input.uas_serial_number || null,
         gcs_serial_number: input.gcs_serial_number || null,
-        license_plate: input.license_plate || null,
         // Manual entry for now — d-flight has no documented endpoint for these.
-        certifications: input.certifications?.enac_authorizations || input.certifications?.sts_declarations
+        certifications: input.certifications?.sts_declarations
           ? (input.certifications as unknown as Prisma.InputJsonValue)
           : Prisma.JsonNull,
         component_metadata: {

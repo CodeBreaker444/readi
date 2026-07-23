@@ -4941,8 +4941,7 @@
         "drc": "DRC (D-Flight ID)",
         "model": "Model",
         "status": "Status",
-        "action": "Action",
-        "licensePlate": "License Plate"
+        "action": "Action"
       },
       "error": {
         "generic": "Failed to load fleet data"
@@ -4975,7 +4974,6 @@
         "client": "Client",
         "uasSerialNumber": "UAS Serial Number",
         "gcsSerialNumber": "GCS Serial Number",
-        "licensePlate": "License Plate",
         "enacAuthorizations": "ENAC Authorizations",
         "enacAuthorizationsPlaceholder": "e.g. ENAC Authorization No. 12345, issued 2026-01-10",
         "stsDeclarations": "STS Declarations",
@@ -5006,7 +5004,7 @@
       "view": "View Components"
     },
     "plateSearch": {
-      "label": "Align with D-Flight by License Plate",
+      "label": "Align with D-Flight by DRC",
       "placeholder": "e.g. IT-A1B2C3",
       "search": "Search",
       "matched": "Matched \"{{name}}\" — fields pre-filled below",

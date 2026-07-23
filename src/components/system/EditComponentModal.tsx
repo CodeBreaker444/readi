@@ -1,6 +1,5 @@
 'use client';
 
-import DFlightPlateSearch from '@/components/dflight/DFlightPlateSearch';
 import LocationPicker from '@/components/system/LocationPicker';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -72,7 +71,6 @@ const EMPTY_FORM = {
   drone_registration_code: '',
   uas_serial_number: '',
   gcs_serial_number: '',
-  license_plate: '',
   component_activation_date: '',
   component_purchase_date: '',
   expiration_date: '',
@@ -195,7 +193,6 @@ export default function EditComponentModal({
       drone_registration_code: comp.drone_registration_code || '',
       uas_serial_number: comp.uas_serial_number || '',
       gcs_serial_number: comp.gcs_serial_number || '',
-      license_plate: comp.license_plate || '',
       component_activation_date: comp.component_activation_date?.split('T')[0] || '',
       component_purchase_date: comp.component_purchase_date?.split('T')[0] || '',
       expiration_date: comp.expiration_date?.split('T')[0] || '',
@@ -241,7 +238,6 @@ export default function EditComponentModal({
         dFlightId: drone.dFlightId,
         uas_serial_number: drone.uasSerialNumber ?? null,
         gcs_serial_number: drone.gcsSerialNumber ?? null,
-        license_plate: drone.matriculationNumber ?? null,
         insurance_company: drone.insuranceCompany ?? null,
         insurance_expiry_date: drone.insuranceExpiryDate ?? null,
         qr_code_image: drone.qrCodeImage ?? null,
@@ -255,7 +251,6 @@ export default function EditComponentModal({
           drone_registration_code: data.data.drone_registration_code || prev.drone_registration_code,
           uas_serial_number: data.data.uas_serial_number || prev.uas_serial_number,
           gcs_serial_number: data.data.gcs_serial_number || prev.gcs_serial_number,
-          license_plate: data.data.license_plate || prev.license_plate,
           component_sn: prev.component_sn || drone.serialNumber || '',
           insurance_company: drone.insuranceCompany || prev.insurance_company,
           insurance_expiry_date: drone.insuranceExpiryDate?.slice(0, 10) || prev.insurance_expiry_date,
@@ -410,7 +405,6 @@ export default function EditComponentModal({
         drone_registration_code: formData.drone_registration_code || null,
         uas_serial_number: formData.uas_serial_number || null,
         gcs_serial_number: formData.gcs_serial_number || null,
-        license_plate: formData.license_plate || null,
         component_activation_date: formData.component_activation_date || null,
         component_purchase_date: formData.component_purchase_date || null,
         expiration_date: formData.expiration_date || null,
@@ -767,10 +761,6 @@ export default function EditComponentModal({
                   </div>
                 )}
 
-                {formData.component_type === 'DRONE' && dFlightEnabled && selectedComponentId && (
-                  <DFlightPlateSearch isDark={isDark} onFound={handleDFlightMatch} />
-                )}
-
                 {formData.component_type === 'DRONE' && (
                   <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
                     <div className="col-span-1 sm:col-span-3">
@@ -816,10 +806,6 @@ export default function EditComponentModal({
                     <div className="col-span-1 sm:col-span-3">
                       <Label className={labelCls}>{t('dflight.import.fields.gcsSerialNumber')} <span className="font-normal opacity-60">{t('systems.components.common.optional')}</span></Label>
                       <Input className={inputCls} value={formData.gcs_serial_number} onChange={e => handleChange('gcs_serial_number', e.target.value)} />
-                    </div>
-                    <div className="col-span-1 sm:col-span-3">
-                      <Label className={labelCls}>{t('dflight.import.fields.licensePlate')} <span className="font-normal opacity-60">{t('systems.components.common.optional')}</span></Label>
-                      <Input className={inputCls} value={formData.license_plate} onChange={e => handleChange('license_plate', e.target.value)} />
                     </div>
                   </div>
                 )}

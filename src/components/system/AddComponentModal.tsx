@@ -1,6 +1,5 @@
 'use client';
 
-import DFlightPlateSearch from '@/components/dflight/DFlightPlateSearch';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -41,7 +40,6 @@ const INITIAL_FORM = {
   drone_registration_code: '',
   uas_serial_number: '',
   gcs_serial_number: '',
-  license_plate: '',
   component_activation_date: '',
   component_purchase_date: '',
   expiration_date: '',
@@ -213,7 +211,6 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
       drone_registration_code: drone.dFlightId || prev.drone_registration_code,
       uas_serial_number: drone.uasSerialNumber || prev.uas_serial_number,
       gcs_serial_number: drone.gcsSerialNumber || prev.gcs_serial_number,
-      license_plate: drone.matriculationNumber || prev.license_plate,
       insurance_company: drone.insuranceCompany || prev.insurance_company,
       insurance_expiry_date: drone.insuranceExpiryDate?.slice(0, 10) || prev.insurance_expiry_date,
     }));
@@ -255,7 +252,6 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
         drone_registration_code: formData.drone_registration_code || null,
         uas_serial_number: formData.uas_serial_number || null,
         gcs_serial_number: formData.gcs_serial_number || null,
-        license_plate: formData.license_plate || null,
         component_activation_date: formData.component_activation_date || null,
         component_purchase_date: formData.component_purchase_date || null,
         expiration_date: formData.expiration_date || null,
@@ -300,7 +296,6 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
               dFlightId: matchedDFlightDrone.dFlightId,
               uas_serial_number: matchedDFlightDrone.uasSerialNumber ?? null,
               gcs_serial_number: matchedDFlightDrone.gcsSerialNumber ?? null,
-              license_plate: matchedDFlightDrone.matriculationNumber ?? null,
               insurance_company: matchedDFlightDrone.insuranceCompany ?? null,
               insurance_expiry_date: matchedDFlightDrone.insuranceExpiryDate ?? null,
               qr_code_image: matchedDFlightDrone.qrCodeImage ?? null,
@@ -490,10 +485,6 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
               </div>
             </div>
 
-            {formData.component_type === 'DRONE' && dFlightEnabled && (
-              <DFlightPlateSearch onFound={handleDFlightMatch} />
-            )}
-
             {formData.component_type === 'DRONE' && (
               <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 overflow-visible">
                 <div className="col-span-1 sm:col-span-3">
@@ -542,10 +533,6 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
                 <div className="col-span-1 sm:col-span-3">
                   <Label className="pb-2">{t('dflight.import.fields.gcsSerialNumber')} <span className="text-muted-foreground font-normal">{t('systems.components.common.optional')}</span></Label>
                   <Input value={formData.gcs_serial_number} onChange={(e) => handleChange('gcs_serial_number', e.target.value)} />
-                </div>
-                <div className="col-span-1 sm:col-span-3">
-                  <Label className="pb-2">{t('dflight.import.fields.licensePlate')} <span className="text-muted-foreground font-normal">{t('systems.components.common.optional')}</span></Label>
-                  <Input value={formData.license_plate} onChange={(e) => handleChange('license_plate', e.target.value)} />
                 </div>
               </div>
             )}

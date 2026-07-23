@@ -31,7 +31,6 @@ const ComponentSchema = z
     drone_registration_code: z.string().optional().nullable(),
     uas_serial_number: z.string().optional().nullable(),
     gcs_serial_number: z.string().optional().nullable(),
-    license_plate: z.string().optional().nullable(),
     certifications: z.object({
       enac_authorizations: z.string().optional().nullable(),
       sts_declarations: z.string().optional().nullable(),
@@ -102,7 +101,6 @@ export async function POST(req: NextRequest) {
       drone_registration_code: d.drone_registration_code,
       uas_serial_number: d.uas_serial_number,
       gcs_serial_number: d.gcs_serial_number,
-      license_plate: d.license_plate,
       certifications: d.certifications ?? null,
       maintenance_cycle: d.maintenance_cycle,
       maintenance_cycle_hour: d.maintenance_cycle_hour,

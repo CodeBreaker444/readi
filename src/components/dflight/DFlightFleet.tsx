@@ -106,7 +106,6 @@ export default function DFlightFleet() {
         dFlightId: row.dFlightId,
         uas_serial_number: row.uasSerialNumber ?? null,
         gcs_serial_number: row.gcsSerialNumber ?? null,
-        license_plate: row.matriculationNumber ?? null,
         insurance_company: row.insuranceCompany ?? null,
         insurance_expiry_date: row.insuranceExpiryDate ?? null,
         qr_code_image: row.qrCodeImage ?? null,

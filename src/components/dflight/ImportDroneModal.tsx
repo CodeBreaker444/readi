@@ -37,7 +37,6 @@ const EMPTY_FORM = {
   component_sn: '',
   uas_serial_number: '',
   gcs_serial_number: '',
-  license_plate: '',
   fk_tool_model_id: '',
   fk_client_id: '',
   drone_classes: [] as string[],
@@ -46,7 +45,6 @@ const EMPTY_FORM = {
   insurance_expiry_date: '',
   insurance_alert_recipients: [] as string[],
   insurance_alert_days_before: '30',
-  enac_authorizations: '',
   sts_declarations: '',
 };
 
@@ -96,7 +94,6 @@ export default function ImportDroneModal({ open, onClose, onImported, drone, mod
       component_sn: drone.serialNumber || '',
       uas_serial_number: drone.uasSerialNumber || '',
       gcs_serial_number: drone.gcsSerialNumber || '',
-      license_plate: drone.matriculationNumber || '',
       fk_tool_model_id: matched ? String(matched.tool_model_id) : '',
       fk_client_id: '',
       drone_classes: [],
@@ -105,7 +102,6 @@ export default function ImportDroneModal({ open, onClose, onImported, drone, mod
       insurance_expiry_date: drone.insuranceExpiryDate?.slice(0, 10) || '',
       insurance_alert_recipients: [],
       insurance_alert_days_before: '30',
-      enac_authorizations: '',
       sts_declarations: '',
     });
     setInsuranceExpanded(!!(drone.insuranceCompany || drone.insuranceExpiryDate));
@@ -223,10 +219,9 @@ export default function ImportDroneModal({ open, onClose, onImported, drone, mod
     if (!formData.fk_tool_model_id) { toast.error(t('dflight.import.toasts.modelRequired')); return; }
     if (!formData.fk_client_id) { toast.error(t('dflight.import.toasts.clientRequired')); return; }
 
-    const enacAuthorizations = formData.enac_authorizations.trim();
     const stsDeclarations = formData.sts_declarations.trim();
-    const certifications = enacAuthorizations || stsDeclarations
-      ? { enac_authorizations: enacAuthorizations || null, sts_declarations: stsDeclarations || null }
+    const certifications = stsDeclarations
+      ? { sts_declarations: stsDeclarations }
       : null;
 
     setLoading(true);
@@ -240,7 +235,6 @@ export default function ImportDroneModal({ open, onClose, onImported, drone, mod
         component_sn: formData.component_sn.trim(),
         uas_serial_number: formData.uas_serial_number.trim() || null,
         gcs_serial_number: formData.gcs_serial_number.trim() || null,
-        license_plate: formData.license_plate.trim() || null,
         fk_tool_model_id: Number(formData.fk_tool_model_id),
         drone_classes: formData.drone_classes.length ? formData.drone_classes : null,
         insurance_name: formData.insurance_name || null,
@@ -326,10 +320,6 @@ export default function ImportDroneModal({ open, onClose, onImported, drone, mod
                   <Label className="pb-2">{t('dflight.import.fields.gcsSerialNumber')}</Label>
                   <Input value={formData.gcs_serial_number} onChange={(e) => handleChange('gcs_serial_number', e.target.value)} />
                 </div>
-                <div className="col-span-1 sm:col-span-4">
-                  <Label className="pb-2">{t('dflight.import.fields.licensePlate')}</Label>
-                  <Input value={formData.license_plate} onChange={(e) => handleChange('license_plate', e.target.value)} />
-                </div>
               </div>
             </div>
 
@@ -348,7 +338,7 @@ export default function ImportDroneModal({ open, onClose, onImported, drone, mod
                       </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
-                      {models.map((m: any) => (
+                      {models.filter((m: any) => m.model_type?.startsWith('AIRCRAFT_')).map((m: any) => (
                         <SelectItem key={m.tool_model_id} value={m.tool_model_id.toString()} disabled={m.model_active !== 'Y'}>
                           {m.factory_type} / {m.factory_model} / {m.factory_serie}
                         </SelectItem>
@@ -482,17 +472,7 @@ export default function ImportDroneModal({ open, onClose, onImported, drone, mod
                   <p className="col-span-1 sm:col-span-2 text-[11px] text-muted-foreground -mt-1">
                     {t('dflight.import.certificationsHint')}
                   </p>
-                  <div className="col-span-1">
-                    <Label className="pb-2">{t('dflight.import.fields.enacAuthorizations')}</Label>
-                    <textarea
-                      value={formData.enac_authorizations}
-                      onChange={(e) => handleChange('enac_authorizations', e.target.value)}
-                      placeholder={t('dflight.import.fields.enacAuthorizationsPlaceholder')}
-                      rows={3}
-                      className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-xs outline-none focus:ring-1 focus:ring-violet-500/30 bg-background resize-y"
-                    />
-                  </div>
-                  <div className="col-span-1">
+                  <div className="col-span-1 sm:col-span-2">
                     <Label className="pb-2">{t('dflight.import.fields.stsDeclarations')}</Label>
                     <textarea
                       value={formData.sts_declarations}

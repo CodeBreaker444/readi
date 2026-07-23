@@ -9,7 +9,6 @@ export interface SyncDFlightDroneInput {
   drone_classes?: string[] | null;
   uas_serial_number?: string | null;
   gcs_serial_number?: string | null;
-  license_plate?: string | null;
   insurance_name?: string | null;
   insurance_company?: string | null;
   insurance_expiry_date?: string | null;
@@ -53,7 +52,6 @@ export async function syncDFlightDrone(input: SyncDFlightDroneInput) {
         qr_code_image: input.qr_code_image || null,
         uas_serial_number: input.uas_serial_number || null,
         gcs_serial_number: input.gcs_serial_number || null,
-        license_plate: input.license_plate || null,
         component_metadata: {
           ...baseMeta,
           drone_classes: input.drone_classes?.length ? input.drone_classes : (baseMeta as any).drone_classes ?? null,
