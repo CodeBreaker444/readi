@@ -104,7 +104,7 @@ export const MissionCompletedEmail = ({
               {/* View details link */}
               <div style={actionCard}>
                 <Text style={actionLabel}>View mission details</Text>
-                <Link href={`${process.env.APP_URL || 'https://app.readi.ai'}/operations/missions`} style={actionLink}>
+                <Link href={`${process.env.APP_URL}/operations/table`} style={actionLink}>
                   View Mission {missionCode}
                 </Link>
               </div>

@@ -277,7 +277,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
       subItems: [
         { name: t('sidebar.securityApiKeys'), href: '/settings/security' },
         ...(role && ['ADMIN', 'OPM', 'SUPERADMIN'].includes(role)
-          ? [{ name: t('sidebar.securityEmailConfig'), href: '/settings/email-config' },{ name: t('sidebar.integrations'), href: '/settings/integrations' }]
+          ? [
+            { name: t('sidebar.integrations'), href: '/settings/integrations' }]
           : []),
       ],
     },
