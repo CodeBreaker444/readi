@@ -12,7 +12,6 @@ import {
   Text,
 } from '@react-email/components';
 
-import { LOGO_BASE64 as LOGO_URL } from './logo-base64';
 
 interface UserActivationEmailProps {
   organization: string;
@@ -39,7 +38,7 @@ export const UserActivationEmail = ({
         <div style={outer}>
           {/* Header */}
           <div style={header}>
-            <Img src={LOGO_URL} alt="ReADI" width={36} height={36} style={logoImg} />
+            <Img src='https://readi.theun1t.com/logo-sm.png' alt="ReADI" width={36} height={36} style={logoImg} />
             <span style={headerTitle}>{organization}</span>
           </div>
 

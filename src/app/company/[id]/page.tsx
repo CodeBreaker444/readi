@@ -74,6 +74,8 @@ type FeaturesForm = {
     d_flight_enabled: boolean;
     flytrelay_enabled: boolean;
     email_notifications_enabled: boolean;
+    operation_email_enabled: boolean;
+    system_email_enabled: boolean;
     easa_operator_code: string;
 };
 
@@ -107,6 +109,8 @@ function buildPayload(general: GeneralForm, security: SecurityForm, features: Fe
         d_flight_enabled: features.d_flight_enabled,
         flytrelay_enabled: features.flytrelay_enabled,
         email_notifications_enabled: features.email_notifications_enabled,
+        operation_email_enabled: features.operation_email_enabled,
+        system_email_enabled: features.system_email_enabled,
         easa_operator_code: features.easa_operator_code || null,
     };
 }
@@ -142,7 +146,7 @@ export default function CompanyDetailPage() {
     });
     const [securityForm, setSecurityForm] = useState<SecurityForm>({ owner_active: 'Y' });
     const [featuresForm, setFeaturesForm] = useState<FeaturesForm>({
-        drone_atc_enabled: false, d_flight_enabled: false, flytrelay_enabled: false, email_notifications_enabled: false, easa_operator_code: '',
+        drone_atc_enabled: false, d_flight_enabled: false, flytrelay_enabled: false, email_notifications_enabled: false, operation_email_enabled: false, system_email_enabled: false, easa_operator_code: '',
     });
 
     const [newPassword, setNewPassword] = useState('');
@@ -169,6 +173,8 @@ export default function CompanyDetailPage() {
             d_flight_enabled: o.d_flight_enabled ?? false,
             flytrelay_enabled: o.flytrelay_enabled ?? false,
             email_notifications_enabled: o.email_notifications_enabled ?? false,
+            operation_email_enabled: o.operation_email_enabled ?? false,
+            system_email_enabled: o.system_email_enabled ?? false,
             easa_operator_code: toStr(o.easa_operator_code),
         });
     }, []);
@@ -594,7 +600,9 @@ export default function CompanyDetailPage() {
                                     { key: 'drone_atc_enabled' as const, label: 'Drone ATC', desc: 'Enables Air Traffic Control integration for drone operations' },
                                     { key: 'd_flight_enabled' as const, label: 'D-Flight', desc: 'Enables D-Flight USSP integration for drone registration and fleet management' },
                                     { key: 'flytrelay_enabled' as const, label: 'FlytRelay', desc: 'Enables FlytRelay drone flight logs and telemetry integration' },
-                                    { key: 'email_notifications_enabled' as const, label: 'Email Notifications', desc: 'Send email alerts to users for important events' },
+                                    { key: 'email_notifications_enabled' as const, label: 'Default Email Notifications', desc: 'Send account activation, password reset, and other default emails' },
+                                    { key: 'operation_email_enabled' as const, label: 'Operations Email Notifications', desc: 'Send operations-related email notifications' },
+                                    { key: 'system_email_enabled' as const, label: 'System Email Notifications', desc: 'Send system/maintenance-related email notifications' },
                                 ].map(({ key, label, desc }) => (
                                     <div key={key}>
                                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">

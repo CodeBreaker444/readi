@@ -37,6 +37,8 @@ const initialForm = {
     d_flight_enabled: false,
     flytrelay_enabled: false,
     email_notifications_enabled: false,
+    operation_email_enabled: false,
+    system_email_enabled: false,
     easa_operator_code: '',
     tax_id: '',
     registration_number: '',
@@ -421,13 +423,40 @@ export default function NewCompanyPage() {
                                 <div className="flex items-center justify-between gap-4 py-1">
                                     <div>
                                         <div className="flex items-center gap-2">
-                                            <p className={`text-sm font-medium ${isDark ? 'text-white' : 'text-slate-900'}`}>Email Notifications</p>
+                                            <p className={`text-sm font-medium ${isDark ? 'text-white' : 'text-slate-900'}`}>Default Email Notifications</p>
                                         </div>
-                                        <p className="text-xs text-muted-foreground mt-0.5">Send alerts to user emails</p>
+                                        <p className="text-xs text-muted-foreground mt-0.5">Account activation, password reset emails</p>
                                     </div>
                                     <Switch
                                         checked={form.email_notifications_enabled}
                                         onCheckedChange={(v) => setField('email_notifications_enabled', v)}
+                                        className="data-[state=checked]:bg-green-500"
+                                    />
+                                </div>
+                                 <div className="flex items-center justify-between gap-4 py-1">
+                                    <div>
+                                        <div className="flex items-center gap-2">
+                                            <p className={`text-sm font-medium ${isDark ? 'text-white' : 'text-slate-900'}`}>FlytRelay</p>
+                                        </div>
+                                        <p className="text-xs text-muted-foreground mt-0.5">FlytRelay drone flight logs and telemetry integration</p>
+                                    </div>
+                                    <Switch
+                                        checked={form.flytrelay_enabled}
+                                        onCheckedChange={(v) => setField('flytrelay_enabled', v)}
+                                        className="data-[state=checked]:bg-green-500"
+                                    />
+                                </div>
+                            
+                                <div className="flex items-center justify-between gap-4 py-1">
+                                    <div>
+                                        <div className="flex items-center gap-2">
+                                            <p className={`text-sm font-medium ${isDark ? 'text-white' : 'text-slate-900'}`}>System Email Notifications</p>
+                                        </div>
+                                        <p className="text-xs text-muted-foreground mt-0.5">System/maintenance email notifications</p>
+                                    </div>
+                                    <Switch
+                                        checked={form.system_email_enabled}
+                                        onCheckedChange={(v) => setField('system_email_enabled', v)}
                                         className="data-[state=checked]:bg-green-500"
                                     />
                                 </div>
@@ -444,16 +473,17 @@ export default function NewCompanyPage() {
                                         className="data-[state=checked]:bg-green-500"
                                     />
                                 </div>
-                                <div className="flex items-center justify-between gap-4 py-1">
+                               
+                                 <div className="flex items-center justify-between gap-4 py-1">
                                     <div>
                                         <div className="flex items-center gap-2">
-                                            <p className={`text-sm font-medium ${isDark ? 'text-white' : 'text-slate-900'}`}>FlytRelay</p>
+                                            <p className={`text-sm font-medium ${isDark ? 'text-white' : 'text-slate-900'}`}>Operations Email Notifications</p>
                                         </div>
-                                        <p className="text-xs text-muted-foreground mt-0.5">FlytRelay drone flight logs and telemetry integration</p>
+                                        <p className="text-xs text-muted-foreground mt-0.5">Operations-related email notifications</p>
                                     </div>
                                     <Switch
-                                        checked={form.flytrelay_enabled}
-                                        onCheckedChange={(v) => setField('flytrelay_enabled', v)}
+                                        checked={form.operation_email_enabled}
+                                        onCheckedChange={(v) => setField('operation_email_enabled', v)}
                                         className="data-[state=checked]:bg-green-500"
                                     />
                                 </div>

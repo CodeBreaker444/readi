@@ -19,6 +19,8 @@ export interface OwnerData {
   d_flight_enabled: boolean;
   flytrelay_enabled: boolean;
   email_notifications_enabled: boolean;
+  operation_email_enabled: boolean;
+  system_email_enabled: boolean;
   easa_operator_code: string | null;
   tax_id: string | null;
   registration_number: string | null;

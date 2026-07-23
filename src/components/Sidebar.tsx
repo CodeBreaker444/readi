@@ -133,7 +133,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
         { name: t('sidebar.operationsTable'), href: '/operations/table' },
         { name: t('sidebar.dailyBoard'), href: '/operations/daily-board' },
         { name: t('sidebar.flightRequests'), href: '/operations/flight-requests' },
-        { name: t('sidebar.calendar'), href: '/operations/calendar' }
+        { name: t('sidebar.calendar'), href: '/operations/calendar' },
+         ...(role && ['ADMIN', 'OPM', 'SUPERADMIN'].includes(role)
+          ? [{ name: 'Email Notifications', href: '/operations/email-notifications' }]
+          : []),
       ]
     },
     {
@@ -243,6 +246,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
         { name: t('sidebar.map'), href: '/systems/map' },
         { name: t('sidebar.maintenanceDashboard'), href: '/systems/maintenance-dashboard' },
         { name: t('sidebar.maintenanceTickets'), href: '/systems/maintenance-tickets' },
+        ...(role && ['ADMIN', 'OPM', 'SUPERADMIN'].includes(role)
+          ? [{ name: 'Email Notifications', href: '/systems/email-notifications' }]
+          : []),
       ],
     },
     {
@@ -271,7 +277,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
       subItems: [
         { name: t('sidebar.securityApiKeys'), href: '/settings/security' },
         ...(role && ['ADMIN', 'OPM', 'SUPERADMIN'].includes(role)
-          ? [{ name: t('sidebar.integrations'), href: '/settings/integrations' }]
+          ? [{ name: t('sidebar.securityEmailConfig'), href: '/settings/email-config' },{ name: t('sidebar.integrations'), href: '/settings/integrations' }]
           : []),
       ],
     },

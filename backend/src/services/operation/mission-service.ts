@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import { attachFlytbaseFlightLog } from './flight-log-service';
+import { sendMissionCreatedModuleEmail, sendMissionCompletedModuleEmail } from '../settings/module-email-notification-service';
 
 export interface CreateAndAttachMissionParams {
   mission_code: string;
@@ -70,8 +71,82 @@ export async function createAndAttachMission(
     },
   });
 
+  // Send mission created email notification
+  try {
+    const missionType = fk_mission_type_id 
+      ? await prisma.mission_type.findUnique({
+          where: { mission_type_id: fk_mission_type_id },
+          select: { type_name: true },
+        })
+      : null;
+    
+    const user = await prisma.public_users.findUnique({
+      where: { user_id: userId },
+      select: { first_name: true, last_name: true },
+    });
+
+    const createdBy = user 
+      ? `${user.first_name} ${user.last_name}`.trim() 
+      : 'System';
+
+    await sendMissionCreatedModuleEmail(ownerId, {
+      missionCode: mission.mission_code || '',
+      missionType: missionType?.type_name || 'Unknown',
+      createdBy,
+      scheduledDate: scheduled_start,
+      description: mission_name || notes || undefined,
+    });
+  } catch (emailError) {
+    console.error('Failed to send mission created email:', emailError);
+    // Don't fail the mission creation if email fails
+  }
+
   // Attach the flight log
   await attachFlytbaseFlightLog(mission.pilot_mission_id, userId, ownerId, flight_id);
+
+  // Send mission completed email notification if status is COMPLETED
+  if (status_name === 'COMPLETED' && actual_end) {
+    try {
+      const missionType = fk_mission_type_id 
+        ? await prisma.mission_type.findUnique({
+            where: { mission_type_id: fk_mission_type_id },
+            select: { type_name: true },
+          })
+        : null;
+      
+      const user = await prisma.public_users.findUnique({
+        where: { user_id: userId },
+        select: { first_name: true, last_name: true },
+      });
+
+      const completedBy = user 
+        ? `${user.first_name} ${user.last_name}`.trim() 
+        : 'System';
+
+      // Calculate duration if both start and end times are available
+      let duration: string | undefined;
+      if (actual_start && actual_end) {
+        const start = new Date(actual_start);
+        const end = new Date(actual_end);
+        const diffMs = end.getTime() - start.getTime();
+        const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+        const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+        duration = `${diffHours}h ${diffMins}m`;
+      }
+
+      await sendMissionCompletedModuleEmail(ownerId, {
+        missionCode: mission.mission_code || '',
+        missionType: missionType?.type_name || 'Unknown',
+        completedBy,
+        completionTime: actual_end.toISOString(),
+        duration,
+        notes: notes || undefined,
+      });
+    } catch (emailError) {
+      console.error('Failed to send mission completed email:', emailError);
+      // Don't fail the mission creation if email fails
+    }
+  }
 
   // If PDRA and created after flight completion, add compliance warning to audit logs
   if (op_type === 'PDRA' && actual_start && actual_end) {

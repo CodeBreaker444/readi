@@ -8,6 +8,7 @@ import {
     OperationItem
 } from '@/config/types/operation';
 import { prisma } from '@/lib/prisma';
+import { sendCalendarEventCreatedModuleEmail } from '../settings/module-email-notification-service';
 
 const STATUS_COLORS: Record<string, string> = {
   Scheduled: '#0284c7',
@@ -171,6 +172,38 @@ export const createOperationCalendarEntry = async (
     },
     select: { pilot_mission_id: true },
   });
+
+  // Send calendar event created email notification
+  try {
+    const missionType = input.fk_mission_type_id 
+      ? await prisma.mission_type.findUnique({
+          where: { mission_type_id: input.fk_mission_type_id },
+          select: { type_name: true },
+        })
+      : null;
+    
+    const user = await prisma.public_users.findUnique({
+      where: { user_id: input.created_by_user_id || 0 },
+      select: { first_name: true, last_name: true },
+    });
+
+    const createdBy = user 
+      ? `${user.first_name} ${user.last_name}`.trim() 
+      : 'System';
+
+    await sendCalendarEventCreatedModuleEmail(ownerId, {
+      eventTitle: input.mission_name || dccMissionId,
+      eventType: missionType?.type_name || 'Mission',
+      createdBy,
+      startDate: input.scheduled_start,
+      endDate: input.scheduled_end,
+      location: input.location,
+      description: input.notes,
+    });
+  } catch (emailError) {
+    console.error('Failed to send calendar event created email:', emailError);
+    // Don't fail the calendar entry creation if email fails
+  }
 
   return {
     firstMissionId: data.pilot_mission_id,

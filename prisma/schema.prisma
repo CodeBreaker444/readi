@@ -23,30 +23,31 @@ model audit_log_entries {
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model custom_oauth_providers {
-  id                    String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  provider_type         String
-  identifier            String    @unique
-  name                  String
-  client_id             String
-  client_secret         String
-  acceptable_client_ids String[]  @default([])
-  scopes                String[]  @default([])
-  pkce_enabled          Boolean   @default(true)
-  attribute_mapping     Json      @default("{}")
-  authorization_params  Json      @default("{}")
-  enabled               Boolean   @default(true)
-  email_optional        Boolean   @default(false)
-  issuer                String?
-  discovery_url         String?
-  skip_nonce_check      Boolean   @default(false)
-  cached_discovery      Json?
-  discovery_cached_at   DateTime? @db.Timestamptz(6)
-  authorization_url     String?
-  token_url             String?
-  userinfo_url          String?
-  jwks_uri              String?
-  created_at            DateTime  @default(now()) @db.Timestamptz(6)
-  updated_at            DateTime  @default(now()) @db.Timestamptz(6)
+  id                      String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  provider_type           String
+  identifier              String    @unique
+  name                    String
+  client_id               String
+  client_secret           String
+  acceptable_client_ids   String[]  @default([])
+  scopes                  String[]  @default([])
+  pkce_enabled            Boolean   @default(true)
+  attribute_mapping       Json      @default("{}")
+  authorization_params    Json      @default("{}")
+  enabled                 Boolean   @default(true)
+  email_optional          Boolean   @default(false)
+  issuer                  String?
+  discovery_url           String?
+  skip_nonce_check        Boolean   @default(false)
+  cached_discovery        Json?
+  discovery_cached_at     DateTime? @db.Timestamptz(6)
+  authorization_url       String?
+  token_url               String?
+  userinfo_url            String?
+  jwks_uri                String?
+  created_at              DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at              DateTime  @default(now()) @db.Timestamptz(6)
+  custom_claims_allowlist String[]  @default([])
 
   @@index([created_at])
   @@index([enabled])
@@ -840,6 +841,23 @@ model compliance_status_log {
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model component_insurance {
+  insurance_id      Int            @id @default(autoincrement())
+  fk_component_id   Int            @unique
+  insurance_name    String?        @db.VarChar(255)
+  insurance_company String?        @db.VarChar(255)
+  expiry_date       DateTime?      @db.Date
+  created_at        DateTime       @default(now()) @db.Timestamp(6)
+  updated_at        DateTime       @default(now()) @db.Timestamp(6)
+  alert_recipients  Json?
+  alert_days_before Int?           @default(30)
+  tool_component    tool_component @relation(fields: [fk_component_id], references: [component_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([fk_component_id], map: "idx_component_insurance_fk_component_id")
+  @@schema("public")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model component_type_config {
   type_id     Int    @id @default(autoincrement())
   type_value  String @db.VarChar(50)
@@ -906,19 +924,6 @@ model countries {
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
-model dcc_integrations {
-  id           Int       @id @default(autoincrement())
-  fk_owner_id  Int       @unique
-  display_name String
-  callback_url String
-  created_at   DateTime? @default(now()) @db.Timestamptz(6)
-  updated_at   DateTime? @default(now()) @db.Timestamptz(6)
-
-  @@schema("public")
-}
-
-/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model d_flight_integrations {
   id                 Int       @id @default(autoincrement())
   fk_owner_id        Int       @unique
@@ -933,6 +938,19 @@ model d_flight_integrations {
   @@schema("public")
 }
 
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model dcc_integrations {
+  id           Int       @id @default(autoincrement())
+  fk_owner_id  Int       @unique
+  display_name String
+  callback_url String
+  created_at   DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at   DateTime? @default(now()) @db.Timestamptz(6)
+
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model deleted_owner {
   deleted_id          Int           @id @default(autoincrement())
@@ -1230,28 +1248,13 @@ model flytbase_organizations {
   name                 String                 @db.VarChar(255)
   org_id               String                 @unique @db.VarChar(255)
   api_token            String
-  created_at           DateTime               @default(now()) @db.Timestamptz(6)
-  updated_at           DateTime               @default(now()) @db.Timestamptz(6)
+  created_at           DateTime?              @default(now()) @db.Timestamptz(6)
+  updated_at           DateTime?              @default(now()) @db.Timestamptz(6)
   fk_owner_id          Int
   user_flytbase_access user_flytbase_access[]
 
   @@index([org_id])
-  @@index([fk_owner_id])
-  @@schema("public")
-}
-
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
-model user_flytbase_access {
-  id              Int                    @id @default(autoincrement())
-  user_id         Int
-  organization_id Int
-  created_at      DateTime               @default(now()) @db.Timestamptz(6)
-  fk_owner_id     Int
-  organization    flytbase_organizations @relation(fields: [organization_id], references: [id], onDelete: Cascade)
-
-  @@unique([user_id, organization_id])
-  @@index([user_id])
-  @@index([organization_id])
+  @@index([org_id], map: "idx_flytbase_organizations_org_id")
   @@schema("public")
 }
 
@@ -1561,6 +1564,27 @@ model mission_flight_logs {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model module_email_notification_config {
+  config_id             Int       @id @default(autoincrement())
+  fk_owner_id           Int
+  module_name           String    @db.VarChar(50)
+  event_type            String    @db.VarChar(100)
+  is_enabled            Boolean?  @default(false)
+  notification_roles    String[]
+  notification_user_ids Int[]
+  created_at            DateTime? @default(now()) @db.Timestamp(6)
+  updated_at            DateTime? @default(now()) @db.Timestamp(6)
+  owner                 owner     @relation(fields: [fk_owner_id], references: [owner_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_menc_owner")
+
+  @@unique([fk_owner_id, module_name, event_type], map: "unique_module_event_per_owner")
+  @@index([is_enabled], map: "idx_menc_enabled", where: raw("(is_enabled = true)"))
+  @@index([module_name], map: "idx_menc_module")
+  @@index([fk_owner_id], map: "idx_menc_owner")
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model notification {
   notification_id      Int          @id @default(autoincrement())
   fk_user_id           Int
@@ -1619,70 +1643,73 @@ model org_chart_overrides {
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model owner {
-  owner_id                    Int                         @id @default(autoincrement())
-  owner_code                  String?                     @unique @db.VarChar(50)
-  owner_name                  String                      @db.VarChar(255)
-  owner_legal_name            String?                     @db.VarChar(255)
-  owner_type                  String?                     @db.VarChar(50)
-  owner_address               String?
-  owner_city                  String?                     @db.VarChar(100)
-  owner_state                 String?                     @db.VarChar(100)
-  owner_postal_code           String?                     @db.VarChar(20)
-  fk_country_id               Int?
-  owner_phone                 String?                     @db.VarChar(50)
-  owner_email                 String?                     @db.VarChar(255)
-  owner_website               String?                     @db.VarChar(255)
-  owner_logo                  String?
-  owner_active                String?                     @default("Y") @db.Char(1)
-  tax_id                      String?                     @db.VarChar(50)
-  registration_number         String?                     @db.VarChar(100)
-  license_number              String?                     @db.VarChar(100)
-  license_expiry              DateTime?                   @db.Date
-  created_at                  DateTime?                   @default(now()) @db.Timestamp(6)
-  updated_at                  DateTime?                   @default(now()) @db.Timestamp(6)
-  drone_atc_enabled           Boolean                     @default(false)
-  easa_operator_code          String?
-  email_notifications_enabled Boolean                     @default(false)
-  d_flight_enabled            Boolean                     @default(false)
-  flytrelay_enabled           Boolean                     @default(false)
-  api_keys                    api_keys[]
-  assignment                  assignment[]
-  calendar_shift              calendar_shift[]
-  checklist                   checklist[]
-  client                      client[]
-  communication               communication[]
-  communication_general       communication_general[]
-  compliance_requirement      compliance_requirement[]
-  controlroom_meta            controlroom_meta[]
-  drone_class_config          drone_class_config[]
-  emergency_response_plan     emergency_response_plan[]
-  evaluation                  evaluation[]
-  flight_requests             flight_requests[]
-  kanban                      kanban[]
-  luc_document                luc_document[]
-  luc_procedure               luc_procedure[]
-  maintenance_ticket          maintenance_ticket[]
-  countries                   countries?                  @relation(fields: [fk_country_id], references: [country_id], onDelete: NoAction, onUpdate: NoAction)
-  owner_territorial_unit      owner_territorial_unit[]
-  payload                     payload[]
-  pilot_mission               pilot_mission[]
-  pilot_mission_result_type   pilot_mission_result_type[]
-  pilot_mission_status        pilot_mission_status[]
-  planning                    planning[]
-  planning_logbook            planning_logbook[]
-  planning_test_logbook       planning_test_logbook[]
-  repository_file             repository_file[]
-  role_feature_permission     role_feature_permission[]
-  safety_report               safety_report[]
-  spi_kpi                     spi_kpi[]
-  spi_kpi_definition          spi_kpi_definition[]
-  team                        team[]
-  tool                        tool[]
-  training                    training[]
-  turns                       turns[]
-  user_owner                  user_owner[]
-  user_qualification          user_qualification[]
-  users                       public_users[]
+  owner_id                         Int                                @id @default(autoincrement())
+  owner_code                       String?                            @unique @db.VarChar(50)
+  owner_name                       String                             @db.VarChar(255)
+  owner_legal_name                 String?                            @db.VarChar(255)
+  owner_type                       String?                            @db.VarChar(50)
+  owner_address                    String?
+  owner_city                       String?                            @db.VarChar(100)
+  owner_state                      String?                            @db.VarChar(100)
+  owner_postal_code                String?                            @db.VarChar(20)
+  fk_country_id                    Int?
+  owner_phone                      String?                            @db.VarChar(50)
+  owner_email                      String?                            @db.VarChar(255)
+  owner_website                    String?                            @db.VarChar(255)
+  owner_logo                       String?
+  owner_active                     String?                            @default("Y") @db.Char(1)
+  tax_id                           String?                            @db.VarChar(50)
+  registration_number              String?                            @db.VarChar(100)
+  license_number                   String?                            @db.VarChar(100)
+  license_expiry                   DateTime?                          @db.Date
+  created_at                       DateTime?                          @default(now()) @db.Timestamp(6)
+  updated_at                       DateTime?                          @default(now()) @db.Timestamp(6)
+  drone_atc_enabled                Boolean                            @default(false)
+  easa_operator_code               String?
+  email_notifications_enabled      Boolean                            @default(false)
+  d_flight_enabled                 Boolean                            @default(false)
+  flytrelay_enabled                Boolean?                           @default(false)
+  operation_email_enabled          Boolean                            @default(false)
+  system_email_enabled             Boolean                            @default(false)
+  api_keys                         api_keys[]
+  assignment                       assignment[]
+  calendar_shift                   calendar_shift[]
+  checklist                        checklist[]
+  client                           client[]
+  communication                    communication[]
+  communication_general            communication_general[]
+  compliance_requirement           compliance_requirement[]
+  controlroom_meta                 controlroom_meta[]
+  drone_class_config               drone_class_config[]
+  emergency_response_plan          emergency_response_plan[]
+  evaluation                       evaluation[]
+  flight_requests                  flight_requests[]
+  kanban                           kanban[]
+  luc_document                     luc_document[]
+  luc_procedure                    luc_procedure[]
+  maintenance_ticket               maintenance_ticket[]
+  module_email_notification_config module_email_notification_config[]
+  countries                        countries?                         @relation(fields: [fk_country_id], references: [country_id], onDelete: NoAction, onUpdate: NoAction)
+  owner_territorial_unit           owner_territorial_unit[]
+  payload                          payload[]
+  pilot_mission                    pilot_mission[]
+  pilot_mission_result_type        pilot_mission_result_type[]
+  pilot_mission_status             pilot_mission_status[]
+  planning                         planning[]
+  planning_logbook                 planning_logbook[]
+  planning_test_logbook            planning_test_logbook[]
+  repository_file                  repository_file[]
+  role_feature_permission          role_feature_permission[]
+  safety_report                    safety_report[]
+  spi_kpi                          spi_kpi[]
+  spi_kpi_definition               spi_kpi_definition[]
+  team                             team[]
+  tool                             tool[]
+  training                         training[]
+  turns                            turns[]
+  user_owner                       user_owner[]
+  user_qualification               user_qualification[]
+  users                            public_users[]
 
   @@index([owner_active], map: "idx_owner_active")
   @@index([owner_code], map: "idx_owner_code")
@@ -1805,7 +1832,7 @@ model pilot_mission {
   fk_mission_planning_id    Int?
   controlroom_drone         controlroom_drone[]
   operation_attachment      operation_attachment[]
-  mission_planning          planning_logbook?          @relation(fields: [fk_mission_planning_id], references: [mission_planning_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_pilot_mission_mission_planning")
+  planning_logbook          planning_logbook?          @relation(fields: [fk_mission_planning_id], references: [mission_planning_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_pilot_mission_mission_planning")
   client                    client?                    @relation(fields: [fk_client_id], references: [client_id], onDelete: NoAction, onUpdate: NoAction)
   erp_location_group        erp_location_group?        @relation(fields: [fk_erp_group_id], references: [group_id], onDelete: NoAction, onUpdate: NoAction)
   luc_procedure             luc_procedure?             @relation(fields: [fk_luc_procedure_id], references: [procedure_id], onUpdate: NoAction)
@@ -1822,9 +1849,9 @@ model pilot_mission {
 
   @@index([actual_start], map: "idx_pilot_mission_actual_start")
   @@index([scheduled_start], map: "idx_pilot_mission_date")
+  @@index([fk_mission_planning_id], map: "idx_pilot_mission_fk_mission_planning_id")
   @@index([fk_pilot_user_id], map: "idx_pilot_mission_fk_pilot_user_id")
   @@index([fk_planning_id], map: "idx_pilot_mission_fk_planning_id")
-  @@index([fk_mission_planning_id], map: "idx_pilot_mission_fk_mission_planning_id")
   @@index([fk_tool_id], map: "idx_pilot_mission_fk_tool_id")
   @@index([fk_luc_procedure_id], map: "idx_pilot_mission_luc", where: raw("(fk_luc_procedure_id IS NOT NULL)"))
   @@index([fk_owner_id], map: "idx_pilot_mission_owner")
@@ -2034,7 +2061,7 @@ model planning_logbook {
   updated_at                  DateTime?               @default(now()) @db.Timestamp(6)
   mission_planning_s3_key     String?
   mission_planning_s3_url     String?
-  pilot_missions              pilot_mission[]
+  pilot_mission               pilot_mission[]
   client                      client?                 @relation(fields: [fk_client_id], references: [client_id], onDelete: NoAction, onUpdate: NoAction)
   evaluation                  evaluation?             @relation(fields: [fk_evaluation_id], references: [evaluation_id], onDelete: NoAction, onUpdate: NoAction)
   owner                       owner?                  @relation(fields: [fk_owner_id], references: [owner_id], onDelete: NoAction, onUpdate: NoAction)
@@ -2144,6 +2171,21 @@ model repository_file_type {
   is_active             Boolean?          @default(true)
   repository_file       repository_file[]
 
+  @@schema("public")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model role_feature_permission {
+  id          Int      @id @default(autoincrement())
+  role        String   @db.VarChar(50)
+  feature_key String   @db.VarChar(100)
+  access      String   @default("R") @db.Char(1)
+  updated_at  DateTime @default(now()) @db.Timestamp(6)
+  fk_owner_id Int
+  owner       owner    @relation(fields: [fk_owner_id], references: [owner_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([fk_owner_id, role, feature_key], map: "role_feature_permission_owner_role_feature_key_key")
+  @@index([fk_owner_id], map: "idx_role_feature_permission_fk_owner_id")
   @@schema("public")
 }
 
@@ -2456,23 +2498,8 @@ model tool_component {
   maintenance_ticket_item     maintenance_ticket_item[]
   tool                        tool                      @relation(fields: [fk_tool_id], references: [tool_id], onDelete: Cascade, onUpdate: NoAction)
 
-  @@index([fk_tool_id, component_active], map: "idx_tool_component_tool")
   @@index([license_plate], map: "idx_tool_component_license_plate")
-  @@schema("public")
-}
-
-model component_insurance {
-  insurance_id      Int            @id @default(autoincrement())
-  fk_component_id   Int            @unique
-  insurance_name    String?        @db.VarChar(255)
-  insurance_company String?        @db.VarChar(255)
-  expiry_date       DateTime?      @db.Date
-  created_at        DateTime?      @default(now()) @db.Timestamp(6)
-  updated_at        DateTime?      @default(now()) @db.Timestamp(6)
-  alert_recipients  Json?
-  alert_days_before Int?           @default(30)
-  tool_component    tool_component @relation(fields: [fk_component_id], references: [component_id], onDelete: Cascade, onUpdate: NoAction)
-
+  @@index([fk_tool_id, component_active], map: "idx_tool_component_tool")
   @@schema("public")
 }
 
@@ -2689,6 +2716,36 @@ model user_device {
   @@schema("public")
 }
 
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model user_feature_permission {
+  id          Int          @id @default(autoincrement())
+  fk_user_id  Int
+  feature_key String       @db.VarChar(100)
+  access      String       @default("R") @db.Char(1)
+  updated_at  DateTime     @default(now()) @db.Timestamp(6)
+  users       public_users @relation(fields: [fk_user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([fk_user_id, feature_key])
+  @@index([fk_user_id], map: "idx_user_feature_permission_fk_user_id")
+  @@schema("public")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model user_flytbase_access {
+  id                     Int                    @id @default(autoincrement())
+  user_id                Int
+  organization_id        Int
+  created_at             DateTime?              @default(now()) @db.Timestamptz(6)
+  fk_owner_id            Int?
+  flytbase_organizations flytbase_organizations @relation(fields: [organization_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_user_flytbase_access_organization")
+  users                  public_users           @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_user_flytbase_access_user")
+
+  @@unique([user_id, organization_id])
+  @@index([organization_id], map: "idx_user_flytbase_access_organization_id")
+  @@index([user_id], map: "idx_user_flytbase_access_user_id")
+  @@schema("public")
+}
+
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model user_owner {
@@ -2724,21 +2781,6 @@ model user_permessi {
   users_user_permessi_granted_byTousers public_users? @relation("user_permessi_granted_byTousers", fields: [granted_by], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
 
   @@unique([fk_user_id, permission_code])
-  @@schema("public")
-}
-
-model user_subroles {
-  id         Int          @id @default(autoincrement())
-  fk_user_id Int
-  subrole    String       @db.VarChar(50)
-  granted_by Int?
-  granted_at DateTime     @default(now()) @db.Timestamp(6)
-  is_active  Boolean      @default(true)
-  revoked_at DateTime?    @db.Timestamp(6)
-  revoked_by Int?
-  user       public_users @relation("user_subroles_fk_user_idTousers", fields: [fk_user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
-
-  @@index([fk_user_id, subrole], map: "idx_user_subroles_user_subrole")
   @@schema("public")
 }
 
@@ -2797,6 +2839,22 @@ model user_settings {
   users         public_users @relation(fields: [fk_user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
 
   @@unique([fk_user_id, setting_key])
+  @@schema("public")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model user_subroles {
+  id         Int          @id @default(autoincrement())
+  fk_user_id Int
+  subrole    String       @db.VarChar(50)
+  granted_by Int?
+  granted_at DateTime?    @default(now()) @db.Timestamp(6)
+  is_active  Boolean?     @default(true)
+  revoked_at DateTime?    @db.Timestamp(6)
+  revoked_by Int?
+  users      public_users @relation(fields: [fk_user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([fk_user_id, subrole], map: "idx_user_subroles_user_subrole")
   @@schema("public")
 }
 
@@ -2899,13 +2957,14 @@ model public_users {
   turn_users                                                                 turn_users[]
   user_device                                                                user_device[]
   user_feature_permission                                                    user_feature_permission[]
+  user_flytbase_access                                                       user_flytbase_access[]
   user_owner                                                                 user_owner[]
   user_permessi_user_permessi_fk_user_idTousers                              user_permessi[]                          @relation("user_permessi_fk_user_idTousers")
   user_permessi_user_permessi_granted_byTousers                              user_permessi[]                          @relation("user_permessi_granted_byTousers")
   user_qualification                                                         user_qualification[]
   user_session                                                               user_session[]
   user_settings                                                              user_settings[]
-  user_subroles                                                              user_subroles[]                          @relation("user_subroles_fk_user_idTousers")
+  user_subroles                                                              user_subroles[]
   users                                                                      auth_users?                              @relation(fields: [auth_user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_users_auth_user")
   client                                                                     client?                                  @relation(fields: [fk_client_id], references: [client_id], onUpdate: NoAction)
   owner                                                                      owner?                                   @relation(fields: [fk_owner_id], references: [owner_id], onDelete: NoAction, onUpdate: NoAction)
@@ -2924,33 +2983,6 @@ model public_users {
   @@index([user_id], map: "idx_users_user_id")
   @@index([username], map: "idx_users_username")
   @@map("users")
-  @@schema("public")
-}
-
-model role_feature_permission {
-  id          Int      @id @default(autoincrement())
-  role        String   @db.VarChar(50)
-  feature_key String   @db.VarChar(100)
-  access      String   @default("R") @db.Char(1)
-  updated_at  DateTime @default(now()) @updatedAt @db.Timestamp(6)
-  fk_owner_id Int
-  owner       owner    @relation(fields: [fk_owner_id], references: [owner_id], onDelete: Cascade, onUpdate: NoAction)
-
-  @@unique([fk_owner_id, role, feature_key], map: "role_feature_permission_owner_role_feature_key_key")
-  @@index([fk_owner_id], map: "idx_role_feature_permission_fk_owner_id")
-  @@schema("public")
-}
-
-model user_feature_permission {
-  id          Int          @id @default(autoincrement())
-  fk_user_id  Int
-  feature_key String       @db.VarChar(100)
-  access      String       @default("R") @db.Char(1)
-  updated_at  DateTime     @default(now()) @updatedAt @db.Timestamp(6)
-  users       public_users @relation(fields: [fk_user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
-
-  @@unique([fk_user_id, feature_key])
-  @@index([fk_user_id], map: "idx_user_feature_permission_fk_user_id")
   @@schema("public")
 }
 

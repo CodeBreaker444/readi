@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { autoAbortStaleMissions } from './auto-abort-service';
 import { getToolMaintenanceStatus } from './maintenance-cycle-service';
 import { assertMissionEditable } from './mission-lock';
+import { sendMissionStartedModuleEmail, sendMissionCompletedModuleEmail } from '../settings/module-email-notification-service';
 
 const BOARD_STATUS_ID_TO_CODE: Record<number, MissionStatusCode> = {
   1: '00',
@@ -266,6 +267,75 @@ export async function updateMissionStatus(
     where: { pilot_mission_id: payload.mission_id },
     data: updateFields,
   });
+
+  // Send email notifications based on status change
+  try {
+    const mission = await prisma.pilot_mission.findUnique({
+      where: { pilot_mission_id: payload.mission_id },
+      select: {
+        mission_code: true,
+        fk_mission_type_id: true,
+        fk_owner_id: true,
+        actual_start: true,
+        actual_end: true,
+        notes: true,
+        mission_name: true,
+      },
+    });
+
+    if (!mission) return { code: 1, message: 'Mission status updated successfully' };
+
+    const missionType = mission.fk_mission_type_id 
+      ? await prisma.pilot_mission_type.findUnique({
+          where: { mission_type_id: mission.fk_mission_type_id },
+          select: { type_name: true },
+        })
+      : null;
+
+    const user = payload.pilot_id 
+      ? await prisma.public_users.findUnique({
+          where: { user_id: payload.pilot_id },
+          select: { first_name: true, last_name: true },
+        })
+      : null;
+
+    const userName = user 
+      ? `${user.first_name} ${user.last_name}`.trim() 
+      : 'System';
+
+    if (payload.workflow_mission_status === '_START') {
+      await sendMissionStartedModuleEmail(mission.fk_owner_id, {
+        missionCode: mission.mission_code || '',
+        missionType: missionType?.type_name || 'Unknown',
+        startedBy: userName,
+        startTime: mission.actual_start?.toISOString() || new Date().toISOString(),
+        pilot: userName,
+      });
+    } else if (payload.workflow_mission_status === '_END') {
+      // Calculate duration if both start and end times are available
+      let duration: string | undefined;
+      if (mission.actual_start && mission.actual_end) {
+        const start = new Date(mission.actual_start);
+        const end = new Date(mission.actual_end);
+        const diffMs = end.getTime() - start.getTime();
+        const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+        const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+        duration = `${diffHours}h ${diffMins}m`;
+      }
+
+      await sendMissionCompletedModuleEmail(mission.fk_owner_id, {
+        missionCode: mission.mission_code || '',
+        missionType: missionType?.type_name || 'Unknown',
+        completedBy: userName,
+        completionTime: mission.actual_end?.toISOString() || new Date().toISOString(),
+        duration,
+        notes: mission.notes || mission.mission_name || undefined,
+      });
+    }
+  } catch (emailError) {
+    console.error('Failed to send mission status email:', emailError);
+    // Don't fail the status update if email fails
+  }
 
   return { code: 1, message: 'Mission status updated successfully' };
 }

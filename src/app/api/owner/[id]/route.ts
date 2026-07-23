@@ -38,6 +38,8 @@ const editOwnerValidation = z.object({
     flytrelay_enabled: z.boolean().optional(),
     d_flight_enabled: z.boolean().optional(),
     email_notifications_enabled: z.boolean().optional(),
+    operation_email_enabled: z.boolean().optional(),
+    system_email_enabled: z.boolean().optional(),
     easa_operator_code: z.string().max(100).optional().nullable(),
     tax_id: z.string().optional().nullable(),
     registration_number: z.string().optional().nullable(),

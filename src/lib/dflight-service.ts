@@ -302,3 +302,120 @@ export async function getDFlightManufacturer(
   const name = record['name'] as string | undefined;
   return { id: manufacturerId, name: name ?? null };
 }
+
+export interface DFlightUserInfo {
+  operatorRegistrationNumber: string | null;
+}
+
+export async function getDFlightUserInfo(
+  baseUrl:     string,
+  accessToken: string,
+): Promise<DFlightUserInfo> {
+  const res = await dFetch(
+    `${baseUrl}/iam/userinfo`,
+    {
+      method:  'GET',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        Accept:        'application/json',
+      },
+    },
+  );
+
+  if (!res.ok) {
+    throw new Error(`D-Flight userinfo request failed (${res.status})`);
+  }
+  const json = (await res.json()) as Record<string, unknown>;
+  console.log('userinfo dflight:',json)
+  const userData = json['userData'] as Record<string, unknown> | undefined;
+  return {
+    operatorRegistrationNumber: (userData?.['OperatorRegistrationNumber'] as string | undefined) ?? null,
+  };
+}
+
+export interface DFlightStatusHistory {
+  ltu: string;
+  status: string;
+}
+
+export interface DFlightDroneDeclaration {
+  declarationId: string;
+  droneId: string;
+  authorizedScenarios: string[];
+  statusHistory: DFlightStatusHistory[];
+}
+
+export async function getDFlightDroneDeclarations(
+  baseUrl:                   string,
+  accessToken:               string,
+  operatorRegistrationNumber: string,
+  droneId:                   string,
+): Promise<DFlightDroneDeclaration[]> {
+  const params = new URLSearchParams({
+    droneid: droneId,
+    statusHistory: 'true',
+  });
+
+  console.log(`Fetching drone declarations for operator: ${operatorRegistrationNumber}, drone: ${droneId}`);
+  console.log(`URL: ${baseUrl}/user-management/users/dronedeclarations/operators/${encodeURIComponent(operatorRegistrationNumber)}?${params.toString()}`);
+
+  const res = await dFetch(
+    `${baseUrl}/user-management/users/dronedeclarations/operators/${encodeURIComponent(operatorRegistrationNumber)}?${params.toString()}`,
+    {
+      method:  'GET',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        Accept:        'application/json',
+      },
+    },
+  );
+
+  if (!res.ok) {
+    const errorText = await res.text();
+    console.error('D-Flight drone declarations error:', errorText);
+    throw new Error(`D-Flight drone declarations request failed (${res.status}): ${errorText}`);
+  }
+
+  const json = (await res.json()) as { data?: unknown[] };
+  const records = Array.isArray(json.data) ? json.data : [];
+
+  return records.map((record: unknown) => {
+    const r = record as Record<string, unknown>;
+    return {
+      declarationId: (r['declarationId'] as string | undefined) ?? '',
+      droneId: (r['droneId'] as string | undefined) ?? '',
+      authorizedScenarios: Array.isArray(r['authorizedScenarios'])
+        ? (r['authorizedScenarios'] as string[]).map(String)
+        : [],
+      statusHistory: Array.isArray(r['statusHistory'])
+        ? (r['statusHistory'] as unknown[]).map((h: unknown) => ({
+            ltu: String((h as Record<string, unknown>)['ltu'] ?? ''),
+            status: String((h as Record<string, unknown>)['status'] ?? ''),
+          }))
+        : [],
+    };
+  });
+}
+
+export async function getDFlightDeclarationPdf(
+  baseUrl:        string,
+  accessToken:    string,
+  declarationId:  string,
+): Promise<Uint8Array> {
+  const res = await dFetch(
+    `${baseUrl}/user-management/users/dronedeclarations/${encodeURIComponent(declarationId)}/pdf`,
+    {
+      method:  'GET',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    },
+  );
+
+  if (!res.ok) {
+    throw new Error(`D-Flight declaration PDF request failed (${res.status})`);
+  }
+
+  const arrayBuffer = await res.arrayBuffer();
+  return new Uint8Array(arrayBuffer);
+}

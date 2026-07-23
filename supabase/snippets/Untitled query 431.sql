@@ -1,0 +1,3 @@
+ALTER TABLE owner
+ADD COLUMN operation_email_enabled BOOLEAN NOT NULL DEFAULT FALSE,
+ADD COLUMN system_email_enabled BOOLEAN NOT NULL DEFAULT FALSE;

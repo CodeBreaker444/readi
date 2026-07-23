@@ -17,7 +17,7 @@ export interface UserFlytbaseAccess {
   user_id: number;
   organization_id: number;
   created_at: Date;
-  organization?: FlytbaseOrganization;
+  flytbase_organizations?: FlytbaseOrganization;
 }
 
 /**
@@ -110,18 +110,18 @@ export async function getUserFlytbaseOrganizations(
   companyId: number,
 ): Promise<FlytbaseOrganization[]> {
   const accessRecords = await prisma.user_flytbase_access.findMany({
-    where: { 
+    where: {
       user_id: userId,
-      organization: {
+      flytbase_organizations: {
         fk_owner_id: companyId,
       },
     },
    include: {
-    organization: true,  
+    flytbase_organizations: true,
   },
   });
 
-  return accessRecords.map((record) => record.organization);
+  return accessRecords.map((record) => record.flytbase_organizations);
 }
 
 /**
@@ -147,7 +147,7 @@ export async function grantUserFlytbaseAccess(
       fk_owner_id: organization.fk_owner_id!,
     },
     include: {
-      organization: true,
+      flytbase_organizations: true,
     },
   });
 }
@@ -190,20 +190,20 @@ export async function getAllUsersWithFlytbaseAccess(companyId: number): Promise<
   const accessRecords = await prisma.user_flytbase_access.findMany({
     where: {
       user_id: { in: users.map(u => u.user_id) },
-      organization: {
+      flytbase_organizations: {
         fk_owner_id: companyId,
       },
     },
     include: {
-      organization: true,
+      flytbase_organizations: true,
     },
   });
 
   const accessByUser = new Map<number, FlytbaseOrganization[]>();
   for (const record of accessRecords) {
-    if (record.organization) {
+    if (record.flytbase_organizations) {
       const existing = accessByUser.get(record.user_id) ?? [];
-      existing.push(record.organization);
+      existing.push(record.flytbase_organizations);
       accessByUser.set(record.user_id, existing);
     }
   }
@@ -245,16 +245,16 @@ export async function getUserFlytbaseCredentials(
   const accessRecord = await prisma.user_flytbase_access.findFirst({
     where: { user_id: userId },
     include: {
-      organization: true,
+      flytbase_organizations: true,
     },
   });
 
-  if (!accessRecord || !accessRecord.organization) return null;
+  if (!accessRecord || !accessRecord.flytbase_organizations) return null;
 
   return {
-    token: accessRecord.organization.api_token,
-    orgId: accessRecord.organization.org_id,
-    organizationId: accessRecord.organization.id,
+    token: accessRecord.flytbase_organizations.api_token,
+    orgId: accessRecord.flytbase_organizations.org_id,
+    organizationId: accessRecord.flytbase_organizations.id,
   };
 }
 
@@ -269,16 +269,16 @@ export async function getAllUserFlytbaseCredentials(
   const accessRecords = await prisma.user_flytbase_access.findMany({
     where: { user_id: userId },
     include: {
-      organization: true,
+      flytbase_organizations: true,
     },
   });
 
   return accessRecords
-    .filter((record) => record.organization)
+    .filter((record) => record.flytbase_organizations)
     .map((record) => ({
-      orgName: record.organization.name,
-      token: record.organization.api_token,
-      orgId: record.organization.org_id,
-      organizationId: record.organization.id,
+      orgName: record.flytbase_organizations.name,
+      token: record.flytbase_organizations.api_token,
+      orgId: record.flytbase_organizations.org_id,
+      organizationId: record.flytbase_organizations.id,
     }));
 }

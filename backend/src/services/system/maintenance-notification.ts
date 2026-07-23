@@ -1,5 +1,9 @@
 import { prisma } from "@/lib/prisma";
 import { getMaintenanceDashboard } from "@/backend/services/system/maintenance-service";
+import { 
+  sendMaintenanceAlertEmail,
+  sendMaintenanceDueEmail,
+} from '@/backend/services/settings/module-email-notification-service';
 import { MaintenanceDrone } from "@/config/types/maintenance";
 
 interface AlertItem {
@@ -8,6 +12,7 @@ interface AlertItem {
   system_code: string;
   status: "ALERT" | "DUE";
   triggers: string[];
+  drone_id: number;
 }
 
 async function getAlreadyNotifiedToday(ownerId: number): Promise<Set<number>> {
@@ -81,6 +86,7 @@ export async function sendMaintenanceAlertNotifications(
           system_code: drone.code,
           status: comp.status,
           triggers: comp.trigger.filter((t): t is string => !!t),
+          drone_id: drone.tool_id,
         });
       }
     }
@@ -129,6 +135,23 @@ export async function sendMaintenanceAlertNotifications(
       item.tool_component_id,
       item.status
     );
+
+    // Send module-based email notification
+    if (isDue) {
+      sendMaintenanceDueEmail(ownerId, {
+        systemCode: item.system_code,
+        componentName: item.component_name,
+        status: item.status,
+        triggers: item.triggers,
+      }).catch(() => {});
+    } else {
+      sendMaintenanceAlertEmail(ownerId, {
+        systemCode: item.system_code,
+        componentName: item.component_name,
+        status: item.status,
+        triggers: item.triggers,
+      }).catch(() => {});
+    }
   }
 }
 
