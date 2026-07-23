@@ -73,8 +73,8 @@ export async function createAndAttachMission(
 
   // Send mission created email notification
   try {
-    const missionType = fk_mission_type_id 
-      ? await prisma.mission_type.findUnique({
+    const missionType = fk_mission_type_id
+      ? await prisma.pilot_mission_type.findUnique({
           where: { mission_type_id: fk_mission_type_id },
           select: { type_name: true },
         })
@@ -107,8 +107,8 @@ export async function createAndAttachMission(
   // Send mission completed email notification if status is COMPLETED
   if (status_name === 'COMPLETED' && actual_end) {
     try {
-      const missionType = fk_mission_type_id 
-        ? await prisma.mission_type.findUnique({
+      const missionType = fk_mission_type_id
+        ? await prisma.pilot_mission_type.findUnique({
             where: { mission_type_id: fk_mission_type_id },
             select: { type_name: true },
           })
@@ -138,7 +138,7 @@ export async function createAndAttachMission(
         missionCode: mission.mission_code || '',
         missionType: missionType?.type_name || 'Unknown',
         completedBy,
-        completionTime: actual_end.toISOString(),
+        completionTime: actual_end,
         duration,
         notes: notes || undefined,
       });

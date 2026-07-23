@@ -78,7 +78,7 @@ async function fetchUsersWithDroneAtc(companyId?: number): Promise<DroneAtcUser[
       where: { user_id: { in: userIds } },
       select: {
         user_id: true,
-        organization: {
+        flytbase_organizations: {
           select: { org_id: true, api_token: true, name: true },
         },
       },
@@ -94,12 +94,12 @@ async function fetchUsersWithDroneAtc(companyId?: number): Promise<DroneAtcUser[
 
   const orgsByUser = new Map<number, DroneAtcOrgCredential[]>();
   for (const row of accessRows) {
-    if (!row.organization) continue;
+    if (!row.flytbase_organizations) continue;
     const list = orgsByUser.get(row.user_id) ?? [];
     list.push({
-      orgId: row.organization.org_id,
-      token: row.organization.api_token,
-      name: row.organization.name,
+      orgId: row.flytbase_organizations.org_id,
+      token: row.flytbase_organizations.api_token,
+      name: row.flytbase_organizations.name,
     });
     orgsByUser.set(row.user_id, list);
   }
