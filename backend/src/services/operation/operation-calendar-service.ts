@@ -175,8 +175,8 @@ export const createOperationCalendarEntry = async (
 
   // Send calendar event created email notification
   try {
-    const missionType = input.fk_mission_type_id 
-      ? await prisma.mission_type.findUnique({
+    const missionType = input.fk_mission_type_id
+      ? await prisma.pilot_mission_type.findUnique({
           where: { mission_type_id: input.fk_mission_type_id },
           select: { type_name: true },
         })

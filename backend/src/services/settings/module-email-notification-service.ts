@@ -44,7 +44,7 @@ export interface MissionEmailData {
   createdBy?: string;
   startedBy?: string;
   completedBy?: string;
-  scheduledDate?: string;
+  scheduledDate?: string | null;
   startTime?: string;
   completionTime?: string;
   duration?: string;

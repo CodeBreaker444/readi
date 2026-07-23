@@ -8,15 +8,15 @@ export interface FlytbaseOrganization {
   name: string;
   org_id: string;
   api_token: string;
-  created_at: Date;
-  updated_at: Date;
+  created_at: Date | null;
+  updated_at: Date | null;
 }
 
 export interface UserFlytbaseAccess {
   id: number;
   user_id: number;
   organization_id: number;
-  created_at: Date;
+  created_at: Date | null;
   flytbase_organizations?: FlytbaseOrganization;
 }
 
