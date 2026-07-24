@@ -18,6 +18,8 @@ interface FormState {
   password: string;
   client_id: string;
   easa_operator_code: string;
+  pfx_content: string;
+  pfx_password: string;
 }
 
 const EMPTY: FormState = {
@@ -26,6 +28,8 @@ const EMPTY: FormState = {
   password: '',
   client_id: '',
   easa_operator_code: '',
+  pfx_content: '',
+  pfx_password: '',
 };
 
 export default function DFlightSettings() {
@@ -36,7 +40,9 @@ export default function DFlightSettings() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showPfxPassword, setShowPfxPassword] = useState(false);
   const [passwordSet, setPasswordSet] = useState(false);
+  const [pfxPasswordSet, setPfxPasswordSet] = useState(false);
   const [form, setForm] = useState<FormState>(EMPTY);
 
   const card  = isDark ? 'bg-slate-800/80 border-slate-700/60' : 'bg-white border-gray-200';
@@ -45,6 +51,22 @@ export default function DFlightSettings() {
 
   const set = (key: keyof FormState) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm((f) => ({ ...f, [key]: e.target.value }));
+
+  const handlePfxFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const buffer = event.target?.result as ArrayBuffer;
+        // Convert binary buffer to base64 for storage
+        const base64Content = btoa(
+          new Uint8Array(buffer).reduce((data, byte) => data + String.fromCharCode(byte), '')
+        );
+        setForm((f) => ({ ...f, pfx_content: base64Content }));
+      };
+      reader.readAsArrayBuffer(file);
+    }
+  };
 
   const load = useCallback(async () => {
     try {
@@ -56,8 +78,11 @@ export default function DFlightSettings() {
           password:           '',
           client_id:          data.data.client_id          ?? '',
           easa_operator_code: data.data.easa_operator_code ?? '',
+          pfx_content:        data.data.pfx_content        ?? '',
+          pfx_password:       '',
         });
         setPasswordSet(data.data.password_set ?? false);
+        setPfxPasswordSet(data.data.pfx_password_set ?? false);
       }
     } catch {
       toast.error(t('dflight.settings.toast.loadFailed'));
@@ -85,11 +110,14 @@ export default function DFlightSettings() {
         client_id:          form.client_id.trim(),
         easa_operator_code: form.easa_operator_code.trim() || null,
         password:           form.password.trim() || '__KEEP__',
+        pfx_content:        form.pfx_content || null,
+        pfx_password:       form.pfx_password.trim() || '__KEEP__',
       };
       await axios.post('/api/settings/dflight', payload);
       setSaved(true);
       setPasswordSet(true);
-      setForm((f) => ({ ...f, password: '' }));
+      setPfxPasswordSet(true);
+      setForm((f) => ({ ...f, password: '', pfx_password: '' }));
       setTimeout(() => setSaved(false), 2500);
       toast.success(t('dflight.settings.toast.saved'));
     } catch (err: any) {
@@ -199,6 +227,63 @@ export default function DFlightSettings() {
               </div>
               <p className={`text-[11px] mt-1.5 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
                 Your EASA operator registration code issued by ENAC. Used to filter drones in the fleet.
+              </p>
+            </div>
+
+            {/* PFX Certificate */}
+            <div>
+              <p className={`text-[10px] font-semibold uppercase tracking-wider mb-3 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
+                PFX Certificate
+              </p>
+              <div className="space-y-4 max-w-md">
+                {/* PFX File Upload */}
+                <div className="space-y-1.5">
+                  <Label className={`text-xs ${labelCls}`}>
+                    PFX File
+                    {form.pfx_content && (
+                      <span className={`ml-2 text-[10px] ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>
+                        (File uploaded)
+                      </span>
+                    )}
+                  </Label>
+                  <Input
+                    type="file"
+                    accept=".pfx,.p12"
+                    onChange={handlePfxFileChange}
+                    className={`h-9 text-xs ${inputCls}`}
+                  />
+                </div>
+
+                {/* PFX Password */}
+                <div className="space-y-1.5">
+                  <Label className={`text-xs ${labelCls}`}>
+                    PFX Password
+                    {pfxPasswordSet && (
+                      <span className={`ml-2 text-[10px] ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>
+                        (Password set)
+                      </span>
+                    )}
+                  </Label>
+                  <div className="relative">
+                    <Input
+                      value={form.pfx_password}
+                      onChange={set('pfx_password')}
+                      placeholder={pfxPasswordSet ? 'Keep existing password' : 'Enter PFX password'}
+                      type={showPfxPassword ? 'text' : 'password'}
+                      className={`h-9 text-xs pr-9 ${inputCls}`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPfxPassword((v) => !v)}
+                      className={`absolute right-2.5 top-1/2 -translate-y-1/2 ${isDark ? 'text-slate-500 hover:text-slate-300' : 'text-gray-400 hover:text-gray-600'}`}
+                    >
+                      {showPfxPassword ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <p className={`text-[11px] mt-1.5 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
+                Upload your PFX certificate file and its password for secure D-Flight API authentication.
               </p>
             </div>
           </div>

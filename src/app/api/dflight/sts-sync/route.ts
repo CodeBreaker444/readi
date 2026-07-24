@@ -57,16 +57,23 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    if (!config.pfx_content || !config.pfx_password) {
+      return NextResponse.json({
+        code: 0,
+        message: 'PFX certificate not configured. Please upload PFX file and password in D-Flight settings.',
+      });
+    }
+
     const tokenResponse = await getDFlightToken({
       base_url: config.base_url,
       username: config.username,
       password: config.password,
       client_id: config.client_id,
-    });
+    }, config.pfx_content, config.pfx_password);
     const accessToken = tokenResponse.access_token;
 
     // Get operator registration number
-    const userInfo = await getDFlightUserInfo(config.base_url, accessToken);
+    const userInfo = await getDFlightUserInfo(config.base_url, accessToken, config.pfx_content, config.pfx_password);
     if (!userInfo.operatorRegistrationNumber) {
       return NextResponse.json({
         code: 0,
@@ -80,6 +87,8 @@ export async function POST(req: NextRequest) {
       accessToken,
       userInfo.operatorRegistrationNumber,
       component.drone_registration_code,
+      config.pfx_content,
+      config.pfx_password,
     );
 
     if (declarations.length === 0) {

@@ -1,5 +1,6 @@
 import 'server-only';
 import { prisma } from '@/lib/prisma';
+import { encryptToken, decryptToken } from '@/backend/utils/token-encryption';
 
 export interface DFlightIntegration {
   id: number;
@@ -9,6 +10,8 @@ export interface DFlightIntegration {
   password: string;
   client_id: string;
   easa_operator_code: string | null;
+  pfx_content: string | null;
+  pfx_password: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -27,6 +30,8 @@ export async function getDFlightIntegration(ownerId: number): Promise<DFlightInt
     password: row.password,
     client_id: row.client_id,
     easa_operator_code: row.easa_operator_code ?? null,
+    pfx_content: row.pfx_content ?? null,
+    pfx_password: row.pfx_password ? decryptToken(row.pfx_password) : null,
     created_at: row.created_at?.toISOString() ?? '',
     updated_at: row.updated_at?.toISOString() ?? '',
   };
@@ -40,8 +45,12 @@ export async function upsertDFlightIntegration(
     password: string;
     client_id: string;
     easa_operator_code?: string | null;
+    pfx_content?: string | null;
+    pfx_password?: string | null;
   },
 ): Promise<void> {
+  const encryptedPfxPassword = data.pfx_password ? encryptToken(data.pfx_password) : null;
+
   await prisma.$transaction([
     prisma.d_flight_integrations.upsert({
       where: { fk_owner_id: ownerId },
@@ -51,6 +60,8 @@ export async function upsertDFlightIntegration(
         password: data.password,
         client_id: data.client_id,
         easa_operator_code: data.easa_operator_code ?? null,
+        pfx_content: data.pfx_content ?? undefined,
+        pfx_password: encryptedPfxPassword ?? undefined,
         updated_at: new Date(),
       },
       create: {
@@ -60,6 +71,8 @@ export async function upsertDFlightIntegration(
         password: data.password,
         client_id: data.client_id,
         easa_operator_code: data.easa_operator_code ?? null,
+        pfx_content: data.pfx_content ?? null,
+        pfx_password: encryptedPfxPassword ?? null,
       },
     }),
     prisma.owner.update({

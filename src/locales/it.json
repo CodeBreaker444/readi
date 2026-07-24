@@ -4884,7 +4884,7 @@
       "websocketUrl": "URL WebSocket",
       "websocketUrlPlaceholder": "wss://dflight.esempio.com/ws",
       "username": "Nome utente",
-      "usernamePlaceholder": "utente@operatore.com",
+      "usernamePlaceholder": "utente",
       "password": "Password",
       "passwordPlaceholder": "Inserisci la password",
       "passwordKeep": "Lascia vuoto per mantenere la password attuale",

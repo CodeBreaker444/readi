@@ -20,14 +20,18 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ code: 0, message: 'D-Flight integration not configured', data: null });
     }
 
+    if (!config.pfx_content || !config.pfx_password) {
+      return NextResponse.json({ code: 0, message: 'PFX certificate not configured. Please upload PFX file and password in D-Flight settings.', data: null });
+    }
+
     const token = await getDFlightToken({
       base_url: config.base_url,
       username: config.username,
       password: config.password,
       client_id: config.client_id,
-    });
+    }, config.pfx_content, config.pfx_password);
 
-    const result = await getDFlightModel(config.base_url, token.access_token, modelId);
+    const result = await getDFlightModel(config.base_url, token.access_token, modelId, config.pfx_content, config.pfx_password);
     return NextResponse.json({ code: 1, data: result });
   } catch (err: any) {
     return internalError(E.SV001, err);

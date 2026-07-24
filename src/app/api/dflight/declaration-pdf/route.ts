@@ -30,18 +30,27 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    if (!config.pfx_content || !config.pfx_password) {
+      return NextResponse.json({
+        code: 0,
+        message: 'PFX certificate not configured. Please upload PFX file and password in D-Flight settings.',
+      });
+    }
+
     const tokenResponse = await getDFlightToken({
       base_url: config.base_url,
       username: config.username,
       password: config.password,
       client_id: config.client_id,
-    });
+    }, config.pfx_content, config.pfx_password);
     const accessToken = tokenResponse.access_token;
 
     const pdfBuffer = await getDFlightDeclarationPdf(
       config.base_url,
       accessToken,
       declarationId,
+      config.pfx_content,
+      config.pfx_password,
     );
 
     return new NextResponse(Buffer.from(pdfBuffer), {

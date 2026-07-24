@@ -252,7 +252,7 @@ export default function DFlightFleet() {
           <div className="flex flex-col items-center justify-center py-16 gap-3">
             <AlertCircle className="h-8 w-8 text-red-500" />
             <p className={`text-sm ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>{error}</p>
-            <button onClick={load} className="text-xs text-sky-500 hover:underline">
+            <button onClick={load} className="cursor-pointer text-xs text-sky-500 hover:underline">
               {t('dflight.fleet.retry')}
             </button>
           </div>

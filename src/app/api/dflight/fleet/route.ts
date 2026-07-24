@@ -63,13 +63,22 @@ export async function GET() {
 
     let dFlightDrones: Awaited<ReturnType<typeof getDFlightDrones>> = [];
     try {
+      if (!config.pfx_content || !config.pfx_password) {
+        return NextResponse.json({
+          code: 0,
+          message: 'PFX certificate not configured. Please upload PFX file and password in D-Flight settings.',
+          data: [],
+        });
+      }
       const token = await getDFlightToken({
         base_url: config.base_url,
         username: config.username,
         password: config.password,
         client_id: config.client_id,
-      });
-      dFlightDrones = await getDFlightDrones(config.base_url, token.access_token, config.username);
+      }, config.pfx_content, config.pfx_password);
+
+      dFlightDrones = await getDFlightDrones(config.base_url, token.access_token, config.username, config.pfx_content, config.pfx_password);
+      
     } catch (e: any) {
       return NextResponse.json({
         code: 0,
