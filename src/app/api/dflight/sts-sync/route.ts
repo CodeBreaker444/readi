@@ -67,7 +67,7 @@ export async function POST(req: NextRequest) {
     const tokenResponse = await getDFlightToken({
       base_url: config.base_url,
       username: config.username,
-      password: config.password,
+      password: config.password ?? undefined,
       client_id: config.client_id,
     }, config.pfx_content, config.pfx_password);
     const accessToken = tokenResponse.access_token;

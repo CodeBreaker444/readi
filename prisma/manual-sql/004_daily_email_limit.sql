@@ -2,13 +2,13 @@
 -- Migration: 004_daily_email_limit
 -- Description: Add daily email limit tracking for each company
 
--- Add daily_email_limit field (default 100)
+-- Add daily_email_limit field (default 100, NOT NULL)
 ALTER TABLE public.owner 
-ADD COLUMN IF NOT EXISTS daily_email_limit INTEGER DEFAULT 100;
+ADD COLUMN IF NOT EXISTS daily_email_limit INTEGER NOT NULL DEFAULT 100;
 
--- Add daily_email_count field (default 0)
+-- Add daily_email_count field (default 0, NOT NULL)
 ALTER TABLE public.owner 
-ADD COLUMN IF NOT EXISTS daily_email_count INTEGER DEFAULT 0;
+ADD COLUMN IF NOT EXISTS daily_email_count INTEGER NOT NULL DEFAULT 0;
 
 -- Add daily_email_count_reset_date field to track when counter was last reset
 ALTER TABLE public.owner 

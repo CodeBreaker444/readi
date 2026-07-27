@@ -1673,8 +1673,8 @@ model owner {
   flytrelay_enabled                  Boolean?                           @default(false)
   operation_email_enabled            Boolean                            @default(false)
   system_email_enabled               Boolean                            @default(false)
-  daily_email_limit                  Int?                               @default(100)
-  daily_email_count                  Int?                               @default(0)
+  daily_email_limit                  Int                               @default(100)
+  daily_email_count                  Int                               @default(0)
   daily_email_count_reset_date       DateTime?                          @db.Date
   email_limit_notification_sent_date DateTime?                          @db.Date
   api_keys                           api_keys[]

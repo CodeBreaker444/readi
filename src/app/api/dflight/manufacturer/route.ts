@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
     const token = await getDFlightToken({
       base_url: config.base_url,
       username: config.username,
-      password: config.password,
+      password: config.password ?? undefined,
       client_id: config.client_id,
     }, config.pfx_content, config.pfx_password);
 
