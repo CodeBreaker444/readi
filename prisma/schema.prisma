@@ -929,7 +929,7 @@ model d_flight_integrations {
   fk_owner_id        Int       @unique
   base_url           String    @db.VarChar(500)
   username           String    @db.VarChar(255)
-  password           String?   @db.VarChar(500)
+  password           String    @db.VarChar(500)
   client_id          String    @db.VarChar(255)
   created_at         DateTime? @default(now()) @db.Timestamptz(6)
   updated_at         DateTime? @default(now()) @db.Timestamptz(6)
@@ -1645,73 +1645,77 @@ model org_chart_overrides {
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model owner {
-  owner_id                         Int                                @id @default(autoincrement())
-  owner_code                       String?                            @unique @db.VarChar(50)
-  owner_name                       String                             @db.VarChar(255)
-  owner_legal_name                 String?                            @db.VarChar(255)
-  owner_type                       String?                            @db.VarChar(50)
-  owner_address                    String?
-  owner_city                       String?                            @db.VarChar(100)
-  owner_state                      String?                            @db.VarChar(100)
-  owner_postal_code                String?                            @db.VarChar(20)
-  fk_country_id                    Int?
-  owner_phone                      String?                            @db.VarChar(50)
-  owner_email                      String?                            @db.VarChar(255)
-  owner_website                    String?                            @db.VarChar(255)
-  owner_logo                       String?
-  owner_active                     String?                            @default("Y") @db.Char(1)
-  tax_id                           String?                            @db.VarChar(50)
-  registration_number              String?                            @db.VarChar(100)
-  license_number                   String?                            @db.VarChar(100)
-  license_expiry                   DateTime?                          @db.Date
-  created_at                       DateTime?                          @default(now()) @db.Timestamp(6)
-  updated_at                       DateTime?                          @default(now()) @db.Timestamp(6)
-  drone_atc_enabled                Boolean                            @default(false)
-  easa_operator_code               String?
-  email_notifications_enabled      Boolean                            @default(false)
-  d_flight_enabled                 Boolean                            @default(false)
-  flytrelay_enabled                Boolean?                           @default(false)
-  operation_email_enabled          Boolean                            @default(false)
-  system_email_enabled             Boolean                            @default(false)
-  api_keys                         api_keys[]
-  assignment                       assignment[]
-  calendar_shift                   calendar_shift[]
-  checklist                        checklist[]
-  client                           client[]
-  communication                    communication[]
-  communication_general            communication_general[]
-  compliance_requirement           compliance_requirement[]
-  controlroom_meta                 controlroom_meta[]
-  drone_class_config               drone_class_config[]
-  emergency_response_plan          emergency_response_plan[]
-  evaluation                       evaluation[]
-  flight_requests                  flight_requests[]
-  kanban                           kanban[]
-  luc_document                     luc_document[]
-  luc_procedure                    luc_procedure[]
-  maintenance_ticket               maintenance_ticket[]
-  module_email_notification_config module_email_notification_config[]
-  countries                        countries?                         @relation(fields: [fk_country_id], references: [country_id], onDelete: NoAction, onUpdate: NoAction)
-  owner_territorial_unit           owner_territorial_unit[]
-  payload                          payload[]
-  pilot_mission                    pilot_mission[]
-  pilot_mission_result_type        pilot_mission_result_type[]
-  pilot_mission_status             pilot_mission_status[]
-  planning                         planning[]
-  planning_logbook                 planning_logbook[]
-  planning_test_logbook            planning_test_logbook[]
-  repository_file                  repository_file[]
-  role_feature_permission          role_feature_permission[]
-  safety_report                    safety_report[]
-  spi_kpi                          spi_kpi[]
-  spi_kpi_definition               spi_kpi_definition[]
-  team                             team[]
-  tool                             tool[]
-  training                         training[]
-  turns                            turns[]
-  user_owner                       user_owner[]
-  user_qualification               user_qualification[]
-  users                            public_users[]
+  owner_id                           Int                                @id @default(autoincrement())
+  owner_code                         String?                            @unique @db.VarChar(50)
+  owner_name                         String                             @db.VarChar(255)
+  owner_legal_name                   String?                            @db.VarChar(255)
+  owner_type                         String?                            @db.VarChar(50)
+  owner_address                      String?
+  owner_city                         String?                            @db.VarChar(100)
+  owner_state                        String?                            @db.VarChar(100)
+  owner_postal_code                  String?                            @db.VarChar(20)
+  fk_country_id                      Int?
+  owner_phone                        String?                            @db.VarChar(50)
+  owner_email                        String?                            @db.VarChar(255)
+  owner_website                      String?                            @db.VarChar(255)
+  owner_logo                         String?
+  owner_active                       String?                            @default("Y") @db.Char(1)
+  tax_id                             String?                            @db.VarChar(50)
+  registration_number                String?                            @db.VarChar(100)
+  license_number                     String?                            @db.VarChar(100)
+  license_expiry                     DateTime?                          @db.Date
+  created_at                         DateTime?                          @default(now()) @db.Timestamp(6)
+  updated_at                         DateTime?                          @default(now()) @db.Timestamp(6)
+  drone_atc_enabled                  Boolean                            @default(false)
+  easa_operator_code                 String?
+  email_notifications_enabled        Boolean                            @default(false)
+  d_flight_enabled                   Boolean                            @default(false)
+  flytrelay_enabled                  Boolean?                           @default(false)
+  operation_email_enabled            Boolean                            @default(false)
+  system_email_enabled               Boolean                            @default(false)
+  daily_email_limit                  Int?                               @default(100)
+  daily_email_count                  Int?                               @default(0)
+  daily_email_count_reset_date       DateTime?                          @db.Date
+  email_limit_notification_sent_date DateTime?                          @db.Date
+  api_keys                           api_keys[]
+  assignment                         assignment[]
+  calendar_shift                     calendar_shift[]
+  checklist                          checklist[]
+  client                             client[]
+  communication                      communication[]
+  communication_general              communication_general[]
+  compliance_requirement             compliance_requirement[]
+  controlroom_meta                   controlroom_meta[]
+  drone_class_config                 drone_class_config[]
+  emergency_response_plan            emergency_response_plan[]
+  evaluation                         evaluation[]
+  flight_requests                    flight_requests[]
+  kanban                             kanban[]
+  luc_document                       luc_document[]
+  luc_procedure                      luc_procedure[]
+  maintenance_ticket                 maintenance_ticket[]
+  module_email_notification_config   module_email_notification_config[]
+  countries                          countries?                         @relation(fields: [fk_country_id], references: [country_id], onDelete: NoAction, onUpdate: NoAction)
+  owner_territorial_unit             owner_territorial_unit[]
+  payload                            payload[]
+  pilot_mission                      pilot_mission[]
+  pilot_mission_result_type          pilot_mission_result_type[]
+  pilot_mission_status               pilot_mission_status[]
+  planning                           planning[]
+  planning_logbook                   planning_logbook[]
+  planning_test_logbook              planning_test_logbook[]
+  repository_file                    repository_file[]
+  role_feature_permission            role_feature_permission[]
+  safety_report                      safety_report[]
+  spi_kpi                            spi_kpi[]
+  spi_kpi_definition                 spi_kpi_definition[]
+  team                               team[]
+  tool                               tool[]
+  training                           training[]
+  turns                              turns[]
+  user_owner                         user_owner[]
+  user_qualification                 user_qualification[]
+  users                              public_users[]
 
   @@index([owner_active], map: "idx_owner_active")
   @@index([owner_code], map: "idx_owner_code")

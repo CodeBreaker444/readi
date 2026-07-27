@@ -16,6 +16,7 @@ import { TicketCreatedEmail } from '@/components/email-template/TicketCreatedEma
 import { UserActivationEmail } from '@/components/email-template/UserActivationEmail';
 import { render } from '@react-email/components';
 import { Resend } from 'resend';
+import { isDailyEmailLimitReached, incrementDailyEmailCount } from '@/backend/services/email/email-limit-service';
 
 const resend = new Resend(env.RESEND_API_KEY);
 

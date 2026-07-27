@@ -14,6 +14,8 @@ import {
   sendMaintenanceAlertEmail as sendMaintenanceAlertEmailTemplate,
   sendMaintenanceDueEmail as sendMaintenanceDueEmailTemplate,
 } from "../../../../lib/resend/mail";
+import { isDailyEmailLimitReached, incrementDailyEmailCount, getDailyEmailStats } from "@/backend/services/email/email-limit-service";
+import { notifyAdminsOnEmailLimitReached, shouldNotifyEmailLimitReached, markEmailLimitNotificationSent } from "@/backend/services/email/admin-notification-service";
 
 export interface ModuleEmailNotificationConfig {
   config_id: number;
@@ -308,7 +310,60 @@ async function sendMaintenanceModuleEmail(
     return;
   }
 
+  // Check daily email limit
+  const limitReached = await isDailyEmailLimitReached(ownerId);
+  if (limitReached) {
+    console.log('[sendMaintenanceModuleEmail] Daily email limit reached for owner:', ownerId);
+    const stats = await getDailyEmailStats(ownerId);
+    console.log('[sendMaintenanceModuleEmail] Email stats:', stats);
+    
+    // Notify admins if limit is reached and notification hasn't been sent today
+    if (stats && await shouldNotifyEmailLimitReached(ownerId)) {
+      const owner = await prisma.owner.findUnique({
+        where: { owner_id: ownerId },
+        select: { owner_name: true },
+      });
+
+      if (owner) {
+        await notifyAdminsOnEmailLimitReached({
+          ownerId,
+          ownerName: owner.owner_name,
+          dailyLimit: stats.limit,
+          currentCount: stats.count,
+        });
+        await markEmailLimitNotificationSent(ownerId);
+      }
+    }
+    return;
+  }
+
   await emailFn(emails, ...emailArgs);
+
+  // Increment email counter
+  const newCount = await incrementDailyEmailCount(ownerId);
+  console.log('[sendMaintenanceModuleEmail] Email sent, new daily count:', newCount);
+
+  // Check if we just reached the limit
+  const stats = await getDailyEmailStats(ownerId);
+  if (stats && stats.remaining === 0) {
+    console.log('[sendMaintenanceModuleEmail] Daily email limit just reached for owner:', ownerId);
+    
+    // Get owner details for notification
+    const owner = await prisma.owner.findUnique({
+      where: { owner_id: ownerId },
+      select: { owner_name: true },
+    });
+
+    if (owner && await shouldNotifyEmailLimitReached(ownerId)) {
+      await notifyAdminsOnEmailLimitReached({
+        ownerId,
+        ownerName: owner.owner_name,
+        dailyLimit: stats.limit,
+        currentCount: stats.count,
+      });
+      await markEmailLimitNotificationSent(ownerId);
+    }
+  }
 }
 
 /**
@@ -464,7 +519,59 @@ async function sendOperationsModuleEmail(
     return;
   }
 
+  const limitReached = await isDailyEmailLimitReached(ownerId);
+  if (limitReached) {
+    console.log('[sendOperationsModuleEmail] Daily email limit reached for owner:', ownerId);
+    const stats = await getDailyEmailStats(ownerId);
+    console.log('[sendOperationsModuleEmail] Email stats:', stats);
+    
+    // Notify admins if limit is reached and notification hasn't been sent today
+    if (stats && await shouldNotifyEmailLimitReached(ownerId)) {
+      const owner = await prisma.owner.findUnique({
+        where: { owner_id: ownerId },
+        select: { owner_name: true },
+      });
+
+      if (owner) {
+        await notifyAdminsOnEmailLimitReached({
+          ownerId,
+          ownerName: owner.owner_name,
+          dailyLimit: stats.limit,
+          currentCount: stats.count,
+        });
+        await markEmailLimitNotificationSent(ownerId);
+      }
+    }
+    return;
+  }
+
   await emailFn(emails, ...emailArgs);
+
+  // Increment email counter
+  const newCount = await incrementDailyEmailCount(ownerId);
+  console.log('[sendOperationsModuleEmail] Email sent, new daily count:', newCount);
+
+  // Check if we just reached the limit
+  const stats = await getDailyEmailStats(ownerId);
+  if (stats && stats.remaining === 0) {
+    console.log('[sendOperationsModuleEmail] Daily email limit just reached for owner:', ownerId);
+    
+    // Get owner details for notification
+    const owner = await prisma.owner.findUnique({
+      where: { owner_id: ownerId },
+      select: { owner_name: true },
+    });
+
+    if (owner && await shouldNotifyEmailLimitReached(ownerId)) {
+      await notifyAdminsOnEmailLimitReached({
+        ownerId,
+        ownerName: owner.owner_name,
+        dailyLimit: stats.limit,
+        currentCount: stats.count,
+      });
+      await markEmailLimitNotificationSent(ownerId);
+    }
+  }
 }
 
 /**

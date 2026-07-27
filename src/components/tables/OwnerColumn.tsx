@@ -22,6 +22,8 @@ export interface OwnerData {
   operation_email_enabled: boolean;
   system_email_enabled: boolean;
   easa_operator_code: string | null;
+  daily_email_limit: number | null;
+  daily_email_count: number | null;
   tax_id: string | null;
   registration_number: string | null;
   license_number: string | null;
