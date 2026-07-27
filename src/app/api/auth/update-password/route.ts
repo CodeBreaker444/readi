@@ -98,7 +98,7 @@ export async function POST(request: NextRequest) {
     cookieStore.set('readi_auth_token', freshToken, {
       httpOnly: true,
       secure:   process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      sameSite: 'lax',
       maxAge:   60 * 60 * 24 * 7,
       path:     '/',
       priority: 'high',
