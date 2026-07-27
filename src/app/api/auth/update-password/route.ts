@@ -3,6 +3,7 @@ import { internalError, unauthorized, zodError } from '@/lib/api-error';
 import { createToken, verifyToken } from '@/lib/auth/jwt-utils';
 import { E } from '@/lib/error-codes';
 import { prisma } from '@/lib/prisma';
+import { checkRateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 import bcrypt from 'bcrypt';
 import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
@@ -18,6 +19,10 @@ const validateSchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
+  // Apply rate limiting
+  const rateLimitError = await checkRateLimit(request, RATE_LIMITS.PASSWORD_UPDATE);
+  if (rateLimitError) return rateLimitError;
+
   try {
     const body = await request.json();
     const validation = validateSchema.safeParse(body);

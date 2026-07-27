@@ -40,6 +40,7 @@
     "@supabase/supabase-js": "^2.93.3",
     "@tanstack/react-table": "^8.21.3",
     "@types/dompurify": "^3.0.5",
+    "@upstash/ratelimit": "^2.0.8",
     "agora-rtc-sdk-ng": "^4.24.3",
     "axios": "^1.13.5",
     "bcrypt": "^6.0.0",

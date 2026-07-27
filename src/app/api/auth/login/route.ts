@@ -3,11 +3,16 @@ import { createToken } from '@/lib/auth/jwt-utils';
 import { Role } from '@/lib/auth/roles';
 import { apiError, internalError } from '@/lib/api-error';
 import { E } from '@/lib/error-codes';
+import { checkRateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 import bcrypt from 'bcrypt';
 import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
+  // Apply rate limiting
+  const rateLimitError = await checkRateLimit(request, RATE_LIMITS.LOGIN);
+  if (rateLimitError) return rateLimitError;
+
   try {
     const { email, password } = await request.json();
 
