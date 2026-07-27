@@ -1,6 +1,4 @@
--- Add daily email limit fields to owner table
--- Migration: 004_daily_email_limit
--- Description: Add daily email limit tracking for each company
+ 
 
 -- Add daily_email_limit field (default 100, NOT NULL)
 ALTER TABLE public.owner 

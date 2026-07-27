@@ -15,6 +15,14 @@ import { toast } from 'sonner';
 import type { DFlightDroneRow } from '@/types/dflight';
 import { InsuranceAlertRecipients } from '@/components/system/InsuranceAlertRecipients';
 
+function formatDateDDMMYYYY(dateStr: string): string {
+  const date = new Date(dateStr);
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = date.getFullYear();
+  return `${day}/${month}/${year}`;
+}
+
 interface ImportDroneModalProps {
   open: boolean;
   onClose: () => void;
@@ -129,7 +137,7 @@ export default function ImportDroneModal({ open, onClose, onImported, drone, mod
         .then(({ data }) => {
           if (data.code === 1 && data.data?.declarations?.length > 0) {
             const stsText = data.data.declarations
-              .map((d: any) => `${d.stsType} (Start: ${d.startDate ? new Date(d.startDate).toLocaleDateString() : 'N/A'})`)
+              .map((d: any) => `${d.stsType} (Start: ${d.startDate ? formatDateDDMMYYYY(d.startDate) : 'N/A'})`)
               .join('\n');
             setFormData(prev => ({ ...prev, sts_declarations: stsText }));
           }

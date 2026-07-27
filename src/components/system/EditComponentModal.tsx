@@ -18,6 +18,13 @@ import { InsuranceAlertRecipients } from './InsuranceAlertRecipients';
 import { ManageComponentTypesModal } from './ManageComponentTypesModal';
 import { DroneClassRow, ManageDroneClassesModal } from './ManageDroneClassesModal';
 
+function formatDateDDMMYYYY(dateStr: string): string {
+  const date = new Date(dateStr);
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = date.getFullYear();
+  return `${day}/${month}/${year}`;
+}
 function SystemOptionLabel({ tool }: { tool: any }) {
   const statusColors: Record<string, string> = {
     OPERATIONAL: 'bg-green-100 text-green-700',
@@ -219,7 +226,7 @@ export default function EditComponentModal({
         const metaSts = comp.component_metadata?.sts_declarations;
         if (Array.isArray(metaSts) && metaSts.length > 0) {
           return metaSts
-            .map((sts: any) => `${sts.stsType} (Start: ${sts.startDate ? new Date(sts.startDate).toLocaleDateString() : 'N/A'})`)
+            .map((sts: any) => `${sts.stsType} (Start: ${sts.startDate ? formatDateDDMMYYYY(sts.startDate) : 'N/A'})`)
             .join('\n');
         }
         // Otherwise fall back to certifications text field
@@ -276,7 +283,7 @@ export default function EditComponentModal({
           toast.success('STS declarations synced successfully');
           // Update the STS declarations in the form
           const stsText = data.data.declarations
-            .map((d: any) => `${d.stsType} (Start: ${d.startDate ? new Date(d.startDate).toLocaleDateString() : 'N/A'})`)
+            .map((d: any) => `${d.stsType} (Start: ${d.startDate ? formatDateDDMMYYYY(d.startDate) : 'N/A'})`)
             .join('\n');
           setFormData(prev => ({ ...prev, sts_declarations: stsText }));
         } else {
@@ -1037,9 +1044,9 @@ export default function EditComponentModal({
 
                     {certificationsExpanded && (
                       <div className={`px-4 pb-4 grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3 border-t ${isDark ? 'border-slate-700' : 'border-slate-200'}`}>
-                        <p className={`col-span-1 sm:col-span-2 text-[11px] -mt-1 ${isDark ? 'text-slate-500' : 'text-muted-foreground'}`}>
+                        {/* <p className={`col-span-1 sm:col-span-2 text-[11px] -mt-1 ${isDark ? 'text-slate-500' : 'text-muted-foreground'}`}>
                           {t('dflight.import.certificationsHint')}
-                        </p>
+                        </p> */}
                         <div className="col-span-1 sm:col-span-2">
                           <div className="flex items-center justify-between mb-2">
                             <Label className={labelCls}>{t('dflight.import.fields.stsDeclarations')}</Label>

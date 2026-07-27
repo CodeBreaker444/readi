@@ -76,7 +76,7 @@ export const fleetColumns = [
     cell:   ({ row, table }) => {
       const dark = (table.options.meta as ColumnMeta)?.isDark;
       const r    = row.original;
-      const id   = r.linked ? (r.storedDrc ?? r.dFlightId) : r.storedDrc;
+      const id   = r.storedDrc ?? r.dFlightId;
       return id
         ? <code className={`text-[11px] font-semibold ${dark ? 'text-violet-400' : 'text-violet-600'}`}>{id}</code>
         : <span className={dark ? 'text-slate-600' : 'text-gray-300'}>—</span>;

@@ -846,9 +846,9 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
 
                 {certificationsExpanded && (
                   <div className="px-4 pb-4 grid grid-cols-1 sm:grid-cols-2 gap-3 border-t border-slate-200 pt-3">
-                    <p className="col-span-1 sm:col-span-2 text-[11px] text-muted-foreground -mt-1">
+                    {/* <p className="col-span-1 sm:col-span-2 text-[11px] text-muted-foreground -mt-1">
                       {t('dflight.import.certificationsHint')}
-                    </p>
+                    </p> */}
                     <div className="col-span-1 sm:col-span-2">
                       <Label className="pb-2">{t('dflight.import.fields.stsDeclarations')}</Label>
                       <textarea

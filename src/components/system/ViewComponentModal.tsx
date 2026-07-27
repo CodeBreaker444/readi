@@ -6,6 +6,14 @@ import axios from 'axios';
 import { Download } from 'lucide-react';
 import { useState } from 'react';
 
+function formatDateDDMMYYYY(dateStr: string): string {
+  const date = new Date(dateStr);
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = date.getFullYear();
+  return `${day}/${month}/${year}`;
+}
+
 interface ViewComponentModalProps {
     open: boolean;
     component: any | null;
@@ -141,7 +149,7 @@ export default function ViewComponentModal({ open, component, systemCode, onClos
                                                             <div className="flex-1">
                                                                 <p className="text-xs font-medium text-slate-700">{sts.stsType}</p>
                                                                 <p className="text-[10px] text-slate-500">
-                                                                    Start: {sts.startDate ? new Date(sts.startDate).toLocaleDateString() : 'N/A'}
+                                                                    Start: {sts.startDate ? formatDateDDMMYYYY(sts.startDate) : 'N/A'}
                                                                 </p>
                                                                 <p className="text-[10px] text-slate-500">{sts.scenarios}</p>
                                                             </div>

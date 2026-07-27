@@ -285,7 +285,7 @@ export async function getDFlightDrones(
   owner:       string,
   pfxContent:  string,
   pfxPassword: string,
-  pageSize = 50,
+  pageSize = 100,
 ): Promise<DFlightDroneResult[]> {
   const drones: DFlightDroneResult[] = [];
   let pageNumber = 0;
@@ -322,7 +322,7 @@ export async function getDFlightDrones(
 
     const json = (await res.json()) as DFlightDronePageResult;
     const pageItems = Array.isArray(json.data) ? json.data : [];
-console.log('item:',json.data)
+// console.log('item:',json.data)
     if (pageNumber === 0 && pageItems[0]) {
       console.log('D-Flight raw drone resultView keys:', Object.keys(pageItems[0].resultView ?? {}));
       console.log('D-Flight raw drone resultView (first item):', JSON.stringify(pageItems[0].resultView, null, 2));
@@ -537,6 +537,15 @@ export interface DFlightStatusHistory {
   status: string;
 }
 
+function convertDFlightDateToIso(dateStr: string): string {
+  // Convert DD/MM/YYYY HH:mm:ss to ISO format YYYY-MM-DDTHH:mm:ss
+  const parts = dateStr.match(/(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}):(\d{2}):(\d{2})/);
+  if (!parts) return dateStr;
+  
+  const [, day, month, year, hours, minutes, seconds] = parts;
+  return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
+}
+
 export interface DFlightDroneDeclaration {
   declarationId: string;
   droneId: string;
@@ -582,22 +591,27 @@ export async function getDFlightDroneDeclarations(
     throw new Error(`D-Flight drone declarations request failed (${res.status}): ${errorText}`);
   }
 
-  const json = (await res.json()) as { data?: unknown[] };
-  const records = Array.isArray(json.data) ? json.data : [];
+  const json = await res.json() as unknown;
+  const records = Array.isArray(json) ? json : (Array.isArray((json as any).data) ? (json as any).data : []);
 console.log('user management:',records)
   return records.map((record: unknown) => {
     const r = record as Record<string, unknown>;
     return {
-      declarationId: (r['declarationId'] as string | undefined) ?? '',
+      declarationId: (r['id'] as string | undefined) ?? '',
       droneId: (r['droneId'] as string | undefined) ?? '',
       authorizedScenarios: Array.isArray(r['authorizedScenarios'])
         ? (r['authorizedScenarios'] as string[]).map(String)
         : [],
       statusHistory: Array.isArray(r['statusHistory'])
-        ? (r['statusHistory'] as unknown[]).map((h: unknown) => ({
-            ltu: String((h as Record<string, unknown>)['ltu'] ?? ''),
-            status: String((h as Record<string, unknown>)['status'] ?? ''),
-          }))
+        ? (r['statusHistory'] as unknown[]).map((h: unknown) => {
+            const ltuRaw = String((h as Record<string, unknown>)['ltu'] ?? '');
+            // Convert DD/MM/YYYY HH:mm:ss to ISO format
+            const ltu = ltuRaw ? convertDFlightDateToIso(ltuRaw) : '';
+            return {
+              ltu,
+              status: String((h as Record<string, unknown>)['newStatus'] ?? ''),
+            };
+          })
         : [],
     };
   });
