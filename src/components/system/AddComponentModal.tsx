@@ -63,7 +63,6 @@ const INITIAL_FORM = {
   insurance_expiry_date: '',
   alert_recipients: [] as string[],
   alert_days_before: '30',
-  enac_authorizations: '',
   sts_declarations: '',
 };
 export interface ComponentType {
@@ -275,9 +274,8 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
         insurance_expiry_date: formData.insurance_expiry_date || null,
         alert_recipients: formData.alert_recipients.length > 0 ? formData.alert_recipients : null,
         alert_days_before: formData.alert_days_before !== '' ? Number(formData.alert_days_before) : null,
-        certifications: (formData.enac_authorizations.trim() || formData.sts_declarations.trim())
+        certifications: formData.sts_declarations.trim()
           ? {
-              enac_authorizations: formData.enac_authorizations.trim() || null,
               sts_declarations: formData.sts_declarations.trim() || null,
             }
           : null,
@@ -851,17 +849,7 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
                     <p className="col-span-1 sm:col-span-2 text-[11px] text-muted-foreground -mt-1">
                       {t('dflight.import.certificationsHint')}
                     </p>
-                    <div className="col-span-1">
-                      <Label className="pb-2">{t('dflight.import.fields.enacAuthorizations')}</Label>
-                      <textarea
-                        value={formData.enac_authorizations}
-                        onChange={(e) => handleChange('enac_authorizations', e.target.value)}
-                        placeholder={t('dflight.import.fields.enacAuthorizationsPlaceholder')}
-                        rows={3}
-                        className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-xs outline-none focus:ring-1 focus:ring-violet-500/30 bg-background resize-y"
-                      />
-                    </div>
-                    <div className="col-span-1">
+                    <div className="col-span-1 sm:col-span-2">
                       <Label className="pb-2">{t('dflight.import.fields.stsDeclarations')}</Label>
                       <textarea
                         value={formData.sts_declarations}

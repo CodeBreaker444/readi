@@ -63,17 +63,24 @@ export async function GET() {
 
     let dFlightDrones: Awaited<ReturnType<typeof getDFlightDrones>> = [];
     try {
-      if (!config.pfx_content || !config.pfx_password) {
+      if (!config.pfx_content) {
         return NextResponse.json({
           code: 0,
-          message: 'PFX certificate not configured. Please upload PFX file and password in D-Flight settings.',
+          message: 'D-Flight digital certificate is missing. A PFX certificate file is required for authentication.',
+          data: [],
+        });
+      }
+      if (!config.pfx_password) {
+        return NextResponse.json({
+          code: 0,
+          message: 'D-Flight certificate password is missing. The password for your PFX certificate is required.',
           data: [],
         });
       }
       const token = await getDFlightToken({
         base_url: config.base_url,
         username: config.username,
-        password: config.password,
+        password: config.password ?? undefined,
         client_id: config.client_id,
       }, config.pfx_content, config.pfx_password);
 

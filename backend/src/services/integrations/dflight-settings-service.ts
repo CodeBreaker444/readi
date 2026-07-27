@@ -7,7 +7,7 @@ export interface DFlightIntegration {
   fk_owner_id: number;
   base_url: string;
   username: string;
-  password: string;
+  password: string | null;
   client_id: string;
   easa_operator_code: string | null;
   pfx_content: string | null;
@@ -42,7 +42,7 @@ export async function upsertDFlightIntegration(
   data: {
     base_url: string;
     username: string;
-    password: string;
+    password?: string | null;
     client_id: string;
     easa_operator_code?: string | null;
     pfx_content?: string | null;
@@ -51,29 +51,37 @@ export async function upsertDFlightIntegration(
 ): Promise<void> {
   const encryptedPfxPassword = data.pfx_password ? encryptToken(data.pfx_password) : null;
 
+  const createData: any = {
+    fk_owner_id: ownerId,
+    base_url: data.base_url,
+    username: data.username,
+    client_id: data.client_id,
+    easa_operator_code: data.easa_operator_code ?? null,
+    pfx_content: data.pfx_content ?? null,
+    pfx_password: encryptedPfxPassword ?? null,
+  };
+  if (data.password !== null && data.password !== undefined) {
+    createData.password = data.password;
+  }
+
+  const updateData: any = {
+    base_url: data.base_url,
+    username: data.username,
+    client_id: data.client_id,
+    easa_operator_code: data.easa_operator_code ?? null,
+    pfx_content: data.pfx_content ?? undefined,
+    pfx_password: encryptedPfxPassword ?? undefined,
+    updated_at: new Date(),
+  };
+  if (data.password !== null && data.password !== undefined) {
+    updateData.password = data.password;
+  }
+
   await prisma.$transaction([
     prisma.d_flight_integrations.upsert({
       where: { fk_owner_id: ownerId },
-      update: {
-        base_url: data.base_url,
-        username: data.username,
-        password: data.password,
-        client_id: data.client_id,
-        easa_operator_code: data.easa_operator_code ?? null,
-        pfx_content: data.pfx_content ?? undefined,
-        pfx_password: encryptedPfxPassword ?? undefined,
-        updated_at: new Date(),
-      },
-      create: {
-        fk_owner_id: ownerId,
-        base_url: data.base_url,
-        username: data.username,
-        password: data.password,
-        client_id: data.client_id,
-        easa_operator_code: data.easa_operator_code ?? null,
-        pfx_content: data.pfx_content ?? null,
-        pfx_password: encryptedPfxPassword ?? null,
-      },
+      update: updateData,
+      create: createData,
     }),
     prisma.owner.update({
       where: { owner_id: ownerId },

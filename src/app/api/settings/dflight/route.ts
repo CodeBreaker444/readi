@@ -30,7 +30,7 @@ export async function GET() {
       code: 1, 
       data: { 
         ...safe, 
-        password_set: true,
+        password_set: !!integration.password,
         pfx_password_set: !!integration.pfx_password 
       } 
     });
@@ -52,8 +52,8 @@ export async function POST(req: NextRequest) {
       return zodError(E.VL001, parsed.error);
     }
 
-    let password = parsed.data.password;
-    let pfx_password = parsed.data.pfx_password;
+    let password: string | undefined = parsed.data.password;
+    let pfx_password: string | null | undefined = parsed.data.pfx_password;
 
 
     if (password === KEEP_SENTINEL) {
@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
       if (!existing) {
         return NextResponse.json({ code: 0, error: 'No existing integration found' }, { status: 400 });
       }
-      password = existing.password;
+      password = existing.password || undefined;
     }
 
     if (pfx_password === KEEP_SENTINEL) {
@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
       if (!existing) {
         return NextResponse.json({ code: 0, error: 'No existing integration found' }, { status: 400 });
       }
-      pfx_password = existing.pfx_password;
+      pfx_password = existing.pfx_password ?? null;
     }
 
 

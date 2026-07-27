@@ -32,7 +32,7 @@ function getHttpsAgent(pfxContent: string, pfxPassword: string): https.Agent {
 export interface DFlightConfig {
   base_url: string;
   username: string;
-  password: string;
+  password?: string;
   client_id: string;
 }
 
@@ -95,10 +95,16 @@ export interface DFlightDronePageResult {
 }
 
 function createUndiciAgent(pfxContent: string, pfxPassword: string, baseUrl: string): Agent {
-  if (!pfxContent || !pfxPassword) {
+  if (!pfxContent) {
     throw new Error(
-      'D-Flight TLS configuration is missing. ' +
-      'PFX content and password are required.'
+      'D-Flight digital certificate is missing. ' +
+      'A PFX certificate file is required for authentication.'
+    );
+  }
+  if (!pfxPassword) {
+    throw new Error(
+      'D-Flight certificate password is missing. ' +
+      'The password for your PFX certificate is required.'
     );
   }
 
@@ -191,7 +197,7 @@ export async function getDFlightToken(
     grant_type: 'password',
     client_id:  config.client_id,
     username:   config.username,
-    password:   config.password,
+    ...(config.password ? { password: config.password } : {}),
     scope:      'openid email profile user-data personal-data pilot-license dflight-identification',
   });
 
@@ -316,7 +322,7 @@ export async function getDFlightDrones(
 
     const json = (await res.json()) as DFlightDronePageResult;
     const pageItems = Array.isArray(json.data) ? json.data : [];
-
+console.log('item:',json.data)
     if (pageNumber === 0 && pageItems[0]) {
       console.log('D-Flight raw drone resultView keys:', Object.keys(pageItems[0].resultView ?? {}));
       console.log('D-Flight raw drone resultView (first item):', JSON.stringify(pageItems[0].resultView, null, 2));
@@ -578,7 +584,7 @@ export async function getDFlightDroneDeclarations(
 
   const json = (await res.json()) as { data?: unknown[] };
   const records = Array.isArray(json.data) ? json.data : [];
-
+console.log('user management:',records)
   return records.map((record: unknown) => {
     const r = record as Record<string, unknown>;
     return {

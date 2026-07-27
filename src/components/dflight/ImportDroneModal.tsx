@@ -53,9 +53,10 @@ export default function ImportDroneModal({ open, onClose, onImported, drone, mod
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState(EMPTY_FORM);
   const [showAddModel, setShowAddModel] = useState(false);
-  const [insuranceExpanded, setInsuranceExpanded] = useState(false);
-  const [classesExpanded, setClassesExpanded] = useState(false);
-  const [certificationsExpanded, setCertificationsExpanded] = useState(false);
+  const [insuranceExpanded, setInsuranceExpanded] = useState(true);
+  const [classesExpanded, setClassesExpanded] = useState(true);
+  const [certificationsExpanded, setCertificationsExpanded] = useState(true);
+  const [stsLoading, setStsLoading] = useState(false);
   const [droneClasses, setDroneClasses] = useState<{ class_id: number; class_value: string }[]>([]);
   const [customClassInput, setCustomClassInput] = useState('');
   const [modelPrefill, setModelPrefill] = useState({
@@ -104,9 +105,9 @@ export default function ImportDroneModal({ open, onClose, onImported, drone, mod
       insurance_alert_days_before: '30',
       sts_declarations: '',
     });
-    setInsuranceExpanded(!!(drone.insuranceCompany || drone.insuranceExpiryDate));
-    setClassesExpanded(false);
-    setCertificationsExpanded(false);
+    setInsuranceExpanded(!!(drone.insuranceCompany || drone.insuranceExpiryDate) || true);
+    setClassesExpanded(true);
+    setCertificationsExpanded(true);
 
     setModelPrefill({
       manufacturer: drone.manufacturerName || '',
@@ -120,6 +121,26 @@ export default function ImportDroneModal({ open, onClose, onImported, drone, mod
     axios.get('/api/system/drone-classes')
       .then(({ data }) => { if (data.code === 1) setDroneClasses(data.data ?? []); })
       .catch(() => setDroneClasses([]));
+
+    // Fetch STS declarations using D-Flight ID
+    if (drone.dFlightId) {
+      setStsLoading(true);
+      axios.post('/api/dflight/fetch-sts-by-dflight-id', { dFlightId: drone.dFlightId })
+        .then(({ data }) => {
+          if (data.code === 1 && data.data?.declarations?.length > 0) {
+            const stsText = data.data.declarations
+              .map((d: any) => `${d.stsType} (Start: ${d.startDate ? new Date(d.startDate).toLocaleDateString() : 'N/A'})`)
+              .join('\n');
+            setFormData(prev => ({ ...prev, sts_declarations: stsText }));
+          }
+        })
+        .catch(() => {
+          // Silently fail - STS sync is optional
+        })
+        .finally(() => {
+          setStsLoading(false);
+        });
+    }
 
     if (!drone.modelId) return;
 
@@ -469,18 +490,27 @@ export default function ImportDroneModal({ open, onClose, onImported, drone, mod
               </button>
               {certificationsExpanded && (
                 <div className="px-4 pb-4 grid grid-cols-1 sm:grid-cols-2 gap-3 border-t border-slate-200 pt-3">
-                  <p className="col-span-1 sm:col-span-2 text-[11px] text-muted-foreground -mt-1">
-                    {t('dflight.import.certificationsHint')}
-                  </p>
                   <div className="col-span-1 sm:col-span-2">
                     <Label className="pb-2">{t('dflight.import.fields.stsDeclarations')}</Label>
-                    <textarea
-                      value={formData.sts_declarations}
-                      onChange={(e) => handleChange('sts_declarations', e.target.value)}
-                      placeholder={t('dflight.import.fields.stsDeclarationsPlaceholder')}
-                      rows={3}
-                      className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-xs outline-none focus:ring-1 focus:ring-violet-500/30 bg-background resize-y"
-                    />
+                    {stsLoading ? (
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground py-2">
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        <span>Loading STS declarations...</span>
+                      </div>
+                    ) : (
+                      <>
+                        <textarea
+                          value={formData.sts_declarations}
+                          onChange={(e) => handleChange('sts_declarations', e.target.value)}
+                          placeholder={t('dflight.import.fields.stsDeclarationsPlaceholder')}
+                          rows={3}
+                          className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-xs outline-none focus:ring-1 focus:ring-violet-500/30 bg-background resize-y"
+                        />
+                        {!stsLoading && formData.sts_declarations === '' && (
+                          <p className="text-[10px] text-muted-foreground mt-1">No STS data available from D-Flight</p>
+                        )}
+                      </>
+                    )}
                   </div>
                 </div>
               )}

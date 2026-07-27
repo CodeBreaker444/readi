@@ -98,10 +98,6 @@ export default function DFlightSettings() {
       toast.error(t('dflight.settings.toast.validationError'));
       return;
     }
-    if (!form.password.trim() && !passwordSet) {
-      toast.error(t('dflight.settings.toast.passwordRequired'));
-      return;
-    }
     setSaving(true);
     try {
       const payload: Record<string, string | null> = {
@@ -115,8 +111,8 @@ export default function DFlightSettings() {
       };
       await axios.post('/api/settings/dflight', payload);
       setSaved(true);
-      setPasswordSet(true);
-      setPfxPasswordSet(true);
+      setPasswordSet(form.password.trim() !== '' || passwordSet);
+      setPfxPasswordSet(form.pfx_password.trim() !== '' || pfxPasswordSet);
       setForm((f) => ({ ...f, password: '', pfx_password: '' }));
       setTimeout(() => setSaved(false), 2500);
       toast.success(t('dflight.settings.toast.saved'));
@@ -185,10 +181,13 @@ export default function DFlightSettings() {
               <div className="grid gap-4 sm:grid-cols-3">
                 {field('username', t('dflight.settings.username'), t('dflight.settings.usernamePlaceholder'))}
 
-                {/* Password */}
+                {/* Password - Optional */}
                 <div className="space-y-1.5">
                   <Label className={`text-xs ${labelCls}`}>
                     {t('dflight.settings.password')}
+                    <span className={`ml-2 text-[10px] ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
+                      (Optional)
+                    </span>
                     {passwordSet && (
                       <span className={`ml-2 text-[10px] ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>
                         ({t('dflight.settings.passwordSet')})
@@ -226,14 +225,17 @@ export default function DFlightSettings() {
                 {field('easa_operator_code', 'EASA Operator Code', 'e.g. ITAhhd2jm2pbdinl', { mono: false })}
               </div>
               <p className={`text-[11px] mt-1.5 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
-                Your EASA operator registration code issued by ENAC. Used to filter drones in the fleet.
+                Your EASA operator registration code issued by ENAC.  
               </p>
             </div>
 
-            {/* PFX Certificate */}
+            {/* PFX Certificate - Optional */}
             <div>
               <p className={`text-[10px] font-semibold uppercase tracking-wider mb-3 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
                 PFX Certificate
+                <span className={`ml-2 text-[10px] ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
+                  (Optional - Required for accessing dflight features)
+                </span>
               </p>
               <div className="space-y-4 max-w-md">
                 {/* PFX File Upload */}

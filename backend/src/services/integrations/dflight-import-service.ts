@@ -1,5 +1,12 @@
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
+import { getDFlightIntegration } from './dflight-settings-service';
+import {
+  getDFlightToken,
+  getDFlightUserInfo,
+  getDFlightDroneDeclarations,
+  type DFlightDroneDeclaration,
+} from '@/lib/dflight-service';
 
 export interface ImportDFlightDroneInput {
   fk_owner_id: number;
@@ -20,6 +27,75 @@ export interface ImportDFlightDroneInput {
   insurance_alert_days_before?: number | null;
   certifications?: { sts_declarations?: string | null } | null;
   qr_code_image?: string | null;
+}
+
+async function syncStsDeclarations(componentId: number, ownerId: number) {
+  try {
+    const config = await getDFlightIntegration(ownerId);
+    if (!config || !config.pfx_content || !config.pfx_password) {
+      return; // Skip if D-Flight not configured
+    }
+
+    const component = await prisma.tool_component.findUnique({
+      where: { component_id: componentId },
+      select: { drone_registration_code: true, component_metadata: true },
+    });
+
+    if (!component?.drone_registration_code) return;
+
+    const tokenConfig: any = {
+      base_url: config.base_url,
+      username: config.username,
+      client_id: config.client_id,
+    };
+    if (config.password !== null) {
+      tokenConfig.password = config.password;
+    }
+    const tokenResponse = await getDFlightToken(tokenConfig, config.pfx_content, config.pfx_password);
+
+    const userInfo = await getDFlightUserInfo(config.base_url, tokenResponse.access_token, config.pfx_content, config.pfx_password);
+    if (!userInfo.operatorRegistrationNumber) return;
+
+    const declarations = await getDFlightDroneDeclarations(
+      config.base_url,
+      tokenResponse.access_token,
+      userInfo.operatorRegistrationNumber,
+      component.drone_registration_code,
+      config.pfx_content,
+      config.pfx_password,
+    );
+
+    if (declarations.length === 0) return;
+
+    const stsData = declarations.map((decl: DFlightDroneDeclaration) => {
+      const startDate = decl.statusHistory.length > 0 ? decl.statusHistory[0].ltu : null;
+      const scenarios = decl.authorizedScenarios;
+      const stsType = scenarios.includes('STS-01') ? 'STS-01' : 
+                      scenarios.includes('STS-02') ? 'STS-02' : 
+                      scenarios.length > 0 ? scenarios[0] : 'UNKNOWN';
+
+      return {
+        declarationId: decl.declarationId,
+        stsType,
+        startDate,
+        scenarios: scenarios.join(', '),
+      };
+    });
+
+    const baseMeta = (component.component_metadata as Record<string, unknown>) ?? {};
+    const updatedMeta = {
+      ...baseMeta,
+      sts_declarations: stsData,
+    };
+
+    await prisma.tool_component.update({
+      where: { component_id: componentId },
+      data: { component_metadata: updatedMeta as any },
+    });
+  } catch (error) {
+    // Log but don't fail the import if STS sync fails
+    console.error('Failed to sync STS declarations during import:', error);
+  }
 }
 
 export async function importDFlightDrone(input: ImportDFlightDroneInput) {
@@ -119,6 +195,8 @@ export async function importDFlightDrone(input: ImportDFlightDroneInput) {
 
     return { tool, component };
   });
+
+  await syncStsDeclarations(result.component.component_id, input.fk_owner_id);
 
   return { code: 1, message: 'Drone imported successfully', data: result };
 }

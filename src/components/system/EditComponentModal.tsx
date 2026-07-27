@@ -93,7 +93,6 @@ const EMPTY_FORM = {
   insurance_expiry_date: '',
   alert_recipients: [] as string[],
   alert_days_before: '30',
-  enac_authorizations: '',
   sts_declarations: '',
 };
 interface ComponentType {
@@ -215,7 +214,6 @@ export default function EditComponentModal({
       insurance_expiry_date: comp.insurance_expiry_date?.split('T')[0] || '',
       alert_recipients: Array.isArray(comp.alert_recipients) ? comp.alert_recipients : [],
       alert_days_before: comp.alert_days_before != null ? String(comp.alert_days_before) : '30',
-      enac_authorizations: comp.certifications?.enac_authorizations || '',
       sts_declarations: (() => {
         // If component_metadata has structured STS data, format it as text
         const metaSts = comp.component_metadata?.sts_declarations;
@@ -427,9 +425,8 @@ export default function EditComponentModal({
         insurance_expiry_date: formData.insurance_expiry_date || null,
         alert_recipients: formData.alert_recipients.length > 0 ? formData.alert_recipients : null,
         alert_days_before: formData.alert_days_before !== '' ? Number(formData.alert_days_before) : null,
-        certifications: (formData.enac_authorizations.trim() || formData.sts_declarations.trim())
+        certifications: formData.sts_declarations.trim()
           ? {
-              enac_authorizations: formData.enac_authorizations.trim() || null,
               sts_declarations: formData.sts_declarations.trim() || null,
             }
           : null,
@@ -1043,17 +1040,7 @@ export default function EditComponentModal({
                         <p className={`col-span-1 sm:col-span-2 text-[11px] -mt-1 ${isDark ? 'text-slate-500' : 'text-muted-foreground'}`}>
                           {t('dflight.import.certificationsHint')}
                         </p>
-                        <div className="col-span-1">
-                          <Label className={labelCls}>{t('dflight.import.fields.enacAuthorizations')}</Label>
-                          <textarea
-                            value={formData.enac_authorizations}
-                            onChange={(e) => handleChange('enac_authorizations', e.target.value)}
-                            placeholder={t('dflight.import.fields.enacAuthorizationsPlaceholder')}
-                            rows={3}
-                            className={`w-full rounded-md border px-2.5 py-1.5 text-xs outline-none focus:ring-1 focus:ring-violet-500/30 resize-y ${isDark ? 'bg-slate-900 border-slate-600 text-slate-200 placeholder:text-slate-500' : 'bg-background border-slate-300'}`}
-                          />
-                        </div>
-                        <div className="col-span-1">
+                        <div className="col-span-1 sm:col-span-2">
                           <div className="flex items-center justify-between mb-2">
                             <Label className={labelCls}>{t('dflight.import.fields.stsDeclarations')}</Label>
                             {dFlightEnabled && formData.drone_registration_code && (
