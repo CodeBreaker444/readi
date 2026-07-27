@@ -158,10 +158,5 @@ export const RATE_LIMITS = {
   ACTIVATE: { limit: 50, window: 60 * 60 * 1000 },   // 50 requests per hour
   PASSWORD_UPDATE: { limit: 20, window: 60 * 60 * 1000 }, // 20 requests per hour
   
-  // Standard limits for general API
-  STANDARD: { limit: 300, window: 60 * 1000 },        // 300 requests per minute
-  
-  // Lenient limits for read operations
-  READ: { limit: 500, window: 60 * 1000 },          // 500 requests per minute
 } as const;
 

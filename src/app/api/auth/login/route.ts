@@ -97,18 +97,20 @@ export async function POST(request: NextRequest) {
     cookieStore.set('readi_auth_token', jwtToken, {
       httpOnly: true,
       secure:   process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      sameSite: 'strict',
       maxAge:   60 * 60 * 24 * 7,
       path:     '/',
+      priority: 'high',
     });
 
     if (needsPasswordChange) {
       cookieStore.set('force_pw_change', '1', {
         httpOnly: false,
         secure:   process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
+        sameSite: 'strict',
         maxAge:   60 * 30,
         path:     '/',
+        priority: 'high',
       });
       return NextResponse.json({ success: true, redirect: '/auth/change-password' });
     }

@@ -98,9 +98,10 @@ export async function POST(request: NextRequest) {
     cookieStore.set('readi_auth_token', freshToken, {
       httpOnly: true,
       secure:   process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      sameSite: 'strict',
       maxAge:   60 * 60 * 24 * 7,
       path:     '/',
+      priority: 'high',
     });
 
     return NextResponse.json({ success: true, message: 'Password changed successfully', role: payload.role });

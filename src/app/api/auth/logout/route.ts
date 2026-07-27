@@ -7,15 +7,18 @@ function clearAuthCookies(cookieStore: Awaited<Awaited<ReturnType<typeof cookies
   cookieStore.set('readi_auth_token', '', {
     httpOnly: true,
     secure:   process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
+    sameSite: 'strict',
     maxAge:   0,
     path:     '/',
+    priority: 'high',
   });
   cookieStore.set('mfa_verified', '', {
     httpOnly: false,
-    sameSite: 'lax',
+    secure:   process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
     maxAge:   0,
     path:     '/',
+    priority: 'high',
   });
 }
 
