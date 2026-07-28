@@ -15,6 +15,14 @@ import { toast } from 'sonner';
 import type { DFlightDroneRow } from '@/types/dflight';
 import { InsuranceAlertRecipients } from '@/components/system/InsuranceAlertRecipients';
 
+function formatDateDDMMYYYY(dateStr: string): string {
+  const date = new Date(dateStr);
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = date.getFullYear();
+  return `${day}/${month}/${year}`;
+}
+
 interface ImportDroneModalProps {
   open: boolean;
   onClose: () => void;
@@ -37,7 +45,6 @@ const EMPTY_FORM = {
   component_sn: '',
   uas_serial_number: '',
   gcs_serial_number: '',
-  license_plate: '',
   fk_tool_model_id: '',
   fk_client_id: '',
   drone_classes: [] as string[],
@@ -46,7 +53,6 @@ const EMPTY_FORM = {
   insurance_expiry_date: '',
   insurance_alert_recipients: [] as string[],
   insurance_alert_days_before: '30',
-  enac_authorizations: '',
   sts_declarations: '',
 };
 
@@ -55,9 +61,10 @@ export default function ImportDroneModal({ open, onClose, onImported, drone, mod
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState(EMPTY_FORM);
   const [showAddModel, setShowAddModel] = useState(false);
-  const [insuranceExpanded, setInsuranceExpanded] = useState(false);
-  const [classesExpanded, setClassesExpanded] = useState(false);
-  const [certificationsExpanded, setCertificationsExpanded] = useState(false);
+  const [insuranceExpanded, setInsuranceExpanded] = useState(true);
+  const [classesExpanded, setClassesExpanded] = useState(true);
+  const [certificationsExpanded, setCertificationsExpanded] = useState(true);
+  const [stsLoading, setStsLoading] = useState(false);
   const [droneClasses, setDroneClasses] = useState<{ class_id: number; class_value: string }[]>([]);
   const [customClassInput, setCustomClassInput] = useState('');
   const [modelPrefill, setModelPrefill] = useState({
@@ -96,7 +103,6 @@ export default function ImportDroneModal({ open, onClose, onImported, drone, mod
       component_sn: drone.serialNumber || '',
       uas_serial_number: drone.uasSerialNumber || '',
       gcs_serial_number: drone.gcsSerialNumber || '',
-      license_plate: drone.matriculationNumber || '',
       fk_tool_model_id: matched ? String(matched.tool_model_id) : '',
       fk_client_id: '',
       drone_classes: [],
@@ -105,12 +111,11 @@ export default function ImportDroneModal({ open, onClose, onImported, drone, mod
       insurance_expiry_date: drone.insuranceExpiryDate?.slice(0, 10) || '',
       insurance_alert_recipients: [],
       insurance_alert_days_before: '30',
-      enac_authorizations: '',
       sts_declarations: '',
     });
-    setInsuranceExpanded(!!(drone.insuranceCompany || drone.insuranceExpiryDate));
-    setClassesExpanded(false);
-    setCertificationsExpanded(false);
+    setInsuranceExpanded(!!(drone.insuranceCompany || drone.insuranceExpiryDate) || true);
+    setClassesExpanded(true);
+    setCertificationsExpanded(true);
 
     setModelPrefill({
       manufacturer: drone.manufacturerName || '',
@@ -124,6 +129,26 @@ export default function ImportDroneModal({ open, onClose, onImported, drone, mod
     axios.get('/api/system/drone-classes')
       .then(({ data }) => { if (data.code === 1) setDroneClasses(data.data ?? []); })
       .catch(() => setDroneClasses([]));
+
+    // Fetch STS declarations using D-Flight ID
+    if (drone.dFlightId) {
+      setStsLoading(true);
+      axios.post('/api/dflight/fetch-sts-by-dflight-id', { dFlightId: drone.dFlightId })
+        .then(({ data }) => {
+          if (data.code === 1 && data.data?.declarations?.length > 0) {
+            const stsText = data.data.declarations
+              .map((d: any) => `${d.stsType} (Start: ${d.startDate ? formatDateDDMMYYYY(d.startDate) : 'N/A'})`)
+              .join('\n');
+            setFormData(prev => ({ ...prev, sts_declarations: stsText }));
+          }
+        })
+        .catch(() => {
+          // Silently fail - STS sync is optional
+        })
+        .finally(() => {
+          setStsLoading(false);
+        });
+    }
 
     if (!drone.modelId) return;
 
@@ -223,10 +248,9 @@ export default function ImportDroneModal({ open, onClose, onImported, drone, mod
     if (!formData.fk_tool_model_id) { toast.error(t('dflight.import.toasts.modelRequired')); return; }
     if (!formData.fk_client_id) { toast.error(t('dflight.import.toasts.clientRequired')); return; }
 
-    const enacAuthorizations = formData.enac_authorizations.trim();
     const stsDeclarations = formData.sts_declarations.trim();
-    const certifications = enacAuthorizations || stsDeclarations
-      ? { enac_authorizations: enacAuthorizations || null, sts_declarations: stsDeclarations || null }
+    const certifications = stsDeclarations
+      ? { sts_declarations: stsDeclarations }
       : null;
 
     setLoading(true);
@@ -240,7 +264,6 @@ export default function ImportDroneModal({ open, onClose, onImported, drone, mod
         component_sn: formData.component_sn.trim(),
         uas_serial_number: formData.uas_serial_number.trim() || null,
         gcs_serial_number: formData.gcs_serial_number.trim() || null,
-        license_plate: formData.license_plate.trim() || null,
         fk_tool_model_id: Number(formData.fk_tool_model_id),
         drone_classes: formData.drone_classes.length ? formData.drone_classes : null,
         insurance_name: formData.insurance_name || null,
@@ -326,10 +349,6 @@ export default function ImportDroneModal({ open, onClose, onImported, drone, mod
                   <Label className="pb-2">{t('dflight.import.fields.gcsSerialNumber')}</Label>
                   <Input value={formData.gcs_serial_number} onChange={(e) => handleChange('gcs_serial_number', e.target.value)} />
                 </div>
-                <div className="col-span-1 sm:col-span-4">
-                  <Label className="pb-2">{t('dflight.import.fields.licensePlate')}</Label>
-                  <Input value={formData.license_plate} onChange={(e) => handleChange('license_plate', e.target.value)} />
-                </div>
               </div>
             </div>
 
@@ -348,7 +367,7 @@ export default function ImportDroneModal({ open, onClose, onImported, drone, mod
                       </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
-                      {models.map((m: any) => (
+                      {models.filter((m: any) => m.model_type?.startsWith('AIRCRAFT_')).map((m: any) => (
                         <SelectItem key={m.tool_model_id} value={m.tool_model_id.toString()} disabled={m.model_active !== 'Y'}>
                           {m.factory_type} / {m.factory_model} / {m.factory_serie}
                         </SelectItem>
@@ -479,28 +498,27 @@ export default function ImportDroneModal({ open, onClose, onImported, drone, mod
               </button>
               {certificationsExpanded && (
                 <div className="px-4 pb-4 grid grid-cols-1 sm:grid-cols-2 gap-3 border-t border-slate-200 pt-3">
-                  <p className="col-span-1 sm:col-span-2 text-[11px] text-muted-foreground -mt-1">
-                    {t('dflight.import.certificationsHint')}
-                  </p>
-                  <div className="col-span-1">
-                    <Label className="pb-2">{t('dflight.import.fields.enacAuthorizations')}</Label>
-                    <textarea
-                      value={formData.enac_authorizations}
-                      onChange={(e) => handleChange('enac_authorizations', e.target.value)}
-                      placeholder={t('dflight.import.fields.enacAuthorizationsPlaceholder')}
-                      rows={3}
-                      className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-xs outline-none focus:ring-1 focus:ring-violet-500/30 bg-background resize-y"
-                    />
-                  </div>
-                  <div className="col-span-1">
+                  <div className="col-span-1 sm:col-span-2">
                     <Label className="pb-2">{t('dflight.import.fields.stsDeclarations')}</Label>
-                    <textarea
-                      value={formData.sts_declarations}
-                      onChange={(e) => handleChange('sts_declarations', e.target.value)}
-                      placeholder={t('dflight.import.fields.stsDeclarationsPlaceholder')}
-                      rows={3}
-                      className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-xs outline-none focus:ring-1 focus:ring-violet-500/30 bg-background resize-y"
-                    />
+                    {stsLoading ? (
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground py-2">
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        <span>Loading STS declarations...</span>
+                      </div>
+                    ) : (
+                      <>
+                        <textarea
+                          value={formData.sts_declarations}
+                          onChange={(e) => handleChange('sts_declarations', e.target.value)}
+                          placeholder={t('dflight.import.fields.stsDeclarationsPlaceholder')}
+                          rows={3}
+                          className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-xs outline-none focus:ring-1 focus:ring-violet-500/30 bg-background resize-y"
+                        />
+                        {!stsLoading && formData.sts_declarations === '' && (
+                          <p className="text-[10px] text-muted-foreground mt-1">No STS data available from D-Flight</p>
+                        )}
+                      </>
+                    )}
                   </div>
                 </div>
               )}

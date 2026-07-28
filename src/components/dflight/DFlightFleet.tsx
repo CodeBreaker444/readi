@@ -32,6 +32,7 @@ export default function DFlightFleet() {
   const [clients, setClients] = useState<any[]>([]);
   const [error, setError]     = useState<string | null>(null);
   const [notConfigured, setNotConfigured] = useState(false);
+  const [missingCertificate, setMissingCertificate] = useState(false);
   const [importDrone, setImportDrone] = useState<DFlightDroneRow | null>(null);
 
   const [page, setPage]         = useState(0);
@@ -64,6 +65,7 @@ export default function DFlightFleet() {
     setLoading(true);
     setError(null);
     setNotConfigured(false);
+    setMissingCertificate(false);
     try {
       const { data } = await axios.get<{ code: number; data: DFlightDroneRow[]; message?: string }>(
         '/api/dflight/fleet',
@@ -72,6 +74,10 @@ export default function DFlightFleet() {
         if (data.message === 'D-Flight integration not configured') {
           setNotConfigured(true);
           setRows([]);
+        } else if (data.message?.includes('digital certificate') || data.message?.includes('PFX certificate')) {
+          setMissingCertificate(true);
+          setRows([]);
+          setError(data.message);
         } else {
           setError(data.message ?? t('dflight.fleet.error.generic'));
           setRows([]);
@@ -82,6 +88,9 @@ export default function DFlightFleet() {
       }
     } catch (err: any) {
       const msg = err?.response?.data?.message ?? t('dflight.fleet.error.generic');
+      if (msg?.includes('digital certificate') || msg?.includes('PFX certificate')) {
+        setMissingCertificate(true);
+      }
       setError(msg);
       toast.error(msg);
     } finally {
@@ -106,7 +115,6 @@ export default function DFlightFleet() {
         dFlightId: row.dFlightId,
         uas_serial_number: row.uasSerialNumber ?? null,
         gcs_serial_number: row.gcsSerialNumber ?? null,
-        license_plate: row.matriculationNumber ?? null,
         insurance_company: row.insuranceCompany ?? null,
         insurance_expiry_date: row.insuranceExpiryDate ?? null,
         qr_code_image: row.qrCodeImage ?? null,
@@ -193,9 +201,9 @@ export default function DFlightFleet() {
             <h2 className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>
               {t('dflight.fleet.tableTitle')}
             </h2>
-            <p className={`text-xs mt-0.5 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
+            {/* <p className={`text-xs mt-0.5 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
               {t('dflight.fleet.tableSubtitle')}
-            </p>
+            </p> */}
           </div>
           <button
             onClick={load}
@@ -249,11 +257,34 @@ export default function DFlightFleet() {
               {t('dflight.fleet.notConfigured.setup')}
             </Link>
           </div>
+        ) : missingCertificate ? (
+          <div className="flex flex-col items-center justify-center py-16 gap-4">
+            <AlertCircle className="h-10 w-10 text-amber-500" />
+            <div className="text-center space-y-2">
+              <p className={`text-sm font-medium ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>
+                Digital Certificate Required
+              </p>
+              <p className={`text-xs ${isDark ? 'text-slate-500' : 'text-gray-500'}`}>
+                {error || 'A PFX digital certificate is required to connect to D-Flight. Please upload your certificate in the settings.'}
+              </p>
+            </div>
+            <Link
+              href="/dflight/settings"
+              className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-medium transition-colors ${
+                isDark
+                  ? 'bg-violet-600 hover:bg-violet-700 text-white'
+                  : 'bg-violet-600 hover:bg-violet-700 text-white'
+              }`}
+            >
+              <Settings className="h-3.5 w-3.5" />
+              Configure Certificate
+            </Link>
+          </div>
         ) : error ? (
           <div className="flex flex-col items-center justify-center py-16 gap-3">
             <AlertCircle className="h-8 w-8 text-red-500" />
             <p className={`text-sm ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>{error}</p>
-            <button onClick={load} className="text-xs text-sky-500 hover:underline">
+            <button onClick={load} className="cursor-pointer text-xs text-sky-500 hover:underline">
               {t('dflight.fleet.retry')}
             </button>
           </div>

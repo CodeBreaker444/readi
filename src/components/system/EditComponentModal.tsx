@@ -1,6 +1,5 @@
 'use client';
 
-import DFlightPlateSearch from '@/components/dflight/DFlightPlateSearch';
 import LocationPicker from '@/components/system/LocationPicker';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -19,6 +18,13 @@ import { InsuranceAlertRecipients } from './InsuranceAlertRecipients';
 import { ManageComponentTypesModal } from './ManageComponentTypesModal';
 import { DroneClassRow, ManageDroneClassesModal } from './ManageDroneClassesModal';
 
+function formatDateDDMMYYYY(dateStr: string): string {
+  const date = new Date(dateStr);
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = date.getFullYear();
+  return `${day}/${month}/${year}`;
+}
 function SystemOptionLabel({ tool }: { tool: any }) {
   const statusColors: Record<string, string> = {
     OPERATIONAL: 'bg-green-100 text-green-700',
@@ -72,7 +78,6 @@ const EMPTY_FORM = {
   drone_registration_code: '',
   uas_serial_number: '',
   gcs_serial_number: '',
-  license_plate: '',
   component_activation_date: '',
   component_purchase_date: '',
   expiration_date: '',
@@ -95,7 +100,6 @@ const EMPTY_FORM = {
   insurance_expiry_date: '',
   alert_recipients: [] as string[],
   alert_days_before: '30',
-  enac_authorizations: '',
   sts_declarations: '',
 };
 interface ComponentType {
@@ -195,7 +199,6 @@ export default function EditComponentModal({
       drone_registration_code: comp.drone_registration_code || '',
       uas_serial_number: comp.uas_serial_number || '',
       gcs_serial_number: comp.gcs_serial_number || '',
-      license_plate: comp.license_plate || '',
       component_activation_date: comp.component_activation_date?.split('T')[0] || '',
       component_purchase_date: comp.component_purchase_date?.split('T')[0] || '',
       expiration_date: comp.expiration_date?.split('T')[0] || '',
@@ -218,13 +221,12 @@ export default function EditComponentModal({
       insurance_expiry_date: comp.insurance_expiry_date?.split('T')[0] || '',
       alert_recipients: Array.isArray(comp.alert_recipients) ? comp.alert_recipients : [],
       alert_days_before: comp.alert_days_before != null ? String(comp.alert_days_before) : '30',
-      enac_authorizations: comp.certifications?.enac_authorizations || '',
       sts_declarations: (() => {
         // If component_metadata has structured STS data, format it as text
         const metaSts = comp.component_metadata?.sts_declarations;
         if (Array.isArray(metaSts) && metaSts.length > 0) {
           return metaSts
-            .map((sts: any) => `${sts.stsType} (Start: ${sts.startDate ? new Date(sts.startDate).toLocaleDateString() : 'N/A'})`)
+            .map((sts: any) => `${sts.stsType} (Start: ${sts.startDate ? formatDateDDMMYYYY(sts.startDate) : 'N/A'})`)
             .join('\n');
         }
         // Otherwise fall back to certifications text field
@@ -241,7 +243,6 @@ export default function EditComponentModal({
         dFlightId: drone.dFlightId,
         uas_serial_number: drone.uasSerialNumber ?? null,
         gcs_serial_number: drone.gcsSerialNumber ?? null,
-        license_plate: drone.matriculationNumber ?? null,
         insurance_company: drone.insuranceCompany ?? null,
         insurance_expiry_date: drone.insuranceExpiryDate ?? null,
         qr_code_image: drone.qrCodeImage ?? null,
@@ -255,7 +256,6 @@ export default function EditComponentModal({
           drone_registration_code: data.data.drone_registration_code || prev.drone_registration_code,
           uas_serial_number: data.data.uas_serial_number || prev.uas_serial_number,
           gcs_serial_number: data.data.gcs_serial_number || prev.gcs_serial_number,
-          license_plate: data.data.license_plate || prev.license_plate,
           component_sn: prev.component_sn || drone.serialNumber || '',
           insurance_company: drone.insuranceCompany || prev.insurance_company,
           insurance_expiry_date: drone.insuranceExpiryDate?.slice(0, 10) || prev.insurance_expiry_date,
@@ -283,7 +283,7 @@ export default function EditComponentModal({
           toast.success('STS declarations synced successfully');
           // Update the STS declarations in the form
           const stsText = data.data.declarations
-            .map((d: any) => `${d.stsType} (Start: ${d.startDate ? new Date(d.startDate).toLocaleDateString() : 'N/A'})`)
+            .map((d: any) => `${d.stsType} (Start: ${d.startDate ? formatDateDDMMYYYY(d.startDate) : 'N/A'})`)
             .join('\n');
           setFormData(prev => ({ ...prev, sts_declarations: stsText }));
         } else {
@@ -410,7 +410,6 @@ export default function EditComponentModal({
         drone_registration_code: formData.drone_registration_code || null,
         uas_serial_number: formData.uas_serial_number || null,
         gcs_serial_number: formData.gcs_serial_number || null,
-        license_plate: formData.license_plate || null,
         component_activation_date: formData.component_activation_date || null,
         component_purchase_date: formData.component_purchase_date || null,
         expiration_date: formData.expiration_date || null,
@@ -433,9 +432,8 @@ export default function EditComponentModal({
         insurance_expiry_date: formData.insurance_expiry_date || null,
         alert_recipients: formData.alert_recipients.length > 0 ? formData.alert_recipients : null,
         alert_days_before: formData.alert_days_before !== '' ? Number(formData.alert_days_before) : null,
-        certifications: (formData.enac_authorizations.trim() || formData.sts_declarations.trim())
+        certifications: formData.sts_declarations.trim()
           ? {
-              enac_authorizations: formData.enac_authorizations.trim() || null,
               sts_declarations: formData.sts_declarations.trim() || null,
             }
           : null,
@@ -767,10 +765,6 @@ export default function EditComponentModal({
                   </div>
                 )}
 
-                {formData.component_type === 'DRONE' && dFlightEnabled && selectedComponentId && (
-                  <DFlightPlateSearch isDark={isDark} onFound={handleDFlightMatch} />
-                )}
-
                 {formData.component_type === 'DRONE' && (
                   <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
                     <div className="col-span-1 sm:col-span-3">
@@ -816,10 +810,6 @@ export default function EditComponentModal({
                     <div className="col-span-1 sm:col-span-3">
                       <Label className={labelCls}>{t('dflight.import.fields.gcsSerialNumber')} <span className="font-normal opacity-60">{t('systems.components.common.optional')}</span></Label>
                       <Input className={inputCls} value={formData.gcs_serial_number} onChange={e => handleChange('gcs_serial_number', e.target.value)} />
-                    </div>
-                    <div className="col-span-1 sm:col-span-3">
-                      <Label className={labelCls}>{t('dflight.import.fields.licensePlate')} <span className="font-normal opacity-60">{t('systems.components.common.optional')}</span></Label>
-                      <Input className={inputCls} value={formData.license_plate} onChange={e => handleChange('license_plate', e.target.value)} />
                     </div>
                   </div>
                 )}
@@ -1054,20 +1044,10 @@ export default function EditComponentModal({
 
                     {certificationsExpanded && (
                       <div className={`px-4 pb-4 grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3 border-t ${isDark ? 'border-slate-700' : 'border-slate-200'}`}>
-                        <p className={`col-span-1 sm:col-span-2 text-[11px] -mt-1 ${isDark ? 'text-slate-500' : 'text-muted-foreground'}`}>
+                        {/* <p className={`col-span-1 sm:col-span-2 text-[11px] -mt-1 ${isDark ? 'text-slate-500' : 'text-muted-foreground'}`}>
                           {t('dflight.import.certificationsHint')}
-                        </p>
-                        <div className="col-span-1">
-                          <Label className={labelCls}>{t('dflight.import.fields.enacAuthorizations')}</Label>
-                          <textarea
-                            value={formData.enac_authorizations}
-                            onChange={(e) => handleChange('enac_authorizations', e.target.value)}
-                            placeholder={t('dflight.import.fields.enacAuthorizationsPlaceholder')}
-                            rows={3}
-                            className={`w-full rounded-md border px-2.5 py-1.5 text-xs outline-none focus:ring-1 focus:ring-violet-500/30 resize-y ${isDark ? 'bg-slate-900 border-slate-600 text-slate-200 placeholder:text-slate-500' : 'bg-background border-slate-300'}`}
-                          />
-                        </div>
-                        <div className="col-span-1">
+                        </p> */}
+                        <div className="col-span-1 sm:col-span-2">
                           <div className="flex items-center justify-between mb-2">
                             <Label className={labelCls}>{t('dflight.import.fields.stsDeclarations')}</Label>
                             {dFlightEnabled && formData.drone_registration_code && (

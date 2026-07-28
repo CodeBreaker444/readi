@@ -805,7 +805,6 @@ function buildComponentListResult(data: any[]) {
         qr_code_image: item.qr_code_image ?? null,
         uas_serial_number: item.uas_serial_number ?? null,
         gcs_serial_number: item.gcs_serial_number ?? null,
-        license_plate: item.license_plate ?? null,
         certifications: item.certifications ?? null,
         latitude: item.component_metadata?.latitude ?? null,
         longitude: item.component_metadata?.longitude ?? null,
@@ -924,7 +923,6 @@ export async function addComponent(componentData: any, ownerId: number) {
       drone_registration_code: componentData.drone_registration_code || null,
       uas_serial_number: componentData.uas_serial_number || null,
       gcs_serial_number: componentData.gcs_serial_number || null,
-      license_plate: componentData.license_plate || null,
       // ENAC Authorizations / STS Declarations — manual entry until d-flight exposes an endpoint.
       certifications: componentData.certifications?.enac_authorizations || componentData.certifications?.sts_declarations
         ? (componentData.certifications as Prisma.InputJsonValue)
@@ -1086,7 +1084,6 @@ export async function updateComponent(componentId: number, componentData: any, o
       drone_registration_code: componentData.drone_registration_code || null,
       uas_serial_number: componentData.uas_serial_number || null,
       gcs_serial_number: componentData.gcs_serial_number || null,
-      license_plate: componentData.license_plate || null,
       // ENAC Authorizations / STS Declarations — manual entry until d-flight exposes an endpoint.
       certifications: componentData.certifications?.enac_authorizations || componentData.certifications?.sts_declarations
         ? (componentData.certifications as Prisma.InputJsonValue)

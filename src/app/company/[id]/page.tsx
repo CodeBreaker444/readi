@@ -77,6 +77,7 @@ type FeaturesForm = {
     operation_email_enabled: boolean;
     system_email_enabled: boolean;
     easa_operator_code: string;
+    daily_email_limit: string | number;
 };
 
 function toStr(v: string | null | undefined) { return v ?? ''; }
@@ -112,6 +113,7 @@ function buildPayload(general: GeneralForm, security: SecurityForm, features: Fe
         operation_email_enabled: features.operation_email_enabled,
         system_email_enabled: features.system_email_enabled,
         easa_operator_code: features.easa_operator_code || null,
+        daily_email_limit: features.daily_email_limit || 100,
     };
 }
 
@@ -146,7 +148,7 @@ export default function CompanyDetailPage() {
     });
     const [securityForm, setSecurityForm] = useState<SecurityForm>({ owner_active: 'Y' });
     const [featuresForm, setFeaturesForm] = useState<FeaturesForm>({
-        drone_atc_enabled: false, d_flight_enabled: false, flytrelay_enabled: false, email_notifications_enabled: false, operation_email_enabled: false, system_email_enabled: false, easa_operator_code: '',
+        drone_atc_enabled: false, d_flight_enabled: false, flytrelay_enabled: false, email_notifications_enabled: false, operation_email_enabled: false, system_email_enabled: false, easa_operator_code: '', daily_email_limit: 100,
     });
 
     const [newPassword, setNewPassword] = useState('');
@@ -176,6 +178,7 @@ export default function CompanyDetailPage() {
             operation_email_enabled: o.operation_email_enabled ?? false,
             system_email_enabled: o.system_email_enabled ?? false,
             easa_operator_code: toStr(o.easa_operator_code),
+            daily_email_limit: o.daily_email_limit ?? 100,
         });
     }, []);
 
@@ -624,6 +627,15 @@ export default function CompanyDetailPage() {
                                     {featuresEditing
                                         ? <Input value={featuresForm.easa_operator_code} onChange={(e) => setFeaturesForm(p => ({ ...p, easa_operator_code: e.target.value }))} placeholder="e.g. ITA-OP-12345" className="h-8 text-sm w-full sm:w-56" />
                                         : <p className={`text-sm ${featuresForm.easa_operator_code ? fieldClass : isDark ? 'text-slate-600' : 'text-slate-400'}`}>{featuresForm.easa_operator_code || 'Not set'}</p>}
+                                </div>
+                                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                                    <div>
+                                        <p className={`text-sm font-medium ${isDark ? 'text-white' : 'text-slate-900'}`}>Daily Email Limit</p>
+                                        <p className={`text-xs mt-0.5 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Maximum number of emails allowed per day (default: 100)</p>
+                                    </div>
+                                    {featuresEditing
+                                        ? <Input value={featuresForm.daily_email_limit} onChange={(e) => setFeaturesForm(p => ({ ...p, daily_email_limit: e.target.value === '' ? '' : (parseInt(e.target.value) || 0) as string | number }))}  className="h-8 text-sm w-full sm:w-32" />
+                                        : <p className={fieldClass}>{featuresForm.daily_email_limit}</p>}
                                 </div>
                             </div>
                         </div>

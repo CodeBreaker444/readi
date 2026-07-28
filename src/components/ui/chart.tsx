@@ -1,5 +1,6 @@
 "use client"
 
+import DOMPurify from "dompurify"
 import * as React from "react"
 import * as RechartsPrimitive from "recharts"
 import type { TooltipValueType } from "recharts"
@@ -90,12 +91,9 @@ const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
     return null
   }
 
-  return (
-    <style
-      dangerouslySetInnerHTML={{
-        __html: Object.entries(THEMES)
-          .map(
-            ([theme, prefix]) => `
+  const cssContent = Object.entries(THEMES)
+    .map(
+      ([theme, prefix]) => `
 ${prefix} [data-chart=${id}] {
 ${colorConfig
   .map(([key, itemConfig]) => {
@@ -107,8 +105,19 @@ ${colorConfig
   .join("\n")}
 }
 `
-          )
-          .join("\n"),
+    )
+    .join("\n")
+
+  const sanitizedCss = DOMPurify.sanitize(cssContent, {
+    ALLOWED_TAGS: [],
+    ALLOWED_ATTR: [],
+    ALLOW_DATA_ATTR: false,
+  })
+
+  return (
+    <style
+      dangerouslySetInnerHTML={{
+        __html: sanitizedCss,
       }}
     />
   )

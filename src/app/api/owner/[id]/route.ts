@@ -41,6 +41,7 @@ const editOwnerValidation = z.object({
     operation_email_enabled: z.boolean().optional(),
     system_email_enabled: z.boolean().optional(),
     easa_operator_code: z.string().max(100).optional().nullable(),
+    daily_email_limit: z.number().optional(),
     tax_id: z.string().optional().nullable(),
     registration_number: z.string().optional().nullable(),
     license_number: z.string().optional().nullable(),

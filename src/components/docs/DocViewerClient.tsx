@@ -1,9 +1,11 @@
 'use client';
 
+import DOMPurify from 'dompurify';
 import { ProcedureDocument } from '@/backend/services/docs/doc-service';
 import { useTheme } from '@/components/useTheme';
 import { ArrowLeft, BookOpen, Calendar, FileText, Hash } from 'lucide-react';
 import Link from 'next/link';
+import { useMemo } from 'react';
 
 interface DocViewerClientProps {
     doc: ProcedureDocument;
@@ -11,6 +13,28 @@ interface DocViewerClientProps {
 
 export default function DocViewerClient({ doc }: DocViewerClientProps) {
     const { isDark } = useTheme();
+
+    const sanitizedHtml = useMemo(() => {
+        return DOMPurify.sanitize(doc.html_content, {
+            ALLOWED_TAGS: [
+                'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+                'p', 'br', 'strong', 'em', 'u', 's', 'sub', 'sup',
+                'ul', 'ol', 'li',
+                'a', 'img',
+                'table', 'thead', 'tbody', 'tfoot', 'tr', 'th', 'td',
+                'blockquote', 'hr',
+                'pre', 'code',
+                'span', 'div'
+            ],
+            ALLOWED_ATTR: [
+                'href', 'src', 'alt', 'title', 'target', 'rel',
+                'class', 'style', 'id'
+            ],
+            ALLOW_DATA_ATTR: false,
+            FORBID_TAGS: ['script', 'style', 'iframe', 'object', 'embed'],
+            FORBID_ATTR: ['onclick', 'onload', 'onerror', 'onmouseover'],
+        });
+    }, [doc.html_content]);
 
     const formattedDate = doc.created_at
         ? new Date(doc.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
@@ -104,7 +128,7 @@ export default function DocViewerClient({ doc }: DocViewerClientProps) {
                     ? 'border-white/[0.06] bg-[#0c1020] text-slate-300'
                     : 'border-gray-200 bg-white shadow-sm text-gray-700'
                 }`}
-                    dangerouslySetInnerHTML={{ __html: doc.html_content }}
+                    dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
                 />
 
                 <div className={`flex items-center justify-between py-4 pb-12 text-[11px] border-t ${isDark

@@ -20,7 +20,6 @@ export interface DFlightDroneRow {
   systemName: string | null;
   componentName: string | null;
   storedDrc: string | null;
-  storedLicensePlate?: string | null;
   storedUasSerial?: string | null;
   storedGcsSerial?: string | null;
   storedDccDroneId?: string | null;
