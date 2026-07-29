@@ -65,10 +65,7 @@ export const MissionCreatedEmail = ({
                       <td style={{ ...dataLabel, borderBottom: '1px solid #e0e0e0' }}>TYPE</td>
                       <td style={{ ...dataValue, borderBottom: '1px solid #e0e0e0' }}>{missionType}</td>
                     </tr>
-                    <tr>
-                      <td style={{ ...dataLabel, borderBottom: '1px solid #e0e0e0' }}>CREATED BY</td>
-                      <td style={{ ...dataValue, borderBottom: '1px solid #e0e0e0' }}>{createdBy}</td>
-                    </tr>
+                    
                     {scheduledDate && (
                       <tr>
                         <td style={{ ...dataLabel, borderBottom: 'none' }}>SCHEDULED</td>

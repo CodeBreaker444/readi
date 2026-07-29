@@ -29,8 +29,6 @@ export default function MaintenanceLogbookClient({ canIntervene = false }: Props
   const { isDark } = useTheme();
   const { t } = useTranslation();
   const { canEdit } = usePermissions();
-  // Ticket management (create/assign/close/download) is gated on the
-  // 'systems_maintenance_tickets' feature key from the permission matrix.
   const canManage = canEdit('systems_maintenance_tickets');
   const canClose = canManage;
   const canAssign = canManage;
