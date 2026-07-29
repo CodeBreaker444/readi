@@ -73,11 +73,7 @@ export const MissionAssignedEmail = ({
                   <span style={dataLabel}>ROLE</span>
                   <span style={dataValue}>{role}</span>
                 </div>
-                <div style={dataRowBorder} />
-                <div style={dataRow}>
-                  <span style={dataLabel}>ASSIGNED BY</span>
-                  <span style={dataValue}>{assignedBy}</span>
-                </div>
+                 
                 {scheduledDate && (
                   <>
                     <div style={dataRowBorder} />
