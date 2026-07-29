@@ -2,6 +2,17 @@
 
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import axios from 'axios';
+import { Download } from 'lucide-react';
+import { useState } from 'react';
+
+function formatDateDDMMYYYY(dateStr: string): string {
+  const date = new Date(dateStr);
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = date.getFullYear();
+  return `${day}/${month}/${year}`;
+}
 
 interface ViewComponentModalProps {
     open: boolean;
@@ -30,7 +41,24 @@ const statusColors: Record<string, string> = {
 export default function ViewComponentModal({ open, component, systemCode, onClose, dFlightEnabled = false }: ViewComponentModalProps) {
     if (!component) return null;
 
+    const [loadingPdf, setLoadingPdf] = useState(false);
+
     const statusCls = statusColors[component.component_status] ?? 'bg-slate-100 text-slate-600';
+
+    const handleViewPdf = async (declarationId: string) => {
+        setLoadingPdf(true);
+        try {
+            const { data } = await axios.post('/api/dflight/declaration-pdf', { declarationId }, {
+                responseType: 'blob',
+            });
+            const url = window.URL.createObjectURL(new Blob([data], { type: 'application/pdf' }));
+            window.open(url, '_blank');
+        } catch (error) {
+            console.error('Failed to load PDF:', error);
+        } finally {
+            setLoadingPdf(false);
+        }
+    };
 
     const hasMaintCycle = component.maintenance_cycle ||
         component.maintenance_cycle_hour ||
@@ -77,6 +105,9 @@ export default function ViewComponentModal({ open, component, systemCode, onClos
                             <InfoRow label="Serial No." value={component.component_sn} />
                             <InfoRow label="Vendor" value={component.component_vendor} />
                             <InfoRow label="Installation Date" value={component.component_activation_date} />
+                            {component.drone_registration_code && (
+                                <InfoRow label="DRC" value={component.drone_registration_code} />
+                            )}
                         </div>
                     </div>
 
@@ -84,16 +115,64 @@ export default function ViewComponentModal({ open, component, systemCode, onClos
                         <>
                             <div className="border-t border-slate-100" />
                             <div>
-                                <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-2">Additional Information</p>
-                                <div>
-                                    <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">QR Code</p>
-                                    <img
-                                        src={component.qr_code_image.startsWith('http') || component.qr_code_image.startsWith('data:')
-                                            ? component.qr_code_image
-                                            : `data:image/png;base64,${component.qr_code_image}`}
-                                        alt="QR Code"
-                                        className="w-28 h-28 object-contain rounded border border-slate-200 bg-white"
-                                    />
+                                <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">QR Code</p>
+                                <img
+                                    src={component.qr_code_image.startsWith('http') || component.qr_code_image.startsWith('data:')
+                                        ? component.qr_code_image
+                                        : `data:image/png;base64,${component.qr_code_image}`}
+                                    alt="QR Code"
+                                    className="w-28 h-28 object-contain rounded border border-slate-200 bg-white"
+                                />
+                            </div>
+                        </>
+                    )}
+
+                    {component.certifications && (component.certifications.enac_authorizations || component.certifications.sts_declarations) && (
+                        <>
+                            <div className="border-t border-slate-100" />
+                            <div>
+                                <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-2">Certifications</p>
+                                <div className="space-y-3">
+                                    {component.certifications.enac_authorizations && (
+                                        <div>
+                                            <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">ENAC Authorizations</p>
+                                            <p className="text-sm text-slate-600 whitespace-pre-line">{component.certifications.enac_authorizations}</p>
+                                        </div>
+                                    )}
+                                    {component.certifications.sts_declarations && (
+                                        <div>
+                                            <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">STS Declarations</p>
+                                            {Array.isArray(component.component_metadata?.sts_declarations) ? (
+                                                <div className="space-y-2">
+                                                    {component.component_metadata.sts_declarations.map((sts: any, idx: number) => (
+                                                        <div key={idx} className="flex items-center justify-between p-2 bg-slate-50 rounded border border-slate-200">
+                                                            <div className="flex-1">
+                                                                <p className="text-xs font-medium text-slate-700">{sts.stsType}</p>
+                                                                <p className="text-[10px] text-slate-500">
+                                                                    Start: {sts.startDate ? formatDateDDMMYYYY(sts.startDate) : 'N/A'}
+                                                                </p>
+                                                                <p className="text-[10px] text-slate-500">{sts.scenarios}</p>
+                                                            </div>
+                                                            {dFlightEnabled && sts.declarationId && (
+                                                                <Button
+                                                                    variant="outline"
+                                                                    size="sm"
+                                                                    onClick={() => handleViewPdf(sts.declarationId)}
+                                                                    disabled={loadingPdf}
+                                                                    className="h-7 px-2 text-xs"
+                                                                >
+                                                                    <Download className="h-3 w-3 mr-1" />
+                                                                    View PDF
+                                                                </Button>
+                                                            )}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            ) : (
+                                                <p className="text-sm text-slate-600 whitespace-pre-line">{component.certifications.sts_declarations}</p>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </>

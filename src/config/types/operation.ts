@@ -280,6 +280,7 @@ export type CreateOperationCalendarInput = {
   status_name?: string
   fk_luc_procedure_id: number
   luc_procedure_steps?: Record<string, unknown> | null
+  created_by_user_id?: number
 }
 
 export type CalendarEvent = OperationCalendarEvent

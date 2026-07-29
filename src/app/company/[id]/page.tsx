@@ -74,7 +74,10 @@ type FeaturesForm = {
     d_flight_enabled: boolean;
     flytrelay_enabled: boolean;
     email_notifications_enabled: boolean;
+    operation_email_enabled: boolean;
+    system_email_enabled: boolean;
     easa_operator_code: string;
+    daily_email_limit: string | number;
 };
 
 function toStr(v: string | null | undefined) { return v ?? ''; }
@@ -107,7 +110,10 @@ function buildPayload(general: GeneralForm, security: SecurityForm, features: Fe
         d_flight_enabled: features.d_flight_enabled,
         flytrelay_enabled: features.flytrelay_enabled,
         email_notifications_enabled: features.email_notifications_enabled,
+        operation_email_enabled: features.operation_email_enabled,
+        system_email_enabled: features.system_email_enabled,
         easa_operator_code: features.easa_operator_code || null,
+        daily_email_limit: features.daily_email_limit || 100,
     };
 }
 
@@ -142,7 +148,7 @@ export default function CompanyDetailPage() {
     });
     const [securityForm, setSecurityForm] = useState<SecurityForm>({ owner_active: 'Y' });
     const [featuresForm, setFeaturesForm] = useState<FeaturesForm>({
-        drone_atc_enabled: false, d_flight_enabled: false, flytrelay_enabled: false, email_notifications_enabled: false, easa_operator_code: '',
+        drone_atc_enabled: false, d_flight_enabled: false, flytrelay_enabled: false, email_notifications_enabled: false, operation_email_enabled: false, system_email_enabled: false, easa_operator_code: '', daily_email_limit: 100,
     });
 
     const [newPassword, setNewPassword] = useState('');
@@ -169,7 +175,10 @@ export default function CompanyDetailPage() {
             d_flight_enabled: o.d_flight_enabled ?? false,
             flytrelay_enabled: o.flytrelay_enabled ?? false,
             email_notifications_enabled: o.email_notifications_enabled ?? false,
+            operation_email_enabled: o.operation_email_enabled ?? false,
+            system_email_enabled: o.system_email_enabled ?? false,
             easa_operator_code: toStr(o.easa_operator_code),
+            daily_email_limit: o.daily_email_limit ?? 100,
         });
     }, []);
 
@@ -594,7 +603,9 @@ export default function CompanyDetailPage() {
                                     { key: 'drone_atc_enabled' as const, label: 'Drone ATC', desc: 'Enables Air Traffic Control integration for drone operations' },
                                     { key: 'd_flight_enabled' as const, label: 'D-Flight', desc: 'Enables D-Flight USSP integration for drone registration and fleet management' },
                                     { key: 'flytrelay_enabled' as const, label: 'FlytRelay', desc: 'Enables FlytRelay drone flight logs and telemetry integration' },
-                                    { key: 'email_notifications_enabled' as const, label: 'Email Notifications', desc: 'Send email alerts to users for important events' },
+                                    { key: 'email_notifications_enabled' as const, label: 'Default Email Notifications', desc: 'Send account activation, password reset, and other default emails' },
+                                    { key: 'operation_email_enabled' as const, label: 'Operations Email Notifications', desc: 'Send operations-related email notifications' },
+                                    { key: 'system_email_enabled' as const, label: 'System Email Notifications', desc: 'Send system/maintenance-related email notifications' },
                                 ].map(({ key, label, desc }) => (
                                     <div key={key}>
                                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -616,6 +627,15 @@ export default function CompanyDetailPage() {
                                     {featuresEditing
                                         ? <Input value={featuresForm.easa_operator_code} onChange={(e) => setFeaturesForm(p => ({ ...p, easa_operator_code: e.target.value }))} placeholder="e.g. ITA-OP-12345" className="h-8 text-sm w-full sm:w-56" />
                                         : <p className={`text-sm ${featuresForm.easa_operator_code ? fieldClass : isDark ? 'text-slate-600' : 'text-slate-400'}`}>{featuresForm.easa_operator_code || 'Not set'}</p>}
+                                </div>
+                                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                                    <div>
+                                        <p className={`text-sm font-medium ${isDark ? 'text-white' : 'text-slate-900'}`}>Daily Email Limit</p>
+                                        <p className={`text-xs mt-0.5 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Maximum number of emails allowed per day (default: 100)</p>
+                                    </div>
+                                    {featuresEditing
+                                        ? <Input value={featuresForm.daily_email_limit} onChange={(e) => setFeaturesForm(p => ({ ...p, daily_email_limit: e.target.value === '' ? '' : (parseInt(e.target.value) || 0) as string | number }))}  className="h-8 text-sm w-full sm:w-32" />
+                                        : <p className={fieldClass}>{featuresForm.daily_email_limit}</p>}
                                 </div>
                             </div>
                         </div>

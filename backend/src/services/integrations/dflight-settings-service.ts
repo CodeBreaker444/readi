@@ -1,14 +1,17 @@
 import 'server-only';
 import { prisma } from '@/lib/prisma';
+import { encryptToken, decryptToken } from '@/backend/utils/token-encryption';
 
 export interface DFlightIntegration {
   id: number;
   fk_owner_id: number;
   base_url: string;
   username: string;
-  password: string;
+  password: string | null;
   client_id: string;
   easa_operator_code: string | null;
+  pfx_content: string | null;
+  pfx_password: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -27,6 +30,8 @@ export async function getDFlightIntegration(ownerId: number): Promise<DFlightInt
     password: row.password,
     client_id: row.client_id,
     easa_operator_code: row.easa_operator_code ?? null,
+    pfx_content: row.pfx_content ?? null,
+    pfx_password: row.pfx_password ? decryptToken(row.pfx_password) : null,
     created_at: row.created_at?.toISOString() ?? '',
     updated_at: row.updated_at?.toISOString() ?? '',
   };
@@ -37,34 +42,47 @@ export async function upsertDFlightIntegration(
   data: {
     base_url: string;
     username: string;
-    password: string;
+    password?: string | null;
     client_id: string;
     easa_operator_code?: string | null;
+    pfx_content?: string | null;
+    pfx_password?: string | null;
   },
 ): Promise<void> {
+  const encryptedPfxPassword = data.pfx_password ? encryptToken(data.pfx_password) : null;
+
+  const createData: any = {
+    fk_owner_id: ownerId,
+    base_url: data.base_url,
+    username: data.username,
+    client_id: data.client_id,
+    easa_operator_code: data.easa_operator_code ?? null,
+    pfx_content: data.pfx_content ?? null,
+    pfx_password: encryptedPfxPassword ?? null,
+  };
+  if (data.password !== null && data.password !== undefined) {
+    createData.password = data.password;
+  }
+
+  const updateData: any = {
+    base_url: data.base_url,
+    username: data.username,
+    client_id: data.client_id,
+    easa_operator_code: data.easa_operator_code ?? null,
+    pfx_content: data.pfx_content ?? undefined,
+    pfx_password: encryptedPfxPassword ?? undefined,
+    updated_at: new Date(),
+  };
+  if (data.password !== null && data.password !== undefined) {
+    updateData.password = data.password;
+  }
+
   await prisma.$transaction([
     prisma.d_flight_integrations.upsert({
       where: { fk_owner_id: ownerId },
-      update: {
-        base_url: data.base_url,
-        username: data.username,
-        password: data.password,
-        client_id: data.client_id,
-        easa_operator_code: data.easa_operator_code ?? null,
-        updated_at: new Date(),
-      },
-      create: {
-        fk_owner_id: ownerId,
-        base_url: data.base_url,
-        username: data.username,
-        password: data.password,
-        client_id: data.client_id,
-        easa_operator_code: data.easa_operator_code ?? null,
-      },
+      update: updateData,
+      create: createData,
     }),
-    // The EASA operator code identifies the ReADI "operator subject" (the owner/company),
-    // not just the d-flight connection — keep the owner record in sync so the rest of
-    // the app (company profile, exports, etc.) sees the same value.
     prisma.owner.update({
       where: { owner_id: ownerId },
       data: { easa_operator_code: data.easa_operator_code ?? null },

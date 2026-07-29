@@ -1,6 +1,7 @@
 import { apiError, internalError, zodError } from '@/lib/api-error';
 import { E } from '@/lib/error-codes';
 import { prisma } from '@/lib/prisma';
+import { checkRateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
@@ -12,6 +13,10 @@ const validateSchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
+  // Apply rate limiting
+  const rateLimitError = await checkRateLimit(request, RATE_LIMITS.ACTIVATE);
+  if (rateLimitError) return rateLimitError;
+
   try {
     const body = await request.json();
 

@@ -2,6 +2,13 @@
 
 import { supabase } from '@/backend/database/database';
 import { sendNotificationToClientManagers, sendNotificationToRoles, sendNotificationToUser } from '@/backend/services/notification/notification-service';
+import { 
+  sendTicketCreatedEmail,
+  sendTicketClosedEmail as sendModuleTicketClosedEmail,
+  sendTicketAssignedEmail,
+  sendInterventionStartedEmail,
+  sendInterventionEndedEmail,
+} from '@/backend/services/settings/module-email-notification-service';
 import { getToolName, getUserName } from '@/backend/services/shared/entity-names';
 import { refreshMaintenanceDaysForTool } from '@/backend/utils/refresh-maintenance-days';
 import type {
@@ -25,7 +32,6 @@ import {
   uploadFileToS3,
 } from '@/lib/s3Client';
 import { Prisma } from '@prisma/client';
-import { sendTicketClosedEmail } from '../../../../lib/resend/mail';
 
 
 export async function hasOpenTicketForTool(toolId: number): Promise<boolean> {
@@ -269,6 +275,14 @@ export async function createTicket(payload: CreateTicketPayload): Promise<number
     '/systems/maintenance-tickets'
   ).catch(() => {});
 
+  // Send module-based email notification
+  sendTicketCreatedEmail(payload.fk_owner_id, {
+    systemCode,
+    ticketId: created[0].ticket_id,
+    ticketTitle: payload.components?.length ? `Component Maintenance - #${payload.components[0]}` : `Maintenance - System #${payload.fk_tool_id}`,
+    note: payload.note,
+  }).catch(() => {});
+
   return created[0].ticket_id;
 }
 
@@ -366,22 +380,13 @@ export async function closeTicket(payload: CloseTicketPayload): Promise<void> {
   if (ticket.fk_owner_id) {
     sendNotificationToRoles(ticket.fk_owner_id, ['OPM'], notifTitle, notifMsg, actionUrl).catch(() => {});
 
-    void (async () => {
-      try {
-        const opmUsers = await prisma.public_users.findMany({
-          where: {
-            fk_owner_id: ticket.fk_owner_id!,
-            user_role: 'OPM',
-            user_active: 'Y',
-          },
-          select: { email: true },
-        });
-        if (opmUsers.length) {
-          const emails = opmUsers.map((u) => u.email).filter(Boolean) as string[];
-          await sendTicketClosedEmail(emails, systemCode, ticket.ticket_title, payload.note);
-        }
-      } catch {}
-    })();
+    // Send module-based email notification
+    sendModuleTicketClosedEmail(ticket.fk_owner_id, {
+      systemCode,
+      ticketId: payload.ticket_id,
+      ticketTitle: ticket.ticket_title,
+      note: payload.note,
+    }).catch(() => {});
   }
 }
 
@@ -418,6 +423,12 @@ export async function assignTicket(payload: AssignTicketPayload): Promise<void> 
         `A maintenance ticket on ${systemCode} has been assigned to ${techName}.`,
         '/systems/maintenance-tickets'
       ).catch(() => {});
+
+      // Send module-based email notification
+      sendTicketAssignedEmail(ticket.fk_owner_id, {
+        systemCode,
+        technicianName: techName,
+      }).catch(() => {});
     }
   }
 }
@@ -857,6 +868,11 @@ export async function startIntervention(ticketId: number, userId: number, userEm
       `Maintenance intervention on ${systemCode} has started.`,
       '/systems/maintenance-tickets'
     ).catch(() => {});
+
+    // Send module-based email notification
+    sendInterventionStartedEmail(ticket.fk_owner_id, {
+      systemCode,
+    }).catch(() => {});
   }
 }
 
@@ -891,5 +907,10 @@ export async function endIntervention(ticketId: number, userId: number, userEmai
       `Maintenance intervention on ${systemCode} has ended and awaits closure.`,
       '/systems/maintenance-tickets'
     ).catch(() => {});
+
+    // Send module-based email notification
+    sendInterventionEndedEmail(ticket.fk_owner_id, {
+      systemCode,
+    }).catch(() => {});
   }
 }

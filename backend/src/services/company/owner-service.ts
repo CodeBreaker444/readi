@@ -18,7 +18,10 @@ export interface OwnerData {
     d_flight_enabled: boolean;
     flytrelay_enabled: boolean;
     email_notifications_enabled: boolean;
+    operation_email_enabled: boolean;
+    system_email_enabled: boolean;
     easa_operator_code: string | null;
+    daily_email_limit: number | null;
     created_at: string;
 }
 
@@ -39,6 +42,8 @@ export interface AddOwnerWithAdminPayload {
     d_flight_enabled?: boolean;
     flytrelay_enabled?: boolean;
     email_notifications_enabled?: boolean;
+    operation_email_enabled?: boolean;
+    system_email_enabled?: boolean;
     easa_operator_code?: string;
     tax_id?: string;
     registration_number?: string;
@@ -77,7 +82,10 @@ export interface UpdateOwnerPayload {
     d_flight_enabled?: boolean;
     flytrelay_enabled?: boolean;
     email_notifications_enabled?: boolean;
+    operation_email_enabled?: boolean;
+    system_email_enabled?: boolean;
     easa_operator_code?: string | null;
+    daily_email_limit?: number | null;
     tax_id?: string | null;
     registration_number?: string | null;
     license_number?: string | null;
@@ -288,7 +296,10 @@ export async function updateOwner(id: string, payload: UpdateOwnerPayload) {
             d_flight_enabled: payload.d_flight_enabled ?? false,
             flytrelay_enabled: payload.flytrelay_enabled ?? false,
             email_notifications_enabled: payload.email_notifications_enabled ?? false,
+            operation_email_enabled: payload.operation_email_enabled ?? false,
+            system_email_enabled: payload.system_email_enabled ?? false,
             easa_operator_code: payload.easa_operator_code ?? null,
+            daily_email_limit: payload.daily_email_limit ?? 100,
             tax_id: payload.tax_id ?? null,
             registration_number: payload.registration_number ?? null,
             license_number: payload.license_number ?? null,
@@ -474,6 +485,8 @@ export async function addOwnerWithAdmin(payload: AddOwnerWithAdminPayload) {
             d_flight_enabled: payload.d_flight_enabled ?? false,
             flytrelay_enabled: payload.flytrelay_enabled ?? false,
             email_notifications_enabled: payload.email_notifications_enabled ?? false,
+            operation_email_enabled: payload.operation_email_enabled ?? false,
+            system_email_enabled: payload.system_email_enabled ?? false,
             tax_id: payload.tax_id || null,
             registration_number: payload.registration_number || null,
             license_number: payload.license_number || null,

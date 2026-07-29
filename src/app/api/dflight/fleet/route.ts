@@ -32,7 +32,6 @@ export async function GET() {
         serial_number: true,
         uas_serial_number: true,
         gcs_serial_number: true,
-        license_plate: true,
         drone_registration_code: true,
         dcc_drone_id: true,
         component_metadata: true,
@@ -64,13 +63,29 @@ export async function GET() {
 
     let dFlightDrones: Awaited<ReturnType<typeof getDFlightDrones>> = [];
     try {
+      if (!config.pfx_content) {
+        return NextResponse.json({
+          code: 0,
+          message: 'D-Flight digital certificate is missing. A PFX certificate file is required for authentication.',
+          data: [],
+        });
+      }
+      if (!config.pfx_password) {
+        return NextResponse.json({
+          code: 0,
+          message: 'D-Flight certificate password is missing. The password for your PFX certificate is required.',
+          data: [],
+        });
+      }
       const token = await getDFlightToken({
         base_url: config.base_url,
         username: config.username,
-        password: config.password,
+        password: config.password ?? undefined,
         client_id: config.client_id,
-      });
-      dFlightDrones = await getDFlightDrones(config.base_url, token.access_token, config.username);
+      }, config.pfx_content, config.pfx_password);
+
+      dFlightDrones = await getDFlightDrones(config.base_url, token.access_token, config.username, config.pfx_content, config.pfx_password);
+      
     } catch (e: any) {
       return NextResponse.json({
         code: 0,
@@ -126,7 +141,6 @@ export async function GET() {
         systemName: match?.tool.tool_name ?? null,
         componentName: match?.component_name ?? null,
         storedDrc: match?.drone_registration_code ?? null,
-        storedLicensePlate: match?.license_plate ?? null,
         storedUasSerial: match?.uas_serial_number ?? null,
         storedGcsSerial: match?.gcs_serial_number ?? null,
         storedDccDroneId: match?.dcc_drone_id ?? null,

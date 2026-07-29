@@ -25,5 +25,4 @@ export const env = {
   OPENSKY_PASSWORD: process.env.OPENSKY_PASSWORD,
   OPENAIP_API_KEY: process.env.OPENAIP_API_KEY,
   OPENAIP_BASE: process.env.OPENAIP_BASE,
-  OPENWEATHER_API_KEY: process.env.OPENWEATHER_API_KEY,
 };

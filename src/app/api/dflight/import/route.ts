@@ -17,16 +17,14 @@ const ImportSchema = z.object({
   drone_classes: z.array(z.string()).optional().nullable(),
   uas_serial_number: z.string().optional().nullable(),
   gcs_serial_number: z.string().optional().nullable(),
-  license_plate: z.string().optional().nullable(),
   insurance_name: z.string().optional().nullable(),
   insurance_company: z.string().optional().nullable(),
   insurance_expiry_date: z.string().optional().nullable(),
   insurance_alert_recipients: z.array(z.string().email()).optional().nullable(),
   insurance_alert_days_before: z.number().int().positive().max(365).optional().nullable(),
-  // ENAC Authorizations / STS Declarations: d-flight has no documented endpoint for
-  // these yet, so they're captured as free-text manual entry at import time.
+  // STS Declarations: d-flight has no documented endpoint for
+  // this yet, so it's captured as free-text manual entry at import time.
   certifications: z.object({
-    enac_authorizations: z.string().optional().nullable(),
     sts_declarations: z.string().optional().nullable(),
   }).optional().nullable(),
   qr_code_image: z.string().optional().nullable(),
@@ -58,7 +56,6 @@ export async function POST(req: NextRequest) {
       drone_classes: d.drone_classes ?? null,
       uas_serial_number: d.uas_serial_number ?? null,
       gcs_serial_number: d.gcs_serial_number ?? null,
-      license_plate: d.license_plate ?? null,
       insurance_name: d.insurance_name ?? null,
       insurance_company: d.insurance_company ?? null,
       insurance_expiry_date: d.insurance_expiry_date ?? null,

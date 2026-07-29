@@ -70,26 +70,13 @@ export const fleetColumns = [
         : <span className={dark ? 'text-slate-600' : 'text-gray-300'}>—</span>;
     },
   }),
-
-  helper.accessor('matriculationNumber', {
-    id:     'licensePlate',
-    header: 'License Plate',
-    cell:   ({ row, table }) => {
-      const dark = (table.options.meta as ColumnMeta)?.isDark;
-      const plate = row.original.matriculationNumber;
-      return plate
-        ? <code className={`text-[11px] ${dark ? 'text-slate-300' : 'text-gray-600'}`}>{plate}</code>
-        : <span className={dark ? 'text-slate-600' : 'text-gray-300'}>—</span>;
-    },
-  }),
-
   helper.display({
     id:     'drc',
     header: 'DRC',
     cell:   ({ row, table }) => {
       const dark = (table.options.meta as ColumnMeta)?.isDark;
       const r    = row.original;
-      const id   = r.linked ? (r.storedDrc ?? r.dFlightId) : r.storedDrc;
+      const id   = r.storedDrc ?? r.dFlightId;
       return id
         ? <code className={`text-[11px] font-semibold ${dark ? 'text-violet-400' : 'text-violet-600'}`}>{id}</code>
         : <span className={dark ? 'text-slate-600' : 'text-gray-300'}>—</span>;

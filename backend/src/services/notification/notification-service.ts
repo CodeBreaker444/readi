@@ -203,12 +203,6 @@ export async function sendNotificationToRoles(
       created_at: new Date(),
     })),
   });
-
-  const emailEnabled = await isEmailNotificationsEnabled(ownerId);
-  if (emailEnabled) {
-    const emails = users.map((u) => u.email).filter((e): e is string => !!e);
-    sendNotificationEmail(emails, title, message, "MAINTENANCE", actionUrl ?? null);
-  }
 }
 
 export interface AssignmentNotificationPayload {
@@ -283,12 +277,6 @@ export async function sendNotificationToClientManagers(
       created_at: new Date(),
     })),
   });
-
-  const emailEnabled = await isEmailNotificationsEnabled(ownerId);
-  if (emailEnabled) {
-    const emails = users.map((u) => u.email).filter((e): e is string => !!e);
-    if (emails.length) sendNotificationEmail(emails, title, message, 'MAINTENANCE', actionUrl ?? null);
-  }
 }
 /**
  * Fire-and-forget: send a notification to a specific user.
@@ -310,16 +298,5 @@ export async function sendNotificationToUser(
       created_at: new Date(),
     },
   });
-
-  const user = await prisma.public_users.findUnique({
-    where: { user_id: userId },
-    select: { email: true, fk_owner_id: true },
-  });
-
-  if (user?.fk_owner_id) {
-    const emailEnabled = await isEmailNotificationsEnabled(user.fk_owner_id);
-    if (emailEnabled && user.email) {
-      sendNotificationEmail([user.email], title, message, "MAINTENANCE", actionUrl ?? null);
-    }
-  }
+ 
 }
