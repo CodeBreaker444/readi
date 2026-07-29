@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import {
   type ModuleEmailNotificationConfig,
   MAINTENANCE_EVENTS,
@@ -17,7 +18,8 @@ interface ModuleEmailNotificationConfigProps {
   ownerId: number;
   moduleName: string;
   companyEmailEnabled: boolean;
-  events: Array<{ eventType: string; displayName: string; description: string; defaultRoles: string[] }>;
+  events: Array<{ eventType: string; displayName: string; description: string; defaultRoles: string[]; disableRoleSelection?: boolean }>;
+  translationPrefix?: string;
 }
 
 interface RoleDropdownProps {
@@ -26,9 +28,11 @@ interface RoleDropdownProps {
   onToggleRole: (role: string) => void;
   disabled?: boolean;
   loading?: boolean;
+  t: (key: string, params?: any) => string;
+  translationPrefix: string;
 }
 
-function RoleDropdown({ eventType, selectedRoles, onToggleRole, disabled, loading }: RoleDropdownProps) {
+function RoleDropdown({ eventType, selectedRoles, onToggleRole, disabled, loading, t, translationPrefix }: RoleDropdownProps) {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -51,7 +55,7 @@ function RoleDropdown({ eventType, selectedRoles, onToggleRole, disabled, loadin
         className="w-full flex items-center justify-between gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
       >
         <span className="truncate text-left">
-          {selectedRoles.length > 0 ? `${selectedRoles.length} role${selectedRoles.length > 1 ? 's' : ''} selected` : 'Select roles'}
+          {selectedRoles.length > 0 ? t(`${translationPrefix}.rolesSelected`, { count: selectedRoles.length, plural: selectedRoles.length > 1 ? 's' : '' }) : t(`${translationPrefix}.selectRoles`)}
         </span>
         <span className={`shrink-0 text-muted-foreground transition-transform ${open ? 'rotate-180' : ''}`}>▾</span>
       </button>
@@ -80,7 +84,7 @@ function RoleDropdown({ eventType, selectedRoles, onToggleRole, disabled, loadin
         {loading ? (
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <Loader2 className="h-3 w-3 animate-spin" />
-            <span>Saving...</span>
+            <span>{t(`${translationPrefix}.saving`)}</span>
           </div>
         ) : selectedRoles.length > 0 ? (
           selectedRoles.map((role) => (
@@ -101,7 +105,7 @@ function RoleDropdown({ eventType, selectedRoles, onToggleRole, disabled, loadin
             </span>
           ))
         ) : (
-          <span className="text-xs text-muted-foreground">No roles selected. No emails will be sent for this event.</span>
+          <span className="text-xs text-muted-foreground">{t(`${translationPrefix}.noRolesSelected`)}</span>
         )}
       </div>
     </div>
@@ -113,7 +117,9 @@ export function ModuleEmailNotificationConfig({
   moduleName,
   companyEmailEnabled,
   events,
+  translationPrefix = 'settings.emailNotifications.operations',
 }: ModuleEmailNotificationConfigProps) {
+  const { t } = useTranslation();
   const [configs, setConfigs] = useState<ModuleEmailNotificationConfig[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -214,10 +220,10 @@ export function ModuleEmailNotificationConfig({
         c.event_type === eventType ? data.data : c
       ));
 
-      toast.success('Configuration saved successfully');
+      toast.success(t(`${translationPrefix}.saveSuccess`));
     } catch (err: any) {
       setError(err.message);
-      toast.error(err.message || 'Failed to save configuration');
+      toast.error(err.message || t(`${translationPrefix}.saveFailed`));
       // Revert to original state on error
       fetchConfigs();
     } finally {
@@ -254,7 +260,7 @@ export function ModuleEmailNotificationConfig({
       <Card>
         <CardContent className="p-6">
           <p className="text-sm text-muted-foreground">
-            Email notifications are disabled at the company level. Contact your administrator to enable them.
+            {t('settings.emailNotifications.companyDisabled')}
           </p>
         </CardContent>
       </Card>
@@ -272,6 +278,8 @@ export function ModuleEmailNotificationConfig({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {events.map((event) => {
           const config = getConfigForEvent(event.eventType);
+          const translatedDisplayName = t(`${translationPrefix}.events.${event.eventType}.displayName`, event.displayName);
+          const translatedDescription = t(`${translationPrefix}.events.${event.eventType}.description`, event.description);
 
           return (
             <Card key={event.eventType}>
@@ -279,10 +287,10 @@ export function ModuleEmailNotificationConfig({
                 <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                   <div className="space-y-1 min-w-0">
                     <CardTitle className="text-base">
-                      {event.displayName}
+                      {translatedDisplayName}
                     </CardTitle>
                     <CardDescription className="text-sm">
-                      {event.description}
+                      {translatedDescription}
                     </CardDescription>
                   </div>
                   <Switch
@@ -293,18 +301,27 @@ export function ModuleEmailNotificationConfig({
                   />
                 </div>
               </CardHeader>
-              {config.is_enabled && (
+              {config.is_enabled && !event.disableRoleSelection && (
                 <CardContent className="pt-0">
                   <div className="space-y-2">
-                    <Label className="text-sm font-medium">Notify Roles</Label>
+                    <Label className="text-sm font-medium">{t(`${translationPrefix}.notifyRoles`)}</Label>
                     <RoleDropdown
                       eventType={event.eventType}
                       selectedRoles={config.notification_roles}
                       onToggleRole={(role) => handleRoleToggle(event.eventType, role)}
                       disabled={saving}
                       loading={savingEvent === event.eventType}
+                      t={t}
+                      translationPrefix={translationPrefix}
                     />
                   </div>
+                </CardContent>
+              )}
+              {config.is_enabled && event.disableRoleSelection && (
+                <CardContent className="pt-0">
+                  <p className="text-xs text-muted-foreground">
+                    {t(`${translationPrefix}.directToUsers`)}
+                  </p>
                 </CardContent>
               )}
             </Card>
@@ -314,7 +331,7 @@ export function ModuleEmailNotificationConfig({
 
       {saving && (
         <div className="text-sm text-muted-foreground">
-          Saving configuration...
+          {t(`${translationPrefix}.saving`)}
         </div>
       )}
     </div>

@@ -52,10 +52,10 @@ export default function OperationsEmailNotificationsPage() {
               <div className="w-1 h-6 rounded-full bg-violet-600" />
               <div>
                 <h1 className={`font-semibold text-base tracking-tight ${isDark ? "text-white" : "text-slate-900"}`}>
-                  Email Notifications
+                  {t('settings.emailNotifications.title')}
                 </h1>
                 <p className={`text-xs ${isDark ? "text-slate-500" : "text-slate-400"}`}>
-                  Configure operations email notifications
+                  {t('settings.emailNotifications.operations.title')}
                 </p>
               </div>
             </div>
@@ -87,10 +87,10 @@ export default function OperationsEmailNotificationsPage() {
               <div className="w-1 h-6 rounded-full bg-violet-600" />
               <div>
                 <h1 className={`font-semibold text-base tracking-tight ${isDark ? "text-white" : "text-slate-900"}`}>
-                  Email Notifications
+                  {t('settings.emailNotifications.title')}
                 </h1>
                 <p className={`text-xs ${isDark ? "text-slate-500" : "text-slate-400"}`}>
-                  Configure operations email notifications
+                  {t('settings.emailNotifications.operations.title')}
                 </p>
               </div>
             </div>
@@ -98,7 +98,7 @@ export default function OperationsEmailNotificationsPage() {
         </div>
         <div className="mx-auto px-4 sm:px-6 py-6 sm:py-8">
           <div className={`flex items-center justify-center p-8 rounded-xl border text-center ${isDark ? "bg-slate-800 border-slate-700 text-slate-400" : "bg-white border-slate-200 text-slate-500"}`}>
-            <p>Unable to load user information</p>
+            <p>{t('settings.emailNotifications.operations.unableToLoad')}</p>
           </div>
         </div>
       </div>
@@ -119,10 +119,10 @@ export default function OperationsEmailNotificationsPage() {
             <div className="w-1 h-6 rounded-full bg-violet-600" />
             <div>
               <h1 className={`font-semibold text-base tracking-tight ${isDark ? "text-white" : "text-slate-900"}`}>
-                Email Notifications
+                {t('settings.emailNotifications.title')}
               </h1>
               <p className={`text-xs ${isDark ? "text-slate-500" : "text-slate-400"}`}>
-                Configure operations email notifications
+                {t('settings.emailNotifications.operations.title')}
               </p>
             </div>
           </div>
@@ -138,12 +138,12 @@ export default function OperationsEmailNotificationsPage() {
           >
             <div className="flex-1 min-w-0">
               <h3 className={`font-medium text-sm ${isDark ? "text-white" : "text-slate-900"}`}>
-                {ownerData.emailEnabled ? "Email notifications enabled" : "Email notifications disabled"}
+                {ownerData.emailEnabled ? t('settings.emailNotifications.operations.enabled') : t('settings.emailNotifications.operations.disabled')}
               </h3>
               <p className={`text-xs mt-1 ${isDark ? "text-slate-400" : "text-slate-500"}`}>
                 {ownerData.emailEnabled
-                  ? "Operations email notifications are enabled. You can configure specific operations events below."
-                  : "Operations email notifications are disabled. Contact your administrator to enable them."}
+                  ? t('settings.emailNotifications.operations.enabledDescription')
+                  : t('settings.emailNotifications.operations.disabledDescription')}
               </p>
             </div>
             <span
@@ -157,7 +157,7 @@ export default function OperationsEmailNotificationsPage() {
                   : "bg-amber-50 text-amber-600"
               }`}
             >
-              {ownerData.emailEnabled ? "Enabled" : "Disabled"}
+              {ownerData.emailEnabled ? t('settings.emailNotifications.operations.enabledLabel') : t('settings.emailNotifications.operations.disabledLabel')}
             </span>
           </div>
         </div>
@@ -168,6 +168,7 @@ export default function OperationsEmailNotificationsPage() {
             moduleName="operations"
             companyEmailEnabled={ownerData.emailEnabled}
             events={OPERATIONS_EVENTS}
+            translationPrefix="settings.emailNotifications.operations"
           />
         </div>
       </main>
