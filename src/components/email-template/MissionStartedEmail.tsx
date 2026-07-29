@@ -55,34 +55,32 @@ export const MissionStartedEmail = ({
 
               {/* Mission details */}
               <div style={dataCard}>
-                <div style={dataRow}>
-                  <span style={dataLabel}>MISSION CODE</span>
-                  <span style={dataValue}>{missionCode}</span>
-                </div>
-                <div style={dataRowBorder} />
-                <div style={dataRow}>
-                  <span style={dataLabel}>TYPE</span>
-                  <span style={dataValue}>{missionType}</span>
-                </div>
-                <div style={dataRowBorder} />
-                <div style={dataRow}>
-                  <span style={dataLabel}>STARTED BY</span>
-                  <span style={dataValue}>{startedBy}</span>
-                </div>
-                <div style={dataRowBorder} />
-                <div style={dataRow}>
-                  <span style={dataLabel}>START TIME</span>
-                  <span style={dataValue}>{startTime}</span>
-                </div>
-                {pilot && (
-                  <>
-                    <div style={dataRowBorder} />
-                    <div style={dataRow}>
-                      <span style={dataLabel}>PILOT</span>
-                      <span style={dataValue}>{pilot}</span>
-                    </div>
-                  </>
-                )}
+                <table role="presentation" width="100%" cellPadding={0} cellSpacing={0} style={dataRow}>
+                  <tbody>
+                    <tr>
+                      <td style={{ ...dataLabel, borderBottom: '1px solid #e0e0e0' }}>MISSION CODE</td>
+                      <td style={{ ...dataValue, borderBottom: '1px solid #e0e0e0' }}>{missionCode}</td>
+                    </tr>
+                    <tr>
+                      <td style={{ ...dataLabel, borderBottom: '1px solid #e0e0e0' }}>TYPE</td>
+                      <td style={{ ...dataValue, borderBottom: '1px solid #e0e0e0' }}>{missionType}</td>
+                    </tr>
+                    <tr>
+                      <td style={{ ...dataLabel, borderBottom: '1px solid #e0e0e0' }}>STARTED BY</td>
+                      <td style={{ ...dataValue, borderBottom: '1px solid #e0e0e0' }}>{startedBy}</td>
+                    </tr>
+                    <tr>
+                      <td style={{ ...dataLabel, borderBottom: '1px solid #e0e0e0' }}>START TIME</td>
+                      <td style={{ ...dataValue, borderBottom: '1px solid #e0e0e0' }}>{startTime}</td>
+                    </tr>
+                    {pilot && (
+                      <tr>
+                        <td style={{ ...dataLabel, borderBottom: 'none' }}>PILOT</td>
+                        <td style={{ ...dataValue, borderBottom: 'none' }}>{pilot}</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
               </div>
 
               <div style={infoCard}>
@@ -158,7 +156,6 @@ const header = {
 const logoImg = {
   objectFit: 'contain' as const,
   filter: 'brightness(0) invert(1)',
-  display: 'block',
 };
 
 const headerTitle = {
@@ -219,16 +216,8 @@ const dataCard = {
 };
 
 const dataRow = {
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  padding: '14px 18px',
-};
-
-const dataRowBorder = {
-  height: '1px',
-  backgroundColor: '#e0e0e0',
-  margin: '0 18px',
+  width: '100%',
+  borderCollapse: 'collapse' as const,
 };
 
 const dataLabel = {
@@ -237,12 +226,17 @@ const dataLabel = {
   color: '#5f6368',
   letterSpacing: '0.6px',
   textTransform: 'uppercase' as const,
+  textAlign: 'left' as const,
+  padding: '14px 8px 14px 18px',
+  whiteSpace: 'nowrap' as const,
 };
 
 const dataValue = {
   fontSize: '14px',
   color: '#202124',
   fontWeight: '500',
+  textAlign: 'right' as const,
+  padding: '14px 18px 14px 8px',
 };
 
 const infoCard = {

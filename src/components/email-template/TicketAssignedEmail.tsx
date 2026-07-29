@@ -57,34 +57,32 @@ export const TicketAssignedEmail = ({
 
               {/* Ticket details */}
               <div style={dataCard}>
-                <div style={dataRow}>
-                  <span style={dataLabel}>SYSTEM</span>
-                  <span style={dataValue}>{systemCode}</span>
-                </div>
-                <div style={dataRowBorder} />
-                <div style={dataRow}>
-                  <span style={dataLabel}>TICKET</span>
-                  <span style={dataValue}>{ticketTitle}</span>
-                </div>
-                <div style={dataRowBorder} />
-                <div style={dataRow}>
-                  <span style={dataLabel}>TICKET ID</span>
-                  <span style={dataValue}>#{ticketId}</span>
-                </div>
-                <div style={dataRowBorder} />
-                <div style={dataRow}>
-                  <span style={dataLabel}>ASSIGNED TO</span>
-                  <span style={dataValue}>{technicianName}</span>
-                </div>
-                {assignedBy && (
-                  <>
-                    <div style={dataRowBorder} />
-                    <div style={dataRow}>
-                      <span style={dataLabel}>ASSIGNED BY</span>
-                      <span style={dataValue}>{assignedBy}</span>
-                    </div>
-                  </>
-                )}
+                <table role="presentation" width="100%" cellPadding={0} cellSpacing={0} style={dataRow}>
+                  <tbody>
+                    <tr>
+                      <td style={{ ...dataLabel, borderBottom: '1px solid #e0e0e0' }}>SYSTEM</td>
+                      <td style={{ ...dataValue, borderBottom: '1px solid #e0e0e0' }}>{systemCode}</td>
+                    </tr>
+                    <tr>
+                      <td style={{ ...dataLabel, borderBottom: '1px solid #e0e0e0' }}>TICKET</td>
+                      <td style={{ ...dataValue, borderBottom: '1px solid #e0e0e0' }}>{ticketTitle}</td>
+                    </tr>
+                    <tr>
+                      <td style={{ ...dataLabel, borderBottom: '1px solid #e0e0e0' }}>TICKET ID</td>
+                      <td style={{ ...dataValue, borderBottom: '1px solid #e0e0e0' }}>#{ticketId}</td>
+                    </tr>
+                    <tr>
+                      <td style={{ ...dataLabel, borderBottom: '1px solid #e0e0e0' }}>ASSIGNED TO</td>
+                      <td style={{ ...dataValue, borderBottom: '1px solid #e0e0e0' }}>{technicianName}</td>
+                    </tr>
+                    {assignedBy && (
+                      <tr>
+                        <td style={{ ...dataLabel, borderBottom: 'none' }}>ASSIGNED BY</td>
+                        <td style={{ ...dataValue, borderBottom: 'none' }}>{assignedBy}</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
               </div>
 
               {/* Optional description */}
@@ -104,7 +102,7 @@ export const TicketAssignedEmail = ({
               {/* View details link */}
               <div style={actionCard}>
                 <Text style={actionLabel}>View ticket details</Text>
-                <Link href={`${process.env.APP_URL || 'https://app.readi.ai'}/systems/maintenance-tickets`} style={actionLink}>
+                <Link href={`${process.env.APP_URL}/systems/maintenance-tickets`} style={actionLink}>
                   View Ticket #{ticketId}
                 </Link>
               </div>
@@ -169,7 +167,6 @@ const header = {
 const logoImg = {
   objectFit: 'contain' as const,
   filter: 'brightness(0) invert(1)',
-  display: 'block',
 };
 
 const headerTitle = {
@@ -230,16 +227,8 @@ const dataCard = {
 };
 
 const dataRow = {
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  padding: '14px 18px',
-};
-
-const dataRowBorder = {
-  height: '1px',
-  backgroundColor: '#e0e0e0',
-  margin: '0 18px',
+  width: '100%',
+  borderCollapse: 'collapse' as const,
 };
 
 const dataLabel = {
@@ -248,14 +237,18 @@ const dataLabel = {
   color: '#5f6368',
   letterSpacing: '0.6px',
   textTransform: 'uppercase' as const,
+  textAlign: 'left' as const,
+  padding: '14px 8px 14px 18px',
+  whiteSpace: 'nowrap' as const,
 };
 
 const dataValue = {
   fontSize: '14px',
   color: '#202124',
   fontWeight: '500',
+  textAlign: 'right' as const,
+  padding: '14px 18px 14px 8px',
 };
-
 const noteCard = {
   backgroundColor: '#f8f9fa',
   border: '1px solid #e0e0e0',

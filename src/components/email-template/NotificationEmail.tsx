@@ -123,7 +123,6 @@ const header = {
 const logoImg = {
   objectFit: 'contain' as const,
   filter: 'brightness(0) invert(1)',
-  display: 'block',
 };
 
 const headerTitle = {

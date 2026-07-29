@@ -173,10 +173,8 @@ const dataCard = {
 };
 
 const dataRow = {
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  padding: '14px 18px',
+  width: '100%',
+  borderCollapse: 'collapse' as const,
 };
 
 const dataRowBorder = {
@@ -191,12 +189,17 @@ const dataLabel = {
   color: '#5f6368',
   letterSpacing: '0.6px',
   textTransform: 'uppercase' as const,
+  textAlign: 'left' as const,
+  padding: '14px 8px 14px 18px',
+  whiteSpace: 'nowrap' as const,
 };
 
 const dataValue = {
   fontSize: '14px',
   color: '#202124',
   fontWeight: '500',
+  textAlign: 'right' as const,
+  padding: '14px 18px 14px 8px',
 };
 
 const monoValue = {
