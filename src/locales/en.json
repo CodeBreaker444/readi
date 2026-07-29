@@ -4775,6 +4775,104 @@
     "fieldAltitude": "Altitude (m)"
   },
   "settings": {
+    "emailNotifications": {
+      "title": "Email Notifications",
+      "operations": {
+        "title": "Configure operations email notifications",
+        "enabled": "Email notifications enabled",
+        "disabled": "Email notifications disabled",
+        "enabledDescription": "Operations email notifications are enabled. You can configure specific operations events below.",
+        "disabledDescription": "Operations email notifications are disabled. Contact your administrator to enable them.",
+        "enabledLabel": "Enabled",
+        "disabledLabel": "Disabled",
+        "unableToLoad": "Unable to load user information",
+        "moduleNotifications": "Operations Module Notifications",
+        "notifyRoles": "Notify Roles",
+        "noRolesSelected": "No roles selected. No emails will be sent for this event.",
+        "selectRoles": "Select roles",
+        "rolesSelected": "{{count}} role{{plural}} selected",
+        "directToUsers": "This notification is sent directly to assigned users. Role selection is not applicable.",
+        "saving": "Saving configuration...",
+        "saveSuccess": "Configuration saved successfully",
+        "saveFailed": "Failed to save configuration",
+        "events": {
+          "mission_created": {
+            "displayName": "Mission Created",
+            "description": "When a new mission is created"
+          },
+          "mission_assigned": {
+            "displayName": "Mission Assigned",
+            "description": "When a pilot or observer is assigned to a mission"
+          },
+          "mission_started": {
+            "displayName": "Mission Started",
+            "description": "When a mission begins"
+          },
+          "mission_completed": {
+            "displayName": "Mission Completed",
+            "description": "When a mission is completed"
+          },
+          "calendar_event_created": {
+            "displayName": "Calendar Event Created",
+            "description": "When a new calendar event is created"
+          },
+          "calendar_event_updated": {
+            "displayName": "Calendar Event Updated",
+            "description": "When a calendar event is updated"
+          }
+        }
+      },
+      "systems": {
+        "title": "Configure system email notifications",
+        "enabled": "Email notifications enabled",
+        "disabled": "Email notifications disabled",
+        "enabledDescription": "System email notifications are enabled. You can configure specific system events below.",
+        "disabledDescription": "System email notifications are disabled. Contact your administrator to enable them.",
+        "enabledLabel": "Enabled",
+        "disabledLabel": "Disabled",
+        "unableToLoad": "Unable to load user information",
+        "moduleNotifications": "Systems Module Notifications",
+        "notifyRoles": "Notify Roles",
+        "noRolesSelected": "No roles selected. No emails will be sent for this event.",
+        "selectRoles": "Select roles",
+        "rolesSelected": "{{count}} role{{plural}} selected",
+        "directToUsers": "This notification is sent directly to assigned users. Role selection is not applicable.",
+        "saving": "Saving configuration...",
+        "saveSuccess": "Configuration saved successfully",
+        "saveFailed": "Failed to save configuration",
+        "events": {
+          "ticket_created": {
+            "displayName": "Ticket Created",
+            "description": "When a new maintenance ticket is created"
+          },
+          "ticket_closed": {
+            "displayName": "Ticket Closed",
+            "description": "When a maintenance ticket is closed"
+          },
+          "ticket_assigned": {
+            "displayName": "Ticket Assigned",
+            "description": "When a maintenance ticket is assigned to a technician"
+          },
+          "maintenance_alert": {
+            "displayName": "Maintenance Alert",
+            "description": "When a component approaches its maintenance limit"
+          },
+          "maintenance_due": {
+            "displayName": "Maintenance Due",
+            "description": "When a component reaches its maintenance limit"
+          },
+          "intervention_started": {
+            "displayName": "Intervention Started",
+            "description": "When maintenance intervention begins"
+          },
+          "intervention_ended": {
+            "displayName": "Intervention Ended",
+            "description": "When maintenance intervention ends"
+          }
+        }
+      },
+      "companyDisabled": "Email notifications are disabled at the company level. Contact your administrator to enable them."
+    },
     "integrations": {
       "title": "Integrations",
       "subtitle": "Configure external system connections",

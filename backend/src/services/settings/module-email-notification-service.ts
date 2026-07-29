@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { sendNotificationEmail } from "../../../../lib/resend/mail";
 import {
   sendMissionCreatedEmail,
+  sendMissionAssignedEmail,
   sendMissionStartedEmail,
   sendMissionCompletedEmail,
   sendCalendarEventCreatedEmail,
@@ -44,6 +45,9 @@ export interface MissionEmailData {
   missionCode: string;
   missionType: string;
   createdBy?: string;
+  assignedBy?: string;
+  assignedTo?: string;
+  role?: 'Pilot' | 'Observer';
   startedBy?: string;
   completedBy?: string;
   scheduledDate?: string | null;
@@ -591,6 +595,74 @@ export async function sendMissionCreatedModuleEmail(
     data.scheduledDate,
     data.description
   );
+}
+
+/**
+ * Send mission assigned email directly to specific user IDs
+ */
+export async function sendMissionAssignedModuleEmail(
+  ownerId: number,
+  data: MissionEmailData,
+  recipientUserIds?: number[]
+): Promise<void> {
+  // Check if mission assigned email is enabled
+  const isEnabled = await isModuleEventEmailEnabled(ownerId, 'operations', 'mission_assigned');
+  if (!isEnabled) {
+    console.log('[sendMissionAssignedModuleEmail] Mission assigned email is disabled for owner:', ownerId);
+    return;
+  }
+
+  // If specific user IDs are provided, send directly to them
+  if (recipientUserIds && recipientUserIds.length > 0) {
+    const users = await prisma.public_users.findMany({
+      where: { user_id: { in: recipientUserIds } },
+      select: { user_id: true, email: true },
+    });
+
+    const emails = users.map(u => u.email).filter(Boolean) as string[];
+    if (emails.length === 0) {
+      console.log('[sendMissionAssignedModuleEmail] No valid emails found for recipient user IDs');
+      return;
+    }
+
+    // Check daily email limit
+    const limitReached = await isDailyEmailLimitReached(ownerId);
+    if (limitReached) {
+      console.log('[sendMissionAssignedModuleEmail] Daily email limit reached for owner:', ownerId);
+      return;
+    }
+
+    try {
+      await sendMissionAssignedEmail(
+        emails,
+        data.missionCode,
+        data.missionType,
+        data.assignedBy || 'System',
+        data.assignedTo || 'Unknown',
+        data.role || 'Pilot',
+        data.scheduledDate,
+        data.description
+      );
+      await incrementDailyEmailCount(ownerId);
+      console.log('[sendMissionAssignedModuleEmail] Email sent successfully to', emails.length, 'recipients');
+    } catch (error) {
+      console.error('[sendMissionAssignedModuleEmail] Failed to send email:', error);
+    }
+  } else {
+    // Fallback to role-based sending if no specific user IDs provided
+    await sendOperationsModuleEmail(
+      ownerId,
+      'mission_assigned',
+      sendMissionAssignedEmail,
+      data.missionCode,
+      data.missionType,
+      data.assignedBy || 'System',
+      data.assignedTo || 'Unknown',
+      data.role || 'Pilot',
+      data.scheduledDate,
+      data.description
+    );
+  }
 }
 
 /**

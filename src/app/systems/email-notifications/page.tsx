@@ -52,10 +52,10 @@ export default function SystemsEmailNotificationsPage() {
               <div className="w-1 h-6 rounded-full bg-violet-600" />
               <div>
                 <h1 className={`font-semibold text-base tracking-tight ${isDark ? "text-white" : "text-slate-900"}`}>
-                  Email Notifications
+                  {t('settings.emailNotifications.title')}
                 </h1>
                 <p className={`text-xs ${isDark ? "text-slate-500" : "text-slate-400"}`}>
-                  Configure system email notifications
+                  {t('settings.emailNotifications.systems.title')}
                 </p>
               </div>
             </div>
@@ -87,10 +87,10 @@ export default function SystemsEmailNotificationsPage() {
               <div className="w-1 h-6 rounded-full bg-violet-600" />
               <div>
                 <h1 className={`font-semibold text-base tracking-tight ${isDark ? "text-white" : "text-slate-900"}`}>
-                  Email Notifications
+                  {t('settings.emailNotifications.title')}
                 </h1>
                 <p className={`text-xs ${isDark ? "text-slate-500" : "text-slate-400"}`}>
-                  Configure system email notifications
+                  {t('settings.emailNotifications.systems.title')}
                 </p>
               </div>
             </div>
@@ -98,7 +98,7 @@ export default function SystemsEmailNotificationsPage() {
         </div>
         <div className="mx-auto px-4 sm:px-6 py-6 sm:py-8">
           <div className={`flex items-center justify-center p-8 rounded-xl border text-center ${isDark ? "bg-slate-800 border-slate-700 text-slate-400" : "bg-white border-slate-200 text-slate-500"}`}>
-            <p>Unable to load user information</p>
+            <p>{t('settings.emailNotifications.systems.unableToLoad')}</p>
           </div>
         </div>
       </div>
@@ -138,12 +138,12 @@ export default function SystemsEmailNotificationsPage() {
           >
             <div className="flex-1 min-w-0">
               <h3 className={`font-medium text-sm ${isDark ? "text-white" : "text-slate-900"}`}>
-                {ownerData.emailEnabled ? "Email notifications enabled" : "Email notifications disabled"}
+                {ownerData.emailEnabled ? t('settings.emailNotifications.systems.enabled') : t('settings.emailNotifications.systems.disabled')}
               </h3>
               <p className={`text-xs mt-1 ${isDark ? "text-slate-400" : "text-slate-500"}`}>
                 {ownerData.emailEnabled
-                  ? "System email notifications are enabled. You can configure specific system events below."
-                  : "System email notifications are disabled. Contact your administrator to enable them."}
+                  ? t('settings.emailNotifications.systems.enabledDescription')
+                  : t('settings.emailNotifications.systems.disabledDescription')}
               </p>
             </div>
             <span
@@ -157,7 +157,7 @@ export default function SystemsEmailNotificationsPage() {
                   : "bg-amber-50 text-amber-600"
               }`}
             >
-              {ownerData.emailEnabled ? "Enabled" : "Disabled"}
+              {ownerData.emailEnabled ? t('settings.emailNotifications.systems.enabledLabel') : t('settings.emailNotifications.systems.disabledLabel')}
             </span>
           </div>
         </div>
@@ -168,6 +168,7 @@ export default function SystemsEmailNotificationsPage() {
             moduleName="maintenance"
             companyEmailEnabled={ownerData.emailEnabled}
             events={MAINTENANCE_EVENTS}
+            translationPrefix="settings.emailNotifications.systems"
           />
         </div>
       </main>

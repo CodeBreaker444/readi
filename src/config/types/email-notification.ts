@@ -30,6 +30,7 @@ export type MaintenanceEventType =
 
 export type OperationsEventType =
   | 'mission_created'
+  | 'mission_assigned'
   | 'mission_started'
   | 'mission_completed'
   | 'calendar_event_created'
@@ -40,6 +41,7 @@ export interface MaintenanceEventConfig {
   displayName: string;
   description: string;
   defaultRoles: string[];
+  disableRoleSelection?: boolean;
 }
 
 export interface OperationsEventConfig {
@@ -47,6 +49,7 @@ export interface OperationsEventConfig {
   displayName: string;
   description: string;
   defaultRoles: string[];
+  disableRoleSelection?: boolean;
 }
 
 export const MAINTENANCE_EVENTS: MaintenanceEventConfig[] = [
@@ -99,19 +102,26 @@ export const OPERATIONS_EVENTS: OperationsEventConfig[] = [
     eventType: 'mission_created',
     displayName: 'Mission Created',
     description: 'When a new mission is created',
-    defaultRoles: ['OPM', 'ADMIN', 'PILOT'],
+    defaultRoles: ['OPM', 'ADMIN', 'PIC'],
+  },
+  {
+    eventType: 'mission_assigned',
+    displayName: 'Mission Assigned',
+    description: 'When a pilot or observer is assigned to a mission',
+    defaultRoles: ['OPM', 'ADMIN', 'PIC'],
+    disableRoleSelection: true,
   },
   {
     eventType: 'mission_started',
     displayName: 'Mission Started',
     description: 'When a mission begins',
-    defaultRoles: ['OPM', 'ADMIN', 'PILOT'],
+    defaultRoles: ['OPM', 'ADMIN', 'PIC'],
   },
   {
     eventType: 'mission_completed',
     displayName: 'Mission Completed',
     description: 'When a mission is completed',
-    defaultRoles: ['OPM', 'ADMIN', 'PILOT'],
+    defaultRoles: ['OPM', 'ADMIN', 'PIC'],
   },
   {
     eventType: 'calendar_event_created',

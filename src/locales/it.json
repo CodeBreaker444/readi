@@ -4763,6 +4763,104 @@
     "fieldAltitude": "Altitudine (m)"
   },
   "settings": {
+    "emailNotifications": {
+      "title": "Notifiche Email",
+      "operations": {
+        "title": "Configura notifiche email operazioni",
+        "enabled": "Notifiche email abilitate",
+        "disabled": "Notifiche email disabilitate",
+        "enabledDescription": "Le notifiche email operazioni sono abilitate. Puoi configurare eventi operativi specifici di seguito.",
+        "disabledDescription": "Le notifiche email operazioni sono disabilitate. Contatta il tuo amministratore per abilitarle.",
+        "enabledLabel": "Abilitato",
+        "disabledLabel": "Disabilitato",
+        "unableToLoad": "Impossibile caricare le informazioni utente",
+        "moduleNotifications": "Notifiche Modulo Operazioni",
+        "notifyRoles": "Notifica Ruoli",
+        "noRolesSelected": "Nessun ruolo selezionato. Nessuna email verrà inviata per questo evento.",
+        "selectRoles": "Seleziona ruoli",
+        "rolesSelected": "{{count}} ruolo{{plural}} selezionato{{plural}}",
+        "directToUsers": "Questa notifica viene inviata direttamente agli utenti assegnati. La selezione dei ruoli non è applicabile.",
+        "saving": "Salvataggio configurazione...",
+        "saveSuccess": "Configurazione salvata con successo",
+        "saveFailed": "Impossibile salvare la configurazione",
+        "events": {
+          "mission_created": {
+            "displayName": "Missione Creata",
+            "description": "Quando viene creata una nuova missione"
+          },
+          "mission_assigned": {
+            "displayName": "Missione Assegnata",
+            "description": "Quando un pilota o osservatore viene assegnato a una missione"
+          },
+          "mission_started": {
+            "displayName": "Missione Avviata",
+            "description": "Quando una missione inizia"
+          },
+          "mission_completed": {
+            "displayName": "Missione Completata",
+            "description": "Quando una missione è completata"
+          },
+          "calendar_event_created": {
+            "displayName": "Evento Calendario Creato",
+            "description": "Quando viene creato un nuovo evento calendario"
+          },
+          "calendar_event_updated": {
+            "displayName": "Evento Calendario Aggiornato",
+            "description": "Quando viene aggiornato un evento calendario"
+          }
+        }
+      },
+      "systems": {
+        "title": "Configura notifiche email sistema",
+        "enabled": "Notifiche email abilitate",
+        "disabled": "Notifiche email disabilitate",
+        "enabledDescription": "Le notifiche email sistema sono abilitate. Puoi configurare eventi di sistema specifici di seguito.",
+        "disabledDescription": "Le notifiche email sistema sono disabilitate. Contatta il tuo amministratore per abilitarle.",
+        "enabledLabel": "Abilitato",
+        "disabledLabel": "Disabilitato",
+        "unableToLoad": "Impossibile caricare le informazioni utente",
+        "moduleNotifications": "Notifiche Modulo Sistemi",
+        "notifyRoles": "Notifica Ruoli",
+        "noRolesSelected": "Nessun ruolo selezionato. Nessuna email verrà inviata per questo evento.",
+        "selectRoles": "Seleziona ruoli",
+        "rolesSelected": "{{count}} ruolo{{plural}} selezionato{{plural}}",
+        "directToUsers": "Questa notifica viene inviata direttamente agli utenti assegnati. La selezione dei ruoli non è applicabile.",
+        "saving": "Salvataggio configurazione...",
+        "saveSuccess": "Configurazione salvata con successo",
+        "saveFailed": "Impossibile salvare la configurazione",
+        "events": {
+          "ticket_created": {
+            "displayName": "Ticket Creato",
+            "description": "Quando viene creato un nuovo ticket di manutenzione"
+          },
+          "ticket_closed": {
+            "displayName": "Ticket Chiuso",
+            "description": "Quando un ticket di manutenzione viene chiuso"
+          },
+          "ticket_assigned": {
+            "displayName": "Ticket Assegnato",
+            "description": "Quando un ticket di manutenzione viene assegnato a un tecnico"
+          },
+          "maintenance_alert": {
+            "displayName": "Allarme Manutenzione",
+            "description": "Quando un componente si avvicina al limite di manutenzione"
+          },
+          "maintenance_due": {
+            "displayName": "Manutenzione Scaduta",
+            "description": "Quando un componente raggiunge il limite di manutenzione"
+          },
+          "intervention_started": {
+            "displayName": "Intervento Avviato",
+            "description": "Quando inizia l'intervento di manutenzione"
+          },
+          "intervention_ended": {
+            "displayName": "Intervento Terminato",
+            "description": "Quando termina l'intervento di manutenzione"
+          }
+        }
+      },
+      "companyDisabled": "Le notifiche email sono disabilitate a livello aziendale. Contatta il tuo amministratore per abilitarle."
+    },
     "integrations": {
       "title": "Integrazioni",
       "subtitle": "Configura connessioni a sistemi esterni",

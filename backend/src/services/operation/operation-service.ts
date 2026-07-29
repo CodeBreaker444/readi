@@ -3,7 +3,7 @@ import { assertMissionEditable } from '@/backend/services/operation/mission-lock
 import { AttachmentUploadResponse, CreateOperationSchema, ListOperationsQuerySchema, Operation, OperationAttachment, OperationsListResponse, UpdateOperationSchema } from '@/config/types/operation';
 import { prisma } from '@/lib/prisma';
 import { buildS3Url, deleteFileFromS3, getPresignedDownloadUrl, REGION, uploadFileToS3 } from '@/lib/s3Client';
-import { sendMissionCreatedModuleEmail } from '../settings/module-email-notification-service';
+import { sendMissionCreatedModuleEmail, sendMissionAssignedModuleEmail } from '../settings/module-email-notification-service';
 
 // Keys must match the `status_name` values actually sent by callers
 // (the OperationStatus enum: PLANNED | IN_PROGRESS | COMPLETED | CANCELLED | ABORTED).
@@ -299,6 +299,52 @@ export async function createOperation(input: CreateOperationSchema, ownerId: num
     });
     
     console.log('[createOperation] Mission created email sent successfully');
+
+    // Send mission assigned email to pilot
+    if (input.fk_pilot_user_id) {
+      try {
+        const pilotUser = await prisma.public_users.findUnique({
+          where: { user_id: input.fk_pilot_user_id },
+          select: { first_name: true, last_name: true },
+        });
+
+        if (pilotUser) {
+          await sendMissionAssignedModuleEmail(ownerId, {
+            missionCode: codeToChild,
+            missionType: missionType?.type_name || 'Unknown',
+            assignedBy: createdBy,
+            assignedTo: `${pilotUser.first_name} ${pilotUser.last_name}`.trim(),
+            role: 'Pilot',
+            scheduledDate: input.scheduled_start,
+            description: input.mission_name || input.mission_description || input.notes || undefined,
+          }, [input.fk_pilot_user_id]);
+          console.log('[createOperation] Mission assigned email sent to pilot:', pilotUser.first_name, pilotUser.last_name);
+        }
+      } catch (pilotEmailError) {
+        console.error('[createOperation] Failed to send mission assigned email to pilot:', pilotEmailError);
+      }
+    }
+
+    // Send mission assigned emails to visual observers
+    if (visualObservers?.length) {
+      const observerIds = visualObservers.map(o => o.user_id);
+      for (const observer of visualObservers) {
+        try {
+          await sendMissionAssignedModuleEmail(ownerId, {
+            missionCode: codeToChild,
+            missionType: missionType?.type_name || 'Unknown',
+            assignedBy: createdBy,
+            assignedTo: observer.name,
+            role: 'Observer',
+            scheduledDate: input.scheduled_start,
+            description: input.mission_name || input.mission_description || input.notes || undefined,
+          }, [observer.user_id]);
+          console.log('[createOperation] Mission assigned email sent to observer:', observer.name);
+        } catch (observerEmailError) {
+          console.error('[createOperation] Failed to send mission assigned email to observer:', observer.name, observerEmailError);
+        }
+      }
+    }
   } catch (emailError) {
     console.error('[createOperation] Failed to send mission created email:', emailError);
     // Don't fail the operation creation if email fails
@@ -312,7 +358,17 @@ export async function createOperation(input: CreateOperationSchema, ownerId: num
 export async function updateOperation(id: number, input: UpdateOperationSchema): Promise<Operation> {
   const current = await prisma.pilot_mission.findUnique({
     where: { pilot_mission_id: id },
-    select: { status_name: true },
+    select: { 
+      status_name: true,
+      fk_pilot_user_id: true,
+      mission_metadata: true,
+      mission_code: true,
+      fk_mission_type_id: true,
+      scheduled_start: true,
+      mission_name: true,
+      mission_description: true,
+      fk_owner_id: true,
+    },
   });
   assertMissionEditable(current?.status_name);
 
@@ -338,14 +394,28 @@ export async function updateOperation(id: number, input: UpdateOperationSchema):
   if (input.distance_flown !== undefined) updatePayload.distance_flown = input.distance_flown;
   if ((input as any).fk_erp_group_id !== undefined) updatePayload.fk_erp_group_id = (input as any).fk_erp_group_id;
 
-  if ((input as any).flight_mode !== undefined) {
-    const current = await prisma.pilot_mission.findUnique({
-      where: { pilot_mission_id: id },
-      select: { mission_metadata: true },
+  // Handle visual observers assignment
+  const rawObserverIds: number[] | null = (input as any).visual_observer_ids ?? null;
+  let visualObservers: { user_id: number; name: string }[] | null = null;
+  if (rawObserverIds?.length) {
+    const observerUsers = await prisma.public_users.findMany({
+      where: { user_id: { in: rawObserverIds } },
+      select: { user_id: true, first_name: true, last_name: true },
     });
+    if (observerUsers.length) {
+      visualObservers = observerUsers.map((u) => ({
+        user_id: u.user_id,
+        name: `${u.first_name ?? ''} ${u.last_name ?? ''}`.trim(),
+      }));
+    }
+  }
+
+  if (visualObservers?.length || (input as any).flight_mode !== undefined) {
+    const currentMetadata = current?.mission_metadata as any ?? {};
     updatePayload.mission_metadata = {
-      ...(current?.mission_metadata as any ?? {}),
-      flight_mode: (input as any).flight_mode,
+      ...currentMetadata,
+      ...(visualObservers?.length && { visual_observers: visualObservers }),
+      ...((input as any).flight_mode !== undefined && { flight_mode: (input as any).flight_mode }),
     };
   }
 
@@ -353,6 +423,62 @@ export async function updateOperation(id: number, input: UpdateOperationSchema):
     where: { pilot_mission_id: id },
     data: updatePayload,
   });
+
+  // Send mission assignment emails if pilot or observers changed
+  const ownerId = current?.fk_owner_id;
+  if (ownerId) {
+    try {
+      const missionType = current?.fk_mission_type_id
+        ? await prisma.pilot_mission_type.findUnique({
+            where: { mission_type_id: current.fk_mission_type_id },
+            select: { type_name: true },
+          })
+        : null;
+
+      // Check if pilot changed
+      if (input.fk_pilot_user_id !== undefined && input.fk_pilot_user_id !== current?.fk_pilot_user_id) {
+        const pilotUser = await prisma.public_users.findUnique({
+          where: { user_id: input.fk_pilot_user_id },
+          select: { first_name: true, last_name: true },
+        });
+
+        if (pilotUser) {
+          await sendMissionAssignedModuleEmail(ownerId, {
+            missionCode: current?.mission_code || '',
+            missionType: missionType?.type_name || 'Unknown',
+            assignedBy: 'System',
+            assignedTo: `${pilotUser.first_name} ${pilotUser.last_name}`.trim(),
+            role: 'Pilot',
+            scheduledDate: current?.scheduled_start?.toISOString(),
+            description: current?.mission_name || current?.mission_description || undefined,
+          }, [input.fk_pilot_user_id]);
+        }
+      }
+
+      // Check if observers changed
+      const currentObservers = (current?.mission_metadata as any)?.visual_observers || [];
+      const currentObserverIds = new Set(currentObservers.map((o: any) => o.user_id));
+      const newObserverIds = new Set(visualObservers?.map((o) => o.user_id) || []);
+
+      // Find newly added observers
+      for (const observer of visualObservers || []) {
+        if (!currentObserverIds.has(observer.user_id)) {
+          await sendMissionAssignedModuleEmail(ownerId, {
+            missionCode: current?.mission_code || '',
+            missionType: missionType?.type_name || 'Unknown',
+            assignedBy: 'System',
+            assignedTo: observer.name,
+            role: 'Observer',
+            scheduledDate: current?.scheduled_start?.toISOString(),
+            description: current?.mission_name || current?.mission_description || undefined,
+          }, [observer.user_id]);
+        }
+      }
+    } catch (emailError) {
+      console.error('[updateOperation] Failed to send mission assignment email:', emailError);
+      // Don't fail the operation update if email fails
+    }
+  }
 
   const full = await getOperation(id);
   if (!full) throw new Error('OPERATION_NOT_FOUND');

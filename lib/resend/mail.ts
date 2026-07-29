@@ -6,6 +6,7 @@ import { InterventionEndedEmail } from '@/components/email-template/Intervention
 import { InterventionStartedEmail } from '@/components/email-template/InterventionStartedEmail';
 import { MaintenanceAlertEmail } from '@/components/email-template/MaintenanceAlertEmail';
 import { MaintenanceDueEmail } from '@/components/email-template/MaintenanceDueEmail';
+import { MissionAssignedEmail } from '@/components/email-template/MissionAssignedEmail';
 import { MissionCompletedEmail } from '@/components/email-template/MissionCompletedEmail';
 import { MissionCreatedEmail } from '@/components/email-template/MissionCreatedEmail';
 import { MissionStartedEmail } from '@/components/email-template/MissionStartedEmail';
@@ -336,6 +337,34 @@ export const sendMissionCreatedEmail = async (
     if (error) console.error('sendMissionCreatedEmail error:', error);
   } catch (err) {
     console.error('sendMissionCreatedEmail exception:', err);
+  }
+};
+
+export const sendMissionAssignedEmail = async (
+  emails: string[],
+  missionCode: string,
+  missionType: string,
+  assignedBy: string,
+  assignedTo: string,
+  role: 'Pilot' | 'Observer',
+  scheduledDate?: string,
+  description?: string
+) => {
+  if (!emails.length) return;
+  try {
+    const emailHtml = await render(
+      MissionAssignedEmail({ missionCode, missionType, assignedBy, assignedTo, role, scheduledDate, description })
+    );
+
+    const { error } = await resend.emails.send({
+      from: 'ReADI <no-reply@readi.theun1t.com>',
+      to: emails,
+      subject: `Mission Assignment — ${missionCode}`,
+      html: emailHtml,
+    });
+    if (error) console.error('sendMissionAssignedEmail error:', error);
+  } catch (err) {
+    console.error('sendMissionAssignedEmail exception:', err);
   }
 };
 
