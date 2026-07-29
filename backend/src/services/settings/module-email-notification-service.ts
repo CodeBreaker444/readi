@@ -1,5 +1,4 @@
 import { prisma } from "@/lib/prisma";
-import { sendNotificationEmail } from "../../../../lib/resend/mail";
 import {
   sendMissionCreatedEmail,
   sendMissionAssignedEmail,
@@ -640,7 +639,7 @@ export async function sendMissionAssignedModuleEmail(
         data.assignedBy || 'System',
         data.assignedTo || 'Unknown',
         data.role || 'Pilot',
-        data.scheduledDate,
+        data.scheduledDate ?? undefined,
         data.description
       );
       await incrementDailyEmailCount(ownerId);
