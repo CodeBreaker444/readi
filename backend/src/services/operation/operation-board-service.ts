@@ -79,7 +79,6 @@ export async function getMissionBoard(
       where: {
         fk_owner_id: ownerId,
         fk_mission_status_id: 1,
-        recurring_group_id: null,
         mission_metadata: {
           not: {
             is_imported: true
@@ -99,7 +98,6 @@ export async function getMissionBoard(
       where: {
         fk_owner_id: ownerId,
         fk_mission_status_id: 2,
-        recurring_group_id: null,
         mission_metadata: {
           not: {
             is_imported: true
@@ -115,7 +113,6 @@ export async function getMissionBoard(
       where: {
         fk_owner_id: ownerId,
         fk_mission_status_id: 3,
-        recurring_group_id: null,
         mission_metadata: {
           not: {
             is_imported: true

@@ -167,8 +167,9 @@ async function processGutmaBuffer(
     return { duplicate: true, error: `Duplicate mission_code "${missionCode}" — skipped` };
   }
 
-  // Imports represent flights that already happened, so always set to COMPLETED
-  const statusName = 'COMPLETED';
+  // Single imports represent flights that already happened, so set to COMPLETED
+  // Recurrent missions are future scheduled missions, so set to PLANNED
+  const statusName = recurringGroupId ? 'PLANNED' : 'COMPLETED';
 
   const notesArr = [
     params.notes || null,
@@ -240,13 +241,18 @@ async function processGutmaBuffer(
       flight_duration: durationSec,
       distance_flown: distanceFlown,
       notes: notesArr.join(' | ') || null,
-      ...(params.missionPlanningId && params.flightMode && { mission_metadata: { flight_mode: params.flightMode, is_imported: true } }),
       ...(recurringGroupId && {
         recurring_group_id: recurringGroupId,
         mission_date_until: params.recurrentEndDate ? new Date(params.recurrentEndDate) : null,
         mission_group_label: params.groupLabel || null,
+        ...(params.missionPlanningId && params.flightMode && { mission_metadata: { flight_mode: params.flightMode } }),
       }),
-      ...(!recurringGroupId && { mission_metadata: { is_imported: true } }),
+      ...(!recurringGroupId && {
+        mission_metadata: {
+          ...(params.missionPlanningId && params.flightMode && { flight_mode: params.flightMode }),
+          is_imported: true,
+        },
+      }),
     } as any,
     select: { pilot_mission_id: true },
   });

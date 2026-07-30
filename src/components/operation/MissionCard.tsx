@@ -146,6 +146,15 @@ export function MissionCard({ mission, draggable, onDragStart, onViewDetails, on
 
       <CardHeader className="space-y-2 p-4 pb-2">
         <div className="flex items-start justify-between gap-2">
+          <h4 className={`font-mono text-xs font-semibold ${isDark ? "text-slate-200" : "text-slate-800"}`}>
+            {mission.mission_name || `—`}
+          </h4>
+          <span className={`shrink-0 font-mono text-[10px] ${isDark ? "text-slate-500" : "text-slate-400"}`}>
+            #{mission.mission_id}
+          </span>
+        </div>
+
+        <div className="flex items-start justify-between gap-2">
           <div className="flex flex-wrap items-center gap-1.5">
             <Badge
               variant="outline"
@@ -163,9 +172,6 @@ export function MissionCard({ mission, draggable, onDragStart, onViewDetails, on
               </Badge>
             )}
           </div>
-          <span className={`shrink-0 font-mono text-[10px] ${isDark ? "text-slate-500" : "text-slate-400"}`}>
-            #{mission.mission_id}
-          </span>
         </div>
 
         <div>
