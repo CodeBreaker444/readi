@@ -45,6 +45,10 @@ export default function DFlightSettings() {
   const [pfxPasswordSet, setPfxPasswordSet] = useState(false);
   const [form, setForm] = useState<FormState>(EMPTY);
 
+  // Validation: at least one of password or PFX certificate must be present
+  const hasAuthMethod = (form.password.trim() !== '' || passwordSet) || (form.pfx_content !== '' || pfxPasswordSet);
+  const validationError = !hasAuthMethod ? t('dflight.settings.toast.authRequired') : null;
+
   const card  = isDark ? 'bg-slate-800/80 border-slate-700/60' : 'bg-white border-gray-200';
   const inputCls = isDark ? 'bg-slate-900 border-slate-600 text-slate-200 placeholder:text-slate-500' : '';
   const labelCls = isDark ? 'text-slate-400' : 'text-gray-500';
@@ -96,6 +100,10 @@ export default function DFlightSettings() {
   async function handleSave() {
     if (!form.base_url.trim() || !form.username.trim() || !form.client_id.trim()) {
       toast.error(t('dflight.settings.toast.validationError'));
+      return;
+    }
+    if (!hasAuthMethod) {
+      toast.error(t('dflight.settings.toast.authRequired'));
       return;
     }
     setSaving(true);
@@ -296,7 +304,7 @@ export default function DFlightSettings() {
             <Button
               size="sm"
               onClick={handleSave}
-              disabled={saving || loading}
+              disabled={saving || loading || !hasAuthMethod}
               className="h-8 text-xs bg-violet-600 hover:bg-violet-500 text-white gap-1.5"
             >
               {saving
@@ -308,6 +316,12 @@ export default function DFlightSettings() {
             </Button>
           </FeatureGate>
         </div>
+
+        {validationError && !loading && (
+          <div className={`text-xs text-red-500 mt-2 ${isDark ? 'text-red-400' : ''}`}>
+            {validationError}
+          </div>
+        )}
       </div>
     </div>
   );
