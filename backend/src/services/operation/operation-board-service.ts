@@ -79,6 +79,12 @@ export async function getMissionBoard(
       where: {
         fk_owner_id: ownerId,
         fk_mission_status_id: 1,
+        recurring_group_id: null,
+        mission_metadata: {
+          not: {
+            is_imported: true
+          }
+        },
         ...(pilotFilter && { fk_pilot_user_id: pilotFilter }),
         OR: [
           { scheduled_start: null },
@@ -93,6 +99,12 @@ export async function getMissionBoard(
       where: {
         fk_owner_id: ownerId,
         fk_mission_status_id: 2,
+        recurring_group_id: null,
+        mission_metadata: {
+          not: {
+            is_imported: true
+          }
+        },
         ...(pilotFilter && { fk_pilot_user_id: pilotFilter }),
       },
       orderBy: { actual_start: { sort: 'desc', nulls: 'first' } },
@@ -103,6 +115,12 @@ export async function getMissionBoard(
       where: {
         fk_owner_id: ownerId,
         fk_mission_status_id: 3,
+        recurring_group_id: null,
+        mission_metadata: {
+          not: {
+            is_imported: true
+          }
+        },
         actual_end: { gte: todayStart, lte: todayEnd },
         ...(pilotFilter
           ? { fk_pilot_user_id: pilotFilter }

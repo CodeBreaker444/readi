@@ -79,7 +79,6 @@ export async function POST(req: NextRequest) {
                     ? null : Number(formData.get('mission_plan')) || null,
       missionPlanningId: formData.get('mission_planning') === 'N'
                     ? null : Number(formData.get('mission_planning')) || null,
-      statusId:   Number(formData.get('mission_status'))       || 0,
       resultId:   Number(formData.get('mission_result'))       || 0,
       pilotId:    Number(formData.get('pilot_id'))             || 0,
       lucProcedureId: Number(formData.get('mission_luc_procedure')) || null,
@@ -90,6 +89,10 @@ export async function POST(req: NextRequest) {
       userId:     session!.user.userId,
       missionCode: String(formData.get('mission_code') ?? '').trim() || undefined,
       userTimezone: session!.user.timezone || undefined,
+      isRecurrent: String(formData.get('is_recurrent')) === 'true',
+      recurrentStartDate: String(formData.get('recurrent_start_date') ?? ''),
+      recurrentEndDate: String(formData.get('recurrent_end_date') ?? ''),
+      recurrentTime: String(formData.get('recurrent_time') ?? ''),
     };
 
     const result = await importMissionFromLog(file, params, flytbaseFlightId || null);
