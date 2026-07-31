@@ -1909,6 +1909,7 @@
         "ccPlatform": "CC Platform",
         "organization": "Organization",
         "uploadLogFile": "Upload Log File (.gutma or .zip)",
+        "logFile": "Log File",
         "flytbaseWindow": "Control Center Window",
         "selectFlightLog": "Select Flight Log",
         "missionCode": "Mission Code",

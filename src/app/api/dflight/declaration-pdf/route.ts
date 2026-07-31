@@ -30,10 +30,14 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    if (!config.pfx_content || !config.pfx_password) {
+    // Check if either certificate+password or just password is available
+    const hasCertificateWithPassword = config.pfx_content && config.pfx_password;
+    const hasPasswordOnly = config.password;
+
+    if (!hasCertificateWithPassword && !hasPasswordOnly) {
       return NextResponse.json({
         code: 0,
-        message: 'PFX certificate not configured. Please upload PFX file and password in D-Flight settings.',
+        message: 'D-Flight credentials are missing. Either a PFX certificate with password or just the password is required for authentication.',
       });
     }
 
@@ -42,15 +46,15 @@ export async function POST(req: NextRequest) {
       username: config.username,
       password: config.password ?? undefined,
       client_id: config.client_id,
-    }, config.pfx_content, config.pfx_password);
+    }, config.pfx_content?? undefined, config.pfx_password ?? undefined);
     const accessToken = tokenResponse.access_token;
 
     const pdfBuffer = await getDFlightDeclarationPdf(
       config.base_url,
       accessToken,
       declarationId,
-      config.pfx_content,
-      config.pfx_password,
+      config.pfx_content ?? undefined,
+      config.pfx_password ?? undefined,
     );
 
     return new NextResponse(Buffer.from(pdfBuffer), {

@@ -51,9 +51,9 @@ async function syncStsDeclarations(componentId: number, ownerId: number) {
     if (config.password !== null) {
       tokenConfig.password = config.password;
     }
-    const tokenResponse = await getDFlightToken(tokenConfig, config.pfx_content, config.pfx_password);
+    const tokenResponse = await getDFlightToken(tokenConfig, config.pfx_content ?? undefined, config.pfx_password ?? undefined);
 
-    const userInfo = await getDFlightUserInfo(config.base_url, tokenResponse.access_token, config.pfx_content, config.pfx_password);
+    const userInfo = await getDFlightUserInfo(config.base_url, tokenResponse.access_token, config.pfx_content ?? undefined, config.pfx_password ?? undefined);
     if (!userInfo.operatorRegistrationNumber) return;
 
     const declarations = await getDFlightDroneDeclarations(

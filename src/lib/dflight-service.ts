@@ -10,7 +10,10 @@ let _httpsAgent: https.Agent | null = null;
 let _httpsPfxContent: string | null = null;
 let _httpsPfxPassword: string | null = null;
 
-function getHttpsAgent(pfxContent: string, pfxPassword: string): https.Agent {
+function getHttpsAgent(pfxContent: string, pfxPassword: string): https.Agent | undefined {
+  if (!pfxContent || !pfxPassword) {
+    return undefined;
+  }
   if (!_httpsAgent || _httpsPfxContent !== pfxContent || _httpsPfxPassword !== pfxPassword) {
     const pfx = Buffer.from(pfxContent, 'base64');
     _httpsAgent = new https.Agent({
@@ -24,7 +27,6 @@ function getHttpsAgent(pfxContent: string, pfxPassword: string): https.Agent {
     });
     _httpsPfxContent = pfxContent;
     _httpsPfxPassword = pfxPassword;
-    console.log('D-Flight: Created new HTTPS Agent with TLS 1.2+ support');
   }
   return _httpsAgent;
 }
@@ -158,15 +160,15 @@ function getAgent(pfxContent: string, pfxPassword: string, baseUrl: string): Age
 async function dFetch(
   url: string,
   init: Parameters<typeof undiciFetch>[1],
-  pfxContent: string,
-  pfxPassword: string,
-  baseUrl: string,
+  pfxContent?: string,
+  pfxPassword?: string,
+  baseUrl?: string,
 ): Promise<Awaited<ReturnType<typeof undiciFetch>>> {
   // Use native HTTPS fetch by default for better PFX certificate support
-  const httpsAgent = getHttpsAgent(pfxContent, pfxPassword);
+  const httpsAgent = pfxContent && pfxPassword ? getHttpsAgent(pfxContent, pfxPassword) : undefined;
   const response = await fetch(url, {
     ...init,
-    agent: httpsAgent as any,
+    ...(httpsAgent ? { agent: httpsAgent as any } : {}),
   } as RequestInit);
 
   // Convert native fetch response to undici-compatible format
@@ -190,8 +192,8 @@ async function dFetch(
 
 export async function getDFlightToken(
   config: DFlightConfig,
-  pfxContent: string,
-  pfxPassword: string,
+  pfxContent?: string,
+  pfxPassword?: string,
 ): Promise<DFlightTokenResponse> {
   const body = new URLSearchParams({
     grant_type: 'password',
@@ -283,8 +285,8 @@ export async function getDFlightDrones(
   baseUrl:     string,
   accessToken: string,
   owner:       string,
-  pfxContent:  string,
-  pfxPassword: string,
+  pfxContent?:  string,
+  pfxPassword?: string,
   pageSize = 100,
 ): Promise<DFlightDroneResult[]> {
   const drones: DFlightDroneResult[] = [];
@@ -384,8 +386,8 @@ export async function getDFlightUasClass(
   baseUrl:     string,
   accessToken: string,
   classId:     string,
-  pfxContent:  string,
-  pfxPassword: string,
+  pfxContent?:  string,
+  pfxPassword?: string,
 ): Promise<DFlightUasClassResult | null> {
   const safeBaseUrl = baseUrl.startsWith('http') ? baseUrl : `https://${baseUrl}`;
 
@@ -417,8 +419,8 @@ export async function getDFlightModel(
   baseUrl:     string,
   accessToken: string,
   modelId:     string,
-  pfxContent:  string,
-  pfxPassword: string,
+  pfxContent?:  string,
+  pfxPassword?: string,
 ): Promise<DFlightModelResult | null> {
   const safeBaseUrl = baseUrl.startsWith('http') ? baseUrl : `https://${baseUrl}`;
 
@@ -466,8 +468,8 @@ export async function getDFlightManufacturer(
   baseUrl:        string,
   accessToken:    string,
   manufacturerId: string,
-  pfxContent:     string,
-  pfxPassword:    string,
+  pfxContent?:     string,
+  pfxPassword?:    string,
 ): Promise<DFlightManufacturerResult | null> {
   const safeBaseUrl = baseUrl.startsWith('http') ? baseUrl : `https://${baseUrl}`;
 
@@ -502,8 +504,8 @@ export interface DFlightUserInfo {
 export async function getDFlightUserInfo(
   baseUrl:     string,
   accessToken: string,
-  pfxContent:  string,
-  pfxPassword: string,
+  pfxContent?:  string,
+  pfxPassword?: string,
 ): Promise<DFlightUserInfo> {
   const safeBaseUrl = baseUrl.startsWith('http') ? baseUrl : `https://${baseUrl}`;
 
@@ -558,8 +560,8 @@ export async function getDFlightDroneDeclarations(
   accessToken:               string,
   operatorRegistrationNumber: string,
   droneId:                   string,
-  pfxContent:                string,
-  pfxPassword:               string,
+  pfxContent?:                string,
+  pfxPassword?:               string,
 ): Promise<DFlightDroneDeclaration[]> {
   const params = new URLSearchParams({
     droneid: droneId,
@@ -621,8 +623,8 @@ export async function getDFlightDeclarationPdf(
   baseUrl:       string,
   accessToken:   string,
   declarationId: string,
-  pfxContent:    string,
-  pfxPassword:   string,
+  pfxContent?:    string,
+  pfxPassword?:   string,
 ): Promise<Uint8Array> {
   const safeBaseUrl = baseUrl.startsWith('http') ? baseUrl : `https://${baseUrl}`;
 

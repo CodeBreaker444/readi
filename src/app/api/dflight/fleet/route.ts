@@ -62,36 +62,19 @@ export async function GET() {
     const modelById = new Map(models.map((m) => [m.model_id, m]));
 
     let dFlightDrones: Awaited<ReturnType<typeof getDFlightDrones>> = [];
+    let connectionError: string | null = null;
+
     try {
-      if (!config.pfx_content) {
-        return NextResponse.json({
-          code: 0,
-          message: 'D-Flight digital certificate is missing. A PFX certificate file is required for authentication.',
-          data: [],
-        });
-      }
-      if (!config.pfx_password) {
-        return NextResponse.json({
-          code: 0,
-          message: 'D-Flight certificate password is missing. The password for your PFX certificate is required.',
-          data: [],
-        });
-      }
       const token = await getDFlightToken({
         base_url: config.base_url,
         username: config.username,
         password: config.password ?? undefined,
         client_id: config.client_id,
-      }, config.pfx_content, config.pfx_password);
+      }, config.pfx_content ?? undefined, config.pfx_password ?? undefined);
 
-      dFlightDrones = await getDFlightDrones(config.base_url, token.access_token, config.username, config.pfx_content, config.pfx_password);
-      
+      dFlightDrones = await getDFlightDrones(config.base_url, token.access_token, config.username, config.pfx_content ?? undefined, config.pfx_password ?? undefined);
     } catch (e: any) {
-      return NextResponse.json({
-        code: 0,
-        message: `Failed to connect to D-Flight: ${e?.message ?? 'Unknown error'}`,
-        data: [],
-      });
+      connectionError = `Failed to connect to D-Flight: ${e?.message ?? 'Unknown error'}`;
     }
 
     // Any drone in d-flight can be listed here, regardless of status — only
@@ -155,6 +138,14 @@ export async function GET() {
       const rank = (r: DFlightDroneRow) => (r.linked ? 1 : 0);
       return rank(a) - rank(b);
     });
+
+    if (connectionError) {
+      return NextResponse.json({ 
+        code: 0, 
+        message: connectionError,
+        data: [],
+      });
+    }
 
     return NextResponse.json({ code: 1, data: rows });
   } catch (err: any) {

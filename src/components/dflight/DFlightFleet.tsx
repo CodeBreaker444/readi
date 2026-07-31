@@ -67,7 +67,11 @@ export default function DFlightFleet() {
     setNotConfigured(false);
     setMissingCertificate(false);
     try {
-      const { data } = await axios.get<{ code: number; data: DFlightDroneRow[]; message?: string }>(
+      const { data } = await axios.get<{ 
+        code: number; 
+        data: DFlightDroneRow[]; 
+        message?: string;
+      }>(
         '/api/dflight/fleet',
       );
       if (data.code === 0) {

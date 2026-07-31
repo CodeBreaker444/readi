@@ -20,8 +20,12 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ code: 0, message: 'D-Flight integration not configured', data: null });
     }
 
-    if (!config.pfx_content || !config.pfx_password) {
-      return NextResponse.json({ code: 0, message: 'PFX certificate not configured. Please upload PFX file and password in D-Flight settings.', data: null });
+    // Check if either certificate+password or just password is available
+    const hasCertificateWithPassword = config.pfx_content && config.pfx_password;
+    const hasPasswordOnly = config.password;
+
+    if (!hasCertificateWithPassword && !hasPasswordOnly) {
+      return NextResponse.json({ code: 0, message: 'D-Flight credentials are missing. Either a PFX certificate with password or just the password is required for authentication.', data: null });
     }
 
     const token = await getDFlightToken({
@@ -29,9 +33,9 @@ export async function GET(req: NextRequest) {
       username: config.username,
       password: config.password ?? undefined,
       client_id: config.client_id,
-    }, config.pfx_content, config.pfx_password);
+    }, config.pfx_content ?? undefined, config.pfx_password ?? undefined);
 
-    const result = await getDFlightManufacturer(config.base_url, token.access_token, manufacturerId, config.pfx_content, config.pfx_password);
+    const result = await getDFlightManufacturer(config.base_url, token.access_token, manufacturerId, config.pfx_content ?? undefined, config.pfx_password ?? undefined);
     return NextResponse.json({ code: 1, data: result });
   } catch (err: any) {
     return internalError(E.SV001, err);
