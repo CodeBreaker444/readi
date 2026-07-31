@@ -1904,6 +1904,7 @@
         "ccPlatform": "Piattaforma CC",
         "organization": "Organizzazione",
         "uploadLogFile": "Carica File Log (.gutma o .zip)",
+        "logFile": "File Log",
         "flytbaseWindow": "Finestra Control Center",
         "selectFlightLog": "Seleziona Volo",
         "missionCode": "Codice Missione",

@@ -1902,6 +1902,7 @@
         "ccPlatform": "CC-Plattform",
         "organization": "Organisation",
         "uploadLogFile": "Protokolldatei hochladen (.gutma oder .zip)",
+        "logFile": "Protokolldatei",
         "flytbaseWindow": "Control Center Fenster",
         "selectFlightLog": "Flugprotokoll auswählen",
         "missionCode": "Missionscode",

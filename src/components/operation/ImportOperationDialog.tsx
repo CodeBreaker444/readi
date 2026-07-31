@@ -75,7 +75,7 @@ const STEP_KEYS = [
     { id: 5, labelKey: 'confirm',     icon: ClipboardCheck },
 ];
 
-const PLATFORMS = [{ value: 'Control Center', label: 'Control Center' }];
+const PLATFORMS = [{ value: 'FLYTBASE', label: 'Control Center' }];
 
 function formatDuration(secs?: number): string {
     if (secs == null) return '—';
@@ -142,6 +142,16 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
     const [categoryId,  setCategoryId]  = useState('');
     const [typeId,      setTypeId]      = useState('');
     const [opType,      setOpType]      = useState<'OPEN' | 'PDRA'>('OPEN');
+
+    const handleOpTypeChange = (newOpType: 'OPEN' | 'PDRA') => {
+        setOpType(newOpType);
+        // Reset PDRA-specific fields when switching to OPEN
+        if (newOpType === 'OPEN') {
+            setPlanId('');
+            setMissionPlanningId('');
+            setFlightMode('RC');
+        }
+    };
     const [flightMode,  setFlightMode]  = useState<'RC' | 'DOCK'>('RC');
     const [planId,      setPlanId]      = useState('');
     const [missionPlanningId, setMissionPlanningId] = useState('');
@@ -199,6 +209,46 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
             const bActive = !b.planning_active || b.planning_active === 'Y' ? 0 : 1;
             return aActive - bActive;
         });
+
+    // Load mission plannings when planId changes (for PDRA operations)
+    useEffect(() => {
+        if (!planId || opType !== 'PDRA') {
+            setMissionPlannings([]);
+            setMissionPlanningId('');
+            return;
+        }
+        setLoadingMissionPlannings(true);
+        axios.get(`/api/operation/mission-plannings?planning_id=${planId}`)
+            .then((r) => {
+                const missions = r.data.mission_plannings ?? [];
+                setMissionPlannings(missions);
+                if (missions.length > 0 && !missionPlanningId) {
+                    setMissionPlanningId(String(missions[0].mission_planning_id));
+                }
+            })
+            .catch(() => toast.error(t(ns + '.toast.loadMissionOptionsError')))
+            .finally(() => setLoadingMissionPlannings(false));
+    }, [planId, opType]);
+
+    const canNext = () => {
+        if (step === 1) return !!clientId;
+        if (step === 2) {
+            // Allow either Flytbase flight selection OR log file upload
+            return !!selectedFlightId || !!logFile;
+        }
+        if (step === 3) {
+            if (!vehicleId) return false;
+            if (!missionCode.trim()) return false;
+            if (opType === 'PDRA') {
+                if (!planId) return false;
+                const selected = clientPlannings.find(p => String(p.planning_id) === planId);
+                if (selected && selected.planning_active === 'N') return false;
+            }
+            return true;
+        }
+        if (step === 4) return !!pilotId;
+        return true;
+    };
 
     // Once the log's aircraft serial number and the drone list are both known,
     // auto-select the one matching system — the user must not be able to pick
@@ -324,9 +374,11 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
             formData.append('category_id', categoryId);
             formData.append('type_id', typeId);
             formData.append('op_type', opType);
-            formData.append('flight_mode', flightMode);
-            formData.append('plan_id', planId);
-            formData.append('mission_planning_id', missionPlanningId);
+            if (opType === 'PDRA') {
+                formData.append('flight_mode', flightMode);
+                formData.append('plan_id', planId);
+                formData.append('mission_planning_id', missionPlanningId);
+            }
             formData.append('luc_procedure_id', lucProcedureId);
             formData.append('location', location);
             formData.append('group_label', groupLabel);
@@ -360,6 +412,8 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
     const selectedPilot    = pilots.find((p) => String(p.user_id) === pilotId);
     const pilotLabel       = selectedPilot ? `${selectedPilot.first_name} ${selectedPilot.last_name}` : '';
     const selectedFlightObj = flights.find((f) => f.flight_id === selectedFlightId);
+    const selectedPlan     = clientPlannings.find((p) => String(p.planning_id) === planId);
+    const selectedMissionPlanning = missionPlannings.find((m) => String(m.mission_planning_id) === missionPlanningId);
 
     return (
         <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
@@ -516,6 +570,9 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                                                             onClick={() => {
                                                                 setSelectedFlightId(f.flight_id);
                                                                 setLogFile(null);
+                                                                // Clear file input when flight is selected
+                                                                const fileInput = document.getElementById('log-file-input') as HTMLInputElement;
+                                                                if (fileInput) fileInput.value = '';
                                                                 document.getElementById('flight-dropdown')?.classList.add('hidden');
                                                             }}
                                                             className="p-3 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer border-b border-slate-100 dark:border-slate-800 last:border-0"
@@ -602,85 +659,129 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                             )}
 
                             <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                <span>{t(ns + '.info.uploadOrSelectFlight')}</span>
+                                <span>Select a flight from Flytbase or upload a log file below</span>
+                            </div>
+
+                            <div className="border-t border-slate-200 dark:border-slate-800 pt-4 mt-4">
+                                <Label className="mb-1.5 block">{t(ns + '.fields.logFile')}</Label>
+                                <div className="flex items-center gap-3">
+                                    <Input
+                                        id="log-file-input"
+                                        type="file"
+                                        accept=".gutma,.zip,.json,.xml"
+                                        onChange={(e) => {
+                                            const file = e.target.files?.[0] || null;
+                                            setLogFile(file);
+                                            if (file) {
+                                                setSelectedFlightId('');
+                                            }
+                                        }}
+                                        className="flex-1"
+                                    />
+                                    {logFile && (
+                                        <div className="flex items-center gap-2 text-sm">
+                                            <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                                            <span className="text-emerald-600">{logFile.name}</span>
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => {
+                                                    setLogFile(null);
+                                                    const fileInput = document.getElementById('log-file-input') as HTMLInputElement;
+                                                    if (fileInput) fileInput.value = '';
+                                                }}
+                                                className="h-6 px-2"
+                                            >
+                                                Clear
+                                            </Button>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     )}
 
                     {step === 3 && (
                         <div className="space-y-4">
-                            <div>
-                                <Label className="mb-1.5 block">{t(ns + '.fields.drone')}</Label>
-                                <Select value={vehicleId} onValueChange={setVehicleId} disabled={loadingDrones}>
-                                    <SelectTrigger>
-                                        {loadingDrones ? <Loader2 className="h-4 w-4 animate-spin" /> : vehicleId ? <SelectValue /> : <SelectValue placeholder={t(ns + '.placeholders.selectDot')} />}
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {drones.map((d) => (
-                                                <SelectItem
-                                                    key={d.tool_id}
-                                                    value={String(d.tool_id)}
-                                                    disabled={d.in_maintenance || d.is_non_operational || d.is_dismissed}
-                                                    className={cn((d.in_maintenance || d.is_non_operational || d.is_dismissed) && 'opacity-50')}
-                                                >
-                                                    {d.tool_name} ({d.tool_code})
-                                                    {d.in_maintenance && ' (Maintenance)'}
-                                                    {d.maintenance_due && ' (Maintenance Due)'}
-                                                    {d.is_non_operational && ' (Non-operational)'}
-                                                    {d.is_dismissed && ' (Dismissed)'}
-                                                </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <Label className="mb-1.5 block">{t(ns + '.fields.drone')}</Label>
+                                    <Select value={vehicleId} onValueChange={setVehicleId} disabled={loadingDrones}>
+                                        <SelectTrigger>
+                                            {loadingDrones ? <Loader2 className="h-4 w-4 animate-spin" /> : vehicleId ? <SelectValue /> : <SelectValue placeholder={t(ns + '.placeholders.selectDot')} />}
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {drones.map((d) => (
+                                                    <SelectItem
+                                                        key={d.tool_id}
+                                                        value={String(d.tool_id)}
+                                                        disabled={d.in_maintenance || d.is_non_operational || d.is_dismissed}
+                                                        className={cn((d.in_maintenance || d.is_non_operational || d.is_dismissed) && 'opacity-50')}
+                                                    >
+                                                        {d.tool_name} ({d.tool_code})
+                                                        {d.in_maintenance && ' (Maintenance)'}
+                                                        {d.maintenance_due && ' (Maintenance Due)'}
+                                                        {d.is_non_operational && ' (Non-operational)'}
+                                                        {d.is_dismissed && ' (Dismissed)'}
+                                                    </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div>
+                                    <Label className="mb-1.5 block">{t(ns + '.fields.missionCode')}</Label>
+                                    <Input value={missionCode} onChange={(e) => setMissionCode(e.target.value)} placeholder={t(ns + '.placeholders.missionCode')} />
+                                </div>
+                                <div>
+                                    <Label className="mb-1.5 block">{t(ns + '.fields.category')}</Label>
+                                    <Select value={categoryId} onValueChange={setCategoryId} disabled={loadingMissionOptions}>
+                                        <SelectTrigger>
+                                            {loadingMissionOptions ? <Loader2 className="h-4 w-4 animate-spin" /> : categoryId ? <SelectValue /> : <SelectValue placeholder={t(ns + '.placeholders.selectDot')} />}
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {categories.map((c) => <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>)}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div>
+                                    <Label className="mb-1.5 block">{t(ns + '.fields.type')}</Label>
+                                    <Select value={typeId} onValueChange={setTypeId} disabled={loadingMissionOptions}>
+                                        <SelectTrigger>
+                                            {loadingMissionOptions ? <Loader2 className="h-4 w-4 animate-spin" /> : typeId ? <SelectValue /> : <SelectValue placeholder={t(ns + '.placeholders.selectDot')} />}
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {types.map((ty) => <SelectItem key={ty.id} value={String(ty.id)}>{ty.name}</SelectItem>)}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div>
+                                    <Label className="mb-1.5 block">{t(ns + '.fields.opType')}</Label>
+                                    <Select value={opType} onValueChange={handleOpTypeChange}>
+                                        <SelectTrigger><SelectValue /></SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="OPEN">OPEN</SelectItem>
+                                            <SelectItem value="PDRA">PDRA</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                {opType === 'PDRA' && (
+                                    <div>
+                                        <Label className="mb-1.5 block">{t(ns + '.fields.flightMode')}</Label>
+                                        <Select value={flightMode} onValueChange={(v: 'RC' | 'DOCK') => setFlightMode(v)}>
+                                            <SelectTrigger><SelectValue /></SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="RC">RC</SelectItem>
+                                                <SelectItem value="DOCK">DOCK</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                )}
                             </div>
-                            <div>
-                                <Label className="mb-1.5 block">{t(ns + '.fields.missionCode')}</Label>
-                                <Input value={missionCode} onChange={(e) => setMissionCode(e.target.value)} placeholder={t(ns + '.placeholders.missionCode')} />
-                            </div>
-                            <div>
-                                <Label className="mb-1.5 block">{t(ns + '.fields.category')}</Label>
-                                <Select value={categoryId} onValueChange={setCategoryId} disabled={loadingMissionOptions}>
-                                    <SelectTrigger>
-                                        {loadingMissionOptions ? <Loader2 className="h-4 w-4 animate-spin" /> : categoryId ? <SelectValue /> : <SelectValue placeholder={t(ns + '.placeholders.selectDot')} />}
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {categories.map((c) => <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>)}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div>
-                                <Label className="mb-1.5 block">{t(ns + '.fields.type')}</Label>
-                                <Select value={typeId} onValueChange={setTypeId} disabled={loadingMissionOptions}>
-                                    <SelectTrigger>
-                                        {loadingMissionOptions ? <Loader2 className="h-4 w-4 animate-spin" /> : typeId ? <SelectValue /> : <SelectValue placeholder={t(ns + '.placeholders.selectDot')} />}
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {types.map((ty) => <SelectItem key={ty.id} value={String(ty.id)}>{ty.name}</SelectItem>)}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div>
-                                <Label className="mb-1.5 block">{t(ns + '.fields.opType')}</Label>
-                                <Select value={opType} onValueChange={(v: 'OPEN' | 'PDRA') => setOpType(v)}>
-                                    <SelectTrigger><SelectValue /></SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="OPEN">OPEN</SelectItem>
-                                        <SelectItem value="PDRA">PDRA</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div>
-                                <Label className="mb-1.5 block">{t(ns + '.fields.flightMode')}</Label>
-                                <Select value={flightMode} onValueChange={(v: 'RC' | 'DOCK') => setFlightMode(v)}>
-                                    <SelectTrigger><SelectValue /></SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="RC">RC</SelectItem>
-                                        <SelectItem value="DOCK">DOCK</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div>
-                                <Label className="mb-1.5 block">{t(ns + '.fields.planning')}</Label>
+                            {opType === 'PDRA' && (
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <Label className="mb-1.5 block">{t(ns + '.fields.planning')}</Label>
                                         <Select
                                             value={planId}
                                             onValueChange={setPlanId}
@@ -706,9 +807,9 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                                                 })}
                                             </SelectContent>
                                         </Select>
-                            </div>
-                            <div>
-                                <Label className="mb-1.5 block">{t(ns + '.fields.missionPlanning')}</Label>
+                                    </div>
+                                    <div>
+                                        <Label className="mb-1.5 block">{t(ns + '.fields.missionPlanning')}</Label>
                                         <Select
                                             value={missionPlanningId}
                                             onValueChange={setMissionPlanningId}
@@ -734,29 +835,33 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                                                 })}
                                             </SelectContent>
                                         </Select>
-                            </div>
-                            <div>
-                                <Label className="mb-1.5 block">{t(ns + '.fields.lucProcedure')}</Label>
-                                <Select value={lucProcedureId} onValueChange={setLucProcedureId} disabled={loadingMissionOptions}>
-                                    <SelectTrigger>
-                                        {loadingMissionOptions ? <Loader2 className="h-4 w-4 animate-spin" /> : lucProcedureId ? <SelectValue /> : <SelectValue placeholder={t(ns + '.placeholders.selectDot')} />}
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {lucProcedures.map((p) => <SelectItem key={p.id} value={String(p.id)}>{p.name}</SelectItem>)}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div>
-                                <Label className="mb-1.5 block">{t(ns + '.fields.location')}</Label>
-                                <Input value={location} onChange={(e) => setLocation(e.target.value)} placeholder={t(ns + '.placeholders.location')} />
-                            </div>
-                            <div>
-                                <Label className="mb-1.5 block">{t(ns + '.fields.groupLabel')}</Label>
-                                <Input value={groupLabel} onChange={(e) => setGroupLabel(e.target.value)} placeholder={t(ns + '.placeholders.groupLabel')} />
-                            </div>
-                            <div>
-                                <Label className="mb-1.5 block">{t(ns + '.fields.notes')}</Label>
-                                <Input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={t(ns + '.placeholders.notes')} />
+                                    </div>
+                                </div>
+                            )}
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <Label className="mb-1.5 block">{t(ns + '.fields.lucProcedure')}</Label>
+                                    <Select value={lucProcedureId} onValueChange={setLucProcedureId} disabled={loadingMissionOptions}>
+                                        <SelectTrigger>
+                                            {loadingMissionOptions ? <Loader2 className="h-4 w-4 animate-spin" /> : lucProcedureId ? <SelectValue /> : <SelectValue placeholder={t(ns + '.placeholders.selectDot')} />}
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {lucProcedures.map((p) => <SelectItem key={p.id} value={String(p.id)}>{p.name}</SelectItem>)}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div>
+                                    <Label className="mb-1.5 block">{t(ns + '.fields.location')}</Label>
+                                    <Input value={location} onChange={(e) => setLocation(e.target.value)} placeholder={t(ns + '.placeholders.location')} />
+                                </div>
+                                <div>
+                                    <Label className="mb-1.5 block">{t(ns + '.fields.groupLabel')}</Label>
+                                    <Input value={groupLabel} onChange={(e) => setGroupLabel(e.target.value)} placeholder={t(ns + '.placeholders.groupLabel')} />
+                                </div>
+                                <div>
+                                    <Label className="mb-1.5 block">{t(ns + '.fields.notes')}</Label>
+                                    <Input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={t(ns + '.placeholders.notes')} />
+                                </div>
                             </div>
                             {logSerialNumber && (
                                 <div className="flex items-center gap-2 text-xs text-muted-foreground bg-slate-50 dark:bg-slate-900 p-2 rounded">
@@ -855,10 +960,22 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                                     <Label className="mb-1.5 block">{t(ns + '.fields.opType')}</Label>
                                     <p className="text-sm font-medium">{opType}</p>
                                 </div>
-                                <div>
-                                    <Label className="mb-1.5 block">{t(ns + '.fields.flightMode')}</Label>
-                                    <p className="text-sm font-medium">{flightMode}</p>
-                                </div>
+                                {opType === 'PDRA' && (
+                                    <>
+                                        <div>
+                                            <Label className="mb-1.5 block">{t(ns + '.fields.flightMode')}</Label>
+                                            <p className="text-sm font-medium">{flightMode}</p>
+                                        </div>
+                                        <div>
+                                            <Label className="mb-1.5 block">{t(ns + '.fields.planning')}</Label>
+                                            <p className="text-sm font-medium">{selectedPlan?.planning_name || '—'}</p>
+                                        </div>
+                                        <div>
+                                            <Label className="mb-1.5 block">{t(ns + '.fields.missionPlanning')}</Label>
+                                            <p className="text-sm font-medium">{selectedMissionPlanning?.mission_planning_name || '—'}</p>
+                                        </div>
+                                    </>
+                                )}
                                 <div>
                                     <Label className="mb-1.5 block">{t(ns + '.fields.pilot')}</Label>
                                     <p className="text-sm font-medium">{pilotLabel || '—'}</p>
@@ -896,7 +1013,7 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                                 setStep(step + 1);
                             }
                         }}
-                        disabled={submitting}
+                        disabled={submitting || !canNext()}
                         className='bg-violet-600 hover:bg-violet-500 cursor-pointer'
                     >
                         {submitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
