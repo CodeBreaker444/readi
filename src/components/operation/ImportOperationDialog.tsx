@@ -135,6 +135,7 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
     const [groupLabel,  setGroupLabel]  = useState('');
     const [notes,       setNotes]       = useState('');
     const [pilotId,     setPilotId]     = useState('');
+    const [visualObserverIds, setVisualObserverIds] = useState<string[]>([]);
     const [isRecurrent, setIsRecurrent] = useState(false);
     const [recurrentStartDate, setRecurrentStartDate] = useState('');
     const [recurrentEndDate, setRecurrentEndDate] = useState('');
@@ -238,7 +239,7 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
         setOrganizations([]); setOrganizationId(''); setLoadingOrgs(false);
         setVehicleId(''); setMissionCode(''); setCategoryId(''); setTypeId(''); setPlanId(''); setMissionPlanningId('');
         setOpType('OPEN'); setFlightMode('RC');
-        setLucProcedureId(''); setLocation(''); setGroupLabel(''); setNotes(''); setPilotId('');
+        setLucProcedureId(''); setLocation(''); setGroupLabel(''); setNotes(''); setPilotId(''); setVisualObserverIds([]);
         setFbWindow('30'); setFlights([]); setSelectedFlightId(''); setFlightsError('');
         setLogSerialNumber(null); setLoadingSerialNumber(false);
         setDrones([]); setPlannings([]); setMissionPlannings([]); setCategories([]); setTypes([]); setPilots([]); setLucProcedures([]);
@@ -345,6 +346,9 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
             fd.append('mission_group_label', groupLabel);
             fd.append('mission_notes',       notes);
             fd.append('pilot_id',            pilotId);
+            if (visualObserverIds.length > 0) {
+                visualObserverIds.forEach(id => fd.append('visual_observer_ids', id));
+            }
             if (isRecurrent) {
                 fd.append('is_recurrent', 'true');
                 fd.append('recurrent_start_date', recurrentStartDate);
@@ -978,7 +982,7 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <Label className="mb-1.5 block">{t(`${ns}.fields.pilotInCommand`)} <span className="text-red-500">*</span></Label>
-                                    <Select value={pilotId} onValueChange={setPilotId} disabled={loadingPilots}>
+                                    <Select value={pilotId} onValueChange={(id) => { setPilotId(id); setVisualObserverIds(visualObserverIds.filter(v => v !== id)); }} disabled={loadingPilots}>
                                         <SelectTrigger>
                                             {loadingPilots ? (
                                                 <span className="flex items-center gap-2 text-muted-foreground">
@@ -999,6 +1003,61 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                                     <div>
                                         <Label className="mb-1.5 block">{t(`${ns}.fields.selected`)}</Label>
                                         <Input value={pilotLabel} disabled className="bg-muted" />
+                                    </div>
+                                )}
+                            </div>
+
+                            <div>
+                                <Label className="mb-1.5 block">
+                                    {t('operations.newOperation.pilot.visualObserversLabel')}
+                                    <span className="ml-1 text-[10px] text-muted-foreground font-normal">{t('operations.newOperation.pilot.visualObserversOptional')}</span>
+                                </Label>
+                                {!pilotId ? (
+                                    <p className="text-xs mt-1 text-muted-foreground">
+                                        {t('operations.newOperation.pilot.visualObserversDisabled')}
+                                    </p>
+                                ) : (
+                                    <div className="mt-1 rounded-md border max-h-36 overflow-y-auto">
+                                        {pilots.length === 0 && (
+                                            <p className="text-xs px-3 py-2 text-muted-foreground">
+                                                {t('operations.newOperation.pilot.noPilots')}
+                                            </p>
+                                        )}
+                                        {pilots.map((p) => {
+                                            const id = String(p.user_id);
+                                            const isPrimary = id === pilotId;
+                                            const isChecked = visualObserverIds.includes(id);
+                                            return (
+                                                <label
+                                                    key={p.user_id}
+                                                    className={`flex items-center gap-2.5 px-3 py-2 cursor-pointer text-xs transition-colors ${
+                                                        isPrimary
+                                                            ? 'opacity-40 cursor-not-allowed'
+                                                            : 'hover:bg-slate-50 dark:hover:bg-slate-700/40'
+                                                    }`}
+                                                >
+                                                    <input
+                                                        type="checkbox"
+                                                        disabled={isPrimary}
+                                                        checked={isChecked}
+                                                        onChange={() => !isPrimary && (
+                                                            isChecked
+                                                                ? setVisualObserverIds(visualObserverIds.filter(v => v !== id))
+                                                                : setVisualObserverIds([...visualObserverIds, id])
+                                                        )}
+                                                        className="accent-violet-600 shrink-0"
+                                                    />
+                                                    <span>
+                                                        {p.first_name} {p.last_name}
+                                                    </span>
+                                                    {isPrimary && (
+                                                        <span className="text-[10px] text-muted-foreground">
+                                                            {t('operations.newOperation.pilot.primaryPilotNote')}
+                                                        </span>
+                                                    )}
+                                                </label>
+                                            );
+                                        })}
                                     </div>
                                 )}
                             </div>

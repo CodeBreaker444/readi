@@ -289,7 +289,7 @@ export function OperationBoard() {
                             onDragStart={handleDragStart}
                             onDrop={handleDrop}
                             onViewDetails={(m) => setSelectedMission(m)}
-                            onUpdateMaintenance={col.id === "done" && userCanUpdateMaintenance ? (m) => setMaintenanceMission(m) : undefined}
+                            onUpdateMaintenance={userCanUpdateMaintenance ? (m) => setMaintenanceMission(m) : undefined}
                             onOpenLuc={(m) => setLucMission(m)}
                             isDragOver={dragOverColumn === col.id}
                             onDragOver={(e) => handleDragOver(e, col.id)}
@@ -368,6 +368,7 @@ export function OperationBoard() {
                 isDark={isDark}
                 onClose={() => setSelectedMission(null)}
                 onOpenLuc={(m) => { setSelectedMission(null); setLucMission(m); }}
+                onUpdateMaintenance={(m) => { setSelectedMission(null); setMaintenanceMission(m); }}
             />
 
             {lucMission && (
@@ -406,10 +407,12 @@ function getMissionProcedureStatus(mission: Mission) {
     };
 }
 
-function MissionDetailSheet({ mission, isDark, onClose, onOpenLuc }: { mission: Mission | null; isDark: boolean; onClose: () => void; onOpenLuc: (m: Mission) => void }) {
+function MissionDetailSheet({ mission, isDark, onClose, onOpenLuc, onUpdateMaintenance }: { mission: Mission | null; isDark: boolean; onClose: () => void; onOpenLuc: (m: Mission) => void; onUpdateMaintenance?: (m: Mission) => void }) {
     const { t } = useTranslation();
     const { timezone } = useTimezone();
     const isDone = mission?.fk_status_id === 3;
+    const { canEdit } = usePermissions();
+    const userCanUpdateMaintenance = canEdit("operation_daily_board");
 
     const proc = mission ? getMissionProcedureStatus(mission) : null;
     const procAllDone = proc ? proc.assignmentDone && proc.checklistDone : false;
@@ -617,6 +620,27 @@ function MissionDetailSheet({ mission, isDark, onClose, onOpenLuc }: { mission: 
                                 <>
                                     <div className="h-px bg-border" />
                                     <DetailItem icon={<Activity className="h-3.5 w-3.5" />} label={t("operations.board.detail.missionGroup")} value={mission.mission_group_label} />
+                                </>
+                            )}
+
+                            {/* Update Maintenance Button */}
+                            {userCanUpdateMaintenance && onUpdateMaintenance && (
+                                <>
+                                    <div className="h-px bg-border" />
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => onUpdateMaintenance(mission)}
+                                        className={cn(
+                                            "w-full gap-2",
+                                            isDark
+                                                ? "border-violet-500/30 bg-violet-500/10 text-violet-400 hover:bg-violet-500/20"
+                                                : "border-violet-200 bg-violet-50 text-violet-700 hover:bg-violet-100"
+                                        )}
+                                    >
+                                        <Wrench className="h-3.5 w-3.5" />
+                                        {t("operations.board.card.updateMaintenance")}
+                                    </Button>
                                 </>
                             )}
                         </div>

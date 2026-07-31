@@ -81,6 +81,7 @@ export async function POST(req: NextRequest) {
                     ? null : Number(formData.get('mission_planning')) || null,
       resultId:   Number(formData.get('mission_result'))       || 0,
       pilotId:    Number(formData.get('pilot_id'))             || 0,
+      visualObserverIds: formData.getAll('visual_observer_ids').map(id => Number(id)).filter(id => !isNaN(id) && id > 0),
       lucProcedureId: Number(formData.get('mission_luc_procedure')) || null,
       location:   String(formData.get('mission_location')     ?? ''),
       groupLabel: String(formData.get('mission_group_label')  ?? ''),

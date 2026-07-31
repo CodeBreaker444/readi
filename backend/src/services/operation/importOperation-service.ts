@@ -37,6 +37,7 @@ export interface ImportMissionParams {
   statusId?: number;
   resultId: number;
   pilotId: number;
+  visualObserverIds?: number[];
   lucProcedureId: number | null;
   groupLabel: string;
   notes: string;
@@ -241,6 +242,9 @@ async function processGutmaBuffer(
       flight_duration: durationSec,
       distance_flown: distanceFlown,
       notes: notesArr.join(' | ') || null,
+      ...(params.visualObserverIds && params.visualObserverIds.length > 0 && {
+        visual_observer_ids: params.visualObserverIds,
+      }),
       ...(recurringGroupId && {
         recurring_group_id: recurringGroupId,
         mission_date_until: params.recurrentEndDate ? new Date(params.recurrentEndDate) : null,
