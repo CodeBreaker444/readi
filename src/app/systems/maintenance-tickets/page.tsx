@@ -9,7 +9,5 @@ export default async function MaintenanceLogbookPage() {
     ? await userHasActiveSubRole(session!.user.userId, 'PIC_TECHNICIAN')
     : false;
 
-  // Ticket management access (close/assign/create/download) is resolved client-side
-  // via usePermissions() against the 'systems_maintenance_tickets' feature key.
   return <MaintenanceLogbookClient canIntervene={canIntervene} />;
 }

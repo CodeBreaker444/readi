@@ -75,7 +75,8 @@ export async function GET(req: NextRequest) {
     const mode = req.nextUrl.searchParams.get('mode');
     const pageParam = req.nextUrl.searchParams.get('page');
     const page = Math.max(1, parseInt(pageParam ?? '1', 10) || 1);
-    const pageSize = 8;
+    const pageSizeParam = req.nextUrl.searchParams.get('pageSize');
+    const pageSize = Math.min(Math.max(1, parseInt(pageSizeParam ?? '8', 10) || 8), 100);
 
     if (mode === 'latest') {
       const { flights, total } = await fetchLatestFlights(creds.token, creds.orgId, page, pageSize);

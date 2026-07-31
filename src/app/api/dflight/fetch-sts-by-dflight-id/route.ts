@@ -51,11 +51,11 @@ export async function POST(req: NextRequest) {
       tokenConfig.password = config.password;
     }
 
-    const tokenResponse = await getDFlightToken(tokenConfig, config.pfx_content, config.pfx_password);
+    const tokenResponse = await getDFlightToken(tokenConfig, config.pfx_content ?? undefined, config.pfx_password ?? undefined);
     const accessToken = tokenResponse.access_token;
 
     // Get operator registration number
-    const userInfo = await getDFlightUserInfo(config.base_url, accessToken, config.pfx_content, config.pfx_password);
+    const userInfo = await getDFlightUserInfo(config.base_url, accessToken, config.pfx_content ?? undefined, config.pfx_password ?? undefined);
     if (!userInfo.operatorRegistrationNumber) {
       return NextResponse.json({
         code: 0,

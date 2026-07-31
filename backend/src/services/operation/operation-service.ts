@@ -179,7 +179,7 @@ export async function getOperation(id: number): Promise<Operation | null> {
   } as unknown as Operation;
 }
 
-export async function createOperation(input: CreateOperationSchema, ownerId: number): Promise<Operation> {
+export async function createOperation(input: CreateOperationSchema, ownerId: number, creatorUserId?: number): Promise<Operation> {
   const codeToChild = input.mission_code;
 
   const existing = await prisma.pilot_mission.findFirst({
@@ -274,7 +274,7 @@ export async function createOperation(input: CreateOperationSchema, ownerId: num
       : null;
     
     const user = await prisma.public_users.findUnique({
-      where: { user_id: input.fk_pilot_user_id || 0 },
+      where: { user_id: creatorUserId || input.fk_pilot_user_id || 0 },
       select: { first_name: true, last_name: true },
     });
 
@@ -355,7 +355,7 @@ export async function createOperation(input: CreateOperationSchema, ownerId: num
   return full;
 }
 
-export async function updateOperation(id: number, input: UpdateOperationSchema): Promise<Operation> {
+export async function updateOperation(id: number, input: UpdateOperationSchema, creatorUserId?: number): Promise<Operation> {
   const current = await prisma.pilot_mission.findUnique({
     where: { pilot_mission_id: id },
     select: { 
@@ -435,6 +435,16 @@ export async function updateOperation(id: number, input: UpdateOperationSchema):
           })
         : null;
 
+      // Get the creator user for "assignedBy" field
+      const user = await prisma.public_users.findUnique({
+        where: { user_id: creatorUserId || 0 },
+        select: { first_name: true, last_name: true },
+      });
+
+      const assignedBy = user 
+        ? `${user.first_name} ${user.last_name}`.trim() 
+        : 'System';
+
       // Check if pilot changed
       if (input.fk_pilot_user_id !== undefined && input.fk_pilot_user_id !== current?.fk_pilot_user_id) {
         const pilotUser = await prisma.public_users.findUnique({
@@ -446,7 +456,7 @@ export async function updateOperation(id: number, input: UpdateOperationSchema):
           await sendMissionAssignedModuleEmail(ownerId, {
             missionCode: current?.mission_code || '',
             missionType: missionType?.type_name || 'Unknown',
-            assignedBy: 'System',
+            assignedBy,
             assignedTo: `${pilotUser.first_name} ${pilotUser.last_name}`.trim(),
             role: 'Pilot',
             scheduledDate: current?.scheduled_start?.toISOString(),
@@ -466,7 +476,7 @@ export async function updateOperation(id: number, input: UpdateOperationSchema):
           await sendMissionAssignedModuleEmail(ownerId, {
             missionCode: current?.mission_code || '',
             missionType: missionType?.type_name || 'Unknown',
-            assignedBy: 'System',
+            assignedBy,
             assignedTo: observer.name,
             role: 'Observer',
             scheduledDate: current?.scheduled_start?.toISOString(),

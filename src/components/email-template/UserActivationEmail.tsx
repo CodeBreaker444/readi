@@ -54,15 +54,18 @@ export const UserActivationEmail = ({
 
               {/* Credentials table */}
               <div style={dataCard}>
-                <div style={dataRow}>
-                  <span style={dataLabel}>USERNAME</span>
-                  <span style={dataValue}>{username}</span>
-                </div>
-                <div style={dataRowBorder} />
-                <div style={dataRow}>
-                  <span style={dataLabel}>TEMPORARY PASSCODE</span>
-                  <span style={monoValue}>{passcode}</span>
-                </div>
+                <table role="presentation" width="100%" cellPadding={0} cellSpacing={0} style={dataRow}>
+                  <tbody>
+                    <tr>
+                      <td style={{ ...dataLabel, borderBottom: '1px solid #e0e0e0' }}>USERNAME</td>
+                      <td style={{ ...dataValue, borderBottom: '1px solid #e0e0e0' }}>{username}</td>
+                    </tr>
+                    <tr>
+                      <td style={{ ...dataLabel, borderBottom: 'none' }}>TEMPORARY PASSCODE</td>
+                      <td style={{ ...dataValue, borderBottom: 'none' }}><span style={monoValue}>{passcode}</span></td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
 
               <Text style={hintText}>
@@ -165,7 +168,6 @@ const header = {
 const logoImg = {
   objectFit: 'contain' as const,
   filter: 'brightness(0) invert(1)',
-  display: 'block',
 };
 
 const headerTitle = {
@@ -211,16 +213,8 @@ const dataCard = {
 };
 
 const dataRow = {
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  padding: '14px 18px',
-};
-
-const dataRowBorder = {
-  height: '1px',
-  backgroundColor: '#e0e0e0',
-  margin: '0 18px',
+  width: '100%',
+  borderCollapse: 'collapse' as const,
 };
 
 const dataLabel = {
@@ -229,12 +223,17 @@ const dataLabel = {
   color: '#5f6368',
   letterSpacing: '0.6px',
   textTransform: 'uppercase' as const,
+  textAlign: 'left' as const,
+  padding: '14px 8px 14px 18px',
+  whiteSpace: 'nowrap' as const,
 };
 
 const dataValue = {
   fontSize: '14px',
   color: '#202124',
   fontWeight: '500',
+  textAlign: 'right' as const,
+  padding: '14px 18px 14px 8px',
 };
 
 const monoValue = {

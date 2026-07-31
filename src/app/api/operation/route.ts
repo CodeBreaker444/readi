@@ -103,7 +103,7 @@ export async function POST(req: NextRequest) {
 
     let operation;
     try {
-      operation = await createOperation({ ...validated }, ownerId);
+      operation = await createOperation({ ...validated }, ownerId, session.user.userId);
     } catch (appErr: any) {
       return NextResponse.json({ error: appErr.message }, { status: 400 });
     }

@@ -55,14 +55,12 @@ export async function upsertDFlightIntegration(
     fk_owner_id: ownerId,
     base_url: data.base_url,
     username: data.username,
+    password: data.password || '', // Use empty string instead of null since password is required in schema
     client_id: data.client_id,
     easa_operator_code: data.easa_operator_code ?? null,
     pfx_content: data.pfx_content ?? null,
     pfx_password: encryptedPfxPassword ?? null,
   };
-  if (data.password !== null && data.password !== undefined) {
-    createData.password = data.password;
-  }
 
   const updateData: any = {
     base_url: data.base_url,
@@ -73,7 +71,9 @@ export async function upsertDFlightIntegration(
     pfx_password: encryptedPfxPassword ?? undefined,
     updated_at: new Date(),
   };
-  if (data.password !== null && data.password !== undefined) {
+
+  // Only include password in update if it's being changed (not empty or __KEEP__)
+  if (data.password && data.password !== '__KEEP__') {
     updateData.password = data.password;
   }
 

@@ -34,9 +34,10 @@ export interface ImportMissionParams {
   typeId: number;
   planId: number | null;
   missionPlanningId: number | null;
-  statusId: number;
+  statusId?: number;
   resultId: number;
   pilotId: number;
+  visualObserverIds?: number[];
   lucProcedureId: number | null;
   groupLabel: string;
   notes: string;
@@ -45,6 +46,10 @@ export interface ImportMissionParams {
   missionCode?: string;
   flightMode?: string | null;
   userTimezone?: string;
+  isRecurrent?: boolean;
+  recurrentStartDate?: string;
+  recurrentEndDate?: string;
+  recurrentTime?: string;
 }
 
 export interface ImportMissionResult {
@@ -96,13 +101,32 @@ async function generateUniqueMissionCode(ownerId: number): Promise<string> {
   throw new Error('Failed to generate a unique mission code');
 }
 
+function generateRecurringGroupId(): string {
+  return `RG-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+}
+
+function getDatesInRange(startDate: string, endDate: string): Date[] {
+  const dates: Date[] = [];
+  const current = new Date(startDate);
+  const end = new Date(endDate);
+  
+  while (current <= end) {
+    dates.push(new Date(current));
+    current.setDate(current.getDate() + 1);
+  }
+  
+  return dates;
+}
+
 
 async function processGutmaBuffer(
   buffer: ArrayBuffer,
   filename: string,
   params: ImportMissionParams,
   sourceFlightId: string | null,
-  missionCodeOverride?: string
+  missionCodeOverride?: string,
+  recurringGroupId?: string,
+  dateIndex?: number
 ): Promise<{ missionId: number; operation: any } | { error: string; duplicate?: boolean }> {
   let parsed: any;
   try {
@@ -112,11 +136,20 @@ async function processGutmaBuffer(
   }
 
   const gutma = parseGutmaFlightData(parsed);
-  const missionCode = missionCodeOverride || await generateUniqueMissionCode(params.ownerId);
+  let missionCode = missionCodeOverride || await generateUniqueMissionCode(params.ownerId);
+  
+  // Add index to mission code for recurrent missions
+  if (recurringGroupId && dateIndex !== undefined) {
+    missionCode = `${missionCode}-${dateIndex + 1}`;
+  }
+  
   const takeoff = gutma.start_time;
   const landing = gutma.end_time;
   const durationSec = parseDurationSeconds(takeoff, landing);
   const distanceFlown = gutma.distance_m;
+  const batteryChargeStart = gutma.battery_charge_start;
+  const batteryChargeEnd = gutma.battery_charge_end;
+  const weatherTemperature = gutma.weather_temperature;
 
   const logSerialNumber = typeof gutma.aircraft?.serial_number === 'string'
     ? gutma.aircraft.serial_number.trim() || null
@@ -138,16 +171,9 @@ async function processGutmaBuffer(
     return { duplicate: true, error: `Duplicate mission_code "${missionCode}" — skipped` };
   }
 
-  // Imports represent flights that already happened, so default to COMPLETED
-  // (matches the wizard's own default status selection) if no status was chosen.
-  let statusName = 'COMPLETED';
-  if (params.statusId) {
-    const st = await prisma.pilot_mission_status.findUnique({
-      where: { status_id: params.statusId },
-      select: { status_name: true },
-    });
-    if (st?.status_name) statusName = normalizeStatusName(st.status_name);
-  }
+  // Single imports represent flights that already happened, so set to COMPLETED
+  // Recurrent missions are future scheduled missions, so set to PLANNED
+  const statusName = recurringGroupId ? 'PLANNED' : 'COMPLETED';
 
   const notesArr = [
     params.notes || null,
@@ -161,7 +187,19 @@ async function processGutmaBuffer(
   let actualStart: Date | null = null;
   let actualEnd: Date | null = null;
   
-  if (takeoff) {
+  // For recurrent missions, use the specified date and time
+  if (recurringGroupId && params.recurrentStartDate && params.recurrentTime) {
+    const [hours, minutes] = params.recurrentTime.split(':').map(Number);
+    const scheduledDate = new Date(params.recurrentStartDate);
+    if (dateIndex !== undefined) {
+      scheduledDate.setDate(scheduledDate.getDate() + dateIndex);
+    }
+    scheduledDate.setHours(hours, minutes, 0, 0);
+    scheduledStart = scheduledDate;
+    actualStart = scheduledDate;
+    // Set actual end to 1 hour after start for recurrent missions
+    actualEnd = new Date(scheduledDate.getTime() + 60 * 60 * 1000);
+  } else if (takeoff) {
     const takeoffDate = new Date(takeoff);
     if (params.userTimezone) {
       // Parse the date in the user's timezone and store as UTC
@@ -174,7 +212,7 @@ async function processGutmaBuffer(
     }
   }
   
-  if (landing) {
+  if (landing && !recurringGroupId) {
     const landingDate = new Date(landing);
     if (params.userTimezone) {
       const userTzDate = new Date(landingDate.toLocaleString('en-US', { timeZone: params.userTimezone }));
@@ -206,8 +244,25 @@ async function processGutmaBuffer(
       actual_end: actualEnd,
       flight_duration: durationSec,
       distance_flown: distanceFlown,
+      battery_charge_start: batteryChargeStart,
+      battery_charge_end: batteryChargeEnd,
+      weather_temperature: weatherTemperature,
       notes: notesArr.join(' | ') || null,
-      ...(params.missionPlanningId && params.flightMode && { mission_metadata: { flight_mode: params.flightMode } }),
+      ...(params.visualObserverIds && params.visualObserverIds.length > 0 && {
+        visual_observer_ids: params.visualObserverIds,
+      }),
+      ...(recurringGroupId && {
+        recurring_group_id: recurringGroupId,
+        mission_date_until: params.recurrentEndDate ? new Date(params.recurrentEndDate) : null,
+        mission_group_label: params.groupLabel || null,
+        ...(params.missionPlanningId && params.flightMode && { mission_metadata: { flight_mode: params.flightMode } }),
+      }),
+      ...(!recurringGroupId && {
+        mission_metadata: {
+          ...(params.missionPlanningId && params.flightMode && { flight_mode: params.flightMode }),
+          is_imported: true,
+        },
+      }),
     } as any,
     select: { pilot_mission_id: true },
   });
@@ -284,14 +339,25 @@ export async function importMissionFromLog(
   const duplicates: string[] = [];
 
   const missionCode = params.missionCode?.trim() || undefined;
+  const recurringGroupId = params.isRecurrent ? generateRecurringGroupId() : undefined;
+
+  if (params.isRecurrent && (!params.recurrentStartDate || !params.recurrentEndDate || !params.recurrentTime)) {
+    throw new Error('Recurrent mission requires start date, end date, and mission time');
+  }
+
+  const datesToProcess = params.isRecurrent && params.recurrentStartDate && params.recurrentEndDate
+    ? getDatesInRange(params.recurrentStartDate, params.recurrentEndDate)
+    : [null];
 
   if (ext === 'gutma') {
-    const res = await processGutmaBuffer(buffer, file.name, params, flytbaseFlightId, missionCode);
-    if ('error' in res) {
-      if (res.duplicate) duplicates.push(res.error);
-      else errors.push(res.error);
-    } else {
-      successes.push(res);
+    for (let dateIndex = 0; dateIndex < datesToProcess.length; dateIndex++) {
+      const res = await processGutmaBuffer(buffer, file.name, params, flytbaseFlightId, missionCode, recurringGroupId, dateIndex);
+      if ('error' in res) {
+        if (res.duplicate) duplicates.push(res.error);
+        else errors.push(res.error);
+      } else {
+        successes.push(res);
+      }
     }
   } else if (ext === 'zip') {
     let zip: JSZip;
@@ -307,21 +373,22 @@ export async function importMissionFromLog(
 
     if (gutmaEntries.length === 0) throw new Error('ZIP contains no .gutma files.');
 
-    // A user-provided code only uniquely identifies a single mission, so a
-    // multi-file ZIP gets it suffixed per entry to avoid duplicate codes.
-    let index = 0;
+    // For recurrent missions with ZIP files, create missions for each date for each gutma file
     for (const [name, entry] of gutmaEntries) {
-      index++;
-      const entryCode = missionCode
-        ? (gutmaEntries.length > 1 ? `${missionCode}-${index}` : missionCode)
-        : undefined;
       const buf = await entry.async('arraybuffer');
-      const res = await processGutmaBuffer(buf, name.split('/').pop() ?? name, params, null, entryCode);
-      if ('error' in res) {
-        if (res.duplicate) duplicates.push(res.error);
-        else errors.push(res.error);
-      } else {
-        successes.push(res);
+      const entryName = name.split('/').pop() ?? name;
+      
+      for (let dateIndex = 0; dateIndex < datesToProcess.length; dateIndex++) {
+        const entryCode = missionCode
+          ? (datesToProcess.length > 1 ? `${missionCode}-${dateIndex + 1}` : missionCode)
+          : undefined;
+        const res = await processGutmaBuffer(buf, entryName, params, null, entryCode, recurringGroupId, dateIndex);
+        if ('error' in res) {
+          if (res.duplicate) duplicates.push(res.error);
+          else errors.push(res.error);
+        } else {
+          successes.push(res);
+        }
       }
     }
   } else {

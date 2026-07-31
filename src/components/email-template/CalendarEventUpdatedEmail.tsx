@@ -59,47 +59,40 @@ export const CalendarEventUpdatedEmail = ({
 
               {/* Event details */}
               <div style={dataCard}>
-                <div style={dataRow}>
-                  <span style={dataLabel}>EVENT TITLE</span>
-                  <span style={dataValue}>{eventTitle}</span>
-                </div>
-                <div style={dataRowBorder} />
-                <div style={dataRow}>
-                  <span style={dataLabel}>TYPE</span>
-                  <span style={dataValue}>{eventType}</span>
-                </div>
-                <div style={dataRowBorder} />
-                <div style={dataRow}>
-                  <span style={dataLabel}>UPDATED BY</span>
-                  <span style={dataValue}>{updatedBy}</span>
-                </div>
-                {startDate && (
-                  <>
-                    <div style={dataRowBorder} />
-                    <div style={dataRow}>
-                      <span style={dataLabel}>START DATE</span>
-                      <span style={dataValue}>{startDate}</span>
-                    </div>
-                  </>
-                )}
-                {endDate && (
-                  <>
-                    <div style={dataRowBorder} />
-                    <div style={dataRow}>
-                      <span style={dataLabel}>END DATE</span>
-                      <span style={dataValue}>{endDate}</span>
-                    </div>
-                  </>
-                )}
-                {location && (
-                  <>
-                    <div style={dataRowBorder} />
-                    <div style={dataRow}>
-                      <span style={dataLabel}>LOCATION</span>
-                      <span style={dataValue}>{location}</span>
-                    </div>
-                  </>
-                )}
+                <table role="presentation" width="100%" cellPadding={0} cellSpacing={0} style={dataRow}>
+                  <tbody>
+                    <tr>
+                      <td style={{ ...dataLabel, borderBottom: '1px solid #e0e0e0' }}>EVENT TITLE</td>
+                      <td style={{ ...dataValue, borderBottom: '1px solid #e0e0e0' }}>{eventTitle}</td>
+                    </tr>
+                    <tr>
+                      <td style={{ ...dataLabel, borderBottom: '1px solid #e0e0e0' }}>TYPE</td>
+                      <td style={{ ...dataValue, borderBottom: '1px solid #e0e0e0' }}>{eventType}</td>
+                    </tr>
+                    <tr>
+                      <td style={{ ...dataLabel, borderBottom: '1px solid #e0e0e0' }}>UPDATED BY</td>
+                      <td style={{ ...dataValue, borderBottom: '1px solid #e0e0e0' }}>{updatedBy}</td>
+                    </tr>
+                    {startDate && (
+                      <tr>
+                        <td style={{ ...dataLabel, borderBottom: '1px solid #e0e0e0' }}>START DATE</td>
+                        <td style={{ ...dataValue, borderBottom: '1px solid #e0e0e0' }}>{startDate}</td>
+                      </tr>
+                    )}
+                    {endDate && (
+                      <tr>
+                        <td style={{ ...dataLabel, borderBottom: '1px solid #e0e0e0' }}>END DATE</td>
+                        <td style={{ ...dataValue, borderBottom: '1px solid #e0e0e0' }}>{endDate}</td>
+                      </tr>
+                    )}
+                    {location && (
+                      <tr>
+                        <td style={{ ...dataLabel, borderBottom: 'none' }}>LOCATION</td>
+                        <td style={{ ...dataValue, borderBottom: 'none' }}>{location}</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
               </div>
 
               {/* Changes list */}
@@ -121,7 +114,7 @@ export const CalendarEventUpdatedEmail = ({
               {/* View details link */}
               <div style={actionCard}>
                 <Text style={actionLabel}>View calendar</Text>
-                <Link href={`${process.env.APP_URL || 'https://app.readi.ai'}/operations/calendar`} style={actionLink}>
+                <Link href={`${process.env.APP_URL}/operations/calendar`} style={actionLink}>
                   View Calendar
                 </Link>
               </div>
@@ -187,7 +180,6 @@ const header = {
 const logoImg = {
   objectFit: 'contain' as const,
   filter: 'brightness(0) invert(1)',
-  display: 'block',
 };
 
 const headerTitle = {
@@ -248,16 +240,8 @@ const dataCard = {
 };
 
 const dataRow = {
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  padding: '14px 18px',
-};
-
-const dataRowBorder = {
-  height: '1px',
-  backgroundColor: '#e0e0e0',
-  margin: '0 18px',
+  width: '100%',
+  borderCollapse: 'collapse' as const,
 };
 
 const dataLabel = {
@@ -266,12 +250,17 @@ const dataLabel = {
   color: '#5f6368',
   letterSpacing: '0.6px',
   textTransform: 'uppercase' as const,
+  textAlign: 'left' as const,
+  padding: '14px 8px 14px 18px',
+  whiteSpace: 'nowrap' as const,
 };
 
 const dataValue = {
   fontSize: '14px',
   color: '#202124',
   fontWeight: '500',
+  textAlign: 'right' as const,
+  padding: '14px 18px 14px 8px',
 };
 
 const noteCard = {

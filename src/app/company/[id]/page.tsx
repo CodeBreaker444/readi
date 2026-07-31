@@ -29,6 +29,7 @@ import {
     EyeOff,
     HardDrive,
     House,
+    Loader2,
     Power,
     Save,
     Shield,
@@ -135,6 +136,7 @@ export default function CompanyDetailPage() {
     const [metricsLoading, setMetricsLoading] = useState(true);
     const [deleteOpen, setDeleteOpen] = useState(false);
     const [saving, setSaving] = useState(false);
+    const [resendingEmail, setResendingEmail] = useState(false);
 
     const [generalEditing, setGeneralEditing] = useState(false);
     const [securityEditing, setSecurityEditing] = useState(false);
@@ -524,6 +526,40 @@ export default function CompanyDetailPage() {
                                             <span className={`text-xs px-2 py-1 rounded-full font-medium ${owner.admin_user.user_active === 'Y' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'}`}>
                                                 {owner.admin_user.user_active === 'Y' ? 'Active' : 'Inactive'}
                                             </span>
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            <Label className={labelClass}>Account Status</Label>
+                                            <div className="flex items-center gap-2">
+                                                <span className={`text-xs px-2 py-1 rounded-full font-medium ${owner.admin_user.user_active === 'Y' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                                                    {owner.admin_user.user_active === 'Y' ? 'Active' : 'Pending Activation'}
+                                                </span>
+                                                {owner.admin_user.user_active === 'N' && (
+                                                    <Button
+                                                        size="sm"
+                                                        variant="outline"
+                                                        className="h-7 text-xs gap-2"
+                                                        onClick={async () => {
+                                                            setResendingEmail(true);
+                                                            try {
+                                                                const res = await axios.post(`/api/owner/${id}/resend-verification`);
+                                                                if (res.data.code === 1) {
+                                                                    toast.success('Activation email sent successfully');
+                                                                } else {
+                                                                    toast.error(res.data.message || 'Failed to send activation email');
+                                                                }
+                                                            } catch {
+                                                                toast.error('Network error');
+                                                            } finally {
+                                                                setResendingEmail(false);
+                                                            }
+                                                        }}
+                                                        disabled={resendingEmail}
+                                                    >
+                                                        {resendingEmail && <Loader2 size={12} className="animate-spin" />}
+                                                        {resendingEmail ? 'Sending...' : 'Resend Email'}
+                                                    </Button>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
                                 ) : (

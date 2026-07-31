@@ -77,7 +77,8 @@ export async function PUT(req: NextRequest, { params }: Params) {
     if (!parsed.success) return zodError(E.VL011, parsed.error);
 
     const validated = parsed.data as UpdateOperationSchema;
-    const updated = await updateOperation(id, validated);
+    const currentSession = session || await getUserSession();
+    const updated = await updateOperation(id, validated, currentSession?.user.userId);
 
     logEvent({
       eventType: 'UPDATE',

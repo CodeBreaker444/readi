@@ -1,9 +1,12 @@
+import React from 'react';
 import { CalendarClock, Settings, User } from 'lucide-react';
 
 export interface Client { client_id: number; client_name: string; client_code: string }
 export interface Drone { tool_id: number; tool_code: string; tool_name: string; in_maintenance?: boolean; maintenance_due?: boolean; is_non_operational?: boolean; is_dismissed?: boolean; drone_serial_numbers?: string[] }
 export interface PlanningOption { planning_id: number; planning_name: string; fk_client_id: number; client_name: string; planning_active?: 'Y' | 'N' }
-export interface MissionPlanningOption { mission_planning_id: number; mission_planning_code: string; mission_planning_desc: string; mission_planning_active: string; fk_planning_id: number; tool_code: string }
+export interface MissionPlanningOption {
+    mission_planning_name: React.ReactNode | Iterable<React.ReactNode>; mission_planning_id: number; mission_planning_code: string; mission_planning_desc: string; mission_planning_active: string; fk_planning_id: number; tool_code: string 
+}
 export interface GenericOption { id: number; label: string }
 export interface LucOption { id: number; label: string; steps?: any }
 export interface PilotOption { user_id: number; first_name: string; last_name: string }

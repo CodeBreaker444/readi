@@ -587,16 +587,6 @@ export async function getComponentList(toolId: number, ticketType?: string): Pro
 
   let rows = data ?? [];
 
-  if (ticketType === 'BASIC') {
-    rows = rows.filter((row) => {
-      const cycle = row.maintenance_cycle ?? 'NONE';
-      const cycleDay = Number(row.maintenance_cycle_day ?? 0);
-      if (cycle === 'NONE') return true;
-      if ((cycle === 'DAYS' || cycle === 'MIXED') && cycleDay === 31) return true;
-      return false;
-    });
-  }
-
   return rows.map((row) => ({
     tool_component_id: row.component_id,
     component_code:    row.component_code ?? '',
@@ -736,17 +726,7 @@ async function resetComponentCounters(
 
   if (!components.length) return;
 
-  const eligible = ticketType === 'BASIC'
-    ? components.filter((comp) => {
-        const cycle = comp.maintenance_cycle ?? 'NONE';
-        const cycleDay = Number(comp.maintenance_cycle_day ?? 0);
-        if (cycle === 'NONE') return true;
-        if ((cycle === 'DAYS' || cycle === 'MIXED') && cycleDay === 31) return true;
-        return false;
-      })
-    : components;
-
-  const updates = eligible
+  const updates = components
     .filter((comp) => (comp.maintenance_cycle ?? 'NONE') !== 'NONE')
     .map((comp) => {
       const cycleType = comp.maintenance_cycle!;
