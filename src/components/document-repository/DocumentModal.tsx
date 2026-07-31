@@ -369,7 +369,20 @@ export default function DocumentFormModal({ open, onClose, onSaved, docTypes, on
                 <div className="flex gap-2">
                   <Select
                     value={filterSystem}
-                    onValueChange={(v) => { setFilterSystem(v); setFkComponentId('__none__'); setSystemSearch(''); }}
+                    onValueChange={(v) => { 
+                      setFilterSystem(v); 
+                      setSystemSearch('');
+                      // Only reset component selection if current component is not in the new filtered list
+                      if (fkComponentId !== '__none__') {
+                        const newFilteredComponents = v === '__all__'
+                          ? components
+                          : components.filter(c => c.fk_tool_id != null && String(c.fk_tool_id) === v);
+                        const componentExistsInNewFilter = newFilteredComponents.some(c => String(c.tool_component_id) === fkComponentId);
+                        if (!componentExistsInNewFilter) {
+                          setFkComponentId('__none__');
+                        }
+                      }
+                    }}
                     disabled={componentsLoading}
                   >
                     <SelectTrigger className={`text-sm w-52 shrink-0 ${selectTriggerCls}`}>
