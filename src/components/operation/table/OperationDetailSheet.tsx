@@ -445,51 +445,47 @@ export function OperationDetailSheet({
                 )}
 
                 {/* Maintenance */}
-                {operation.fk_tool_id && (
-                  <>
-                    <div className="h-px bg-border" />
-                    <section className="space-y-3">
-                      <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-                        <Wrench className="h-3.5 w-3.5" />
-                        {t('operations.table.detail.maintenance')}
-                      </h3>
-                      {isCompleted && (
-                        <>
-                          <div className="rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/20 p-3 flex items-start gap-3">
-                            <Ban className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium text-amber-800 dark:text-amber-300">
-                                {t('operations.table.detail.updateMaintenanceCycles')}
-                              </p>
-                              <p className="text-xs text-amber-600 dark:text-amber-500 mt-0.5">
-                                {t('operations.table.detail.logFlightsHours', {
-                                  code: operation.tool_code,
-                                })}
-                              </p>
-                            </div>
-                          </div>
-                          <FeatureGate feature="operation_mission_table" require="edit">
-                            <Button
-                              className="w-full gap-2 bg-violet-600 hover:bg-violet-500 text-white"
-                              onClick={() => setMaintenanceOpen(true)}
-                            >
-                              <Wrench className="h-4 w-4" />
-                              {t('operations.table.detail.updateMaintenance')}
-                            </Button>
-                          </FeatureGate>
-                        </>
-                      )}
+                <>
+                  <div className="h-px bg-border" />
+                  <section className="space-y-3">
+                    <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                      <Wrench className="h-3.5 w-3.5" />
+                      {t('operations.table.detail.maintenance')}
+                    </h3>
+                    {isCompleted && (
+                      <div className="rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/20 p-3 flex items-start gap-3">
+                        <Ban className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-amber-800 dark:text-amber-300">
+                            {t('operations.table.detail.updateMaintenanceCycles')}
+                          </p>
+                          <p className="text-xs text-amber-600 dark:text-amber-500 mt-0.5">
+                            {t('operations.table.detail.logFlightsHours', {
+                              code: operation.tool_code,
+                            })}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                    <FeatureGate feature="operation_mission_table" require="edit">
                       <Button
-                        variant="outline"
-                        className="w-full gap-2 border-red-200 text-red-600 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950/20"
-                        onClick={() => setReportIssueOpen(true)}
+                        className="w-full gap-2 bg-violet-600 hover:bg-violet-500 text-white"
+                        onClick={() => setMaintenanceOpen(true)}
                       >
-                        <AlertTriangle className="h-4 w-4" />
-                        {t('operations.table.detail.reportIssue')}
+                        <Wrench className="h-4 w-4" />
+                        {t('operations.table.detail.updateMaintenance')}
                       </Button>
-                    </section>
-                  </>
-                )}
+                    </FeatureGate>
+                    <Button
+                      variant="outline"
+                      className="w-full gap-2 border-red-200 text-red-600 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950/20"
+                      onClick={() => setReportIssueOpen(true)}
+                    >
+                      <AlertTriangle className="h-4 w-4" />
+                      {t('operations.table.detail.reportIssue')}
+                    </Button>
+                  </section>
+                </>
               </div>
             </>
           )}

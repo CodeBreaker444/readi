@@ -23,6 +23,7 @@ export interface ParsedGutmaFlight {
   distance_m: number | null;
   battery_charge_start: number | null;
   battery_charge_end: number | null;
+  weather_temperature: number | null;
   waypoints: GutmaWaypoint[];
 }
 
@@ -58,6 +59,7 @@ export function parseGutmaFlightData(gutma: any): ParsedGutmaFlight {
   const batteryIdx = col('battery_percent');
   const phiIdx = col('angle_phi');
   const thetaIdx = col('angle_theta');
+  const tempIdx = col('temperature');
 
   const loggingStart = logging?.logging_start_dtg ?? null;
   const start_time =
@@ -91,6 +93,12 @@ export function parseGutmaFlightData(gutma: any): ParsedGutmaFlight {
     const last = items[items.length - 1][batteryIdx];
     if (first != null) battery_charge_start = Math.round(Number(first));
     if (last != null) battery_charge_end = Math.round(Number(last));
+  }
+
+  let weather_temperature: number | null = null;
+  if (tempIdx >= 0 && items.length > 0) {
+    const first = items[0][tempIdx];
+    if (first != null) weather_temperature = Number(first);
   }
 
   let distance_m: number | null = null;
@@ -138,6 +146,7 @@ export function parseGutmaFlightData(gutma: any): ParsedGutmaFlight {
     distance_m,
     battery_charge_start,
     battery_charge_end,
+    weather_temperature,
     waypoints,
   };
 }
@@ -180,5 +189,6 @@ export function parseGutmaFlightPreview(flightId: string, gutma: any): ParsedGut
     distance_m: parsed.distance_m,
     battery_charge_start: parsed.battery_charge_start,
     battery_charge_end: parsed.battery_charge_end,
+    weather_temperature: parsed.weather_temperature,
   };
 }

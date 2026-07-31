@@ -1920,6 +1920,10 @@
         "location": "Location",
         "groupLabel": "Group Label",
         "notes": "Notes",
+        "recurrent": "Recurrent Mission",
+        "startDate": "Start Date",
+        "endDate": "End Date",
+        "missionTime": "Mission Time",
         "pilotInCommand": "Pilot in Command",
         "selected": "Selected",
         "optional": "(optional)",
@@ -5012,7 +5016,8 @@
         "saved": "D-Flight settings saved",
         "saveFailed": "Failed to save D-Flight settings",
         "validationError": "Base URL, username and client ID are required",
-        "passwordRequired": "Password is required for first-time setup"
+        "passwordRequired": "Password is required for first-time setup",
+        "authRequired": "At least one authentication method (password or PFX certificate) is required"
       }
     },
     "fleet": {

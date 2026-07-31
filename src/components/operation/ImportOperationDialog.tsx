@@ -100,7 +100,6 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
     const [missionPlannings, setMissionPlannings] = useState<MissionPlanningOption[]>([]);
     const [categories, setCategories] = useState<SelectOption[]>([]);
     const [types,      setTypes]      = useState<SelectOption[]>([]);
-    const [statuses,   setStatuses]   = useState<SelectOption[]>([]);
     const [pilots,     setPilots]     = useState<Pilot[]>([]);
     const [lucProcedures, setLucProcedures] = useState<SelectOption[]>([]);
     const [loadingClients, setLoadingClients] = useState(false);
@@ -131,12 +130,16 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
     const [flightMode,  setFlightMode]  = useState<'RC' | 'DOCK'>('RC');
     const [planId,      setPlanId]      = useState('');
     const [missionPlanningId, setMissionPlanningId] = useState('');
-    const [statusId,    setStatusId]    = useState('');
     const [lucProcedureId, setLucProcedureId] = useState('');
     const [location,    setLocation]    = useState('');
     const [groupLabel,  setGroupLabel]  = useState('');
     const [notes,       setNotes]       = useState('');
     const [pilotId,     setPilotId]     = useState('');
+    const [visualObserverIds, setVisualObserverIds] = useState<string[]>([]);
+    const [isRecurrent, setIsRecurrent] = useState(false);
+    const [recurrentStartDate, setRecurrentStartDate] = useState('');
+    const [recurrentEndDate, setRecurrentEndDate] = useState('');
+    const [recurrentTime, setRecurrentTime] = useState('');
 
     useEffect(() => {
         if (!open) return;
@@ -197,20 +200,11 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
         Promise.all([
             axios.get('/api/operation/import/options?type=categories'),
             axios.get('/api/operation/import/options?type=types'),
-            axios.get('/api/operation/import/options?type=statuses'),
             axios.get('/api/operation/import/options?type=lucProcedures'),
-        ]).then(([cat, typ, sta, luc]) => {
+        ]).then(([cat, typ, luc]) => {
             setCategories(cat.data.categories ?? []);
             setTypes(typ.data.types ?? []);
             setLucProcedures(luc.data.lucProcedures ?? []);
-            const statusList: SelectOption[] = sta.data.statuses ?? [];
-            setStatuses(statusList);
-            // status to "Completed" instead of making the user pick it.
-            setStatusId((prev) => {
-                if (prev) return prev;
-                const completed = statusList.find((s) => s.name?.toLowerCase() === 'completed');
-                return completed ? String(completed.id) : prev;
-            });
         }).catch(() => toast.error(t(`${ns}.toast.loadMissionOptionsError`)))
           .finally(() => setLoadingMissionOptions(false));
     }, [step]);
@@ -245,11 +239,12 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
         setOrganizations([]); setOrganizationId(''); setLoadingOrgs(false);
         setVehicleId(''); setMissionCode(''); setCategoryId(''); setTypeId(''); setPlanId(''); setMissionPlanningId('');
         setOpType('OPEN'); setFlightMode('RC');
-        setStatusId(''); setLucProcedureId(''); setLocation(''); setGroupLabel(''); setNotes(''); setPilotId('');
+        setLucProcedureId(''); setLocation(''); setGroupLabel(''); setNotes(''); setPilotId(''); setVisualObserverIds([]);
         setFbWindow('30'); setFlights([]); setSelectedFlightId(''); setFlightsError('');
         setLogSerialNumber(null); setLoadingSerialNumber(false);
-        setDrones([]); setPlannings([]); setMissionPlannings([]); setCategories([]); setTypes([]); setStatuses([]); setPilots([]); setLucProcedures([]);
+        setDrones([]); setPlannings([]); setMissionPlannings([]); setCategories([]); setTypes([]); setPilots([]); setLucProcedures([]);
         setLoadingClients(false); setLoadingDrones(false); setLoadingMissionOptions(false); setLoadingPlannings(false); setLoadingMissionPlannings(false); setLoadingPilots(false);
+        setIsRecurrent(false); setRecurrentStartDate(''); setRecurrentEndDate(''); setRecurrentTime('');
     }
 
     const fetchFlytbaseFlights = useCallback(async () => {
@@ -322,13 +317,14 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
         if (step === 1) return !!clientId;
         if (step === 2) return !!logFile || !!selectedFlightId;
         if (step === 3) {
-            if (!vehicleId || !categoryId || !typeId || !statusId || !lucProcedureId || serialBlocked) return false;
+            if (!vehicleId || !categoryId || !typeId || !lucProcedureId || serialBlocked) return false;
             if (opType === 'PDRA' && (!planId || !missionPlanningId)) return false;
+            if (isRecurrent && (!recurrentStartDate || !recurrentEndDate || !recurrentTime)) return false;
             return true;
         }
         if (step === 4) return !!pilotId;
         return true;
-    }, [step, clientId, logFile, vehicleId, categoryId, typeId, statusId, lucProcedureId, pilotId, serialBlocked, opType, planId, missionPlanningId]);
+    }, [step, clientId, logFile, vehicleId, categoryId, typeId, lucProcedureId, pilotId, serialBlocked, opType, planId, missionPlanningId, isRecurrent, recurrentStartDate, recurrentEndDate, recurrentTime]);
 
     async function handleSubmit() {
         if (!logFile && !selectedFlightId) return;
@@ -344,13 +340,21 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
             fd.append('mission_plan',        opType === 'PDRA' && planId ? planId : 'N');
             fd.append('mission_planning',    opType === 'PDRA' && missionPlanningId ? missionPlanningId : 'N');
             fd.append('flight_mode',         opType === 'PDRA' ? flightMode : '');
-            fd.append('mission_status',      statusId);
             fd.append('mission_luc_procedure', lucProcedureId);
             fd.append('mission_code',        missionCode.trim());
             fd.append('mission_location',    location);
             fd.append('mission_group_label', groupLabel);
             fd.append('mission_notes',       notes);
             fd.append('pilot_id',            pilotId);
+            if (visualObserverIds.length > 0) {
+                visualObserverIds.forEach(id => fd.append('visual_observer_ids', id));
+            }
+            if (isRecurrent) {
+                fd.append('is_recurrent', 'true');
+                fd.append('recurrent_start_date', recurrentStartDate);
+                fd.append('recurrent_end_date', recurrentEndDate);
+                fd.append('recurrent_time', recurrentTime);
+            }
             if (selectedFlightId) {
                 fd.append('flytbase_flight_id', selectedFlightId);
                 if (organizationId) fd.append('organization_id', organizationId);
@@ -383,7 +387,6 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
 
     const selectedPilot    = pilots.find((p) => String(p.user_id) === pilotId);
     const pilotLabel       = selectedPilot ? `${selectedPilot.first_name} ${selectedPilot.last_name}` : '';
-    const statusLabel      = statuses.find((s) => String(s.id) === statusId)?.name ?? '';
     const selectedFlightObj = flights.find((f) => f.flight_id === selectedFlightId);
 
     return (
@@ -847,32 +850,13 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                                 </div>
                             )}
 
-                            <div className="grid grid-cols-2 gap-3">
-                                <div>
-                                    <Label className="mb-1.5 block">{t(`${ns}.fields.missionStatus`)} <span className="text-red-500">*</span></Label>
-                                    <Select value={statusId} onValueChange={setStatusId} disabled={loadingMissionOptions}>
-                                        <SelectTrigger>
-                                            {loadingMissionOptions ? (
-                                                <span className="flex items-center gap-2 text-muted-foreground">
-                                                    <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading...
-                                                </span>
-                                            ) : <SelectValue placeholder={t(`${ns}.placeholders.selectDot`)} />}
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {statuses.map((s) => (
-                                                <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div>
-                                    <Label className="mb-1.5 block">
-                                        {t(`${ns}.fields.location`)}
-                                        <span className="ml-1 text-[10px] text-muted-foreground font-normal">{t(`${ns}.fields.optional`)}</span>
-                                    </Label>
-                                    <Input value={location} onChange={(e) => setLocation(e.target.value)}
-                                        placeholder={t(`${ns}.placeholders.location`)} />
-                                </div>
+                            <div>
+                                <Label className="mb-1.5 block">
+                                    {t(`${ns}.fields.location`)}
+                                    <span className="ml-1 text-[10px] text-muted-foreground font-normal">{t(`${ns}.fields.optional`)}</span>
+                                </Label>
+                                <Input value={location} onChange={(e) => setLocation(e.target.value)}
+                                    placeholder={t(`${ns}.placeholders.location`)} />
                             </div>
 
                             {opType === 'PDRA' && (
@@ -942,6 +926,50 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                                 </div>
                             </div>
 
+                            <div className="space-y-3">
+                                <div className="flex items-center gap-2">
+                                    <input
+                                        type="checkbox"
+                                        id="recurrent-checkbox"
+                                        checked={isRecurrent}
+                                        onChange={(e) => setIsRecurrent(e.target.checked)}
+                                        className="h-4 w-4 rounded border-gray-300 text-violet-600 focus:ring-violet-600"
+                                    />
+                                    <Label htmlFor="recurrent-checkbox" className="cursor-pointer">
+                                        {t(`${ns}.fields.recurrent`)}
+                                    </Label>
+                                </div>
+
+                                {isRecurrent && (
+                                    <div className="grid grid-cols-3 gap-3 pl-6 border-l-2 border-violet-200">
+                                        <div>
+                                            <Label className="mb-1.5 block">{t(`${ns}.fields.startDate`)} <span className="text-red-500">*</span></Label>
+                                            <Input
+                                                type="date"
+                                                value={recurrentStartDate}
+                                                onChange={(e) => setRecurrentStartDate(e.target.value)}
+                                            />
+                                        </div>
+                                        <div>
+                                            <Label className="mb-1.5 block">{t(`${ns}.fields.endDate`)} <span className="text-red-500">*</span></Label>
+                                            <Input
+                                                type="date"
+                                                value={recurrentEndDate}
+                                                onChange={(e) => setRecurrentEndDate(e.target.value)}
+                                            />
+                                        </div>
+                                        <div>
+                                            <Label className="mb-1.5 block">{t(`${ns}.fields.missionTime`)} <span className="text-red-500">*</span></Label>
+                                            <Input
+                                                type="time"
+                                                value={recurrentTime}
+                                                onChange={(e) => setRecurrentTime(e.target.value)}
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
                             <div className="rounded-md border border-blue-200 bg-blue-50 dark:bg-blue-950/20 dark:border-blue-800 px-3 py-2 text-xs text-blue-700 dark:text-blue-400">
                                 ℹ️ {t(`${ns}.info.gutmaAutoExtract`)}
                             </div>
@@ -954,7 +982,7 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <Label className="mb-1.5 block">{t(`${ns}.fields.pilotInCommand`)} <span className="text-red-500">*</span></Label>
-                                    <Select value={pilotId} onValueChange={setPilotId} disabled={loadingPilots}>
+                                    <Select value={pilotId} onValueChange={(id) => { setPilotId(id); setVisualObserverIds(visualObserverIds.filter(v => v !== id)); }} disabled={loadingPilots}>
                                         <SelectTrigger>
                                             {loadingPilots ? (
                                                 <span className="flex items-center gap-2 text-muted-foreground">
@@ -975,6 +1003,61 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                                     <div>
                                         <Label className="mb-1.5 block">{t(`${ns}.fields.selected`)}</Label>
                                         <Input value={pilotLabel} disabled className="bg-muted" />
+                                    </div>
+                                )}
+                            </div>
+
+                            <div>
+                                <Label className="mb-1.5 block">
+                                    {t('operations.newOperation.pilot.visualObserversLabel')}
+                                    <span className="ml-1 text-[10px] text-muted-foreground font-normal">{t('operations.newOperation.pilot.visualObserversOptional')}</span>
+                                </Label>
+                                {!pilotId ? (
+                                    <p className="text-xs mt-1 text-muted-foreground">
+                                        {t('operations.newOperation.pilot.visualObserversDisabled')}
+                                    </p>
+                                ) : (
+                                    <div className="mt-1 rounded-md border max-h-36 overflow-y-auto">
+                                        {pilots.length === 0 && (
+                                            <p className="text-xs px-3 py-2 text-muted-foreground">
+                                                {t('operations.newOperation.pilot.noPilots')}
+                                            </p>
+                                        )}
+                                        {pilots.map((p) => {
+                                            const id = String(p.user_id);
+                                            const isPrimary = id === pilotId;
+                                            const isChecked = visualObserverIds.includes(id);
+                                            return (
+                                                <label
+                                                    key={p.user_id}
+                                                    className={`flex items-center gap-2.5 px-3 py-2 cursor-pointer text-xs transition-colors ${
+                                                        isPrimary
+                                                            ? 'opacity-40 cursor-not-allowed'
+                                                            : 'hover:bg-slate-50 dark:hover:bg-slate-700/40'
+                                                    }`}
+                                                >
+                                                    <input
+                                                        type="checkbox"
+                                                        disabled={isPrimary}
+                                                        checked={isChecked}
+                                                        onChange={() => !isPrimary && (
+                                                            isChecked
+                                                                ? setVisualObserverIds(visualObserverIds.filter(v => v !== id))
+                                                                : setVisualObserverIds([...visualObserverIds, id])
+                                                        )}
+                                                        className="accent-violet-600 shrink-0"
+                                                    />
+                                                    <span>
+                                                        {p.first_name} {p.last_name}
+                                                    </span>
+                                                    {isPrimary && (
+                                                        <span className="text-[10px] text-muted-foreground">
+                                                            {t('operations.newOperation.pilot.primaryPilotNote')}
+                                                        </span>
+                                                    )}
+                                                </label>
+                                            );
+                                        })}
                                     </div>
                                 )}
                             </div>
@@ -1002,7 +1085,6 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                                         <Row label={t(`${ns}.review.drone`)}    value={drones.find((d) => String(d.tool_id) === vehicleId)?.tool_code} />
                                         <Row label={t(`${ns}.review.category`)} value={categories.find((c) => String(c.id) === categoryId)?.name} />
                                         <Row label={t(`${ns}.review.type`)}     value={types.find((tp) => String(tp.id) === typeId)?.name} />
-                                        <Row label={t(`${ns}.review.status`)}   value={statusLabel} />
                                         <Row label={t(`${ns}.review.procedure`)} value={lucProcedures.find((p) => String(p.id) === lucProcedureId)?.name} />
                                         <Row label={t(`${ns}.review.location`)} value={location} />
                                         <Row label={t('operations.newOperation.drone.opTypeLabel')} value={opType} />
