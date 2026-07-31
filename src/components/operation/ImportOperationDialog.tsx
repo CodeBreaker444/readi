@@ -58,6 +58,7 @@ interface FlytbaseFlight {
     duration?: number;
     distance?: number;
     drone_name?: string;
+    drone_id?: string;
 }
 
 interface ImportOperationDialogProps {
@@ -74,15 +75,26 @@ const STEP_KEYS = [
     { id: 5, labelKey: 'confirm',     icon: ClipboardCheck },
 ];
 
-const PLATFORMS = [{ value: 'FLYTBASE', label: 'Control Center' }];
+const PLATFORMS = [{ value: 'Control Center', label: 'Control Center' }];
 
 function formatDuration(secs?: number): string {
     if (secs == null) return '—';
     const h = Math.floor(secs / 3600);
     const m = Math.floor((secs % 3600) / 60);
     const s = secs % 60;
-    if (h > 0) return `${h}h ${m}m`;
-    return m > 0 ? `${m}m ${s}s` : `${s}s`;
+    if (h > 0) return h + 'h ' + m + 'm';
+    return m > 0 ? m + 'm ' + s + 's' : `${s}s`;
+}
+
+function formatDistance(meters?: number): string {
+    if (meters == null) return '—';
+    if (meters >= 1000) return (meters / 1000).toFixed(2) + ' km';
+    return Math.round(meters) + ' m';
+}
+
+function formatFlightTime(timestamp?: number): string {
+    if (timestamp == null) return '—';
+    return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
 export default function ImportOperationDialog({ open, onClose, onSaved }: ImportOperationDialogProps) {
@@ -115,11 +127,14 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
     const [organizations, setOrganizations] = useState<FlytbaseOrganization[]>([]);
     const [organizationId, setOrganizationId] = useState('');
     const [loadingOrgs, setLoadingOrgs] = useState(false);
-    const [fbWindow, setFbWindow] = useState('30');
+    const [fbWindow, setFbWindow] = useState('1440');
     const [flights, setFlights] = useState<FlytbaseFlight[]>([]);
     const [loadingFlights, setLoadingFlights] = useState(false);
     const [selectedFlightId, setSelectedFlightId] = useState('');
     const [flightsError, setFlightsError] = useState('');
+    const [flightPage, setFlightPage] = useState(1);
+    const [flightTotal, setFlightTotal] = useState(0);
+    const [flightSearchQuery, setFlightSearchQuery] = useState('');
     const [logSerialNumber, setLogSerialNumber] = useState<string | null>(null);
     const [loadingSerialNumber, setLoadingSerialNumber] = useState(false);
     const [vehicleId,   setVehicleId]   = useState('');
@@ -147,13 +162,13 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
         setLoadingClients(true);
         axios.get('/api/operation/import/options?type=clients')
             .then((r) => setClients(r.data.clients ?? []))
-            .catch(() => toast.error(t(`${ns}.toast.loadClientsError`)))
+            .catch(() => toast.error(t(ns + '.toast.loadClientsError')))
             .finally(() => setLoadingClients(false));
 
         setLoadingPlannings(true);
         axios.get('/api/operation/options')
             .then((r) => setPlannings(r.data.plannings ?? []))
-            .catch(() => toast.error(t(`${ns}.toast.loadMissionOptionsError`)))
+            .catch(() => toast.error(t(ns + '.toast.loadMissionOptionsError')))
             .finally(() => setLoadingPlannings(false));
 
         setLoadingOrgs(true);
@@ -173,7 +188,7 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
         setLoadingDrones(true);
         axios.get(`/api/operation/import/options?type=drones&client_id=${clientId}`)
             .then((r) => setDrones(r.data.drones ?? []))
-            .catch(() => toast.error(t(`${ns}.toast.loadDronesError`)))
+            .catch(() => toast.error(t(ns + '.toast.loadDronesError')))
             .finally(() => setLoadingDrones(false));
     }, [clientId]);
 
@@ -201,35 +216,22 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
             axios.get('/api/operation/import/options?type=categories'),
             axios.get('/api/operation/import/options?type=types'),
             axios.get('/api/operation/import/options?type=lucProcedures'),
-        ]).then(([cat, typ, luc]) => {
-            setCategories(cat.data.categories ?? []);
-            setTypes(typ.data.types ?? []);
-            setLucProcedures(luc.data.lucProcedures ?? []);
-        }).catch(() => toast.error(t(`${ns}.toast.loadMissionOptionsError`)))
-          .finally(() => setLoadingMissionOptions(false));
-    }, [step]);
-
-    useEffect(() => {
-        if (!planId || opType !== 'PDRA') { setMissionPlannings([]); setMissionPlanningId(''); return; }
-        setLoadingMissionPlannings(true);
-        axios.post('/api/evaluation/planning/logbook', { p_id: parseInt(planId) })
-            .then((r) => {
-                const missions = (r.data.data ?? []) as MissionPlanningOption[];
-                setMissionPlannings(missions);
-                if (missions.length > 0 && !missionPlanningId) {
-                    setMissionPlanningId(String(missions[0].mission_planning_id));
-                }
+        ])
+            .then(([catRes, typeRes, lucRes]) => {
+                setCategories(catRes.data.categories ?? []);
+                setTypes(typeRes.data.types ?? []);
+                setLucProcedures(lucRes.data.lucProcedures ?? []);
             })
-            .catch(() => toast.error(t(`${ns}.toast.loadMissionOptionsError`)))
-            .finally(() => setLoadingMissionPlannings(false));
-    }, [planId, opType]);
+            .catch(() => toast.error(t(ns + '.toast.loadMissionOptionsError')))
+            .finally(() => setLoadingMissionOptions(false));
+    }, [step]);
 
     useEffect(() => {
         if (step !== 4) return;
         setLoadingPilots(true);
         axios.get('/api/operation/import/options?type=pilots')
             .then((r) => setPilots(r.data.pilots ?? []))
-            .catch(() => toast.error(t(`${ns}.toast.loadPilotsError`)))
+            .catch(() => toast.error(t(ns + '.toast.loadPilotsError')))
             .finally(() => setLoadingPilots(false));
     }, [step]);
 
@@ -240,32 +242,35 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
         setVehicleId(''); setMissionCode(''); setCategoryId(''); setTypeId(''); setPlanId(''); setMissionPlanningId('');
         setOpType('OPEN'); setFlightMode('RC');
         setLucProcedureId(''); setLocation(''); setGroupLabel(''); setNotes(''); setPilotId(''); setVisualObserverIds([]);
-        setFbWindow('30'); setFlights([]); setSelectedFlightId(''); setFlightsError('');
+        setFbWindow('1440'); setFlights([]); setSelectedFlightId(''); setFlightsError('');
+        setFlightPage(1); setFlightTotal(0); setFlightSearchQuery('');
         setLogSerialNumber(null); setLoadingSerialNumber(false);
         setDrones([]); setPlannings([]); setMissionPlannings([]); setCategories([]); setTypes([]); setPilots([]); setLucProcedures([]);
         setLoadingClients(false); setLoadingDrones(false); setLoadingMissionOptions(false); setLoadingPlannings(false); setLoadingMissionPlannings(false); setLoadingPilots(false);
         setIsRecurrent(false); setRecurrentStartDate(''); setRecurrentEndDate(''); setRecurrentTime('');
     }
 
-    const fetchFlytbaseFlights = useCallback(async () => {
+    const fetchFlytbaseFlights = useCallback(async (page = 1) => {
         if (!organizationId) return;
         setLoadingFlights(true);
         setFlights([]);
         setSelectedFlightId('');
         setFlightsError('');
         try {
-            const { data } = await axios.get(`/api/flytbase/flights?window=${fbWindow}&organizationId=${organizationId}`);
+            const { data } = await axios.get(`/api/flytbase/flights?window=${fbWindow}&organizationId=${organizationId}&page=${page}&pageSize=10`);
             if (data.success) {
                 const loaded = data.flights ?? [];
                 setFlights(loaded);
+                setFlightTotal(data.total ?? 0);
+                setFlightPage(page);
                 if (loaded.length === 0) {
-                    setFlightsError(t(`${ns}.toast.noFlightsFound`));
+                    setFlightsError(t(ns + '.toast.noFlightsFound'));
                 }
             } else {
-                setFlightsError(data.message ?? t(`${ns}.toast.loadFlightsError`));
+                setFlightsError(data.message ?? t(ns + '.toast.loadFlightsError'));
             }
         } catch (e: any) {
-            setFlightsError(e?.response?.data?.message ?? t(`${ns}.toast.loadFlightsError`));
+            setFlightsError(e?.response?.data?.message ?? t(ns + '.toast.loadFlightsError'));
         } finally {
             setLoadingFlights(false);
         }
@@ -273,113 +278,80 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
 
     useEffect(() => {
         if (step !== 2 || platform !== 'FLYTBASE' || !organizationId) return;
-        fetchFlytbaseFlights();
+        setFlightPage(1);
+        fetchFlytbaseFlights(1);
     }, [step, platform, organizationId, fetchFlytbaseFlights]);
 
     // Detect the drone serial number from whichever log source is selected,
     // so it can be shown as a hint on the Mission Data step.
     useEffect(() => {
-        if (logFile) {
-            let cancelled = false;
+        if (platform === 'FLYTBASE' && selectedFlightId) {
             setLoadingSerialNumber(true);
-            setLogSerialNumber(null);
-            const fd = new FormData();
-            fd.append('file', logFile);
-            axios.post('/api/operation/import/preview', fd)
-                .then((r) => { if (!cancelled) setLogSerialNumber(r.data.serial_number ?? null); })
-                .catch(() => { if (!cancelled) setLogSerialNumber(null); })
-                .finally(() => { if (!cancelled) setLoadingSerialNumber(false); });
-            return () => { cancelled = true; };
-        }
-        if (selectedFlightId) {
-            let cancelled = false;
+            axios.get(`/api/flytbase/flights/preview?flightId=${encodeURIComponent(selectedFlightId)}&organizationId=${organizationId}`)
+                .then((r) => {
+                    const serial = r.data.data?.aircraft?.serial_number;
+                    setLogSerialNumber(serial || null);
+                })
+                .catch(() => setLogSerialNumber(null))
+                .finally(() => setLoadingSerialNumber(false));
+        } else if (logFile) {
             setLoadingSerialNumber(true);
+            const formData = new FormData();
+            formData.append('logFile', logFile);
+            axios.post('/api/operation/import/serial-number', formData)
+                .then((r) => setLogSerialNumber(r.data.serialNumber || null))
+                .catch(() => setLogSerialNumber(null))
+                .finally(() => setLoadingSerialNumber(false));
+        } else {
             setLogSerialNumber(null);
-            const orgParam = organizationId ? `&organizationId=${organizationId}` : '';
-            axios.get(`/api/flytbase/flights/preview?flightId=${selectedFlightId}${orgParam}`)
-                .then((r) => { if (!cancelled) setLogSerialNumber(r.data?.data?.aircraft?.serial_number?.trim() || null); })
-                .catch(() => { if (!cancelled) setLogSerialNumber(null); })
-                .finally(() => { if (!cancelled) setLoadingSerialNumber(false); });
-            return () => { cancelled = true; };
         }
-        setLogSerialNumber(null);
-        setLoadingSerialNumber(false);
-    }, [logFile, selectedFlightId, organizationId]);
+    }, [selectedFlightId, logFile, platform, organizationId]);
 
-    // A log's aircraft serial number must match the selected system's — a log
-    // from one drone can never be attached to a different one.
-    const matchingDrone = logSerialNumber
-        ? drones.find((d) => serialInList(d.drone_serial_numbers, logSerialNumber))
-        : undefined;
-    const serialBlocked = !!logSerialNumber && !matchingDrone;
-
-    const canNext = useCallback(() => {
-        if (step === 1) return !!clientId;
-        if (step === 2) return !!logFile || !!selectedFlightId;
-        if (step === 3) {
-            if (!vehicleId || !categoryId || !typeId || !lucProcedureId || serialBlocked) return false;
-            if (opType === 'PDRA' && (!planId || !missionPlanningId)) return false;
-            if (isRecurrent && (!recurrentStartDate || !recurrentEndDate || !recurrentTime)) return false;
-            return true;
-        }
-        if (step === 4) return !!pilotId;
-        return true;
-    }, [step, clientId, logFile, vehicleId, categoryId, typeId, lucProcedureId, pilotId, serialBlocked, opType, planId, missionPlanningId, isRecurrent, recurrentStartDate, recurrentEndDate, recurrentTime]);
-
-    async function handleSubmit() {
-        if (!logFile && !selectedFlightId) return;
+    const handleSubmit = async () => {
         setSubmitting(true);
         try {
-            const fd = new FormData();
-            if (logFile) fd.append('mission_file_log', logFile);
-            fd.append('client_id',           clientId);
-            fd.append('mission_ccPlatform',  platform);
-            fd.append('mission_vehicle',     vehicleId);
-            fd.append('mission_category',    categoryId);
-            fd.append('mission_type',        typeId);
-            fd.append('mission_plan',        opType === 'PDRA' && planId ? planId : 'N');
-            fd.append('mission_planning',    opType === 'PDRA' && missionPlanningId ? missionPlanningId : 'N');
-            fd.append('flight_mode',         opType === 'PDRA' ? flightMode : '');
-            fd.append('mission_luc_procedure', lucProcedureId);
-            fd.append('mission_code',        missionCode.trim());
-            fd.append('mission_location',    location);
-            fd.append('mission_group_label', groupLabel);
-            fd.append('mission_notes',       notes);
-            fd.append('pilot_id',            pilotId);
-            if (visualObserverIds.length > 0) {
-                visualObserverIds.forEach(id => fd.append('visual_observer_ids', id));
+            const formData = new FormData();
+            formData.append('client_id', clientId);
+            formData.append('platform', platform);
+            if (platform === 'FLYTBASE') {
+                formData.append('flight_id', selectedFlightId);
+                formData.append('organization_id', organizationId);
+            } else {
+                if (logFile) formData.append('logFile', logFile);
             }
+            formData.append('vehicle_id', vehicleId);
+            formData.append('mission_code', missionCode);
+            formData.append('category_id', categoryId);
+            formData.append('type_id', typeId);
+            formData.append('op_type', opType);
+            formData.append('flight_mode', flightMode);
+            formData.append('plan_id', planId);
+            formData.append('mission_planning_id', missionPlanningId);
+            formData.append('luc_procedure_id', lucProcedureId);
+            formData.append('location', location);
+            formData.append('group_label', groupLabel);
+            formData.append('notes', notes);
+            formData.append('pilot_id', pilotId);
+            formData.append('visual_observer_ids', JSON.stringify(visualObserverIds));
+            formData.append('is_recurrent', String(isRecurrent));
             if (isRecurrent) {
-                fd.append('is_recurrent', 'true');
-                fd.append('recurrent_start_date', recurrentStartDate);
-                fd.append('recurrent_end_date', recurrentEndDate);
-                fd.append('recurrent_time', recurrentTime);
-            }
-            if (selectedFlightId) {
-                fd.append('flytbase_flight_id', selectedFlightId);
-                if (organizationId) fd.append('organization_id', organizationId);
+                formData.append('recurrent_start_date', recurrentStartDate);
+                formData.append('recurrent_end_date', recurrentEndDate);
+                formData.append('recurrent_time', recurrentTime);
             }
 
-            const { data } = await axios.post('/api/operation/import', fd);
-            if (data.code === 1) {
-                setImportedIds(data.newMissionIds ?? []);
-                setSkippedList(data.skipped ?? []);
-                const imported = data.newMissionIds?.length ?? 0;
-                const skipped  = data.skipped?.length ?? 0;
-                if (imported > 0) {
-                    if (skipped > 0) toast.success(t(`${ns}.toast.importSuccessWithSkipped`, { count: imported, skipped }));
-                    else toast.success(t(`${ns}.toast.importSuccess`, { count: imported }));
-                } else {
-                    toast.warning(t(`${ns}.toast.allDuplicates`, { count: skipped }));
-                }
+            const { data } = await axios.post('/api/operation/import', formData);
+            if (data.success) {
+                toast.success(t(ns + '.toast.importSuccess'));
+                onClose();
                 if (onSaved && data.operations) {
                     data.operations.forEach((op: Operation) => onSaved(op));
                 }
             } else {
-                toast.error(data.message ?? t(`${ns}.toast.importFailed`));
+                toast.error(data.message ?? t(ns + '.toast.importFailed'));
             }
         } catch (e: any) {
-            toast.error(e?.response?.data?.message ?? t(`${ns}.toast.importFailed`));
+            toast.error(e?.response?.data?.message ?? t(ns + '.toast.importFailed'));
         } finally {
             setSubmitting(false);
         }
@@ -395,7 +367,7 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                 <DialogHeader className="px-6 pt-6 pb-4 border-b">
                     <DialogTitle className="flex items-center gap-2 text-base font-semibold">
                         <FileUp className="h-5 w-5 text-violet-600" />
-                        {t(`${ns}.dialogTitle`)}
+                        {t(ns + '.dialogTitle')}
                     </DialogTitle>
                 </DialogHeader>
 
@@ -420,13 +392,13 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                                             'text-[10px] font-medium whitespace-nowrap',
                                             active ? 'text-violet-600' : done ? 'text-emerald-600' : 'text-muted-foreground'
                                         )}>
-                                            {t(`${ns}.steps.${s.labelKey}`)}
+                                            {t(ns + '.steps.' + s.labelKey)}
                                         </span>
                                     </div>
                                     {i < STEP_KEYS.length - 1 && (
                                         <div className={cn(
-                                            'h-0.5 flex-1 mt-[-14px] mx-1 transition-all',
-                                            done ? 'bg-emerald-400' : 'bg-muted'
+                                            'flex-1 h-0.5 mx-2 transition-colors',
+                                            done ? 'bg-emerald-600' : active ? 'bg-violet-600' : 'bg-muted'
                                         )} />
                                     )}
                                 </div>
@@ -435,26 +407,31 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                     </div>
                 </div>
 
-                <div className="px-6 py-5 min-h-[240px]">
-
+                <div className="px-6 py-4 flex-1 overflow-y-auto max-h-[600px]">
                     {step === 1 && (
                         <div className="space-y-4">
-                            <SectionTitle>{t(`${ns}.sections.clientDetails`)}</SectionTitle>
-                            <div className="max-w-xs">
-                                <Label className="mb-1.5 block">{t(`${ns}.fields.chooseClient`)}</Label>
+                            <div>
+                                <Label className="mb-1.5 block">{t(ns + '.fields.client')}</Label>
                                 <Select value={clientId} onValueChange={setClientId} disabled={loadingClients}>
                                     <SelectTrigger>
-                                        {loadingClients ? (
-                                            <span className="flex items-center gap-2 text-muted-foreground">
-                                                <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading...
-                                            </span>
-                                        ) : <SelectValue placeholder={t(`${ns}.placeholders.selectClient`)} />}
+                                        {loadingClients ? <Loader2 className="h-4 w-4 animate-spin" /> : clientId ? <SelectValue /> : <SelectValue placeholder={t(ns + '.placeholders.selectClient')} />}
                                     </SelectTrigger>
                                     <SelectContent>
                                         {clients.map((c) => (
                                             <SelectItem key={c.client_id} value={String(c.client_id)}>
-                                                [{c.client_code}] {c.client_name}
+                                            {c.client_name} ({c.client_code})
                                             </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div>
+                                <Label className="mb-1.5 block">{t(ns + '.fields.platform')}</Label>
+                                <Select value={platform} onValueChange={setPlatform}>
+                                    <SelectTrigger><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        {PLATFORMS.map((p) => (
+                                                <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>
@@ -464,63 +441,14 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
 
                     {step === 2 && (
                         <div className="space-y-4">
-                            <SectionTitle>{t(`${ns}.sections.logFile`)}</SectionTitle>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <Label className="mb-1.5 block">{t(`${ns}.fields.ccPlatform`)}</Label>
-                                    <Select value={platform} onValueChange={setPlatform}>
-                                        <SelectTrigger><SelectValue /></SelectTrigger>
-                                        <SelectContent>
-                                            {PLATFORMS.map((p) => (
-                                                <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div>
-                                    <Label className="mb-1.5 block">{t(`${ns}.fields.uploadLogFile`)}</Label>
-                                    <div
-                                        className={cn(
-                                            'relative border-2 border-dashed rounded-lg p-4 text-center transition-colors cursor-pointer',
-                                            logFile
-                                                ? 'border-emerald-400 bg-emerald-50 dark:bg-emerald-950/20'
-                                                : 'border-muted-foreground/25 hover:border-violet-400 hover:bg-violet-50/50 dark:hover:bg-violet-950/10'
-                                        )}
-                                        onClick={() => document.getElementById('log-file-input')?.click()}
-                                    >
-                                        <input id="log-file-input" type="file" accept=".gutma,.zip" className="hidden"
-                                            onChange={(e) => {
-                                                setLogFile(e.target.files?.[0] ?? null);
-                                                setSelectedFlightId('');
-                                            }} />
-                                        {logFile ? (
-                                            <div className="flex items-center justify-center gap-2 text-emerald-700 dark:text-emerald-400">
-                                                <FileText className="h-4 w-4" />
-                                                <span className="text-sm font-medium truncate max-w-[140px]">{logFile.name}</span>
-                                            </div>
-                                        ) : (
-                                            <div className="text-muted-foreground">
-                                                <Upload className="h-6 w-6 mx-auto mb-1 opacity-50" />
-                                                <p className="text-xs">{t(`${ns}.info.clickToUpload`)}</p>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="rounded-md border p-3 space-y-3">
-                                <div className="flex items-end gap-3">
-                                    <div className="w-48">
-                                        <Label className="mb-1.5 block">{t(`${ns}.fields.organization`)}</Label>
+                            {platform === 'FLYTBASE' && (
+                                <>
+                                    <div>
+                                        <Label className="mb-1.5 block">{t(ns + '.fields.organization')}</Label>
                                         <Select value={organizationId} onValueChange={setOrganizationId} disabled={loadingOrgs || organizations.length === 0}>
                                             <SelectTrigger>
-                                                {loadingOrgs ? (
-                                                    <span className="flex items-center gap-2 text-muted-foreground">
-                                                        <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading...
-                                                    </span>
-                                                ) : organizations.length === 0 ? (
-                                                    <span className="text-muted-foreground">{t(`${ns}.info.noOrganizations`)}</span>
-                                                ) : (
-                                                    <SelectValue placeholder={t(`${ns}.placeholders.selectOrganization`)} />
+                                                {loadingOrgs ? <Loader2 className="h-4 w-4 animate-spin" /> : (
+                                                    organizationId ? <SelectValue /> : <SelectValue placeholder={t(ns + '.placeholders.selectOrganization')} />
                                                 )}
                                             </SelectTrigger>
                                             <SelectContent>
@@ -530,257 +458,240 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                                             </SelectContent>
                                         </Select>
                                     </div>
-                                    <div className="w-40">
-                                        <Label className="mb-1.5 block">{t(`${ns}.fields.flytbaseWindow`)}</Label>
-                                        <Select value={fbWindow} onValueChange={setFbWindow}>
-                                            <SelectTrigger><SelectValue /></SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="30">30 min</SelectItem>
-                                                <SelectItem value="120">2 h</SelectItem>
-                                                <SelectItem value="360">6 h</SelectItem>
-                                                <SelectItem value="720">12 h</SelectItem>
-                                                <SelectItem value="1440">24 h</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                    <Button type="button" variant="outline" size="sm" onClick={fetchFlytbaseFlights} disabled={loadingFlights || !organizationId}>
-                                        {loadingFlights ? <Loader2 className="h-4 w-4 animate-spin" /> : t(`${ns}.buttons.refreshFlights`)}
-                                    </Button>
-                                </div>
-                                <div>
-                                    <Label className="mb-1.5 block">{t(`${ns}.fields.selectFlightLog`)}</Label>
-                                    <Select value={selectedFlightId} onValueChange={(value) => {
-                                        setSelectedFlightId(value);
-                                        setLogFile(null);
-                                    }}>
-                                        <SelectTrigger>
-                                            <SelectValue placeholder={t(`${ns}.placeholders.selectFlightLog`)} />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {flights.map((f) => (
-                                                <SelectItem key={f.flight_id} value={f.flight_id}>
-                                                    {(f.flight_name || f.flight_id)}{f.drone_name ? ` · ${f.drone_name}` : ''}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                    {flightsError && (
-                                        <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">{flightsError}</p>
-                                    )}
-                                </div>
-
-                                {selectedFlightObj && (
-                                    <div className="flex items-center gap-3 rounded-lg border border-violet-200 bg-violet-50 dark:bg-violet-950/20 dark:border-violet-800 px-4 py-3">
-                                        <Clock className="h-5 w-5 text-violet-600 shrink-0" />
-                                        <div className="grid grid-cols-3 gap-6 text-sm flex-1">
-                                            {selectedFlightObj.start_time != null && (
-                                                <>
-                                                    <div>
-                                                        <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">{t(`${ns}.fields.flightDate`)}</p>
-                                                        <p className="font-medium text-xs">{new Date(selectedFlightObj.start_time).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}</p>
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">{t(`${ns}.fields.flightTime`)}</p>
-                                                        <p className="font-medium text-xs">{new Date(selectedFlightObj.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
-                                                    </div>
-                                                </>
-                                            )}
-                                            {selectedFlightObj.duration != null && (
-                                                <div>
-                                                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">{t(`${ns}.fields.flightDuration`)}</p>
-                                                    <p className="font-medium text-xs">{formatDuration(selectedFlightObj.duration)}</p>
-                                                </div>
-                                            )}
+                                    <div className="flex gap-2">
+                                        <div className="flex-1">
+                                            <Label className="mb-1.5 block">{t(ns + '.fields.flytbaseWindow')}</Label>
+                                            <Select value={fbWindow} onValueChange={setFbWindow}>
+                                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="30">30 min</SelectItem>
+                                                    <SelectItem value="120">2 h</SelectItem>
+                                                    <SelectItem value="360">6 h</SelectItem>
+                                                    <SelectItem value="720">12 h</SelectItem>
+                                                    <SelectItem value="1440">24 h</SelectItem>
+                                                </SelectContent>
+                                            </Select>
                                         </div>
+                                        <Button type="button" variant="outline" size="sm" onClick={() => fetchFlytbaseFlights(flightPage)} disabled={loadingFlights || !organizationId}>
+                                            {loadingFlights ? <Loader2 className="h-4 w-4 animate-spin" /> : t(ns + '.buttons.refreshFlights')}
+                                        </Button>
                                     </div>
-                                )}
+                                    <div>
+                                        <Label className="mb-1.5 block">{t(ns + '.fields.selectFlightLog')}</Label>
+                                        <div className="relative">
+                                            <Input
+                                                placeholder={t(ns + '.placeholders.selectFlightLog')}
+                                                value={selectedFlightId ? flights.find(f => f.flight_id === selectedFlightId)?.flight_name || selectedFlightId : ''}
+                                                readOnly
+                                                onClick={() => {
+                                                    if (!loadingFlights && flights.length > 0) {
+                                                        document.getElementById('flight-dropdown')?.classList.toggle('hidden');
+                                                    }
+                                                }}
+                                                className="h-12 cursor-pointer"
+                                            />
+                                            <div
+                                                id="flight-dropdown"
+                                                className="hidden absolute top-full left-0 right-0 z-50 mt-1 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-md shadow-lg"
+                                            >
+                                                <div className="p-3 border-b border-slate-200 dark:border-slate-800">
+                                                    <Input
+                                                        placeholder="Search flights..."
+                                                        value={flightSearchQuery}
+                                                        onChange={(e) => setFlightSearchQuery(e.target.value)}
+                                                        className="h-8"
+                                                    />
+                                                </div>
+                                                <div className="max-h-[300px] overflow-y-auto">
+                                                    {flights
+                                                        .filter(f => 
+                                                            flightSearchQuery === '' || 
+                                                            (f.flight_name && f.flight_name.toLowerCase().includes(flightSearchQuery.toLowerCase())) ||
+                                                            (f.drone_name && f.drone_name.toLowerCase().includes(flightSearchQuery.toLowerCase())) ||
+                                                            f.flight_id.toLowerCase().includes(flightSearchQuery.toLowerCase())
+                                                        )
+                                                        .map((f) => (
+                                                        <div
+                                                            key={f.flight_id}
+                                                            onClick={() => {
+                                                                setSelectedFlightId(f.flight_id);
+                                                                setLogFile(null);
+                                                                document.getElementById('flight-dropdown')?.classList.add('hidden');
+                                                            }}
+                                                            className="p-3 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer border-b border-slate-100 dark:border-slate-800 last:border-0"
+                                                        >
+                                                            <div className="flex flex-col gap-1">
+                                                                <div className="font-medium text-xs">
+                                                                    {f.flight_name || f.flight_id}
+                                                                    {f.drone_name ? ` · ${f.drone_name}` : ''}
+                                                                </div>
+                                                                <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+                                                                    <span>{formatFlightTime(f.start_time)}</span>
+                                                                    <span>{formatDuration(f.duration)}</span>
+                                                                    <span>{formatDistance(f.distance)}</span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                    {flights.length === 0 && !loadingFlights && (
+                                                        <div className="p-4 text-center text-sm text-muted-foreground">
+                                                            No flights found
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                {flightTotal > 10 && (
+                                                    <div className="p-2 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                                                        <span className="text-xs text-muted-foreground">
+                                                            Page {flightPage} of {Math.ceil(flightTotal / 10)}
+                                                        </span>
+                                                        <div className="flex gap-1">
+                                                            <Button
+                                                                size="sm"
+                                                                variant="outline"
+                                                                onClick={() => fetchFlytbaseFlights(flightPage - 1)}
+                                                                disabled={flightPage === 1 || loadingFlights}
+                                                                className="h-7 px-2"
+                                                            >
+                                                                Prev
+                                                            </Button>
+                                                            <Button
+                                                                size="sm"
+                                                                variant="outline"
+                                                                onClick={() => fetchFlytbaseFlights(flightPage + 1)}
+                                                                disabled={flightPage >= Math.ceil(flightTotal / 10) || loadingFlights}
+                                                                className="h-7 px-2"
+                                                            >
+                                                                Next
+                                                            </Button>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                        {flightsError && (
+                                            <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">{flightsError}</p>
+                                        )}
+                                    </div>
 
-                                <p className="text-xs text-muted-foreground">
-                                    {t(`${ns}.info.uploadOrSelectFlight`)}
-                                </p>
+                                    {selectedFlightObj && (
+                                        <div className="flex items-center gap-3 rounded-lg border border-violet-200 bg-violet-50 dark:bg-violet-950/20 dark:border-violet-800 px-4 py-3">
+                                            <Clock className="h-5 w-5 text-violet-600 shrink-0" />
+                                            <div className="grid grid-cols-3 gap-6 text-sm flex-1">
+                                                {selectedFlightObj.start_time != null && (
+                                                    <>
+                                                        <div>
+                                                            <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">{t(ns + '.fields.flightDate')}</p>
+                                                            <p className="font-medium text-xs">{new Date(selectedFlightObj.start_time).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}</p>
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">{t(ns + '.fields.flightTime')}</p>
+                                                            <p className="font-medium text-xs">{new Date(selectedFlightObj.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                                                        </div>
+                                                    </>
+                                                )}
+                                                {selectedFlightObj.duration != null && (
+                                                    <div>
+                                                        <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">{t(ns + '.fields.duration')}</p>
+                                                        <p className="font-medium text-xs">{formatDuration(selectedFlightObj.duration)}</p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+                                </>
+                            )}
+
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <span>{t(ns + '.info.uploadOrSelectFlight')}</span>
                             </div>
                         </div>
                     )}
 
                     {step === 3 && (
-                        <div className="space-y-3">
-                            <SectionTitle>{t(`${ns}.sections.missionDetails`)}</SectionTitle>
-
-                            {loadingSerialNumber ? (
-                                <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-xs text-muted-foreground">
-                                    <Loader2 className="h-3.5 w-3.5 animate-spin" /> {t(`${ns}.info.detectingSerialNumber`)}
-                                </div>
-                            ) : logSerialNumber ? (
-                                <div className="flex items-center gap-2 rounded-md border border-emerald-200 bg-emerald-50 dark:bg-emerald-950/20 dark:border-emerald-800 px-3 py-2 text-xs text-emerald-700 dark:text-emerald-400">
-                                    <Fingerprint className="h-3.5 w-3.5 shrink-0" />
-                                    {t(`${ns}.info.detectedSerialNumber`)}: <span className="font-mono font-semibold">{logSerialNumber}</span>
-                                </div>
-                            ) : null}
-
-                            {serialBlocked && (
-                                <div className="flex items-center gap-2 rounded-md border border-red-200 bg-red-50 dark:bg-red-950/20 dark:border-red-800 px-3 py-2 text-xs text-red-700 dark:text-red-400">
-                                    <AlertCircle className="h-3.5 w-3.5 shrink-0" />
-                                    {t(`${ns}.info.noSystemWithSerial`, { serial: logSerialNumber })}
-                                </div>
-                            )}
-
+                        <div className="space-y-4">
                             <div>
-                                <Label className="mb-1.5 block">
-                                    {t(`${ns}.fields.missionCode`)}
-                                    <span className="ml-1 text-[10px] text-muted-foreground font-normal">{t(`${ns}.fields.optional`)}</span>
-                                </Label>
-                                <Input value={missionCode} onChange={(e) => setMissionCode(e.target.value)}
-                                    placeholder={t(`${ns}.placeholders.missionCode`)} />
-                            </div>
-
-                            <div className="grid grid-cols-3 gap-3">
-                                <div>
-                                    <Label className="mb-1.5 block">{t(`${ns}.fields.droneSystem`)} <span className="text-red-500">*</span></Label>
-                                    <Select value={vehicleId} onValueChange={setVehicleId} disabled={loadingDrones}>
-                                        <SelectTrigger>
-                                            {loadingDrones ? (
-                                                <span className="flex items-center gap-2 text-muted-foreground">
-                                                    <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading...
-                                                </span>
-                                            ) : <SelectValue placeholder={t(`${ns}.placeholders.selectDot`)} />}
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {drones.length === 0 ? (
-                                                <div className="px-3 py-2 text-xs text-muted-foreground italic">
-                                                    {t(`${ns}.info.noData`)}
-                                                </div>
-                                            ) : drones.map((d) => {
-                                                const snMismatch = !!logSerialNumber && !serialInList(d.drone_serial_numbers, logSerialNumber);
-                                                return (
+                                <Label className="mb-1.5 block">{t(ns + '.fields.drone')}</Label>
+                                <Select value={vehicleId} onValueChange={setVehicleId} disabled={loadingDrones}>
+                                    <SelectTrigger>
+                                        {loadingDrones ? <Loader2 className="h-4 w-4 animate-spin" /> : vehicleId ? <SelectValue /> : <SelectValue placeholder={t(ns + '.placeholders.selectDot')} />}
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {drones.map((d) => (
                                                 <SelectItem
                                                     key={d.tool_id}
                                                     value={String(d.tool_id)}
-                                                    disabled={!!d.is_non_operational || !!d.is_dismissed || !!d.in_maintenance || snMismatch}
-                                                    className={cn((d.is_non_operational || d.is_dismissed || d.in_maintenance || snMismatch) && 'opacity-50')}
+                                                    disabled={d.in_maintenance || d.is_non_operational || d.is_dismissed}
+                                                    className={cn((d.in_maintenance || d.is_non_operational || d.is_dismissed) && 'opacity-50')}
                                                 >
-                                                    <span className="flex items-center gap-2">
-                                                        <span>{d.tool_code}</span>
-                                                        {snMismatch && (
-                                                            <span className="text-[10px] font-semibold text-red-600 bg-red-50 border border-red-200 rounded px-1.5 py-0.5 leading-none">
-                                                                {t(`${ns}.info.snMismatch`)}
-                                                            </span>
-                                                        )}
-                                                        {d.is_non_operational && (
-                                                            <span className="text-[10px] font-semibold text-red-600 bg-red-50 border border-red-200 rounded px-1.5 py-0.5 leading-none">
-                                                                {t(`${ns}.info.notOperational`)}
-                                                            </span>
-                                                        )}
-                                                        {!d.is_non_operational && d.is_dismissed && (
-                                                            <span className="text-[10px] font-semibold text-slate-600 bg-slate-100 border border-slate-300 rounded px-1.5 py-0.5 leading-none">
-                                                                {t(`${ns}.info.dismissed`)}
-                                                            </span>
-                                                        )}
-                                                        {!d.is_non_operational && !d.is_dismissed && d.in_maintenance && (
-                                                            <span className="text-[10px] font-semibold text-amber-600 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 leading-none">
-                                                                {t(`${ns}.info.inMaintenance`)}
-                                                            </span>
-                                                        )}
-                                                        {!d.is_non_operational && !d.is_dismissed && !d.in_maintenance && d.maintenance_due && (
-                                                            <span className="text-[10px] font-semibold text-orange-600 bg-orange-50 border border-orange-200 rounded px-1.5 py-0.5 leading-none">
-                                                                {t(`${ns}.info.maintenanceDue`)}
-                                                            </span>
-                                                        )}
-                                                    </span>
+                                                    {d.tool_name} ({d.tool_code})
+                                                    {d.in_maintenance && ' (Maintenance)'}
+                                                    {d.maintenance_due && ' (Maintenance Due)'}
+                                                    {d.is_non_operational && ' (Non-operational)'}
+                                                    {d.is_dismissed && ' (Dismissed)'}
                                                 </SelectItem>
-                                                );
-                                            })}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div>
-                                    <Label className="mb-1.5 block">{t(`${ns}.fields.missionCategory`)} <span className="text-red-500">*</span></Label>
-                                    <Select value={categoryId} onValueChange={setCategoryId} disabled={loadingMissionOptions}>
-                                        <SelectTrigger>
-                                            {loadingMissionOptions ? (
-                                                <span className="flex items-center gap-2 text-muted-foreground">
-                                                    <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading...
-                                                </span>
-                                            ) : <SelectValue placeholder={t(`${ns}.placeholders.selectDot`)} />}
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {categories.map((c) => (
-                                                <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div>
-                                    <Label className="mb-1.5 block">{t(`${ns}.fields.missionType`)} <span className="text-red-500">*</span></Label>
-                                    <Select value={typeId} onValueChange={setTypeId} disabled={loadingMissionOptions}>
-                                        <SelectTrigger>
-                                            {loadingMissionOptions ? (
-                                                <span className="flex items-center gap-2 text-muted-foreground">
-                                                    <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading...
-                                                </span>
-                                            ) : <SelectValue placeholder={t(`${ns}.placeholders.selectDot`)} />}
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {types.map((ty) => (
-                                                <SelectItem key={ty.id} value={String(ty.id)}>{ty.name}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
                             </div>
-
                             <div>
-                                <Label className="mb-1.5 block">{t('operations.newOperation.drone.opTypeLabel')} <span className="text-red-500">*</span></Label>
-                                <div className="flex gap-2 mt-1">
-                                    {(['OPEN', 'PDRA'] as const).map((type) => (
-                                        <button
-                                            key={type}
-                                            type="button"
-                                            onClick={() => {
-                                                setOpType(type);
-                                                if (type === 'OPEN') { setPlanId(''); setMissionPlanningId(''); setFlightMode('RC'); }
-                                            }}
-                                            className={cn(
-                                                'px-4 py-2 cursor-pointer rounded-md text-sm font-semibold border transition-colors',
-                                                opType === type
-                                                    ? 'bg-violet-600 border-violet-600 text-white'
-                                                    : 'bg-white border-slate-300 text-slate-600 hover:bg-slate-50 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-600'
-                                            )}
-                                        >
-                                            {type}
-                                        </button>
-                                    ))}
-                                </div>
-                                <p className="text-xs mt-1.5 text-muted-foreground">
-                                    {opType === 'OPEN'
-                                        ? t('operations.newOperation.drone.opTypeOpenDesc')
-                                        : t('operations.newOperation.drone.opTypePdraDesc')}
-                                </p>
+                                <Label className="mb-1.5 block">{t(ns + '.fields.missionCode')}</Label>
+                                <Input value={missionCode} onChange={(e) => setMissionCode(e.target.value)} placeholder={t(ns + '.placeholders.missionCode')} />
                             </div>
-
-                            {opType === 'PDRA' && (
-                                <div className="grid grid-cols-2 gap-3">
-                                    <div>
-                                        <Label className="mb-1.5 block">
-                                            {t(`${ns}.fields.missionPlan`)} <span className="text-red-500">*</span>
-                                            {clientPlannings.length === 0 && !loadingPlannings && (
-                                                <span className="ml-1 text-[11px] text-amber-500 font-normal">{t('operations.newOperation.drone.noPlansForClient')}</span>
-                                            )}
-                                        </Label>
+                            <div>
+                                <Label className="mb-1.5 block">{t(ns + '.fields.category')}</Label>
+                                <Select value={categoryId} onValueChange={setCategoryId} disabled={loadingMissionOptions}>
+                                    <SelectTrigger>
+                                        {loadingMissionOptions ? <Loader2 className="h-4 w-4 animate-spin" /> : categoryId ? <SelectValue /> : <SelectValue placeholder={t(ns + '.placeholders.selectDot')} />}
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {categories.map((c) => <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div>
+                                <Label className="mb-1.5 block">{t(ns + '.fields.type')}</Label>
+                                <Select value={typeId} onValueChange={setTypeId} disabled={loadingMissionOptions}>
+                                    <SelectTrigger>
+                                        {loadingMissionOptions ? <Loader2 className="h-4 w-4 animate-spin" /> : typeId ? <SelectValue /> : <SelectValue placeholder={t(ns + '.placeholders.selectDot')} />}
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {types.map((ty) => <SelectItem key={ty.id} value={String(ty.id)}>{ty.name}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div>
+                                <Label className="mb-1.5 block">{t(ns + '.fields.opType')}</Label>
+                                <Select value={opType} onValueChange={(v: 'OPEN' | 'PDRA') => setOpType(v)}>
+                                    <SelectTrigger><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="OPEN">OPEN</SelectItem>
+                                        <SelectItem value="PDRA">PDRA</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div>
+                                <Label className="mb-1.5 block">{t(ns + '.fields.flightMode')}</Label>
+                                <Select value={flightMode} onValueChange={(v: 'RC' | 'DOCK') => setFlightMode(v)}>
+                                    <SelectTrigger><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="RC">RC</SelectItem>
+                                        <SelectItem value="DOCK">DOCK</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div>
+                                <Label className="mb-1.5 block">{t(ns + '.fields.planning')}</Label>
                                         <Select
                                             value={planId}
-                                            onValueChange={(v) => { setPlanId(v); setMissionPlanningId(''); }}
-                                            disabled={loadingPlannings || clientPlannings.length === 0}
+                                            onValueChange={setPlanId}
+                                            disabled={loadingPlannings}
                                         >
                                             <SelectTrigger>
-                                                {loadingPlannings ? (
-                                                    <span className="flex items-center gap-2 text-muted-foreground">
-                                                        <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading...
-                                                    </span>
-                                                ) : (
-                                                    <SelectValue placeholder={
+                                                {loadingPlannings ? <Loader2 className="h-4 w-4 animate-spin" /> : (
+                                                    planId ? <SelectValue /> : <SelectValue placeholder={
                                                         clientPlannings.length === 0
-                                                            ? t('operations.newOperation.drone.noPlansAvailable')
-                                                            : t('operations.newOperation.drone.selectMissionPlan')
+                                                            ? t(ns + '.placeholders.noPlanningAvailable')
+                                                            : t(ns + '.placeholders.selectPlanning')
                                                     } />
                                                 )}
                                             </SelectTrigger>
@@ -789,42 +700,26 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                                                     const isActive = !p.planning_active || p.planning_active === 'Y';
                                                     return (
                                                         <SelectItem key={p.planning_id} value={String(p.planning_id)} disabled={!isActive} className={cn(!isActive && 'opacity-50')}>
-                                                            <span className="flex items-center gap-2">
-                                                                <span>{p.planning_name}</span>
-                                                                {!isActive && (
-                                                                    <span className="text-[10px] font-semibold text-slate-500 bg-slate-100 border border-slate-200 rounded px-1.5 py-0.5 leading-none">
-                                                                        Inactive
-                                                                    </span>
-                                                                )}
-                                                            </span>
+                                                            {p.planning_name}
                                                         </SelectItem>
                                                     );
                                                 })}
                                             </SelectContent>
                                         </Select>
-                                    </div>
-                                    <div>
-                                        <Label className="mb-1.5 block">
-                                            {t('operations.newOperation.drone.missionPlanning')} <span className="text-red-500">*</span>
-                                            {planId && missionPlannings.length === 0 && !loadingMissionPlannings && (
-                                                <span className="ml-1 text-[11px] text-amber-500 font-normal">{t('operations.newOperation.drone.noMissionsForPlan')}</span>
-                                            )}
-                                        </Label>
+                            </div>
+                            <div>
+                                <Label className="mb-1.5 block">{t(ns + '.fields.missionPlanning')}</Label>
                                         <Select
                                             value={missionPlanningId}
                                             onValueChange={setMissionPlanningId}
-                                            disabled={loadingMissionPlannings || missionPlannings.length === 0}
+                                            disabled={loadingMissionPlannings}
                                         >
                                             <SelectTrigger>
-                                                {loadingMissionPlannings ? (
-                                                    <span className="flex items-center gap-2 text-muted-foreground">
-                                                        <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading...
-                                                    </span>
-                                                ) : (
-                                                    <SelectValue placeholder={
+                                                {loadingMissionPlannings ? <Loader2 className="h-4 w-4 animate-spin" /> : (
+                                                    missionPlanningId ? <SelectValue /> : <SelectValue placeholder={
                                                         missionPlannings.length === 0
-                                                            ? t('operations.newOperation.drone.noMissionsAvailable')
-                                                            : t('operations.newOperation.drone.selectMission')
+                                                            ? t(ns + '.placeholders.noMissionPlanningAvailable')
+                                                            : t(ns + '.placeholders.selectMissionPlanning')
                                                     } />
                                                 )}
                                             </SelectTrigger>
@@ -833,348 +728,182 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                                                     const isActive = !m.mission_planning_active || m.mission_planning_active === 'Y';
                                                     return (
                                                         <SelectItem key={m.mission_planning_id} value={String(m.mission_planning_id)} disabled={!isActive} className={cn(!isActive && 'opacity-50')}>
-                                                            <span className="flex items-center gap-2">
-                                                                <span>{m.mission_planning_code} — {m.mission_planning_desc}</span>
-                                                                {!isActive && (
-                                                                    <span className="text-[10px] font-semibold text-slate-500 bg-slate-100 border border-slate-200 rounded px-1.5 py-0.5 leading-none">
-                                                                        Inactive
-                                                                    </span>
-                                                                )}
-                                                            </span>
+                                                            {m.mission_planning_name}
                                                         </SelectItem>
                                                     );
                                                 })}
                                             </SelectContent>
                                         </Select>
-                                    </div>
-                                </div>
-                            )}
-
-                            <div>
-                                <Label className="mb-1.5 block">
-                                    {t(`${ns}.fields.location`)}
-                                    <span className="ml-1 text-[10px] text-muted-foreground font-normal">{t(`${ns}.fields.optional`)}</span>
-                                </Label>
-                                <Input value={location} onChange={(e) => setLocation(e.target.value)}
-                                    placeholder={t(`${ns}.placeholders.location`)} />
                             </div>
-
-                            {opType === 'PDRA' && (
-                                <div className="max-w-xs">
-                                    <Label className="mb-1.5 block">{t('operations.newOperation.drone.flightMode')}</Label>
-                                    <div className="flex gap-2 mt-1">
-                                        {([
-                                            { value: 'RC' as const, labelKey: 'operations.newOperation.drone.flightModeRC' },
-                                            { value: 'DOCK' as const, labelKey: 'operations.newOperation.drone.flightModeDock' },
-                                        ]).map((fm) => (
-                                            <button
-                                                key={fm.value}
-                                                type="button"
-                                                onClick={() => setFlightMode(fm.value)}
-                                                className={cn(
-                                                    'px-3 py-1.5 cursor-pointer rounded-md text-xs font-semibold border transition-colors',
-                                                    flightMode === fm.value
-                                                        ? 'bg-sky-600 border-sky-600 text-white'
-                                                        : 'bg-white border-slate-300 text-slate-600 hover:bg-slate-50 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-600'
-                                                )}
-                                            >
-                                                {t(fm.labelKey)}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-
-                            <div className="max-w-xs">
-                                <Label className="mb-1.5 block">
-                                    {t(`${ns}.fields.procedure`)} <span className="text-red-500">*</span>
-                                </Label>
+                            <div>
+                                <Label className="mb-1.5 block">{t(ns + '.fields.lucProcedure')}</Label>
                                 <Select value={lucProcedureId} onValueChange={setLucProcedureId} disabled={loadingMissionOptions}>
                                     <SelectTrigger>
-                                        {loadingMissionOptions ? (
-                                            <span className="flex items-center gap-2 text-muted-foreground">
-                                                <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading...
-                                            </span>
-                                        ) : <SelectValue placeholder={t(`${ns}.placeholders.selectDot`)} />}
+                                        {loadingMissionOptions ? <Loader2 className="h-4 w-4 animate-spin" /> : lucProcedureId ? <SelectValue /> : <SelectValue placeholder={t(ns + '.placeholders.selectDot')} />}
                                     </SelectTrigger>
                                     <SelectContent>
-                                        {lucProcedures.length === 0 ? (
-                                            <div className="px-3 py-2 text-xs text-muted-foreground italic">
-                                                {t(`${ns}.info.noData`)}
-                                            </div>
-                                        ) : lucProcedures.map((p) => (
-                                            <SelectItem key={p.id} value={String(p.id)}>{p.name}</SelectItem>
-                                        ))}
+                                        {lucProcedures.map((p) => <SelectItem key={p.id} value={String(p.id)}>{p.name}</SelectItem>)}
                                     </SelectContent>
                                 </Select>
                             </div>
-
-                            <div className="grid grid-cols-2 gap-3">
-                                <div>
-                                    <Label className="mb-1.5 block">{t(`${ns}.fields.groupLabel`)}
-                                        <span className="ml-1 text-[10px] text-muted-foreground font-normal">{t(`${ns}.fields.optional`)}</span>
-                                    </Label>
-                                    <Input value={groupLabel} onChange={(e) => setGroupLabel(e.target.value)}
-                                        placeholder={t(`${ns}.placeholders.groupLabel`)} />
-                                </div>
-                                <div>
-                                    <Label className="mb-1.5 block">{t(`${ns}.fields.notes`)}
-                                        <span className="ml-1 text-[10px] text-muted-foreground font-normal">{t(`${ns}.fields.optional`)}</span>
-                                    </Label>
-                                    <Input value={notes} onChange={(e) => setNotes(e.target.value)}
-                                        placeholder={t(`${ns}.placeholders.notes`)} />
-                                </div>
+                            <div>
+                                <Label className="mb-1.5 block">{t(ns + '.fields.location')}</Label>
+                                <Input value={location} onChange={(e) => setLocation(e.target.value)} placeholder={t(ns + '.placeholders.location')} />
                             </div>
-
-                            <div className="space-y-3">
-                                <div className="flex items-center gap-2">
-                                    <input
-                                        type="checkbox"
-                                        id="recurrent-checkbox"
-                                        checked={isRecurrent}
-                                        onChange={(e) => setIsRecurrent(e.target.checked)}
-                                        className="h-4 w-4 rounded border-gray-300 text-violet-600 focus:ring-violet-600"
-                                    />
-                                    <Label htmlFor="recurrent-checkbox" className="cursor-pointer">
-                                        {t(`${ns}.fields.recurrent`)}
-                                    </Label>
+                            <div>
+                                <Label className="mb-1.5 block">{t(ns + '.fields.groupLabel')}</Label>
+                                <Input value={groupLabel} onChange={(e) => setGroupLabel(e.target.value)} placeholder={t(ns + '.placeholders.groupLabel')} />
+                            </div>
+                            <div>
+                                <Label className="mb-1.5 block">{t(ns + '.fields.notes')}</Label>
+                                <Input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={t(ns + '.placeholders.notes')} />
+                            </div>
+                            {logSerialNumber && (
+                                <div className="flex items-center gap-2 text-xs text-muted-foreground bg-slate-50 dark:bg-slate-900 p-2 rounded">
+                                    <Fingerprint className="h-4 w-4" />
+                                    <span>Detected serial: {logSerialNumber}</span>
                                 </div>
-
-                                {isRecurrent && (
-                                    <div className="grid grid-cols-3 gap-3 pl-6 border-l-2 border-violet-200">
-                                        <div>
-                                            <Label className="mb-1.5 block">{t(`${ns}.fields.startDate`)} <span className="text-red-500">*</span></Label>
-                                            <Input
-                                                type="date"
-                                                value={recurrentStartDate}
-                                                onChange={(e) => setRecurrentStartDate(e.target.value)}
-                                            />
-                                        </div>
-                                        <div>
-                                            <Label className="mb-1.5 block">{t(`${ns}.fields.endDate`)} <span className="text-red-500">*</span></Label>
-                                            <Input
-                                                type="date"
-                                                value={recurrentEndDate}
-                                                onChange={(e) => setRecurrentEndDate(e.target.value)}
-                                            />
-                                        </div>
-                                        <div>
-                                            <Label className="mb-1.5 block">{t(`${ns}.fields.missionTime`)} <span className="text-red-500">*</span></Label>
-                                            <Input
-                                                type="time"
-                                                value={recurrentTime}
-                                                onChange={(e) => setRecurrentTime(e.target.value)}
-                                            />
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-
-                            <div className="rounded-md border border-blue-200 bg-blue-50 dark:bg-blue-950/20 dark:border-blue-800 px-3 py-2 text-xs text-blue-700 dark:text-blue-400">
-                                ℹ️ {t(`${ns}.info.gutmaAutoExtract`)}
-                            </div>
+                            )}
                         </div>
                     )}
 
                     {step === 4 && (
                         <div className="space-y-4">
-                            <SectionTitle>{t(`${ns}.sections.pilotInCommand`)}</SectionTitle>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <Label className="mb-1.5 block">{t(`${ns}.fields.pilotInCommand`)} <span className="text-red-500">*</span></Label>
-                                    <Select value={pilotId} onValueChange={(id) => { setPilotId(id); setVisualObserverIds(visualObserverIds.filter(v => v !== id)); }} disabled={loadingPilots}>
-                                        <SelectTrigger>
-                                            {loadingPilots ? (
-                                                <span className="flex items-center gap-2 text-muted-foreground">
-                                                    <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading...
-                                                </span>
-                                            ) : <SelectValue placeholder={t(`${ns}.placeholders.selectPilot`)} />}
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {pilots.map((p) => (
-                                                <SelectItem key={p.user_id} value={String(p.user_id)}>
-                                                    {p.first_name} {p.last_name}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                {pilotLabel && (
-                                    <div>
-                                        <Label className="mb-1.5 block">{t(`${ns}.fields.selected`)}</Label>
-                                        <Input value={pilotLabel} disabled className="bg-muted" />
-                                    </div>
-                                )}
-                            </div>
-
                             <div>
-                                <Label className="mb-1.5 block">
-                                    {t('operations.newOperation.pilot.visualObserversLabel')}
-                                    <span className="ml-1 text-[10px] text-muted-foreground font-normal">{t('operations.newOperation.pilot.visualObserversOptional')}</span>
-                                </Label>
-                                {!pilotId ? (
-                                    <p className="text-xs mt-1 text-muted-foreground">
-                                        {t('operations.newOperation.pilot.visualObserversDisabled')}
-                                    </p>
-                                ) : (
-                                    <div className="mt-1 rounded-md border max-h-36 overflow-y-auto">
-                                        {pilots.length === 0 && (
-                                            <p className="text-xs px-3 py-2 text-muted-foreground">
-                                                {t('operations.newOperation.pilot.noPilots')}
-                                            </p>
-                                        )}
-                                        {pilots.map((p) => {
-                                            const id = String(p.user_id);
-                                            const isPrimary = id === pilotId;
-                                            const isChecked = visualObserverIds.includes(id);
-                                            return (
-                                                <label
-                                                    key={p.user_id}
-                                                    className={`flex items-center gap-2.5 px-3 py-2 cursor-pointer text-xs transition-colors ${
-                                                        isPrimary
-                                                            ? 'opacity-40 cursor-not-allowed'
-                                                            : 'hover:bg-slate-50 dark:hover:bg-slate-700/40'
-                                                    }`}
-                                                >
-                                                    <input
-                                                        type="checkbox"
-                                                        disabled={isPrimary}
-                                                        checked={isChecked}
-                                                        onChange={() => !isPrimary && (
-                                                            isChecked
-                                                                ? setVisualObserverIds(visualObserverIds.filter(v => v !== id))
-                                                                : setVisualObserverIds([...visualObserverIds, id])
-                                                        )}
-                                                        className="accent-violet-600 shrink-0"
-                                                    />
-                                                    <span>
-                                                        {p.first_name} {p.last_name}
-                                                    </span>
-                                                    {isPrimary && (
-                                                        <span className="text-[10px] text-muted-foreground">
-                                                            {t('operations.newOperation.pilot.primaryPilotNote')}
-                                                        </span>
-                                                    )}
-                                                </label>
-                                            );
-                                        })}
-                                    </div>
-                                )}
+                                <Label className="mb-1.5 block">{t(ns + '.fields.pilotInCommand')}</Label>
+                                <Select value={pilotId} onValueChange={setPilotId} disabled={loadingPilots}>
+                                    <SelectTrigger>
+                                        {loadingPilots ? <Loader2 className="h-4 w-4 animate-spin" /> : pilotId ? <SelectValue /> : <SelectValue placeholder={t(ns + '.placeholders.selectPilot')} />}
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {pilots.map((p) => <SelectItem key={p.user_id} value={String(p.user_id)}>{p.first_name} {p.last_name}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
                             </div>
+                            <div>
+                                <Label className="mb-1.5 block">{t(ns + '.fields.visualObservers')}</Label>
+                                <Select
+                                    value={visualObserverIds.length > 0 ? visualObserverIds[0] : ''}
+                                    onValueChange={(v) => setVisualObserverIds([v])}
+                                    disabled={loadingPilots}
+                                >
+                                    <SelectTrigger>
+                                        {loadingPilots ? <Loader2 className="h-4 w-4 animate-spin" /> : visualObserverIds.length > 0 ? <SelectValue /> : <SelectValue placeholder={t(ns + '.placeholders.selectVisualObserver')} />}
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {pilots.filter(p => String(p.user_id) !== pilotId).map((p) => <SelectItem key={p.user_id} value={String(p.user_id)}>{p.first_name} {p.last_name}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <input
+                                    type="checkbox"
+                                    id="isRecurrent"
+                                    checked={isRecurrent}
+                                    onChange={(e) => setIsRecurrent(e.target.checked)}
+                                    className="h-4 w-4"
+                                />
+                                <Label htmlFor="isRecurrent" className="text-sm cursor-pointer">{t(ns + '.fields.recurrent')}</Label>
+                            </div>
+                            {isRecurrent && (
+                                <div className="grid grid-cols-3 gap-4">
+                                    <div>
+                                        <Label className="mb-1.5 block">{t(ns + '.fields.recurrentStartDate')}</Label>
+                                        <Input type="date" value={recurrentStartDate} onChange={(e) => setRecurrentStartDate(e.target.value)} />
+                                    </div>
+                                    <div>
+                                        <Label className="mb-1.5 block">{t(ns + '.fields.recurrentEndDate')}</Label>
+                                        <Input type="date" value={recurrentEndDate} onChange={(e) => setRecurrentEndDate(e.target.value)} />
+                                    </div>
+                                    <div>
+                                        <Label className="mb-1.5 block">{t(ns + '.fields.recurrentTime')}</Label>
+                                        <Input type="time" value={recurrentTime} onChange={(e) => setRecurrentTime(e.target.value)} />
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     )}
 
                     {step === 5 && (
                         <div className="space-y-4">
-                            <SectionTitle>{t(`${ns}.sections.confirmation`)}</SectionTitle>
-
-                            {importedIds.length === 0 && skippedList.length === 0 && (
-                                <div className="text-center py-4 space-y-3">
-                                    <div className="mx-auto h-14 w-14 rounded-full bg-violet-100 dark:bg-violet-950/40 flex items-center justify-center">
-                                        <ClipboardCheck className="h-7 w-7 text-violet-600" />
-                                    </div>
-                                    <p className="font-semibold text-base">{t(`${ns}.info.youAreAllSet`)}</p>
-                                    <p className="text-sm text-muted-foreground">
-                                        {t(`${ns}.info.reviewAndImport`, { importButton: t(`${ns}.buttons.importMission`) })}
-                                    </p>
-                                    <div className="mt-2 rounded-lg border bg-muted/30 p-4 text-left space-y-1.5">
-                                        <Row label={t(`${ns}.review.client`)}   value={clients.find((c) => String(c.client_id) === clientId)?.client_name} />
-                                        <Row label={t(`${ns}.review.platform`)} value={platform} />
-                                        <Row label={t(`${ns}.review.file`)}     value={logFile?.name || flights.find((f) => f.flight_id === selectedFlightId)?.flight_name || selectedFlightId} />
-                                        <Row label={t(`${ns}.review.missionCode`)} value={missionCode.trim() || t(`${ns}.info.autoGenerated`)} />
-                                        <Row label={t(`${ns}.review.drone`)}    value={drones.find((d) => String(d.tool_id) === vehicleId)?.tool_code} />
-                                        <Row label={t(`${ns}.review.category`)} value={categories.find((c) => String(c.id) === categoryId)?.name} />
-                                        <Row label={t(`${ns}.review.type`)}     value={types.find((tp) => String(tp.id) === typeId)?.name} />
-                                        <Row label={t(`${ns}.review.procedure`)} value={lucProcedures.find((p) => String(p.id) === lucProcedureId)?.name} />
-                                        <Row label={t(`${ns}.review.location`)} value={location} />
-                                        <Row label={t('operations.newOperation.drone.opTypeLabel')} value={opType} />
-                                        {opType === 'PDRA' && (
-                                            <>
-                                                <Row label={t(`${ns}.review.plan`)} value={clientPlannings.find((p) => String(p.planning_id) === planId)?.planning_name} />
-                                                <Row label={t('operations.newOperation.drone.missionPlanning')} value={missionPlannings.find((m) => String(m.mission_planning_id) === missionPlanningId)?.mission_planning_code} />
-                                                <Row label={t('operations.newOperation.drone.flightMode')} value={flightMode} />
-                                            </>
-                                        )}
-                                        <Row label={t(`${ns}.review.pilot`)}    value={pilotLabel} />
-                                        {groupLabel && <Row label={t(`${ns}.review.group`)} value={groupLabel} />}
-                                    </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <Label className="mb-1.5 block">{t(ns + '.fields.client')}</Label>
+                                    <p className="text-sm font-medium">{clients.find(c => String(c.client_id) === clientId)?.client_name || '—'}</p>
                                 </div>
-                            )}
-
-                            {(importedIds.length > 0 || skippedList.length > 0) && (
-                                <div className="space-y-3">
-                                    {importedIds.length > 0 && (
-                                        <div className="text-center py-2 space-y-2">
-                                            <CheckCircle2 className="h-12 w-12 mx-auto text-emerald-500" />
-                                            <p className="font-semibold text-emerald-700 dark:text-emerald-400">
-                                                {t(`${ns}.result.missionsImported`, { count: importedIds.length })}
-                                            </p>
-                                            <div className="space-y-1">
-                                                {importedIds.map((id) => (
-                                                    <p key={id} className="text-sm text-muted-foreground">{t(`${ns}.result.addedMission`, { id })}</p>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-                                    {skippedList.length > 0 && (
-                                        <div className="rounded-md border border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-800 px-4 py-3">
-                                            <div className="flex items-center gap-2 mb-2">
-                                                <AlertCircle className="h-4 w-4 text-amber-600 shrink-0" />
-                                                <p className="text-xs font-semibold text-amber-700 dark:text-amber-400">
-                                                    {t(`${ns}.result.duplicatesSkipped`, { count: skippedList.length })}
-                                                </p>
-                                            </div>
-                                            <div className="space-y-0.5">
-                                                {skippedList.map((msg, i) => (
-                                                    <p key={i} className="text-xs text-amber-600 dark:text-amber-400">• {msg}</p>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
+                                <div>
+                                    <Label className="mb-1.5 block">{t(ns + '.fields.platform')}</Label>
+                                    <p className="text-sm font-medium">{platform}</p>
+                                </div>
+                                <div>
+                                    <Label className="mb-1.5 block">{t(ns + '.fields.drone')}</Label>
+                                    <p className="text-sm font-medium">{drones.find(d => String(d.tool_id) === vehicleId)?.tool_name || '—'}</p>
+                                </div>
+                                <div>
+                                    <Label className="mb-1.5 block">{t(ns + '.fields.missionCode')}</Label>
+                                    <p className="text-sm font-medium">{missionCode || '—'}</p>
+                                </div>
+                                <div>
+                                    <Label className="mb-1.5 block">{t(ns + '.fields.category')}</Label>
+                                    <p className="text-sm font-medium">{categories.find(c => String(c.id) === categoryId)?.name || '—'}</p>
+                                </div>
+                                <div>
+                                    <Label className="mb-1.5 block">{t(ns + '.fields.type')}</Label>
+                                    <p className="text-sm font-medium">{types.find(ty => String(ty.id) === typeId)?.name || '—'}</p>
+                                </div>
+                                <div>
+                                    <Label className="mb-1.5 block">{t(ns + '.fields.opType')}</Label>
+                                    <p className="text-sm font-medium">{opType}</p>
+                                </div>
+                                <div>
+                                    <Label className="mb-1.5 block">{t(ns + '.fields.flightMode')}</Label>
+                                    <p className="text-sm font-medium">{flightMode}</p>
+                                </div>
+                                <div>
+                                    <Label className="mb-1.5 block">{t(ns + '.fields.pilot')}</Label>
+                                    <p className="text-sm font-medium">{pilotLabel || '—'}</p>
+                                </div>
+                                <div>
+                                    <Label className="mb-1.5 block">{t(ns + '.fields.visualObservers')}</Label>
+                                    <p className="text-sm font-medium">{visualObserverIds.map(id => pilots.find(p => String(p.user_id) === id)?.first_name + ' ' + pilots.find(p => String(p.user_id) === id)?.last_name).join(', ') || '—'}</p>
+                                </div>
+                            </div>
+                            {isRecurrent && (
+                                <div className="border-t pt-4">
+                                    <p className="text-sm font-medium mb-2">{t(ns + '.fields.recurrent')}</p>
+                                    <p className="text-sm text-muted-foreground">
+                                        {recurrentStartDate} to {recurrentEndDate} at {recurrentTime}
+                                    </p>
                                 </div>
                             )}
                         </div>
                     )}
                 </div>
 
-                <div className="flex items-center justify-between px-6 pb-6 pt-2 border-t bg-muted/20">
-                    <Button variant="outline" size="sm" onClick={() => setStep((s) => s - 1)}
-                        disabled={step === 1 || submitting || importedIds.length > 0 || skippedList.length > 0}
-                        className="gap-1">
-                        <ChevronLeft className="h-4 w-4" /> {t(`${ns}.buttons.previous`)}
+                <div className="px-6 py-4 border-t flex justify-between">
+                    <Button
+                        variant="outline"
+                        onClick={() => setStep(step - 1)}
+                        disabled={step === 1 || submitting}
+                    >
+                        {t(ns + '.buttons.back')}
                     </Button>
-
-                    {step < 5 ? (
-                        <Button size="sm" onClick={() => setStep((s) => s + 1)} disabled={!canNext()}
-                            className="gap-1 bg-violet-600 hover:bg-violet-700 text-white">
-                            {t(`${ns}.buttons.next`)} <ChevronRight className="h-4 w-4" />
-                        </Button>
-                    ) : (importedIds.length === 0 && skippedList.length === 0) ? (
-                        <Button size="sm" onClick={handleSubmit} disabled={submitting}
-                            className="gap-2 bg-rose-600 hover:bg-rose-700 text-white min-w-[140px]">
-                            {submitting
-                                ? <><Loader2 className="h-4 w-4 animate-spin" /> {t(`${ns}.buttons.importing`)}</>
-                                : <><FileUp className="h-4 w-4" /> {t(`${ns}.buttons.importMission`)}</>}
-                        </Button>
-                    ) : (
-                        <Button size="sm" onClick={onClose} className="bg-emerald-600 hover:bg-emerald-700 text-white">{t(`${ns}.buttons.done`)}</Button>
-                    )}
+                    <Button
+                        onClick={() => {
+                            if (step === 5) {
+                                handleSubmit();
+                            } else {
+                                setStep(step + 1);
+                            }
+                        }}
+                        disabled={submitting}
+                        className='bg-violet-600 hover:bg-violet-500 cursor-pointer'
+                    >
+                        {submitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                        {step === 5 ? t(ns + '.buttons.import') : t(ns + '.buttons.next')}
+                    </Button>
                 </div>
             </DialogContent>
         </Dialog>
-    );
-}
-
-function SectionTitle({ children }: { children: React.ReactNode }) {
-    return <h4 className="text-sm font-semibold text-foreground border-b pb-2 mb-3">{children}</h4>;
-}
-
-function Row({ label, value }: { label: string; value?: string }) {
-    if (!value) return null;
-    return (
-        <div className="flex gap-2">
-            <span className="text-muted-foreground w-20 shrink-0 text-xs">{label}</span>
-            <span className="font-medium text-xs">{value}</span>
-        </div>
     );
 }

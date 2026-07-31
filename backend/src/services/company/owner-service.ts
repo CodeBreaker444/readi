@@ -570,6 +570,78 @@ export async function addOwnerWithAdmin(payload: AddOwnerWithAdminPayload) {
     }
 }
 
+export async function resendAdminActivationEmail(ownerId: string) {
+    const ownerIdNum = parseInt(ownerId);
+
+    // Get the owner with admin user
+    const owner = await prisma.owner.findUnique({
+        where: { owner_id: ownerIdNum },
+        include: {
+            user_owner: {
+                where: { relationship_type: 'OWNER_ADMIN', is_primary: true },
+                select: {
+                    users: {
+                        select: {
+                            user_id: true,
+                            username: true,
+                            email: true,
+                            first_name: true,
+                            last_name: true,
+                            user_active: true,
+                            user_unique_code: true,
+                        },
+                    },
+                },
+                take: 1,
+            },
+        },
+    });
+
+    if (!owner) throw new Error('Company not found');
+
+    const adminRel = owner.user_owner[0];
+    if (!adminRel?.users) {
+        throw new Error('No admin user found for this company');
+    }
+
+    const adminUser = adminRel.users;
+
+    // Check if account is already active
+    if (adminUser.user_active === 'Y') {
+        throw new Error('Account is already active');
+    }
+
+    // Generate new activation token
+    const activationToken = generateActivationToken(128);
+
+    // Update the user with new activation token
+    await prisma.public_users.update({
+        where: { user_id: adminUser.user_id },
+        data: { key_: activationToken },
+    });
+
+    // Send activation email
+    const fullname = [adminUser.first_name, adminUser.last_name].filter(Boolean).join(' ');
+    const activationLink = `${env.APP_URL}/auth/activate?o=${ownerIdNum}&email=${encodeURIComponent(adminUser.email!)}&username=${encodeURIComponent(adminUser.username!)}&id=${activationToken}`;
+
+    const emailResult = await sendUserActivationEmail(
+        adminUser.email!,
+        fullname,
+        {
+            organization: owner.owner_name,
+            username: adminUser.username!,
+            passcode: adminUser.user_unique_code || activationToken.substring(0, 10),
+            loginlink: activationLink,
+        }
+    );
+
+    return {
+        success: true,
+        message: 'Activation email sent successfully',
+        emailResult,
+    };
+}
+
 export async function updateAdminPassword(ownerId: string, adminUserId: number, newPassword: string) {
     const ownerIdNum = parseInt(ownerId);
 

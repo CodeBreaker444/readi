@@ -1901,6 +1901,7 @@
         "logFile": "Log File",
         "missionDetails": "Mission Details",
         "pilotInCommand": "Pilot In Command",
+        "pilot": "Pilot",
         "confirmation": "Import Mission Confirmation"
       },
       "fields": {
@@ -1929,7 +1930,22 @@
         "optional": "(optional)",
         "flightDate": "Date",
         "flightTime": "Time",
-        "flightDuration": "Flight Time"
+        "flightDuration": "Flight Time",
+        "client": "Client",
+        "platform": "Platform",
+        "drone": "Drone",
+        "category": "Category",
+        "type": "Type",
+        "opType": "Operation Type",
+        "flightMode": "Flight Mode",
+        "planning": "Planning",
+        "missionPlanning": "Mission Planning",
+        "lucProcedure": "LUC Procedure",
+        "visualObservers": "Visual Observers",
+        "recurrentStartDate": "Recurrent Start Date",
+        "recurrentEndDate": "Recurrent End Date",
+        "recurrentTime": "Recurrent Time",
+        "duration": "Duration"
       },
       "placeholders": {
         "selectClient": "Select client…",
@@ -1940,7 +1956,13 @@
         "groupLabel": "e.g. Spring Survey 2025",
         "notes": "Additional notes…",
         "selectDot": "Select…",
-        "missionCode": "Leave blank to auto-generate"
+        "missionCode": "Leave blank to auto-generate",
+        "selectVisualObservers": "Select visual observers…",
+        "selectPlanning": "Select planning…",
+        "noPlanningAvailable": "No planning available",
+        "selectMissionPlanning": "Select mission planning…",
+        "noMissionPlanningAvailable": "No mission planning available",
+        "selectVisualObserver": "Select visual observer…"
       },
       "info": {
         "gutmaAutoExtract": "Altitude, distance and timestamps are extracted automatically from the GUTMA log file. The mission code is auto-generated unless you set one below.",
@@ -1976,7 +1998,10 @@
         "location": "Location",
         "plan": "Plan",
         "pilot": "Pilot",
-        "group": "Group"
+        "group": "Group",
+        "opType": "Operation Type",
+        "flightMode": "Flight Mode",
+        "missionPlanning": "Mission Planning"
       },
       "buttons": {
         "previous": "Previous",
@@ -1984,7 +2009,9 @@
         "refreshFlights": "Refresh Flights",
         "importing": "Importing…",
         "importMission": "Import Mission",
-        "done": "Done"
+        "import": "Import",
+        "done": "Done",
+        "back": "Back"
       },
       "toast": {
         "loadClientsError": "Failed to load clients",
