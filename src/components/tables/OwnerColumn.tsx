@@ -1,5 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { ColumnDef } from '@tanstack/react-table';
+import { Loader2, Mail } from 'lucide-react';
 
 export interface OwnerData {
   owner_id: number;
@@ -44,9 +45,11 @@ interface OwnerColumnActions {
   onOpen: (owner: OwnerData) => void;
   onDelete: (owner: OwnerData) => void;
   onActivate: (owner: OwnerData) => void;
+  onResendVerification: (owner: OwnerData) => void;
+  resendingOwnerId: number | null;
 }
 
-export const ownerColumns = ({ onOpen, onDelete, onActivate }: OwnerColumnActions): ColumnDef<OwnerData>[] => [
+export const ownerColumns = ({ onOpen, onDelete, onActivate, onResendVerification, resendingOwnerId }: OwnerColumnActions): ColumnDef<OwnerData>[] => [
   {
     header: 'Code',
     accessorKey: 'owner_code',
@@ -130,6 +133,9 @@ export const ownerColumns = ({ onOpen, onDelete, onActivate }: OwnerColumnAction
       const owner = row.original;
       const isActive = owner.owner_active === 'Y';
       const isProtected = owner.owner_id === 1 && isActive;
+      const adminUser = owner.admin_user;
+      const isAdminPending = adminUser && adminUser.user_active === 'N';
+      
       return (
         <div className="flex items-center gap-2">
           <Button
@@ -140,6 +146,22 @@ export const ownerColumns = ({ onOpen, onDelete, onActivate }: OwnerColumnAction
           >
             Open
           </Button>
+          {isAdminPending && (
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7 w-7 p-0 cursor-pointer hover:bg-yellow-50 hover:text-yellow-600"
+              onClick={() => onResendVerification(owner)}
+              title="Resend activation email"
+              disabled={resendingOwnerId === owner.owner_id}
+            >
+              {resendingOwnerId === owner.owner_id ? (
+                <Loader2 size={14} className="animate-spin" />
+              ) : (
+                <Mail size={14} />
+              )}
+            </Button>
+          )}
           {isActive ? (
             <Button
               size="sm"

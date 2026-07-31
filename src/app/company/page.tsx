@@ -9,7 +9,7 @@ import axios from 'axios';
 import { Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 export default function OwnersPage() {
   const { isDark } = useTheme();
@@ -20,8 +20,9 @@ export default function OwnersPage() {
 
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [selectedOwner, setSelectedOwner] = useState<OwnerData | null>(null);
+  const [resendingOwnerId, setResendingOwnerId] = useState<number | null>(null);
 
-  const fetchOwners = async () => {
+  const fetchOwners = useCallback(async () => {
     setLoading(true);
     try {
       const res = await axios.get('/api/owner');
@@ -32,13 +33,13 @@ export default function OwnersPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchOwners();
-  }, []);
+  }, [fetchOwners]);
 
-  const handleActivate = async (owner: OwnerData) => {
+  const handleActivate = useCallback(async (owner: OwnerData) => {
     try {
       const res = await axios.put(`/api/owner/${owner.owner_id}`, {
         owner_name: owner.owner_name,
@@ -69,7 +70,23 @@ export default function OwnersPage() {
     } catch {
       toast.error('Failed to activate company');
     }
-  };
+  }, [fetchOwners]);
+
+  const handleResendVerification = useCallback(async (owner: OwnerData) => {
+    setResendingOwnerId(owner.owner_id);
+    try {
+      const res = await axios.post(`/api/owner/${owner.owner_id}/resend-verification`);
+      if (res.data.code === 1) {
+        toast.success('Activation email sent successfully');
+      } else {
+        toast.error(res.data.message || 'Failed to send activation email');
+      }
+    } catch {
+      toast.error('Network error');
+    } finally {
+      setResendingOwnerId(null);
+    }
+  }, []);
 
   const columns = useMemo(
     () =>
@@ -80,9 +97,10 @@ export default function OwnersPage() {
           setDeleteOpen(true);
         },
         onActivate: handleActivate,
+        onResendVerification: handleResendVerification,
+        resendingOwnerId,
       }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [router]
+    [router, handleActivate, handleResendVerification, resendingOwnerId]
   );
 
   return (
