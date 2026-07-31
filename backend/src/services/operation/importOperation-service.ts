@@ -147,6 +147,9 @@ async function processGutmaBuffer(
   const landing = gutma.end_time;
   const durationSec = parseDurationSeconds(takeoff, landing);
   const distanceFlown = gutma.distance_m;
+  const batteryChargeStart = gutma.battery_charge_start;
+  const batteryChargeEnd = gutma.battery_charge_end;
+  const weatherTemperature = gutma.weather_temperature;
 
   const logSerialNumber = typeof gutma.aircraft?.serial_number === 'string'
     ? gutma.aircraft.serial_number.trim() || null
@@ -241,6 +244,9 @@ async function processGutmaBuffer(
       actual_end: actualEnd,
       flight_duration: durationSec,
       distance_flown: distanceFlown,
+      battery_charge_start: batteryChargeStart,
+      battery_charge_end: batteryChargeEnd,
+      weather_temperature: weatherTemperature,
       notes: notesArr.join(' | ') || null,
       ...(params.visualObserverIds && params.visualObserverIds.length > 0 && {
         visual_observer_ids: params.visualObserverIds,
