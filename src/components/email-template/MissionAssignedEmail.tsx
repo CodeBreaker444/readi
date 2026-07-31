@@ -70,6 +70,14 @@ export const MissionAssignedEmail = ({
                       <td style={{ ...dataValue, borderBottom: '1px solid #e0e0e0' }}>{missionType}</td>
                     </tr>
                     <tr>
+                      <td style={{ ...dataLabel, borderBottom: '1px solid #e0e0e0' }}>CREATED BY</td>
+                      <td style={{ ...dataValue, borderBottom: '1px solid #e0e0e0' }}>{assignedBy}</td>
+                    </tr>
+                    <tr>
+                      <td style={{ ...dataLabel, borderBottom: '1px solid #e0e0e0' }}>ASSIGNED TO</td>
+                      <td style={{ ...dataValue, borderBottom: '1px solid #e0e0e0' }}>{assignedTo}</td>
+                    </tr>
+                    <tr>
                       <td style={{ ...dataLabel, borderBottom: '1px solid #e0e0e0' }}>ROLE</td>
                       <td style={{ ...dataValue, borderBottom: '1px solid #e0e0e0' }}>{role}</td>
                     </tr>
