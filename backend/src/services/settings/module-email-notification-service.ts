@@ -41,6 +41,7 @@ export interface MaintenanceEmailData {
   note?: string | null;
   technicianName?: string;
   assignedByName?: string;
+  startTime?: string;
 }
 
 export interface MissionEmailData {
@@ -375,6 +376,8 @@ async function sendMaintenanceModuleEmail(
 /**
  * Send maintenance alert email
  */
+// Commented out - maintenance alert emails disabled
+/*
 export async function sendMaintenanceAlertEmail(
   ownerId: number,
   data: MaintenanceEmailData
@@ -389,10 +392,13 @@ export async function sendMaintenanceAlertEmail(
     data.triggers || []
   );
 }
+*/
 
 /**
  * Send maintenance due email
  */
+// Commented out - maintenance due emails disabled
+/*
 export async function sendMaintenanceDueEmail(
   ownerId: number,
   data: MaintenanceEmailData
@@ -406,6 +412,7 @@ export async function sendMaintenanceDueEmail(
     data.triggers || []
   );
 }
+*/
 
 /**
  * Send ticket created email
@@ -529,7 +536,9 @@ export async function sendInterventionStartedEmail(
     data.ticketId || 0,
     data.technicianName || 'Unknown Technician',
     undefined, // startTime
-    data.note
+    data.note,
+    data.ticketType,
+    data.ticketPriority
   );
 }
 
@@ -549,7 +558,9 @@ export async function sendInterventionEndedEmail(
     data.ticketId || 0,
     data.technicianName || 'Unknown Technician',
     undefined, // endTime
-    data.note
+    data.note,
+    data.ticketType,
+    data.ticketPriority
   );
 }
 

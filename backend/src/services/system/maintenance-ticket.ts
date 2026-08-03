@@ -837,7 +837,16 @@ export async function getComponentTicketEvents(componentId: number) {
 export async function startIntervention(ticketId: number, userId: number, userEmail: string): Promise<void> {
   const ticket = await prisma.maintenance_ticket.findUnique({
     where: { ticket_id: ticketId },
-    select: { assigned_to_user_id: true, ticket_status: true, intervention_started_at: true, fk_tool_id: true, fk_owner_id: true },
+    select: { 
+      assigned_to_user_id: true, 
+      ticket_status: true, 
+      intervention_started_at: true, 
+      fk_tool_id: true, 
+      fk_owner_id: true,
+      ticket_title: true,
+      ticket_type: true,
+      ticket_priority: true,
+    },
   });
 
   if (!ticket) throw new Error('Ticket not found');
@@ -858,6 +867,9 @@ export async function startIntervention(ticketId: number, userId: number, userEm
 
   if (ticket.fk_tool_id && ticket.fk_owner_id) {
     const systemCode = await getToolName(ticket.fk_tool_id);
+    const technicianName = ticket.assigned_to_user_id ? await getUserName(ticket.assigned_to_user_id) : 'Unknown Technician';
+    const startTime = new Date().toLocaleString();
+
     sendNotificationToClientManagers(
       ticket.fk_tool_id,
       ticket.fk_owner_id,
@@ -869,6 +881,12 @@ export async function startIntervention(ticketId: number, userId: number, userEm
     // Send module-based email notification
     sendInterventionStartedEmail(ticket.fk_owner_id, {
       systemCode,
+      ticketTitle: ticket.ticket_title || 'Untitled Ticket',
+      ticketId,
+      technicianName,
+      startTime,
+      ticketType: ticket.ticket_type,
+      ticketPriority: ticket.ticket_priority,
     }).catch(() => {});
   }
 }
@@ -876,7 +894,17 @@ export async function startIntervention(ticketId: number, userId: number, userEm
 export async function endIntervention(ticketId: number, userId: number, userEmail: string): Promise<void> {
   const ticket = await prisma.maintenance_ticket.findUnique({
     where: { ticket_id: ticketId },
-    select: { assigned_to_user_id: true, ticket_status: true, intervention_started_at: true, intervention_ended_at: true, fk_tool_id: true, fk_owner_id: true },
+    select: { 
+      assigned_to_user_id: true, 
+      ticket_status: true, 
+      intervention_started_at: true, 
+      intervention_ended_at: true, 
+      fk_tool_id: true, 
+      fk_owner_id: true,
+      ticket_title: true,
+      ticket_type: true,
+      ticket_priority: true,
+    },
   });
 
   if (!ticket) throw new Error('Ticket not found');
@@ -897,6 +925,9 @@ export async function endIntervention(ticketId: number, userId: number, userEmai
 
   if (ticket.fk_tool_id && ticket.fk_owner_id) {
     const systemCode = await getToolName(ticket.fk_tool_id);
+    const technicianName = ticket.assigned_to_user_id ? await getUserName(ticket.assigned_to_user_id) : 'Unknown Technician';
+    const endTime = new Date().toLocaleString();
+
     sendNotificationToClientManagers(
       ticket.fk_tool_id,
       ticket.fk_owner_id,
@@ -908,6 +939,12 @@ export async function endIntervention(ticketId: number, userId: number, userEmai
     // Send module-based email notification
     sendInterventionEndedEmail(ticket.fk_owner_id, {
       systemCode,
+      ticketTitle: ticket.ticket_title || 'Untitled Ticket',
+      ticketId,
+      technicianName,
+      endTime,
+      ticketType: ticket.ticket_type,
+      ticketPriority: ticket.ticket_priority,
     }).catch(() => {});
   }
 }

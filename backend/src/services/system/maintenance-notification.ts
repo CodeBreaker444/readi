@@ -76,6 +76,8 @@ export async function sendMaintenanceAlertNotifications(
   ownerId: number,
   drones: MaintenanceDrone[]
 ): Promise<void> {
+  console.log(`[MaintenanceNotification] Checking alerts for owner ${ownerId}, ${drones.length} drones`);
+
   const alertItems: AlertItem[] = [];
   for (const drone of drones) {
     for (const comp of drone.components) {
@@ -92,12 +94,16 @@ export async function sendMaintenanceAlertNotifications(
     }
   }
 
+  console.log(`[MaintenanceNotification] Found ${alertItems.length} components with ALERT/DUE status`);
+
   if (!alertItems.length) return;
 
   const alreadyNotified = await getAlreadyNotifiedToday(ownerId);
   const toNotify = alertItems.filter(
     (item) => !alreadyNotified.has(item.tool_component_id)
   );
+
+  console.log(`[MaintenanceNotification] ${toNotify.length} components not yet notified today`);
 
   if (!toNotify.length) return;
 
@@ -109,6 +115,8 @@ export async function sendMaintenanceAlertNotifications(
     },
     select: { user_id: true },
   });
+
+  console.log(`[MaintenanceNotification] Found ${managers.length} managers to notify`);
 
   if (!managers.length) return;
 
@@ -136,22 +144,31 @@ export async function sendMaintenanceAlertNotifications(
       item.status
     );
 
+    console.log(`[MaintenanceNotification] Sending ${isDue ? 'DUE' : 'ALERT'} email for ${item.system_code} - ${item.component_name}`);
+
     // Send module-based email notification
+    // Commented out - maintenance alert and due emails disabled
+    /*
     if (isDue) {
       sendMaintenanceDueEmail(ownerId, {
         systemCode: item.system_code,
         componentName: item.component_name,
         status: item.status,
         triggers: item.triggers,
-      }).catch(() => {});
+      }).catch((error) => {
+        console.error(`[MaintenanceNotification] Failed to send maintenance due email:`, error);
+      });
     } else {
       sendMaintenanceAlertEmail(ownerId, {
         systemCode: item.system_code,
         componentName: item.component_name,
         status: item.status,
         triggers: item.triggers,
-      }).catch(() => {});
+      }).catch((error) => {
+        console.error(`[MaintenanceNotification] Failed to send maintenance alert email:`, error);
+      });
     }
+    */
   }
 }
 
