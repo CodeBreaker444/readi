@@ -130,12 +130,14 @@ export const sendTicketAssignedEmail = async (
   ticketId: number,
   technicianName: string,
   assignedBy?: string,
-  description?: string
+  description?: string,
+  ticketType?: string,
+  ticketPriority?: string
 ) => {
   if (!emails.length) return;
   try {
     const emailHtml = await render(
-      TicketAssignedEmail({ systemCode, ticketTitle, ticketId, technicianName, assignedBy, description })
+      TicketAssignedEmail({ systemCode, ticketTitle, ticketId, ticketType, ticketPriority, technicianName, assignedBy, description })
     );
 
     const { error } = await resend.emails.send({

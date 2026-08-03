@@ -69,7 +69,8 @@ export const MAINTENANCE_EVENTS: MaintenanceEventConfig[] = [
     eventType: 'ticket_assigned',
     displayName: 'Ticket Assigned',
     description: 'When a maintenance ticket is assigned to a technician',
-    defaultRoles: ['OPM', 'ADMIN', 'TECHNICIAN'],
+    defaultRoles: [],
+    disableRoleSelection: true,
   },
   {
     eventType: 'maintenance_alert',

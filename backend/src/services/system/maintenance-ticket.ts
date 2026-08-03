@@ -265,6 +265,19 @@ export async function createTicket(payload: CreateTicketPayload): Promise<number
       `${reporter} opened a maintenance ticket on ${systemCode} and assigned it to you.${payload.note ? ` Note: ${payload.note}` : ''}`,
       '/systems/maintenance-tickets'
     ).catch(() => {});
+
+    // Send module-based email notification to assigned user
+    const techName = await getUserName(payload.assigned_to);
+    sendTicketAssignedEmail(payload.fk_owner_id, {
+      systemCode,
+      technicianName: techName,
+      ticketId: created[0].ticket_id,
+      ticketTitle: payload.components?.length ? `Component Maintenance - #${payload.components[0]}` : `Maintenance - System #${payload.fk_tool_id}`,
+      ticketType: payload.type || 'STANDARD',
+      ticketPriority: payload.priority || 'MEDIUM',
+      note: payload.note,
+      assignedByName: payload.reporter_name,
+    }, payload.assigned_to).catch(() => {});
   }
 
   sendNotificationToClientManagers(
@@ -396,7 +409,7 @@ export async function assignTicket(payload: AssignTicketPayload): Promise<void> 
   const ticket = await prisma.maintenance_ticket.update({
     where: { ticket_id: payload.ticket_id },
     data: { assigned_to_user_id: payload.assigned_to },
-    select: { fk_tool_id: true, fk_owner_id: true },
+    select: { fk_tool_id: true, fk_owner_id: true, ticket_id: true, ticket_title: true, ticket_type: true },
   });
 
   const techName = payload.technician_name ?? `User #${payload.assigned_to}`;
@@ -424,11 +437,15 @@ export async function assignTicket(payload: AssignTicketPayload): Promise<void> 
         '/systems/maintenance-tickets'
       ).catch(() => {});
 
-      // Send module-based email notification
+      // Send module-based email notification to assigned user
       sendTicketAssignedEmail(ticket.fk_owner_id, {
         systemCode,
         technicianName: techName,
-      }).catch(() => {});
+        ticketId: ticket.ticket_id,
+        ticketTitle: ticket.ticket_title || 'Untitled Ticket',
+        ticketType: ticket.ticket_type || 'STANDARD',
+        assignedByName: payload.assigned_by_name,
+      }, payload.assigned_to).catch(() => {});
     }
   }
 }
