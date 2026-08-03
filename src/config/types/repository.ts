@@ -97,6 +97,7 @@ export interface DocumentHistoryResponse {
   status?: "DRAFT" | "IN_REVIEW" | "APPROVED" | "OBSOLETE";
   owner_role?: string;
   search?: string;
+  fk_component_id?: number;
 };
 
 export type DocumentCreateInput = {

@@ -14,6 +14,7 @@ const DocumentListSchema = z.object({
     status: z.enum(['DRAFT', 'IN_REVIEW', 'APPROVED', 'OBSOLETE']).optional(),
     owner_role: z.string().max(150).optional(),
     search: z.string().max(255).optional(),
+    fk_component_id: z.number().int().positive().optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -25,7 +26,8 @@ export async function POST(req: NextRequest) {
         if (!parsed.success) {
             return zodError(E.VL001, parsed.error);
         }
-        const data = await listDocuments({ ...parsed.data, ownerId: session!.user.ownerId });
+        const { fk_component_id, ...rest } = parsed.data;
+        const data = await listDocuments({ ...rest, ownerId: session!.user.ownerId, fk_component_id });
         return NextResponse.json({ code: 1, message: 'Success', ...data });
     } catch (error: any) {
         console.error('[document_list]', error);
