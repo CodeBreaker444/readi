@@ -127,6 +127,7 @@ export async function listDocuments(input: DocumentListInput): Promise<{
       document_active: 'Y',
       ...(input.status ? { document_status: input.status } : {}),
       ...(input.area   ? { luc_doc_type: { doc_type_category: input.area } } : {}),
+      ...(input.fk_component_id ? { fk_component_id: input.fk_component_id } : {}),
       ...(input.search ? {
         OR: [
           { document_title:       { contains: input.search, mode: 'insensitive' } },

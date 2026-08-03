@@ -19,6 +19,8 @@ interface InterventionStartedEmailProps {
   technicianName: string;
   startTime?: string;
   description?: string;
+  ticketType?: string;
+  ticketPriority?: string;
 }
 
 export const InterventionStartedEmail = ({
@@ -26,6 +28,8 @@ export const InterventionStartedEmail = ({
   ticketTitle,
   ticketId,
   technicianName,
+  ticketType,
+  ticketPriority,
   startTime,
   description,
 }: InterventionStartedEmailProps) => (
@@ -64,8 +68,8 @@ export const InterventionStartedEmail = ({
                       <td style={{ ...dataValue, borderBottom: '1px solid #e0e0e0' }}>{systemCode}</td>
                     </tr>
                     <tr>
-                      <td style={{ ...dataLabel, borderBottom: '1px solid #e0e0e0' }}>TICKET</td>
-                      <td style={{ ...dataValue, borderBottom: '1px solid #e0e0e0' }}>{ticketTitle}</td>
+                      <td style={{ ...dataLabel, borderBottom: '1px solid #e0e0e0' }}>TYPE & PRIORITY</td>
+                      <td style={{ ...dataValue, borderBottom: '1px solid #e0e0e0' }}>{ticketType || 'N/A'} | {ticketPriority || 'N/A'}</td>
                     </tr>
                     <tr>
                       <td style={{ ...dataLabel, borderBottom: '1px solid #e0e0e0' }}>TICKET ID</td>

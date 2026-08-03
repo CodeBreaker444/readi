@@ -16,6 +16,8 @@ interface TicketAssignedEmailProps {
   systemCode: string;
   ticketTitle: string;
   ticketId: number;
+  ticketType?: string;
+  ticketPriority?: string;
   technicianName: string;
   assignedBy?: string;
   description?: string;
@@ -25,6 +27,8 @@ export const TicketAssignedEmail = ({
   systemCode,
   ticketTitle,
   ticketId,
+  ticketType,
+  ticketPriority,
   technicianName,
   assignedBy,
   description,
@@ -64,8 +68,8 @@ export const TicketAssignedEmail = ({
                       <td style={{ ...dataValue, borderBottom: '1px solid #e0e0e0' }}>{systemCode}</td>
                     </tr>
                     <tr>
-                      <td style={{ ...dataLabel, borderBottom: '1px solid #e0e0e0' }}>TICKET</td>
-                      <td style={{ ...dataValue, borderBottom: '1px solid #e0e0e0' }}>{ticketTitle}</td>
+                      <td style={{ ...dataLabel, borderBottom: '1px solid #e0e0e0' }}>TICKET TYPE</td>
+                      <td style={{ ...dataValue, borderBottom: '1px solid #e0e0e0' }}>{ticketType || 'STANDARD'} - {ticketPriority || 'MEDIUM'}</td>
                     </tr>
                     <tr>
                       <td style={{ ...dataLabel, borderBottom: '1px solid #e0e0e0' }}>TICKET ID</td>
@@ -93,11 +97,7 @@ export const TicketAssignedEmail = ({
                 </div>
               )}
 
-              <div style={infoCard}>
-                <Text style={infoText}>
-                  The technician has been notified and can begin work on this ticket.
-                </Text>
-              </div>
+               
 
               {/* View details link */}
               <div style={actionCard}>

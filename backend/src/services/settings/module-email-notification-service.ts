@@ -33,11 +33,15 @@ export interface MaintenanceEmailData {
   systemCode: string;
   ticketId?: number;
   ticketTitle?: string;
+  ticketType?: string;
+  ticketPriority?: string;
   componentName?: string;
   status?: 'ALERT' | 'DUE';
   triggers?: string[];
   note?: string | null;
   technicianName?: string;
+  assignedByName?: string;
+  startTime?: string;
 }
 
 export interface MissionEmailData {
@@ -372,6 +376,7 @@ async function sendMaintenanceModuleEmail(
 /**
  * Send maintenance alert email
  */
+/*
 export async function sendMaintenanceAlertEmail(
   ownerId: number,
   data: MaintenanceEmailData
@@ -386,10 +391,12 @@ export async function sendMaintenanceAlertEmail(
     data.triggers || []
   );
 }
+*/
 
 /**
  * Send maintenance due email
  */
+/*
 export async function sendMaintenanceDueEmail(
   ownerId: number,
   data: MaintenanceEmailData
@@ -403,6 +410,7 @@ export async function sendMaintenanceDueEmail(
     data.triggers || []
   );
 }
+*/
 
 /**
  * Send ticket created email
@@ -442,23 +450,72 @@ export async function sendTicketClosedEmail(
 }
 
 /**
- * Send ticket assigned email
+ * Send ticket assigned email directly to assigned user
  */
 export async function sendTicketAssignedEmail(
   ownerId: number,
-  data: MaintenanceEmailData
+  data: MaintenanceEmailData,
+  assignedUserId?: number
 ): Promise<void> {
-  await sendMaintenanceModuleEmail(
-    ownerId,
-    'ticket_assigned',
-    sendTicketAssignedEmailTemplate,
-    data.systemCode,
-    data.ticketTitle || 'Untitled Ticket',
-    data.ticketId || 0,
-    data.technicianName || 'Unknown Technician',
-    data.technicianName, // assignedBy (using same as technician for now)
-    data.note
-  );
+  // Check if ticket assigned email is enabled
+  const isEnabled = await isModuleEventEmailEnabled(ownerId, 'maintenance', 'ticket_assigned');
+  if (!isEnabled) {
+    console.log('[sendTicketAssignedEmail] Ticket assigned email is disabled for owner:', ownerId);
+    return;
+  }
+
+  // If specific user ID is provided, send directly to them
+  if (assignedUserId) {
+    const user = await prisma.public_users.findUnique({
+      where: { user_id: assignedUserId },
+      select: { user_id: true, email: true },
+    });
+
+    if (!user?.email) {
+      console.log('[sendTicketAssignedEmail] No valid email found for assigned user ID:', assignedUserId);
+      return;
+    }
+
+    // Check daily email limit
+    const limitReached = await isDailyEmailLimitReached(ownerId);
+    if (limitReached) {
+      console.log('[sendTicketAssignedEmail] Daily email limit reached for owner:', ownerId);
+      return;
+    }
+
+    try {
+      await sendTicketAssignedEmailTemplate(
+        [user.email],
+        data.systemCode,
+        data.ticketTitle || 'Untitled Ticket',
+        data.ticketId || 0,
+        data.technicianName || 'Unknown Technician',
+        data.assignedByName || 'System',
+        data.note ||'No description provided',
+        data.ticketType,
+        data.ticketPriority
+      );
+      await incrementDailyEmailCount(ownerId);
+      console.log('[sendTicketAssignedEmail] Email sent successfully to assigned user');
+    } catch (error) {
+      console.error('[sendTicketAssignedEmail] Failed to send email:', error);
+    }
+  } else {
+    // Fallback to role-based sending if no specific user ID provided
+    await sendMaintenanceModuleEmail(
+      ownerId,
+      'ticket_assigned',
+      sendTicketAssignedEmailTemplate,
+      data.systemCode,
+      data.ticketTitle || 'Untitled Ticket',
+      data.ticketId || 0,
+      data.technicianName || 'Unknown Technician',
+      data.assignedByName || 'System',
+      data.note,
+      data.ticketType,
+      data.ticketPriority
+    );
+  }
 }
 
 /**
@@ -477,7 +534,9 @@ export async function sendInterventionStartedEmail(
     data.ticketId || 0,
     data.technicianName || 'Unknown Technician',
     undefined, // startTime
-    data.note
+    data.note,
+    data.ticketType,
+    data.ticketPriority
   );
 }
 
@@ -496,8 +555,9 @@ export async function sendInterventionEndedEmail(
     data.ticketTitle || 'Untitled Ticket',
     data.ticketId || 0,
     data.technicianName || 'Unknown Technician',
-    undefined, // endTime
-    data.note
+    data.note,
+    data.ticketType,
+    data.ticketPriority
   );
 }
 
@@ -706,6 +766,7 @@ export async function sendMissionCompletedModuleEmail(
 /**
  * Send calendar event created email
  */
+/*
 export async function sendCalendarEventCreatedModuleEmail(
   ownerId: number,
   data: CalendarEventData
@@ -723,10 +784,12 @@ export async function sendCalendarEventCreatedModuleEmail(
     data.description
   );
 }
+*/
 
 /**
  * Send calendar event updated email
  */
+/*
 export async function sendCalendarEventUpdatedModuleEmail(
   ownerId: number,
   data: CalendarEventData
@@ -744,3 +807,4 @@ export async function sendCalendarEventUpdatedModuleEmail(
     data.location
   );
 }
+*/

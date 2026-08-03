@@ -167,7 +167,7 @@ export default function OperationsEmailNotificationsPage() {
             ownerId={ownerData.ownerId}
             moduleName="operations"
             companyEmailEnabled={ownerData.emailEnabled}
-            events={OPERATIONS_EVENTS}
+            events={OPERATIONS_EVENTS.filter(event => event.eventType !== 'calendar_event_created' && event.eventType !== 'calendar_event_updated')}
             translationPrefix="settings.emailNotifications.operations"
           />
         </div>

@@ -1,9 +1,5 @@
 import { prisma } from "@/lib/prisma";
 import { getMaintenanceDashboard } from "@/backend/services/system/maintenance-service";
-import { 
-  sendMaintenanceAlertEmail,
-  sendMaintenanceDueEmail,
-} from '@/backend/services/settings/module-email-notification-service';
 import { MaintenanceDrone } from "@/config/types/maintenance";
 
 interface AlertItem {
@@ -76,6 +72,7 @@ export async function sendMaintenanceAlertNotifications(
   ownerId: number,
   drones: MaintenanceDrone[]
 ): Promise<void> {
+
   const alertItems: AlertItem[] = [];
   for (const drone of drones) {
     for (const comp of drone.components) {
@@ -92,12 +89,14 @@ export async function sendMaintenanceAlertNotifications(
     }
   }
 
+
   if (!alertItems.length) return;
 
   const alreadyNotified = await getAlreadyNotifiedToday(ownerId);
   const toNotify = alertItems.filter(
     (item) => !alreadyNotified.has(item.tool_component_id)
   );
+
 
   if (!toNotify.length) return;
 
@@ -109,6 +108,7 @@ export async function sendMaintenanceAlertNotifications(
     },
     select: { user_id: true },
   });
+
 
   if (!managers.length) return;
 
@@ -136,22 +136,29 @@ export async function sendMaintenanceAlertNotifications(
       item.status
     );
 
+
     // Send module-based email notification
+    /*
     if (isDue) {
       sendMaintenanceDueEmail(ownerId, {
         systemCode: item.system_code,
         componentName: item.component_name,
         status: item.status,
         triggers: item.triggers,
-      }).catch(() => {});
+      }).catch((error) => {
+        console.error(`[MaintenanceNotification] Failed to send maintenance due email:`, error);
+      });
     } else {
       sendMaintenanceAlertEmail(ownerId, {
         systemCode: item.system_code,
         componentName: item.component_name,
         status: item.status,
         triggers: item.triggers,
-      }).catch(() => {});
+      }).catch((error) => {
+        console.error(`[MaintenanceNotification] Failed to send maintenance alert email:`, error);
+      });
     }
+    */
   }
 }
 

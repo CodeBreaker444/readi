@@ -4,6 +4,7 @@ import { serialInList } from '@/lib/serial-number';
 import { BUCKET, s3 } from '@/lib/s3Client';
 import { PutObjectCommand } from '@aws-sdk/client-s3';
 import JSZip from 'jszip';
+import { sendMissionCreatedModuleEmail, sendMissionAssignedModuleEmail } from '@/backend/services/settings/module-email-notification-service';
 
 /** Looks up the registered serial numbers for ALL of a tool's active drone/aircraft components — a tool (system) can have more than one, e.g. a dock with several swappable airframes. */
 async function getDroneSerialNumbersForTool(toolId: number): Promise<string[]> {
@@ -266,6 +267,77 @@ async function processGutmaBuffer(
     } as any,
     select: { pilot_mission_id: true },
   });
+
+  // Send mission creation and assignment email notifications
+  try {
+    const missionType = params.typeId
+      ? await prisma.pilot_mission_type.findUnique({
+          where: { mission_type_id: params.typeId },
+          select: { type_name: true },
+        })
+      : null;
+
+    const user = await prisma.public_users.findUnique({
+      where: { user_id: params.userId },
+      select: { first_name: true, last_name: true },
+    });
+
+    const createdBy = user
+      ? `${user.first_name} ${user.last_name}`.trim()
+      : 'System';
+
+    // Send mission created email
+    await sendMissionCreatedModuleEmail(params.ownerId, {
+      missionCode: missionCode,
+      missionType: missionType?.type_name || 'Unknown',
+      createdBy,
+      scheduledDate: scheduledStart?.toISOString(),
+      description: params.notes || undefined,
+    });
+
+    // Send mission assigned email to pilot
+    if (params.pilotId) {
+      const pilotUser = await prisma.public_users.findUnique({
+        where: { user_id: params.pilotId },
+        select: { first_name: true, last_name: true },
+      });
+
+      if (pilotUser) {
+        await sendMissionAssignedModuleEmail(params.ownerId, {
+          missionCode: missionCode,
+          missionType: missionType?.type_name || 'Unknown',
+          assignedBy: createdBy,
+          assignedTo: `${pilotUser.first_name} ${pilotUser.last_name}`.trim(),
+          role: 'Pilot',
+          scheduledDate: scheduledStart?.toISOString(),
+          description: params.notes || undefined,
+        }, [params.pilotId]);
+      }
+    }
+
+    // Send mission assigned emails to visual observers
+    if (params.visualObserverIds && params.visualObserverIds.length > 0) {
+      const observerUsers = await prisma.public_users.findMany({
+        where: { user_id: { in: params.visualObserverIds } },
+        select: { user_id: true, first_name: true, last_name: true },
+      });
+
+      for (const observer of observerUsers) {
+        await sendMissionAssignedModuleEmail(params.ownerId, {
+          missionCode: missionCode,
+          missionType: missionType?.type_name || 'Unknown',
+          assignedBy: createdBy,
+          assignedTo: `${observer.first_name} ${observer.last_name}`.trim(),
+          role: 'Observer',
+          scheduledDate: scheduledStart?.toISOString(),
+          description: params.notes || undefined,
+        }, [observer.user_id]);
+      }
+    }
+  } catch (emailError) {
+    console.error('[processGutmaBuffer] Failed to send mission email notifications:', emailError);
+    // Don't fail the import if email fails
+  }
 
   try {
     const s3Key = `flight-logs/mission/${inserted.pilot_mission_id}/${filename}`;
