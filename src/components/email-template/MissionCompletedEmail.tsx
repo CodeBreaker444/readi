@@ -75,12 +75,7 @@ export const MissionCompletedEmail = ({
                       <td style={{ ...dataLabel, borderBottom: '1px solid #e0e0e0' }}>COMPLETION TIME</td>
                       <td style={{ ...dataValue, borderBottom: '1px solid #e0e0e0' }}>{completionTime}</td>
                     </tr>
-                    {duration && (
-                      <tr>
-                        <td style={{ ...dataLabel, borderBottom: 'none' }}>DURATION</td>
-                        <td style={{ ...dataValue, borderBottom: 'none' }}>{duration}</td>
-                      </tr>
-                    )}
+                     
                   </tbody>
                 </table>
               </div>

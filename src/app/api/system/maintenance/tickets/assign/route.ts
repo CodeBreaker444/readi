@@ -31,6 +31,7 @@ export async function POST(req: NextRequest) {
       ticket_id: validation.data.ticket_id,
       assigned_to: validation.data.assigned_to,
       technician_name: techName,
+      assigned_by_name: session!.user.fullname,
     });
 
     logEvent({

@@ -130,12 +130,14 @@ export const sendTicketAssignedEmail = async (
   ticketId: number,
   technicianName: string,
   assignedBy?: string,
-  description?: string
+  description?: string,
+  ticketType?: string,
+  ticketPriority?: string
 ) => {
   if (!emails.length) return;
   try {
     const emailHtml = await render(
-      TicketAssignedEmail({ systemCode, ticketTitle, ticketId, technicianName, assignedBy, description })
+      TicketAssignedEmail({ systemCode, ticketTitle, ticketId, ticketType, ticketPriority, technicianName, assignedBy, description })
     );
 
     const { error } = await resend.emails.send({
@@ -157,12 +159,14 @@ export const sendInterventionStartedEmail = async (
   ticketId: number,
   technicianName: string,
   startTime?: string,
-  description?: string
+  description?: string,
+  ticketType?: string,
+  ticketPriority?: string
 ) => {
   if (!emails.length) return;
   try {
     const emailHtml = await render(
-      InterventionStartedEmail({ systemCode, ticketTitle, ticketId, technicianName, startTime, description })
+      InterventionStartedEmail({ systemCode, ticketTitle, ticketId, technicianName, startTime, description, ticketType, ticketPriority })
     );
 
     const { error } = await resend.emails.send({
@@ -184,12 +188,14 @@ export const sendInterventionEndedEmail = async (
   ticketId: number,
   technicianName: string,
   endTime?: string,
-  notes?: string
+  notes?: string,
+  ticketType?: string,
+  ticketPriority?: string
 ) => {
   if (!emails.length) return;
   try {
     const emailHtml = await render(
-      InterventionEndedEmail({ systemCode, ticketTitle, ticketId, technicianName, endTime, notes })
+      InterventionEndedEmail({ systemCode, ticketTitle, ticketId, technicianName, endTime, notes, ticketType, ticketPriority })
     );
 
     const { error } = await resend.emails.send({
