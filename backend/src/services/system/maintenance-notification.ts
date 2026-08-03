@@ -1,9 +1,5 @@
 import { prisma } from "@/lib/prisma";
 import { getMaintenanceDashboard } from "@/backend/services/system/maintenance-service";
-import { 
-  sendMaintenanceAlertEmail,
-  sendMaintenanceDueEmail,
-} from '@/backend/services/settings/module-email-notification-service';
 import { MaintenanceDrone } from "@/config/types/maintenance";
 
 interface AlertItem {
@@ -76,7 +72,6 @@ export async function sendMaintenanceAlertNotifications(
   ownerId: number,
   drones: MaintenanceDrone[]
 ): Promise<void> {
-  console.log(`[MaintenanceNotification] Checking alerts for owner ${ownerId}, ${drones.length} drones`);
 
   const alertItems: AlertItem[] = [];
   for (const drone of drones) {
@@ -94,7 +89,6 @@ export async function sendMaintenanceAlertNotifications(
     }
   }
 
-  console.log(`[MaintenanceNotification] Found ${alertItems.length} components with ALERT/DUE status`);
 
   if (!alertItems.length) return;
 
@@ -103,7 +97,6 @@ export async function sendMaintenanceAlertNotifications(
     (item) => !alreadyNotified.has(item.tool_component_id)
   );
 
-  console.log(`[MaintenanceNotification] ${toNotify.length} components not yet notified today`);
 
   if (!toNotify.length) return;
 
@@ -116,7 +109,6 @@ export async function sendMaintenanceAlertNotifications(
     select: { user_id: true },
   });
 
-  console.log(`[MaintenanceNotification] Found ${managers.length} managers to notify`);
 
   if (!managers.length) return;
 
@@ -144,10 +136,8 @@ export async function sendMaintenanceAlertNotifications(
       item.status
     );
 
-    console.log(`[MaintenanceNotification] Sending ${isDue ? 'DUE' : 'ALERT'} email for ${item.system_code} - ${item.component_name}`);
 
     // Send module-based email notification
-    // Commented out - maintenance alert and due emails disabled
     /*
     if (isDue) {
       sendMaintenanceDueEmail(ownerId, {

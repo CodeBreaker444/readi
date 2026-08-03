@@ -376,7 +376,6 @@ async function sendMaintenanceModuleEmail(
 /**
  * Send maintenance alert email
  */
-// Commented out - maintenance alert emails disabled
 /*
 export async function sendMaintenanceAlertEmail(
   ownerId: number,
@@ -397,7 +396,6 @@ export async function sendMaintenanceAlertEmail(
 /**
  * Send maintenance due email
  */
-// Commented out - maintenance due emails disabled
 /*
 export async function sendMaintenanceDueEmail(
   ownerId: number,
@@ -493,7 +491,7 @@ export async function sendTicketAssignedEmail(
         data.ticketId || 0,
         data.technicianName || 'Unknown Technician',
         data.assignedByName || 'System',
-        data.note,
+        data.note ||'No description provided',
         data.ticketType,
         data.ticketPriority
       );
@@ -557,7 +555,6 @@ export async function sendInterventionEndedEmail(
     data.ticketTitle || 'Untitled Ticket',
     data.ticketId || 0,
     data.technicianName || 'Unknown Technician',
-    undefined, // endTime
     data.note,
     data.ticketType,
     data.ticketPriority
@@ -769,6 +766,7 @@ export async function sendMissionCompletedModuleEmail(
 /**
  * Send calendar event created email
  */
+/*
 export async function sendCalendarEventCreatedModuleEmail(
   ownerId: number,
   data: CalendarEventData
@@ -786,10 +784,12 @@ export async function sendCalendarEventCreatedModuleEmail(
     data.description
   );
 }
+*/
 
 /**
  * Send calendar event updated email
  */
+/*
 export async function sendCalendarEventUpdatedModuleEmail(
   ownerId: number,
   data: CalendarEventData
@@ -807,3 +807,4 @@ export async function sendCalendarEventUpdatedModuleEmail(
     data.location
   );
 }
+*/

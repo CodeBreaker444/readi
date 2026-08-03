@@ -885,8 +885,8 @@ export async function startIntervention(ticketId: number, userId: number, userEm
       ticketId,
       technicianName,
       startTime,
-      ticketType: ticket.ticket_type,
-      ticketPriority: ticket.ticket_priority,
+      ticketType: ticket.ticket_type!!,
+      ticketPriority: ticket.ticket_priority!!,
     }).catch(() => {});
   }
 }
@@ -942,9 +942,8 @@ export async function endIntervention(ticketId: number, userId: number, userEmai
       ticketTitle: ticket.ticket_title || 'Untitled Ticket',
       ticketId,
       technicianName,
-      endTime,
-      ticketType: ticket.ticket_type,
-      ticketPriority: ticket.ticket_priority,
+      ticketType: ticket.ticket_type || 'null',
+      ticketPriority: ticket.ticket_priority || 'null',
     }).catch(() => {});
   }
 }

@@ -8,7 +8,6 @@ import {
     OperationItem
 } from '@/config/types/operation';
 import { prisma } from '@/lib/prisma';
-import { sendCalendarEventCreatedModuleEmail } from '../settings/module-email-notification-service';
 
 const STATUS_COLORS: Record<string, string> = {
   Scheduled: '#0284c7',
@@ -187,10 +186,11 @@ export const createOperationCalendarEntry = async (
       select: { first_name: true, last_name: true },
     });
 
-    const createdBy = user 
-      ? `${user.first_name} ${user.last_name}`.trim() 
+    const createdBy = user
+      ? `${user.first_name} ${user.last_name}`.trim()
       : 'System';
 
+    /*
     await sendCalendarEventCreatedModuleEmail(ownerId, {
       eventTitle: input.mission_name || dccMissionId,
       eventType: missionType?.type_name || 'Mission',
@@ -200,6 +200,11 @@ export const createOperationCalendarEntry = async (
       location: input.location,
       description: input.notes,
     });
+  } catch (emailError) {
+    console.error('Failed to send calendar event created email:', emailError);
+    // Don't fail the calendar entry creation if email fails
+  }
+  */
   } catch (emailError) {
     console.error('Failed to send calendar event created email:', emailError);
     // Don't fail the calendar entry creation if email fails
