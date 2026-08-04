@@ -170,6 +170,7 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData, loading 
 
         <div className="flex items-center gap-2 sm:gap-4">
           <button
+            type="button"
             onClick={() => { if (!isChatRestricted) setShowSearch(true); }}
             className={`sm:hidden flex items-center justify-center w-9 h-9 rounded-xl transition-all duration-200 ${isDark
               ? 'bg-slate-800/80 text-violet-400 hover:bg-slate-800'
@@ -180,6 +181,7 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData, loading 
           </button>
 
           <button
+            type="button"
             onClick={() => { if (!isChatRestricted) setShowSearch(true); }}
             className={`group relative hidden sm:flex items-center gap-2.5 px-4 py-2 rounded-xl text-sm transition-all duration-200 w-60 ${isDark
               ? 'bg-slate-800/80 text-slate-400 hover:text-slate-300 hover:bg-slate-800'
@@ -219,6 +221,7 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData, loading 
           <LanguageSelect isDark={isDark} />
 
           <button
+            type="button"
             onClick={() => router.push('/docs')}
             className={`cursor-pointer p-2 rounded-lg transition-colors ${isDark ? 'hover:bg-slate-700 text-gray-300' : 'hover:bg-gray-100 text-gray-600'}`}
             aria-label="Documentation"
@@ -228,6 +231,7 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData, loading 
           </button>
 
           <button
+            type="button"
             onClick={toggleTheme}
             className={`cursor-pointer p-2 rounded-lg transition-colors ${isDark ? 'hover:bg-slate-700 text-gray-300' : 'hover:bg-gray-100 text-gray-600'}`}
             aria-label={t('topbar.toggleTheme')}
@@ -317,6 +321,7 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData, loading 
                               const initial = u.fullname?.charAt(0)?.toUpperCase() ?? '?';
                               return (
                                 <button
+                                  type="button"
                                   key={u.userId}
                                   onClick={() => selectOpm(u)}
                                   className={`cursor-pointer w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${
@@ -355,6 +360,7 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData, loading 
                         {impersonatedOpm && (
                           <div className={`border-t px-2 py-1.5 ${isDark ? 'border-slate-700/60' : 'border-gray-100'}`}>
                             <button
+                              type="button"
                               onClick={(e) => { e.stopPropagation(); clearOpm(); setShowOpmPicker(false); }}
                               className={`cursor-pointer w-full flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-medium transition-colors ${
                                 isDark ? 'text-slate-500 hover:text-rose-400 hover:bg-rose-500/10' : 'text-gray-400 hover:text-rose-500 hover:bg-rose-50'
@@ -384,6 +390,7 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData, loading 
                 )}
                 {isAdmin && (
                   <button
+                    type="button"
                     onClick={() => { setShowSearch(false); router.push('/knowledge-config'); }}
                     className={`p-1.5 cursor-pointer rounded-lg transition-colors ${isDark ? 'text-slate-400 hover:bg-slate-700 hover:text-violet-400' : 'text-gray-400 hover:bg-gray-100 hover:text-violet-600'}`}
                     aria-label={t('knowledge.title')}
@@ -393,6 +400,7 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData, loading 
                   </button>
                 )}
                 <button
+                  type="button"
                   onClick={() => setShowSearch(false)}
                   className={`text-[10px] cursor-pointer font-medium px-2 py-1 rounded border transition-colors ${isDark ? 'bg-slate-800 border-slate-600 text-slate-400 hover:text-slate-200' : 'bg-gray-50 border-gray-200 text-gray-400 hover:text-gray-600'}`}
                 >
@@ -464,6 +472,7 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData, loading 
                                 className={`inline-flex items-center gap-1.5 text-[10px] px-2.5 py-1 rounded-lg border transition-colors no-underline ${isDark
                                   ? 'bg-slate-800/60 border-slate-700 text-violet-400 hover:border-violet-500/50 hover:bg-slate-700'
                                   : 'bg-gray-50 border-gray-200 text-violet-600 hover:border-violet-300 hover:bg-violet-50'}`}
+                                onClick={(e) => e.stopPropagation()}
                               >
                                 <FileText size={9} />
                                 <span className="truncate max-w-[140px]">{ref.title || ref.source}</span>
@@ -478,6 +487,7 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData, loading 
                           <div className="flex flex-col gap-1.5 px-1 mt-1">
                             {msg.followUpQuestions.map((q, qi) => (
                               <button
+                                type="button"
                                 key={qi}
                                 onClick={() => { setChatInput(q); chatInputRef.current?.focus(); }}
                                 className={`cursor-pointer text-left text-[11px] px-3 py-1.5 rounded-xl border transition-colors leading-snug w-full ${isDark
@@ -518,7 +528,7 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData, loading 
               {isAdmin && impersonatedOpm && (
                 <div className={`flex items-center justify-between mb-2 px-3 py-1.5 rounded-lg text-[11px] font-medium ${isDark ? 'bg-amber-500/10 border border-amber-500/20 text-amber-400' : 'bg-amber-50 border border-amber-200 text-amber-700'}`}>
                   <span>{t('chat.actingAs', { name: impersonatedOpm.fullname })}</span>
-                  <button onClick={clearOpm} className="cursor-pointer hover:opacity-70 transition-opacity ml-2">
+                  <button type="button" onClick={clearOpm} className="cursor-pointer hover:opacity-70 transition-opacity ml-2">
                     <X size={11} />
                   </button>
                 </div>
@@ -541,6 +551,7 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData, loading 
                   className={`flex-1 bg-transparent text-sm outline-none ${isDark ? 'text-white placeholder-slate-500' : 'text-gray-900 placeholder-gray-400'}`}
                 />
                 <button
+                  type="button"
                   onClick={handleChatSend}
                   disabled={chatLoading || !chatInput.trim()}
                   className={`flex items-center justify-center w-8 h-8 rounded-lg transition-all ${chatInput.trim() && !chatLoading

@@ -1,0 +1,263 @@
+---
+title: "Email Notification Business Logic"
+description: "Business logic flow for email notifications including parameters, triggers, limits, and dependencies."
+---
+
+# Email Notification Business Logic
+
+## Overview
+
+The email notification system manages all outgoing emails across modules (maintenance, operations, planning, etc.). It includes daily limit enforcement, module-level enablement, role-based recipient selection, and direct user assignment. This system is tightly integrated with every module that triggers notifications.
+
+---
+
+## Core Business Flow
+
+```
+Module Event Triggered
+  → Check Module Email Enabled (company-level)
+  → Check Event Email Enabled (config-level)
+  → Check Daily Email Limit
+  → Get Recipient Emails (roles + specific users)
+  → Send Email via Resend
+  → Increment Daily Email Count
+  → Check if Limit Just Reached → Notify Admins
+```
+
+---
+
+## Key Parameters
+
+### Company-Level Email Settings
+
+| Frontend Label | Parameter | Maintenance Impact |
+|---|---|---|
+| Email Notifications Enabled | `email_notifications_enabled` | Master switch for general emails |
+| Operations Email Enabled | `operation_email_enabled` | Master switch for operations module emails |
+| System Email Enabled | `system_email_enabled` | **YES** - Master switch for maintenance/system module emails |
+| Daily Email Limit | `daily_email_limit` | Maximum emails per day per company (default: 1000) |
+| Daily Email Count | `daily_email_count` | Current daily email count (auto-reset) |
+| Daily Email Count Reset Date | `daily_email_count_reset_date` | Date when counter was last reset |
+
+### Module Email Configuration
+
+| Frontend Label | Parameter | Maintenance Impact |
+|---|---|---|
+| Module Name | `module_name` | Module identifier (maintenance, operations, planning, etc.) |
+| Event Type | `event_type` | Specific event (e.g., ticket_created, mission_assigned) |
+| Is Enabled | `is_enabled` | **YES** - Per-event enablement for maintenance alerts |
+| Notification Roles | `notification_roles` | Roles to notify (OPM, RM, ADMIN, etc.) |
+| Notification User IDs | `notification_user_ids` | Specific user IDs to notify |
+
+---
+
+## Email Enablement Logic
+
+### Multi-Level Enablement Check
+
+**Logic Flow:**
+
+1. **Company-Level Module Check:**
+   - For operations: Check operation_email_enabled
+   - For maintenance: Check system_email_enabled
+   - For other modules: Check email_notifications_enabled
+
+2. **Event-Level Configuration Check:**
+   - Query configuration by owner, module, and event type
+   - Check if event is enabled
+
+3. **Both Must Be True:**
+   - Company-level enabled AND event-level enabled → email sent
+   - Otherwise → email skipped
+
+---
+
+## Daily Email Limit Logic
+
+### Limit Check
+
+**Logic:**
+1. Fetch daily limit and current count
+2. Check reset date - if not today, reset counter to 0
+3. Compare count to limit
+4. If count >= limit → limit reached, skip email
+5. Otherwise → email allowed
+
+### Counter Reset
+
+**Logic:**
+- Counter automatically resets when reset date is not today
+- Reset date updated to current date
+- Count set to 0 on reset
+
+### Increment Counter
+
+**Logic:**
+- If reset date is not today → reset to 1 (first email of day)
+- If reset date is today → increment by 1
+- Return updated count
+
+---
+
+## Recipient Selection Logic
+
+**Logic Flow:**
+
+1. **Get Configuration:**
+   - Fetch configuration for owner, module, and event type
+   - If not found or not enabled → return empty array
+
+2. **Collect Role-Based Users:**
+   - For each role in notification_roles:
+     - Query active users with that role
+     - Collect email addresses
+   - Deduplicate by user ID
+
+3. **Collect Specific Users:**
+   - For each user ID in notification_user_ids:
+     - Query active users
+     - Collect email addresses
+   - Deduplicate (avoid duplicates from role-based selection)
+
+4. **Return Combined List:**
+   - Union of role-based and specific user emails
+   - No duplicates
+
+---
+
+## Direct User Assignment Logic
+
+### Override Role-Based Selection
+
+Some events (e.g., ticket_assigned, mission_assigned) support direct user assignment:
+
+**Logic:**
+- If assigned user ID provided:
+  - Fetch user by ID
+  - Validate user has email
+  - Check daily email limit
+  - Send email directly to that user only
+  - Increment daily count
+- If no assigned user ID:
+  - Fall back to role-based selection
+  - Send to all configured recipients
+
+**Benefits:**
+- Ensures assigned person receives notification
+- Reduces email noise (only relevant recipients)
+- Bypasses role configuration for critical assignments
+
+---
+
+## Admin Notification on Limit Reached
+
+**Trigger:** Daily email limit reached
+
+**Logic:**
+1. Check if notification already sent today
+2. If not sent:
+   - Fetch owner details
+   - Send notification to platform admins
+   - Mark notification as sent in database
+
+**Notification Content:**
+- Owner ID and name
+- Daily limit
+- Current count
+
+---
+
+## Module-Specific Email Events
+
+### Maintenance Module Events
+
+| Event Type | Trigger |
+|---|---|
+| ticket_created | New maintenance ticket created |
+| ticket_assigned | Ticket assigned to technician |
+| ticket_closed | Ticket resolved/closed |
+| intervention_started | Maintenance intervention begins |
+| intervention_ended | Maintenance intervention ends |
+
+### Operations Module Events
+
+| Event Type | Trigger |
+|---|---|
+| mission_created | Mission record created |
+| mission_assigned | Pilot/drone assigned |
+| mission_started | Mission status = IN_PROGRESS |
+| mission_completed | Mission status = COMPLETED |
+
+---
+
+## Email Sending Logic
+
+**Logic Flow:**
+
+1. **Check Enablement:**
+   - Verify company-level and event-level enablement
+   - If not enabled → skip email
+
+2. **Get Recipients:**
+   - Fetch recipient emails
+   - If empty → skip email
+
+3. **Check Daily Limit:**
+   - Verify limit not reached
+   - If limit reached:
+     - Notify admins if just reached
+     - Skip email
+
+4. **Send Email:**
+   - Call email function
+   - Catch and log errors (don't fail the operation)
+
+5. **Increment Counter:**
+   - Increment daily email count
+
+6. **Check if Limit Just Reached:**
+   - If remaining = 0:
+     - Notify admins
+     - Mark notification as sent
+
+**Error Handling:**
+- Email failures are logged but don't fail parent operations
+- Daily count NOT incremented if email not sent
+- No automatic retry (manual retry required)
+
+---
+
+## Parameter Dependencies
+
+### Direct Dependencies
+
+- Email enablement depends on: company-level switch AND event-level configuration
+- Recipient list depends on: notification roles, specific user IDs, user active status
+- Email sending depends on: enablement, daily email count < limit
+- Daily count depends on: reset date (auto-reset)
+- Admin notification depends on: limit reached, notification not sent today
+
+### Cross-Module Dependencies
+
+- **Maintenance Module:** Triggers ticket and intervention events
+- **Operations Module:** Triggers mission events
+- **Planning Module:** Can trigger calendar events
+- **System Module:** Owner settings control module-level enablement
+- **User Module:** User roles and active status determine recipients
+- **Admin Module:** Platform admins notified on limit reached
+
+---
+
+ 
+## Key Business Rules
+
+1. **Two-Level Enablement:** Company-level AND event-level must both be enabled
+2. **Daily Limit Enforcement:** Hard limit per company, auto-resets daily
+3. **Role + User Recipients:** Union of role-based and specific user selections
+4. **Direct Assignment Override:** Critical assignments can bypass role configuration
+5. **Limit Reached Notification:** Admins notified once per day when limit reached
+6. **Non-Blocking Emails:** Email failures don't fail parent operations
+7. **Deduplication:** Same component notified once per day (maintenance alerts)
+8. **Module-Specific Switches:** Different modules have different master switches
+9. **Active Users Only:** Inactive users excluded from recipient lists
+10. **Counter Reset:** Automatic reset when reset date != today

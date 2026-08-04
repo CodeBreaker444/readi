@@ -8,6 +8,12 @@
     "platform-flow",
     "agent-api",
     "role-glossary",
-    "db-tables"
+    "db-tables",
+    "maintenance-module",
+    "operations-module",
+    "email-notifications",
+    "evaluation-planning-module",
+    "integration-services",
+    "parameter-reference"
   ]
 }
