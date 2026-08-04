@@ -4,7 +4,27 @@ import { autoAbortStaleMissions } from './auto-abort-service';
 import { getToolMaintenanceStatus } from './maintenance-cycle-service';
 import { assertMissionEditable } from './mission-lock';
 import { sendMissionStartedModuleEmail, sendMissionCompletedModuleEmail } from '../settings/module-email-notification-service';
-import { dateConversionUtcToLocal } from '@/utils/date-utils';
+
+// Local timezone conversion function
+function dateConversionUtcToLocal(utcDate: string | Date, timezone: string = 'UTC'): string {
+  try {
+    const date = new Date(utcDate);
+    
+    return date.toLocaleString('en-US', {
+      timeZone: timezone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false
+    });
+  } catch (error) {
+    console.error('Error converting date:', error);
+    return new Date(utcDate).toISOString();
+  }
+}
 
 const BOARD_STATUS_ID_TO_CODE: Record<number, MissionStatusCode> = {
   1: '00',
