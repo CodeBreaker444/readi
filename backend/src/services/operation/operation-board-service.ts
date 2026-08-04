@@ -4,6 +4,7 @@ import { autoAbortStaleMissions } from './auto-abort-service';
 import { getToolMaintenanceStatus } from './maintenance-cycle-service';
 import { assertMissionEditable } from './mission-lock';
 import { sendMissionStartedModuleEmail, sendMissionCompletedModuleEmail } from '../settings/module-email-notification-service';
+import { dateConversionUtcToLocal } from '@/utils/date-utils';
 
 const BOARD_STATUS_ID_TO_CODE: Record<number, MissionStatusCode> = {
   1: '00',
@@ -310,20 +311,26 @@ export async function updateMissionStatus(
     const user = payload.pilot_id 
       ? await prisma.public_users.findUnique({
           where: { user_id: payload.pilot_id },
-          select: { first_name: true, last_name: true },
+          select: { first_name: true, last_name: true, user_timezone: true },
         })
       : null;
 
     const userName = user 
       ? `${user.first_name} ${user.last_name}`.trim() 
       : 'System';
+    
+    const userTimezone = user?.user_timezone || 'UTC';
 
     if (payload.workflow_mission_status === '_START') {
+      const startTime = mission.actual_start 
+        ? dateConversionUtcToLocal(mission.actual_start, userTimezone)
+        : dateConversionUtcToLocal(new Date(), userTimezone);
+      
       await sendMissionStartedModuleEmail(mission.fk_owner_id, {
         missionCode: mission.mission_code || '',
         missionType: missionType?.type_name || 'Unknown',
         startedBy: userName,
-        startTime: mission.actual_start?.toISOString() || new Date().toISOString(),
+        startTime,
         pilot: userName,
       });
     } else if (payload.workflow_mission_status === '_END') {
@@ -338,13 +345,17 @@ export async function updateMissionStatus(
         duration = `${diffHours}h ${diffMins}m`;
       }
 
+      const completionTime = mission.actual_end 
+        ? dateConversionUtcToLocal(mission.actual_end, userTimezone)
+        : dateConversionUtcToLocal(new Date(), userTimezone);
+
       await sendMissionCompletedModuleEmail(mission.fk_owner_id, {
         missionCode: mission.mission_code || '',
         missionType: missionType?.type_name || 'Unknown',
         completedBy: userName,
-        completionTime: mission.actual_end?.toISOString() || new Date().toISOString(),
+        completionTime,
         duration,
-        notes: mission.notes || mission.mission_name || undefined,
+        notes: mission.notes || undefined,
       });
     }
   } catch (emailError) {

@@ -271,6 +271,18 @@ export async function createOperation(input: CreateOperationSchema, ownerId: num
   const recurringGroupId = isRecurrent ? generateRecurringGroupId() : null;
   const insertedIds: number[] = [];
 
+  // Get planned_date from planning if available (do this once before the loop)
+  let planningPlannedDate: Date | null = null;
+  if (input.fk_planning_id && !input.scheduled_start) {
+    const planning = await prisma.planning.findUnique({
+      where: { planning_id: input.fk_planning_id },
+      select: { planned_date: true },
+    });
+    if (planning?.planned_date) {
+      planningPlannedDate = new Date(planning.planned_date);
+    }
+  }
+
   // Process each date
   for (let dateIndex = 0; dateIndex < datesToProcess.length; dateIndex++) {
     const currentDate = datesToProcess[dateIndex];
@@ -290,7 +302,7 @@ export async function createOperation(input: CreateOperationSchema, ownerId: num
       throw new Error(`An operation with code ${missionCode} already exists.`);
     }
 
-    // Calculate scheduled start time based on recurrent time
+    // Calculate scheduled start time based on recurrent time or planning planned_date
     let scheduledStart: Date | null = null;
     if (isRecurrent && recurrentTime) {
       const [hours, minutes] = recurrentTime.split(':').map(Number);
@@ -298,6 +310,16 @@ export async function createOperation(input: CreateOperationSchema, ownerId: num
       scheduledStart.setHours(hours, minutes, 0, 0);
     } else if (input.scheduled_start) {
       scheduledStart = new Date(input.scheduled_start);
+    } else if (planningPlannedDate) {
+      // Use the planned_date from planning if no scheduled_start provided
+      // For recurrent missions, combine planning date with recurrent time
+      if (isRecurrent && recurrentTime) {
+        const [hours, minutes] = recurrentTime.split(':').map(Number);
+        scheduledStart = new Date(currentDate);
+        scheduledStart.setHours(hours, minutes, 0, 0);
+      } else {
+        scheduledStart = planningPlannedDate;
+      }
     }
 
     const baseInsert: any = {
@@ -367,7 +389,7 @@ export async function createOperation(input: CreateOperationSchema, ownerId: num
       missionType: missionType?.type_name || 'Unknown',
       createdBy,
       scheduledDate: firstMission?.scheduled_start,
-      description: input.mission_name || input.mission_description || input.notes || undefined,
+      description: input.notes || undefined,
       isRecurrent,
       totalMissions: insertedIds.length,
     });
@@ -377,7 +399,7 @@ export async function createOperation(input: CreateOperationSchema, ownerId: num
       missionType: missionType?.type_name || 'Unknown',
       createdBy,
       scheduledDate: firstMission?.scheduled_start?.toISOString() || input.scheduled_start,
-      description: input.mission_name || input.mission_description || input.notes || undefined,
+      description: input.notes || undefined,
     });
     
     console.log('[createOperation] Mission created email sent successfully');
@@ -398,7 +420,7 @@ export async function createOperation(input: CreateOperationSchema, ownerId: num
             assignedTo: `${pilotUser.first_name} ${pilotUser.last_name}`.trim(),
             role: 'Pilot',
             scheduledDate: firstMission?.scheduled_start?.toISOString() || input.scheduled_start,
-            description: input.mission_name || input.mission_description || input.notes || undefined,
+            description: input.notes || undefined,
           }, [input.fk_pilot_user_id]);
           console.log('[createOperation] Mission assigned email sent to pilot:', pilotUser.first_name, pilotUser.last_name);
         }
@@ -419,7 +441,7 @@ export async function createOperation(input: CreateOperationSchema, ownerId: num
             assignedTo: observer.name,
             role: 'Observer',
             scheduledDate: firstMission?.scheduled_start?.toISOString() || input.scheduled_start,
-            description: input.mission_name || input.mission_description || input.notes || undefined,
+            description: input.notes || undefined,
           }, [observer.user_id]);
           console.log('[createOperation] Mission assigned email sent to observer:', observer.name);
         } catch (observerEmailError) {
