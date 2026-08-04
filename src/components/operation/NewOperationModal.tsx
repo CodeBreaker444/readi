@@ -124,6 +124,11 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
     const [pilotId, setPilotId] = useState('')
     const [visualObserverIds, setVisualObserverIds] = useState<string[]>([])
 
+    const [isRecurrent, setIsRecurrent] = useState(false)
+    const [recurrentStartDate, setRecurrentStartDate] = useState('')
+    const [recurrentEndDate, setRecurrentEndDate] = useState('')
+    const [recurrentTime, setRecurrentTime] = useState('')
+
     const [erps, setErps] = useState<EmergencyResponsePlan[]>([])
     const [loadingErps, setLoadingErps] = useState(false)
 
@@ -382,6 +387,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
         setErps([]); setResultOptions([])
         setFlightWaypoints([]); setLoadingWaypoints(false)
         setErpGroupId(''); setErpGroups([]); setLoadingErpGroups(false)
+        setIsRecurrent(false); setRecurrentStartDate(''); setRecurrentEndDate(''); setRecurrentTime('')
         setSchedulerForm({
             missionCode: '', scheduledStart: '', scheduledEnd: '',
             missionName: '', location: '', notes: '', distanceFlown: '',
@@ -487,10 +493,23 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                 // completed, not scheduled for the future.
                 status_name: createPrefill ? 'COMPLETED' : 'PLANNED',
                 ...(visualObserverIds.length > 0 && { visual_observer_ids: visualObserverIds.map(Number) }),
+                ...(isRecurrent && {
+                    is_recurrent: true,
+                    recurrent_start_date: recurrentStartDate || undefined,
+                    recurrent_end_date: recurrentEndDate || undefined,
+                    recurrent_time: recurrentTime || undefined,
+                }),
             }
             const res = await axios.post('/api/operation', payload)
             if (!res.data.success) throw new Error(res.data.error ?? t('operations.newOperation.toast.createError'))
-            toast.success(t('operations.newOperation.toast.createSuccess'))
+            
+            // Show appropriate success message for recurrent missions
+            if (res.data.created_missions && res.data.created_missions.length > 1) {
+                toast.success(t('operations.newOperation.toast.createRecurrentSuccess', { count: res.data.created_missions.length }))
+            } else {
+                toast.success(t('operations.newOperation.toast.createSuccess'))
+            }
+            
             onSaved?.(res.data)
             onSuccess(); onClose()
         } catch (err: any) {
@@ -704,6 +723,14 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                             onVisualObserverChange={setVisualObserverIds}
                             loadingOptions={loadingOptions}
                             isDark={isDark}
+                            isRecurrent={isRecurrent}
+                            onRecurrentChange={setIsRecurrent}
+                            recurrentStartDate={recurrentStartDate}
+                            onRecurrentStartDateChange={setRecurrentStartDate}
+                            recurrentEndDate={recurrentEndDate}
+                            onRecurrentEndDateChange={setRecurrentEndDate}
+                            recurrentTime={recurrentTime}
+                            onRecurrentTimeChange={setRecurrentTime}
                             summary={{
                                 clientName: selectedClient?.client_name,
                                 opType,

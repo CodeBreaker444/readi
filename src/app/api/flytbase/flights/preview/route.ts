@@ -120,11 +120,18 @@ export async function GET(req: NextRequest) {
 
   const presignedUploadUrl = await getPresignedUploadUrl(key, 'application/json', 600);
 
+  // Extract serial number from exchange.message.flight_data.aircraft.serial_number
+  // The gutma parser already extracts this into data.aircraft.serial_number
+  const serialNumber = typeof gutma?.exchange?.message?.flight_data?.aircraft?.serial_number === 'string'
+    ? gutma.exchange.message.flight_data.aircraft.serial_number.trim() || null
+    : null;
+
   return NextResponse.json({
     success: true,
     data,
     presignedUploadUrl,
     s3Key: key,
     fromCache: false,
+    serialNumber,
   });
 }

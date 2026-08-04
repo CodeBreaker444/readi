@@ -1907,6 +1907,8 @@
         "logFile": "File Log",
         "flytbaseWindow": "Finestra Control Center",
         "selectFlightLog": "Seleziona Volo",
+        "timeWindow": "Finestra Temporale",
+        "selectFlight": "Seleziona Volo",
         "missionCode": "Codice Missione",
         "droneSystem": "Sistema Drone",
         "missionCategory": "Categoria Missione",
@@ -2016,9 +2018,9 @@
         "loadPilotsError": "Impossibile caricare i piloti",
         "loadFlightsError": "Impossibile caricare i voli Control Center",
         "noFlightsFound": "Nessun volo Control Center trovato in questa finestra temporale",
-        "importSuccess": "{{count}} missione/i importata/e",
-        "importSuccessWithSkipped": "{{count}} missione/i importata/e, {{skipped}} duplicato/i ignorato/i",
-        "allDuplicates": "Tutte le {{count}} missioni erano già state importate (duplicati ignorati)",
+        "importSuccess": "Missione/i importata/e con successo",
+        "importSuccessWithSkipped": "Missione/i importata/e con successo, alcuni duplicati ignorati",
+        "allDuplicates": "Tutte le missioni erano già state importate (duplicati ignorati)",
         "importFailed": "Importazione fallita"
       },
       "result": {

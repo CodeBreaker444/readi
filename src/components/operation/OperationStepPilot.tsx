@@ -1,5 +1,6 @@
 'use client'
 
+import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -37,9 +38,17 @@ interface Props {
     loadingOptions?: boolean
     summary: SummaryData
     isDark: boolean
+    isRecurrent?: boolean
+    onRecurrentChange?: (value: boolean) => void
+    recurrentStartDate?: string
+    onRecurrentStartDateChange?: (value: string) => void
+    recurrentEndDate?: string
+    onRecurrentEndDateChange?: (value: string) => void
+    recurrentTime?: string
+    onRecurrentTimeChange?: (value: string) => void
 }
 
-export function OperationStepPilot({ pilots, pilotId, onPilotChange, visualObserverIds = [], onVisualObserverChange, loadingOptions = false, summary, isDark }: Props) {
+export function OperationStepPilot({ pilots, pilotId, onPilotChange, visualObserverIds = [], onVisualObserverChange, loadingOptions = false, summary, isDark, isRecurrent = false, onRecurrentChange, recurrentStartDate = '', onRecurrentStartDateChange, recurrentEndDate = '', onRecurrentEndDateChange, recurrentTime = '', onRecurrentTimeChange }: Props) {
     const { t } = useTranslation()
 
     const toggleObserver = (id: string) => {
@@ -131,6 +140,33 @@ export function OperationStepPilot({ pilots, pilotId, onPilotChange, visualObser
                     </div>
                 )}
             </div>
+
+            <div className="flex items-center gap-2">
+                <input
+                    type="checkbox"
+                    id="isRecurrent"
+                    checked={isRecurrent}
+                    onChange={(e) => onRecurrentChange?.(e.target.checked)}
+                    className="h-4 w-4 accent-violet-600"
+                />
+                <Label htmlFor="isRecurrent" className="text-sm cursor-pointer">{t('operations.importOperation.fields.recurrent')}</Label>
+            </div>
+            {isRecurrent && (
+                <div className="grid grid-cols-3 gap-4">
+                    <div>
+                        <Label className="mb-1.5 block">{t('operations.importOperation.fields.recurrentStartDate')}</Label>
+                        <Input type="date" value={recurrentStartDate} onChange={(e) => onRecurrentStartDateChange?.(e.target.value)} className={inputCls(isDark)} />
+                    </div>
+                    <div>
+                        <Label className="mb-1.5 block">{t('operations.importOperation.fields.recurrentEndDate')}</Label>
+                        <Input type="date" value={recurrentEndDate} onChange={(e) => onRecurrentEndDateChange?.(e.target.value)} className={inputCls(isDark)} />
+                    </div>
+                    <div>
+                        <Label className="mb-1.5 block">{t('operations.importOperation.fields.recurrentTime')}</Label>
+                        <Input type="time" value={recurrentTime} onChange={(e) => onRecurrentTimeChange?.(e.target.value)} className={inputCls(isDark)} />
+                    </div>
+                </div>
+            )}
 
             <div className={cn('rounded-lg border p-4 space-y-2 text-sm', isDark ? 'border-slate-600 bg-slate-700/30' : 'border-border bg-muted/20')}>
                 <p className={cn('text-xs font-semibold uppercase tracking-wide pb-2 border-b', isDark ? 'text-slate-400 border-slate-600' : 'text-muted-foreground')}>

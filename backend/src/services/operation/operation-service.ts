@@ -23,6 +23,23 @@ function asUtc(ts: Date | string | null | undefined): string | null {
   return s.endsWith('Z') || s.includes('+') ? s : s + 'Z';
 }
 
+function generateRecurringGroupId(): string {
+  return `RG-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+}
+
+function getDatesInRange(startDate: string, endDate: string): Date[] {
+  const dates: Date[] = [];
+  const current = new Date(startDate);
+  const end = new Date(endDate);
+  
+  while (current <= end) {
+    dates.push(new Date(current));
+    current.setDate(current.getDate() + 1);
+  }
+  
+  return dates;
+}
+
 export async function listOperations(
   params: ListOperationsQuerySchema,
   ownerId: number
@@ -228,41 +245,98 @@ export async function createOperation(input: CreateOperationSchema, ownerId: num
     }
   }
 
+  const isRecurrent = (input as any).is_recurrent === true;
+  const recurrentStartDate = (input as any).recurrent_start_date;
+  const recurrentEndDate = (input as any).recurrent_end_date;
+  const recurrentTime = (input as any).recurrent_time;
+
   const missionMetadata: Record<string, unknown> = {};
   if (visualObservers?.length) missionMetadata.visual_observers = visualObservers;
   if ((input as any).flight_mode) missionMetadata.flight_mode = (input as any).flight_mode;
+  if (isRecurrent) {
+    missionMetadata.is_recurrent = true;
+    if (recurrentStartDate) missionMetadata.recurrent_start_date = recurrentStartDate;
+    if (recurrentEndDate) missionMetadata.recurrent_end_date = recurrentEndDate;
+    if (recurrentTime) missionMetadata.recurrent_time = recurrentTime;
+  }
 
-  const baseInsert: any = {
-    mission_code: codeToChild,
-    mission_name: input.mission_name,
-    mission_description: input.mission_description ?? null,
-    status_name: input.status_name,
-    fk_mission_status_id: STATUS_NAME_TO_ID[input.status_name] ?? 1,
-    scheduled_start: input.scheduled_start ? new Date(input.scheduled_start) : null,
-    actual_end: input.actual_end ? new Date(input.actual_end) : null,
-    location: input.location ?? null,
-    notes: input.notes ?? null,
-    fk_owner_id: ownerId,
-    fk_pilot_user_id: input.fk_pilot_user_id,
-    fk_tool_id: (input as any).fk_tool_id ?? null,
-    fk_client_id: (input as any).fk_client_id ?? null,
-    fk_planning_id: input.fk_planning_id ?? null,
-    fk_mission_planning_id: (input as any).fk_mission_planning_id ?? null,
-    fk_mission_type_id: (input as any).fk_mission_type_id ?? null,
-    fk_mission_category_id: (input as any).fk_mission_category_id ?? null,
-    fk_luc_procedure_id: fkLuc,
-    fk_erp_group_id: (input as any).fk_erp_group_id ?? null,
-    luc_procedure_progress: luc_procedure_progress as any,
-    luc_completed_at: null,
-    ...(Object.keys(missionMetadata).length && { mission_metadata: missionMetadata }),
-  };
+  // Determine the dates to create missions for
+  let datesToProcess: Date[] = [];
+  if (isRecurrent && recurrentStartDate && recurrentEndDate && recurrentTime) {
+    datesToProcess = getDatesInRange(recurrentStartDate, recurrentEndDate);
+  } else {
+    datesToProcess = [new Date()]; // Single mission for non-recurrent
+  }
 
-  const inserted = await prisma.pilot_mission.create({
-    data: baseInsert,
-    select: { pilot_mission_id: true },
-  });
+  const recurringGroupId = isRecurrent ? generateRecurringGroupId() : null;
+  const insertedIds: number[] = [];
 
-  // Send mission created email notification
+  // Process each date
+  for (let dateIndex = 0; dateIndex < datesToProcess.length; dateIndex++) {
+    const currentDate = datesToProcess[dateIndex];
+    
+    // Generate mission code with index for recurrent missions
+    const missionCode = isRecurrent && datesToProcess.length > 1
+      ? `${codeToChild}-${dateIndex + 1}`
+      : codeToChild;
+
+    // Check for duplicate mission code
+    const existing = await prisma.pilot_mission.findFirst({
+      where: { mission_code: missionCode, fk_owner_id: ownerId },
+      select: { pilot_mission_id: true },
+    });
+
+    if (existing) {
+      throw new Error(`An operation with code ${missionCode} already exists.`);
+    }
+
+    // Calculate scheduled start time based on recurrent time
+    let scheduledStart: Date | null = null;
+    if (isRecurrent && recurrentTime) {
+      const [hours, minutes] = recurrentTime.split(':').map(Number);
+      scheduledStart = new Date(currentDate);
+      scheduledStart.setHours(hours, minutes, 0, 0);
+    } else if (input.scheduled_start) {
+      scheduledStart = new Date(input.scheduled_start);
+    }
+
+    const baseInsert: any = {
+      mission_code: missionCode,
+      mission_name: input.mission_name,
+      mission_description: input.mission_description ?? null,
+      status_name: input.status_name,
+      fk_mission_status_id: STATUS_NAME_TO_ID[input.status_name] ?? 1,
+      scheduled_start: scheduledStart,
+      actual_end: input.actual_end ? new Date(input.actual_end) : null,
+      location: input.location ?? null,
+      notes: input.notes ?? null,
+      fk_owner_id: ownerId,
+      fk_pilot_user_id: input.fk_pilot_user_id,
+      fk_tool_id: (input as any).fk_tool_id ?? null,
+      fk_client_id: (input as any).fk_client_id ?? null,
+      fk_planning_id: input.fk_planning_id ?? null,
+      fk_mission_planning_id: (input as any).fk_mission_planning_id ?? null,
+      fk_mission_type_id: (input as any).fk_mission_type_id ?? null,
+      fk_mission_category_id: (input as any).fk_mission_category_id ?? null,
+      fk_luc_procedure_id: fkLuc,
+      fk_erp_group_id: (input as any).fk_erp_group_id ?? null,
+      luc_procedure_progress: luc_procedure_progress as any,
+      luc_completed_at: null,
+      ...(Object.keys(missionMetadata).length && { mission_metadata: { ...missionMetadata, recurring_group_id: recurringGroupId } }),
+    };
+
+    const inserted = await prisma.pilot_mission.create({
+      data: baseInsert,
+      select: { pilot_mission_id: true },
+    });
+
+    insertedIds.push(inserted.pilot_mission_id);
+  }
+
+  // For returning, we'll return the first mission created
+  const firstInsertedId = insertedIds[0];
+
+  // Send mission created email notification (for the first mission only)
   try {
     console.log('[createOperation] Attempting to send mission created email for ownerId:', ownerId, 'missionCode:', codeToChild);
     
@@ -282,19 +356,27 @@ export async function createOperation(input: CreateOperationSchema, ownerId: num
       ? `${user.first_name} ${user.last_name}`.trim() 
       : 'System';
 
+    // Use the first mission's scheduled start date for email
+    const firstMission = await prisma.pilot_mission.findUnique({
+      where: { pilot_mission_id: firstInsertedId },
+      select: { scheduled_start: true },
+    });
+
     console.log('[createOperation] Email data:', {
       missionCode: codeToChild,
       missionType: missionType?.type_name || 'Unknown',
       createdBy,
-      scheduledDate: input.scheduled_start,
+      scheduledDate: firstMission?.scheduled_start,
       description: input.mission_name || input.mission_description || input.notes || undefined,
+      isRecurrent,
+      totalMissions: insertedIds.length,
     });
 
     await sendMissionCreatedModuleEmail(ownerId, {
       missionCode: codeToChild,
       missionType: missionType?.type_name || 'Unknown',
       createdBy,
-      scheduledDate: input.scheduled_start,
+      scheduledDate: firstMission?.scheduled_start?.toISOString() || input.scheduled_start,
       description: input.mission_name || input.mission_description || input.notes || undefined,
     });
     
@@ -315,7 +397,7 @@ export async function createOperation(input: CreateOperationSchema, ownerId: num
             assignedBy: createdBy,
             assignedTo: `${pilotUser.first_name} ${pilotUser.last_name}`.trim(),
             role: 'Pilot',
-            scheduledDate: input.scheduled_start,
+            scheduledDate: firstMission?.scheduled_start?.toISOString() || input.scheduled_start,
             description: input.mission_name || input.mission_description || input.notes || undefined,
           }, [input.fk_pilot_user_id]);
           console.log('[createOperation] Mission assigned email sent to pilot:', pilotUser.first_name, pilotUser.last_name);
@@ -336,7 +418,7 @@ export async function createOperation(input: CreateOperationSchema, ownerId: num
             assignedBy: createdBy,
             assignedTo: observer.name,
             role: 'Observer',
-            scheduledDate: input.scheduled_start,
+            scheduledDate: firstMission?.scheduled_start?.toISOString() || input.scheduled_start,
             description: input.mission_name || input.mission_description || input.notes || undefined,
           }, [observer.user_id]);
           console.log('[createOperation] Mission assigned email sent to observer:', observer.name);
@@ -350,7 +432,7 @@ export async function createOperation(input: CreateOperationSchema, ownerId: num
     // Don't fail the operation creation if email fails
   }
 
-  const full = await getOperation(inserted.pilot_mission_id);
+  const full = await getOperation(firstInsertedId);
   if (!full) throw new Error('Failed to fetch created operation');
   return full;
 }

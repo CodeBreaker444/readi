@@ -1905,6 +1905,8 @@
         "logFile": "Protokolldatei",
         "flytbaseWindow": "Control Center Fenster",
         "selectFlightLog": "Flugprotokoll auswählen",
+        "timeWindow": "Zeitfenster",
+        "selectFlight": "Flug auswählen",
         "missionCode": "Missionscode",
         "droneSystem": "Drohnensystem",
         "missionCategory": "Missionskategorie",
@@ -2012,9 +2014,9 @@
         "loadDronesError": "Drohnen konnten nicht geladen werden",
         "loadMissionOptionsError": "Missionsoptionen konnten nicht geladen werden",
         "loadPilotsError": "Piloten konnten nicht geladen werden",
-        "importSuccess": "{{count}} Mission(en) importiert",
-        "importSuccessWithSkipped": "{{count}} Mission(en) importiert, {{skipped}} Duplikat(e) übersprungen",
-        "allDuplicates": "Alle {{count}} Mission(en) wurden bereits importiert (Duplikate übersprungen)",
+        "importSuccess": "Mission(en) erfolgreich importiert",
+        "importSuccessWithSkipped": "Mission(en) erfolgreich importiert, einige Duplikate übersprungen",
+        "allDuplicates": "Alle Mission(en) wurden bereits importiert (Duplikate übersprungen)",
         "importFailed": "Import fehlgeschlagen"
       },
       "result": {

@@ -65,6 +65,10 @@ export type CreateOperationSchema = {
   fk_mission_category_id?: number | null;
   fk_luc_procedure_id: number;
   flight_mode?: string | null;
+  is_recurrent?: boolean;
+  recurrent_start_date?: string | null;
+  recurrent_end_date?: string | null;
+  recurrent_time?: string | null;
 };
 export type UpdateOperationSchema = {
   mission_code?: string;

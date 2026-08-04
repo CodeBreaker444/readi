@@ -1912,6 +1912,8 @@
         "logFile": "Log File",
         "flytbaseWindow": "Control Center Window",
         "selectFlightLog": "Select Flight Log",
+        "timeWindow": "Time Window",
+        "selectFlight": "Select Flight",
         "missionCode": "Mission Code",
         "droneSystem": "Drone System",
         "missionCategory": "Mission Category",
@@ -2021,9 +2023,9 @@
         "loadPilotsError": "Failed to load pilots",
         "loadFlightsError": "Failed to load Control Center flights",
         "noFlightsFound": "No Control Center flights found in this time window",
-        "importSuccess": "Imported {{count}} mission(s)",
-        "importSuccessWithSkipped": "Imported {{count}} mission(s), {{skipped}} duplicate(s) skipped",
-        "allDuplicates": "All {{count}} mission(s) were already imported (duplicates skipped)",
+        "importSuccess": "Imported mission(s) successfully",
+        "importSuccessWithSkipped": "Imported mission(s) successfully with some duplicates skipped",
+        "allDuplicates": "All mission(s) were already imported (duplicates skipped)",
         "importFailed": "Import failed"
       },
       "result": {
@@ -2165,6 +2167,7 @@
         "updateSuccess": "Operation updated successfully",
         "updateError": "Failed to update operation",
         "createSuccess": "Operation created successfully",
+        "createRecurrentSuccess": "{{count}} recurrent missions created successfully",
         "createError": "Failed to create operation",
         "postFlightSuccess": "Post-flight data saved successfully",
         "postFlightError": "Failed to save post-flight data"
