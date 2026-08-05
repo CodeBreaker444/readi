@@ -33,6 +33,15 @@ export interface Operation {
   planning_name?: string | null;
   attachment_count?: number;
   flight_mode?: string | null;
+  mission_metadata?: {
+    visual_observers?: { user_id: number; name: string }[];
+    flight_mode?: string;
+    is_recurrent?: boolean;
+    recurrent_start_date?: string;
+    recurrent_end_date?: string;
+    recurrent_time?: string;
+    recurring_group_id?: string;
+  } | null;
   created_at: string;
   updated_at: string;
 }
