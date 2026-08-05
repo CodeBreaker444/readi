@@ -2017,6 +2017,10 @@
         "done": "Fine",
         "back":"Indietro"
       },
+      "errors": {
+        "endDateBeforeStart": "La data di fine deve essere successiva o uguale alla data di inizio",
+        "datesRequired": "Sia la data di inizio che quella di fine sono obbligatorie per le missioni ricorrenti"
+      },
       "toast": {
         "loadClientsError": "Impossibile caricare i clienti",
         "loadDronesError": "Impossibile caricare i droni",

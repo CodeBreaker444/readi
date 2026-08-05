@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Skeleton } from '@/components/ui/skeleton'
 import { formatDateTimeInTz } from '@/lib/utils'
 import { cn } from '@/lib/utils'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { inputCls, labelCls, scCls, siCls, ReviewRow, SectionTitle } from './OperationModalHelpers'
 import { FlightMode, GenericOption, LucOption, OpType, PilotOption } from './OperationModalTypes'
@@ -46,10 +47,54 @@ interface Props {
     onRecurrentEndDateChange?: (value: string) => void
     recurrentTime?: string
     onRecurrentTimeChange?: (value: string) => void
+    onRecurrentDateErrorChange?: (error: string) => void
+    onRecurrentToggle?: (checked: boolean) => void
 }
 
-export function OperationStepPilot({ pilots, pilotId, onPilotChange, visualObserverIds = [], onVisualObserverChange, loadingOptions = false, summary, isDark, isRecurrent = false, onRecurrentChange, recurrentStartDate = '', onRecurrentStartDateChange, recurrentEndDate = '', onRecurrentEndDateChange, recurrentTime = '', onRecurrentTimeChange }: Props) {
+export function OperationStepPilot({ pilots, pilotId, onPilotChange, visualObserverIds = [], onVisualObserverChange, loadingOptions = false, summary, isDark, isRecurrent = false, onRecurrentChange, recurrentStartDate = '', onRecurrentStartDateChange, recurrentEndDate = '', onRecurrentEndDateChange, recurrentTime = '', onRecurrentTimeChange, onRecurrentDateErrorChange, onRecurrentToggle }: Props) {
     const { t } = useTranslation()
+    const [recurrentDateError, setRecurrentDateError] = useState('')
+
+    const handleRecurrentEndDateChange = (value: string) => {
+        onRecurrentEndDateChange?.(value)
+        // Validate that end date is not before start date
+        if (value && recurrentStartDate && new Date(value) < new Date(recurrentStartDate)) {
+            const error = t('operations.importOperation.errors.endDateBeforeStart')
+            setRecurrentDateError(error)
+            onRecurrentDateErrorChange?.(error)
+        } else if (!value && isRecurrent) {
+            const error = t('operations.importOperation.errors.datesRequired')
+            setRecurrentDateError(error)
+            onRecurrentDateErrorChange?.(error)
+        } else {
+            setRecurrentDateError('')
+            onRecurrentDateErrorChange?.('')
+        }
+    }
+
+    const handleRecurrentStartDateChange = (value: string) => {
+        onRecurrentStartDateChange?.(value)
+        // Validate that end date is not before start date
+        if (value && recurrentEndDate && new Date(recurrentEndDate) < new Date(value)) {
+            const error = t('operations.importOperation.errors.endDateBeforeStart')
+            setRecurrentDateError(error)
+            onRecurrentDateErrorChange?.(error)
+        } else if (!value && isRecurrent) {
+            const error = t('operations.importOperation.errors.datesRequired')
+            setRecurrentDateError(error)
+            onRecurrentDateErrorChange?.(error)
+        } else {
+            setRecurrentDateError('')
+            onRecurrentDateErrorChange?.('')
+        }
+    }
+
+    const validateRecurrentDates = () => {
+        if (!isRecurrent) return true
+        if (!recurrentStartDate || !recurrentEndDate) return false
+        if (recurrentDateError) return false
+        return true
+    }
 
     const toggleObserver = (id: string) => {
         if (!onVisualObserverChange) return
@@ -146,7 +191,7 @@ export function OperationStepPilot({ pilots, pilotId, onPilotChange, visualObser
                     type="checkbox"
                     id="isRecurrent"
                     checked={isRecurrent}
-                    onChange={(e) => onRecurrentChange?.(e.target.checked)}
+                    onChange={(e) => onRecurrentToggle?.(e.target.checked)}
                     className="h-4 w-4 accent-violet-600"
                 />
                 <Label htmlFor="isRecurrent" className="text-sm cursor-pointer">{t('operations.importOperation.fields.recurrent')}</Label>
@@ -155,17 +200,20 @@ export function OperationStepPilot({ pilots, pilotId, onPilotChange, visualObser
                 <div className="grid grid-cols-3 gap-4">
                     <div>
                         <Label className="mb-1.5 block">{t('operations.importOperation.fields.recurrentStartDate')}</Label>
-                        <Input type="date" value={recurrentStartDate} onChange={(e) => onRecurrentStartDateChange?.(e.target.value)} className={inputCls(isDark)} />
+                        <Input type="date" value={recurrentStartDate} onChange={(e) => handleRecurrentStartDateChange(e.target.value)} className={inputCls(isDark)} />
                     </div>
                     <div>
                         <Label className="mb-1.5 block">{t('operations.importOperation.fields.recurrentEndDate')}</Label>
-                        <Input type="date" value={recurrentEndDate} onChange={(e) => onRecurrentEndDateChange?.(e.target.value)} className={inputCls(isDark)} />
+                        <Input type="date" value={recurrentEndDate} onChange={(e) => handleRecurrentEndDateChange(e.target.value)} className={cn(inputCls(isDark), recurrentDateError ? 'border-red-500' : '')} />
                     </div>
                     <div>
                         <Label className="mb-1.5 block">{t('operations.importOperation.fields.recurrentTime')}</Label>
                         <Input type="time" value={recurrentTime} onChange={(e) => onRecurrentTimeChange?.(e.target.value)} className={inputCls(isDark)} />
                     </div>
                 </div>
+            )}
+            {recurrentDateError && (
+                <p className="text-red-500 text-xs mt-1">{recurrentDateError}</p>
             )}
 
             <div className={cn('rounded-lg border p-4 space-y-2 text-sm', isDark ? 'border-slate-600 bg-slate-700/30' : 'border-border bg-muted/20')}>

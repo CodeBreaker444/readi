@@ -128,6 +128,24 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
     const [recurrentStartDate, setRecurrentStartDate] = useState('')
     const [recurrentEndDate, setRecurrentEndDate] = useState('')
     const [recurrentTime, setRecurrentTime] = useState('')
+    const [recurrentDateError, setRecurrentDateError] = useState('')
+
+    const validateRecurrentDates = () => {
+        if (!isRecurrent) return true
+        if (!recurrentStartDate || !recurrentEndDate) {
+            setRecurrentDateError(t('operations.importOperation.errors.datesRequired'))
+            return false
+        }
+        if (recurrentDateError) return false
+        return true
+    }
+
+    const handleRecurrentToggle = (checked: boolean) => {
+        setIsRecurrent(checked)
+        if (!checked) {
+            setRecurrentDateError('')
+        }
+    }
 
     const [erps, setErps] = useState<EmergencyResponsePlan[]>([])
     const [loadingErps, setLoadingErps] = useState(false)
@@ -387,7 +405,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
         setErps([]); setResultOptions([])
         setFlightWaypoints([]); setLoadingWaypoints(false)
         setErpGroupId(''); setErpGroups([]); setLoadingErpGroups(false)
-        setIsRecurrent(false); setRecurrentStartDate(''); setRecurrentEndDate(''); setRecurrentTime('')
+        setIsRecurrent(false); setRecurrentStartDate(''); setRecurrentEndDate(''); setRecurrentTime(''); setRecurrentDateError('')
         setSchedulerForm({
             missionCode: '', scheduledStart: '', scheduledEnd: '',
             missionName: '', location: '', notes: '', distanceFlown: '',
@@ -428,7 +446,11 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
             if (!schedulerForm.missionCode.trim() || !schedulerForm.scheduledStart || !schedulerForm.lucId) return false
             return true
         }
-        if (step === 4) return !!pilotId
+        if (step === 4) {
+            if (!pilotId) return false
+            if (isRecurrent && !validateRecurrentDates()) return false
+            return true
+        }
         return true
     }
 
@@ -731,6 +753,8 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                             onRecurrentEndDateChange={setRecurrentEndDate}
                             recurrentTime={recurrentTime}
                             onRecurrentTimeChange={setRecurrentTime}
+                            onRecurrentDateErrorChange={setRecurrentDateError}
+                            onRecurrentToggle={handleRecurrentToggle}
                             summary={{
                                 clientName: selectedClient?.client_name,
                                 opType,

@@ -2015,6 +2015,10 @@
         "done": "Fertig",
         "back":"Zurück"
       },
+      "errors": {
+        "endDateBeforeStart": "Enddatum muss nach oder am Startdatum liegen",
+        "datesRequired": "Sowohl Start- als auch Enddatum sind für wiederkehrende Missionen erforderlich"
+      },
       "toast": {
         "loadClientsError": "Kunden konnten nicht geladen werden",
         "loadDronesError": "Drohnen konnten nicht geladen werden",

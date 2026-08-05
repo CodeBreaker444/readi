@@ -2022,6 +2022,10 @@
         "done": "Done",
         "back": "Back"
       },
+      "errors": {
+        "endDateBeforeStart": "End date must be on or after start date",
+        "datesRequired": "Both start and end dates are required for recurrent missions"
+      },
       "toast": {
         "loadClientsError": "Failed to load clients",
         "loadDronesError": "Failed to load drones",
