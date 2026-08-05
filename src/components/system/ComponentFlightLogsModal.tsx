@@ -131,7 +131,9 @@ export function ComponentFlightLogsModal({ open, onClose, componentId, component
               {selected.mission_code ?? `Mission #${selected.mission_id}`}
             </p>
             <p className={`text-sm ${textSecondary}`}>
-              Manual upload — no Control Center preview available.
+              {selected.log_source === 'mission_logbook' 
+                ? 'Completed mission from mission log book — no flight log attached.'
+                : 'Manual upload — no Control Center preview available.'}
             </p>
             <div className={`flex items-center justify-center gap-6 pt-2 text-sm ${textSecondary}`}>
               {selected.flight_duration != null && (
@@ -234,16 +236,21 @@ export function ComponentFlightLogsModal({ open, onClose, componentId, component
                     </div>
                   </div>
                   <span
-                    className={`shrink-0 mt-0.5 text-[10px] px-2 py-0.5 rounded-full font-semibold ${log.log_source === 'flytbase'
+                    className={`shrink-0 mt-0.5 text-[10px] px-2 py-0.5 rounded-full font-semibold ${
+                      log.log_source === 'flytbase'
                         ? isDark
                           ? 'bg-violet-900/50 text-violet-300'
                           : 'bg-violet-100 text-violet-700'
-                        : isDark
-                          ? 'bg-slate-700 text-slate-400'
-                          : 'bg-slate-100 text-slate-600'
-                      }`}
+                        : log.log_source === 'mission_logbook'
+                          ? isDark
+                            ? 'bg-emerald-900/50 text-emerald-300'
+                            : 'bg-emerald-100 text-emerald-700'
+                          : isDark
+                            ? 'bg-slate-700 text-slate-400'
+                            : 'bg-slate-100 text-slate-600'
+                    }`}
                   >
-                    {log.log_source === 'flytbase' ? 'Control Center' : 'Manual'}
+                    {log.log_source === 'flytbase' ? 'Control Center' : log.log_source === 'mission_logbook' ? 'Mission Logbook' : 'Manual'}
                   </span>
                 </div>
               </button>
