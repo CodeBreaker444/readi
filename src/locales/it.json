@@ -947,7 +947,8 @@
       "saveChanges": "Salva Modifiche",
       "searchLogbook": "Cerca nel Registro",
       "edit": "Modifica",
-      "delete": "Elimina"
+      "delete": "Elimina",
+      "view": "Visualizza"
     },
     "modal": {
       "addPlanningTitle": "Aggiungi Richiesta di Pianificazione",
@@ -1388,6 +1389,8 @@
     },
     "communication": {
       "title": "Invia Comunicazione",
+      "subtitle": "Comunicazioni inviate per questa valutazione",
+      "noCommunications": "Nessuna comunicazione inviata ancora",
       "newCommunication": "Nuova Comunicazione",
       "to": "A",
       "selected": "selezionati",
@@ -1414,7 +1417,10 @@
       "messageSingle": "Il messaggio non può essere vuoto",
       "sentSuccess": "Comunicazione inviata",
       "sendError": "Invio fallito",
-      "loadError": "Errore nel caricamento degli utenti"
+      "loadError": "Errore nel caricamento degli utenti",
+      "sender": "Mittente",
+      "status": "Stato",
+      "sentAt": "Inviato il"
     },
     "assignment": {
       "title": "Azione di Assegnazione",

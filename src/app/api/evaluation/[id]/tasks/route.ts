@@ -51,7 +51,16 @@ export async function PUT(
         const body = await req.json();
         const validated = evaluationTaskUpdateSchema.parse(body);
 
-        const result = await updateEvaluationTask(session!.user.ownerId, id, validated.task_id, validated.task_status);
+        const result = await updateEvaluationTask(
+            session!.user.ownerId,
+            id,
+            validated.task_id,
+            validated.task_status,
+            session!.user.userId,
+            session!.user.fullname,
+            session!.user.email,
+            session!.user.role
+        );
 
         if (!result.success) {
             return NextResponse.json(

@@ -950,7 +950,8 @@
       "saveChanges": "Save Changes",
       "searchLogbook": "Search Logbook",
       "edit": "Edit",
-      "delete": "Delete"
+      "delete": "Delete",
+      "view": "View"
     },
     "modal": {
       "addPlanningTitle": "Add Planning Request",
@@ -1389,6 +1390,8 @@
     },
     "communication": {
       "title": "Send Communication",
+      "subtitle": "Communications sent for this evaluation",
+      "noCommunications": "No communications sent yet",
       "newCommunication": "New Communication",
       "to": "To",
       "selected": "selected",
@@ -1415,7 +1418,10 @@
       "messageSingle": "Message cannot be empty",
       "sentSuccess": "Communication sent",
       "sendError": "Failed to send",
-      "loadError": "Failed to load users"
+      "loadError": "Failed to load users",
+      "sender": "Sender",
+      "status": "Status",
+      "sentAt": "Sent At"
     },
     "assignment": {
       "title": "Assignment Action",

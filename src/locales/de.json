@@ -947,7 +947,8 @@
       "saveChanges": "Änderungen speichern",
       "searchLogbook": "Logbuch durchsuchen",
       "edit": "Bearbeiten",
-      "delete": "Löschen"
+      "delete": "Löschen",
+      "view": "Ansehen"
     },
     "modal": {
       "addPlanningTitle": "Planungsantrag hinzufügen",
@@ -1386,6 +1387,8 @@
     },
     "communication": {
       "title": "Kommunikation senden",
+      "subtitle": "Für diese Bewertung gesendete Kommunikation",
+      "noCommunications": "Noch keine Kommunikation gesendet",
       "newCommunication": "Neue Kommunikation",
       "to": "An",
       "selected": "ausgewählt",
@@ -1412,7 +1415,10 @@
       "messageSingle": "Nachricht darf nicht leer sein",
       "sentSuccess": "Kommunikation gesendet",
       "sendError": "Senden fehlgeschlagen",
-      "loadError": "Benutzer konnten nicht geladen werden"
+      "loadError": "Benutzer konnten nicht geladen werden",
+      "sender": "Absender",
+      "status": "Status",
+      "sentAt": "Gesendet am"
     },
     "assignment": {
       "title": "Zuweisungsaktion",

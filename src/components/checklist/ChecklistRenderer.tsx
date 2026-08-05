@@ -12,6 +12,8 @@ interface ChecklistRendererProps {
   userEmail?: string;
   onComplete?: (survey: Model) => void;
   isDark?: boolean;
+  initialData?: Record<string, unknown>;
+  readOnly?: boolean;
 }
 
 export function ChecklistRenderer({
@@ -20,14 +22,16 @@ export function ChecklistRenderer({
   userEmail = '',
   onComplete,
   isDark = false,
+  initialData = {},
+  readOnly = false,
 }: ChecklistRendererProps) {
   const [surveyModel, setSurveyModel] = useState<Model | null>(null);
   const { t } = useTranslation();
 
   useEffect(() => {
     try {
-      const jsonSchema = typeof checklistJson === 'string' 
-        ? JSON.parse(checklistJson) 
+      const jsonSchema = typeof checklistJson === 'string'
+        ? JSON.parse(checklistJson)
         : checklistJson;
 
       const survey = new Model(jsonSchema);
@@ -40,6 +44,14 @@ export function ChecklistRenderer({
       if (userFullname) survey.setValue('user_fullname', userFullname);
       if (userEmail) survey.setValue('email', userEmail);
 
+      if (Object.keys(initialData).length > 0) {
+        survey.data = initialData;
+      }
+
+      if (readOnly) {
+        survey.mode = 'display';
+      }
+
       if (onComplete) {
         survey.onComplete.add((sender) => onComplete(sender));
       }
@@ -48,7 +60,7 @@ export function ChecklistRenderer({
     } catch (error) {
       console.error('Error rendering checklist:', error);
     }
-  }, [checklistJson, userFullname, userEmail, onComplete, isDark]);
+  }, [checklistJson, userFullname, userEmail, onComplete, isDark, initialData, readOnly]);
 
   if (!surveyModel) {
     return (

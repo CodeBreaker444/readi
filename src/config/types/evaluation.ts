@@ -108,6 +108,7 @@ export interface EvaluationTask {
   task_status:    'pending' | 'in_progress' | 'completed' | 'skipped';
   task_order:     number;
   checklist_json: object | null;
+  checklist_result?: Record<string, unknown> | null;
 }
 
 export interface EvaluationPolygonArea {

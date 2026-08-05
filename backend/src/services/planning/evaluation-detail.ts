@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { Evaluation, EvaluationFile, EvaluationTask, SendAssignmentPayload, SendAssignmentResult } from '@/config/types/evaluation';
 import { ProcedureSteps } from '@/config/types/lcuProcedures';
 import { deleteFileFromS3, getPresignedDownloadUrl, uploadFileToS3 } from '@/lib/s3Client';
+import { logEvent } from '@/backend/services/auditLog/audit-log';
 
 function normalisePolygonData(raw: any): { type: string; features: any[] } | null {
   if (!raw) return null;
@@ -103,7 +104,11 @@ export interface EvaluationUpdateInput {
 }
 
 export async function updateEvaluation(
-  payload: EvaluationUpdateInput
+  payload: EvaluationUpdateInput,
+  userId?: number,
+  userName?: string,
+  userEmail?: string,
+  userRole?: string
 ): Promise<{ success: boolean; message: string; data?: Evaluation }> {
   const {
     evaluation_id, fk_owner_id, fk_client_id, fk_evaluation_code,
@@ -145,6 +150,26 @@ export async function updateEvaluation(
     return { success: false, message: 'Update failed: record not found' };
   }
 
+  const evalWithCode = await prisma.evaluation.findUnique({
+    where: { evaluation_id },
+    select: { evaluation_code: true, },
+  });
+
+  const evalIdentifier = `EVAL_${evaluation_id}`;
+
+  logEvent({
+    eventType: 'UPDATE',
+    entityType: 'evaluation',
+    entityId: evaluation_id,
+    description: `${evalIdentifier} updated`,
+    userId: userId,
+    userName: userName,
+    userEmail: userEmail,
+    userRole: userRole,
+    ownerId: fk_owner_id,
+    metadata: { updateData, evaluationCode: evalWithCode?.evaluation_code },
+  });
+
   const updated = await prisma.evaluation.findUnique({
     where: { evaluation_id },
   });
@@ -167,6 +192,14 @@ export async function deleteEvaluation(
 
   await prisma.evaluation.deleteMany({
     where: { evaluation_id: evaluationId, fk_owner_id: ownerId },
+  });
+
+  logEvent({
+    eventType: 'DELETE',
+    entityType: 'evaluation',
+    entityId: evaluationId,
+    description: `Evaluation #${evaluationId} deleted`,
+    ownerId: ownerId,
   });
 
   return { success: true, message: 'Evaluation deleted' };
@@ -283,6 +316,16 @@ export async function addEvaluationFile(
     download_url: downloadUrl,
   };
 
+  logEvent({
+    eventType: 'CREATE',
+    entityType: 'evaluation_file',
+    entityId: row.file_id,
+    description: `File "${file.name}" uploaded to evaluation #${evaluationId}`,
+    ownerId: ownerId,
+    userId: uploadedByUserId,
+    metadata: { fileName: file.name, fileSize: file.size },
+  });
+
   return { success: true, data: mapped };
 }
 
@@ -319,6 +362,14 @@ export async function deleteEvaluationFile(
 
   await prisma.evaluation_file.delete({ where: { file_id: fileId } });
 
+  logEvent({
+    eventType: 'DELETE',
+    entityType: 'evaluation_file',
+    entityId: fileId,
+    description: `File deleted from evaluation #${evaluationId}`,
+    ownerId: ownerId,
+  });
+
   return { success: true };
 }
 
@@ -353,6 +404,15 @@ function buildTasksFromActions(
   const tasks: EvaluationTask[] = rows.map((r) => {
     const type = r.action_type as EvaluationTask['task_type'];
     const code = r.action_code as string;
+    const dependencies = r.dependencies as Record<string, unknown> | null;
+    
+    let checklistJson = type === 'checklist' ? (checklistJsonMap.get(code) ?? null) : null;
+    let checklistResult = null;
+    
+    if (dependencies && typeof dependencies === 'object') {
+      checklistResult = (dependencies as any).checklist_result ?? null;
+    }
+
     return {
       task_id: r.action_id as number,
       task_code: code,
@@ -360,7 +420,8 @@ function buildTasksFromActions(
       task_type: type,
       task_status: r.action_status as EvaluationTask['task_status'],
       task_order: r.action_order as number,
-      checklist_json: type === 'checklist' ? (checklistJsonMap.get(code) ?? null) : null,
+      checklist_json: checklistJson,
+      checklist_result: checklistResult,
     };
   });
 
@@ -492,18 +553,43 @@ export async function updateEvaluationTask(
   ownerId: number,
   evaluationId: number,
   actionId: number,
-  newStatus: 'pending' | 'in_progress' | 'completed' | 'skipped'
+  newStatus: 'pending' | 'in_progress' | 'completed' | 'skipped',
+  userId?: number,
+  userName?: string,
+  userEmail?: string,
+  userRole?: string
 ): Promise<{ success: boolean; message?: string }> {
   const evalRow = await prisma.evaluation.findFirst({
     where: { evaluation_id: evaluationId, fk_owner_id: ownerId },
-    select: { evaluation_id: true },
+    select: { evaluation_id: true, evaluation_code: true },
   });
 
   if (!evalRow) return { success: false, message: 'Evaluation not found or access denied' };
 
+  const actionRow = await prisma.evaluation_action.findFirst({
+    where: { action_id: actionId, fk_evaluation_id: evaluationId },
+    select: { action_title: true },
+  });
+
   await prisma.evaluation_action.updateMany({
     where: { action_id: actionId, fk_evaluation_id: evaluationId },
     data: { action_status: newStatus },
+  });
+
+  const evalIdentifier = evalRow.evaluation_code ? `EVAL_${evalRow.evaluation_code}` : `Evaluation #${evaluationId}`;
+  const taskName = actionRow?.action_title ?? `Task #${actionId}`;
+
+  logEvent({
+    eventType: 'UPDATE',
+    entityType: 'evaluation_task',
+    entityId: actionId,
+    description: `${taskName} status updated to ${newStatus} for ${evalIdentifier}`,
+    userId: userId,
+    userName: userName,
+    userEmail: userEmail,
+    userRole: userRole,
+    ownerId: ownerId,
+    metadata: { newStatus, evaluationId, taskName: actionRow?.action_title },
   });
 
   return { success: true };
@@ -548,6 +634,15 @@ export async function moveEvaluationToPlanning(
     data: { evaluation_status: 'DONE' },
   });
 
+  logEvent({
+    eventType: 'UPDATE',
+    entityType: 'evaluation',
+    entityId: evaluationId,
+    description: `Evaluation #${evaluationId} moved to planning (PLAN_${planning.planning_id})`,
+    ownerId: ownerId,
+    metadata: { planningId: planning.planning_id, clientId },
+  });
+
   return {
     success: true,
     planningId: planning.planning_id,
@@ -563,28 +658,53 @@ export async function sendEvaluationCommunication(
     from_user_id: number;
     message: string;
     subject?: string;
-  }
+  },
+  userName?: string,
+  userEmail?: string,
+  userRole?: string
 ): Promise<{ success: boolean; message?: string }> {
   const evalCheck = await prisma.evaluation.findFirst({
     where: { evaluation_id: evaluationId, fk_owner_id: ownerId },
-    select: { evaluation_id: true },
+    select: { evaluation_id: true, evaluation_code: true },
   });
 
   if (!evalCheck) {
     return { success: false, message: 'Evaluation not found or access denied' };
   }
 
-  await prisma.communication_general.create({
+  const recipientUser = await prisma.public_users.findFirst({
+    where: { user_id: params.to_user_id },
+    select: { first_name: true, last_name: true },
+  });
+
+  const communication = await prisma.communication_general.create({
     data: {
       fk_owner_id: ownerId,
       subject: params.subject ?? `Evaluation #${evaluationId} Communication`,
       message: params.message,
       communication_type: 'evaluation',
+      fk_evaluation_id: evaluationId,
       status: 'sent',
       sent_by_user_id: params.from_user_id,
       recipients: [params.to_user_id],
       sent_at: new Date(),
     },
+  });
+
+  const evalIdentifier = evalCheck.evaluation_code ? `EVAL_${evalCheck.evaluation_code}` : `Evaluation #${evaluationId}`;
+  const recipientName = recipientUser ? `${recipientUser.first_name} ${recipientUser.last_name}`.trim() : `User #${params.to_user_id}`;
+
+  logEvent({
+    eventType: 'CREATE',
+    entityType: 'evaluation_communication',
+    entityId: communication.communication_id,
+    description: `Communication sent for ${evalIdentifier} to ${recipientName}`,
+    userId: params.from_user_id,
+    userName: userName,
+    userEmail: userEmail,
+    userRole: userRole,
+    ownerId: ownerId,
+    metadata: { evaluationId, toUserId: params.to_user_id, subject: params.subject, recipientName },
   });
 
   return { success: true };
@@ -715,4 +835,54 @@ export async function getFlightRequestsByEvaluationId(
 
   const { getFlightRequestsByPlanningId } = await import('@/backend/services/mission/flight-request-service');
   return getFlightRequestsByPlanningId(planning.planning_id, ownerId);
+}
+
+export async function getCommunicationsByEvaluation(
+  ownerId: number,
+  evaluationId: number
+): Promise<any[]> {
+  const evalRow = await prisma.evaluation.findFirst({
+    where: { evaluation_id: evaluationId, fk_owner_id: ownerId },
+    select: { evaluation_id: true },
+  });
+
+  if (!evalRow) {
+    throw new Error('Evaluation not found or access denied');
+  }
+
+  const communications = await prisma.communication_general.findMany({
+    where: {
+      fk_owner_id: ownerId,
+      communication_type: 'evaluation',
+      OR: [
+        { fk_evaluation_id: evaluationId },
+        { communication_id: evaluationId },
+      ],
+    },
+    orderBy: { sent_at: 'desc' },
+  });
+
+  const userIds = communications.map(c => c.sent_by_user_id).filter(Boolean);
+  const users = userIds.length > 0 ? await prisma.public_users.findMany({
+    where: { user_id: { in: userIds as number[] } },
+    select: {
+      user_id: true,
+      first_name: true,
+      last_name: true,
+      email: true,
+    },
+  }) : [];
+
+  const userMap = new Map(users.map((u: any) => [u.user_id, u]));
+
+  return communications.map((comm) => ({
+    communication_id: comm.communication_id,
+    subject: comm.subject,
+    message: comm.message,
+    status: comm.status,
+    sent_at: comm.sent_at,
+    sent_by_user_id: comm.sent_by_user_id,
+    sender: comm.sent_by_user_id ? userMap.get(comm.sent_by_user_id) : null,
+    recipients: comm.recipients,
+  }));
 }
