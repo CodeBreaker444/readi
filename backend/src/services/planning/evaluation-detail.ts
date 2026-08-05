@@ -690,3 +690,29 @@ export async function sendAssignment(
 
   return { success: true, message: 'Assignment sent' };
 }
+
+export async function getFlightRequestsByEvaluationId(
+  ownerId: number,
+  evaluationId: number
+): Promise<any[]> {
+  const evalRow = await prisma.evaluation.findFirst({
+    where: { evaluation_id: evaluationId, fk_owner_id: ownerId },
+    select: { evaluation_id: true },
+  });
+
+  if (!evalRow) {
+    throw new Error('Evaluation not found or access denied');
+  }
+
+  const planning = await prisma.planning.findFirst({
+    where: { fk_evaluation_id: evaluationId, fk_owner_id: ownerId },
+    select: { planning_id: true },
+  });
+
+  if (!planning) {
+    return [];
+  }
+
+  const { getFlightRequestsByPlanningId } = await import('@/backend/services/mission/flight-request-service');
+  return getFlightRequestsByPlanningId(planning.planning_id, ownerId);
+}
