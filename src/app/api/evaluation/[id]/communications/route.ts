@@ -2,7 +2,7 @@ import { getCommunicationsByEvaluation } from '@/backend/services/planning/evalu
 import { requirePermission } from '@/lib/auth/api-auth';
 import { internalError } from '@/lib/api-error';
 import { E } from '@/lib/error-codes';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
 const paramsSchema = z.object({
