@@ -9,6 +9,7 @@ import { internalError } from '@/lib/api-error';
 import { requirePermission } from '@/lib/auth/api-auth';
 import { getUserSession } from '@/lib/auth/server-session';
 import { E } from '@/lib/error-codes';
+import { prisma } from '@/lib/prisma';
 import { NextRequest, NextResponse } from 'next/server';
 import { ZodError, z } from 'zod';
 
@@ -47,6 +48,10 @@ const createOperationSchema = z.object({
   visual_observer_ids: z.array(z.number().int().positive()).optional().nullable(),
   fk_erp_group_id: z.number().int().positive().nullable().optional(),
   flight_mode: z.enum(['RC', 'DOCK']).nullable().optional(),
+  is_recurrent: z.boolean().optional(),
+  recurrent_start_date: z.string().nullable().optional(),
+  recurrent_end_date: z.string().nullable().optional(),
+  recurrent_time: z.string().nullable().optional(),
 });
 
 export async function GET(req: NextRequest) {
@@ -102,8 +107,33 @@ export async function POST(req: NextRequest) {
     }
 
     let operation;
+    let allOperations: any[] = [];
     try {
       operation = await createOperation({ ...validated }, ownerId, session.user.userId);
+      
+      // If this is a recurrent mission, fetch all created missions with the same recurring group
+      if (validated.is_recurrent && operation.mission_metadata?.recurring_group_id) {
+        const recurringGroupId = operation.mission_metadata.recurring_group_id;
+        const allMissions = await prisma.pilot_mission.findMany({
+          where: {
+            fk_owner_id: ownerId,
+            mission_metadata: {
+              path: ['recurring_group_id'],
+              equals: recurringGroupId,
+            },
+          },
+          select: {
+            pilot_mission_id: true,
+            mission_code: true,
+            mission_name: true,
+            scheduled_start: true,
+          },
+        });
+        
+        allOperations = allMissions;
+      } else {
+        allOperations = [operation];
+      }
     } catch (appErr: any) {
       return NextResponse.json({ error: appErr.message }, { status: 400 });
     }
@@ -111,11 +141,11 @@ export async function POST(req: NextRequest) {
     const dcc = await notifyDccMissionCreation(ownerId, {
       type: 'ON-DEMAND',
       target: validated.mission_name,
-      missions: [{
-        missionId:     operation.mission_code,
-        startDateTime: operation.scheduled_start ?? new Date().toISOString(),
-      }],
-      notes:    validated.notes ?? undefined,
+      missions: allOperations.map(op => ({
+        missionId: op.mission_code,
+        startDateTime: op.scheduled_start ?? new Date().toISOString(),
+      })),
+      notes: validated.notes ?? undefined,
       operator: session.user.email ?? undefined,
     });
 
@@ -123,13 +153,16 @@ export async function POST(req: NextRequest) {
       console.warn('[POST /api/operation] DCC notification failed (non-fatal):', dcc.message);
     }
 
+    // Send pilot assignment notifications for all created missions
     if (validated.fk_pilot_user_id) {
-      await notifyPilotAssignment({
-        pilotUserId: validated.fk_pilot_user_id,
-        missionId:   operation.pilot_mission_id,
-        missionCode: operation.mission_code,
-        fromUserId:  session.user.userId,
-      });
+      for (const op of allOperations) {
+        await notifyPilotAssignment({
+          pilotUserId: validated.fk_pilot_user_id,
+          missionId:   op.pilot_mission_id,
+          missionCode: op.mission_code,
+          fromUserId:  session.user.userId,
+        });
+      }
     }
 
     const [systemName, pilotName] = await Promise.all([
@@ -137,17 +170,29 @@ export async function POST(req: NextRequest) {
       validated.fk_pilot_user_id ? getUserName(validated.fk_pilot_user_id) : Promise.resolve(null),
     ]);
 
+    // Log creation of all missions (especially for recurrent missions)
+    const missionCount = allOperations.length;
+    const description = missionCount > 1
+      ? `Created ${missionCount} recurrent operations '${validated.mission_code}'${validated.mission_name ? ` — ${validated.mission_name}` : ''} (status: ${validated.status_name}${systemName ? `, system: ${systemName}` : ''}${pilotName ? `, pilot: ${pilotName}` : ''})`
+      : `Created operation '${validated.mission_code}'${validated.mission_name ? ` — ${validated.mission_name}` : ''} (status: ${validated.status_name}${systemName ? `, system: ${systemName}` : ''}${pilotName ? `, pilot: ${pilotName}` : ''})`;
+
     logEvent({
       eventType: 'CREATE',
       entityType: 'operation',
-      description: `Created operation '${validated.mission_code}'${validated.mission_name ? ` — ${validated.mission_name}` : ''} (status: ${validated.status_name}${systemName ? `, system: ${systemName}` : ''}${pilotName ? `, pilot: ${pilotName}` : ''})`,
+      description,
       userId: session.user.userId,
       userName: session.user.fullname,
       userEmail: session.user.email,
       userRole: session.user.role,
       ownerId,
     });
-    return NextResponse.json({ success: true, ...operation, dcc }, { status: 201 });
+    
+    return NextResponse.json({ 
+      success: true, 
+      ...operation, 
+      dcc,
+      created_missions: allOperations.length > 1 ? allOperations : undefined,
+    }, { status: 201 });
   } catch (err) {
     if (err instanceof ZodError) {
       return NextResponse.json({ error: 'Validation failed', details: err.issues }, { status: 400 });

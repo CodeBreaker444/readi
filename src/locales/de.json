@@ -947,7 +947,8 @@
       "saveChanges": "Änderungen speichern",
       "searchLogbook": "Logbuch durchsuchen",
       "edit": "Bearbeiten",
-      "delete": "Löschen"
+      "delete": "Löschen",
+      "view": "Ansehen"
     },
     "modal": {
       "addPlanningTitle": "Planungsantrag hinzufügen",
@@ -1386,6 +1387,8 @@
     },
     "communication": {
       "title": "Kommunikation senden",
+      "subtitle": "Für diese Bewertung gesendete Kommunikation",
+      "noCommunications": "Noch keine Kommunikation gesendet",
       "newCommunication": "Neue Kommunikation",
       "to": "An",
       "selected": "ausgewählt",
@@ -1412,7 +1415,10 @@
       "messageSingle": "Nachricht darf nicht leer sein",
       "sentSuccess": "Kommunikation gesendet",
       "sendError": "Senden fehlgeschlagen",
-      "loadError": "Benutzer konnten nicht geladen werden"
+      "loadError": "Benutzer konnten nicht geladen werden",
+      "sender": "Absender",
+      "status": "Status",
+      "sentAt": "Gesendet am"
     },
     "assignment": {
       "title": "Zuweisungsaktion",
@@ -1905,6 +1911,8 @@
         "logFile": "Protokolldatei",
         "flytbaseWindow": "Control Center Fenster",
         "selectFlightLog": "Flugprotokoll auswählen",
+        "timeWindow": "Zeitfenster",
+        "selectFlight": "Flug auswählen",
         "missionCode": "Missionscode",
         "droneSystem": "Drohnensystem",
         "missionCategory": "Missionskategorie",
@@ -2012,9 +2020,9 @@
         "loadDronesError": "Drohnen konnten nicht geladen werden",
         "loadMissionOptionsError": "Missionsoptionen konnten nicht geladen werden",
         "loadPilotsError": "Piloten konnten nicht geladen werden",
-        "importSuccess": "{{count}} Mission(en) importiert",
-        "importSuccessWithSkipped": "{{count}} Mission(en) importiert, {{skipped}} Duplikat(e) übersprungen",
-        "allDuplicates": "Alle {{count}} Mission(en) wurden bereits importiert (Duplikate übersprungen)",
+        "importSuccess": "Mission(en) erfolgreich importiert",
+        "importSuccessWithSkipped": "Mission(en) erfolgreich importiert, einige Duplikate übersprungen",
+        "allDuplicates": "Alle Mission(en) wurden bereits importiert (Duplikate übersprungen)",
         "importFailed": "Import fehlgeschlagen"
       },
       "result": {

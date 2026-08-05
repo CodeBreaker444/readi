@@ -1,4 +1,4 @@
-import { getFlightRequestsByPlanningId } from '@/backend/services/mission/flight-request-service';
+import { getFlightRequestsByEvaluationId } from '@/backend/services/planning/evaluation-detail';
 import { requirePermission } from '@/lib/auth/api-auth';
 import { apiError, internalError } from '@/lib/api-error';
 import { E } from '@/lib/error-codes';
@@ -13,12 +13,12 @@ export async function GET(
     if (error) return error;
 
     const { id } = await params;
-    const planningId = Number(id);
-    if (isNaN(planningId) || planningId <= 0) {
+    const evaluationId = Number(id);
+    if (isNaN(evaluationId) || evaluationId <= 0) {
       return apiError(E.VL002, 400);
     }
 
-    const items = await getFlightRequestsByPlanningId(planningId, session!.user.ownerId);
+    const items = await getFlightRequestsByEvaluationId(session!.user.ownerId, evaluationId);
     return NextResponse.json({ code: 1, items, dataRows: items.length });
   } catch (err) {
     return internalError(E.SV001, err);

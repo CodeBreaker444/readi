@@ -1,0 +1,334 @@
+---
+title: "Operations Module Business Logic"
+description: "Business logic flow for operations/mission module including parameters, triggers, and dependencies."
+---
+
+# Operations Module Business Logic
+
+## Overview
+
+The operations module manages the entire mission lifecycle from creation to completion, including pilot assignments, drone assignments, flight log attachments, and compliance tracking. This module is tightly integrated with planning, maintenance, and notification systems.
+
+---
+
+## Core Business Flow
+
+```
+Planning Approved
+  → Mission Created (PLANNED status)
+  → Pilot & Drone Assigned
+  → Pre-Flight Check Completed
+  → Mission Started (IN_PROGRESS status)
+  → Authorization PIN Entered
+  → Telemetry Recording (FlytBase integration)
+  → Mission Completed (COMPLETED status)
+  → Post-Flight Check Completed
+  → Flight Log Attached
+  → Maintenance Cycle Updated
+  → Email Notifications Sent
+```
+
+---
+
+## Key Parameters
+
+### Mission Parameters
+
+| Frontend Label | Parameter | Maintenance Impact |
+|---|---|---|
+| Mission Code | `mission_code` | Mission identification |
+| Mission Name | `mission_name` | Display name |
+| Planning | `fk_planning_id` | Links to approved planning record |
+| Pilot | `fk_pilot_user_id` | Pilot assignment (PIC) |
+| Drone/System | `fk_tool_id` | **YES** - Drone assignment triggers maintenance update on completion |
+| Client | `fk_client_id` | Client association |
+| Mission Type | `fk_mission_type_id` | Mission type (surveillance, delivery, etc.) |
+| Mission Category | `fk_mission_category_id` | Mission category |
+| LUC Procedure | `fk_luc_procedure_id` | LUC procedure reference for compliance |
+| Scheduled Start | `scheduled_start` | Planned takeoff time |
+| Actual Start | `actual_start` | Actual takeoff timestamp |
+| Actual End | `actual_end` | **YES** - Triggers maintenance cycle update on mission completion |
+| Flight Duration | `flight_duration` | **YES** - Added to component Maintenance Hours |
+| Distance Flown | `distance_flown` | Distance in kilometers for compliance |
+| Max Altitude | `max_altitude` | Peak altitude in metres (>120m = compliance flag) |
+| Location | `location` | Flight location |
+| Notes | `notes` | Mission notes |
+| Status | `status_name` | Mission status (PLANNED, IN_PROGRESS, COMPLETED, CANCELLED, FAILED) |
+| Pre-Flight Check OK | `pre_flight_check_ok` | Pre-flight checklist signed off |
+| Post-Flight Check OK | `post_flight_check_ok` | Post-flight checklist signed off |
+| Incident Flag | `incident_flag` | Safety incident occurred |
+| Unplanned RTH | `rth_unplanned` | Unplanned return-to-home |
+| Link Loss | `link_loss` | Communication link lost |
+| Deviation Flag | `deviation_flag` | Flight deviated from planned route |
+| Battery Charge Start | `battery_charge_start` | Battery % at takeoff |
+| Battery Charge End | `battery_charge_end` | Battery % at landing |
+
+### Mission Status Logic
+
+| Status | Allowed Transitions | Business Logic |
+|---|---|---|
+| PLANNED | IN_PROGRESS, CANCELLED | Initial state, awaiting execution |
+| IN_PROGRESS | COMPLETED, FAILED | Drone airborne, telemetry active |
+| COMPLETED | None | Successful flight completion |
+| CANCELLED | None | Called off before takeoff |
+| FAILED | None | Started but did not complete normally |
+
+**Status Transitions:**
+- PLANNED → IN_PROGRESS: Requires pre-flight check OK, system OPERATIONAL
+- IN_PROGRESS → COMPLETED: Requires post-flight check OK, actual_end recorded
+- IN_PROGRESS → FAILED: Incident flags set, safety report may be filed
+- PLANNED → CANCELLED: actual_start remains NULL
+
+---
+
+## Mission Creation Logic
+
+**Creation Logic:**
+1. Validate required parameters (mission_code, LUC procedure, flight ID)
+2. Create mission record with provided parameters
+3. Default status to COMPLETED if not provided
+4. Send mission created email notification (if enabled)
+5. Attach FlytBase flight log using flight ID
+6. Send mission completed email (if status = COMPLETED and actual_end provided)
+7. For PDRA operations: Check if mission created >1 hour after flight completion → compliance warning
+
+**Email Triggers:**
+- mission_created: Sent immediately after creation
+- mission_completed: Sent if status = COMPLETED and actual_end provided
+
+**Compliance Logic (PDRA):**
+If operation type is PDRA and mission is created more than 1 hour after flight completion, a compliance warning audit log is created.
+
+---
+
+## Flight Log Attachment Logic
+
+**Logic:**
+1. Fetch flight data from FlytBase API using flight ID
+2. Parse telemetry data (altitude, speed, coordinates, battery)
+3. Create flight log record
+4. Update mission with telemetry-derived values:
+   - max_altitude (from telemetry)
+   - distance_flown (calculated from GPS track)
+   - flight_duration (from telemetry timestamps)
+   - battery_charge_start/end (from telemetry)
+
+**Deduplication:**
+- One mission can have only one flight log attached
+- If log already exists, attachment is rejected
+
+---
+
+## Mission Assignment Logic
+
+### Pilot Assignment
+
+**Validation:**
+- Pilot must have role of PIC or PILOT
+- Pilot must be active
+- Pilot availability checked (no concurrent missions in IN_PROGRESS)
+- Pilot certification checked (if required by mission type)
+
+### Drone Assignment
+
+**Validation:**
+- System must be OPERATIONAL (not MAINTENANCE or NOT_OPERATIONAL)
+- System must be active
+- System availability checked (no concurrent missions in IN_PROGRESS)
+- System maintenance status checked
+- System location checked (if mission has specific location requirement)
+
+---
+
+## Pre-Flight Check Logic
+
+**Logic:**
+1. Load checklist items from LUC procedure
+2. Pilot must complete all required checklist items
+3. Each item must have evidence (photo, document, or signature)
+4. System validates all items before allowing mission start
+5. System must be OPERATIONAL for flight
+
+---
+
+## Mission Execution Logic
+
+### Authorization PIN
+
+**Logic:**
+1. PIN required for mission start (actual_start)
+2. PIN required for mission end (actual_end)
+3. Pilot enters PIN before takeoff
+4. System validates PIN against user credentials
+5. If valid, mission status changes to IN_PROGRESS
+6. Same process for landing (COMPLETED)
+7. PIN logged in audit trail
+
+### Telemetry Recording
+
+**Integration:** FlytBase API
+
+**Parameters Recorded:**
+- GPS coordinates (lat, lon, altitude)
+- Speed and heading
+- Battery voltage and percentage
+- Signal strength
+- Flight mode
+- Timestamps
+
+**Logic:**
+1. Telemetry streamed continuously during flight
+2. Data stored in FlytBase, referenced by flight ID
+3. On mission completion, summary data attached to mission record
+
+---
+
+## Post-Flight Logic
+
+### Checklist Completion
+
+**Logic:**
+1. Pilot completes post-flight checklist
+2. Includes battery inspection, damage check, data upload
+3. All items must be completed before mission marked COMPLETED
+
+### Maintenance Cycle Update
+
+**Trigger:** Mission completion (Actual End - actual_end recorded)
+
+**Logic:**
+1. Identify all active components on the drone via Drone/System (fk_tool_id)
+2. Update component Maintenance Hours (initial_maintenance_hours) with Flight Duration (flight_duration)
+3. Update component Maintenance Flights (initial_maintenance_flights) with +1 (multiplied by Battery Cycle Ratio - battery_cycle_ratio)
+4. Recalculate component Status (component_status) - OK/ALERT/DUE based on model limits
+5. Trigger maintenance notifications if Status changes to ALERT or DUE
+6. Recalculate system Status (tool_status) based on worst component status
+7. If any component Expiration Date (expiration_date) reached, system becomes NOT_OPERATIONAL
+
+---
+
+## Mission Result Logic
+
+**Logic:**
+1. Created on mission completion
+2. Populated with telemetry-derived data
+3. Processing status updated asynchronously
+4. Quality score calculated from data completeness
+
+---
+
+## Email Notification Integration
+
+### Mission Email Events
+
+| Event Type | Trigger |
+|---|---|
+| mission_created | Mission record created |
+| mission_assigned | Pilot/drone assigned |
+| mission_started | Mission status = IN_PROGRESS |
+| mission_completed | Mission status = COMPLETED |
+
+### Email Enablement
+
+Emails are sent only when:
+1. Company-level operations email is enabled
+2. Module-level email notification is enabled for the specific event
+3. Daily email limit has not been reached
+
+### Direct User Assignment
+
+For mission_assigned events, emails can be sent directly to specific users instead of role-based distribution.
+
+---
+
+## Flight Request API Logic
+
+### External Mission Integration
+
+**Purpose:** Allow external systems to request missions via API
+
+**Status Flow:**
+```
+NEW → ACKNOWLEDGED → ASSIGNED → IN_PROGRESS → COMPLETED
+      ↓
+   CANCELLED
+```
+
+**API Key Management:**
+- Keys generated as unique identifiers
+- Hash stored in database
+- Prefix displayed for identification
+- Keys can be revoked
+
+---
+
+## Mission Lock Logic
+
+### Concurrent Mission Prevention
+
+**Purpose:** Prevent same pilot/drone from being in multiple missions
+
+**Logic:**
+- Check for active missions for pilot/drone
+- If active mission exists, throw error
+- Applied to pilot assignments, drone assignments, and mission start authorization
+
+---
+
+## Compliance Tracking Logic
+
+### PDRA (Pre-Defined Risk Assessment)
+
+**Logic:**
+- Compare mission creation timestamp vs flight completion timestamp
+- If operation type is PDRA and time difference > 1 hour, create compliance warning audit log
+- Allow creation but flag for review
+
+### Altitude Compliance
+
+**Logic:**
+- If max_altitude > 120 metres, flag for compliance review
+- May require additional authorization
+
+---
+
+## Parameter Dependencies
+
+### Direct Dependencies
+
+- Actual Start (actual_start) depends on: Pre-Flight Check OK (pre_flight_check_ok), System OPERATIONAL (tool_status), authorization PIN
+- Actual End (actual_end) depends on: Post-Flight Check OK (post_flight_check_ok), authorization PIN
+- Flight Duration (flight_duration) depends on: Actual Start (actual_start), Actual End (actual_end) - calculated
+- Max Altitude (max_altitude) depends on: FlytBase telemetry
+- Distance Flown (distance_flown) depends on: FlytBase telemetry (GPS track)
+- Status (status_name) depends on: Actual Start (actual_start), Actual End (actual_end), checklists
+- **Maintenance metrics depend on:** Mission completion - Flight Duration (flight_duration) added to component Maintenance Hours (initial_maintenance_hours), +1 flight added to Maintenance Flights (initial_maintenance_flights) multiplied by Battery Cycle Ratio (battery_cycle_ratio)
+
+### Cross-Module Dependencies
+
+- **Planning Module:** Mission linked via Planning (fk_planning_id)
+- **Maintenance Module:** **YES** - Component usage updated on completion via Drone/System (fk_tool_id) and Actual End (actual_end)
+- **Notification Module:** Emails sent on Status (status_name) changes
+- **System Module:** Drone must be OPERATIONAL (tool_status) for mission start
+- **User Module:** Pilot must be active and certified
+- **Integration Module:** FlytBase flight log attachment via Flight ID (flytbase_flight_id)
+- **Compliance Module:** PDRA timing checks, altitude flags (>120m)
+
+---
+
+ 
+
+## Key Business Rules
+
+1. **Status Flow:** PLANNED → IN_PROGRESS → COMPLETED (or FAILED/CANCELLED)
+2. **Pre-Flight Required:** System must be OPERATIONAL (tool_status), checklist completed
+3. **Authorization Required:** PIN required for start and end
+4. **One Log Per Mission:** Flight log attachment is unique per mission
+5. **Maintenance Update:** **YES** - Component Maintenance Hours/Flights updated automatically on completion (actual_end, flight_duration)
+6. **Concurrent Prevention:** Pilot/drone cannot be in multiple active missions
+7. **Email Notifications:** Sent on creation, assignment, start, completion
+8. **PDRA Compliance:** Mission creation >1h after flight flagged
+9. **Altitude Flag:** >120m flagged for compliance review
+10. **Direct Assignment:** Emails can be sent directly to assigned users
+11. **Maintenance Block:** Missions cannot start if drone has open maintenance tickets (system in MAINTENANCE status)
+12. **Battery Ratio Impact:** Flight count multiplied by Battery Cycle Ratio (battery_cycle_ratio) for maintenance calculations

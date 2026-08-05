@@ -126,6 +126,24 @@ export const getEvaluationTaskColumns = (
     cell: ({ row }) => {
       const task = row.original;
       if (task.task_status === 'completed' || task.task_status === 'skipped') {
+        if (task.task_type === 'checklist' && onOpenAction) {
+          return (
+            <Button
+              variant="ghost"
+              size="sm"
+              className={cn(
+                'h-6 text-xs gap-1 border',
+                isDark
+                  ? 'border-slate-600 text-slate-400 hover:bg-slate-700/50 hover:text-slate-200'
+                  : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+              )}
+              onClick={() => onOpenAction(task)}
+            >
+              <ExternalLink className="h-3 w-3" />
+              {t('planning.actions.view')}
+            </Button>
+          );
+        }
         return (
           <span className={cn('inline-flex items-center gap-1 text-xs', isDark ? 'text-slate-600' : 'text-slate-300')}>
             <CheckCircle2 className="h-3.5 w-3.5" />

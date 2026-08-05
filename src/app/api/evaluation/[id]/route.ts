@@ -66,7 +66,13 @@ export async function PUT(
     const validated = evaluationUpdateSchema.parse(body);
     const ownerId = session!.user.ownerId
 
-    const result = await updateEvaluation({...validated,fk_owner_id:ownerId});
+    const result = await updateEvaluation(
+        {...validated,fk_owner_id:ownerId},
+        session!.user.userId,
+        session!.user.fullname,
+        session!.user.email,
+        session!.user.role
+    );
 
     if (!result.success) {
       return NextResponse.json(

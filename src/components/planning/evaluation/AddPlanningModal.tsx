@@ -21,7 +21,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuthorization } from '@/components/authorization/AuthorizationProvider';
 import axios from 'axios';
-import { CalendarDays, ClipboardPlus, FileText, FolderOpen, Loader2, User } from 'lucide-react';
+import { CalendarDays, ClipboardPlus, FileText, Loader2, User } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -60,7 +60,6 @@ export function AddPlanningModal({
 
     const [lucProcedureId, setLucProcedureId] = useState('');
     const [pilotId, setPilotId] = useState('');
-    const [planningFolder, setPlanningFolder] = useState('');
     const [planningStatus] = useState('NEW');
     const [requestDate, setRequestDate] = useState(() =>
         new Date().toISOString().split('T')[0]
@@ -80,7 +79,7 @@ export function AddPlanningModal({
             try {
                 setLoadingDropdowns(true);
                 const [procRes, pilotRes] = await Promise.all([
-                    axios.get("/api/evaluation/luc-procedures?type=PLANNING"),
+                    axios.get("/api/evaluation/luc-procedures?sector=EVALUATION"),
                     axios.get('/api/evaluation/planning/pilot'),
                 ]);
                 const formattedProcedures = (procRes.data.data ?? []).map((p: any) => ({
@@ -104,7 +103,6 @@ export function AddPlanningModal({
     function handleClose() {
         setLucProcedureId('');
         setPilotId('');
-        setPlanningFolder('');
         setRequestDate(new Date().toISOString().split('T')[0]);
         setPlanningYear(String(currentYear));
         setPlanningDesc('');
@@ -155,7 +153,6 @@ export function AddPlanningModal({
             planning_request_date: requestDate,
             planning_year: Number(planningYear),
             planning_type: planningType.trim(),
-            planning_folder: planningFolder.trim(),
             planning_result: 'PROGRESS',
         };
 
@@ -307,21 +304,7 @@ export function AddPlanningModal({
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-4 gap-4">
-                            <div className="space-y-1.5">
-                                <Label htmlFor="folder" className="text-xs font-medium flex items-center gap-1">
-                                    <FolderOpen className="w-3 h-3 text-slate-400" />
-                                    {t('planning.form.folderDocs')}
-                                </Label>
-                                <Input
-                                    id="folder"
-                                    className="h-9 text-sm"
-                                    placeholder={t('planning.form.folderDocsPlaceholder')}
-                                    value={planningFolder}
-                                    onChange={(e) => setPlanningFolder(e.target.value)}
-                                />
-                            </div>
-
+                        <div className="grid grid-cols-3 gap-4">
                             <div className="space-y-1.5">
                                 <Label className="text-xs font-medium">{t('planning.form.status')}</Label>
                                 <Input

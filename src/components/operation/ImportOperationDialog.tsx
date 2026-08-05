@@ -16,6 +16,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Operation } from '@/config/types/operation';
 import { serialInList } from '@/lib/serial-number';
 import { cn } from '@/lib/utils';
@@ -32,6 +33,7 @@ import {
     FileUp,
     Fingerprint,
     Loader2,
+    RefreshCw,
     Settings,
     Upload,
     User,
@@ -165,6 +167,41 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
     const [recurrentStartDate, setRecurrentStartDate] = useState('');
     const [recurrentEndDate, setRecurrentEndDate] = useState('');
     const [recurrentTime, setRecurrentTime] = useState('');
+    const [generatingId, setGeneratingId] = useState(false);
+    const [existingMissionCodes, setExistingMissionCodes] = useState<Set<string>>(new Set());
+
+    function generateMissionId(exclude: Set<string> = new Set()): string {
+        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
+        let id = ''
+        let attempts = 0
+        do {
+            id = ''
+            for (let i = 0; i < 6; i++) {
+                id += chars.charAt(Math.floor(Math.random() * chars.length))
+            }
+            attempts++
+        } while (exclude.has(id) && attempts < 100)
+        return id
+    }
+
+    async function refreshMissionId() {
+        setGeneratingId(true)
+        try {
+            const res = await axios.get('/api/operation/calendar')
+            const codes = new Set<string>(
+                (res.data.data ?? [])
+                    .map((ev: any) => ev.operation?.mission_code)
+                    .filter(Boolean)
+                    .map((c: string) => c.toUpperCase())
+            )
+            setExistingMissionCodes(codes)
+            setMissionCode(generateMissionId(codes))
+        } catch {
+            setMissionCode(generateMissionId(existingMissionCodes))
+        } finally {
+            setGeneratingId(false)
+        }
+    }
 
     useEffect(() => {
         if (!open) return;
@@ -257,7 +294,7 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
         if (!logSerialNumber || drones.length === 0) return;
         const match = drones.find((d) => serialInList(d.drone_serial_numbers, logSerialNumber));
         if (match && String(match.tool_id) !== vehicleId) setVehicleId(String(match.tool_id));
-    }, [logSerialNumber, drones]);
+    }, [logSerialNumber, drones, vehicleId]);
 
     useEffect(() => {
         if (step !== 3) return;
@@ -274,6 +311,13 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
             })
             .catch(() => toast.error(t(ns + '.toast.loadMissionOptionsError')))
             .finally(() => setLoadingMissionOptions(false));
+    }, [step]);
+
+    // Auto-generate mission code when entering step 3
+    useEffect(() => {
+        if (step === 3 && !missionCode) {
+            refreshMissionId();
+        }
     }, [step]);
 
     useEffect(() => {
@@ -339,8 +383,8 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
             setLoadingSerialNumber(true);
             axios.get(`/api/flytbase/flights/preview?flightId=${encodeURIComponent(selectedFlightId)}&organizationId=${organizationId}`)
                 .then((r) => {
-                    const serial = r.data.data?.aircraft?.serial_number;
-                    setLogSerialNumber(serial || null);
+                    const serial = r.data.serialNumber || null;
+                    setLogSerialNumber(serial);
                 })
                 .catch(() => setLogSerialNumber(null))
                 .finally(() => setLoadingSerialNumber(false));
@@ -357,43 +401,72 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
         }
     }, [selectedFlightId, logFile, platform, organizationId]);
 
-    const handleSubmit = async () => {
+    const handleSubmit = async (e?: React.FormEvent) => {
+        if (e) e.preventDefault();
+        
+        
         setSubmitting(true);
+        
         try {
             const formData = new FormData();
+            
             formData.append('client_id', clientId);
-            formData.append('platform', platform);
-            if (platform === 'FLYTBASE') {
-                formData.append('flight_id', selectedFlightId);
+            
+            formData.append('mission_ccPlatform', platform);
+            
+            // If a log file is uploaded, send it regardless of platform
+            if (logFile) {
+                formData.append('mission_file_log', logFile);
+            } else if (platform === 'FLYTBASE' && selectedFlightId) {
+                formData.append('flytbase_flight_id', selectedFlightId);
                 formData.append('organization_id', organizationId);
             } else {
-                if (logFile) formData.append('logFile', logFile);
+                toast.error('Please select a log file or a flight');
+                setSubmitting(false);
+                return;
             }
-            formData.append('vehicle_id', vehicleId);
+            
+            formData.append('mission_vehicle', vehicleId);
+            
             formData.append('mission_code', missionCode);
-            formData.append('category_id', categoryId);
-            formData.append('type_id', typeId);
-            formData.append('op_type', opType);
-            if (opType === 'PDRA') {
-                formData.append('flight_mode', flightMode);
-                formData.append('plan_id', planId);
-                formData.append('mission_planning_id', missionPlanningId);
-            }
-            formData.append('luc_procedure_id', lucProcedureId);
-            formData.append('location', location);
-            formData.append('group_label', groupLabel);
-            formData.append('notes', notes);
+            
+            formData.append('mission_category', categoryId);
+            
+            formData.append('mission_type', typeId);
+            
+            formData.append('mission_plan', planId || 'N');
+            
+            formData.append('mission_planning', missionPlanningId || 'N');
+            
+            formData.append('flight_mode', flightMode);
+            
+            formData.append('mission_result', '1');
+            
+            formData.append('mission_luc_procedure', lucProcedureId);
+            
+            formData.append('mission_location', location);
+            
+            formData.append('mission_group_label', groupLabel);
+            
+            formData.append('mission_notes', notes);
+            
             formData.append('pilot_id', pilotId);
-            formData.append('visual_observer_ids', JSON.stringify(visualObserverIds));
+            
+            visualObserverIds.forEach(id => formData.append('visual_observer_ids', id));
+            
             formData.append('is_recurrent', String(isRecurrent));
+            
             if (isRecurrent) {
                 formData.append('recurrent_start_date', recurrentStartDate);
                 formData.append('recurrent_end_date', recurrentEndDate);
                 formData.append('recurrent_time', recurrentTime);
             }
 
+
             const { data } = await axios.post('/api/operation/import', formData);
-            if (data.success) {
+            
+            // Check for success based on the API response structure
+            if (data.code === 1 || data.status === 'SUCCESS' || data.success) {
                 toast.success(t(ns + '.toast.importSuccess'));
                 onClose();
                 if (onSaved && data.operations) {
@@ -403,6 +476,9 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                 toast.error(data.message ?? t(ns + '.toast.importFailed'));
             }
         } catch (e: any) {
+            console.error('Error:', e);
+            console.error('Error response:', e?.response?.data);
+            console.error('Error message:', e?.message);
             toast.error(e?.response?.data?.message ?? t(ns + '.toast.importFailed'));
         } finally {
             setSubmitting(false);
@@ -417,15 +493,15 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
 
     return (
         <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-            <DialogContent className="sm:max-w-3xl gap-0 p-0 overflow-hidden">
-                <DialogHeader className="px-6 pt-6 pb-4 border-b">
+            <DialogContent className="sm:max-w-3xl gap-0 p-0 overflow-hidden max-h-[85vh] flex flex-col">
+                <DialogHeader className="px-6 pt-6 pb-4 border-b shrink-0">
                     <DialogTitle className="flex items-center gap-2 text-base font-semibold">
                         <FileUp className="h-5 w-5 text-violet-600" />
                         {t(ns + '.dialogTitle')}
                     </DialogTitle>
                 </DialogHeader>
 
-                <div className="px-6 pt-4 pb-2">
+                <div className="px-6 pt-4 pb-2 shrink-0">
                     <div className="flex items-center gap-0">
                         {STEP_KEYS.map((s, i) => {
                             const Icon   = s.icon;
@@ -461,143 +537,116 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                     </div>
                 </div>
 
-                <div className="px-6 py-4 flex-1 overflow-y-auto max-h-[600px]">
-                    {step === 1 && (
-                        <div className="space-y-4">
-                            <div>
-                                <Label className="mb-1.5 block">{t(ns + '.fields.client')}</Label>
-                                <Select value={clientId} onValueChange={setClientId} disabled={loadingClients}>
-                                    <SelectTrigger>
-                                        {loadingClients ? <Loader2 className="h-4 w-4 animate-spin" /> : clientId ? <SelectValue /> : <SelectValue placeholder={t(ns + '.placeholders.selectClient')} />}
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {clients.map((c) => (
-                                            <SelectItem key={c.client_id} value={String(c.client_id)}>
-                                            {c.client_name} ({c.client_code})
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
+                <div className="px-6 py-4 flex-1 overflow-y-auto min-h-0">
+                    <div className="min-h-[400px]">
+                        {step === 1 && (
+                            <div className="space-y-4">
+                                <div>
+                                    <Label className="mb-1.5 block">{t(ns + '.fields.client')} <span className="text-red-500">*</span></Label>
+                                    <Select value={clientId} onValueChange={setClientId} disabled={loadingClients}>
+                                        <SelectTrigger>
+                                            {loadingClients ? <Loader2 className="h-4 w-4 animate-spin" /> : clientId ? <SelectValue /> : <SelectValue placeholder={t(ns + '.placeholders.selectClient')} />}
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {clients.map((c) => (
+                                                <SelectItem key={c.client_id} value={String(c.client_id)}>
+                                                {c.client_name} ({c.client_code})
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
                             </div>
-                            <div>
-                                <Label className="mb-1.5 block">{t(ns + '.fields.platform')}</Label>
-                                <Select value={platform} onValueChange={setPlatform}>
-                                    <SelectTrigger><SelectValue /></SelectTrigger>
-                                    <SelectContent>
-                                        {PLATFORMS.map((p) => (
-                                                <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
-                    )}
+                        )}
 
-                    {step === 2 && (
-                        <div className="space-y-4">
-                            {platform === 'FLYTBASE' && (
-                                <>
-                                    <div>
-                                        <Label className="mb-1.5 block">{t(ns + '.fields.organization')}</Label>
-                                        <Select value={organizationId} onValueChange={setOrganizationId} disabled={loadingOrgs || organizations.length === 0}>
-                                            <SelectTrigger>
-                                                {loadingOrgs ? <Loader2 className="h-4 w-4 animate-spin" /> : (
-                                                    organizationId ? <SelectValue /> : <SelectValue placeholder={t(ns + '.placeholders.selectOrganization')} />
-                                                )}
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {organizations.map((o) => (
-                                                    <SelectItem key={o.organization_id} value={String(o.organization_id)}>{o.org_name}</SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                    <div className="flex gap-2">
-                                        <div className="flex-1">
-                                            <Label className="mb-1.5 block">{t(ns + '.fields.flytbaseWindow')}</Label>
-                                            <Select value={fbWindow} onValueChange={setFbWindow}>
-                                                <SelectTrigger><SelectValue /></SelectTrigger>
+                        {step === 2 && (
+                            <div className="space-y-4">
+                                <div>
+                                    <Label className="mb-1.5 block">{t(ns + '.fields.platform')}</Label>
+                                    <Select value={platform} onValueChange={setPlatform}>
+                                        <SelectTrigger><SelectValue /></SelectTrigger>
+                                        <SelectContent>
+                                            {PLATFORMS.map((p) => (
+                                                <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                {platform === 'FLYTBASE' && (
+                                    <>
+                                        <div>
+                                            <Label className="mb-1.5 block">{t(ns + '.fields.organization')} <span className="text-red-500">*</span></Label>
+                                            <Select value={organizationId} onValueChange={setOrganizationId} disabled={loadingOrgs}>
+                                                <SelectTrigger>
+                                                    {loadingOrgs ? <Loader2 className="h-4 w-4 animate-spin" /> : organizationId ? <SelectValue /> : <SelectValue placeholder={t(ns + '.placeholders.selectOrganization')} />}
+                                                </SelectTrigger>
                                                 <SelectContent>
-                                                    <SelectItem value="30">30 min</SelectItem>
-                                                    <SelectItem value="120">2 h</SelectItem>
-                                                    <SelectItem value="360">6 h</SelectItem>
-                                                    <SelectItem value="720">12 h</SelectItem>
-                                                    <SelectItem value="1440">24 h</SelectItem>
+                                                    {organizations.map((org) => (
+                                                        <SelectItem key={org.organization_id} value={String(org.organization_id)}>{org.org_name}</SelectItem>
+                                                    ))}
                                                 </SelectContent>
                                             </Select>
                                         </div>
-                                        <Button type="button" variant="outline" size="sm" onClick={() => fetchFlytbaseFlights(flightPage)} disabled={loadingFlights || !organizationId}>
-                                            {loadingFlights ? <Loader2 className="h-4 w-4 animate-spin" /> : t(ns + '.buttons.refreshFlights')}
-                                        </Button>
-                                    </div>
-                                    <div>
-                                        <Label className="mb-1.5 block">{t(ns + '.fields.selectFlightLog')}</Label>
-                                        <div className="relative">
-                                            <Input
-                                                placeholder={t(ns + '.placeholders.selectFlightLog')}
-                                                value={selectedFlightId ? flights.find(f => f.flight_id === selectedFlightId)?.flight_name || selectedFlightId : ''}
-                                                readOnly
-                                                onClick={() => {
-                                                    if (!loadingFlights && flights.length > 0) {
-                                                        document.getElementById('flight-dropdown')?.classList.toggle('hidden');
-                                                    }
-                                                }}
-                                                className="h-12 cursor-pointer"
-                                            />
-                                            <div
-                                                id="flight-dropdown"
-                                                className="hidden absolute top-full left-0 right-0 z-50 mt-1 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-md shadow-lg"
-                                            >
-                                                <div className="p-3 border-b border-slate-200 dark:border-slate-800">
-                                                    <Input
-                                                        placeholder="Search flights..."
-                                                        value={flightSearchQuery}
-                                                        onChange={(e) => setFlightSearchQuery(e.target.value)}
-                                                        className="h-8"
-                                                    />
-                                                </div>
-                                                <div className="max-h-[300px] overflow-y-auto">
-                                                    {flights
-                                                        .filter(f => 
-                                                            flightSearchQuery === '' || 
-                                                            (f.flight_name && f.flight_name.toLowerCase().includes(flightSearchQuery.toLowerCase())) ||
-                                                            (f.drone_name && f.drone_name.toLowerCase().includes(flightSearchQuery.toLowerCase())) ||
-                                                            f.flight_id.toLowerCase().includes(flightSearchQuery.toLowerCase())
-                                                        )
-                                                        .map((f) => (
-                                                        <div
-                                                            key={f.flight_id}
-                                                            onClick={() => {
-                                                                setSelectedFlightId(f.flight_id);
-                                                                setLogFile(null);
-                                                                // Clear file input when flight is selected
-                                                                const fileInput = document.getElementById('log-file-input') as HTMLInputElement;
-                                                                if (fileInput) fileInput.value = '';
-                                                                document.getElementById('flight-dropdown')?.classList.add('hidden');
-                                                            }}
-                                                            className="p-3 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer border-b border-slate-100 dark:border-slate-800 last:border-0"
-                                                        >
-                                                            <div className="flex flex-col gap-1">
-                                                                <div className="font-medium text-xs">
-                                                                    {f.flight_name || f.flight_id}
-                                                                    {f.drone_name ? ` · ${f.drone_name}` : ''}
-                                                                </div>
-                                                                <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
-                                                                    <span>{formatFlightTime(f.start_time)}</span>
-                                                                    <span>{formatDuration(f.duration)}</span>
-                                                                    <span>{formatDistance(f.distance)}</span>
-                                                                </div>
-                                                            </div>
+                                        <div>
+                                            <Label className="mb-1.5 block">{t(ns + '.fields.timeWindow')}</Label>
+                                            <Select value={fbWindow} onValueChange={setFbWindow}>
+                                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="60">Last 1 hour</SelectItem>
+                                                    <SelectItem value="360">Last 6 hours</SelectItem>
+                                                    <SelectItem value="720">Last 12 hours</SelectItem>
+                                                    <SelectItem value="1440">Last 24 hours</SelectItem>
+                                                    <SelectItem value="4320">Last 3 days</SelectItem>
+                                                    <SelectItem value="10080">Last 7 days</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <div>
+                                            <Label className="mb-1.5 block">{t(ns + '.fields.selectFlight')} <span className="text-red-500">*</span></Label>
+                                            {loadingFlights ? (
+                                                <div className="space-y-3">
+                                                    {[...Array(5)].map((_, i) => (
+                                                        <div key={i} className="flex items-center gap-3 p-3 border-b">
+                                                            <Skeleton className="h-4 w-24" />
+                                                            <Skeleton className="h-3 w-16" />
+                                                            <Skeleton className="h-3 w-12" />
                                                         </div>
                                                     ))}
-                                                    {flights.length === 0 && !loadingFlights && (
-                                                        <div className="p-4 text-center text-sm text-muted-foreground">
-                                                            No flights found
-                                                        </div>
-                                                    )}
+                                                </div>
+                                            ) : (
+                                                <div className="border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden h-64 flex flex-col">
+                                                    <div className="flex-1 overflow-y-auto">
+                                                        {flights.map((f) => (
+                                                            <div
+                                                                key={f.flight_id}
+                                                                onClick={() => setSelectedFlightId(f.flight_id)}
+                                                                className={cn(
+                                                                    'px-4 py-3 cursor-pointer border-b border-slate-100 dark:border-slate-800 last:border-0 transition-colors',
+                                                                    selectedFlightId === f.flight_id ? 'bg-violet-50 dark:bg-violet-950/20' : 'hover:bg-slate-50 dark:hover:bg-slate-900'
+                                                                )}
+                                                            >
+                                                                <div className="flex flex-col gap-1">
+                                                                    <div className="font-medium text-xs">
+                                                                        {f.flight_name || f.flight_id}
+                                                                        {f.drone_name ? ` · ${f.drone_name}` : ''}
+                                                                    </div>
+                                                                    <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+                                                                        <span>{formatFlightTime(f.start_time)}</span>
+                                                                        <span>{formatDuration(f.duration)}</span>
+                                                                        <span>{formatDistance(f.distance)}</span>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                        {flights.length === 0 && !loadingFlights && (
+                                                            <div className="p-4 text-center text-sm text-muted-foreground">
+                                                                No flights found
+                                                            </div>
+                                                        )}
                                                 </div>
                                                 {flightTotal > 10 && (
-                                                    <div className="p-2 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                                                    <div className="p-2 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between shrink-0">
                                                         <span className="text-xs text-muted-foreground">
                                                             Page {flightPage} of {Math.ceil(flightTotal / 10)}
                                                         </span>
@@ -607,7 +656,7 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                                                                 variant="outline"
                                                                 onClick={() => fetchFlytbaseFlights(flightPage - 1)}
                                                                 disabled={flightPage === 1 || loadingFlights}
-                                                                className="h-7 px-2"
+                                                                className="h-7 px-2 cursor-pointer"
                                                             >
                                                                 Prev
                                                             </Button>
@@ -616,7 +665,7 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                                                                 variant="outline"
                                                                 onClick={() => fetchFlytbaseFlights(flightPage + 1)}
                                                                 disabled={flightPage >= Math.ceil(flightTotal / 10) || loadingFlights}
-                                                                className="h-7 px-2"
+                                                                className="h-7 px-2 cursor-pointer"
                                                             >
                                                                 Next
                                                             </Button>
@@ -624,7 +673,7 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                                                     </div>
                                                 )}
                                             </div>
-                                        </div>
+                                        )}
                                         {flightsError && (
                                             <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">{flightsError}</p>
                                         )}
@@ -663,7 +712,7 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                             </div>
 
                             <div className="border-t border-slate-200 dark:border-slate-800 pt-4 mt-4">
-                                <Label className="mb-1.5 block">{t(ns + '.fields.logFile')}</Label>
+                                <Label className="mb-1.5 block">{t(ns + '.fields.logFile')} <span className="text-red-500">*</span></Label>
                                 <div className="flex items-center gap-3">
                                     <Input
                                         id="log-file-input"
@@ -671,6 +720,7 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                                         accept=".gutma,.zip,.json,.xml"
                                         onChange={(e) => {
                                             const file = e.target.files?.[0] || null;
+                                            console.log('File selected:', file?.name, file?.size, file?.type);
                                             setLogFile(file);
                                             if (file) {
                                                 setSelectedFlightId('');
@@ -691,7 +741,7 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                                                     const fileInput = document.getElementById('log-file-input') as HTMLInputElement;
                                                     if (fileInput) fileInput.value = '';
                                                 }}
-                                                className="h-6 px-2"
+                                                className="h-6 px-2 cursor-pointer"
                                             >
                                                 Clear
                                             </Button>
@@ -706,7 +756,7 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                         <div className="space-y-4">
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <Label className="mb-1.5 block">{t(ns + '.fields.drone')}</Label>
+                                    <Label className="mb-1.5 block">{t(ns + '.fields.droneSystem')} <span className="text-red-500">*</span></Label>
                                     <Select value={vehicleId} onValueChange={setVehicleId} disabled={loadingDrones}>
                                         <SelectTrigger>
                                             {loadingDrones ? <Loader2 className="h-4 w-4 animate-spin" /> : vehicleId ? <SelectValue /> : <SelectValue placeholder={t(ns + '.placeholders.selectDot')} />}
@@ -730,11 +780,22 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                                     </Select>
                                 </div>
                                 <div>
-                                    <Label className="mb-1.5 block">{t(ns + '.fields.missionCode')}</Label>
-                                    <Input value={missionCode} onChange={(e) => setMissionCode(e.target.value)} placeholder={t(ns + '.placeholders.missionCode')} />
+                                    <Label className="mb-1.5 block">{t(ns + '.fields.missionCode')} <span className="text-red-500">*</span></Label>
+                                    <div className="flex gap-2 items-center">
+                                        <Input value={missionCode} onChange={(e) => setMissionCode(e.target.value.toUpperCase())} placeholder={t(ns + '.placeholders.missionCode')}  maxLength={6} />
+                                        <button
+                                            type="button"
+                                            onClick={refreshMissionId}
+                                            disabled={generatingId}
+                                            title={t('operations.newOperation.scheduler.regenerateId')}
+                                            className="shrink-0 p-2 cursor-pointer rounded-md border transition-colors bg-white border-slate-300 text-slate-500 hover:bg-slate-50"
+                                        >
+                                            <RefreshCw className={cn('h-4 w-4', generatingId && 'animate-spin')} />
+                                        </button>
+                                    </div>
                                 </div>
                                 <div>
-                                    <Label className="mb-1.5 block">{t(ns + '.fields.category')}</Label>
+                                    <Label className="mb-1.5 block">{t(ns + '.fields.category')} <span className="text-red-500">*</span></Label>
                                     <Select value={categoryId} onValueChange={setCategoryId} disabled={loadingMissionOptions}>
                                         <SelectTrigger>
                                             {loadingMissionOptions ? <Loader2 className="h-4 w-4 animate-spin" /> : categoryId ? <SelectValue /> : <SelectValue placeholder={t(ns + '.placeholders.selectDot')} />}
@@ -745,7 +806,7 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                                     </Select>
                                 </div>
                                 <div>
-                                    <Label className="mb-1.5 block">{t(ns + '.fields.type')}</Label>
+                                    <Label className="mb-1.5 block">{t(ns + '.fields.type')} <span className="text-red-500">*</span></Label>
                                     <Select value={typeId} onValueChange={setTypeId} disabled={loadingMissionOptions}>
                                         <SelectTrigger>
                                             {loadingMissionOptions ? <Loader2 className="h-4 w-4 animate-spin" /> : typeId ? <SelectValue /> : <SelectValue placeholder={t(ns + '.placeholders.selectDot')} />}
@@ -875,7 +936,7 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                     {step === 4 && (
                         <div className="space-y-4">
                             <div>
-                                <Label className="mb-1.5 block">{t(ns + '.fields.pilotInCommand')}</Label>
+                                <Label className="mb-1.5 block">{t(ns + '.fields.pilotInCommand')} <span className="text-red-500">*</span></Label>
                                 <Select value={pilotId} onValueChange={setPilotId} disabled={loadingPilots}>
                                     <SelectTrigger>
                                         {loadingPilots ? <Loader2 className="h-4 w-4 animate-spin" /> : pilotId ? <SelectValue /> : <SelectValue placeholder={t(ns + '.placeholders.selectPilot')} />}
@@ -954,7 +1015,7 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                                 </div>
                                 <div>
                                     <Label className="mb-1.5 block">{t(ns + '.fields.type')}</Label>
-                                    <p className="text-sm font-medium">{types.find(ty => String(ty.id) === typeId)?.name || '—'}</p>
+                                    <p className="text-sm font-medium">{types.find(t => String(t.id) === typeId)?.name || '—'}</p>
                                 </div>
                                 <div>
                                     <Label className="mb-1.5 block">{t(ns + '.fields.opType')}</Label>
@@ -977,48 +1038,72 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                                     </>
                                 )}
                                 <div>
-                                    <Label className="mb-1.5 block">{t(ns + '.fields.pilot')}</Label>
-                                    <p className="text-sm font-medium">{pilotLabel || '—'}</p>
+                                    <Label className="mb-1.5 block">{t(ns + '.fields.lucProcedure')}</Label>
+                                    <p className="text-sm font-medium">{lucProcedures.find(p => String(p.id) === lucProcedureId)?.name || '—'}</p>
                                 </div>
                                 <div>
-                                    <Label className="mb-1.5 block">{t(ns + '.fields.visualObservers')}</Label>
-                                    <p className="text-sm font-medium">{visualObserverIds.map(id => pilots.find(p => String(p.user_id) === id)?.first_name + ' ' + pilots.find(p => String(p.user_id) === id)?.last_name).join(', ') || '—'}</p>
+                                    <Label className="mb-1.5 block">{t(ns + '.fields.location')}</Label>
+                                    <p className="text-sm font-medium">{location || '—'}</p>
                                 </div>
+                                <div>
+                                    <Label className="mb-1.5 block">{t(ns + '.fields.groupLabel')}</Label>
+                                    <p className="text-sm font-medium">{groupLabel || '—'}</p>
+                                </div>
+                                <div>
+                                    <Label className="mb-1.5 block">{t(ns + '.fields.pilotInCommand')}</Label>
+                                    <p className="text-sm font-medium">{pilotLabel || '—'}</p>
+                                </div>
+                                {isRecurrent && (
+                                    <>
+                                        <div>
+                                            <Label className="mb-1.5 block">{t(ns + '.fields.recurrentStartDate')}</Label>
+                                            <p className="text-sm font-medium">{recurrentStartDate || '—'}</p>
+                                        </div>
+                                        <div>
+                                            <Label className="mb-1.5 block">{t(ns + '.fields.recurrentEndDate')}</Label>
+                                            <p className="text-sm font-medium">{recurrentEndDate || '—'}</p>
+                                        </div>
+                                        <div>
+                                            <Label className="mb-1.5 block">{t(ns + '.fields.recurrentTime')}</Label>
+                                            <p className="text-sm font-medium">{recurrentTime || '—'}</p>
+                                        </div>
+                                    </>
+                                )}
                             </div>
-                            {isRecurrent && (
-                                <div className="border-t pt-4">
-                                    <p className="text-sm font-medium mb-2">{t(ns + '.fields.recurrent')}</p>
-                                    <p className="text-sm text-muted-foreground">
-                                        {recurrentStartDate} to {recurrentEndDate} at {recurrentTime}
-                                    </p>
-                                </div>
-                            )}
                         </div>
                     )}
+                    </div>
                 </div>
 
-                <div className="px-6 py-4 border-t flex justify-between">
+                <div className="px-6 py-4 border-t flex items-center justify-between shrink-0">
                     <Button
                         variant="outline"
                         onClick={() => setStep(step - 1)}
                         disabled={step === 1 || submitting}
                     >
-                        {t(ns + '.buttons.back')}
+                        <ChevronLeft className="h-4 w-4 mr-1" />
+                        {t('common.back')}
                     </Button>
-                    <Button
-                        onClick={() => {
-                            if (step === 5) {
-                                handleSubmit();
-                            } else {
-                                setStep(step + 1);
-                            }
-                        }}
-                        disabled={submitting || !canNext()}
-                        className='bg-violet-600 hover:bg-violet-500 cursor-pointer'
-                    >
-                        {submitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                        {step === 5 ? t(ns + '.buttons.import') : t(ns + '.buttons.next')}
-                    </Button>
+                    <div className="flex items-center gap-2">
+                        {step === 5 && (
+                            <Button
+                                variant="outline"
+                                onClick={() => setStep(4)}
+                                disabled={submitting}
+                            >
+                                {t('common.edit')}
+                            </Button>
+                        )}
+                        <Button
+                            onClick={step === 5 ? handleSubmit : () => setStep(step + 1)}
+                            disabled={!canNext() || submitting}
+                            className='bg-violet-600 hover:bg-violet-500 cursor-pointer'
+                        >
+                            {submitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                            {step === 5 ? t(ns+'.buttons.import') : t(ns+'.buttons.next')}
+                            {step !== 5 && <ChevronRight className="h-4 w-4 ml-1" />}
+                        </Button>
+                    </div>
                 </div>
             </DialogContent>
         </Dialog>
