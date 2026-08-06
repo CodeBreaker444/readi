@@ -96,6 +96,7 @@ export async function POST(
       const lng = parsed.data.longitude;
       const hasCoords = lat != null && lng != null;
       const hasOldPosition = result.oldPosition && (result.oldPosition.latitude != null || result.oldPosition.longitude != null);
+      const isPositionUpdate = hasCoords || (result.oldPosition && (result.oldPosition.latitude != null || result.oldPosition.longitude != null));
       
       let posPart = '';
       if (hasCoords && hasOldPosition) {
@@ -116,7 +117,7 @@ export async function POST(
       }
 
       const metadata: Record<string, unknown> = {};
-      if (hasOldPosition) {
+      if (isPositionUpdate && result.oldPosition) {
         metadata.oldPosition = result.oldPosition;
       }
 

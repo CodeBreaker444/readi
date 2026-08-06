@@ -35,6 +35,7 @@ export function AuditLogDetailModal({ log, onClose }: AuditLogDetailModalProps) 
   const isDcc = log.entity_type === 'dcc_bug_report';
   const dcc = isDcc ? (log.metadata as any)?.dcc : null;
   const oldPosition = (log.metadata as any)?.oldPosition as { latitude: number | null; longitude: number | null } | undefined;
+  const hasOldPosition = oldPosition !== undefined;
   const hasOtherMeta = hasMeta && !isDcc && Object.keys(log.metadata || {}).some(key => key !== 'oldPosition');
 
   return (
@@ -109,14 +110,14 @@ export function AuditLogDetailModal({ log, onClose }: AuditLogDetailModalProps) 
           )}
 
           {/* Old position details */}
-          {oldPosition && (oldPosition.latitude != null || oldPosition.longitude != null) && (
+          {hasOldPosition && (
             <div className={`rounded-lg border p-3.5 space-y-3 ${isDark ? 'bg-blue-950/20 border-blue-800/30' : 'bg-blue-50 border-blue-200'}`}>
               <p className={`text-[10px] font-bold uppercase tracking-wider ${isDark ? 'text-blue-400' : 'text-blue-700'}`}>
                 Previous Position
               </p>
               <div className="grid grid-cols-2 gap-x-6 gap-y-3">
-                <Field label="Latitude" value={oldPosition.latitude != null ? String(oldPosition.latitude) : null} mono />
-                <Field label="Longitude" value={oldPosition.longitude != null ? String(oldPosition.longitude) : null} mono />
+                <Field label="Latitude" value={oldPosition.latitude != null ? String(oldPosition.latitude) : 'Not set'} mono />
+                <Field label="Longitude" value={oldPosition.longitude != null ? String(oldPosition.longitude) : 'Not set'} mono />
               </div>
             </div>
           )}

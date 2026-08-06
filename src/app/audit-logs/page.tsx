@@ -69,7 +69,8 @@ export default function AuditLogsPage() {
       (l) =>
         l.description?.toLowerCase().includes(search.toLowerCase()) ||
         l.user_name?.toLowerCase().includes(search.toLowerCase()) ||
-        l.entity_type?.toLowerCase().includes(search.toLowerCase())
+        l.entity_type?.toLowerCase().includes(search.toLowerCase()) ||
+        (l.metadata && JSON.stringify(l.metadata).toLowerCase().includes(search.toLowerCase()))
     )
     : logs;
 
