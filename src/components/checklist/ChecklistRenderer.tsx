@@ -87,7 +87,7 @@ export function ChecklistRenderer({
   }
 
   return (
-    <div className={`w-full checklist-container ${isDark ? 'survey-dark' : ''}`}>
+    <div className={`w-full checklist-container overflow-x-auto ${isDark ? 'survey-dark' : ''}`}>
       <Survey model={surveyModel} />
     </div>
   );

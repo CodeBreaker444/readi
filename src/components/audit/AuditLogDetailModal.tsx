@@ -36,7 +36,7 @@ export function AuditLogDetailModal({ log, onClose }: AuditLogDetailModalProps) 
   const dcc = isDcc ? (log.metadata as any)?.dcc : null;
   const oldPosition = (log.metadata as any)?.oldPosition as { latitude: number | null; longitude: number | null } | undefined;
   const hasOldPosition = oldPosition !== undefined;
-  const hasOtherMeta = hasMeta && !isDcc && Object.keys(log.metadata || {}).some(key => key !== 'oldPosition');
+  const hasOtherMeta = hasMeta && !isDcc && Object.keys(log.metadata || {}).some(key => key !== 'oldPosition' && key !== 'dcc');
 
   return (
     <Dialog open={!!log} onOpenChange={onClose}>

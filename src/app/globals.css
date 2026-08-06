@@ -181,3 +181,217 @@
     border-radius: 10px;
   }
 }
+
+/* SurveyJS Dropdown Fixes */
+.checklist-container {
+  width: 100% !important;
+  overflow-x: hidden !important;
+}
+
+/* Prevent dropdown items from causing horizontal overflow */
+.checklist-container .sv-dropdown__list-item {
+  max-width: 100% !important;
+  overflow-x: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.checklist-container .sv-popup {
+  max-width: 100% !important;
+  overflow-x: hidden !important;
+}
+
+/* Prevent auto-scrolling when dropdowns are clicked */
+.checklist-container .sv-dropdown:focus,
+.checklist-container .sv-select-base:focus,
+.checklist-container .sv-dropdown__list-item:focus {
+  outline: none !important;
+}
+
+/* Prevent focus-induced scrolling */
+.checklist-container * {
+  scroll-margin-top: 0 !important;
+  scroll-margin-bottom: 0 !important;
+}
+
+/* Override scroll-into-view behavior */
+.checklist-container .sv-dropdown,
+.checklist-container .sv-select-base,
+.checklist-container .sv-dropdown__list-item {
+  scroll-behavior: auto !important;
+}
+
+.checklist-container .sv-dropdown__filter {
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.checklist-container .sv-dropdown__list {
+  width: 100% !important;
+  box-sizing: border-box !important;
+  min-width: auto !important;
+  max-width: 100% !important;
+}
+
+.checklist-container .sv-dropdown__item {
+  width: 100% !important;
+  box-sizing: border-box !important;
+  max-width: 100% !important;
+}
+
+.checklist-container .sv-select-base {
+  width: 100% !important;
+  box-sizing: border-box !important;
+  max-width: 100% !important;
+}
+
+.checklist-container .sv-question__content {
+  width: 100% !important;
+  box-sizing: border-box !important;
+  max-width: 100% !important;
+}
+
+.checklist-container .sv-item__control {
+  width: 100% !important;
+  box-sizing: border-box !important;
+  max-width: 100% !important;
+}
+
+.checklist-container .sv-string-viewer {
+  width: 100% !important;
+  box-sizing: border-box !important;
+  white-space: normal !important;
+  word-wrap: break-word !important;
+  max-width: 100% !important;
+}
+
+.checklist-container .sv-dropdown {
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.checklist-container .sv-dropdown-wrapper {
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.checklist-container .sv-choice-item {
+  width: 100% !important;
+  box-sizing: border-box !important;
+  max-width: 100% !important;
+}
+
+.checklist-container .sv-row {
+  width: 100% !important;
+  box-sizing: border-box !important;
+  max-width: 100% !important;
+}
+
+/* Prevent dropdown menus from causing horizontal overflow */
+.checklist-container .sv-popup {
+  max-width: 100% !important;
+  overflow-x: hidden !important;
+  box-sizing: border-box !important;
+}
+
+.checklist-container .sv-list {
+  max-width: 100% !important;
+  overflow-x: hidden !important;
+  box-sizing: border-box !important;
+}
+
+.checklist-container .sv-dropdown-popup {
+  max-width: 100% !important;
+  overflow-x: hidden !important;
+  box-sizing: border-box !important;
+}
+
+/* Fix for SurveyJS positioning issues */
+.checklist-container .sv-question {
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.checklist-container .sv-question__root {
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* Additional overflow prevention for dropdowns */
+.checklist-container .sv-dropdown-list {
+  max-width: 100% !important;
+  overflow-x: hidden !important;
+  box-sizing: border-box !important;
+}
+
+.checklist-container .sv-multi-select {
+  max-width: 100% !important;
+  overflow-x: hidden !important;
+  box-sizing: border-box !important;
+}
+
+.checklist-container .sv-tagbox {
+  max-width: 100% !important;
+  overflow-x: hidden !important;
+  box-sizing: border-box !important;
+}
+
+/* Ensure dropdowns don't expand beyond container */
+.checklist-container .sv-dropdown-popup-container {
+  max-width: 100% !important;
+  overflow-x: hidden !important;
+  box-sizing: border-box !important;
+}
+
+/* Ensure survey container respects parent width */
+.sv-root-modern {
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow-x: hidden !important;
+  box-sizing: border-box !important;
+}
+
+.sv-root {
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow-x: hidden !important;
+  box-sizing: border-box !important;
+}
+
+/* Prevent dropdown popups from causing horizontal scroll */
+.sv-popup__body {
+  max-width: 100% !important;
+  overflow-x: hidden !important;
+  box-sizing: border-box !important;
+}
+
+.sv-popup__content {
+  max-width: 100% !important;
+  overflow-x: hidden !important;
+  box-sizing: border-box !important;
+}
+
+/* Specific fix for dropdown lists */
+.sv-dropdown__list-item {
+  max-width: 100% !important;
+  overflow-x: hidden !important;
+  box-sizing: border-box !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+/* Target the actual dialog content class */
+[data-radix-scroll-area-viewport] {
+  overflow-x: hidden !important;
+}
+
+/* Add specificity for checklist modals */
+.checklist-container *,
+.checklist-container *::before,
+.checklist-container *::after {
+  box-sizing: border-box !important;
+}
