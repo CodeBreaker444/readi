@@ -128,7 +128,7 @@ export function AssignmentActionModal({
 
     return (
         <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-            <DialogContent className="w-full sm:max-w-2xl md:max-w-3xl lg:max-w-4xl xl:max-w-5xl max-h-[90vh] overflow-y-auto overflow-x-hidden">
+            <DialogContent className="w-full sm:max-w-3xl md:max-w-4xl lg:max-w-5xl xl:max-w-6xl max-h-[90vh] overflow-y-auto overflow-x-hidden">
                 <DialogHeader>
                     <div className="flex items-center gap-2">
                         <div>

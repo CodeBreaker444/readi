@@ -33,7 +33,8 @@
     "today": "Heute",
     "yesterday": "Gestern",
     "daysAgo": "Vor {{count}} Tagen",
-    "monthsAgo": "Vor {{count}} Monaten"
+    "monthsAgo": "Vor {{count}} Monaten",
+    "viewDetails": "Details anzeigen"
   },
   "topbar": {
     "askAnything": "Frag etwas…",
@@ -1418,7 +1419,10 @@
       "loadError": "Benutzer konnten nicht geladen werden",
       "sender": "Absender",
       "status": "Status",
-      "sentAt": "Gesendet am"
+      "sentAt": "Gesendet am",
+      "file": "Datei",
+      "download": "Herunterladen",
+      "noFile": "Keine Datei"
     },
     "assignment": {
       "title": "Zuweisungsaktion",

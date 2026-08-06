@@ -51,10 +51,11 @@ const addEvaluationPlanningSchema = z.object({
     .default("NEW"),
   planning_request_date: z.string().min(1, "Request date is required"),
   planning_year: z
-    .number()
-    .int()
-    .min(2020, "Year too far in past")
-    .max(2035, "Year too far in future"),
+    .union([z.number(), z.string()])
+    .refine((val) => {
+      const year = typeof val === 'string' ? parseInt(val, 10) : val;
+      return year >= 2020 && year <= 2035;
+    }, "Year must be between 2020 and 2035"),
   planning_type: z.string().max(100).optional().default(""),
   planning_folder: z.string().max(255).optional().default(""),
   planning_result: z.string().max(50).optional().default("PROGRESS"),
@@ -96,8 +97,19 @@ export async function POST(req: NextRequest) {
   }
 }
 
-const updatePlanningSchema = addEvaluationPlanningSchema.extend({
+const updatePlanningSchema = z.object({
   planning_id: z.number().int().positive("Planning ID is required"),
+  fk_evaluation_id: z.number().int().positive().optional(),
+  fk_client_id: z.number().int().positive().optional(),
+  fk_luc_procedure_id: z.number().int().positive().optional(),
+  planning_desc: z.string().min(1).max(500).optional(),
+  planning_status: z.enum(["NEW", "PROCESSING", "REQ_FEEDBACK", "POSITIVE_RESULT", "NEGATIVE_RESULT"]).optional(),
+  planning_request_date: z.string().min(1).optional(),
+  planning_year: z.union([z.number(), z.string()]).optional(),
+  planning_type: z.string().max(100).optional(),
+  planning_folder: z.string().max(255).optional(),
+  planning_result: z.string().max(50).optional(),
+  planning_active: z.string().optional(),
 });
 
 export async function PUT(req: NextRequest) {

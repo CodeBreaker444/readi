@@ -39,6 +39,7 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import Breadcrumbs from "../Breadcrumbs";
 import { useTheme } from "../useTheme";
+import { PlanningCommunicationTable } from "../tables/PlanningCommunicationTable";
 import { PlanningMissionSkeleton } from "./PlanningMissionSkeleton";
 import { PlanningTaskTableSection } from "./PlanningTaskTableSection";
 interface PlanningMissionProps {
@@ -376,6 +377,8 @@ export const PlanningMissionContent: FC<PlanningMissionProps> = ({ user }) => {
         evaluationId={e_id}
         ownerId={user.ownerId}
       />
+
+      <PlanningCommunicationTable planningId={p_id} />
 
       <Card className={isDark ? "bg-slate-900 border-slate-800" : ""}>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">

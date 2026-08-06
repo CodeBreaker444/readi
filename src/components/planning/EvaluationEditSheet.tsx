@@ -124,7 +124,7 @@ const form = useForm<UpdateEvaluationFormValues>({
                 evaluation_status: normalizedStatus,
                 evaluation_result: evaluation.evaluation_result,
                 evaluation_request_date: evaluation.evaluation_request_date ?? '',
-                evaluation_year: evaluation.evaluation_year,
+                evaluation_year: evaluation.evaluation_year ?? new Date().getFullYear(),
                 evaluation_desc: evaluation.evaluation_desc ?? '',
                 evaluation_offer: evaluation.evaluation_offer ?? '',
                 evaluation_sale_manager: evaluation.evaluation_sale_manager ?? '',

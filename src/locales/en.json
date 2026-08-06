@@ -33,7 +33,8 @@
     "today": "Today",
     "yesterday": "Yesterday",
     "daysAgo": "{{count}} days ago",
-    "monthsAgo": "{{count}} months ago"
+    "monthsAgo": "{{count}} months ago",
+    "viewDetails": "View Details"
   },
   "topbar": {
     "askAnything": "Ask anything…",
@@ -1421,7 +1422,10 @@
       "loadError": "Failed to load users",
       "sender": "Sender",
       "status": "Status",
-      "sentAt": "Sent At"
+      "sentAt": "Sent At",
+      "file": "File",
+      "download": "Download",
+      "noFile": "No file"
     },
     "assignment": {
       "title": "Assignment Action",

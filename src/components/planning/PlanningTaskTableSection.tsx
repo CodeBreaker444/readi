@@ -49,6 +49,7 @@ import CommunicationSection from "./CommunicationSection";
 import { AssignmentActionModal } from "./evaluation/AssignmentActionModal";
 import { ChecklistTaskModal } from "./evaluation/ChecklistTaskModal";
 import { EvaluationCommunicationModal } from "./evaluation/EvaluationCommunicationModal";
+import { EvaluationCommunicationTable } from "./evaluation/EvaluationCommunicationTable";
 
 type FilterMode = "all" | "checklist" | "assignment" | "communication";
 
@@ -301,75 +302,81 @@ export function PlanningTaskTableSection(props: {
         </CardHeader>
 
         <CardContent>
-          <div className={`rounded-md border ${isDark ? "border-slate-800" : "border-slate-200"} overflow-hidden`}>
-            <Table>
-              <TableHeader>
-                {table.getHeaderGroups().map((hg) => (
-                  <TableRow
-                    key={hg.id}
-                    className={
-                      isDark
-                        ? "bg-slate-900/50 border-slate-800 hover:bg-transparent"
-                        : "bg-slate-50 hover:bg-slate-50"
-                    }
-                  >
-                    {hg.headers.map((header) => (
-                      <TableHead
-                        key={header.id}
-                        className={`text-xs h-8 px-3 ${isDark ? "text-slate-400 font-medium" : ""}`}
-                      >
-                        {header.isPlaceholder
-                          ? null
-                          : flexRender(header.column.columnDef.header, header.getContext())}
-                      </TableHead>
-                    ))}
-                  </TableRow>
-                ))}
-              </TableHeader>
-              <TableBody>
-                {isLoading ? (
-                  Array.from({ length: 4 }).map((_, i) => (
-                    <TableRow key={i} className={isDark ? "border-slate-800" : ""}>
-                      {columns.map((_, j) => (
-                        <TableCell key={j} className="px-3 py-2">
-                          <Skeleton className="h-4 w-full" />
-                        </TableCell>
-                      ))}
-                    </TableRow>
-                  ))
-                ) : table.getRowModel().rows.length === 0 ? (
-                  <TableRow>
-                    <TableCell
-                      colSpan={columns.length}
-                      className="text-center text-xs py-8 text-slate-400"
-                    >
-                      {globalFilter
-                        ? t("planning.tasks.noTasksSearch")
-                        : filterMode !== "all"
-                          ? t("planning.tasks.noTasksFilter")
-                          : t("planning.tasks.noTasks")}
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  table.getRowModel().rows.map((row) => (
+          {filterMode === "communication" ? (
+            <EvaluationCommunicationTable evaluationId={evaluationId} clientId={clientId} />
+          ) : (
+            <div className={`rounded-md border ${isDark ? "border-slate-800" : "border-slate-200"} overflow-hidden`}>
+              <Table>
+                <TableHeader>
+                  {table.getHeaderGroups().map((hg) => (
                     <TableRow
-                      key={row.id}
-                      className={isDark ? "border-slate-800 hover:bg-slate-800/50" : ""}
+                      key={hg.id}
+                      className={
+                        isDark
+                          ? "bg-slate-900/50 border-slate-800 hover:bg-transparent"
+                          : "bg-slate-50 hover:bg-slate-50"
+                      }
                     >
-                      {row.getVisibleCells().map((cell) => (
-                        <TableCell key={cell.id} className="px-3 py-2 text-xs">
-                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                        </TableCell>
+                      {hg.headers.map((header) => (
+                        <TableHead
+                          key={header.id}
+                          className={`text-xs h-8 px-3 ${isDark ? "text-slate-400 font-medium" : ""}`}
+                        >
+                          {header.isPlaceholder
+                            ? null
+                            : flexRender(header.column.columnDef.header, header.getContext())}
+                        </TableHead>
                       ))}
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-          <div className="pt-4">
-            <TablePagination table={table} />
-          </div>
+                  ))}
+                </TableHeader>
+                <TableBody>
+                  {isLoading ? (
+                    Array.from({ length: 4 }).map((_, i) => (
+                      <TableRow key={i} className={isDark ? "border-slate-800" : ""}>
+                        {columns.map((_, j) => (
+                          <TableCell key={j} className="px-3 py-2">
+                            <Skeleton className="h-4 w-full" />
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    ))
+                  ) : table.getRowModel().rows.length === 0 ? (
+                    <TableRow>
+                      <TableCell
+                        colSpan={columns.length}
+                        className="text-center text-xs py-8 text-slate-400"
+                      >
+                        {globalFilter
+                          ? t("planning.tasks.noTasksSearch")
+                          : filterMode !== "all"
+                            ? t("planning.tasks.noTasksFilter")
+                            : t("planning.tasks.noTasks")}
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    table.getRowModel().rows.map((row) => (
+                      <TableRow
+                        key={row.id}
+                        className={isDark ? "border-slate-800 hover:bg-slate-800/50" : ""}
+                      >
+                        {row.getVisibleCells().map((cell) => (
+                          <TableCell key={cell.id} className="px-3 py-2 text-xs">
+                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+          {filterMode !== "communication" && (
+            <div className="pt-4">
+              <TablePagination table={table} />
+            </div>
+          )}
         </CardContent>
       </Card>
 

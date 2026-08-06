@@ -41,6 +41,10 @@ export function ChecklistRenderer({
         isPanelless: false,
       });
 
+      // Prevent auto-scrolling on focus
+      survey.focusFirstQuestionAutomatic = false;
+      survey.scrollToTopOnChangingPage = false;
+
       if (userFullname) survey.setValue('user_fullname', userFullname);
       if (userEmail) survey.setValue('email', userEmail);
 

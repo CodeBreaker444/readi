@@ -56,6 +56,7 @@ export default function AuditLogsPage() {
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 8 });
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
   const [detailLog, setDetailLog] = useState<AuditLog | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const toggleRow = (id: number) =>
     setExpandedRows((prev) => {
@@ -115,7 +116,7 @@ export default function AuditLogsPage() {
     } finally {
       setLoading(false);
     }
-  }, [pagination.pageIndex, pagination.pageSize, selectedOwner, selectedUser, selectedEvent, selectedEntity, dateFrom, dateTo]);
+  }, [pagination.pageIndex, pagination.pageSize, selectedOwner, selectedUser, selectedEvent, selectedEntity, dateFrom, dateTo, search, refreshKey]);
 
   useEffect(() => {
     (async () => {
@@ -168,6 +169,11 @@ export default function AuditLogsPage() {
     setDateTo('');
     setSearch('');
     setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+    setRefreshKey(prev => prev + 1);
+  };
+
+  const handleRefresh = () => {
+    setRefreshKey(prev => prev + 1);
   };
 
   const hasFilters = selectedOwner || selectedUser || selectedEvent || selectedEntity || dateFrom || dateTo || search;
@@ -223,7 +229,7 @@ export default function AuditLogsPage() {
             <Button
               variant="outline"
               size="sm"
-              onClick={fetchLogs}
+              onClick={handleRefresh}
               disabled={loading}
               className={`h-8 cursor-pointer gap-1.5 px-3.5 text-xs font-medium rounded-lg transition-all ${isDark
                   ? 'border-white/[0.1] hover:bg-white/[0.05] text-white'
@@ -496,7 +502,7 @@ export default function AuditLogsPage() {
             </div>
           </div>
 
-          <AuditLogDetailModal log={detailLog} onClose={() => setDetailLog(null)} />
+          <AuditLogDetailModal log={detailLog} onClose={() => { setDetailLog(null); setRefreshKey(prev => prev + 1); }} />
 
           <div className="flex items-center justify-between px-2 mt-2">
             <ExportButtons

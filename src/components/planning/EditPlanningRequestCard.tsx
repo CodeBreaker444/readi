@@ -82,7 +82,9 @@ export default function EditPlanningRequestCard({
         fk_luc_procedure_id: planningData.fk_luc_procedure_id || "",
         planning_folder: planningData.planning_folder || "",
         planning_request_date: planningData.planning_request_date || "",
-        planning_year: planningData.planning_year || "",
+        planning_year: typeof planningData.planning_year === 'number' 
+          ? String(planningData.planning_year) 
+          : planningData.planning_year || "",
         planning_desc: planningData.planning_desc || "",
         planning_type: planningData.planning_type || "",
       });
@@ -91,6 +93,8 @@ export default function EditPlanningRequestCard({
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
+    // Skip planning_year as it has its own handler
+    if (name === 'planning_year') return;
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
@@ -98,11 +102,21 @@ export default function EditPlanningRequestCard({
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
+  const handleYearChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { value } = e.target;
+    setForm((prev) => ({ ...prev, planning_year: String(value) }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
     try {
-      await onUpdate(form as unknown as Record<string, unknown>);
+      // Ensure planning_year is included in the update payload
+      const updatePayload = {
+        ...form,
+        planning_year: form.planning_year,
+      };
+      await onUpdate(updatePayload as unknown as Record<string, unknown>);
     } finally {
       setSubmitting(false);
     }
@@ -188,10 +202,12 @@ export default function EditPlanningRequestCard({
           <div className="space-y-2">
             <Label className={labelColor}>{t("planning.form.yearReference")}</Label>
             <Input
+              type="number"
               name="planning_year"
               value={form.planning_year}
-              onChange={handleChange}
+              onChange={handleYearChange}
               className={inputBg}
+              placeholder="YYYY"
             />
           </div>
           <div className="space-y-2">

@@ -161,7 +161,7 @@ export async function getMissionTemplateFilterOptions(ownerId: number) {
     })),
     evaluations: evaluations.map((e) => ({
       id: e.evaluation_id,
-      name: e.evaluation_code ?? `EVAL_${e.evaluation_id}`,
+      name: `EVAL_${e.evaluation_id}`,
       active: e.evaluation_active === 'Y',
     })),
     plannings: plannings.map((p) => ({
