@@ -160,6 +160,10 @@ export default function CompanyDetailPage() {
     const [pwSaving, setPwSaving] = useState(false);
     const [pwError, setPwError] = useState('');
 
+    const [newAdminEmail, setNewAdminEmail] = useState('');
+    const [emailSaving, setEmailSaving] = useState(false);
+    const [emailError, setEmailError] = useState('');
+
     const populateForms = useCallback((o: OwnerData) => {
         setGeneralForm({
             owner_name: toStr(o.owner_name), owner_legal_name: toStr(o.owner_legal_name),
@@ -172,6 +176,7 @@ export default function CompanyDetailPage() {
             license_expiry: o.license_expiry ? o.license_expiry.slice(0, 10) : '',
         });
         setSecurityForm({ owner_active: o.owner_active });
+        setNewAdminEmail(toStr(o.admin_user?.email));
         setFeaturesForm({
             drone_atc_enabled: o.drone_atc_enabled ?? false,
             d_flight_enabled: o.d_flight_enabled ?? false,
@@ -235,6 +240,26 @@ export default function CompanyDetailPage() {
             } else { setPwError(res.data.message || 'Failed to update password'); }
         } catch { setPwError('Network error'); }
         finally { setPwSaving(false); }
+    };
+
+    const handleAdminEmailUpdate = async () => {
+        setEmailError('');
+        if (!owner?.admin_user) return;
+        const email = newAdminEmail.trim();
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setEmailError('Enter a valid email address'); return; }
+        if (email.toLowerCase() === owner.admin_user.email?.toLowerCase()) { setEmailError('This is already the current email'); return; }
+        setEmailSaving(true);
+        try {
+            const res = await axios.put(`/api/owner/${id}/admin-email`, {
+                admin_user_id: owner.admin_user.user_id,
+                new_email: email,
+            });
+            if (res.data.code === 1) {
+                toast.success('Admin email updated successfully');
+                await fetchOwner();
+            } else { setEmailError(res.data.message || 'Failed to update email'); }
+        } catch (err: any) { setEmailError(err?.response?.data?.message || 'Network error'); }
+        finally { setEmailSaving(false); }
     };
 
     const handleActivate = async () => {
@@ -566,6 +591,34 @@ export default function CompanyDetailPage() {
                                     <p className={`text-sm ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>No admin user assigned to this company.</p>
                                 )}
                             </div>
+
+                            {/* Update Admin Email */}
+                            {owner.admin_user && (
+                                <div className={`${cardClass} p-6 space-y-5`}>
+                                    <div>
+                                        <h2 className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>Update Admin Email</h2>
+                                        <p className={`text-xs mt-0.5 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                                            Change the login email for <span className="font-medium">{owner.admin_user.username}</span>.
+                                        </p>
+                                    </div>
+                                    <Separator />
+                                    <div className="max-w-xl space-y-1.5">
+                                        <Label className={labelClass}>Email <span className="text-red-500">*</span></Label>
+                                        <Input
+                                            type="email"
+                                            value={newAdminEmail}
+                                            onChange={(e) => { setNewAdminEmail(e.target.value); setEmailError(''); }}
+                                            placeholder="admin@company.com"
+                                            className="h-9 text-sm"
+                                        />
+                                    </div>
+                                    {emailError && <p className="text-xs text-red-500">{emailError}</p>}
+                                    <Button size="sm" className="h-8 text-xs gap-1.5 bg-violet-600 hover:bg-violet-700 text-white"
+                                        onClick={handleAdminEmailUpdate} disabled={emailSaving || !newAdminEmail}>
+                                        <Save size={13} /> {emailSaving ? 'Updating…' : 'Update Email'}
+                                    </Button>
+                                </div>
+                            )}
 
                             {/* Reset Admin Password */}
                             {owner.admin_user && (

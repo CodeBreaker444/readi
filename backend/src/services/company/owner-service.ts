@@ -676,3 +676,31 @@ export async function updateAdminPassword(ownerId: string, adminUserId: number, 
 
     return { message: 'Password updated successfully' };
 }
+
+export async function updateAdminEmail(ownerId: string, adminUserId: number, newEmail: string) {
+    const ownerIdNum = parseInt(ownerId);
+    const email = newEmail.toLowerCase().trim();
+
+    const user = await prisma.public_users.findFirst({
+        where: { user_id: adminUserId, fk_owner_id: ownerIdNum },
+        select: { user_id: true, email: true },
+    });
+    if (!user) throw new Error('Admin user not found for this company');
+
+    if (user.email?.toLowerCase() === email) {
+        return { message: 'Email unchanged', email: user.email };
+    }
+
+    const existing = await prisma.public_users.findFirst({
+        where: { email: { equals: email, mode: 'insensitive' }, user_id: { not: adminUserId } },
+        select: { user_id: true },
+    });
+    if (existing) throw new Error('A user with this email already exists');
+
+    await prisma.public_users.update({
+        where: { user_id: adminUserId },
+        data: { email, updated_at: new Date() },
+    });
+
+    return { message: 'Email updated successfully', email };
+}
