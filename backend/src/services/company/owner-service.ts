@@ -683,12 +683,15 @@ export async function updateAdminEmail(ownerId: string, adminUserId: number, new
 
     const user = await prisma.public_users.findFirst({
         where: { user_id: adminUserId, fk_owner_id: ownerIdNum },
-        select: { user_id: true, email: true },
+        select: {
+            user_id: true, email: true, username: true, user_active: true,
+            first_name: true, last_name: true, user_unique_code: true,
+        },
     });
     if (!user) throw new Error('Admin user not found for this company');
 
     if (user.email?.toLowerCase() === email) {
-        return { message: 'Email unchanged', email: user.email };
+        return { message: 'Email unchanged', email: user.email, activationEmailSent: false };
     }
 
     const existing = await prisma.public_users.findFirst({
@@ -697,10 +700,41 @@ export async function updateAdminEmail(ownerId: string, adminUserId: number, new
     });
     if (existing) throw new Error('A user with this email already exists');
 
+    // Pending (not yet activated) accounts get a fresh activation link at the new address —
+    // the old link's key_ is bound to the old email and would fail the activate route's lookup.
+    const isPending = user.user_active !== 'Y';
+    const activationToken = isPending ? generateActivationToken(128) : undefined;
+
     await prisma.public_users.update({
         where: { user_id: adminUserId },
-        data: { email, updated_at: new Date() },
+        data: {
+            email,
+            updated_at: new Date(),
+            ...(activationToken ? { key_: activationToken } : {}),
+        },
     });
 
-    return { message: 'Email updated successfully', email };
+    let activationEmailSent = false;
+    if (isPending && activationToken) {
+        const owner = await prisma.owner.findUnique({
+            where: { owner_id: ownerIdNum },
+            select: { owner_name: true },
+        });
+        const fullname = [user.first_name, user.last_name].filter(Boolean).join(' ');
+        const activationLink = `${env.APP_URL}/auth/activate?o=${ownerIdNum}&email=${encodeURIComponent(email)}&username=${encodeURIComponent(user.username!)}&id=${activationToken}`;
+
+        await sendUserActivationEmail(email, fullname, {
+            organization: owner?.owner_name ?? 'ReADI',
+            username: user.username!,
+            passcode: user.user_unique_code || activationToken.substring(0, 10),
+            loginlink: activationLink,
+        });
+        activationEmailSent = true;
+    }
+
+    return {
+        message: activationEmailSent ? 'Email updated and activation link resent' : 'Email updated successfully',
+        email,
+        activationEmailSent,
+    };
 }

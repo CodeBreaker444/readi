@@ -29,7 +29,11 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 
         const result = await updateAdminEmail(id, admin_user_id, new_email);
 
-        return NextResponse.json({ code: 1, message: result.message, data: { email: result.email } });
+        return NextResponse.json({
+            code: 1,
+            message: result.message,
+            data: { email: result.email, activationEmailSent: result.activationEmailSent },
+        });
     } catch (err: any) {
         if (err?.message === 'Admin user not found for this company') {
             return NextResponse.json({ code: 0, message: err.message }, { status: 404 });

@@ -255,7 +255,9 @@ export default function CompanyDetailPage() {
                 new_email: email,
             });
             if (res.data.code === 1) {
-                toast.success('Admin email updated successfully');
+                toast.success(res.data.data?.activationEmailSent
+                    ? 'Admin email updated — activation link resent to the new address'
+                    : 'Admin email updated successfully');
                 await fetchOwner();
             } else { setEmailError(res.data.message || 'Failed to update email'); }
         } catch (err: any) { setEmailError(err?.response?.data?.message || 'Network error'); }
