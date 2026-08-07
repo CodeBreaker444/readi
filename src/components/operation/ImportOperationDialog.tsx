@@ -78,6 +78,7 @@ const STEP_KEYS = [
 ];
 
 const PLATFORMS = [{ value: 'FLYTBASE', label: 'Control Center' }];
+const FLIGHTS_PAGE_SIZE = 20;
 
 function formatDuration(secs?: number): string {
     if (secs == null) return '—';
@@ -309,6 +310,11 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
             .finally(() => setLoadingMissionPlannings(false));
     }, [planId, opType]);
 
+    const matchingDrone = logSerialNumber
+        ? drones.find((d) => serialInList(d.drone_serial_numbers, logSerialNumber))
+        : undefined;
+    const selectedSystemInMaintenance = !!matchingDrone?.in_maintenance;
+
     const canNext = () => {
         if (step === 1) return !!clientId;
         if (step === 2) {
@@ -317,6 +323,7 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
         }
         if (step === 3) {
             if (!vehicleId) return false;
+            if (selectedSystemInMaintenance) return false;
             if (!missionCode.trim()) return false;
             if (opType === 'PDRA') {
                 if (!planId) return false;
@@ -333,14 +340,13 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
         return true;
     };
 
-    // Once the log's aircraft serial number and the drone list are both known,
-    // auto-select the one matching system — the user must not be able to pick
-    // a different one for a mismatched log.
     useEffect(() => {
-        if (!logSerialNumber || drones.length === 0) return;
-        const match = drones.find((d) => serialInList(d.drone_serial_numbers, logSerialNumber));
-        if (match && String(match.tool_id) !== vehicleId) setVehicleId(String(match.tool_id));
-    }, [logSerialNumber, drones, vehicleId]);
+        if (matchingDrone) {
+            if (String(matchingDrone.tool_id) !== vehicleId) setVehicleId(String(matchingDrone.tool_id));
+        } else if (vehicleId) {
+            setVehicleId('');
+        }
+    }, [matchingDrone, vehicleId]);
 
     useEffect(() => {
         if (step !== 3) return;
@@ -397,7 +403,7 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
         setSelectedFlightId('');
         setFlightsError('');
         try {
-            const { data } = await axios.get(`/api/flytbase/flights?window=${fbWindow}&organizationId=${organizationId}&page=${page}&pageSize=10`);
+            const { data } = await axios.get(`/api/flytbase/flights?window=${fbWindow}&organizationId=${organizationId}&page=${page}&pageSize=${FLIGHTS_PAGE_SIZE}`);
             if (data.success) {
                 const loaded = data.flights ?? [];
                 setFlights(loaded);
@@ -531,6 +537,8 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
         }
     }
 
+    const serialNotDetected = !loadingSerialNumber && !logSerialNumber;
+    const serialNoMatch     = !loadingSerialNumber && !loadingDrones && !!logSerialNumber && !matchingDrone;
     const selectedPilot    = pilots.find((p) => String(p.user_id) === pilotId);
     const pilotLabel       = selectedPilot ? `${selectedPilot.first_name} ${selectedPilot.last_name}` : '';
     const selectedFlightObj = flights.find((f) => f.flight_id === selectedFlightId);
@@ -539,7 +547,7 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
 
     return (
         <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-            <DialogContent className="sm:max-w-3xl gap-0 p-0 overflow-hidden max-h-[85vh] flex flex-col">
+            <DialogContent className="sm:max-w-3xl md:max-w-4xl lg:max-w-5xl gap-0 p-0 overflow-hidden max-h-[90vh] flex flex-col">
                 <DialogHeader className="px-6 pt-6 pb-4 border-b shrink-0">
                     <DialogTitle className="flex items-center gap-2 text-base font-semibold">
                         <FileUp className="h-5 w-5 text-violet-600" />
@@ -663,7 +671,7 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                                                     ))}
                                                 </div>
                                             ) : (
-                                                <div className="border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden h-64 flex flex-col">
+                                                <div className="border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden h-96 flex flex-col">
                                                     <div className="flex-1 overflow-y-auto">
                                                         {flights.map((f) => (
                                                             <div
@@ -693,10 +701,10 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                                                             </div>
                                                         )}
                                                 </div>
-                                                {flightTotal > 10 && (
+                                                {flightTotal > FLIGHTS_PAGE_SIZE && (
                                                     <div className="p-2 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between shrink-0">
                                                         <span className="text-xs text-muted-foreground">
-                                                            Page {flightPage} of {Math.ceil(flightTotal / 10)}
+                                                            Page {flightPage} of {Math.ceil(flightTotal / FLIGHTS_PAGE_SIZE)}
                                                         </span>
                                                         <div className="flex gap-1">
                                                             <Button
@@ -712,7 +720,7 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                                                                 size="sm"
                                                                 variant="outline"
                                                                 onClick={() => fetchFlytbaseFlights(flightPage + 1)}
-                                                                disabled={flightPage >= Math.ceil(flightTotal / 10) || loadingFlights}
+                                                                disabled={flightPage >= Math.ceil(flightTotal / FLIGHTS_PAGE_SIZE) || loadingFlights}
                                                                 className="h-7 px-2 cursor-pointer"
                                                             >
                                                                 Next
@@ -819,9 +827,9 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <Label className="mb-1.5 block">{t(ns + '.fields.droneSystem')} <span className="text-red-500">*</span></Label>
-                                    <Select value={vehicleId} onValueChange={setVehicleId} disabled={loadingDrones}>
+                                    <Select value={vehicleId} onValueChange={setVehicleId} disabled>
                                         <SelectTrigger>
-                                            {loadingDrones ? <Loader2 className="h-4 w-4 animate-spin" /> : vehicleId ? <SelectValue /> : <SelectValue placeholder={t(ns + '.placeholders.selectDot')} />}
+                                            {loadingDrones || loadingSerialNumber ? <Loader2 className="h-4 w-4 animate-spin" /> : vehicleId ? <SelectValue /> : <SelectValue placeholder={t(ns + '.placeholders.selectDot')} />}
                                         </SelectTrigger>
                                         <SelectContent>
                                             {drones.map((d) => (
@@ -840,6 +848,45 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                                             ))}
                                         </SelectContent>
                                     </Select>
+                                    <p className="mt-1.5 text-[11px] text-muted-foreground">
+                                        {t(ns + '.info.systemLockedForImport')}
+                                    </p>
+                                    {loadingSerialNumber && (
+                                        <p className="mt-1.5 text-xs text-muted-foreground flex items-center gap-1">
+                                            <Loader2 className="h-3 w-3 shrink-0 animate-spin" />
+                                            {t(ns + '.info.detectingSerialNumber')}
+                                        </p>
+                                    )}
+                                    {serialNotDetected && (
+                                        <div className="mt-2 flex items-start gap-2 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/40 px-3 py-2.5">
+                                            <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-red-500" />
+                                            <p className="text-xs leading-snug text-red-700 dark:text-red-400">
+                                                {t(ns + '.info.noSerialDetected')}
+                                            </p>
+                                        </div>
+                                    )}
+                                    {serialNoMatch && (
+                                        <div className="mt-2 flex items-start gap-2 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/40 px-3 py-2.5">
+                                            <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-red-500" />
+                                            <p className="text-xs leading-snug text-red-700 dark:text-red-400">
+                                                {t(ns + '.info.noSystemWithSerial', { serial: logSerialNumber })}
+                                            </p>
+                                        </div>
+                                    )}
+                                    {!loadingSerialNumber && matchingDrone && !selectedSystemInMaintenance && (
+                                        <p className="mt-1.5 text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                                            <CheckCircle2 className="h-3 w-3 shrink-0" />
+                                            {t(ns + '.info.systemAutoSelected', { name: matchingDrone.tool_name })}
+                                        </p>
+                                    )}
+                                    {!loadingSerialNumber && matchingDrone && selectedSystemInMaintenance && (
+                                        <div className="mt-2 flex items-start gap-2 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 px-3 py-2.5">
+                                            <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-500" />
+                                            <p className="text-xs leading-snug text-amber-700 dark:text-amber-400">
+                                                {t(ns + '.info.systemInMaintenance', { name: matchingDrone.tool_name })}
+                                            </p>
+                                        </div>
+                                    )}
                                 </div>
                                 <div>
                                     <Label className="mb-1.5 block">{t(ns + '.fields.missionCode')} <span className="text-red-500">*</span></Label>
@@ -989,7 +1036,7 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                             {logSerialNumber && (
                                 <div className="flex items-center gap-2 text-xs text-muted-foreground bg-slate-50 dark:bg-slate-900 p-2 rounded">
                                     <Fingerprint className="h-4 w-4" />
-                                    <span>Detected serial: {logSerialNumber}</span>
+                                    <span>{t(ns + '.info.detectedSerialNumber')}: {logSerialNumber}</span>
                                 </div>
                             )}
                         </div>
