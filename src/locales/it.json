@@ -1978,7 +1978,8 @@
         "noPlanningAvailable": "Nessuna pianificazione disponibile",
         "selectMissionPlanning": "Seleziona pianificazione missione…",
         "noMissionPlanningAvailable": "Nessuna pianificazione missione disponibile",
-        "selectVisualObserver": "Seleziona osservatore visivo…"
+        "selectVisualObserver": "Seleziona osservatore visivo…",
+        "searchFlights": "Cerca voli per nome…"
       },
       "info": {
         "gutmaAutoExtract": "Altitudine, distanza e timestamp vengono estratti automaticamente dal file di log GUTMA. Il codice missione viene generato automaticamente a meno che non ne imposti uno qui sotto.",
@@ -2002,7 +2003,9 @@
         "noSystemWithSerial": "Nessun sistema è presente con il numero di serie {{serial}}",
         "noSerialDetected": "Non è stato possibile rilevare un numero di serie in questo file di log, quindi il sistema non può essere selezionato automaticamente.",
         "systemAutoSelected": "Sistema selezionato automaticamente dal numero di serie del log: {{name}}",
-        "systemLockedForImport": "Il sistema viene determinato automaticamente dal numero di serie del log e non può essere modificato manualmente durante l'importazione."
+        "systemLockedForImport": "Il sistema viene determinato automaticamente dal numero di serie del log e non può essere modificato manualmente durante l'importazione.",
+        "clickToFetchFlights": "Clicca su \"Aggiorna Voli\" per caricare i voli dal Control Center",
+        "noFlightsMatchSearch": "Nessun volo corrisponde alla tua ricerca"
       },
       "review": {
         "client": "Cliente",

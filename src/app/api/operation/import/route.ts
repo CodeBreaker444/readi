@@ -8,6 +8,13 @@ import { internalError } from '@/lib/api-error';
 import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
 
+const GUTMA_DOWNLOAD_MAX_ATTEMPTS = 5;
+const GUTMA_DOWNLOAD_RETRY_DELAY_MS = 1_000;
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 async function fetchFlytbaseGutmaFile(
   userId: number,
   ownerId: number,
@@ -20,23 +27,41 @@ async function fetchFlytbaseGutmaFile(
   if (!creds) throw new Error('No FlytBase integration configured.');
 
   const gutmaUrl = `${env.FLYTBASE_URL}/v2/flight/report/download/gutma?${new URLSearchParams({ flightIds: flightId })}`;
-  const upstream = await fetch(gutmaUrl, {
-    method: 'GET',
-    headers: {
-      Authorization: `Bearer ${creds.token}`,
-      'org-id': creds.orgId,
-    },
-    signal: AbortSignal.timeout(30_000),
-  });
 
-  if (!upstream.ok) {
-    const errText = await upstream.text().catch(() => '');
-    throw new Error(`FlytBase returned ${upstream.status}: ${errText.slice(0, 200)}`);
+  let lastError: unknown;
+  for (let attempt = 1; attempt <= GUTMA_DOWNLOAD_MAX_ATTEMPTS; attempt++) {
+    try {
+      const upstream = await fetch(gutmaUrl, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${creds.token}`,
+          'org-id': creds.orgId,
+        },
+        signal: AbortSignal.timeout(30_000),
+      });
+
+      if (!upstream.ok) {
+        const errText = await upstream.text().catch(() => '');
+        throw new Error(`FlytBase returned ${upstream.status}: ${errText.slice(0, 200)}`);
+      }
+
+      const payload = await upstream.text();
+      const filename = `FlytBase_Export_${flightId}.gutma`;
+      return new File([payload], filename, { type: 'application/json' });
+    } catch (err) {
+      lastError = err;
+      console.error(`[fetchFlytbaseGutmaFile] attempt ${attempt}/${GUTMA_DOWNLOAD_MAX_ATTEMPTS} failed`, err);
+      if (attempt < GUTMA_DOWNLOAD_MAX_ATTEMPTS) {
+        await sleep(GUTMA_DOWNLOAD_RETRY_DELAY_MS * attempt);
+      }
+    }
   }
 
-  const payload = await upstream.text();
-  const filename = `FlytBase_Export_${flightId}.gutma`;
-  return new File([payload], filename, { type: 'application/json' });
+  throw new Error(
+    `Failed to download flight log from FlytBase after ${GUTMA_DOWNLOAD_MAX_ATTEMPTS} attempts: ${
+      lastError instanceof Error ? lastError.message : String(lastError)
+    }`
+  );
 }
 
 export async function POST(req: NextRequest) {

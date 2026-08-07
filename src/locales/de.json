@@ -1976,7 +1976,8 @@
         "noPlanningAvailable": "Keine Planung verfügbar",
         "selectMissionPlanning": "Missionsplanung auswählen…",
         "noMissionPlanningAvailable": "Keine Missionsplanung verfügbar",
-        "selectVisualObserver": "Visuellen Beobachter auswählen…"
+        "selectVisualObserver": "Visuellen Beobachter auswählen…",
+        "searchFlights": "Flüge nach Namen suchen…"
       },
       "info": {
         "gutmaAutoExtract": "Höhe, Distanz und Zeitstempel werden automatisch aus der GUTMA-Protokolldatei extrahiert. Der Missionscode wird automatisch generiert, sofern Sie unten keinen eigenen festlegen.",
@@ -2000,7 +2001,9 @@
         "noSystemWithSerial": "Es ist kein System mit der Seriennummer {{serial}} vorhanden",
         "noSerialDetected": "In dieser Protokolldatei konnte keine Seriennummer erkannt werden, daher kann das System nicht automatisch ausgewählt werden.",
         "systemAutoSelected": "System automatisch anhand der Seriennummer im Protokoll ausgewählt: {{name}}",
-        "systemLockedForImport": "Das System wird automatisch anhand der Seriennummer im Protokoll bestimmt und kann beim Import nicht manuell geändert werden."
+        "systemLockedForImport": "Das System wird automatisch anhand der Seriennummer im Protokoll bestimmt und kann beim Import nicht manuell geändert werden.",
+        "clickToFetchFlights": "Klicken Sie auf \"Flüge aktualisieren\", um Flüge vom Control Center zu laden",
+        "noFlightsMatchSearch": "Keine Flüge entsprechen Ihrer Suche"
       },
       "review": {
         "client": "Kunde",

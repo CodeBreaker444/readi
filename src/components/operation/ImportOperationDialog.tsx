@@ -34,6 +34,7 @@ import {
     Fingerprint,
     Loader2,
     RefreshCw,
+    Search,
     Settings,
     Upload,
     User,
@@ -137,6 +138,7 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
     const [flightsError, setFlightsError] = useState('');
     const [flightPage, setFlightPage] = useState(1);
     const [flightTotal, setFlightTotal] = useState(0);
+    const [flightsFetched, setFlightsFetched] = useState(false);
     const [flightSearchQuery, setFlightSearchQuery] = useState('');
     const [logSerialNumber, setLogSerialNumber] = useState<string | null>(null);
     const [loadingSerialNumber, setLoadingSerialNumber] = useState(false);
@@ -338,6 +340,14 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
         ? drones.find((d) => serialInList(d.drone_serial_numbers, logSerialNumber))
         : undefined;
 
+    const filteredFlights = flightSearchQuery.trim()
+        ? flights.filter((f) => {
+            const q = flightSearchQuery.trim().toLowerCase();
+            return (f.flight_name ?? f.flight_id).toLowerCase().includes(q)
+                || (f.drone_name ?? '').toLowerCase().includes(q);
+        })
+        : flights;
+
     useEffect(() => {
         if (matchingDrone) {
             if (String(matchingDrone.tool_id) !== vehicleId) setVehicleId(String(matchingDrone.tool_id));
@@ -387,7 +397,7 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
         setOpType('OPEN'); setFlightMode('RC');
         setLucProcedureId(''); setLocation(''); setGroupLabel(''); setNotes(''); setPilotId(''); setVisualObserverIds([]);
         setFbWindow('1440'); setFlights([]); setSelectedFlightId(''); setFlightsError('');
-        setFlightPage(1); setFlightTotal(0); setFlightSearchQuery('');
+        setFlightPage(1); setFlightTotal(0); setFlightSearchQuery(''); setFlightsFetched(false);
         setLogSerialNumber(null); setLoadingSerialNumber(false);
         setDrones([]); setPlannings([]); setMissionPlannings([]); setCategories([]); setTypes([]); setPilots([]); setLucProcedures([]);
         setLoadingClients(false); setLoadingDrones(false); setLoadingMissionOptions(false); setLoadingPlannings(false); setLoadingMissionPlannings(false); setLoadingPilots(false);
@@ -400,6 +410,8 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
         setFlights([]);
         setSelectedFlightId('');
         setFlightsError('');
+        setFlightsFetched(true);
+        setFlightSearchQuery('');
         try {
             const { data } = await axios.get(`/api/flytbase/flights?window=${fbWindow}&organizationId=${organizationId}&page=${page}&pageSize=${FLIGHTS_PAGE_SIZE}`);
             if (data.success) {
@@ -421,10 +433,14 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
     }, [fbWindow, organizationId, ns, t]);
 
     useEffect(() => {
-        if (step !== 2 || platform !== 'FLYTBASE' || !organizationId) return;
+        setFlights([]);
+        setSelectedFlightId('');
+        setFlightsError('');
+        setFlightsFetched(false);
         setFlightPage(1);
-        fetchFlytbaseFlights(1);
-    }, [step, platform, organizationId, fetchFlytbaseFlights]);
+        setFlightTotal(0);
+        setFlightSearchQuery('');
+    }, [organizationId, fbWindow]);
 
     // Detect the drone serial number from whichever log source is selected,
     // so it can be shown as a hint on the Mission Data step.
@@ -657,7 +673,20 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                                             </Select>
                                         </div>
                                         <div>
-                                            <Label className="mb-1.5 block">{t(ns + '.fields.selectFlight')} <span className="text-red-500">*</span></Label>
+                                            <div className="mb-1.5 flex items-center justify-between">
+                                                <Label>{t(ns + '.fields.selectFlight')} <span className="text-red-500">*</span></Label>
+                                                <Button
+                                                    type="button"
+                                                    size="sm"
+                                                    variant="outline"
+                                                    onClick={() => fetchFlytbaseFlights(1)}
+                                                    disabled={!organizationId || loadingFlights}
+                                                    className="h-7 px-2 cursor-pointer"
+                                                >
+                                                    {loadingFlights ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+                                                    <span className="ml-1">{t(ns + '.buttons.refreshFlights')}</span>
+                                                </Button>
+                                            </div>
                                             {loadingFlights ? (
                                                 <div className="space-y-3">
                                                     {[...Array(5)].map((_, i) => (
@@ -668,10 +697,27 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                                                         </div>
                                                     ))}
                                                 </div>
+                                            ) : !flightsFetched ? (
+                                                <div className="border border-dashed border-slate-300 dark:border-slate-700 rounded-lg h-96 flex flex-col items-center justify-center gap-2 text-center px-6">
+                                                    <FileUp className="h-6 w-6 text-slate-400 dark:text-slate-600" />
+                                                    <p className="text-sm text-slate-500 dark:text-slate-400">
+                                                        {t(ns + '.info.clickToFetchFlights')}
+                                                    </p>
+                                                </div>
                                             ) : (
+                                                <div className="space-y-2">
+                                                <div className="relative">
+                                                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+                                                    <Input
+                                                        value={flightSearchQuery}
+                                                        onChange={(e) => setFlightSearchQuery(e.target.value)}
+                                                        placeholder={t(ns + '.placeholders.searchFlights')}
+                                                        className="h-8 pl-8 text-xs"
+                                                    />
+                                                </div>
                                                 <div className="border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden h-96 flex flex-col">
                                                     <div className="flex-1 overflow-y-auto">
-                                                        {flights.map((f) => (
+                                                        {filteredFlights.map((f) => (
                                                             <div
                                                                 key={f.flight_id}
                                                                 onClick={() => setSelectedFlightId(f.flight_id)}
@@ -693,9 +739,11 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                                                                 </div>
                                                             </div>
                                                         ))}
-                                                        {flights.length === 0 && !loadingFlights && (
+                                                        {filteredFlights.length === 0 && !loadingFlights && (
                                                             <div className="p-4 text-center text-sm text-muted-foreground">
-                                                                No flights found
+                                                                {flightSearchQuery.trim()
+                                                                    ? t(ns + '.info.noFlightsMatchSearch')
+                                                                    : t(ns + '.toast.noFlightsFound')}
                                                             </div>
                                                         )}
                                                 </div>
@@ -726,7 +774,8 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                                                         </div>
                                                     </div>
                                                 )}
-                                            </div>
+                                                </div>
+                                                </div>
                                         )}
                                         {flightsError && (
                                             <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">{flightsError}</p>

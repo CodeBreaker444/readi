@@ -1983,7 +1983,8 @@
         "noPlanningAvailable": "No planning available",
         "selectMissionPlanning": "Select mission planning…",
         "noMissionPlanningAvailable": "No mission planning available",
-        "selectVisualObserver": "Select visual observer…"
+        "selectVisualObserver": "Select visual observer…",
+        "searchFlights": "Search flights by name…"
       },
       "info": {
         "gutmaAutoExtract": "Altitude, distance and timestamps are extracted automatically from the GUTMA log file. The mission code is auto-generated unless you set one below.",
@@ -2007,7 +2008,9 @@
         "noSystemWithSerial": "No system is present with the serial number {{serial}}",
         "noSerialDetected": "No serial number could be detected in this log file, so the system cannot be auto-selected.",
         "systemAutoSelected": "System auto-selected from log serial number: {{name}}",
-        "systemLockedForImport": "The system is determined automatically from the log's serial number and can't be changed manually during import."
+        "systemLockedForImport": "The system is determined automatically from the log's serial number and can't be changed manually during import.",
+        "clickToFetchFlights": "Click \"Refresh Flights\" to load flights from Control Center",
+        "noFlightsMatchSearch": "No flights match your search"
       },
       "review": {
         "client": "Client",
