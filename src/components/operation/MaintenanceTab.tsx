@@ -102,6 +102,11 @@ function formatHhmmHours(value: number): string {
   return `${hours}h ${minutes}m`;
 }
 
+const MODE_STYLE = {
+  auto: "bg-blue-500/10 text-blue-500",
+  manual: "bg-violet-500/10 text-violet-400",
+} as const;
+
 function CycleProgressBar({
   current,
   limit,
@@ -110,6 +115,8 @@ function CycleProgressBar({
   status,
   isDark,
   isHours,
+  mode,
+  modeLabel,
 }: {
   current: number;
   limit: number;
@@ -118,6 +125,10 @@ function CycleProgressBar({
   status: "OK" | "ALERT" | "DUE";
   isDark: boolean;
   isHours?: boolean;
+  // "manual" = user must enter a value (Flights/Hours); "auto" = computed
+  // automatically with no input (Days, tracked from elapsed calendar time).
+  mode?: "auto" | "manual";
+  modeLabel?: string;
 }) {
   if (!limit || limit <= 0) return null;
   const pct = Math.min(100, (current / limit) * 100);
@@ -125,11 +136,18 @@ function CycleProgressBar({
 
   return (
     <div className="space-y-1">
-      <div className="flex items-center gap-1.5">
-        <Icon className={cn("h-3 w-3", isDark ? "text-slate-500" : "text-slate-400")} />
-        <span className={cn("text-[10px] uppercase tracking-wider font-medium", isDark ? "text-slate-500" : "text-slate-400")}>
-          {label}
-        </span>
+      <div className="flex items-center justify-between gap-1.5">
+        <div className="flex items-center gap-1.5">
+          <Icon className={cn("h-3 w-3", isDark ? "text-slate-500" : "text-slate-400")} />
+          <span className={cn("text-[10px] uppercase tracking-wider font-medium", isDark ? "text-slate-500" : "text-slate-400")}>
+            {label}
+          </span>
+        </div>
+        {mode && modeLabel && (
+          <span className={cn("px-1 py-0 rounded text-[8px] font-semibold uppercase tracking-wide", MODE_STYLE[mode])}>
+            {modeLabel}
+          </span>
+        )}
       </div>
       <div className={cn("h-1.5 w-full rounded-full overflow-hidden", isDark ? "bg-slate-700" : "bg-slate-100")}>
         <div className={cn("h-full rounded-full transition-all", cfg.barColor)} style={{ width: `${pct}%` }} />
@@ -309,6 +327,8 @@ export function MaintenanceTab({
                     icon={Plane}
                     status={comp.status}
                     isDark={isDark}
+                    mode="manual"
+                    modeLabel={t("operations.missionComplete.maintenance.manual")}
                   />
                 )}
                 {hasHourLimit && (
@@ -320,6 +340,8 @@ export function MaintenanceTab({
                     status={comp.status}
                     isDark={isDark}
                     isHours
+                    mode="manual"
+                    modeLabel={t("operations.missionComplete.maintenance.manual")}
                   />
                 )}
                 {hasDayLimit && (
@@ -330,6 +352,8 @@ export function MaintenanceTab({
                     icon={CalendarDays}
                     status={comp.status}
                     isDark={isDark}
+                    mode="auto"
+                    modeLabel={t("operations.missionComplete.maintenance.auto")}
                   />
                 )}
               </div>

@@ -1684,6 +1684,8 @@
         "daysTracked": "Tage werden automatisch ab dem letzten Wartungsdatum erfasst.",
         "overdue": "Wartung ist überfällig — Wartung bald einplanen",
         "autoSynced": "Auto-synchronisiert",
+        "auto": "Automatisch",
+        "manual": "Manuell",
         "manualInput": "Manuelle Eingabe",
         "cycles": "Zyklen",
         "alreadyRecorded": "Für diese Mission wurde die Wartung bereits erfasst und kann nicht erneut aktualisiert werden.",

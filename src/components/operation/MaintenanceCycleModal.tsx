@@ -94,6 +94,14 @@ function formatHhmmHours(value: number): string {
   return `${hours}h ${minutes}m`;
 }
 
+function minutesToHhmm(totalMinutes: number): number {
+  const h = Math.floor(totalMinutes / 60);
+  const m = totalMinutes % 60;
+  return h + m / 100;
+}
+
+const DEFAULT_ADD_HOURS_MINUTES = 30;
+
 function CycleProgressBar({
   current,
   limit,
@@ -102,6 +110,8 @@ function CycleProgressBar({
   status,
   isDark,
   isHours,
+  mode,
+  modeLabel,
 }: {
   current: number;
   limit: number;
@@ -110,31 +120,47 @@ function CycleProgressBar({
   status: "OK" | "ALERT" | "DUE";
   isDark: boolean;
   isHours?: boolean;
+  // "manual" = user must enter a value (Flights/Hours); "auto" = computed
+  // automatically with no input (Days, tracked from elapsed calendar time).
+  mode?: "auto" | "manual";
+  modeLabel?: string;
 }) {
   if (!limit || limit <= 0) return null;
 
   const pct = Math.min(100, (current / limit) * 100);
-  
+
   const STATUS_COLORS = {
     OK: "bg-emerald-500",
     ALERT: "bg-amber-400",
     DUE: "bg-rose-500",
   };
 
+  const MODE_STYLE = {
+    auto: "bg-blue-500/10 text-blue-500",
+    manual: "bg-violet-500/10 text-violet-400",
+  };
+
   return (
     <div className="space-y-1">
-      <div className="flex items-center gap-1.5">
-        <Icon
-          className={cn("h-3 w-3", isDark ? "text-slate-500" : "text-slate-400")}
-        />
-        <span
-          className={cn(
-            "text-[10px] uppercase tracking-wider font-medium",
-            isDark ? "text-slate-500" : "text-slate-400"
-          )}
-        >
-          {label}
-        </span>
+      <div className="flex items-center justify-between gap-1.5">
+        <div className="flex items-center gap-1.5">
+          <Icon
+            className={cn("h-3 w-3", isDark ? "text-slate-500" : "text-slate-400")}
+          />
+          <span
+            className={cn(
+              "text-[10px] uppercase tracking-wider font-medium",
+              isDark ? "text-slate-500" : "text-slate-400"
+            )}
+          >
+            {label}
+          </span>
+        </div>
+        {mode && modeLabel && (
+          <span className={cn("px-1 py-0 rounded text-[8px] font-semibold uppercase tracking-wide", MODE_STYLE[mode])}>
+            {modeLabel}
+          </span>
+        )}
       </div>
       <div
         className={cn(
@@ -221,12 +247,31 @@ export function MaintenanceCycleModal({
         const initialCyclesRaw: Record<number, string> = {};
         const initialManual: Record<number, boolean> = {};
         for (const comp of sys.components) {
+          // Flights/cycles default to +1 (one mission = one use) so the
+          // common case needs no input; user can uncheck/edit if this
+          // mission shouldn't count, or if a different value applies. Skip
+          // the default when the component has no room left (already at
+          // or past its limit) so we don't push an already-DUE component
+          // further over.
+          const ratio = comp.battery_cycle_ratio || 1;
+          const remainingFlights = comp.limit_flight - comp.current_flights;
+          const canPrefillFlight = comp.limit_flight > 0 && remainingFlights >= ratio;
+
+          // Hours default to 30 minutes of usage, same reasoning as the
+          // flights +1 default; skipped when there isn't 30 minutes of
+          // room left before the component's limit.
+          const remainingHourMin = comp.limit_hour > 0
+            ? hhmmToMinutes(comp.limit_hour) - hhmmToMinutes(comp.current_hours)
+            : 0;
+          const canPrefillHours = comp.limit_hour > 0 && remainingHourMin >= DEFAULT_ADD_HOURS_MINUTES;
+          const defaultAddHours = canPrefillHours ? minutesToHhmm(DEFAULT_ADD_HOURS_MINUTES) : 0;
+
           initial[comp.component_id] = {
             component_id: comp.component_id,
-            add_flights: 0,
-            add_hours: 0,
+            add_flights: canPrefillFlight ? 1 : 0,
+            add_hours: defaultAddHours,
           };
-          initialRaw[comp.component_id] = "";
+          initialRaw[comp.component_id] = canPrefillHours ? defaultAddHours.toFixed(2) : "";
           initialCyclesRaw[comp.component_id] = "";
           initialManual[comp.component_id] = false;
         }
@@ -528,6 +573,8 @@ export function MaintenanceCycleModal({
                         icon={Plane}
                         status={comp.status}
                         isDark={isDark}
+                        mode="manual"
+                        modeLabel={t("operations.missionComplete.maintenance.manual")}
                       />
                       <CycleProgressBar
                         current={previewHours}
@@ -537,6 +584,8 @@ export function MaintenanceCycleModal({
                         status={comp.status}
                         isDark={isDark}
                         isHours
+                        mode="manual"
+                        modeLabel={t("operations.missionComplete.maintenance.manual")}
                       />
                       <CycleProgressBar
                         current={comp.current_days}
@@ -545,6 +594,8 @@ export function MaintenanceCycleModal({
                         icon={CalendarDays}
                         status={comp.status}
                         isDark={isDark}
+                        mode="auto"
+                        modeLabel={t("operations.missionComplete.maintenance.auto")}
                       />
                     </div>
 
@@ -660,6 +711,11 @@ export function MaintenanceCycleModal({
                           </div>
                         )}
                       </div>
+                      {comp.limit_day > 0 && (
+                        <p className={cn("mt-2 text-[10px] italic", isDark ? "text-slate-500" : "text-slate-400")}>
+                          {t("operations.missionComplete.maintenance.daysTracked")}
+                        </p>
+                      )}
                     </div>
                     )}
 

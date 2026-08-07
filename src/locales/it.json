@@ -1686,6 +1686,8 @@
         "daysTracked": "I giorni vengono tracciati automaticamente dalla data dell'ultima manutenzione.",
         "overdue": "La manutenzione è in ritardo — pianifica la manutenzione al più presto",
         "autoSynced": "Sincronizzato automaticamente",
+        "auto": "Automatico",
+        "manual": "Manuale",
         "manualInput": "Inserimento manuale",
         "cycles": "Cicli",
         "alreadyRecorded": "La manutenzione è già stata registrata per questa missione e non può essere aggiornata di nuovo.",

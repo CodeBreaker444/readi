@@ -118,6 +118,8 @@ function secondsToHhmm(seconds: number): number {
   return h + m / 100;
 }
 
+const DEFAULT_ADD_HOURS_MINUTES = 30;
+
 /** Convert an ISO timestamp to the "YYYY-MM-DDTHH:MM" format for datetime-local inputs */
 function isoToLocalInput(iso: string | null | undefined): string {
   if (!iso) return "";
@@ -206,8 +208,18 @@ export function MissionCompleteModal({ open, onClose, onSkip, toolId, missionId,
         const initCyclesRaw: Record<number, string> = {};
         const initManual: Record<number, boolean> = {};
         for (const c of sys.components) {
-          init[c.component_id] = { component_id: c.component_id, add_flights: 0, add_hours: 0 };
-          initRaw[c.component_id] = "";
+          const ratio = c.battery_cycle_ratio || 1;
+          const remainingFlights = c.limit_flight - c.current_flights;
+          const canPrefillFlight = c.limit_flight > 0 && remainingFlights >= ratio;
+
+          const remainingHourMin = c.limit_hour > 0
+            ? hhmmToMinutes(c.limit_hour) - hhmmToMinutes(c.current_hours)
+            : 0;
+          const canPrefillHours = c.limit_hour > 0 && remainingHourMin >= DEFAULT_ADD_HOURS_MINUTES;
+          const defaultAddHours = canPrefillHours ? secondsToHhmm(DEFAULT_ADD_HOURS_MINUTES * 60) : 0;
+
+          init[c.component_id] = { component_id: c.component_id, add_flights: canPrefillFlight ? 1 : 0, add_hours: defaultAddHours };
+          initRaw[c.component_id] = canPrefillHours ? defaultAddHours.toFixed(2) : "";
           initCyclesRaw[c.component_id] = "";
           initManual[c.component_id] = false;
         }
@@ -639,10 +651,13 @@ export function MissionCompleteModal({ open, onClose, onSkip, toolId, missionId,
                 if (!gutmaSnMap.has(sn)) continue;
                 if (manualCyclesInput[comp.component_id]) continue;
                 newSyncedIds.add(comp.component_id);
+                const ratio = comp.battery_cycle_ratio || 1;
+                const remainingFlights = comp.limit_flight - comp.current_flights;
+                const canSyncFlight = comp.limit_flight > 0 && remainingFlights >= ratio;
                 const current = next[comp.component_id] ?? { component_id: comp.component_id, add_flights: 0, add_hours: 0 };
                 next[comp.component_id] = {
                   ...current,
-                  add_flights: comp.limit_flight > 0 ? 1 : current.add_flights,
+                  add_flights: canSyncFlight ? 1 : current.add_flights,
                   add_hours: comp.limit_hour > 0 && durationHhmm > 0 ? durationHhmm : current.add_hours,
                 };
               }

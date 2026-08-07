@@ -444,6 +444,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
         }
         if (step === 3) {
             if (!schedulerForm.missionCode.trim() || !schedulerForm.scheduledStart || !schedulerForm.lucId) return false
+            if (!schedulerForm.typeId || !schedulerForm.categoryId) return false
             return true
         }
         if (step === 4) {
@@ -835,7 +836,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                             <Button
                                 size="sm"
                                 onClick={handleSubmit}
-                                disabled={isSubmitting || !pilotId || !schedulerForm.missionCode.trim() || !schedulerForm.lucId || !schedulerForm.scheduledStart}
+                                disabled={isSubmitting || !pilotId || !schedulerForm.missionCode.trim() || !schedulerForm.lucId || !schedulerForm.scheduledStart || !schedulerForm.typeId || !schedulerForm.categoryId}
                                 className="gap-2 cursor-pointer bg-violet-600 hover:bg-violet-700 text-white min-w-40"
                             >
                                 {isSubmitting

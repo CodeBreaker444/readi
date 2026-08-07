@@ -1691,6 +1691,8 @@
         "daysTracked": "Days are tracked automatically from the last maintenance date.",
         "overdue": "Maintenance is overdue — schedule maintenance soon",
         "autoSynced": "Auto-synced",
+        "auto": "Automatic",
+        "manual": "Manual",
         "manualInput": "Manual input",
         "cycles": "Cycles",
         "alreadyRecorded": "Maintenance has already been recorded for this mission and can't be updated again.",

@@ -104,7 +104,7 @@ export function OperationStepScheduler({
 
             <div className="grid grid-cols-2 gap-3">
                 <div>
-                    <Label className={labelCls(isDark)}>{t('operations.newOperation.scheduler.missionType')}</Label>
+                    <Label className={labelCls(isDark)}>{t('operations.newOperation.scheduler.missionType')} <span className="text-red-500">*</span></Label>
                     <Select value={form.typeId} onValueChange={v => onChange('typeId', v)} disabled={loadingOptions}>
                         <SelectTrigger className={inputCls(isDark)}>
                             <SelectValue placeholder={t('operations.newOperation.scheduler.selectType')} />
@@ -115,7 +115,7 @@ export function OperationStepScheduler({
                     </Select>
                 </div>
                 <div>
-                    <Label className={labelCls(isDark)}>{t('operations.newOperation.scheduler.category')}</Label>
+                    <Label className={labelCls(isDark)}>{t('operations.newOperation.scheduler.category')} <span className="text-red-500">*</span></Label>
                     <Select value={form.categoryId} onValueChange={v => onChange('categoryId', v)} disabled={loadingOptions}>
                         <SelectTrigger className={inputCls(isDark)}>
                             <SelectValue placeholder={t('operations.newOperation.scheduler.selectCategory')} />
