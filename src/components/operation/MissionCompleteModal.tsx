@@ -67,6 +67,14 @@ interface FlightLog {
   download_url: string;
 }
 
+interface MaintenanceLogEntry {
+  component_id: number;
+  component_code: string | null;
+  add_hours: number;
+  add_flights: number;
+  applied_at: string;
+}
+
 interface FlytbaseFlight {
   flight_id: string;
   flight_name?: string;
@@ -132,6 +140,8 @@ export function MissionCompleteModal({ open, onClose, onSkip, toolId, missionId,
   const [loadingMaint, setLoadingMaint] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [systemData, setSystemData] = useState<SystemData | null>(null);
+  const [maintenanceLog, setMaintenanceLog] = useState<MaintenanceLogEntry[] | null>(null);
+  const maintenanceApplied = !!maintenanceLog && maintenanceLog.length > 0;
   const [inputs, setInputs] = useState<Record<number, ComponentInput>>({});
   const [hoursRaw, setHoursRaw] = useState<Record<number, string>>({});
   const [cyclesRaw, setCyclesRaw] = useState<Record<number, string>>({});
@@ -212,6 +222,15 @@ export function MissionCompleteModal({ open, onClose, onSkip, toolId, missionId,
       setLoadingMaint(false);
     }
   }, [toolId, t]);
+
+  const loadMaintenanceLog = useCallback(async () => {
+    try {
+      const { data } = await axios.get(`/api/operation/board/maintenance-cycle/log?mission_id=${missionId}`);
+      if (data.code === 1) setMaintenanceLog(data.data ?? []);
+    } catch (e) {
+      console.error("Failed to load maintenance log:", e);
+    }
+  }, [missionId]);
 
   const loadWaypoints = useCallback(async (flightId: string, organizationId?: number | null) => {
     setLoadingWaypoints(true);
@@ -299,11 +318,12 @@ export function MissionCompleteModal({ open, onClose, onSkip, toolId, missionId,
   useEffect(() => {
     if (open && toolId > 0) {
       loadMaintenance();
+      loadMaintenanceLog();
       loadLogs();
       loadPostFlight();
       loadOrganizations();
     }
-  }, [open, toolId, loadMaintenance, loadLogs, loadPostFlight, loadOrganizations]);
+  }, [open, toolId, loadMaintenance, loadMaintenanceLog, loadLogs, loadPostFlight, loadOrganizations]);
 
   // Reload waypoints when switching to postflight tab if waypoints are not loaded but a FlytBase log exists
   useEffect(() => {
@@ -409,7 +429,7 @@ export function MissionCompleteModal({ open, onClose, onSkip, toolId, missionId,
   };
 
   const handleSubmitMaintenance = async () => {
-    if (!systemData) return;
+    if (!systemData || maintenanceApplied) return;
     const components = Object.values(inputs).filter((i) => i.add_flights > 0 || i.add_hours > 0);
     if (components.length === 0) { onClose(); return; }
     setSubmitting(true);
@@ -422,6 +442,9 @@ export function MissionCompleteModal({ open, onClose, onSkip, toolId, missionId,
       if (data.code === 1) {
         toast.success(t("operations.missionComplete.toast.updateSuccess"));
         onClose();
+      } else if (data.alreadyApplied) {
+        toast.error(t("operations.missionComplete.toast.maintenanceAlreadyApplied"));
+        loadMaintenanceLog();
       } else {
         toast.error(data.message || t("operations.missionComplete.toast.loadError"));
       }
@@ -753,6 +776,8 @@ export function MissionCompleteModal({ open, onClose, onSkip, toolId, missionId,
               manualCyclesInput={manualCyclesInput}
               autoSyncedIds={autoSyncedIds}
               isDark={isDark}
+              maintenanceApplied={maintenanceApplied}
+              maintenanceLog={maintenanceLog}
               onToggleFlight={handleToggleFlight}
               onManualCyclesToggle={handleManualCyclesToggle}
               onCyclesChange={handleCyclesChange}
@@ -825,7 +850,7 @@ export function MissionCompleteModal({ open, onClose, onSkip, toolId, missionId,
               }
             </Button>
 
-            {activeTab === "maintenance" && (
+            {activeTab === "maintenance" && !maintenanceApplied && (
               <Button
                 onClick={handleSubmitMaintenance}
                 disabled={submitting || loadingMaint || !hasComponents}

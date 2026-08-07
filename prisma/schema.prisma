@@ -1673,8 +1673,8 @@ model owner {
   flytrelay_enabled                  Boolean?                           @default(false)
   operation_email_enabled            Boolean                            @default(false)
   system_email_enabled               Boolean                            @default(false)
-  daily_email_limit                  Int                               @default(100)
-  daily_email_count                  Int                               @default(0)
+  daily_email_limit                  Int                                @default(100)
+  daily_email_count                  Int                                @default(0)
   daily_email_count_reset_date       DateTime?                          @db.Date
   email_limit_notification_sent_date DateTime?                          @db.Date
   api_keys                           api_keys[]
@@ -1837,6 +1837,7 @@ model pilot_mission {
   fk_erp_group_id           Int?
   fk_mission_planning_id    Int?
   controlroom_drone         controlroom_drone[]
+  mission_maintenance_log   mission_maintenance_log[]
   operation_attachment      operation_attachment[]
   planning_logbook          planning_logbook?          @relation(fields: [fk_mission_planning_id], references: [mission_planning_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_pilot_mission_mission_planning")
   client                    client?                    @relation(fields: [fk_client_id], references: [client_id], onDelete: NoAction, onUpdate: NoAction)
@@ -2501,9 +2502,24 @@ model tool_component {
   luc_document                luc_document[]
   maintenance_ticket          maintenance_ticket[]
   maintenance_ticket_item     maintenance_ticket_item[]
+  mission_maintenance_log     mission_maintenance_log[]
   tool                        tool                      @relation(fields: [fk_tool_id], references: [tool_id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([fk_tool_id, component_active], map: "idx_tool_component_tool")
+  @@schema("public")
+}
+
+model mission_maintenance_log {
+  mission_maintenance_log_id Int            @id @default(autoincrement())
+  fk_mission_id              Int
+  fk_component_id            Int
+  add_hours                  Decimal        @default(0) @db.Decimal
+  add_flights                Decimal        @default(0) @db.Decimal
+  created_at                 DateTime       @default(now()) @db.Timestamp(6)
+  tool_component             tool_component @relation(fields: [fk_component_id], references: [component_id], onDelete: Cascade, onUpdate: NoAction)
+  pilot_mission              pilot_mission  @relation(fields: [fk_mission_id], references: [pilot_mission_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([fk_mission_id], map: "idx_mission_maintenance_log_mission")
   @@schema("public")
 }
 

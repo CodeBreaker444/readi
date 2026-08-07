@@ -866,7 +866,8 @@
       "savedSuccess": "Checklist saved",
       "saveFailed": "Failed to save checklist result",
       "checklistNotFound": "Checklist not found",
-      "noChecklistDef": "No checklist definition for code"
+      "noChecklistDef": "No checklist definition for code",
+      "saving": "Saving..."
     },
     "evaluationRequest": {
       "pageTitle": "Planning · New Evaluation Request",
@@ -1551,6 +1552,7 @@
         "stepsCompleteNotFinalized": "Steps complete, not finalized",
         "assignment": "Assignment",
         "checklist": "Checklist",
+        "communication": "Communication",
         "manageProcedure": "Manage Procedure",
         "missionDetails": "Mission Details",
         "client": "Client",
@@ -1579,6 +1581,7 @@
         "pending": "Pending",
         "assignment": "Assignment",
         "checklist": "Checklist",
+        "communication": "Communication",
         "complete": "✓ Complete",
         "incomplete": "✗ Incomplete"
       }
@@ -1691,7 +1694,10 @@
         "overdue": "Maintenance is overdue — schedule maintenance soon",
         "autoSynced": "Auto-synced",
         "manualInput": "Manual input",
-        "cycles": "Cycles"
+        "cycles": "Cycles",
+        "alreadyRecorded": "Maintenance has already been recorded for this mission and can't be updated again.",
+        "recordedUsage": "Recorded Usage",
+        "noUsageRecorded": "No usage recorded for this component."
       },
       "logs": {
         "attachedLogs": "Attached Logs",
@@ -1764,7 +1770,8 @@
         "attachSuccess": "Flight log attached from Control Center",
         "autoSyncSuccess_one": "Auto-filled usage for {{count}} component from GUTMA",
         "autoSyncSuccess_other": "Auto-filled usage for {{count}} components from GUTMA",
-        "postFlightSuccess": "Post-flight data saved"
+        "postFlightSuccess": "Post-flight data saved",
+        "maintenanceAlreadyApplied": "Maintenance has already been recorded for this mission"
       }
     },
     "dialog": {
@@ -1894,7 +1901,8 @@
         "cancel": "Cancel",
         "delete": "Delete",
         "success": "Operation deleted successfully",
-        "error": "Delete failed"
+        "error": "Delete failed",
+        "revertMaintenance": "Revert the maintenance hours/flights this mission recorded on its components"
       }
     },
     "importOperation": {

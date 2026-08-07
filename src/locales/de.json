@@ -863,7 +863,8 @@
       "savedSuccess": "Checkliste gespeichert",
       "saveFailed": "Checklisten-Ergebnis konnte nicht gespeichert werden",
       "checklistNotFound": "Checkliste nicht gefunden",
-      "noChecklistDef": "Keine Checklistendefinition für Code vorhanden"
+      "noChecklistDef": "Keine Checklistendefinition für Code vorhanden",
+      "saving": "Wird gespeichert..."
     },
     "evaluationRequest": {
       "pageTitle": "Planung · Neue Bewertungsanfrage",
@@ -1547,6 +1548,7 @@
         "stepsCompleteNotFinalized": "Schritte abgeschlossen, nicht finalisiert",
         "assignment": "Zuweisung",
         "checklist": "Checkliste",
+        "communication": "Kommunikation",
         "manageProcedure": "Verfahren verwalten",
         "missionDetails": "Missionsdetails",
         "client": "Kunde",
@@ -1575,6 +1577,7 @@
         "pending": "Ausstehend",
         "assignment": "Zuweisung",
         "checklist": "Checkliste",
+        "communication": "Kommunikation",
         "complete": "✓ Abgeschlossen",
         "incomplete": "✗ Unvollständig"
       }
@@ -1684,7 +1687,10 @@
         "overdue": "Wartung ist überfällig — Wartung bald einplanen",
         "autoSynced": "Auto-synchronisiert",
         "manualInput": "Manuelle Eingabe",
-        "cycles": "Zyklen"
+        "cycles": "Zyklen",
+        "alreadyRecorded": "Für diese Mission wurde die Wartung bereits erfasst und kann nicht erneut aktualisiert werden.",
+        "recordedUsage": "Erfasste Nutzung",
+        "noUsageRecorded": "Keine Nutzung für diese Komponente erfasst."
       },
       "logs": {
         "attachedLogs": "Angehängte Protokolle",
@@ -1757,7 +1763,8 @@
         "attachSuccess": "Flugprotokoll von Control Center angehängt",
         "autoSyncSuccess_one": "Nutzung für {{count}} Komponente aus GUTMA ausgefüllt",
         "autoSyncSuccess_other": "Nutzung für {{count}} Komponenten aus GUTMA ausgefüllt",
-        "postFlightSuccess": "Nachflugdaten gespeichert"
+        "postFlightSuccess": "Nachflugdaten gespeichert",
+        "maintenanceAlreadyApplied": "Für diese Mission wurde die Wartung bereits erfasst"
       }
     },
     "dialog": {
@@ -1887,7 +1894,8 @@
         "cancel": "Abbrechen",
         "delete": "Löschen",
         "success": "Vorgang erfolgreich gelöscht",
-        "error": "Löschen fehlgeschlagen"
+        "error": "Löschen fehlgeschlagen",
+        "revertMaintenance": "Die von dieser Mission an ihren Komponenten erfassten Wartungsstunden/-flüge rückgängig machen"
       }
     },
     "importOperation": {

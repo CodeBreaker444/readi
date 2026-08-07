@@ -47,6 +47,11 @@ function addHhmmHours(a: number, b: number): number {
   return Math.floor(totalMin / 60) + (totalMin % 60) / 100;
 }
 
+function subtractHhmmHours(a: number, b: number): number {
+  const totalMin = Math.max(0, hhmmToMinutes(a) - hhmmToMinutes(b));
+  return Math.floor(totalMin / 60) + (totalMin % 60) / 100;
+}
+
 function computeComponentStatus(
   currentHours: number,
   currentFlights: number,
@@ -174,18 +179,108 @@ export async function getComponentsForMaintenanceCycle(
 }
 
 
+export interface MissionMaintenanceLogEntry {
+  component_id: number;
+  component_code: string | null;
+  add_hours: number;
+  add_flights: number;
+  applied_at: string;
+}
+
+export async function getMissionMaintenanceLog(missionId: number): Promise<MissionMaintenanceLogEntry[]> {
+  const rows = await prisma.mission_maintenance_log.findMany({
+    where: { fk_mission_id: missionId },
+    select: {
+      add_hours: true,
+      add_flights: true,
+      created_at: true,
+      fk_component_id: true,
+      tool_component: { select: { component_code: true, component_name: true } },
+    },
+    orderBy: { created_at: 'asc' },
+  });
+
+  return rows.map((r) => ({
+    component_id: r.fk_component_id,
+    component_code: r.tool_component.component_code || r.tool_component.component_name,
+    add_hours: Number(r.add_hours),
+    add_flights: Number(r.add_flights),
+    applied_at: r.created_at.toISOString(),
+  }));
+}
+
+/**
+ * Reverses the maintenance hours/flights this mission previously recorded on
+ * its components (used when a mission is deleted). Removes the log entries
+ * once applied so a later delete of the same mission is a no-op.
+ */
+export async function revertMissionMaintenance(missionId: number, ownerId: number): Promise<{ reverted: number }> {
+  const rows = await prisma.mission_maintenance_log.findMany({
+    where: { fk_mission_id: missionId, tool_component: { tool: { fk_owner_id: ownerId } } },
+    select: { mission_maintenance_log_id: true, fk_component_id: true, add_hours: true, add_flights: true },
+  });
+
+  if (rows.length === 0) return { reverted: 0 };
+
+  await prisma.$transaction(async (tx) => {
+    for (const row of rows) {
+      const comp = await tx.tool_component.findUnique({
+        where: { component_id: row.fk_component_id },
+        select: { current_maintenance_hours: true, current_maintenance_flights: true, current_usage_hours: true },
+      });
+      if (!comp) continue;
+
+      const addHours = Number(row.add_hours);
+      const addFlights = Number(row.add_flights);
+
+      const revertedHours = subtractHhmmHours(Number(comp.current_maintenance_hours ?? 0), addHours);
+      const revertedFlights = Math.max(0, Math.round((Number(comp.current_maintenance_flights ?? 0) - addFlights) * 100) / 100);
+      const revertedLifetimeHours = subtractHhmmHours(Number(comp.current_usage_hours ?? 0), addHours);
+
+      await tx.tool_component.update({
+        where: { component_id: row.fk_component_id },
+        data: {
+          current_maintenance_hours: revertedHours,
+          current_maintenance_flights: revertedFlights,
+          current_usage_hours: revertedLifetimeHours,
+        },
+      });
+    }
+
+    await tx.mission_maintenance_log.deleteMany({
+      where: { mission_maintenance_log_id: { in: rows.map((r) => r.mission_maintenance_log_id) } },
+    });
+  });
+
+  return { reverted: rows.length };
+}
+
 export async function updateComponentMaintenanceCycle(
   toolId: number,
   missionId: number,
   ownerId: number,
   updates: UpdateComponentInput[]
-): Promise<{ code: number; message: string; components: ComponentMaintenanceInfo[] }> {
+): Promise<{ code: number; message: string; components: ComponentMaintenanceInfo[]; alreadyApplied?: boolean }> {
   const tool = await prisma.tool.findFirst({
     where: { tool_id: toolId, fk_owner_id: ownerId },
     select: { tool_id: true },
   });
 
   if (!tool) throw new Error('System not found or unauthorized');
+
+  const existingLog = await prisma.mission_maintenance_log.findFirst({
+    where: { fk_mission_id: missionId },
+    select: { mission_maintenance_log_id: true },
+  });
+
+  if (existingLog) {
+    return {
+      code: 0,
+      message: 'Maintenance has already been recorded for this mission and cannot be updated again.',
+      components: [],
+      alreadyApplied: true,
+    };
+  }
 
   await refreshMaintenanceDaysForTool(toolId);
 
@@ -266,6 +361,15 @@ export async function updateComponentMaintenanceCycle(
         console.error(`[maintenance-cycle] update failed for component ${upd.component_id}`);
         return null;
       }
+
+      await prisma.mission_maintenance_log.create({
+        data: {
+          fk_mission_id: missionId,
+          fk_component_id: upd.component_id,
+          add_hours: upd.add_hours || 0,
+          add_flights: upd.add_flights || 0,
+        },
+      });
 
       const finalHours = upd.add_hours > 0 ? newHours : prevHours;
       const finalFlights = upd.add_flights > 0 ? newFlights : prevFlights;

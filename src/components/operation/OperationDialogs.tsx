@@ -8,6 +8,7 @@ import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Button } from "../ui/button";
+import { Checkbox } from "../ui/checkbox";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../ui/dialog";
 import { Skeleton } from "../ui/skeleton";
 
@@ -199,12 +200,23 @@ export function DeleteDialog({ open, onClose, operation, onDeleted }: {
 }) {
     const { t } = useTranslation();
     const [isPending, startTransition] = useTransition();
+    const [hasMaintenanceLog, setHasMaintenanceLog] = useState(false);
+    const [revertMaintenance, setRevertMaintenance] = useState(false);
+
+    useEffect(() => {
+        if (!open || !operation) { setHasMaintenanceLog(false); setRevertMaintenance(false); return; }
+        setRevertMaintenance(false);
+        axios.get(`/api/operation/board/maintenance-cycle/log?mission_id=${operation.pilot_mission_id}`)
+            .then(({ data }) => setHasMaintenanceLog(data.code === 1 && (data.data ?? []).length > 0))
+            .catch(() => setHasMaintenanceLog(false));
+    }, [open, operation]);
 
     function handleDelete() {
         if (!operation) return;
         startTransition(async () => {
             try {
-                await axios.delete(`/api/operation/${operation.pilot_mission_id}`);
+                const query = revertMaintenance ? '?revert_maintenance=1' : '';
+                await axios.delete(`/api/operation/${operation.pilot_mission_id}${query}`);
                 onDeleted(operation.pilot_mission_id);
                 toast.success(t('operations.dialog.delete.success'));
                 onClose();
@@ -224,6 +236,15 @@ export function DeleteDialog({ open, onClose, operation, onDeleted }: {
                         <span className="font-medium text-foreground">{operation?.mission_name}</span>. {t('operations.dialog.delete.undone')}
                     </DialogDescription>
                 </DialogHeader>
+                {hasMaintenanceLog && (
+                    <label className="flex items-start gap-2 cursor-pointer rounded-md border px-3 py-2 text-sm">
+                        <Checkbox
+                            checked={revertMaintenance}
+                            onCheckedChange={(checked) => setRevertMaintenance(checked === true)}
+                        />
+                        <span>{t('operations.dialog.delete.revertMaintenance')}</span>
+                    </label>
+                )}
                 <DialogFooter>
                     <Button variant="outline" onClick={onClose} disabled={isPending}>{t('operations.dialog.delete.cancel')}</Button>
                     <Button variant="destructive" onClick={handleDelete} disabled={isPending}>

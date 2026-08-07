@@ -863,7 +863,8 @@
       "savedSuccess": "Checklist salvata",
       "saveFailed": "Salvataggio checklist fallito",
       "checklistNotFound": "Checklist non trovata",
-      "noChecklistDef": "Nessuna definizione checklist per il codice"
+      "noChecklistDef": "Nessuna definizione checklist per il codice",
+      "saving": "Salvataggio in corso..."
     },
     "evaluationRequest": {
       "pageTitle": "Pianificazione · Nuova Richiesta di Valutazione",
@@ -1549,6 +1550,7 @@
         "stepsCompleteNotFinalized": "Passaggi completati, non finalizzati",
         "assignment": "Assegnazione",
         "checklist": "Lista di controllo",
+        "communication": "Comunicazione",
         "manageProcedure": "Gestisci procedura",
         "missionDetails": "Dettagli missione",
         "client": "Cliente",
@@ -1577,6 +1579,7 @@
         "pending": "In attesa",
         "assignment": "Assegnazione",
         "checklist": "Lista di controllo",
+        "communication": "Comunicazione",
         "complete": "✓ Completo",
         "incomplete": "✗ Incompleto"
       }
@@ -1686,7 +1689,10 @@
         "overdue": "La manutenzione è in ritardo — pianifica la manutenzione al più presto",
         "autoSynced": "Sincronizzato automaticamente",
         "manualInput": "Inserimento manuale",
-        "cycles": "Cicli"
+        "cycles": "Cicli",
+        "alreadyRecorded": "La manutenzione è già stata registrata per questa missione e non può essere aggiornata di nuovo.",
+        "recordedUsage": "Utilizzo registrato",
+        "noUsageRecorded": "Nessun utilizzo registrato per questo componente."
       },
       "logs": {
         "attachedLogs": "Log allegati",
@@ -1759,7 +1765,8 @@
         "attachSuccess": "Log di volo allegato da Control Center",
         "autoSyncSuccess_one": "Utilizzo per {{count}} componente compilato automaticamente da GUTMA",
         "autoSyncSuccess_other": "Utilizzo per {{count}} componenti compilato automaticamente da GUTMA",
-        "postFlightSuccess": "Dati post-volo salvati"
+        "postFlightSuccess": "Dati post-volo salvati",
+        "maintenanceAlreadyApplied": "La manutenzione è già stata registrata per questa missione"
       }
     },
     "dialog": {
@@ -1889,7 +1896,8 @@
         "cancel": "Annulla",
         "delete": "Elimina",
         "success": "Operazione eliminata con successo",
-        "error": "Eliminazione fallita"
+        "error": "Eliminazione fallita",
+        "revertMaintenance": "Ripristina le ore/voli di manutenzione registrati da questa missione sui suoi componenti"
       }
     },
     "importOperation": {

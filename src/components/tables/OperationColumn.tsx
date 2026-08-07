@@ -93,21 +93,23 @@ function formatShortDate(val: string | null | undefined, tz: string): string {
   return formatDateTimeInTz(val, tz);
 }
 
-function getProcedureStatus(op: Operation): { assignmentDone: boolean; checklistDone: boolean; hasLuc: boolean } {
+function getProcedureStatus(op: Operation): { assignmentDone: boolean; checklistDone: boolean; communicationDone: boolean; hasLuc: boolean } {
   const hasLuc = !!op.fk_luc_procedure_id;
   if (!hasLuc || !op.luc_procedure_progress) {
-    return { hasLuc, assignmentDone: false, checklistDone: false };
+    return { hasLuc, assignmentDone: false, checklistDone: false, communicationDone: false };
   }
   const progress = op.luc_procedure_progress;
   const assignmentEntries = Object.values(progress.assignment ?? {});
   const checklistEntries = Object.values(progress.checklist ?? {});
+  const communicationEntries = Object.values(progress.communication ?? {});
   const assignmentDone = assignmentEntries.length === 0 || assignmentEntries.every(v => v === 'Y');
   const checklistDone = checklistEntries.length === 0 || checklistEntries.every(v => v === 'Y');
-  return { hasLuc, assignmentDone, checklistDone };
+  const communicationDone = communicationEntries.length === 0 || communicationEntries.every(v => v === 'Y');
+  return { hasLuc, assignmentDone, checklistDone, communicationDone };
 }
 
 function ProcedureBadge({ op, isDark, t }: { op: Operation; isDark: boolean; t: TFunction }) {
-  const { hasLuc, assignmentDone, checklistDone } = getProcedureStatus(op);
+  const { hasLuc, assignmentDone, checklistDone, communicationDone } = getProcedureStatus(op);
 
   if (!hasLuc) {
     return (
@@ -124,7 +126,7 @@ function ProcedureBadge({ op, isDark, t }: { op: Operation; isDark: boolean; t: 
     );
   }
 
-  const allDone = !!op.luc_completed_at || (assignmentDone && checklistDone);
+  const allDone = !!op.luc_completed_at || (assignmentDone && checklistDone && communicationDone);
 
   return (
     <Tooltip>
@@ -141,6 +143,7 @@ function ProcedureBadge({ op, isDark, t }: { op: Operation; isDark: boolean; t: 
         <div className="text-xs space-y-0.5">
           <p>{t('operations.table.procedureBadge.assignment')}: {assignmentDone ? t('operations.table.procedureBadge.complete') : t('operations.table.procedureBadge.incomplete')}</p>
           <p>{t('operations.table.procedureBadge.checklist')}: {checklistDone ? t('operations.table.procedureBadge.complete') : t('operations.table.procedureBadge.incomplete')}</p>
+          <p>{t('operations.table.procedureBadge.communication')}: {communicationDone ? t('operations.table.procedureBadge.complete') : t('operations.table.procedureBadge.incomplete')}</p>
         </div>
       </TooltipContent>
     </Tooltip>
