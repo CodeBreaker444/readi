@@ -81,19 +81,30 @@ const defaultForm: FormState = {
   username: '',
 };
 
+const buildFormState = (clientData?: ClientData): FormState => {
+  if (!clientData) return defaultForm;
+  return {
+    ...defaultForm,
+    ...clientData,
+    client_legal_name: clientData.client_legal_name ?? '',
+    client_code: clientData.client_code ?? '',
+    client_email: clientData.client_email ?? '',
+    client_phone: clientData.client_phone ?? '',
+    client_website: clientData.client_website ?? '',
+    client_address: clientData.client_address ?? '',
+    client_city: clientData.client_city ?? '',
+    client_state: clientData.client_state ?? '',
+    client_postal_code: clientData.client_postal_code ?? '',
+    payment_terms: clientData.payment_terms ?? '',
+    credit_limit: clientData.credit_limit?.toString() || '',
+    contract_start_date: clientData.contract_start_date || '',
+    contract_end_date: clientData.contract_end_date || '',
+    username: clientData.username || '',
+  };
+};
+
 export function ClientFormModal({ isOpen, onClose, mode, clientData, onSubmit, isDark }: ClientFormModalProps) {
-  const [formData, setFormData] = useState<FormState>(
-    clientData
-      ? {
-          ...defaultForm,
-          ...clientData,
-          credit_limit: clientData.credit_limit?.toString() || '',
-          contract_start_date: clientData.contract_start_date || '',
-          contract_end_date: clientData.contract_end_date || '',
-          username: clientData.username || '',
-        }
-      : defaultForm
-  );
+  const [formData, setFormData] = useState<FormState>(buildFormState(clientData));
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [usernameStatus, setUsernameStatus] = useState<UsernameStatus>('idle');
   const [generatedPassword, setGeneratedPassword] = useState('');
@@ -109,18 +120,7 @@ export function ClientFormModal({ isOpen, onClose, mode, clientData, onSubmit, i
   // Reset form when modal opens
   useEffect(() => {
     if (isOpen) {
-      setFormData(
-        clientData
-          ? {
-              ...defaultForm,
-              ...clientData,
-              credit_limit: clientData.credit_limit?.toString() || '',
-              contract_start_date: clientData.contract_start_date || '',
-              contract_end_date: clientData.contract_end_date || '',
-              username: clientData.username || '',
-            }
-          : defaultForm
-      );
+      setFormData(buildFormState(clientData));
       setUsernameStatus('idle');
       setGeneratedPassword(mode === 'add' ? makePassword() : '');
       setShowPassword(false);
@@ -185,7 +185,7 @@ export function ClientFormModal({ isOpen, onClose, mode, clientData, onSubmit, i
         return;
       }
     }
-    if (formData.client_email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.client_email)) {
+    if (mode === 'add' && formData.client_email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.client_email)) {
       toast.error('Please enter a valid email address');
       return;
     }
@@ -202,7 +202,7 @@ export function ClientFormModal({ isOpen, onClose, mode, clientData, onSubmit, i
         credit_limit: formData.credit_limit ? parseFloat(formData.credit_limit) : undefined,
         contract_start_date: formData.contract_start_date || undefined,
         contract_end_date: formData.contract_end_date || undefined,
-        client_email: formData.client_email || undefined,
+        client_email: mode === 'add' ? (formData.client_email || undefined) : undefined,
         client_website: formData.client_website || undefined,
       });
     } finally {
