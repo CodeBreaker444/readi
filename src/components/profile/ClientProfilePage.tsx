@@ -19,6 +19,7 @@ import {
   Phone,
   User,
 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { useTheme } from '../useTheme';
@@ -39,6 +40,7 @@ interface ClientInfo {
 
 export default function ClientProfilePage({ user }: { user: SessionUser }) {
   const { isDark } = useTheme();
+  const router = useRouter();
 
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -98,7 +100,7 @@ export default function ClientProfilePage({ user }: { user: SessionUser }) {
       if (res.data.updateResult) {
         toast.success('Profile updated');
         if (res.data.avatarUrl) { setCurrentAvatarUrl(res.data.avatarUrl); setAvatarPreview(null); setAvatar(null); }
-        window.location.reload();
+        router.refresh();
       } else {
         toast.error(res.data.message || 'Update failed');
       }

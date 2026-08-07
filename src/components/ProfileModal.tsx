@@ -3,6 +3,7 @@ import { SessionUser } from '@/lib/auth/server-session';
 import { formatDateInTz } from '@/lib/utils';
 import axios from 'axios';
 import { Camera, CheckCircle2, Clock, GraduationCap, Loader2, User } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -142,6 +143,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
 }) => {
   const { t } = useTranslation();
   const { timezone } = useTimezone();
+  const router = useRouter();
   const canEditEmail =
     userData?.role === 'ADMIN' || userData?.role === 'SUPERADMIN';
 
@@ -281,7 +283,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
           setAvatar(null);
         }
         onClose();
-        window.location.reload();
+        router.refresh();
       } else {
         toast.error(result.message || t('profile.errors.update'));
       }

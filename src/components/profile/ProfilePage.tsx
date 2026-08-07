@@ -18,6 +18,7 @@ import { SessionUser } from '@/lib/auth/server-session';
 import { formatDateInTz } from '@/lib/utils';
 import axios from 'axios';
 import { Camera, CheckCircle2, Clock, GraduationCap, Link2, Loader2, ShieldCheck, User } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -29,6 +30,7 @@ export default function Profile({ user }: { user: SessionUser }) {
   const { t } = useTranslation();
   const { timezone } = useTimezone();
   const { isDark } = useTheme();
+  const router = useRouter();
 
   const [formData, setFormData] = useState({
     fullName: '',
@@ -128,7 +130,7 @@ export default function Profile({ user }: { user: SessionUser }) {
       if (result.updateResult) {
         toast.success(t('profile.success.updated'));
         if (result.avatarUrl) { setCurrentAvatarUrl(result.avatarUrl); setAvatarPreview(null); setAvatar(null); }
-        window.location.reload();
+        router.refresh();
       } else {
         toast.error(result.message || t('profile.errors.update'));
       }
