@@ -1994,8 +1994,7 @@
         "noSystemWithSerial": "Nessun sistema è presente con il numero di serie {{serial}}",
         "noSerialDetected": "Non è stato possibile rilevare un numero di serie in questo file di log, quindi il sistema non può essere selezionato automaticamente.",
         "systemAutoSelected": "Sistema selezionato automaticamente dal numero di serie del log: {{name}}",
-        "systemLockedForImport": "Il sistema viene determinato automaticamente dal numero di serie del log e non può essere modificato manualmente durante l'importazione.",
-        "systemInMaintenance": "{{name}} è attualmente in manutenzione e non può essere utilizzato per questa importazione. Non è possibile procedere finché non torna operativo."
+        "systemLockedForImport": "Il sistema viene determinato automaticamente dal numero di serie del log e non può essere modificato manualmente durante l'importazione."
       },
       "review": {
         "client": "Cliente",

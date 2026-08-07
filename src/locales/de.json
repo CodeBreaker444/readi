@@ -1992,8 +1992,7 @@
         "noSystemWithSerial": "Es ist kein System mit der Seriennummer {{serial}} vorhanden",
         "noSerialDetected": "In dieser Protokolldatei konnte keine Seriennummer erkannt werden, daher kann das System nicht automatisch ausgewählt werden.",
         "systemAutoSelected": "System automatisch anhand der Seriennummer im Protokoll ausgewählt: {{name}}",
-        "systemLockedForImport": "Das System wird automatisch anhand der Seriennummer im Protokoll bestimmt und kann beim Import nicht manuell geändert werden.",
-        "systemInMaintenance": "{{name}} befindet sich derzeit in Wartung und kann für diesen Import nicht verwendet werden. Sie können erst fortfahren, wenn es wieder einsatzbereit ist."
+        "systemLockedForImport": "Das System wird automatisch anhand der Seriennummer im Protokoll bestimmt und kann beim Import nicht manuell geändert werden."
       },
       "review": {
         "client": "Kunde",

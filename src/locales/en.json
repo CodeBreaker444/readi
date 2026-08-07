@@ -1999,8 +1999,7 @@
         "noSystemWithSerial": "No system is present with the serial number {{serial}}",
         "noSerialDetected": "No serial number could be detected in this log file, so the system cannot be auto-selected.",
         "systemAutoSelected": "System auto-selected from log serial number: {{name}}",
-        "systemLockedForImport": "The system is determined automatically from the log's serial number and can't be changed manually during import.",
-        "systemInMaintenance": "{{name}} is currently under maintenance and can't be used for this import. You can't proceed until it's back in service."
+        "systemLockedForImport": "The system is determined automatically from the log's serial number and can't be changed manually during import."
       },
       "review": {
         "client": "Client",

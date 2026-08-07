@@ -792,7 +792,7 @@ export function MissionLucProcedureModal({ mission, isDark, onClose }: Props) {
               onClick={onClose}
               className={`h-8 text-xs ${isDark ? 'border-slate-600 text-slate-300 hover:bg-slate-700' : ''}`}
             >
-              {t('planning.form.no')}
+              {t('common.close')}
             </Button>
           </div>
         </div>

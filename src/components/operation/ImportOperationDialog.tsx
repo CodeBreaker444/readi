@@ -310,11 +310,6 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
             .finally(() => setLoadingMissionPlannings(false));
     }, [planId, opType]);
 
-    const matchingDrone = logSerialNumber
-        ? drones.find((d) => serialInList(d.drone_serial_numbers, logSerialNumber))
-        : undefined;
-    const selectedSystemInMaintenance = !!matchingDrone?.in_maintenance;
-
     const canNext = () => {
         if (step === 1) return !!clientId;
         if (step === 2) {
@@ -323,7 +318,6 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
         }
         if (step === 3) {
             if (!vehicleId) return false;
-            if (selectedSystemInMaintenance) return false;
             if (!missionCode.trim()) return false;
             if (opType === 'PDRA') {
                 if (!planId) return false;
@@ -339,6 +333,10 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
         }
         return true;
     };
+
+    const matchingDrone = logSerialNumber
+        ? drones.find((d) => serialInList(d.drone_serial_numbers, logSerialNumber))
+        : undefined;
 
     useEffect(() => {
         if (matchingDrone) {
@@ -873,19 +871,11 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                                             </p>
                                         </div>
                                     )}
-                                    {!loadingSerialNumber && matchingDrone && !selectedSystemInMaintenance && (
+                                    {!loadingSerialNumber && matchingDrone && (
                                         <p className="mt-1.5 text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
                                             <CheckCircle2 className="h-3 w-3 shrink-0" />
                                             {t(ns + '.info.systemAutoSelected', { name: matchingDrone.tool_name })}
                                         </p>
-                                    )}
-                                    {!loadingSerialNumber && matchingDrone && selectedSystemInMaintenance && (
-                                        <div className="mt-2 flex items-start gap-2 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 px-3 py-2.5">
-                                            <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-500" />
-                                            <p className="text-xs leading-snug text-amber-700 dark:text-amber-400">
-                                                {t(ns + '.info.systemInMaintenance', { name: matchingDrone.tool_name })}
-                                            </p>
-                                        </div>
                                     )}
                                 </div>
                                 <div>
