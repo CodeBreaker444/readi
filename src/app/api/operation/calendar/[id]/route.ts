@@ -1,12 +1,13 @@
 import { notifyDccBulkCancellation } from '@/backend/services/mission/dcc-callback-service'
 import { deleteOperationCalendarEntry, lookupOperationMissionCode } from '@/backend/services/operation/operation-calendar-service'
+import { revertMissionMaintenance } from '@/backend/services/operation/maintenance-cycle-service'
 import { internalError } from '@/lib/api-error'
 import { requireFeatureAccess, requirePermission } from '@/lib/auth/api-auth'
 import { E } from '@/lib/error-codes'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function DELETE(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
@@ -34,6 +35,10 @@ export async function DELETE(
           { status: 502 },
         )
       }
+    }
+
+    if (req.nextUrl.searchParams.get('revert_maintenance') === '1') {
+      await revertMissionMaintenance(operationId, session!.user.ownerId)
     }
 
     // DCC accepted (or not configured) — safe to delete from DB

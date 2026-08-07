@@ -33,7 +33,8 @@
     "today": "Heute",
     "yesterday": "Gestern",
     "daysAgo": "Vor {{count}} Tagen",
-    "monthsAgo": "Vor {{count}} Monaten"
+    "monthsAgo": "Vor {{count}} Monaten",
+    "viewDetails": "Details anzeigen"
   },
   "topbar": {
     "askAnything": "Frag etwas…",
@@ -676,18 +677,16 @@
       "notAssigned": "Nicht zugewiesen"
     },
     "missionStatus": {
-      "completed": "Abgeschlossen",
-      "waiting": "Warten",
-      "left": "Verlassen"
+      "unknown": "Unbekannt"
     },
     "missions": {
       "past": {
-        "title": "Letzte 10 Missionen",
+        "title": "Letzte Missionen",
         "eyebrow": "Verlauf",
         "empty": "Keine vergangenen Missionen"
       },
       "next": {
-        "title": "Nächste 10 Missionen",
+        "title": "Nächste Missionen",
         "eyebrow": "Kommend",
         "empty": "Keine kommenden Missionen"
       },
@@ -862,7 +861,8 @@
       "savedSuccess": "Checkliste gespeichert",
       "saveFailed": "Checklisten-Ergebnis konnte nicht gespeichert werden",
       "checklistNotFound": "Checkliste nicht gefunden",
-      "noChecklistDef": "Keine Checklistendefinition für Code vorhanden"
+      "noChecklistDef": "Keine Checklistendefinition für Code vorhanden",
+      "saving": "Wird gespeichert..."
     },
     "evaluationRequest": {
       "pageTitle": "Planung · Neue Bewertungsanfrage",
@@ -1418,7 +1418,10 @@
       "loadError": "Benutzer konnten nicht geladen werden",
       "sender": "Absender",
       "status": "Status",
-      "sentAt": "Gesendet am"
+      "sentAt": "Gesendet am",
+      "file": "Datei",
+      "download": "Herunterladen",
+      "noFile": "Keine Datei"
     },
     "assignment": {
       "title": "Zuweisungsaktion",
@@ -1543,6 +1546,7 @@
         "stepsCompleteNotFinalized": "Schritte abgeschlossen, nicht finalisiert",
         "assignment": "Zuweisung",
         "checklist": "Checkliste",
+        "communication": "Kommunikation",
         "manageProcedure": "Verfahren verwalten",
         "missionDetails": "Missionsdetails",
         "client": "Kunde",
@@ -1571,6 +1575,7 @@
         "pending": "Ausstehend",
         "assignment": "Zuweisung",
         "checklist": "Checkliste",
+        "communication": "Kommunikation",
         "complete": "✓ Abgeschlossen",
         "incomplete": "✗ Unvollständig"
       }
@@ -1679,8 +1684,13 @@
         "daysTracked": "Tage werden automatisch ab dem letzten Wartungsdatum erfasst.",
         "overdue": "Wartung ist überfällig — Wartung bald einplanen",
         "autoSynced": "Auto-synchronisiert",
+        "auto": "Automatisch",
+        "manual": "Manuell",
         "manualInput": "Manuelle Eingabe",
-        "cycles": "Zyklen"
+        "cycles": "Zyklen",
+        "alreadyRecorded": "Für diese Mission wurde die Wartung bereits erfasst und kann nicht erneut aktualisiert werden.",
+        "recordedUsage": "Erfasste Nutzung",
+        "noUsageRecorded": "Keine Nutzung für diese Komponente erfasst."
       },
       "logs": {
         "attachedLogs": "Angehängte Protokolle",
@@ -1753,7 +1763,8 @@
         "attachSuccess": "Flugprotokoll von Control Center angehängt",
         "autoSyncSuccess_one": "Nutzung für {{count}} Komponente aus GUTMA ausgefüllt",
         "autoSyncSuccess_other": "Nutzung für {{count}} Komponenten aus GUTMA ausgefüllt",
-        "postFlightSuccess": "Nachflugdaten gespeichert"
+        "postFlightSuccess": "Nachflugdaten gespeichert",
+        "maintenanceAlreadyApplied": "Für diese Mission wurde die Wartung bereits erfasst"
       }
     },
     "dialog": {
@@ -1883,7 +1894,8 @@
         "cancel": "Abbrechen",
         "delete": "Löschen",
         "success": "Vorgang erfolgreich gelöscht",
-        "error": "Löschen fehlgeschlagen"
+        "error": "Löschen fehlgeschlagen",
+        "revertMaintenance": "Die von dieser Mission an ihren Komponenten erfassten Wartungsstunden/-flüge rückgängig machen"
       }
     },
     "importOperation": {
@@ -1964,7 +1976,8 @@
         "noPlanningAvailable": "Keine Planung verfügbar",
         "selectMissionPlanning": "Missionsplanung auswählen…",
         "noMissionPlanningAvailable": "Keine Missionsplanung verfügbar",
-        "selectVisualObserver": "Visuellen Beobachter auswählen…"
+        "selectVisualObserver": "Visuellen Beobachter auswählen…",
+        "searchFlights": "Flüge nach Namen suchen…"
       },
       "info": {
         "gutmaAutoExtract": "Höhe, Distanz und Zeitstempel werden automatisch aus der GUTMA-Protokolldatei extrahiert. Der Missionscode wird automatisch generiert, sofern Sie unten keinen eigenen festlegen.",
@@ -1985,7 +1998,12 @@
         "inMaintenance": "Wartung",
         "maintenanceDue": "Wartung Fällig",
         "snMismatch": "SN-Abweichung",
-        "noSystemWithSerial": "Es ist kein System mit der Seriennummer {{serial}} vorhanden"
+        "noSystemWithSerial": "Es ist kein System mit der Seriennummer {{serial}} vorhanden",
+        "noSerialDetected": "In dieser Protokolldatei konnte keine Seriennummer erkannt werden, daher kann das System nicht automatisch ausgewählt werden.",
+        "systemAutoSelected": "System automatisch anhand der Seriennummer im Protokoll ausgewählt: {{name}}",
+        "systemLockedForImport": "Das System wird automatisch anhand der Seriennummer im Protokoll bestimmt und kann beim Import nicht manuell geändert werden.",
+        "clickToFetchFlights": "Klicken Sie auf \"Flüge aktualisieren\", um Flüge vom Control Center zu laden",
+        "noFlightsMatchSearch": "Keine Flüge entsprechen Ihrer Suche"
       },
       "review": {
         "client": "Kunde",
@@ -2014,6 +2032,10 @@
         "import": "Importieren",
         "done": "Fertig",
         "back":"Zurück"
+      },
+      "errors": {
+        "endDateBeforeStart": "Enddatum muss nach oder am Startdatum liegen",
+        "datesRequired": "Sowohl Start- als auch Enddatum sind für wiederkehrende Missionen erforderlich"
       },
       "toast": {
         "loadClientsError": "Kunden konnten nicht geladen werden",

@@ -1,7 +1,7 @@
 import { logEvent } from "@/backend/services/auditLog/audit-log";
 import { getToolName, getUserName } from "@/backend/services/shared/entity-names";
 import type { DccCallbackResult } from "@/types/dcc-callback";
-import { notifyDccExecution, notifyDccTermination } from "@/backend/services/mission/dcc-callback-service";
+import { isMissionRequestedByDcc, notifyDccExecution, notifyDccTermination } from "@/backend/services/mission/dcc-callback-service";
 import { updateMissionStatus } from "@/backend/services/operation/operation-board-service";
 import { checkDailyDeclaration } from "@/backend/services/operation/pilot-declaration-service";
 import { hasOpenTicketForTool } from "@/backend/services/system/maintenance-ticket";
@@ -90,10 +90,13 @@ export async function POST(req: NextRequest) {
         ownerId: session!.user.ownerId,
       });
 
-      if (parsed.data.workflow_mission_status === '_START') {
-        dcc = await notifyDccExecution(parsed.data.mission_id);
-      } else if (parsed.data.workflow_mission_status === '_END') {
-        dcc = await notifyDccTermination(parsed.data.mission_id, 1);
+      if (parsed.data.workflow_mission_status === '_START' || parsed.data.workflow_mission_status === '_END') {
+        const requestedByDcc = await isMissionRequestedByDcc(parsed.data.mission_id);
+        if (requestedByDcc) {
+          dcc = parsed.data.workflow_mission_status === '_START'
+            ? await notifyDccExecution(parsed.data.mission_id)
+            : await notifyDccTermination(parsed.data.mission_id, 1);
+        }
       }
     }
 

@@ -11,6 +11,60 @@ import { BUCKET, getPresignedDownloadUrl, s3 } from '@/lib/s3Client';
 import { PutObjectCommand } from '@aws-sdk/client-s3';
 import JSZip from 'jszip';
 
+const GUTMA_DOWNLOAD_MAX_ATTEMPTS = 5;
+const GUTMA_DOWNLOAD_RETRY_DELAY_MS = 1_000;
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function fetchGutmaFromFlytbase(
+  gutmaUrl: string,
+  creds: { token: string; orgId: string }
+): Promise<Response> {
+  let lastError: unknown;
+  let lastWasTimeout = false;
+
+  for (let attempt = 1; attempt <= GUTMA_DOWNLOAD_MAX_ATTEMPTS; attempt++) {
+    try {
+      const upstream = await fetch(gutmaUrl, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${creds.token}`,
+          'org-id': creds.orgId,
+        },
+        signal: AbortSignal.timeout(30_000),
+      });
+
+      if (upstream.ok) return upstream;
+
+      const errText = await upstream.text().catch(() => '');
+      lastError = new Error(`FlytBase returned ${upstream.status}: ${errText.slice(0, 200)}`);
+      lastWasTimeout = false;
+    } catch (err: any) {
+      lastError = err;
+      lastWasTimeout = err?.name === 'TimeoutError';
+    }
+
+    console.error(
+      `[attachFlytbaseFlightLog] GUTMA download attempt ${attempt}/${GUTMA_DOWNLOAD_MAX_ATTEMPTS} failed`,
+      lastError
+    );
+    if (attempt < GUTMA_DOWNLOAD_MAX_ATTEMPTS) {
+      await sleep(GUTMA_DOWNLOAD_RETRY_DELAY_MS * attempt);
+    }
+  }
+
+  if (lastWasTimeout) {
+    const msg = 'No GUTMA data available for this flight.';
+    throw Object.assign(new Error(msg), { code: 'FLYTBASE_TIMEOUT' });
+  }
+  if (lastError instanceof Error && /^FlytBase returned/.test(lastError.message)) {
+    throw lastError;
+  }
+  throw Object.assign(new Error('Failed to reach FlytBase.'), { code: 'FLYTBASE_TIMEOUT' });
+}
+
 export interface FlightLog {
   log_id: number;
   log_source: 'manual' | 'flytbase';
@@ -395,27 +449,7 @@ export async function attachFlytbaseFlightLog(
 
   const gutmaUrl = `${env.FLYTBASE_URL}/v2/flight/report/download/gutma?${new URLSearchParams({ flightIds: flightId })}`;
 
-  let upstream: Response;
-  try {
-    upstream = await fetch(gutmaUrl, {
-      method: 'GET',
-      headers: {
-        Authorization: `Bearer ${creds.token}`,
-        'org-id': creds.orgId,
-      },
-      signal: AbortSignal.timeout(30_000),
-    });
-  } catch (err: any) {
-    const msg = err?.name === 'TimeoutError'
-      ? 'No GUTMA data available for this flight.'
-      : 'Failed to reach FlytBase.';
-    throw Object.assign(new Error(msg), { code: 'FLYTBASE_TIMEOUT' });
-  }
-
-  if (!upstream.ok) {
-    const errText = await upstream.text().catch(() => '');
-    throw new Error(`FlytBase returned ${upstream.status}: ${errText.slice(0, 200)}`);
-  }
+  const upstream = await fetchGutmaFromFlytbase(gutmaUrl, creds);
 
   let gutma: any;
   try {

@@ -37,6 +37,8 @@ export interface MissionListItem {
   drone_code: string;
   mission_type_desc: string;
   mission_result_desc: string;
+  mission_status_code: string;
+  mission_status_desc: string;
   mission_duration_min: number;
 }
 
@@ -218,8 +220,8 @@ export async function getDashboardData(params: DashboardRequestParams) {
     ] = await Promise.all([
       getYearMissions(owner_id, pilotUserId, currentYear),
       isPilot ? getPilotTotal(user_id, owner_id) : Promise.resolve(null),
-      getReadiLastNextMissionList(owner_id, 0, pilotUserId, 0, 10, user_timezone),
-      getReadiLastNextMissionList(owner_id, 0, pilotUserId, 1, 10, user_timezone),
+      getReadiLastNextMissionList(owner_id, 0, pilotUserId, 0, 50, user_timezone),
+      getReadiLastNextMissionList(owner_id, 0, pilotUserId, 1, 50, user_timezone),
       fetchAgentUsage(owner_id, user_profile_code),
     ]);
 

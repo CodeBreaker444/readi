@@ -389,21 +389,30 @@ function formatBoardDate(iso: string, tz: string): string {
 function getMissionProcedureStatus(mission: Mission) {
     const hasLuc = !!mission.fk_luc_procedure_id;
     if (!hasLuc || !mission.luc_procedure_progress) {
-        return { hasLuc, assignmentDone: false, checklistDone: false, assignmentTotal: 0, assignmentComplete: 0, checklistTotal: 0, checklistComplete: 0 };
+        return {
+            hasLuc, assignmentDone: false, checklistDone: false, communicationDone: false,
+            assignmentTotal: 0, assignmentComplete: 0, checklistTotal: 0, checklistComplete: 0,
+            communicationTotal: 0, communicationComplete: 0,
+        };
     }
     const progress = mission.luc_procedure_progress;
     const assignmentEntries = Object.values(progress.assignment ?? {});
     const checklistEntries = Object.values(progress.checklist ?? {});
+    const communicationEntries = Object.values(progress.communication ?? {});
     const assignmentComplete = assignmentEntries.filter(v => v === "Y").length;
     const checklistComplete = checklistEntries.filter(v => v === "Y").length;
+    const communicationComplete = communicationEntries.filter(v => v === "Y").length;
     return {
         hasLuc,
         assignmentDone: assignmentEntries.length === 0 || assignmentComplete === assignmentEntries.length,
         checklistDone: checklistEntries.length === 0 || checklistComplete === checklistEntries.length,
+        communicationDone: communicationEntries.length === 0 || communicationComplete === communicationEntries.length,
         assignmentTotal: assignmentEntries.length,
         assignmentComplete,
         checklistTotal: checklistEntries.length,
         checklistComplete,
+        communicationTotal: communicationEntries.length,
+        communicationComplete,
     };
 }
 
@@ -415,7 +424,7 @@ function MissionDetailSheet({ mission, isDark, onClose, onOpenLuc, onUpdateMaint
     const userCanUpdateMaintenance = canEdit("operation_daily_board");
 
     const proc = mission ? getMissionProcedureStatus(mission) : null;
-    const procAllDone = proc ? proc.assignmentDone && proc.checklistDone : false;
+    const procAllDone = proc ? proc.assignmentDone && proc.checklistDone && proc.communicationDone : false;
     const lucCompleted = !!mission?.luc_completed_at;
 
     const STATUS_LABEL: Record<string, { label: string; cls: string; darkCls: string }> = {
@@ -489,7 +498,7 @@ function MissionDetailSheet({ mission, isDark, onClose, onOpenLuc, onUpdateMaint
                                                         : t("operations.table.detail.stepsCompleteNotFinalized")}
                                             </p>
                                         </div>
-                                        <div className="grid grid-cols-2 gap-2 pt-1">
+                                        <div className="grid grid-cols-3 gap-2 pt-1">
                                             <div className="flex items-center gap-1.5 text-xs">
                                                 {proc.assignmentDone
                                                     ? <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
@@ -504,6 +513,14 @@ function MissionDetailSheet({ mission, isDark, onClose, onOpenLuc, onUpdateMaint
                                                     : <XCircle className="h-3.5 w-3.5 text-amber-500" />}
                                                 <span className="text-muted-foreground">
                                                     {t("operations.table.detail.checklist")}{proc.checklistTotal > 0 ? ` (${proc.checklistComplete}/${proc.checklistTotal})` : ""}
+                                                </span>
+                                            </div>
+                                            <div className="flex items-center gap-1.5 text-xs">
+                                                {proc.communicationDone
+                                                    ? <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                                                    : <XCircle className="h-3.5 w-3.5 text-amber-500" />}
+                                                <span className="text-muted-foreground">
+                                                    {t("operations.table.detail.communication")}{proc.communicationTotal > 0 ? ` (${proc.communicationComplete}/${proc.communicationTotal})` : ""}
                                                 </span>
                                             </div>
                                         </div>

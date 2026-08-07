@@ -183,6 +183,21 @@ async function processGutmaBuffer(
     `Source: ${filename}`,
   ].filter(Boolean);
 
+  // Handle visual observers
+  let visualObservers: { user_id: number; name: string }[] | null = null;
+  if (params.visualObserverIds?.length) {
+    const observerUsers = await prisma.public_users.findMany({
+      where: { user_id: { in: params.visualObserverIds } },
+      select: { user_id: true, first_name: true, last_name: true },
+    });
+    if (observerUsers.length) {
+      visualObservers = observerUsers.map((u) => ({
+        user_id: u.user_id,
+        name: `${u.first_name ?? ''} ${u.last_name ?? ''}`.trim(),
+      }));
+    }
+  }
+
   // Convert dates to user's timezone for storage
   let scheduledStart: Date | null = null;
   let actualStart: Date | null = null;
@@ -249,9 +264,6 @@ async function processGutmaBuffer(
       battery_charge_end: batteryChargeEnd,
       weather_temperature: weatherTemperature,
       notes: notesArr.join(' | ') || null,
-      ...(params.visualObserverIds && params.visualObserverIds.length > 0 && {
-        visual_observer_ids: params.visualObserverIds,
-      }),
       ...(recurringGroupId && {
         recurring_group_id: recurringGroupId,
         mission_date_until: params.recurrentEndDate ? new Date(params.recurrentEndDate) : null,
@@ -261,6 +273,7 @@ async function processGutmaBuffer(
       ...(!recurringGroupId && {
         mission_metadata: {
           ...(params.missionPlanningId && params.flightMode && { flight_mode: params.flightMode }),
+          ...(visualObservers?.length && { visual_observers: visualObservers }),
           is_imported: true,
         },
       }),

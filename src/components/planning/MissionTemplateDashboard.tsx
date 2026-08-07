@@ -253,7 +253,7 @@ const MissionTemplateDashboard: React.FC<MissionTemplateDashboardProps> = ({
                                         <SelectItem value="0" className={isDark ? 'text-slate-200 focus:bg-slate-700' : ''}>{t('planning.missionTemplate.allEvaluations')}</SelectItem>
                                         {evaluations.map((ev) => (
                                             <SelectItem key={ev.id} value={String(ev.id)} className={isDark ? 'text-slate-200 focus:bg-slate-700' : ''}>
-                                                {ev.name}{!ev.active && <span className="ml-1.5 text-[10px] text-orange-500 font-medium">(Inactive)</span>}
+                                                EVAL_{ev.id}{!ev.active && <span className="ml-1.5 text-[10px] text-orange-500 font-medium">(Inactive)</span>}
                                             </SelectItem>
                                         ))}
                                     </SelectContent>

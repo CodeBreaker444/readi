@@ -34,6 +34,7 @@ import {
     Fingerprint,
     Loader2,
     RefreshCw,
+    Search,
     Settings,
     Upload,
     User,
@@ -78,6 +79,7 @@ const STEP_KEYS = [
 ];
 
 const PLATFORMS = [{ value: 'FLYTBASE', label: 'Control Center' }];
+const FLIGHTS_PAGE_SIZE = 20;
 
 function formatDuration(secs?: number): string {
     if (secs == null) return '—';
@@ -136,6 +138,7 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
     const [flightsError, setFlightsError] = useState('');
     const [flightPage, setFlightPage] = useState(1);
     const [flightTotal, setFlightTotal] = useState(0);
+    const [flightsFetched, setFlightsFetched] = useState(false);
     const [flightSearchQuery, setFlightSearchQuery] = useState('');
     const [logSerialNumber, setLogSerialNumber] = useState<string | null>(null);
     const [loadingSerialNumber, setLoadingSerialNumber] = useState(false);
@@ -144,16 +147,6 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
     const [categoryId,  setCategoryId]  = useState('');
     const [typeId,      setTypeId]      = useState('');
     const [opType,      setOpType]      = useState<'OPEN' | 'PDRA'>('OPEN');
-
-    const handleOpTypeChange = (newOpType: 'OPEN' | 'PDRA') => {
-        setOpType(newOpType);
-        // Reset PDRA-specific fields when switching to OPEN
-        if (newOpType === 'OPEN') {
-            setPlanId('');
-            setMissionPlanningId('');
-            setFlightMode('RC');
-        }
-    };
     const [flightMode,  setFlightMode]  = useState<'RC' | 'DOCK'>('RC');
     const [planId,      setPlanId]      = useState('');
     const [missionPlanningId, setMissionPlanningId] = useState('');
@@ -167,8 +160,60 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
     const [recurrentStartDate, setRecurrentStartDate] = useState('');
     const [recurrentEndDate, setRecurrentEndDate] = useState('');
     const [recurrentTime, setRecurrentTime] = useState('');
+    const [recurrentDateError, setRecurrentDateError] = useState('');
     const [generatingId, setGeneratingId] = useState(false);
     const [existingMissionCodes, setExistingMissionCodes] = useState<Set<string>>(new Set());
+
+    const handleOpTypeChange = (newOpType: 'OPEN' | 'PDRA') => {
+        setOpType(newOpType);
+        // Reset PDRA-specific fields when switching to OPEN
+        if (newOpType === 'OPEN') {
+            setPlanId('');
+            setMissionPlanningId('');
+            setFlightMode('RC');
+        }
+    };
+
+    const handleRecurrentEndDateChange = (value: string) => {
+        setRecurrentEndDate(value);
+        // Validate that end date is not before start date
+        if (value && recurrentStartDate && new Date(value) < new Date(recurrentStartDate)) {
+            setRecurrentDateError(t('operations.importOperation.errors.endDateBeforeStart'));
+        } else if (!value && isRecurrent) {
+            setRecurrentDateError(t('operations.importOperation.errors.datesRequired'));
+        } else {
+            setRecurrentDateError('');
+        }
+    };
+
+    const handleRecurrentStartDateChange = (value: string) => {
+        setRecurrentStartDate(value);
+        // Validate that end date is not before start date
+        if (value && recurrentEndDate && new Date(recurrentEndDate) < new Date(value)) {
+            setRecurrentDateError(t('operations.importOperation.errors.endDateBeforeStart'));
+        } else if (!value && isRecurrent) {
+            setRecurrentDateError(t('operations.importOperation.errors.datesRequired'));
+        } else {
+            setRecurrentDateError('');
+        }
+    };
+
+    const handleRecurrentToggle = (checked: boolean) => {
+        setIsRecurrent(checked);
+        if (!checked) {
+            setRecurrentDateError('');
+        }
+    };
+
+    const validateRecurrentDates = () => {
+        if (!isRecurrent) return true;
+        if (!recurrentStartDate || !recurrentEndDate) {
+            setRecurrentDateError(t('operations.importOperation.errors.datesRequired'));
+            return false;
+        }
+        if (recurrentDateError) return false;
+        return true;
+    };
 
     function generateMissionId(exclude: Set<string> = new Set()): string {
         const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
@@ -283,18 +328,33 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
             }
             return true;
         }
-        if (step === 4) return !!pilotId;
+        if (step === 4) {
+            if (!pilotId) return false;
+            if (isRecurrent && !validateRecurrentDates()) return false;
+            return true;
+        }
         return true;
     };
 
-    // Once the log's aircraft serial number and the drone list are both known,
-    // auto-select the one matching system — the user must not be able to pick
-    // a different one for a mismatched log.
+    const matchingDrone = logSerialNumber
+        ? drones.find((d) => serialInList(d.drone_serial_numbers, logSerialNumber))
+        : undefined;
+
+    const filteredFlights = flightSearchQuery.trim()
+        ? flights.filter((f) => {
+            const q = flightSearchQuery.trim().toLowerCase();
+            return (f.flight_name ?? f.flight_id).toLowerCase().includes(q)
+                || (f.drone_name ?? '').toLowerCase().includes(q);
+        })
+        : flights;
+
     useEffect(() => {
-        if (!logSerialNumber || drones.length === 0) return;
-        const match = drones.find((d) => serialInList(d.drone_serial_numbers, logSerialNumber));
-        if (match && String(match.tool_id) !== vehicleId) setVehicleId(String(match.tool_id));
-    }, [logSerialNumber, drones, vehicleId]);
+        if (matchingDrone) {
+            if (String(matchingDrone.tool_id) !== vehicleId) setVehicleId(String(matchingDrone.tool_id));
+        } else if (vehicleId) {
+            setVehicleId('');
+        }
+    }, [matchingDrone, vehicleId]);
 
     useEffect(() => {
         if (step !== 3) return;
@@ -337,11 +397,11 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
         setOpType('OPEN'); setFlightMode('RC');
         setLucProcedureId(''); setLocation(''); setGroupLabel(''); setNotes(''); setPilotId(''); setVisualObserverIds([]);
         setFbWindow('1440'); setFlights([]); setSelectedFlightId(''); setFlightsError('');
-        setFlightPage(1); setFlightTotal(0); setFlightSearchQuery('');
+        setFlightPage(1); setFlightTotal(0); setFlightSearchQuery(''); setFlightsFetched(false);
         setLogSerialNumber(null); setLoadingSerialNumber(false);
         setDrones([]); setPlannings([]); setMissionPlannings([]); setCategories([]); setTypes([]); setPilots([]); setLucProcedures([]);
         setLoadingClients(false); setLoadingDrones(false); setLoadingMissionOptions(false); setLoadingPlannings(false); setLoadingMissionPlannings(false); setLoadingPilots(false);
-        setIsRecurrent(false); setRecurrentStartDate(''); setRecurrentEndDate(''); setRecurrentTime('');
+        setIsRecurrent(false); setRecurrentStartDate(''); setRecurrentEndDate(''); setRecurrentTime(''); setRecurrentDateError('');
     }
 
     const fetchFlytbaseFlights = useCallback(async (page = 1) => {
@@ -350,8 +410,10 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
         setFlights([]);
         setSelectedFlightId('');
         setFlightsError('');
+        setFlightsFetched(true);
+        setFlightSearchQuery('');
         try {
-            const { data } = await axios.get(`/api/flytbase/flights?window=${fbWindow}&organizationId=${organizationId}&page=${page}&pageSize=10`);
+            const { data } = await axios.get(`/api/flytbase/flights?window=${fbWindow}&organizationId=${organizationId}&page=${page}&pageSize=${FLIGHTS_PAGE_SIZE}`);
             if (data.success) {
                 const loaded = data.flights ?? [];
                 setFlights(loaded);
@@ -371,10 +433,14 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
     }, [fbWindow, organizationId, ns, t]);
 
     useEffect(() => {
-        if (step !== 2 || platform !== 'FLYTBASE' || !organizationId) return;
+        setFlights([]);
+        setSelectedFlightId('');
+        setFlightsError('');
+        setFlightsFetched(false);
         setFlightPage(1);
-        fetchFlytbaseFlights(1);
-    }, [step, platform, organizationId, fetchFlytbaseFlights]);
+        setFlightTotal(0);
+        setFlightSearchQuery('');
+    }, [organizationId, fbWindow]);
 
     // Detect the drone serial number from whichever log source is selected,
     // so it can be shown as a hint on the Mission Data step.
@@ -485,6 +551,8 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
         }
     }
 
+    const serialNotDetected = !loadingSerialNumber && !logSerialNumber;
+    const serialNoMatch     = !loadingSerialNumber && !loadingDrones && !!logSerialNumber && !matchingDrone;
     const selectedPilot    = pilots.find((p) => String(p.user_id) === pilotId);
     const pilotLabel       = selectedPilot ? `${selectedPilot.first_name} ${selectedPilot.last_name}` : '';
     const selectedFlightObj = flights.find((f) => f.flight_id === selectedFlightId);
@@ -493,7 +561,7 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
 
     return (
         <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-            <DialogContent className="sm:max-w-3xl gap-0 p-0 overflow-hidden max-h-[85vh] flex flex-col">
+            <DialogContent className="sm:max-w-3xl md:max-w-4xl lg:max-w-5xl gap-0 p-0 overflow-hidden max-h-[90vh] flex flex-col">
                 <DialogHeader className="px-6 pt-6 pb-4 border-b shrink-0">
                     <DialogTitle className="flex items-center gap-2 text-base font-semibold">
                         <FileUp className="h-5 w-5 text-violet-600" />
@@ -561,17 +629,19 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
 
                         {step === 2 && (
                             <div className="space-y-4">
-                                <div>
-                                    <Label className="mb-1.5 block">{t(ns + '.fields.platform')}</Label>
-                                    <Select value={platform} onValueChange={setPlatform}>
-                                        <SelectTrigger><SelectValue /></SelectTrigger>
-                                        <SelectContent>
-                                            {PLATFORMS.map((p) => (
-                                                <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-4">
+                                        <div>
+                                            <Label className="mb-1.5 block">{t(ns + '.fields.platform')}</Label>
+                                            <Select value={platform} onValueChange={setPlatform}>
+                                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                                <SelectContent>
+                                                    {PLATFORMS.map((p) => (
+                                                        <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
 
                                 {platform === 'FLYTBASE' && (
                                     <>
@@ -603,7 +673,20 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                                             </Select>
                                         </div>
                                         <div>
-                                            <Label className="mb-1.5 block">{t(ns + '.fields.selectFlight')} <span className="text-red-500">*</span></Label>
+                                            <div className="mb-1.5 flex items-center justify-between">
+                                                <Label>{t(ns + '.fields.selectFlight')} <span className="text-red-500">*</span></Label>
+                                                <Button
+                                                    type="button"
+                                                    size="sm"
+                                                    variant="outline"
+                                                    onClick={() => fetchFlytbaseFlights(1)}
+                                                    disabled={!organizationId || loadingFlights}
+                                                    className="h-7 px-2 cursor-pointer"
+                                                >
+                                                    {loadingFlights ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+                                                    <span className="ml-1">{t(ns + '.buttons.refreshFlights')}</span>
+                                                </Button>
+                                            </div>
                                             {loadingFlights ? (
                                                 <div className="space-y-3">
                                                     {[...Array(5)].map((_, i) => (
@@ -614,10 +697,27 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                                                         </div>
                                                     ))}
                                                 </div>
+                                            ) : !flightsFetched ? (
+                                                <div className="border border-dashed border-slate-300 dark:border-slate-700 rounded-lg h-96 flex flex-col items-center justify-center gap-2 text-center px-6">
+                                                    <FileUp className="h-6 w-6 text-slate-400 dark:text-slate-600" />
+                                                    <p className="text-sm text-slate-500 dark:text-slate-400">
+                                                        {t(ns + '.info.clickToFetchFlights')}
+                                                    </p>
+                                                </div>
                                             ) : (
-                                                <div className="border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden h-64 flex flex-col">
+                                                <div className="space-y-2">
+                                                <div className="relative">
+                                                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+                                                    <Input
+                                                        value={flightSearchQuery}
+                                                        onChange={(e) => setFlightSearchQuery(e.target.value)}
+                                                        placeholder={t(ns + '.placeholders.searchFlights')}
+                                                        className="h-8 pl-8 text-xs"
+                                                    />
+                                                </div>
+                                                <div className="border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden h-96 flex flex-col">
                                                     <div className="flex-1 overflow-y-auto">
-                                                        {flights.map((f) => (
+                                                        {filteredFlights.map((f) => (
                                                             <div
                                                                 key={f.flight_id}
                                                                 onClick={() => setSelectedFlightId(f.flight_id)}
@@ -639,16 +739,18 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                                                                 </div>
                                                             </div>
                                                         ))}
-                                                        {flights.length === 0 && !loadingFlights && (
+                                                        {filteredFlights.length === 0 && !loadingFlights && (
                                                             <div className="p-4 text-center text-sm text-muted-foreground">
-                                                                No flights found
+                                                                {flightSearchQuery.trim()
+                                                                    ? t(ns + '.info.noFlightsMatchSearch')
+                                                                    : t(ns + '.toast.noFlightsFound')}
                                                             </div>
                                                         )}
                                                 </div>
-                                                {flightTotal > 10 && (
+                                                {flightTotal > FLIGHTS_PAGE_SIZE && (
                                                     <div className="p-2 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between shrink-0">
                                                         <span className="text-xs text-muted-foreground">
-                                                            Page {flightPage} of {Math.ceil(flightTotal / 10)}
+                                                            Page {flightPage} of {Math.ceil(flightTotal / FLIGHTS_PAGE_SIZE)}
                                                         </span>
                                                         <div className="flex gap-1">
                                                             <Button
@@ -664,7 +766,7 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                                                                 size="sm"
                                                                 variant="outline"
                                                                 onClick={() => fetchFlytbaseFlights(flightPage + 1)}
-                                                                disabled={flightPage >= Math.ceil(flightTotal / 10) || loadingFlights}
+                                                                disabled={flightPage >= Math.ceil(flightTotal / FLIGHTS_PAGE_SIZE) || loadingFlights}
                                                                 className="h-7 px-2 cursor-pointer"
                                                             >
                                                                 Next
@@ -672,7 +774,8 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                                                         </div>
                                                     </div>
                                                 )}
-                                            </div>
+                                                </div>
+                                                </div>
                                         )}
                                         {flightsError && (
                                             <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">{flightsError}</p>
@@ -705,48 +808,62 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                                         </div>
                                     )}
                                 </>
-                            )}
+                                )}
+                                </div>
 
-                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                <span>Select a flight from Flytbase or upload a log file below</span>
-                            </div>
-
-                            <div className="border-t border-slate-200 dark:border-slate-800 pt-4 mt-4">
-                                <Label className="mb-1.5 block">{t(ns + '.fields.logFile')} <span className="text-red-500">*</span></Label>
-                                <div className="flex items-center gap-3">
-                                    <Input
-                                        id="log-file-input"
-                                        type="file"
-                                        accept=".gutma,.zip,.json,.xml"
-                                        onChange={(e) => {
-                                            const file = e.target.files?.[0] || null;
-                                            console.log('File selected:', file?.name, file?.size, file?.type);
-                                            setLogFile(file);
-                                            if (file) {
-                                                setSelectedFlightId('');
-                                            }
-                                        }}
-                                        className="flex-1"
-                                    />
-                                    {logFile && (
-                                        <div className="flex items-center gap-2 text-sm">
-                                            <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                                            <span className="text-emerald-600">{logFile.name}</span>
-                                            <Button
-                                                type="button"
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={() => {
-                                                    setLogFile(null);
-                                                    const fileInput = document.getElementById('log-file-input') as HTMLInputElement;
-                                                    if (fileInput) fileInput.value = '';
+                                <div className="border border-slate-200 dark:border-slate-800 rounded-lg p-4 bg-slate-50 dark:bg-slate-900/20">
+                                    <Label className="mb-3 block">{t(ns + '.fields.logFile')} <span className="text-red-500">*</span></Label>
+                                    <div className="space-y-3">
+                                        <div className="border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-lg p-6 text-center hover:border-violet-400 dark:hover:border-violet-600 transition-colors">
+                                            <Input
+                                                id="log-file-input"
+                                                type="file"
+                                                accept=".gutma,.zip,.json,.xml"
+                                                onChange={(e) => {
+                                                    const file = e.target.files?.[0] || null;
+                                                    console.log('File selected:', file?.name, file?.size, file?.type);
+                                                    setLogFile(file);
+                                                    if (file) {
+                                                        setSelectedFlightId('');
+                                                    }
                                                 }}
-                                                className="h-6 px-2 cursor-pointer"
+                                                className="hidden"
+                                            />
+                                            <label
+                                                htmlFor="log-file-input"
+                                                className="cursor-pointer flex flex-col items-center gap-2"
                                             >
-                                                Clear
-                                            </Button>
+                                                <FileUp className="h-8 w-8 text-slate-400 dark:text-slate-600" />
+                                                <span className="text-sm text-slate-600 dark:text-slate-400">
+                                                    {logFile ? logFile.name : t(ns + '.placeholders.selectFlightLog')}
+                                                </span>
+                                                <span className="text-xs text-slate-500 dark:text-slate-500">
+                                                    .gutma, .zip, .json, .xml
+                                                </span>
+                                            </label>
                                         </div>
-                                    )}
+                                        {logFile && (
+                                            <div className="flex items-center justify-between p-3 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800 rounded-lg">
+                                                <div className="flex items-center gap-2">
+                                                    <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                                                    <span className="text-sm text-emerald-700 dark:text-emerald-400">{logFile.name}</span>
+                                                </div>
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() => {
+                                                        setLogFile(null);
+                                                        const fileInput = document.getElementById('log-file-input') as HTMLInputElement;
+                                                        if (fileInput) fileInput.value = '';
+                                                    }}
+                                                    className="h-6 px-2 cursor-pointer text-red-600 hover:text-red-700"
+                                                >
+                                                    Clear
+                                                </Button>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -757,9 +874,9 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <Label className="mb-1.5 block">{t(ns + '.fields.droneSystem')} <span className="text-red-500">*</span></Label>
-                                    <Select value={vehicleId} onValueChange={setVehicleId} disabled={loadingDrones}>
+                                    <Select value={vehicleId} onValueChange={setVehicleId} disabled>
                                         <SelectTrigger>
-                                            {loadingDrones ? <Loader2 className="h-4 w-4 animate-spin" /> : vehicleId ? <SelectValue /> : <SelectValue placeholder={t(ns + '.placeholders.selectDot')} />}
+                                            {loadingDrones || loadingSerialNumber ? <Loader2 className="h-4 w-4 animate-spin" /> : vehicleId ? <SelectValue /> : <SelectValue placeholder={t(ns + '.placeholders.selectDot')} />}
                                         </SelectTrigger>
                                         <SelectContent>
                                             {drones.map((d) => (
@@ -778,6 +895,37 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                                             ))}
                                         </SelectContent>
                                     </Select>
+                                    <p className="mt-1.5 text-[11px] text-muted-foreground">
+                                        {t(ns + '.info.systemLockedForImport')}
+                                    </p>
+                                    {loadingSerialNumber && (
+                                        <p className="mt-1.5 text-xs text-muted-foreground flex items-center gap-1">
+                                            <Loader2 className="h-3 w-3 shrink-0 animate-spin" />
+                                            {t(ns + '.info.detectingSerialNumber')}
+                                        </p>
+                                    )}
+                                    {serialNotDetected && (
+                                        <div className="mt-2 flex items-start gap-2 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/40 px-3 py-2.5">
+                                            <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-red-500" />
+                                            <p className="text-xs leading-snug text-red-700 dark:text-red-400">
+                                                {t(ns + '.info.noSerialDetected')}
+                                            </p>
+                                        </div>
+                                    )}
+                                    {serialNoMatch && (
+                                        <div className="mt-2 flex items-start gap-2 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/40 px-3 py-2.5">
+                                            <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-red-500" />
+                                            <p className="text-xs leading-snug text-red-700 dark:text-red-400">
+                                                {t(ns + '.info.noSystemWithSerial', { serial: logSerialNumber })}
+                                            </p>
+                                        </div>
+                                    )}
+                                    {!loadingSerialNumber && matchingDrone && (
+                                        <p className="mt-1.5 text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                                            <CheckCircle2 className="h-3 w-3 shrink-0" />
+                                            {t(ns + '.info.systemAutoSelected', { name: matchingDrone.tool_name })}
+                                        </p>
+                                    )}
                                 </div>
                                 <div>
                                     <Label className="mb-1.5 block">{t(ns + '.fields.missionCode')} <span className="text-red-500">*</span></Label>
@@ -927,7 +1075,7 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                             {logSerialNumber && (
                                 <div className="flex items-center gap-2 text-xs text-muted-foreground bg-slate-50 dark:bg-slate-900 p-2 rounded">
                                     <Fingerprint className="h-4 w-4" />
-                                    <span>Detected serial: {logSerialNumber}</span>
+                                    <span>{t(ns + '.info.detectedSerialNumber')}: {logSerialNumber}</span>
                                 </div>
                             )}
                         </div>
@@ -966,7 +1114,7 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                                     type="checkbox"
                                     id="isRecurrent"
                                     checked={isRecurrent}
-                                    onChange={(e) => setIsRecurrent(e.target.checked)}
+                                    onChange={(e) => handleRecurrentToggle(e.target.checked)}
                                     className="h-4 w-4"
                                 />
                                 <Label htmlFor="isRecurrent" className="text-sm cursor-pointer">{t(ns + '.fields.recurrent')}</Label>
@@ -975,17 +1123,20 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                                 <div className="grid grid-cols-3 gap-4">
                                     <div>
                                         <Label className="mb-1.5 block">{t(ns + '.fields.recurrentStartDate')}</Label>
-                                        <Input type="date" value={recurrentStartDate} onChange={(e) => setRecurrentStartDate(e.target.value)} />
+                                        <Input type="date" value={recurrentStartDate} onChange={(e) => handleRecurrentStartDateChange(e.target.value)} />
                                     </div>
                                     <div>
                                         <Label className="mb-1.5 block">{t(ns + '.fields.recurrentEndDate')}</Label>
-                                        <Input type="date" value={recurrentEndDate} onChange={(e) => setRecurrentEndDate(e.target.value)} />
+                                        <Input type="date" value={recurrentEndDate} onChange={(e) => handleRecurrentEndDateChange(e.target.value)} className={recurrentDateError ? 'border-red-500' : ''} />
                                     </div>
                                     <div>
                                         <Label className="mb-1.5 block">{t(ns + '.fields.recurrentTime')}</Label>
                                         <Input type="time" value={recurrentTime} onChange={(e) => setRecurrentTime(e.target.value)} />
                                     </div>
                                 </div>
+                            )}
+                            {recurrentDateError && (
+                                <p className="text-red-500 text-xs mt-1">{recurrentDateError}</p>
                             )}
                         </div>
                     )}

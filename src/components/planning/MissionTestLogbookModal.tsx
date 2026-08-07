@@ -115,9 +115,23 @@ export default function MissionTestLogbookModal({
     }, [open, loadData, missionPlanningActive]);
 
     const handleFieldChange = (field: string, value: string) => {
-        setForm((prev) => ({ ...prev, [field]: value }));
+        setForm((prev) => {
+            const updated = { ...prev, [field]: value };
+            // Clear observer if PIC is set to the same value
+            if (field === "fk_pic_id" && value === prev.fk_observer_id) {
+                updated.fk_observer_id = "";
+            }
+            // Clear PIC if observer is set to the same value
+            if (field === "fk_observer_id" && value === prev.fk_pic_id) {
+                updated.fk_pic_id = "";
+            }
+            return updated;
+        });
         setErrors((prev) => ({ ...prev, [field]: "" }));
     };
+
+    const availablePilots = pilots.filter((p: PilotUser) => String(p.user_id) !== form.fk_observer_id);
+    const availableObservers = pilots.filter((p: PilotUser) => String(p.user_id) !== form.fk_pic_id);
 
     const validateForm = (): boolean => {
         const newErrors: Record<string, string> = {};
@@ -126,8 +140,6 @@ export default function MissionTestLogbookModal({
             newErrors.fk_pic_id = t("planning.testLogbook.picRequired");
         if (!form.fk_observer_id || form.fk_observer_id === "0")
             newErrors.fk_observer_id = t("planning.testLogbook.observerRequired");
-        if (form.fk_pic_id && form.fk_observer_id && form.fk_pic_id === form.fk_observer_id)
-            newErrors.fk_observer_id = t("planning.testLogbook.observerDiff");
         if (!form.mission_test_code.trim())
             newErrors.mission_test_code = t("planning.testLogbook.testCodeRequired");
         if (!form.mission_test_date_start)
@@ -265,7 +277,7 @@ export default function MissionTestLogbookModal({
                                                     <SelectValue placeholder={t("planning.testLogbook.selectPic")} />
                                                 </SelectTrigger>
                                                 <SelectContent className={isDark ? "bg-slate-900 border-slate-800 text-white" : ""}>
-                                                    {pilots.map((p) => (
+                                                    {availablePilots.map((p: PilotUser) => (
                                                         <SelectItem key={p.user_id} value={String(p.user_id)}>
                                                             {p.fullname}
                                                         </SelectItem>
@@ -282,7 +294,7 @@ export default function MissionTestLogbookModal({
                                                     <SelectValue placeholder={t("planning.testLogbook.selectObserver")} />
                                                 </SelectTrigger>
                                                 <SelectContent className={isDark ? "bg-slate-900 border-slate-800 text-white" : ""}>
-                                                    {pilots.map((p) => (
+                                                    {availableObservers.map((p: PilotUser) => (
                                                         <SelectItem key={p.user_id} value={String(p.user_id)}>
                                                             {p.fullname}
                                                         </SelectItem>
@@ -362,7 +374,7 @@ export default function MissionTestLogbookModal({
                                                     </TableCell>
                                                 </TableRow>
                                             ) : (
-                                                tests.map((test) => (
+                                                tests.map((test: MissionTestRow) => (
                                                     <TableRow key={test.test_id} className={`transition-colors ${isDark ? "border-slate-800 hover:bg-slate-800/40" : "hover:bg-muted/50"}`}>
                                                         <TableCell className="font-mono font-medium text-violet-500">{test.test_code}</TableCell>
                                                         <TableCell>

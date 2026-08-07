@@ -59,6 +59,14 @@ interface ComponentInput {
   manual_cycles_input?: boolean;
 }
 
+interface MaintenanceLogEntry {
+  component_id: number;
+  component_code: string | null;
+  add_hours: number;
+  add_flights: number;
+  applied_at: string;
+}
+
 interface Props {
   open: boolean;
   onClose: () => void;
@@ -86,6 +94,14 @@ function formatHhmmHours(value: number): string {
   return `${hours}h ${minutes}m`;
 }
 
+function minutesToHhmm(totalMinutes: number): number {
+  const h = Math.floor(totalMinutes / 60);
+  const m = totalMinutes % 60;
+  return h + m / 100;
+}
+
+const DEFAULT_ADD_HOURS_MINUTES = 30;
+
 function CycleProgressBar({
   current,
   limit,
@@ -94,6 +110,8 @@ function CycleProgressBar({
   status,
   isDark,
   isHours,
+  mode,
+  modeLabel,
 }: {
   current: number;
   limit: number;
@@ -102,31 +120,47 @@ function CycleProgressBar({
   status: "OK" | "ALERT" | "DUE";
   isDark: boolean;
   isHours?: boolean;
+  // "manual" = user must enter a value (Flights/Hours); "auto" = computed
+  // automatically with no input (Days, tracked from elapsed calendar time).
+  mode?: "auto" | "manual";
+  modeLabel?: string;
 }) {
   if (!limit || limit <= 0) return null;
 
   const pct = Math.min(100, (current / limit) * 100);
-  
+
   const STATUS_COLORS = {
     OK: "bg-emerald-500",
     ALERT: "bg-amber-400",
     DUE: "bg-rose-500",
   };
 
+  const MODE_STYLE = {
+    auto: "bg-blue-500/10 text-blue-500",
+    manual: "bg-violet-500/10 text-violet-400",
+  };
+
   return (
     <div className="space-y-1">
-      <div className="flex items-center gap-1.5">
-        <Icon
-          className={cn("h-3 w-3", isDark ? "text-slate-500" : "text-slate-400")}
-        />
-        <span
-          className={cn(
-            "text-[10px] uppercase tracking-wider font-medium",
-            isDark ? "text-slate-500" : "text-slate-400"
-          )}
-        >
-          {label}
-        </span>
+      <div className="flex items-center justify-between gap-1.5">
+        <div className="flex items-center gap-1.5">
+          <Icon
+            className={cn("h-3 w-3", isDark ? "text-slate-500" : "text-slate-400")}
+          />
+          <span
+            className={cn(
+              "text-[10px] uppercase tracking-wider font-medium",
+              isDark ? "text-slate-500" : "text-slate-400"
+            )}
+          >
+            {label}
+          </span>
+        </div>
+        {mode && modeLabel && (
+          <span className={cn("px-1 py-0 rounded text-[8px] font-semibold uppercase tracking-wide", MODE_STYLE[mode])}>
+            {modeLabel}
+          </span>
+        )}
       </div>
       <div
         className={cn(
@@ -166,6 +200,8 @@ export function MaintenanceCycleModal({
   const [hoursRaw, setHoursRaw] = useState<Record<number, string>>({});
   const [cyclesRaw, setCyclesRaw] = useState<Record<number, string>>({});
   const [manualCyclesInput, setManualCyclesInput] = useState<Record<number, boolean>>({});
+  const [maintenanceLog, setMaintenanceLog] = useState<MaintenanceLogEntry[] | null>(null);
+  const maintenanceApplied = !!maintenanceLog && maintenanceLog.length > 0;
 
   const STATUS_CONFIG = {
     OK: {
@@ -211,12 +247,31 @@ export function MaintenanceCycleModal({
         const initialCyclesRaw: Record<number, string> = {};
         const initialManual: Record<number, boolean> = {};
         for (const comp of sys.components) {
+          // Flights/cycles default to +1 (one mission = one use) so the
+          // common case needs no input; user can uncheck/edit if this
+          // mission shouldn't count, or if a different value applies. Skip
+          // the default when the component has no room left (already at
+          // or past its limit) so we don't push an already-DUE component
+          // further over.
+          const ratio = comp.battery_cycle_ratio || 1;
+          const remainingFlights = comp.limit_flight - comp.current_flights;
+          const canPrefillFlight = comp.limit_flight > 0 && remainingFlights >= ratio;
+
+          // Hours default to 30 minutes of usage, same reasoning as the
+          // flights +1 default; skipped when there isn't 30 minutes of
+          // room left before the component's limit.
+          const remainingHourMin = comp.limit_hour > 0
+            ? hhmmToMinutes(comp.limit_hour) - hhmmToMinutes(comp.current_hours)
+            : 0;
+          const canPrefillHours = comp.limit_hour > 0 && remainingHourMin >= DEFAULT_ADD_HOURS_MINUTES;
+          const defaultAddHours = canPrefillHours ? minutesToHhmm(DEFAULT_ADD_HOURS_MINUTES) : 0;
+
           initial[comp.component_id] = {
             component_id: comp.component_id,
-            add_flights: 0,
-            add_hours: 0,
+            add_flights: canPrefillFlight ? 1 : 0,
+            add_hours: defaultAddHours,
           };
-          initialRaw[comp.component_id] = "";
+          initialRaw[comp.component_id] = canPrefillHours ? defaultAddHours.toFixed(2) : "";
           initialCyclesRaw[comp.component_id] = "";
           initialManual[comp.component_id] = false;
         }
@@ -232,9 +287,21 @@ export function MaintenanceCycleModal({
     }
   }, [toolId, t]);
 
+  const loadMaintenanceLog = useCallback(async () => {
+    try {
+      const { data } = await axios.get(`/api/operation/board/maintenance-cycle/log?mission_id=${missionId}`);
+      if (data.code === 1) setMaintenanceLog(data.data ?? []);
+    } catch (e) {
+      console.error("Failed to load maintenance log:", e);
+    }
+  }, [missionId]);
+
   useEffect(() => {
-    if (open && toolId > 0) loadData();
-  }, [open, toolId, loadData]);
+    if (open && toolId > 0) {
+      loadData();
+      loadMaintenanceLog();
+    }
+  }, [open, toolId, loadData, loadMaintenanceLog]);
 
   const handleHoursChange = (compId: number, rawValue: string) => {
     if (rawValue === "") {
@@ -308,7 +375,7 @@ export function MaintenanceCycleModal({
   };
 
   const handleSubmit = async () => {
-    if (!systemData) return;
+    if (!systemData || maintenanceApplied) return;
     const components = Object.values(inputs).filter(
       (inp) => inp.add_flights > 0 || inp.add_hours > 0
     );
@@ -326,6 +393,9 @@ export function MaintenanceCycleModal({
       if (data.code === 1) {
         toast.success(t("operations.table.toast.pilotSuccess", { count: 1 }));
         onClose();
+      } else if (data.alreadyApplied) {
+        toast.error(t("operations.missionComplete.toast.maintenanceAlreadyApplied"));
+        loadMaintenanceLog();
       } else {
         toast.error(t("operations.board.toast.statusUpdateFailed"));
       }
@@ -403,6 +473,12 @@ export function MaintenanceCycleModal({
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto px-6 py-4">
+          {!loading && maintenanceApplied && (
+            <div className={cn("mb-3 flex items-center gap-2 rounded-lg border px-3 py-2 text-xs", isDark ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400" : "border-emerald-200 bg-emerald-50 text-emerald-700")}>
+              <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+              {t("operations.missionComplete.maintenance.alreadyRecorded")}
+            </div>
+          )}
           {loading ? (
             <div className={cn(
               "rounded-xl border p-4 space-y-4",
@@ -437,6 +513,7 @@ export function MaintenanceCycleModal({
                   ? Math.round((inp?.add_flights || 0) * 100) / 100
                   : Math.round((inp?.add_flights || 0) * ratio * 100) / 100;
                 const previewFlights = Math.round((comp.current_flights + effectiveCycles) * 100) / 100;
+                const loggedEntry = maintenanceLog?.find((l) => l.component_id === comp.component_id) ?? null;
 
                 return (
                   <div
@@ -496,6 +573,8 @@ export function MaintenanceCycleModal({
                         icon={Plane}
                         status={comp.status}
                         isDark={isDark}
+                        mode="manual"
+                        modeLabel={t("operations.missionComplete.maintenance.manual")}
                       />
                       <CycleProgressBar
                         current={previewHours}
@@ -505,6 +584,8 @@ export function MaintenanceCycleModal({
                         status={comp.status}
                         isDark={isDark}
                         isHours
+                        mode="manual"
+                        modeLabel={t("operations.missionComplete.maintenance.manual")}
                       />
                       <CycleProgressBar
                         current={comp.current_days}
@@ -513,9 +594,36 @@ export function MaintenanceCycleModal({
                         icon={CalendarDays}
                         status={comp.status}
                         isDark={isDark}
+                        mode="auto"
+                        modeLabel={t("operations.missionComplete.maintenance.auto")}
                       />
                     </div>
 
+                    {maintenanceApplied ? (
+                      <div className={cn("rounded-lg border p-3", isDark ? "border-white/[0.04] bg-slate-800/40" : "border-slate-100 bg-slate-50/80")}>
+                        <p className={cn("text-[10px] uppercase tracking-wider font-medium mb-2", isDark ? "text-slate-500" : "text-slate-400")}>
+                          {t("operations.missionComplete.maintenance.recordedUsage")}
+                        </p>
+                        {loggedEntry && (loggedEntry.add_flights > 0 || loggedEntry.add_hours > 0) ? (
+                          <div className="flex flex-wrap gap-4">
+                            {comp.limit_flight > 0 && loggedEntry.add_flights > 0 && (
+                              <span className={cn("text-xs tabular-nums", isDark ? "text-slate-300" : "text-slate-600")}>
+                                {t("operations.missionComplete.maintenance.flights")}: +{loggedEntry.add_flights}
+                              </span>
+                            )}
+                            {comp.limit_hour > 0 && loggedEntry.add_hours > 0 && (
+                              <span className={cn("text-xs tabular-nums", isDark ? "text-slate-300" : "text-slate-600")}>
+                                {t("operations.missionComplete.maintenance.hours")}: +{formatHhmmHours(loggedEntry.add_hours)}
+                              </span>
+                            )}
+                          </div>
+                        ) : (
+                          <span className={cn("text-xs", isDark ? "text-slate-500" : "text-slate-400")}>
+                            {t("operations.missionComplete.maintenance.noUsageRecorded")}
+                          </span>
+                        )}
+                      </div>
+                    ) : (
                     <div className={cn("rounded-lg border p-3", isDark ? "border-white/[0.04] bg-slate-800/40" : "border-slate-100 bg-slate-50/80")}>
                       <p className={cn("text-[10px] uppercase tracking-wider font-medium mb-2", isDark ? "text-slate-500" : "text-slate-400")}>
                         {t("operations.table.batch.autofillTasks")}
@@ -603,7 +711,13 @@ export function MaintenanceCycleModal({
                           </div>
                         )}
                       </div>
+                      {comp.limit_day > 0 && (
+                        <p className={cn("mt-2 text-[10px] italic", isDark ? "text-slate-500" : "text-slate-400")}>
+                          {t("operations.missionComplete.maintenance.daysTracked")}
+                        </p>
+                      )}
                     </div>
+                    )}
 
                     {comp.status === "DUE" && (
                       <div className={cn("mt-3 flex items-center gap-2 rounded-lg px-3 py-2 text-[11px]", isDark ? "bg-rose-500/10 text-rose-400" : "bg-rose-50 text-rose-600")}>
@@ -633,17 +747,19 @@ export function MaintenanceCycleModal({
             >
               {onSkip ? t("operations.board.toast.revertSuccess").split(' ').slice(-3).join(' ') : t("planning.form.no")}
             </Button>
-            <Button
-              onClick={handleSubmit}
-              disabled={submitting || loading || !hasComponents}
-              className="h-9 px-4 text-sm bg-violet-600 hover:bg-violet-500 text-white"
-            >
-              {submitting ? (
-                <><Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> {t("operations.table.batch.updating")}</>
-              ) : (
-                t("operations.table.detail.updateMaintenance")
-              )}
-            </Button>
+            {!maintenanceApplied && (
+              <Button
+                onClick={handleSubmit}
+                disabled={submitting || loading || !hasComponents}
+                className="h-9 px-4 text-sm bg-violet-600 hover:bg-violet-500 text-white"
+              >
+                {submitting ? (
+                  <><Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> {t("operations.table.batch.updating")}</>
+                ) : (
+                  t("operations.table.detail.updateMaintenance")
+                )}
+              </Button>
+            )}
           </div>
         </div>
       </DialogContent>

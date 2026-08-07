@@ -49,6 +49,14 @@ interface ComponentInput {
   manual_cycles_input?: boolean;
 }
 
+interface MaintenanceLogEntry {
+  component_id: number;
+  component_code: string | null;
+  add_hours: number;
+  add_flights: number;
+  applied_at: string;
+}
+
 const STATUS_CONFIG = {
   OK: {
     label: "OK",
@@ -94,6 +102,11 @@ function formatHhmmHours(value: number): string {
   return `${hours}h ${minutes}m`;
 }
 
+const MODE_STYLE = {
+  auto: "bg-blue-500/10 text-blue-500",
+  manual: "bg-violet-500/10 text-violet-400",
+} as const;
+
 function CycleProgressBar({
   current,
   limit,
@@ -102,6 +115,8 @@ function CycleProgressBar({
   status,
   isDark,
   isHours,
+  mode,
+  modeLabel,
 }: {
   current: number;
   limit: number;
@@ -110,6 +125,10 @@ function CycleProgressBar({
   status: "OK" | "ALERT" | "DUE";
   isDark: boolean;
   isHours?: boolean;
+  // "manual" = user must enter a value (Flights/Hours); "auto" = computed
+  // automatically with no input (Days, tracked from elapsed calendar time).
+  mode?: "auto" | "manual";
+  modeLabel?: string;
 }) {
   if (!limit || limit <= 0) return null;
   const pct = Math.min(100, (current / limit) * 100);
@@ -117,11 +136,18 @@ function CycleProgressBar({
 
   return (
     <div className="space-y-1">
-      <div className="flex items-center gap-1.5">
-        <Icon className={cn("h-3 w-3", isDark ? "text-slate-500" : "text-slate-400")} />
-        <span className={cn("text-[10px] uppercase tracking-wider font-medium", isDark ? "text-slate-500" : "text-slate-400")}>
-          {label}
-        </span>
+      <div className="flex items-center justify-between gap-1.5">
+        <div className="flex items-center gap-1.5">
+          <Icon className={cn("h-3 w-3", isDark ? "text-slate-500" : "text-slate-400")} />
+          <span className={cn("text-[10px] uppercase tracking-wider font-medium", isDark ? "text-slate-500" : "text-slate-400")}>
+            {label}
+          </span>
+        </div>
+        {mode && modeLabel && (
+          <span className={cn("px-1 py-0 rounded text-[8px] font-semibold uppercase tracking-wide", MODE_STYLE[mode])}>
+            {modeLabel}
+          </span>
+        )}
       </div>
       <div className={cn("h-1.5 w-full rounded-full overflow-hidden", isDark ? "bg-slate-700" : "bg-slate-100")}>
         <div className={cn("h-full rounded-full transition-all", cfg.barColor)} style={{ width: `${pct}%` }} />
@@ -155,6 +181,8 @@ interface MaintenanceTabProps {
   manualCyclesInput: Record<number, boolean>;
   autoSyncedIds: Set<number>;
   isDark: boolean;
+  maintenanceApplied?: boolean;
+  maintenanceLog?: MaintenanceLogEntry[] | null;
   onToggleFlight: (compId: number) => void;
   onManualCyclesToggle: (compId: number, checked: boolean) => void;
   onCyclesChange: (compId: number, value: string) => void;
@@ -171,6 +199,8 @@ export function MaintenanceTab({
   manualCyclesInput,
   autoSyncedIds,
   isDark,
+  maintenanceApplied,
+  maintenanceLog,
   onToggleFlight,
   onManualCyclesToggle,
   onCyclesChange,
@@ -219,6 +249,12 @@ export function MaintenanceTab({
           </Badge>
         </div>
       )}
+      {maintenanceApplied && (
+        <div className={cn("mb-3 flex items-center gap-2 rounded-lg border px-3 py-2 text-xs", isDark ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400" : "border-emerald-200 bg-emerald-50 text-emerald-700")}>
+          <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+          {t("operations.missionComplete.maintenance.alreadyRecorded")}
+        </div>
+      )}
       <div className="space-y-3">
         {systemData!.components.map((comp) => {
           const cfg = STATUS_CONFIG[comp.status];
@@ -234,6 +270,7 @@ export function MaintenanceTab({
           const hasHourLimit = comp.limit_hour > 0;
           const hasDayLimit = comp.limit_day > 0;
           const isAutoSynced = autoSyncedIds.has(comp.component_id);
+          const loggedEntry = maintenanceLog?.find((l) => l.component_id === comp.component_id) ?? null;
 
           return (
             <div
@@ -290,6 +327,8 @@ export function MaintenanceTab({
                     icon={Plane}
                     status={comp.status}
                     isDark={isDark}
+                    mode="manual"
+                    modeLabel={t("operations.missionComplete.maintenance.manual")}
                   />
                 )}
                 {hasHourLimit && (
@@ -301,6 +340,8 @@ export function MaintenanceTab({
                     status={comp.status}
                     isDark={isDark}
                     isHours
+                    mode="manual"
+                    modeLabel={t("operations.missionComplete.maintenance.manual")}
                   />
                 )}
                 {hasDayLimit && (
@@ -311,11 +352,39 @@ export function MaintenanceTab({
                     icon={CalendarDays}
                     status={comp.status}
                     isDark={isDark}
+                    mode="auto"
+                    modeLabel={t("operations.missionComplete.maintenance.auto")}
                   />
                 )}
               </div>
 
-              {(hasFlightLimit || hasHourLimit) && (
+              {(hasFlightLimit || hasHourLimit) && maintenanceApplied && (
+                <div className={cn("rounded-lg border p-3", isDark ? "border-white/4 bg-slate-800/40" : "border-slate-100 bg-slate-50/80")}>
+                  <p className={cn("text-[10px] uppercase tracking-wider font-medium mb-2", isDark ? "text-slate-500" : "text-slate-400")}>
+                    {t("operations.missionComplete.maintenance.recordedUsage")}
+                  </p>
+                  {loggedEntry && (loggedEntry.add_flights > 0 || loggedEntry.add_hours > 0) ? (
+                    <div className="flex flex-wrap gap-4">
+                      {hasFlightLimit && loggedEntry.add_flights > 0 && (
+                        <span className={cn("text-xs tabular-nums", isDark ? "text-slate-300" : "text-slate-600")}>
+                          {t("operations.missionComplete.maintenance.flights")}: +{loggedEntry.add_flights}
+                        </span>
+                      )}
+                      {hasHourLimit && loggedEntry.add_hours > 0 && (
+                        <span className={cn("text-xs tabular-nums", isDark ? "text-slate-300" : "text-slate-600")}>
+                          {t("operations.missionComplete.maintenance.hours")}: +{formatHhmmHours(loggedEntry.add_hours)}
+                        </span>
+                      )}
+                    </div>
+                  ) : (
+                    <span className={cn("text-xs", isDark ? "text-slate-500" : "text-slate-400")}>
+                      {t("operations.missionComplete.maintenance.noUsageRecorded")}
+                    </span>
+                  )}
+                </div>
+              )}
+
+              {(hasFlightLimit || hasHourLimit) && !maintenanceApplied && (
                 <div className={cn("rounded-lg border p-3", isDark ? "border-white/4 bg-slate-800/40" : "border-slate-100 bg-slate-50/80")}>
                   <p className={cn("text-[10px] uppercase tracking-wider font-medium mb-2", isDark ? "text-slate-500" : "text-slate-400")}>
                     {t("operations.missionComplete.maintenance.addUsage")}

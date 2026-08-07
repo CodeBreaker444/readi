@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { getPlanningColumns } from "../tables/PlanningColumns";
 import PageHeader from "./PageHeader";
 import PlanningTableCard from "./PlanningTableCard";
+import PlanningDetailsModal from "./PlanningDetailsModal";
 
 import {
   AlertDialog,
@@ -38,6 +39,8 @@ export default function PlanningDashboard({ isDark, userCanEdit, userCanDelete }
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [rowToDelete, setRowToDelete] = useState<Planning | null>(null);
+  const [detailsModalOpen, setDetailsModalOpen] = useState(false);
+  const [selectedPlanningForDetails, setSelectedPlanningForDetails] = useState<Planning | null>(null);
 
   const fetchPlanning = useCallback(async () => {
     setLoading(true);
@@ -97,6 +100,11 @@ export default function PlanningDashboard({ isDark, userCanEdit, userCanDelete }
     );
   };
 
+  const handleViewDetails = (row: Planning) => {
+    setSelectedPlanningForDetails(row);
+    setDetailsModalOpen(true);
+  };
+
   const handleRowClick = useCallback((row: Planning) => {
     setSelectedRow((prev) => (prev?.planning_id === row.planning_id ? null : row));
   }, []);
@@ -107,11 +115,12 @@ export default function PlanningDashboard({ isDark, userCanEdit, userCanDelete }
         isDark,
         onDelete: triggerDeleteConfirm,
         onOpen: handleOpen,
+        onViewDetails: handleViewDetails,
         deleting: false,
         t,
         canDelete: userCanDelete,
       }),
-    [isDark, triggerDeleteConfirm, handleOpen, t, userCanDelete]
+    [isDark, triggerDeleteConfirm, handleOpen, handleViewDetails, t, userCanDelete]
   );
 
   const bg = isDark ? "bg-slate-900" : "bg-slate-50";
@@ -162,13 +171,20 @@ export default function PlanningDashboard({ isDark, userCanEdit, userCanDelete }
             <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="bg-red-600 text-destructive-foreground hover:bg-red-500 cursor-pointer"
             >
               {t("planning.dashboard.confirmDelete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <PlanningDetailsModal
+        open={detailsModalOpen}
+        onOpenChange={setDetailsModalOpen}
+        planning={selectedPlanningForDetails}
+        isDark={isDark}
+      />
     </div>
   );
 }

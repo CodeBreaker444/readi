@@ -229,6 +229,17 @@ export async function notifyDccDenial(
 }
 
 /**
+ * Whether a mission was requested by DCC (i.e. has a flight_request linked
+ * via planning with a resolvable external_mission_id), as opposed to being
+ * created directly in PMVD. Used to skip DCC execution/termination callbacks
+ * for missions DCC never asked for.
+ */
+export async function isMissionRequestedByDcc(missionId: number): Promise<boolean> {
+  const externalId = await getExternalMissionIdFromFlightRequest(missionId);
+  return externalId != null;
+}
+
+/**
  * POST /dcc/missions/{missionId}/execution
  * Called when a mission moves to IN_PROGRESS (_START).
  */

@@ -125,7 +125,7 @@ export function EvaluationCommunicationModal({
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="w-full sm:max-w-3xl md:max-w-4xl lg:max-w-5xl xl:max-w-6xl max-h-[90vh] overflow-y-auto overflow-x-hidden">
         <DialogHeader>
           <div className="flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-50 border border-violet-100">
@@ -176,18 +176,26 @@ export function EvaluationCommunicationModal({
                     placeholder={t('planning.communication.searchUsers')}
                     value={userSearch}
                     onChange={(e) => { setUserSearch(e.target.value); setDropdownOpen(true); }}
+                    onFocus={() => setDropdownOpen(true)}
+                    onBlur={() => setTimeout(() => setDropdownOpen(false), 200)}
                   />
-                  {dropdownOpen && userSearch && filteredUsers.length > 0 && (
+                  {dropdownOpen && (
                     <div className="absolute z-50 mt-1 w-full border bg-popover rounded-md shadow-md max-h-60 overflow-y-auto">
-                      {filteredUsers.map(user => (
-                        <button 
-                          key={user.user_id} 
-                          className="cursor-pointer w-full text-left px-3 py-2 text-sm hover:bg-accent transition-colors" 
-                          onClick={() => handleSelectUser(user)}
-                        >
-                          {user.first_name} {user.last_name ?? ''} ({user.email})
-                        </button>
-                      ))}
+                      {filteredUsers.length > 0 ? (
+                        filteredUsers.map(user => (
+                          <button 
+                            key={user.user_id} 
+                            className="cursor-pointer w-full text-left px-3 py-2 text-sm hover:bg-accent transition-colors" 
+                            onClick={() => handleSelectUser(user)}
+                          >
+                            {user.first_name} {user.last_name ?? ''} ({user.email})
+                          </button>
+                        ))
+                      ) : (
+                        <div className="px-3 py-2 text-sm text-slate-500">
+                          {t('planning.communication.noUsersFound')}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

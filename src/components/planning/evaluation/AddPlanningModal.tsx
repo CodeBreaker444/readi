@@ -72,15 +72,17 @@ export function AddPlanningModal({
     const [pilots, setPilots] = useState<PilotUser[]>([]);
     const [loadingDropdowns, setLoadingDropdowns] = useState(false);
     const [submitting, setSubmitting] = useState(false);
+    const [evaluationYear, setEvaluationYear] = useState<number | null>(null);
 
     useEffect(() => {
         if (!open) return;
         async function loadDropdowns() {
             try {
                 setLoadingDropdowns(true);
-                const [procRes, pilotRes] = await Promise.all([
-                    axios.get("/api/evaluation/luc-procedures?sector=EVALUATION"),
+                const [procRes, pilotRes, evalRes] = await Promise.all([
+                    axios.get("/api/evaluation/luc-procedures?type=PLANNING"),
                     axios.get('/api/evaluation/planning/pilot'),
+                    axios.get(`/api/evaluation/${evaluationId}`),
                 ]);
                 const formattedProcedures = (procRes.data.data ?? []).map((p: any) => ({
                     procedure_id: p.luc_procedure_id,
@@ -91,6 +93,12 @@ export function AddPlanningModal({
                 setProcedures(formattedProcedures);
                 setProcedures(procRes.data.data ?? []);
                 setPilots(pilotRes.data.data ?? []);
+                
+                // Set planning year from evaluation year reference
+                if (evalRes.data?.data?.evaluation_year) {
+                    setEvaluationYear(evalRes.data.data.evaluation_year);
+                    setPlanningYear(String(evalRes.data.data.evaluation_year));
+                }
             } catch {
                 toast.error(t('planning.toast.loadFormError'));
             } finally {
@@ -98,7 +106,7 @@ export function AddPlanningModal({
             }
         }
         loadDropdowns();
-    }, [open]);
+    }, [open, evaluationId]);
 
     function handleClose() {
         setLucProcedureId('');
@@ -107,6 +115,7 @@ export function AddPlanningModal({
         setPlanningYear(String(currentYear));
         setPlanningDesc('');
         setPlanningType('');
+        setEvaluationYear(null);
         onClose();
     }
 
@@ -151,7 +160,7 @@ export function AddPlanningModal({
             planning_desc: planningDesc.trim(),
             planning_status: planningStatus,
             planning_request_date: requestDate,
-            planning_year: Number(planningYear),
+            planning_year: planningYear, // Send as string, backend will handle validation
             planning_type: planningType.trim(),
             planning_result: 'PROGRESS',
         };

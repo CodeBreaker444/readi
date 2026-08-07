@@ -2,6 +2,7 @@ import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { notifyDccAcceptance } from '@/backend/services/mission/dcc-callback-service';
 import { notifyPilotAssignment } from '@/backend/services/notification/notification-service';
 import { deleteOperation, getOperation, updateOperation } from '@/backend/services/operation/operation-service';
+import { revertMissionMaintenance } from '@/backend/services/operation/maintenance-cycle-service';
 import { UpdateOperationSchema } from '@/config/types/operation';
 import { apiError, dbError, internalError, notFound, zodError } from '@/lib/api-error';
 import { requireFeatureAccess, requirePermission } from '@/lib/auth/api-auth';
@@ -124,7 +125,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
   }
 }
 
-export async function DELETE(_req: NextRequest, { params }: Params) {
+export async function DELETE(req: NextRequest, { params }: Params) {
   try {
     const { error: featureError } = await requireFeatureAccess('operation_mission_table', 'delete');
     if (featureError) return featureError;
@@ -134,6 +135,12 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
 
     const session = await getUserSession();
     const opInfo = await getOperation(id);
+
+    const revertMaintenance = req.nextUrl.searchParams.get('revert_maintenance') === '1';
+    if (revertMaintenance && session) {
+      await revertMissionMaintenance(id, session.user.ownerId);
+    }
+
     await deleteOperation(id);
 
     if (session) {

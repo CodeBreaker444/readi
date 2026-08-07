@@ -247,7 +247,7 @@ export async function getAttachableMissions(droneSerialNumber: string, ownerId: 
     orderBy: {
       actual_start: 'desc',
     },
-    take: 50,
+    take: 20,
   });
 
   return missions.map((mission) => ({

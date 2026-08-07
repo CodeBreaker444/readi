@@ -38,8 +38,10 @@ import {
   flexRender,
   getCoreRowModel,
   getFilteredRowModel,
+  getPaginationRowModel,
   useReactTable,
 } from '@tanstack/react-table';
+import { TablePagination } from '@/components/tables/Pagination';
 import { useTheme } from '../useTheme';
 import DashboardSkeleton from './DashboardSkeleton';
 
@@ -54,7 +56,12 @@ interface MissionData {
   id: string;
   name: string;
   date: string;
-  status: 'Left' | 'Waiting' | 'Completed';
+  // Real, current status of the mission (fk_mission_status_id), the same
+  // source of truth the Operation Board uses — so admin changes made after
+  // scheduling (reassignment, cancellation, completion, etc.) show up here
+  // instead of a status guessed at fetch time.
+  statusCode: string;
+  statusLabel: string;
 }
 
 type MissionTableType = 'past' | 'next';
@@ -129,11 +136,16 @@ const STATS = (data: any, t: any) => [
   },
 ];
 
+// Keyed by the mission's status code (same codes as the Operation Board):
+// 00 Scheduled, 05 In Progress, 10 Completed, 99 Cancelled, 101 Pending.
 const STATUS_STYLE: Record<string, string> = {
-  Completed: 'bg-emerald-500/10 text-emerald-500 ring-1 ring-emerald-500/25',
-  Waiting:   'bg-amber-500/10 text-amber-500 ring-1 ring-amber-500/25',
-  Left:      'bg-slate-500/10 text-slate-400 ring-1 ring-slate-500/25',
+  '00':  'bg-blue-500/10 text-blue-500 ring-1 ring-blue-500/25',
+  '05':  'bg-amber-500/10 text-amber-500 ring-1 ring-amber-500/25',
+  '10':  'bg-emerald-500/10 text-emerald-500 ring-1 ring-emerald-500/25',
+  '99':  'bg-red-500/10 text-red-500 ring-1 ring-red-500/25',
+  '101': 'bg-slate-500/10 text-slate-400 ring-1 ring-slate-500/25',
 };
+const DEFAULT_STATUS_STYLE = 'bg-slate-500/10 text-slate-400 ring-1 ring-slate-500/25';
 
 export default function DashboardClient({ ownerId, userProfileCode, userId, initialData }: DashboardClientProps) {
   const { isDark } = useTheme();
@@ -172,14 +184,16 @@ export default function DashboardClient({ ownerId, userProfileCode, userId, init
     id: `#${m.mission_id}`,
     name: m.pilot_name?.trim() || t('dashboard.pilot.notAssigned'),
     date: m.date,
-    status: m.mission_result_desc === 'Completed' ? 'Completed' : 'Waiting',
+    statusCode: m.mission_status_code || '',
+    statusLabel: m.mission_status_desc || t('dashboard.missionStatus.unknown'),
   }));
 
   const nextMissions: MissionData[] = (data?.readi_mission_scheduler_planned || []).map((m: any) => ({
     id: `#${m.mission_id}`,
     name: m.pilot_name?.trim() || t('dashboard.pilot.notAssigned'),
     date: m.date,
-    status: 'Waiting',
+    statusCode: m.mission_status_code || '',
+    statusLabel: m.mission_status_desc || t('dashboard.missionStatus.unknown'),
   }));
 
   const MissionTable = ({ data, tableType }: { data: MissionData[]; tableType: MissionTableType }) => {
@@ -210,16 +224,17 @@ export default function DashboardClient({ ownerId, userProfileCode, userId, init
         ),
       },
       {
-        accessorKey: 'status',
+        accessorKey: 'statusLabel',
         header: t('dashboard.table.headers.status'),
         cell: ({ row }: { row: any }) => {
-          const status = row.getValue('status') as MissionData['status'];
+          const label = row.getValue('statusLabel') as string;
+          const code = (row.original as MissionData).statusCode;
           return (
             <span className={cn(
               'inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium',
-              STATUS_STYLE[status] ?? 'bg-gray-100 text-gray-500'
+              STATUS_STYLE[code] ?? DEFAULT_STATUS_STYLE
             )}>
-              {statusToLabel(status)}
+              {label}
             </span>
           );
         },
@@ -229,7 +244,7 @@ export default function DashboardClient({ ownerId, userProfileCode, userId, init
     const filteredData = useMemo(() => {
       let result = data;
       if (statusFilter !== 'all') {
-        result = result.filter(m => m.status === statusFilter);
+        result = result.filter(m => m.statusLabel === statusFilter);
       }
       return result;
     }, [data, statusFilter]);
@@ -241,14 +256,16 @@ export default function DashboardClient({ ownerId, userProfileCode, userId, init
         globalFilter,
         columnFilters,
       },
+      initialState: { pagination: { pageSize: 8 } },
       onGlobalFilterChange: setGlobalFilter,
       onColumnFiltersChange: setColumnFilters,
       getCoreRowModel: getCoreRowModel(),
       getFilteredRowModel: getFilteredRowModel(),
+      getPaginationRowModel: getPaginationRowModel(),
     });
 
     const uniqueStatuses = useMemo(() => {
-      const statuses = new Set(data.map(m => m.status));
+      const statuses = new Set(data.map(m => m.statusLabel));
       return Array.from(statuses);
     }, [data]);
 
@@ -272,7 +289,7 @@ export default function DashboardClient({ ownerId, userProfileCode, userId, init
             <SelectContent>
               <SelectItem value="all">{t('dashboard.missions.filter.all')}</SelectItem>
               {uniqueStatuses.map(status => (
-                <SelectItem key={status} value={status}>{statusToLabel(status as MissionData['status'])}</SelectItem>
+                <SelectItem key={status} value={status}>{status}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -313,6 +330,7 @@ export default function DashboardClient({ ownerId, userProfileCode, userId, init
             </TableBody>
           </Table>
         </div>
+        {table.getRowModel().rows.length > 0 && <TablePagination table={table} />}
       </div>
     );
   };
@@ -366,19 +384,6 @@ export default function DashboardClient({ ownerId, userProfileCode, userId, init
     'cursor-pointer text-xs px-2.5 py-1 rounded-lg border transition-colors',
     isDark ? 'text-slate-400 border-slate-700 hover:bg-slate-700 hover:text-slate-200' : 'text-gray-500 border-gray-200 hover:bg-gray-50 hover:text-gray-700'
   );
-
-  const statusToLabel = (status: MissionData['status']) => {
-    switch (status) {
-      case 'Completed':
-        return t('dashboard.missionStatus.completed');
-      case 'Waiting':
-        return t('dashboard.missionStatus.waiting');
-      case 'Left':
-        return t('dashboard.missionStatus.left');
-      default:
-        return status;
-    }
-  };
 
   const stats = STATS(data, t);
   const defaultLegendLabels = [

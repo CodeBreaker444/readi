@@ -33,7 +33,8 @@
     "today": "Today",
     "yesterday": "Yesterday",
     "daysAgo": "{{count}} days ago",
-    "monthsAgo": "{{count}} months ago"
+    "monthsAgo": "{{count}} months ago",
+    "viewDetails": "View Details"
   },
   "topbar": {
     "askAnything": "Ask anything…",
@@ -676,18 +677,16 @@
       "notAssigned": "Not Assigned"
     },
     "missionStatus": {
-      "completed": "Completed",
-      "waiting": "Waiting",
-      "left": "Left"
+      "unknown": "Unknown"
     },
     "missions": {
       "past": {
-        "title": "Past 10 Missions",
+        "title": "Past Missions",
         "eyebrow": "History",
         "empty": "No past missions"
       },
       "next": {
-        "title": "Next 10 Missions",
+        "title": "Next Missions",
         "eyebrow": "Upcoming",
         "empty": "No upcoming missions"
       },
@@ -865,7 +864,8 @@
       "savedSuccess": "Checklist saved",
       "saveFailed": "Failed to save checklist result",
       "checklistNotFound": "Checklist not found",
-      "noChecklistDef": "No checklist definition for code"
+      "noChecklistDef": "No checklist definition for code",
+      "saving": "Saving..."
     },
     "evaluationRequest": {
       "pageTitle": "Planning · New Evaluation Request",
@@ -1421,7 +1421,10 @@
       "loadError": "Failed to load users",
       "sender": "Sender",
       "status": "Status",
-      "sentAt": "Sent At"
+      "sentAt": "Sent At",
+      "file": "File",
+      "download": "Download",
+      "noFile": "No file"
     },
     "assignment": {
       "title": "Assignment Action",
@@ -1547,6 +1550,7 @@
         "stepsCompleteNotFinalized": "Steps complete, not finalized",
         "assignment": "Assignment",
         "checklist": "Checklist",
+        "communication": "Communication",
         "manageProcedure": "Manage Procedure",
         "missionDetails": "Mission Details",
         "client": "Client",
@@ -1575,6 +1579,7 @@
         "pending": "Pending",
         "assignment": "Assignment",
         "checklist": "Checklist",
+        "communication": "Communication",
         "complete": "✓ Complete",
         "incomplete": "✗ Incomplete"
       }
@@ -1686,8 +1691,13 @@
         "daysTracked": "Days are tracked automatically from the last maintenance date.",
         "overdue": "Maintenance is overdue — schedule maintenance soon",
         "autoSynced": "Auto-synced",
+        "auto": "Automatic",
+        "manual": "Manual",
         "manualInput": "Manual input",
-        "cycles": "Cycles"
+        "cycles": "Cycles",
+        "alreadyRecorded": "Maintenance has already been recorded for this mission and can't be updated again.",
+        "recordedUsage": "Recorded Usage",
+        "noUsageRecorded": "No usage recorded for this component."
       },
       "logs": {
         "attachedLogs": "Attached Logs",
@@ -1760,7 +1770,8 @@
         "attachSuccess": "Flight log attached from Control Center",
         "autoSyncSuccess_one": "Auto-filled usage for {{count}} component from GUTMA",
         "autoSyncSuccess_other": "Auto-filled usage for {{count}} components from GUTMA",
-        "postFlightSuccess": "Post-flight data saved"
+        "postFlightSuccess": "Post-flight data saved",
+        "maintenanceAlreadyApplied": "Maintenance has already been recorded for this mission"
       }
     },
     "dialog": {
@@ -1890,7 +1901,8 @@
         "cancel": "Cancel",
         "delete": "Delete",
         "success": "Operation deleted successfully",
-        "error": "Delete failed"
+        "error": "Delete failed",
+        "revertMaintenance": "Revert the maintenance hours/flights this mission recorded on its components"
       }
     },
     "importOperation": {
@@ -1971,7 +1983,8 @@
         "noPlanningAvailable": "No planning available",
         "selectMissionPlanning": "Select mission planning…",
         "noMissionPlanningAvailable": "No mission planning available",
-        "selectVisualObserver": "Select visual observer…"
+        "selectVisualObserver": "Select visual observer…",
+        "searchFlights": "Search flights by name…"
       },
       "info": {
         "gutmaAutoExtract": "Altitude, distance and timestamps are extracted automatically from the GUTMA log file. The mission code is auto-generated unless you set one below.",
@@ -1992,7 +2005,12 @@
         "inMaintenance": "Maintenance",
         "maintenanceDue": "Maintenance Due",
         "snMismatch": "SN Mismatch",
-        "noSystemWithSerial": "No system is present with the serial number {{serial}}"
+        "noSystemWithSerial": "No system is present with the serial number {{serial}}",
+        "noSerialDetected": "No serial number could be detected in this log file, so the system cannot be auto-selected.",
+        "systemAutoSelected": "System auto-selected from log serial number: {{name}}",
+        "systemLockedForImport": "The system is determined automatically from the log's serial number and can't be changed manually during import.",
+        "clickToFetchFlights": "Click \"Refresh Flights\" to load flights from Control Center",
+        "noFlightsMatchSearch": "No flights match your search"
       },
       "review": {
         "client": "Client",
@@ -2021,6 +2039,10 @@
         "import": "Import",
         "done": "Done",
         "back": "Back"
+      },
+      "errors": {
+        "endDateBeforeStart": "End date must be on or after start date",
+        "datesRequired": "Both start and end dates are required for recurrent missions"
       },
       "toast": {
         "loadClientsError": "Failed to load clients",

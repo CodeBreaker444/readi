@@ -209,6 +209,8 @@ export interface MissionListItem {
   drone_code: string;
   mission_type_desc: string;
   mission_result_desc: string;
+  mission_status_code: string;
+  mission_status_desc: string;
   mission_duration_min: number;
 }
 

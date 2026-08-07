@@ -1,7 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useTranslation } from 'react-i18next';
+import { useEffect, useRef, useState } from 'react';
 import { Model } from 'survey-core';
 import 'survey-core/survey-core.min.css';
 import { Survey } from 'survey-react-ui';
@@ -26,7 +25,11 @@ export function ChecklistRenderer({
   readOnly = false,
 }: ChecklistRendererProps) {
   const [surveyModel, setSurveyModel] = useState<Model | null>(null);
-  const { t } = useTranslation();
+
+  const onCompleteRef = useRef(onComplete);
+  useEffect(() => { onCompleteRef.current = onComplete; }, [onComplete]);
+
+  const initialDataKey = Object.keys(initialData).length > 0 ? JSON.stringify(initialData) : '';
 
   useEffect(() => {
     try {
@@ -41,26 +44,28 @@ export function ChecklistRenderer({
         isPanelless: false,
       });
 
+      // Prevent auto-scrolling on focus
+      survey.focusFirstQuestionAutomatic = false;
+      survey.scrollToTopOnChangingPage = false;
+
       if (userFullname) survey.setValue('user_fullname', userFullname);
       if (userEmail) survey.setValue('email', userEmail);
 
-      if (Object.keys(initialData).length > 0) {
-        survey.data = initialData;
+      if (initialDataKey) {
+        survey.data = JSON.parse(initialDataKey);
       }
 
       if (readOnly) {
         survey.mode = 'display';
       }
 
-      if (onComplete) {
-        survey.onComplete.add((sender) => onComplete(sender));
-      }
+      survey.onComplete.add((sender) => onCompleteRef.current?.(sender));
 
       setSurveyModel(survey);
     } catch (error) {
       console.error('Error rendering checklist:', error);
     }
-  }, [checklistJson, userFullname, userEmail, onComplete, isDark, initialData, readOnly]);
+  }, [checklistJson, userFullname, userEmail, isDark, initialDataKey, readOnly]);
 
   if (!surveyModel) {
     return (
@@ -87,7 +92,7 @@ export function ChecklistRenderer({
   }
 
   return (
-    <div className={`w-full checklist-container ${isDark ? 'survey-dark' : ''}`}>
+    <div className={`w-full checklist-container overflow-x-auto ${isDark ? 'survey-dark' : ''}`}>
       <Survey model={surveyModel} />
     </div>
   );
