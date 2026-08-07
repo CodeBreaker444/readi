@@ -677,18 +677,16 @@
       "notAssigned": "Non assegnato"
     },
     "missionStatus": {
-      "completed": "Completato",
-      "waiting": "In attesa",
-      "left": "Rimasto"
+      "unknown": "Sconosciuto"
     },
     "missions": {
       "past": {
-        "title": "Ultime 10 missioni",
+        "title": "Ultime missioni",
         "eyebrow": "Storico",
         "empty": "Nessuna missione passata"
       },
       "next": {
-        "title": "Prossime 10 missioni",
+        "title": "Prossime missioni",
         "eyebrow": "In arrivo",
         "empty": "Nessuna missione in arrivo"
       },

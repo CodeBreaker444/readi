@@ -139,6 +139,15 @@ export async function getReadiTotalMission(
   }
 }
 
+// Mirrors BOARD_STATUS_ID_TO_CODE in operation-board-service.ts so the
+// dashboard's status pill matches what the Operation Board shows for the
+// same mission (source of truth for admin-driven status changes).
+const MISSION_STATUS_ID_TO_CODE: Record<number, string> = {
+  1: '00',
+  2: '05',
+  3: '10',
+};
+
 export async function getReadiLastNextMissionList(
   ownerId: number,
   fkClientId: number,
@@ -166,6 +175,13 @@ export async function getReadiLastNextMissionList(
         flight_duration: true,
         fk_pilot_user_id: true,
         fk_planning_id: true,
+        fk_mission_status_id: true,
+        pilot_mission_status: {
+          select: {
+            status_code: true,
+            status_name: true,
+          },
+        },
         users: {
           select: {
             user_id: true,
@@ -228,6 +244,9 @@ export async function getReadiLastNextMissionList(
         const planning = item.fk_planning_id ? planningMap.get(item.fk_planning_id) : null;
         const missionResult = item.pilot_mission_result[0] ?? null;
         const displayDate = item.actual_start || item.scheduled_start;
+        const statusCode = MISSION_STATUS_ID_TO_CODE[item.fk_mission_status_id ?? 0]
+          ?? item.pilot_mission_status?.status_code
+          ?? '00';
 
         return {
           status: 'success',
@@ -240,6 +259,8 @@ export async function getReadiLastNextMissionList(
           drone_code: item.tool?.tool_code || '',
           mission_type_desc: item.pilot_mission_type?.type_name || '',
           mission_result_desc: missionResult?.result_type || '',
+          mission_status_code: statusCode,
+          mission_status_desc: item.pilot_mission_status?.status_name || '',
           mission_duration_min: item.flight_duration || 0,
         };
       });
