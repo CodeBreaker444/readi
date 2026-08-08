@@ -38,6 +38,7 @@ export async function POST(request: NextRequest) {
       fk_territorial_unit: parseInt(body.ownerTerritorialUnit || body.territorial_id || 0),
       owner_id: isSuperAdmin ? parseInt(body.owner_id) : session!.user.ownerId,
       flytrelay_access: body.flytrelay_access ?? false,
+      department: body.department || null,
     };
 
     const result = await createUser(userData);

@@ -49,7 +49,7 @@ export default function DFlightSettings() {
   const hasAuthMethod = (form.password.trim() !== '' || passwordSet) || (form.pfx_content !== '' || pfxPasswordSet);
   const validationError = !hasAuthMethod ? t('dflight.settings.toast.authRequired') : null;
 
-  const card  = isDark ? 'bg-slate-800/80 border-slate-700/60' : 'bg-white border-gray-200';
+  const card  = isDark ? 'bg-slate-800/80 border-slate-700/60 shadow-sm' : 'bg-white border-gray-200 shadow-sm';
   const inputCls = isDark ? 'bg-slate-900 border-slate-600 text-slate-200 placeholder:text-slate-500' : '';
   const labelCls = isDark ? 'text-slate-400' : 'text-gray-500';
 
@@ -150,9 +150,9 @@ export default function DFlightSettings() {
 
   return (
     <div className="space-y-6">
-      <div className={`rounded-xl border p-6 space-y-5 ${card}`}>
+      <div className={`rounded-xl border p-4 sm:p-6 space-y-5 ${card}`}>
         <div className="flex items-center gap-3">
-          <div className={`p-2 rounded-lg ${isDark ? 'bg-violet-500/10' : 'bg-violet-50'}`}>
+          <div className={`p-2 rounded-lg shrink-0 ${isDark ? 'bg-violet-500/10' : 'bg-violet-50'}`}>
             <Wifi className="h-4 w-4 text-violet-500" />
           </div>
           <div>
@@ -186,7 +186,7 @@ export default function DFlightSettings() {
               <p className={`text-[10px] font-semibold uppercase tracking-wider mb-3 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
                 {t('dflight.settings.sectionCredentials')}
               </p>
-              <div className="grid gap-4 sm:grid-cols-3">
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {field('username', t('dflight.settings.username'), t('dflight.settings.usernamePlaceholder'))}
 
                 {/* Password - Optional */}

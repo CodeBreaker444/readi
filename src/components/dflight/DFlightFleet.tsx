@@ -39,7 +39,7 @@ export default function DFlightFleet() {
   const [rowsPerPage, setRowsPerPage] = useState(8);
   const [syncingComponentId, setSyncingComponentId] = useState<number | null>(null);
 
-  const card = isDark ? 'bg-slate-800/80 border-slate-700/60' : 'bg-white border-gray-200';
+  const card = isDark ? 'bg-slate-800/80 border-slate-700/60 shadow-sm' : 'bg-white border-gray-200 shadow-sm';
   const th   = `px-4 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider ${isDark ? 'text-slate-500' : 'text-gray-400'}`;
   const td   = `px-4 py-3 text-xs align-middle ${isDark ? 'text-slate-300' : 'text-gray-700'}`;
 
@@ -176,7 +176,7 @@ export default function DFlightFleet() {
   return (
     <div className="space-y-6">
 
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
         {loading ? (
           [1, 2, 3].map((i) => (
             <div key={i} className={`rounded-xl border p-4 ${card}`}>
@@ -189,8 +189,8 @@ export default function DFlightFleet() {
             { label: t('dflight.fleet.stat.total'),     value: rows.length, color: isDark ? 'text-white'       : 'text-slate-900' },
             { label: t('dflight.fleet.stat.linked'),    value: linked,      color: 'text-emerald-500' },
             { label: t('dflight.fleet.stat.unlinked'),  value: unlinked,    color: 'text-amber-500'   },
-          ].map((s) => (
-            <div key={s.label} className={`rounded-xl border p-4 ${card}`}>
+          ].map((s, i) => (
+            <div key={s.label} className={`rounded-xl border p-4 ${card} ${i === 2 ? 'col-span-2 sm:col-span-1' : ''}`}>
               <p className={`text-xl font-bold ${s.color}`}>{s.value}</p>
               <p className={`text-[11px] mt-0.5 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>{s.label}</p>
             </div>
@@ -200,7 +200,7 @@ export default function DFlightFleet() {
 
       <div className={`rounded-xl border overflow-hidden ${card}`}>
 
-        <div className={`flex items-center justify-between px-5 py-3.5 border-b ${isDark ? 'border-slate-700/60 bg-slate-800/60' : 'border-gray-100 bg-gray-50/80'}`}>
+        <div className={`flex flex-wrap items-center justify-between gap-2 px-4 sm:px-5 py-3.5 border-b ${isDark ? 'border-slate-700/60 bg-slate-800/60' : 'border-gray-100 bg-gray-50/80'}`}>
           <div>
             <h2 className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>
               {t('dflight.fleet.tableTitle')}
@@ -212,7 +212,7 @@ export default function DFlightFleet() {
           <button
             onClick={load}
             disabled={loading}
-            className={`flex cursor-pointer items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors disabled:opacity-50 ${
+            className={`flex shrink-0 cursor-pointer items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors disabled:opacity-50 ${
               isDark
                 ? 'bg-slate-700 hover:bg-slate-600 text-slate-300'
                 : 'bg-gray-100 hover:bg-gray-200 text-gray-600'
@@ -239,7 +239,7 @@ export default function DFlightFleet() {
             </div>
           </div>
         ) : notConfigured ? (
-          <div className="flex flex-col items-center justify-center py-16 gap-4">
+          <div className="flex flex-col items-center justify-center px-4 py-16 gap-4">
             <Settings className="h-10 w-10 text-slate-400" />
             <div className="text-center space-y-2">
               <p className={`text-sm font-medium ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>
@@ -262,7 +262,7 @@ export default function DFlightFleet() {
             </Link>
           </div>
         ) : missingCertificate ? (
-          <div className="flex flex-col items-center justify-center py-16 gap-4">
+          <div className="flex flex-col items-center justify-center px-4 py-16 gap-4">
             <AlertCircle className="h-10 w-10 text-amber-500" />
             <div className="text-center space-y-2">
               <p className={`text-sm font-medium ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>
@@ -285,7 +285,7 @@ export default function DFlightFleet() {
             </Link>
           </div>
         ) : error ? (
-          <div className="flex flex-col items-center justify-center py-16 gap-3">
+          <div className="flex flex-col items-center justify-center px-4 py-16 gap-3">
             <AlertCircle className="h-8 w-8 text-red-500" />
             <p className={`text-sm ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>{error}</p>
             <button onClick={load} className="cursor-pointer text-xs text-sky-500 hover:underline">

@@ -10,9 +10,9 @@ export default function DFlightSettingsPage() {
   const { isDark } = useTheme();
   return (
     <div className={`min-h-screen ${isDark ? 'bg-slate-950' : 'bg-gray-50'}`}>
-      <div className={`border-b px-6 py-4 ${isDark ? 'bg-slate-900/80 border-slate-700/60' : 'bg-white/80 border-gray-200'}`}>
+      <div className={`border-b px-3 sm:px-6 py-4 ${isDark ? 'bg-slate-900/80 border-slate-700/60' : 'bg-white/80 border-gray-200'}`}>
         <div className="mx-auto flex items-center gap-3">
-          <div className="w-1 h-6 rounded-full bg-violet-600" />
+          <div className="w-1 h-6 shrink-0 rounded-full bg-violet-600" />
           <div>
             <h1 className={`font-semibold text-base ${isDark ? 'text-white' : 'text-slate-900'}`}>
               {t('dflight.settings.pageTitle')}
@@ -23,7 +23,7 @@ export default function DFlightSettingsPage() {
           </div>
         </div>
       </div>
-      <div className="mx-auto px-6 py-8">
+      <div className="mx-auto px-3 sm:px-6 py-5 sm:py-8">
         <DFlightSettings />
       </div>
     </div>

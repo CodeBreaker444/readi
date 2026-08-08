@@ -20,6 +20,7 @@ import axios from 'axios';
 import { CheckCircle, ChevronDown, ChevronRight, Eye, EyeOff, Link2, Link2Off, Loader2, ShieldCheck, XCircle } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { DEPARTMENT_OPTIONS } from '../tables/UserColumns';
 import { Skeleton } from '../ui/skeleton';
 
 const SUBROLE_MANAGER_ROLES = ['RM', 'ADMIN', 'SUPERADMIN'];
@@ -110,6 +111,7 @@ export function UserFormModal({
       is_manager: 'N',
       active: 1,
       flytrelay_access: false,
+      department: '',
     };
     if (!userData) return defaults;
     return {
@@ -123,6 +125,7 @@ export function UserFormModal({
       is_manager: userData.is_manager || 'N',
       active: userData.active ?? 1,
       flytrelay_access: userData.flytrelay_access ?? false,
+      department: userData.department || '',
     };
   });
 
@@ -485,6 +488,26 @@ export function UserFormModal({
                   {clients.map((client) => (
                     <SelectItem key={client.client_id} value={client.client_id.toString()}>
                       {client.client_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="department">Department</Label>
+              <Select
+                value={formData.department || 'NONE'}
+                onValueChange={(value) => setFormData({ ...formData, department: value === 'NONE' ? '' : value })}
+              >
+                <SelectTrigger className={isDark ? 'bg-slate-900 border-slate-700' : ''}>
+                  <SelectValue placeholder="Select a Department" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="NONE">Unassigned</SelectItem>
+                  {DEPARTMENT_OPTIONS.map((dept) => (
+                    <SelectItem key={dept} value={dept}>
+                      {dept}
                     </SelectItem>
                   ))}
                 </SelectContent>

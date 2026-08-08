@@ -11,13 +11,13 @@ import {
   useReactTable,
 } from '@tanstack/react-table';
 import axios from 'axios';
-import { Building2, Filter, Plus, Search, User } from 'lucide-react';
+import { Briefcase, Building2, Filter, Plus, Search, User } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import ExportButtons from '../system/ExportButtons';
 import { TablePagination } from '../tables/Pagination';
-import { getUserColumns, UserData } from '../tables/UserColumns';
+import { DEPARTMENT_OPTIONS, getUserColumns, UserData } from '../tables/UserColumns';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -76,6 +76,7 @@ export default function UserManagement({ session }: UserManagementProps) {
   const [roleFilter, setRoleFilter] = useState('ALL');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [companyFilter, setCompanyFilter] = useState('ALL');
+  const [departmentFilter, setDepartmentFilter] = useState('ALL');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
@@ -215,6 +216,7 @@ export default function UserManagement({ session }: UserManagementProps) {
         user_manager: formData.is_manager,
         timezone: 'Europe/Berlin',
         flytrelay_access: formData.flytrelay_access,
+        department: formData.department || null,
         ...(isSuperAdmin && { owner_id: formData.owner_id }),
       });
       const data = res.data;
@@ -279,6 +281,7 @@ export default function UserManagement({ session }: UserManagementProps) {
         is_viewer: formData.is_viewer,
         is_manager: formData.is_manager,
         flytrelay_access: formData.flytrelay_access,
+        department: formData.department || null,
       });
       const data = res.data;
       if (data.code === 1) {
@@ -314,8 +317,9 @@ export default function UserManagement({ session }: UserManagementProps) {
       || (statusFilter === 'PENDING' && user.is_pending)
       || (statusFilter === 'INACTIVE' && user.active === 0 && !user.is_pending);
     const matchesCompany = !isSuperAdmin || companyFilter === 'ALL' || user.owner_name === companyFilter;
-    return matchesSearch && matchesRole && matchesStatus && matchesCompany;
-  }), [users, searchTerm, roleFilter, statusFilter, companyFilter, isSuperAdmin]);
+    const matchesDepartment = departmentFilter === 'ALL' || user.department === departmentFilter;
+    return matchesSearch && matchesRole && matchesStatus && matchesCompany && matchesDepartment;
+  }), [users, searchTerm, roleFilter, statusFilter, companyFilter, departmentFilter, isSuperAdmin]);
 
   const columns = useMemo(() => getUserColumns({ isDark, onEdit: handleEdit, onDelete: handleDelete, onResendInvite: handleResendInvite, onUpdatePassword: handleUpdatePassword, resendingUserId, t }), [isDark, handleEdit, handleDelete, handleResendInvite, handleUpdatePassword, resendingUserId, t]);
 
@@ -373,7 +377,7 @@ export default function UserManagement({ session }: UserManagementProps) {
         </div>
 
         <div className={`rounded-xl border p-4 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
-          <div className={`grid grid-cols-1 gap-3 ${isSuperAdmin ? 'md:grid-cols-4' : 'md:grid-cols-3'}`}>
+          <div className={`grid grid-cols-1 sm:grid-cols-2 gap-3 ${isSuperAdmin ? 'lg:grid-cols-5' : 'lg:grid-cols-4'}`}>
 
             <div className="space-y-1.5">
               <Label className={`flex items-center gap-1.5 text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
@@ -413,6 +417,23 @@ export default function UserManagement({ session }: UserManagementProps) {
                   <SelectItem value="ACTIVE">{t('common.active')}</SelectItem>
                   <SelectItem value="PENDING">{t('team.pendingActivation')}</SelectItem>
                   <SelectItem value="INACTIVE">{t('common.inactive')}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className={`flex items-center gap-1.5 text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                <Briefcase size={13} /> {t('team.department')}
+              </Label>
+              <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+                <SelectTrigger className={`h-8 text-sm ${isDark ? 'bg-gray-900 border-gray-700 text-gray-200' : ''}`}>
+                  <SelectValue placeholder={t('team.personnel.allDepartments')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL">{t('team.personnel.allDepartments')}</SelectItem>
+                  {DEPARTMENT_OPTIONS.map((dept) => (
+                    <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -484,8 +505,8 @@ export default function UserManagement({ session }: UserManagementProps) {
         <div className="flex items-center justify-between px-2">
           <ExportButtons
             filename="Users"
-            headers={['ID', 'Username', 'Full Name', 'Email', 'Phone', 'Role', 'Active']}
-            rows={table.getFilteredRowModel().rows.map(r => { const u = r.original as UserData; return [u.user_id, u.username, u.fullname, u.email, u.phone ?? '', u.user_role, u.active]; })}
+            headers={['ID', 'Username', 'Full Name', 'Email', 'Phone', 'Role', 'Department', 'Active']}
+            rows={table.getFilteredRowModel().rows.map(r => { const u = r.original as UserData; return [u.user_id, u.username, u.fullname, u.email, u.phone ?? '', u.user_role, u.department ?? '', u.active]; })}
           />
           <TablePagination table={table} />
         </div>

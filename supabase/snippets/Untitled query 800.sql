@@ -1,2 +1,4 @@
-ALTER TABLE public.owner
-ADD COLUMN training_email_enabled BOOLEAN NOT NULL DEFAULT false;
+alter table public.users
+  add column if not exists department varchar(100);
+
+create index if not exists idx_users_department on public.users (department);

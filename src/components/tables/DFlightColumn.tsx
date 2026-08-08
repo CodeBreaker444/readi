@@ -1,3 +1,4 @@
+import { Button } from '@/components/ui/button';
 import type { DFlightDroneRow } from '@/types/dflight';
 import { createColumnHelper } from '@tanstack/react-table';
 import { CheckCircle2, Loader2, RefreshCw, Unlink, UploadCloud, XCircle } from 'lucide-react';
@@ -32,11 +33,19 @@ export const fleetColumns = [
     cell:   ({ row, table }) => {
       const dark = (table.options.meta as ColumnMeta)?.isDark;
       const r = row.original;
-      return r.linked
-        ? <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-        : <Unlink className={`h-4 w-4 ${dark ? 'text-slate-600' : 'text-gray-300'}`} />;
+      return r.linked ? (
+        <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-2 py-0.5 text-[10px] font-semibold bg-emerald-500/10 text-emerald-500 border-emerald-500/30">
+          <CheckCircle2 className="h-3 w-3" />
+          Linked
+        </span>
+      ) : (
+        <span className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-2 py-0.5 text-[10px] font-semibold ${dark ? 'bg-slate-700/40 text-slate-400 border-slate-600/50' : 'bg-gray-100 text-gray-400 border-gray-200'}`}>
+          <Unlink className="h-3 w-3" />
+          Not linked
+        </span>
+      );
     },
-    size: 48,
+    size: 110,
   }),
 
   helper.accessor('dFlightName', {
@@ -151,30 +160,32 @@ export const fleetColumns = [
         const syncing  = meta?.syncingComponentId === r.componentId;
         const canSync  = r.componentStatus === 'OPERATIONAL';
         return (
-          <button
+          <Button
             type="button"
+            size="xs"
             onClick={() => meta?.onSync?.(r)}
             disabled={syncing || !canSync}
             title={canSync ? undefined : `Component must be Operational to sync (currently ${r.componentStatus ?? 'unknown'})`}
-            className="inline-flex cursor-pointer items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-white transition-colors"
+            className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
           >
-            {syncing ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+            {syncing ? <Loader2 className="animate-spin" /> : <RefreshCw />}
             {syncing ? 'Syncing…' : 'Sync'}
-          </button>
+          </Button>
         );
       }
 
       return (
-        <button
+        <Button
           type="button"
+          size="xs"
           onClick={() => meta?.onImport?.(r)}
-          className="inline-flex cursor-pointer items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-violet-600 hover:bg-violet-700 text-white transition-colors"
+          className="bg-violet-600 hover:bg-violet-700 text-white shadow-sm"
         >
-          <UploadCloud className="h-3 w-3" />
+          <UploadCloud />
           Import
-        </button>
+        </Button>
       );
     },
-    size: 96,
+    size: 110,
   }),
 ];
