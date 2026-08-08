@@ -1,7 +1,9 @@
 import { deleteFlatTraining } from '@/backend/services/training/training-service';
+import { sendTrainingDeletedModuleEmail } from '@/backend/services/settings/module-email-notification-service';
 import { requireFeatureAccess, requirePermission } from '@/lib/auth/api-auth';
 import { internalError, zodError } from '@/lib/api-error';
 import { E } from '@/lib/error-codes';
+import { prisma } from '@/lib/prisma';
 import { NextRequest, NextResponse } from 'next/server';
 import z from 'zod';
 
@@ -11,7 +13,7 @@ const deleteSchema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
-    const { error } = await requirePermission('view_training');
+    const { session, error } = await requirePermission('view_training');
     if (error) return error;
 
     const { error: featureError } = await requireFeatureAccess('training_courses', 'delete');
@@ -22,7 +24,21 @@ export async function POST(req: NextRequest) {
       return zodError(E.VL001, parsed.error);
     }
 
+    const attendance = await prisma.training_attendance.findUnique({
+      where: { attendance_id: parsed.data.attendance_id },
+      select: { training: { select: { training_name: true, training_type: true } } },
+    });
+
     await deleteFlatTraining(parsed.data.attendance_id);
+
+    if (attendance?.training) {
+      sendTrainingDeletedModuleEmail(session!.user.ownerId, {
+        trainingName: attendance.training.training_name,
+        trainingType: attendance.training.training_type,
+        deletedBy: session!.user.fullname,
+      }).catch((err) => console.error('[training/delete] sendTrainingDeletedModuleEmail failed:', err));
+    }
+
     return NextResponse.json({ code: 1, message: 'Deleted' });
   } catch (err) {
     return internalError(E.SV001, err);

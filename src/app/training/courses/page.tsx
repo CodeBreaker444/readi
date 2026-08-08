@@ -401,7 +401,7 @@ export default function TrainingCoursesPage() {
             { label: t('training.courses.valid'), value: stats.valid, icon: Award, color: 'text-green-400' },
             { label: t('training.courses.expired'), value: stats.expired, icon: ShieldCheck, color: 'text-red-400' },
           ] as const).map(({ label, value, icon: Icon, color }) => (
-            <div key={label} className={`rounded-xl border p-4 ${cardBg}`}>
+            <div key={label} className={`rounded-lg border p-4 ${cardBg}`}>
               <div className="flex items-center justify-between mb-2">
                 <p className={`text-[11px] font-medium uppercase tracking-wider ${textMuted}`}>{label}</p>
                 <Icon size={15} className={color} />
@@ -412,7 +412,7 @@ export default function TrainingCoursesPage() {
         </div>
 
         {/* Table */}
-        <div className={`rounded-xl border overflow-hidden ${cardBg}`}>
+        <div className={`rounded-lg border overflow-hidden ${cardBg}`}>
           <div className={`px-5 py-4 border-b ${borderMuted}`}>
             <h2 className={`text-sm font-semibold ${textPrimary}`}>{t('training.courses.trainingRecords')}</h2>
             <p className={`text-[11px] mt-0.5 ${textMuted}`}>{t('training.courses.record', { count: filtered.length })}</p>

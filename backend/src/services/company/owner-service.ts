@@ -20,6 +20,7 @@ export interface OwnerData {
     email_notifications_enabled: boolean;
     operation_email_enabled: boolean;
     system_email_enabled: boolean;
+    training_email_enabled: boolean;
     easa_operator_code: string | null;
     daily_email_limit: number | null;
     created_at: string;
@@ -44,6 +45,7 @@ export interface AddOwnerWithAdminPayload {
     email_notifications_enabled?: boolean;
     operation_email_enabled?: boolean;
     system_email_enabled?: boolean;
+    training_email_enabled?: boolean;
     easa_operator_code?: string;
     tax_id?: string;
     registration_number?: string;
@@ -84,6 +86,7 @@ export interface UpdateOwnerPayload {
     email_notifications_enabled?: boolean;
     operation_email_enabled?: boolean;
     system_email_enabled?: boolean;
+    training_email_enabled?: boolean;
     easa_operator_code?: string | null;
     daily_email_limit?: number | null;
     tax_id?: string | null;
@@ -298,6 +301,7 @@ export async function updateOwner(id: string, payload: UpdateOwnerPayload) {
             email_notifications_enabled: payload.email_notifications_enabled ?? false,
             operation_email_enabled: payload.operation_email_enabled ?? false,
             system_email_enabled: payload.system_email_enabled ?? false,
+            training_email_enabled: payload.training_email_enabled ?? false,
             easa_operator_code: payload.easa_operator_code ?? null,
             daily_email_limit: payload.daily_email_limit ?? 100,
             tax_id: payload.tax_id ?? null,

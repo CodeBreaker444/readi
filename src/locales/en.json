@@ -266,6 +266,7 @@
     "recentFlights": "Recent Flights",
     "training": "Training",
     "courses": "Courses",
+    "trainingEmailNotifications": "Email Notifications",
     "notifications": "Notifications",
     "documentRepository": "Document Repository",
     "auditLogs": "Audit Logs",
@@ -4931,6 +4932,43 @@
           "intervention_ended": {
             "displayName": "Intervention Ended",
             "description": "When maintenance intervention ends"
+          }
+        }
+      },
+      "training": {
+        "title": "Configure training email notifications",
+        "enabled": "Email notifications enabled",
+        "disabled": "Email notifications disabled",
+        "enabledDescription": "Training email notifications are enabled. You can configure specific training events below.",
+        "disabledDescription": "Training email notifications are disabled. Contact your administrator to enable them.",
+        "enabledLabel": "Enabled",
+        "disabledLabel": "Disabled",
+        "unableToLoad": "Unable to load user information",
+        "moduleNotifications": "Training Module Notifications",
+        "notifyRoles": "Notify Roles",
+        "noRolesSelected": "No roles selected. No emails will be sent for this event.",
+        "selectRoles": "Select roles",
+        "rolesSelected": "{{count}} role{{plural}} selected",
+        "directToUsers": "This notification is sent directly to assigned users. Role selection is not applicable.",
+        "saving": "Saving configuration...",
+        "saveSuccess": "Configuration saved successfully",
+        "saveFailed": "Failed to save configuration",
+        "events": {
+          "training_created": {
+            "displayName": "Training Created",
+            "description": "When a new training record is created"
+          },
+          "training_updated": {
+            "displayName": "Training Updated",
+            "description": "When a training record is updated"
+          },
+          "training_deleted": {
+            "displayName": "Training Deleted",
+            "description": "When a training record is deleted"
+          },
+          "training_certification_expiring": {
+            "displayName": "Certification Expiring",
+            "description": "Sent 30, 14, 7, 3, and 1 day(s) before a certification's expiry date"
           }
         }
       },

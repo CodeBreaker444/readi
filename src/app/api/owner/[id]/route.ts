@@ -40,6 +40,7 @@ const editOwnerValidation = z.object({
     email_notifications_enabled: z.boolean().optional(),
     operation_email_enabled: z.boolean().optional(),
     system_email_enabled: z.boolean().optional(),
+    training_email_enabled: z.boolean().optional(),
     easa_operator_code: z.string().max(100).optional().nullable(),
     daily_email_limit: z.number().optional(),
     tax_id: z.string().optional().nullable(),

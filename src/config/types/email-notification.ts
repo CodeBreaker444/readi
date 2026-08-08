@@ -36,6 +36,12 @@ export type OperationsEventType =
   | 'calendar_event_created'
   | 'calendar_event_updated';
 
+export type TrainingEventType =
+  | 'training_created'
+  | 'training_updated'
+  | 'training_deleted'
+  | 'training_certification_expiring';
+
 export interface MaintenanceEventConfig {
   eventType: MaintenanceEventType;
   displayName: string;
@@ -46,6 +52,14 @@ export interface MaintenanceEventConfig {
 
 export interface OperationsEventConfig {
   eventType: OperationsEventType;
+  displayName: string;
+  description: string;
+  defaultRoles: string[];
+  disableRoleSelection?: boolean;
+}
+
+export interface TrainingEventConfig {
+  eventType: TrainingEventType;
   displayName: string;
   description: string;
   defaultRoles: string[];
@@ -135,6 +149,35 @@ export const OPERATIONS_EVENTS: OperationsEventConfig[] = [
     displayName: 'Calendar Event Updated',
     description: 'When a calendar event is updated',
     defaultRoles: ['OPM', 'ADMIN'],
+  },
+];
+
+export const TRAINING_CERTIFICATION_REMINDER_THRESHOLDS_DAYS: number[] = [30, 14, 7, 3, 1];
+
+export const TRAINING_EVENTS: TrainingEventConfig[] = [
+  {
+    eventType: 'training_created',
+    displayName: 'Training Created',
+    description: 'When a new training record is created',
+    defaultRoles: ['OPM', 'ADMIN', 'TM'],
+  },
+  {
+    eventType: 'training_updated',
+    displayName: 'Training Updated',
+    description: 'When a training record is updated',
+    defaultRoles: ['OPM', 'ADMIN', 'TM'],
+  },
+  {
+    eventType: 'training_deleted',
+    displayName: 'Training Deleted',
+    description: 'When a training record is deleted',
+    defaultRoles: ['OPM', 'ADMIN', 'TM'],
+  },
+  {
+    eventType: 'training_certification_expiring',
+    displayName: 'Certification Expiring',
+    description: `Sent ${TRAINING_CERTIFICATION_REMINDER_THRESHOLDS_DAYS.join(', ')} day(s) before a certification's expiry date`,
+    defaultRoles: ['OPM', 'ADMIN', 'TM'],
   },
 ];
 

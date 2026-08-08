@@ -1677,6 +1677,7 @@ model owner {
   daily_email_count                  Int                                @default(0)
   daily_email_count_reset_date       DateTime?                          @db.Date
   email_limit_notification_sent_date DateTime?                          @db.Date
+  training_email_enabled             Boolean                            @default(false)
   api_keys                           api_keys[]
   assignment                         assignment[]
   calendar_shift                     calendar_shift[]

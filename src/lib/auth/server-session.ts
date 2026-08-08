@@ -23,6 +23,7 @@ export interface SessionUser {
   avatar?: string | null;
   droneAtcEnabled: boolean;
   dFlightEnabled: boolean;
+  trainingEmailEnabled: boolean;
   flytrelayEnabled: boolean;
   flytrelayAccess: boolean;
   companyEasaCode: string | null;
@@ -121,6 +122,7 @@ export const getUserSession = cache(async (): Promise<Session | null> => {
 
     let droneAtcEnabled = false;
     let dFlightEnabled = false;
+    let trainingEmailEnabled = false;
     let flytrelayEnabled = false;
     let flytrelayAccess = false;
     let companyEasaCode: string | null = null;
@@ -129,22 +131,24 @@ export const getUserSession = cache(async (): Promise<Session | null> => {
     if (userData.user_role !== 'SUPERADMIN' && userData.fk_owner_id) {
       const ownerData = await prisma.owner.findUnique({
         where: { owner_id: userData.fk_owner_id },
-        select: { drone_atc_enabled: true, d_flight_enabled: true, flytrelay_enabled: true, easa_operator_code: true, owner_name: true },
+        select: { drone_atc_enabled: true, d_flight_enabled: true, flytrelay_enabled: true, training_email_enabled: true, easa_operator_code: true, owner_name: true },
       });
       droneAtcEnabled = ownerData?.drone_atc_enabled ?? false;
       dFlightEnabled  = ownerData?.d_flight_enabled  ?? false;
+      trainingEmailEnabled = ownerData?.training_email_enabled ?? false;
       flytrelayEnabled = ownerData?.flytrelay_enabled ?? false;
       // User has flytrelay access only if both company has it enabled AND user has access granted
       flytrelayAccess = (ownerData?.flytrelay_enabled ?? false) && (userData.flytrelay_access ?? false);
       companyEasaCode = ownerData?.easa_operator_code ?? null;
       ownerName = ownerData?.owner_name ?? null;
-      
+
       // Check if user has any FlytBase organizations assigned
       const userOrgs = await getUserFlytbaseOrganizations(userData.user_id, userData.fk_owner_id);
       hasFlytbaseOrganizations = userOrgs.length > 0;
     } else if (userData.user_role === 'SUPERADMIN') {
       droneAtcEnabled = true;
       dFlightEnabled  = true;
+      trainingEmailEnabled = true;
       flytrelayEnabled = true;
       flytrelayAccess = true;
       hasFlytbaseOrganizations = true;
@@ -165,6 +169,7 @@ export const getUserSession = cache(async (): Promise<Session | null> => {
       avatar: avatarUrl,
       droneAtcEnabled,
       dFlightEnabled,
+      trainingEmailEnabled,
       flytrelayEnabled,
       flytrelayAccess,
       companyEasaCode,

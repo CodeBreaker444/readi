@@ -1,4 +1,5 @@
 import { addFlatTraining, updateFlatTraining } from '@/backend/services/training/training-service';
+import { sendTrainingCreatedModuleEmail, sendTrainingUpdatedModuleEmail } from '@/backend/services/settings/module-email-notification-service';
 import { requireFeatureAccess, requirePermission } from '@/lib/auth/api-auth';
 import { internalError, zodError } from '@/lib/api-error';
 import { E } from '@/lib/error-codes';
@@ -46,6 +47,15 @@ export async function POST(req: NextRequest) {
         return zodError(E.VL001, parsed.error);
       }
       await updateFlatTraining(parsed.data);
+
+      sendTrainingUpdatedModuleEmail(session!.user.ownerId, {
+        trainingName: parsed.data.training_name,
+        trainingType: parsed.data.training_type,
+        certificateType: parsed.data.certificate_type,
+        sessionDate: parsed.data.session_date,
+        updatedBy: session!.user.fullname,
+      }).catch((err) => console.error('[training/add] sendTrainingUpdatedModuleEmail failed:', err));
+
       return NextResponse.json({ code: 1, message: 'Updated' });
     }
 
@@ -55,6 +65,16 @@ export async function POST(req: NextRequest) {
     }
 
     const ids = await addFlatTraining({ owner_id: session!.user.ownerId, ...parsed.data });
+
+    sendTrainingCreatedModuleEmail(session!.user.ownerId, {
+      trainingName: parsed.data.training_name,
+      trainingType: parsed.data.training_type,
+      certificateType: parsed.data.certificate_type,
+      sessionDate: parsed.data.session_date,
+      attendeeCount: ids.length,
+      createdBy: session!.user.fullname,
+    }).catch((err) => console.error('[training/add] sendTrainingCreatedModuleEmail failed:', err));
+
     return NextResponse.json({ code: 1, message: 'Created', ids }, { status: 201 });
   } catch (err) {
     return internalError(E.SV001, err);
