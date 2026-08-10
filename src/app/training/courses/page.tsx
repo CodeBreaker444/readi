@@ -1,12 +1,21 @@
 'use client';
 
 import { FlatTrainingRecord } from '@/backend/services/training/training-service';
+import { useAuthorization } from '@/components/authorization/AuthorizationProvider';
 import { FeatureGate } from '@/components/permissions/FeatureGate';
 import { TablePagination } from '@/components/tables/Pagination';
 import { getTrainingCoursesColumns } from '@/components/tables/TrainingCoursesColumn';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -31,7 +40,7 @@ import {
   useReactTable,
 } from '@tanstack/react-table';
 import axios from 'axios';
-import { Award, BookOpen, CheckCircle2, Clock, Filter, GraduationCap, Plus, RefreshCw, ShieldCheck, X } from 'lucide-react';
+import { AlertTriangle, Award, BookOpen, CheckCircle2, Clock, Filter, GraduationCap, Loader2, Plus, RefreshCw, Search, ShieldCheck, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -91,6 +100,7 @@ const TRAINING_TYPES = ['INITIAL', 'RECURRENT', 'EMERGENCY', 'SIMULATOR', 'OTHER
 
 export default function TrainingCoursesPage() {
   const { t } = useTranslation();
+  const { requireAuthorization } = useAuthorization();
   const { isDark } = useTheme();
 
   const [records, setRecords] = useState<FlatTrainingRecord[]>([]);
@@ -104,6 +114,7 @@ export default function TrainingCoursesPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<FlatTrainingRecord | null>(null);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [recomputing, setRecomputing] = useState(false);
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [userSearch, setUserSearch] = useState('');
@@ -247,12 +258,27 @@ export default function TrainingCoursesPage() {
 
   async function handleDelete() {
     if (!deleteTarget) return;
+
+    try {
+      await requireAuthorization({
+        actionType: 'delete',
+        entityType: 'training_attendance',
+        entityId: String(deleteTarget.attendance_id),
+        label: `Delete Training Record: ${deleteTarget.user_name ?? ''} — ${deleteTarget.training_name}`,
+      });
+    } catch {
+      return;
+    }
+
+    setDeleting(true);
     try {
       await axios.post('/api/training/delete', { attendance_id: deleteTarget.attendance_id });
       setDeleteTarget(null);
       fetchRecords();
     } catch (err) {
       console.error('Failed to delete training record', err);
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -295,28 +321,31 @@ export default function TrainingCoursesPage() {
   }, [users, userSearch]);
 
 
-  const bg = isDark ? 'bg-[#0a0e1a]' : 'bg-[#f4f6f9]';
-  const cardBg = isDark ? 'bg-[#0f1320] border-white/6' : 'bg-white border-gray-200';
-  const textPrimary = isDark ? 'text-white' : 'text-gray-900';
-  const textMuted = isDark ? 'text-gray-500' : 'text-gray-400';
+  const cardBg = isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200';
+  const textPrimary = isDark ? 'text-white' : 'text-slate-900';
+  const textMuted = isDark ? 'text-slate-500' : 'text-slate-400';
   const inputCls = isDark
-    ? 'bg-white/4 border-white/8 text-white placeholder-gray-600 focus:border-violet-500/50'
+    ? 'bg-slate-900 border-slate-700 text-slate-200 placeholder:text-slate-600 focus:border-violet-500/50'
     : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-400 focus:border-violet-400';
-  const borderMuted = isDark ? 'border-white/6' : 'border-gray-100';
+  const selectCls = isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-gray-50 border-gray-200';
+  const borderMuted = isDark ? 'border-slate-700' : 'border-gray-100';
   const btnOutline = isDark
-    ? 'border-white/10 hover:bg-white/5 text-white'
-    : 'border-gray-200 hover:bg-gray-50 text-gray-700';
+    ? 'border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white'
+    : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50';
 
   return (
-    <div className={`min-h-screen ${bg}`}>
+    <div className={`min-h-screen ${isDark ? 'bg-slate-900' : 'bg-gray-50'}`}>
 
-      <div className={`backdrop-blur-xl border-b ${isDark ? 'bg-[#0a0e1a]/90 border-white/6' : 'bg-white/80 border-black/6 shadow-[0_1px_2px_rgba(0,0,0,0.04)]'}`}>
-        <div className="mx-auto   px-6 py-3.5 flex items-center justify-between">
-          <div className="flex items-center gap-3.5">
-            <div className="w-1 h-6 rounded-full bg-violet-600" />
+      <div className={`top-0 z-10 backdrop-blur-md transition-colors ${isDark
+        ? 'bg-slate-900/80 border-b border-slate-800'
+        : 'bg-white/80 border-b border-slate-200 shadow-[0_1px_3px_rgba(0,0,0,0.06)]'
+        } px-3 sm:px-6 py-4`}>
+        <div className="mx-auto max-w-[1800px] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="w-1 h-6 shrink-0 rounded-full bg-violet-600" />
             <div>
-              <h1 className={`text-[15px] font-semibold tracking-[-0.01em] ${textPrimary}`}>{t('training.courses.pageTitle')}</h1>
-              <p className={`text-[11px] mt-0.5 ${textMuted}`}>{t('training.courses.pageSubtitle')}</p>
+              <h1 className={`font-semibold text-base tracking-tight ${textPrimary}`}>{t('training.courses.pageTitle')}</h1>
+              <p className={`text-xs ${textMuted}`}>{t('training.courses.pageSubtitle')}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -324,7 +353,7 @@ export default function TrainingCoursesPage() {
               variant="outline"
               size="sm"
               onClick={() => setFilterOpen((v) => !v)}
-              className={`h-8 gap-1.5 text-xs ${filterOpen ? 'bg-violet-600/10 border-violet-500/30 text-violet-400' : btnOutline}`}
+              className={`h-8 gap-1.5 text-xs transition-all ${filterOpen ? 'bg-violet-600/10 border-violet-500/30 text-violet-400' : btnOutline}`}
             >
               <Filter size={13} strokeWidth={2.5} />
               {t('training.courses.filter')}
@@ -334,9 +363,9 @@ export default function TrainingCoursesPage() {
               size="sm"
               onClick={fetchRecords}
               disabled={loading}
-              className={`h-8 gap-1.5 text-xs ${btnOutline}`}
+              className={`h-8 gap-1.5 text-xs transition-all ${btnOutline}`}
             >
-              <RefreshCw size={13} className={loading ? 'animate-spin' : ''} strokeWidth={2.5} />
+              {loading ? <Loader2 size={13} className="animate-spin" /> : <RefreshCw size={13} strokeWidth={2.5} />}
             </Button>
             <FeatureGate feature="training_courses" require="edit">
               <Button
@@ -344,7 +373,7 @@ export default function TrainingCoursesPage() {
                 size="sm"
                 onClick={handleRecompute}
                 disabled={recomputing}
-                className={`h-8 gap-1.5 text-xs ${btnOutline}`}
+                className={`h-8 gap-1.5 text-xs transition-all ${btnOutline}`}
               >
                 <ShieldCheck size={13} strokeWidth={2.5} className={recomputing ? 'animate-spin' : ''} />
                 {recomputing ? t('training.courses.updating') : t('training.courses.recomputeKpi')}
@@ -352,7 +381,7 @@ export default function TrainingCoursesPage() {
             </FeatureGate>
 
             <FeatureGate feature="training_courses" require="edit">
-              <Button size="sm" onClick={openCreate} className="h-8 gap-1.5 text-xs bg-violet-600 hover:bg-violet-700 text-white">
+              <Button size="sm" onClick={openCreate} className="h-8 gap-1.5 text-xs font-semibold bg-violet-600 hover:bg-violet-700 text-white shadow-sm">
                 <Plus size={14} strokeWidth={2.5} />
                 {t('training.courses.new')}
               </Button>
@@ -361,45 +390,59 @@ export default function TrainingCoursesPage() {
         </div>
       </div>
 
-      <div className="mx-auto  px-6 py-6 space-y-5">
+      <div className="p-3 sm:p-6 max-w-[1800px] mx-auto space-y-4">
 
         {filterOpen && (
-          <div className={`rounded-xl border p-4 flex flex-wrap gap-3 items-center ${cardBg}`}>
-            <Input
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder={t('training.courses.searchPlaceholder')}
-              className={`h-8 flex-1 min-w-48 text-xs ${inputCls}`}
-            />
-            <Select value={filterStatus || 'all'} onValueChange={(v) => setFilterStatus(v === 'all' ? '' : v)}>
-              <SelectTrigger className={`h-8 w-36 text-xs ${isDark ? 'bg-white/4 border-white/8 text-white' : 'bg-gray-50 border-gray-200'}`}>
-                <SelectValue placeholder="All Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t('training.courses.allStatus')}</SelectItem>
-                <SelectItem value="VALID">{t('training.courses.valid')}</SelectItem>
-                <SelectItem value="EXPIRED">{t('training.courses.expired')}</SelectItem>
-              </SelectContent>
-            </Select>
-            {(q || filterStatus) && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => { setQ(''); setFilterStatus(''); }}
-                className="h-8 gap-1 text-xs text-red-400 hover:bg-red-500/10 hover:text-red-400"
-              >
-                <X size={13} /> {t('training.courses.clear')}
-              </Button>
-            )}
+          <div className={`rounded-xl border p-4 ${cardBg}`}>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div className="space-y-1.5">
+                <Label className={`flex items-center gap-1.5 text-xs ${textMuted}`}>
+                  <Search size={13} /> {t('training.courses.filter')}
+                </Label>
+                <Input
+                  value={q}
+                  onChange={(e) => setQ(e.target.value)}
+                  placeholder={t('training.courses.searchPlaceholder')}
+                  className={`h-8 text-xs ${inputCls}`}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className={`flex items-center gap-1.5 text-xs ${textMuted}`}>
+                  <ShieldCheck size={13} /> {t('training.courses.columnStatus')}
+                </Label>
+                <Select value={filterStatus || 'all'} onValueChange={(v) => setFilterStatus(v === 'all' ? '' : v)}>
+                  <SelectTrigger className={`h-8 text-xs ${selectCls}`}>
+                    <SelectValue placeholder="All Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">{t('training.courses.allStatus')}</SelectItem>
+                    <SelectItem value="VALID">{t('training.courses.valid')}</SelectItem>
+                    <SelectItem value="EXPIRED">{t('training.courses.expired')}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              {(q || filterStatus) && (
+                <div className="flex items-end">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => { setQ(''); setFilterStatus(''); }}
+                    className="h-8 gap-1 text-xs text-red-400 hover:bg-red-500/10 hover:text-red-400"
+                  >
+                    <X size={13} /> {t('training.courses.clear')}
+                  </Button>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
         {/* Stats */}
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-3 gap-3">
           {([
             { label: t('training.courses.totalRecords'), value: stats.total, icon: BookOpen, color: 'text-violet-400' },
-            { label: t('training.courses.valid'), value: stats.valid, icon: Award, color: 'text-green-400' },
-            { label: t('training.courses.expired'), value: stats.expired, icon: ShieldCheck, color: 'text-red-400' },
+            { label: t('training.courses.valid'), value: stats.valid, icon: Award, color: 'text-emerald-400' },
+            { label: t('training.courses.expired'), value: stats.expired, icon: ShieldCheck, color: 'text-rose-400' },
           ] as const).map(({ label, value, icon: Icon, color }) => (
             <div key={label} className={`rounded-lg border p-4 ${cardBg}`}>
               <div className="flex items-center justify-between mb-2">
@@ -412,64 +455,64 @@ export default function TrainingCoursesPage() {
         </div>
 
         {/* Table */}
-        <div className={`rounded-lg border overflow-hidden ${cardBg}`}>
+        <div className={`rounded-xl border overflow-hidden shadow-sm ${cardBg}`}>
           <div className={`px-5 py-4 border-b ${borderMuted}`}>
             <h2 className={`text-sm font-semibold ${textPrimary}`}>{t('training.courses.trainingRecords')}</h2>
             <p className={`text-[11px] mt-0.5 ${textMuted}`}>{t('training.courses.record', { count: filtered.length })}</p>
           </div>
 
           <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                {table.getHeaderGroups().map((hg) => (
-                  <TableRow key={hg.id} className={`${borderMuted} ${isDark ? 'bg-white/2' : 'bg-gray-50/50'}`}>
-                    {hg.headers.map((header) => (
-                      <TableHead
-                        key={header.id}
-                        className={`text-[11px] font-bold uppercase tracking-wider ${textMuted}`}
-                        style={{ width: header.getSize() !== 150 ? header.getSize() : undefined }}
-                      >
-                        {flexRender(header.column.columnDef.header, header.getContext())}
-                      </TableHead>
-                    ))}
-                  </TableRow>
-                ))}
-              </TableHeader>
+              <Table>
+                <TableHeader className={isDark ? 'bg-slate-900/40' : 'bg-slate-50'}>
+                  {table.getHeaderGroups().map((hg) => (
+                    <TableRow key={hg.id} className={`${borderMuted} hover:bg-transparent`}>
+                      {hg.headers.map((header) => (
+                        <TableHead
+                          key={header.id}
+                          className={`text-[11px] font-bold uppercase tracking-wider ${textMuted}`}
+                          style={{ width: header.getSize() !== 150 ? header.getSize() : undefined }}
+                        >
+                          {flexRender(header.column.columnDef.header, header.getContext())}
+                        </TableHead>
+                      ))}
+                    </TableRow>
+                  ))}
+                </TableHeader>
 
-              <TableBody>
-                {loading ? (
-                  Array.from({ length: 6 }).map((_, i) => (
-                    <TableRow key={i} className={borderMuted}>
-                      {columns.map((_, j) => (
-                        <TableCell key={j}>
-                          <div className={`h-3 rounded animate-pulse ${isDark ? 'bg-white/6' : 'bg-gray-100'}`} />
-                        </TableCell>
-                      ))}
+                <TableBody>
+                  {loading ? (
+                    Array.from({ length: 6 }).map((_, i) => (
+                      <TableRow key={i} className={borderMuted}>
+                        {columns.map((_, j) => (
+                          <TableCell key={j}>
+                            <div className={`h-3 rounded animate-pulse ${isDark ? 'bg-slate-700' : 'bg-gray-100'}`} />
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    ))
+                  ) : table.getRowModel().rows.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={columns.length} className="py-20 text-center">
+                        <BookOpen size={32} className={`mx-auto mb-3 ${isDark ? 'text-slate-700' : 'text-gray-300'}`} />
+                        <p className={`text-sm ${textMuted}`}>{t('training.courses.noRecords')}</p>
+                      </TableCell>
                     </TableRow>
-                  ))
-                ) : table.getRowModel().rows.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={columns.length} className="py-20 text-center">
-                      <BookOpen size={32} className={`mx-auto mb-3 ${isDark ? 'text-gray-700' : 'text-gray-300'}`} />
-                      <p className={`text-sm ${textMuted}`}>{t('training.courses.noRecords')}</p>
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  table.getRowModel().rows.map((row) => (
-                    <TableRow
-                      key={row.id}
-                      className={`border-b transition-colors ${isDark ? `${borderMuted} hover:bg-white/2` : `${borderMuted} hover:bg-gray-50/50`}`}
-                    >
-                      {row.getVisibleCells().map((cell) => (
-                        <TableCell key={cell.id}>
-                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                        </TableCell>
-                      ))}
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
+                  ) : (
+                    table.getRowModel().rows.map((row) => (
+                      <TableRow
+                        key={row.id}
+                        className={`border-b transition-colors ${borderMuted} ${isDark ? 'hover:bg-slate-700/50' : 'hover:bg-gray-50'}`}
+                      >
+                        {row.getVisibleCells().map((cell) => (
+                          <TableCell key={cell.id}>
+                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
           </div>
         </div>
 
@@ -479,13 +522,13 @@ export default function TrainingCoursesPage() {
 
       {modalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60">
-          <div className={`w-full max-w-lg rounded-2xl border shadow-2xl ${isDark ? 'bg-[#0f1320] border-white/8' : 'bg-white border-gray-200'}`}>
+          <div className={`w-full max-w-lg rounded-2xl border shadow-2xl ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
 
             <div className={`flex items-center justify-between px-6 py-4 border-b ${borderMuted}`}>
               <h2 className={`text-sm font-semibold ${textPrimary}`}>
                 {form.attendance_id ? t('training.courses.editRecord') : t('training.courses.newRecord')}
               </h2>
-              <Button variant="ghost" size="icon" onClick={() => setModalOpen(false)} className={`h-7 w-7 ${isDark ? 'text-gray-400 hover:bg-white/8' : 'text-gray-400 hover:bg-gray-100'}`}>
+              <Button variant="ghost" size="icon" onClick={() => setModalOpen(false)} className={`h-7 w-7 ${isDark ? 'text-slate-400 hover:bg-slate-700 hover:text-white' : 'text-gray-400 hover:bg-gray-100'}`}>
                 <X size={15} />
               </Button>
             </div>
@@ -495,7 +538,7 @@ export default function TrainingCoursesPage() {
               {form.attendance_id ? (
                 <div>
                   <label className={`block text-[11px] font-semibold uppercase tracking-wider mb-1.5 ${textMuted}`}>{t('training.courses.user')}</label>
-                  <p className={`text-xs px-3 py-2 rounded-lg border ${isDark ? 'border-white/8 text-gray-300' : 'border-gray-200 text-gray-700'}`}>
+                  <p className={`text-xs px-3 py-2 rounded-lg border ${isDark ? 'border-slate-700 text-slate-300 bg-slate-900/40' : 'border-gray-200 text-gray-700'}`}>
                     {users.find((u) => u.user_id === form.user_ids[0])?.full_name ?? `User #${form.user_ids[0]}`}
                   </p>
                 </div>
@@ -510,7 +553,7 @@ export default function TrainingCoursesPage() {
                     placeholder={t('training.courses.searchUsers')}
                     className={`h-8 text-xs mb-2 ${inputCls}`}
                   />
-                  <div className={`rounded-lg border overflow-y-auto max-h-36 ${isDark ? 'border-white/8 bg-white/2' : 'border-gray-200 bg-gray-50'}`}>
+                  <div className={`rounded-lg border overflow-y-auto max-h-36 ${isDark ? 'border-slate-700 bg-slate-900/40' : 'border-gray-200 bg-gray-50'}`}>
                     {visibleUsers.length === 0 ? (
                       <p className={`text-[11px] px-3 py-2 ${textMuted}`}>{t('training.courses.noUsersFound')}</p>
                     ) : (
@@ -519,7 +562,7 @@ export default function TrainingCoursesPage() {
                         return (
                           <label
                             key={u.user_id}
-                            className={`flex items-center gap-2.5 px-3 py-2 cursor-pointer transition-colors ${isDark ? 'hover:bg-white/4' : 'hover:bg-gray-100'
+                            className={`flex items-center gap-2.5 px-3 py-2 cursor-pointer transition-colors ${isDark ? 'hover:bg-slate-700/60' : 'hover:bg-gray-100'
                               } ${checked ? (isDark ? 'bg-violet-600/10' : 'bg-violet-50') : ''}`}
                           >
                             <input
@@ -528,7 +571,7 @@ export default function TrainingCoursesPage() {
                               onChange={() => toggleUser(u.user_id)}
                               className="accent-violet-600"
                             />
-                            <span className={`text-xs ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
+                            <span className={`text-xs ${isDark ? 'text-slate-200' : 'text-gray-800'}`}>
                               {u.full_name || u.email}
                             </span>
                           </label>
@@ -553,7 +596,7 @@ export default function TrainingCoursesPage() {
                 <div>
                   <label className={`block text-[11px] font-semibold uppercase tracking-wider mb-1.5 ${textMuted}`}>{t('training.courses.type')}</label>
                   <Select value={form.training_type || 'none'} onValueChange={(v) => setForm((f) => ({ ...f, training_type: v === 'none' ? '' : v }))}>
-                    <SelectTrigger className={`h-9 text-xs ${isDark ? 'bg-white/4 border-white/8 text-white' : 'bg-gray-50 border-gray-200'}`}>
+                    <SelectTrigger className={`h-9 text-xs ${selectCls}`}>
                       <SelectValue placeholder={t('training.courses.none')} />
                     </SelectTrigger>
                     <SelectContent>
@@ -576,7 +619,7 @@ export default function TrainingCoursesPage() {
               <div>
                 <label className={`block text-[11px] font-semibold uppercase tracking-wider mb-1.5 ${textMuted}`}>{t('training.courses.certificateType')}</label>
                 <Select value={form.certificate_type || 'none'} onValueChange={(v) => setForm((f) => ({ ...f, certificate_type: v === 'none' ? '' : v }))}>
-                  <SelectTrigger className={`h-9 text-xs ${isDark ? 'bg-white/4 border-white/8 text-white' : 'bg-gray-50 border-gray-200'}`}>
+                  <SelectTrigger className={`h-9 text-xs ${selectCls}`}>
                     <SelectValue placeholder={t('training.courses.none')} />
                   </SelectTrigger>
                   <SelectContent>
@@ -620,7 +663,7 @@ export default function TrainingCoursesPage() {
             </div>
 
             <div className={`flex justify-end gap-2 px-6 py-4 border-t ${borderMuted}`}>
-              <Button variant="outline" size="sm" onClick={() => setModalOpen(false)} className={`h-8 text-xs ${isDark ? 'border-white/8 hover:bg-white/5 text-gray-300' : ''}`}>
+              <Button variant="outline" size="sm" onClick={() => setModalOpen(false)} className={`h-8 text-xs ${isDark ? 'border-slate-700 hover:bg-slate-700 text-slate-300' : ''}`}>
                 {t('training.courses.cancel')}
               </Button>
               <Button
@@ -629,6 +672,7 @@ export default function TrainingCoursesPage() {
                 disabled={saving || !form.training_name.trim() || (!form.attendance_id && form.user_ids.length === 0)}
                 className="h-8 text-xs bg-violet-600 hover:bg-violet-700 text-white"
               >
+                {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : null}
                 {saving ? t('training.courses.saving') : form.attendance_id ? t('training.courses.update') : t('training.courses.create')}
               </Button>
             </div>
@@ -639,7 +683,7 @@ export default function TrainingCoursesPage() {
 
       {viewTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className={`w-full max-w-3xl rounded-2xl border shadow-2xl flex flex-col max-h-[85vh] ${isDark ? 'bg-[#0f1320] border-white/8' : 'bg-white border-gray-200'}`}>
+          <div className={`w-full max-w-3xl rounded-2xl border shadow-2xl flex flex-col max-h-[85vh] ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
 
             <div className={`flex items-center justify-between px-6 py-4 border-b ${borderMuted}`}>
               <div className="flex items-center gap-2.5">
@@ -649,7 +693,7 @@ export default function TrainingCoursesPage() {
                   <p className={`text-[11px] mt-0.5 ${textMuted}`}>{viewTarget.user_name ?? `User #${viewTarget.fk_user_id}`}</p>
                 </div>
               </div>
-              <Button variant="ghost" size="icon" onClick={() => setViewTarget(null)} className={`h-7 w-7 ${isDark ? 'text-gray-400 hover:bg-white/8' : 'text-gray-400 hover:bg-gray-100'}`}>
+              <Button variant="ghost" size="icon" onClick={() => setViewTarget(null)} className={`h-7 w-7 ${isDark ? 'text-slate-400 hover:bg-slate-700 hover:text-white' : 'text-gray-400 hover:bg-gray-100'}`}>
                 <X size={15} />
               </Button>
             </div>
@@ -658,12 +702,12 @@ export default function TrainingCoursesPage() {
               {viewLoading ? (
                 <div className="space-y-3 py-4">
                   {[1, 2, 3].map((n) => (
-                    <div key={n} className={`h-3 rounded animate-pulse ${isDark ? 'bg-white/6' : 'bg-gray-100'}`} />
+                    <div key={n} className={`h-3 rounded animate-pulse ${isDark ? 'bg-slate-700' : 'bg-gray-100'}`} />
                   ))}
                 </div>
               ) : viewCurriculum.length === 0 ? (
                 <div className="text-center py-12">
-                  <GraduationCap size={32} className={`mx-auto mb-3 ${isDark ? 'text-gray-700' : 'text-gray-300'}`} />
+                  <GraduationCap size={32} className={`mx-auto mb-3 ${isDark ? 'text-slate-700' : 'text-gray-300'}`} />
                   <p className={`text-sm ${textMuted}`}>{t('training.courses.noUserRecords')}</p>
                 </div>
               ) : (
@@ -674,10 +718,10 @@ export default function TrainingCoursesPage() {
                         <CheckCircle2 size={13} className="text-emerald-500" />
                         <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-500">{t('training.courses.active')}</p>
                       </div>
-                      <div className={`rounded-xl border overflow-hidden ${isDark ? 'border-white/6' : 'border-gray-200'}`}>
+                      <div className={`rounded-xl border overflow-hidden ${borderMuted}`}>
                         <Table>
                           <TableHeader>
-                            <TableRow className={`${isDark ? 'bg-white/2 border-white/6' : 'bg-gray-50/50 border-gray-100'}`}>
+                            <TableRow className={`${isDark ? 'bg-slate-900/40 border-slate-700' : 'bg-slate-50 border-gray-100'}`}>
                               {[t('training.courses.columnCourse'), t('training.courses.columnCertificate'), t('training.courses.columnCompletion'), t('training.courses.columnExpiry'), t('training.courses.columnStatus')].map((h) => (
                                 <TableHead key={h} className={`text-[10px] font-bold uppercase tracking-wider ${textMuted}`}>{h}</TableHead>
                               ))}
@@ -695,12 +739,12 @@ export default function TrainingCoursesPage() {
                                     <Badge variant="outline" className={`text-[10px] font-bold ${r.certificate_type === 'QUALIFICATION' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' : 'bg-teal-500/10 text-teal-500 border-teal-500/20'}`}>
                                       {r.certificate_type === 'PARTICIPATION' ? t('training.courses.participation') : r.certificate_type === 'QUALIFICATION' ? t('training.courses.qualification') : r.certificate_type}
                                     </Badge>
-                                  ) : <span className={`text-[11px] ${isDark ? 'text-gray-600' : 'text-gray-300'}`}>—</span>}
+                                  ) : <span className={`text-[11px] ${isDark ? 'text-slate-600' : 'text-gray-300'}`}>—</span>}
                                 </TableCell>
                                 <TableCell className={`text-xs ${textMuted}`}>{fmtCurrDate(r.completion_date)}</TableCell>
                                 <TableCell className={`text-xs ${textMuted}`}>{fmtCurrDate(r.expiry_date)}</TableCell>
                                 <TableCell>
-                                  <Badge variant="outline" className="text-[10px] font-bold bg-green-500/10 text-green-500 border-green-500/20">{t('training.courses.statusValid')}</Badge>
+                                  <Badge variant="outline" className="text-[10px] font-bold bg-emerald-500/10 text-emerald-500 border-emerald-500/20">{t('training.courses.statusValid')}</Badge>
                                 </TableCell>
                               </TableRow>
                             ))}
@@ -716,10 +760,10 @@ export default function TrainingCoursesPage() {
                         <Clock size={13} className={textMuted} />
                         <p className={`text-[10px] font-bold uppercase tracking-wider ${textMuted}`}>{t('training.courses.history')}</p>
                       </div>
-                      <div className={`rounded-xl border overflow-hidden opacity-60 ${isDark ? 'border-white/6' : 'border-gray-200'}`}>
+                      <div className={`rounded-xl border overflow-hidden opacity-60 ${borderMuted}`}>
                         <Table>
                           <TableHeader>
-                            <TableRow className={`${isDark ? 'bg-white/2 border-white/6' : 'bg-gray-50/50 border-gray-100'}`}>
+                            <TableRow className={`${isDark ? 'bg-slate-900/40 border-slate-700' : 'bg-slate-50 border-gray-100'}`}>
                               {[t('training.courses.columnCourse'), t('training.courses.columnCertificate'), t('training.courses.columnCompletion'), t('training.courses.columnExpiry'), t('training.courses.columnStatus')].map((h) => (
                                 <TableHead key={h} className={`text-[10px] font-bold uppercase tracking-wider ${textMuted}`}>{h}</TableHead>
                               ))}
@@ -737,12 +781,12 @@ export default function TrainingCoursesPage() {
                                     <Badge variant="outline" className={`text-[10px] font-bold ${r.certificate_type === 'QUALIFICATION' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' : 'bg-teal-500/10 text-teal-500 border-teal-500/20'}`}>
                                       {r.certificate_type === 'PARTICIPATION' ? t('training.courses.participation') : r.certificate_type === 'QUALIFICATION' ? t('training.courses.qualification') : r.certificate_type}
                                     </Badge>
-                                  ) : <span className={`text-[11px] ${isDark ? 'text-gray-600' : 'text-gray-300'}`}>—</span>}
+                                  ) : <span className={`text-[11px] ${isDark ? 'text-slate-600' : 'text-gray-300'}`}>—</span>}
                                 </TableCell>
                                 <TableCell className={`text-xs ${textMuted}`}>{fmtCurrDate(r.completion_date)}</TableCell>
-                                <TableCell className="text-xs text-red-400 font-medium">{fmtCurrDate(r.expiry_date)}</TableCell>
+                                <TableCell className="text-xs text-rose-400 font-medium">{fmtCurrDate(r.expiry_date)}</TableCell>
                                 <TableCell>
-                                  <Badge variant="outline" className="text-[10px] font-bold bg-red-500/10 text-red-500 border-red-500/20">{t('training.courses.statusExpired')}</Badge>
+                                  <Badge variant="outline" className="text-[10px] font-bold bg-rose-500/10 text-rose-500 border-rose-500/20">{t('training.courses.statusExpired')}</Badge>
                                 </TableCell>
                               </TableRow>
                             ))}
@@ -756,7 +800,7 @@ export default function TrainingCoursesPage() {
             </div>
 
             <div className={`flex justify-end px-6 py-4 border-t ${borderMuted}`}>
-              <Button variant="outline" size="sm" onClick={() => setViewTarget(null)} className={`h-8 text-xs ${isDark ? 'border-white/8 hover:bg-white/5 text-gray-300' : ''}`}>
+              <Button variant="outline" size="sm" onClick={() => setViewTarget(null)} className={`h-8 text-xs ${isDark ? 'border-slate-700 hover:bg-slate-700 text-slate-300' : ''}`}>
                 {t('training.close')}
               </Button>
             </div>
@@ -764,29 +808,38 @@ export default function TrainingCoursesPage() {
         </div>
       )}
 
-      {deleteTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className={`w-full max-w-sm rounded-2xl border shadow-2xl ${isDark ? 'bg-[#0f1320] border-white/8' : 'bg-white border-gray-200'}`}>
-            <div className="px-6 py-5">
-              <div className="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center mb-4">
-                <BookOpen size={18} className="text-red-400" />
-              </div>
-              <h3 className={`text-sm font-semibold mb-1 ${textPrimary}`}>{t('training.courses.deleteRecord')}</h3>
-              <p className={`text-xs ${textMuted}`}>
-                {t('training.courses.deleteMessage', { userName: deleteTarget.user_name ?? t('training.courses.thisUser'), trainingName: deleteTarget.training_name })}
+      <Dialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}>
+        <DialogContent className={`max-w-md ${isDark ? 'bg-slate-800 border-slate-700' : ''}`}>
+          <DialogHeader>
+            <DialogTitle className={`flex items-center gap-2 ${isDark ? 'text-white' : ''}`}>
+              <AlertTriangle className="h-5 w-5 text-red-500" />
+              {t('training.courses.deleteRecord')}
+            </DialogTitle>
+          </DialogHeader>
+
+          {deleteTarget && (
+            <div className="space-y-3 py-1">
+              <p className={`text-sm ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                <span className="font-semibold">{deleteTarget.user_name ?? t('training.courses.thisUser')}</span> — {deleteTarget.training_name}
               </p>
+              <div className={`rounded-lg p-3 text-sm ${isDark ? 'bg-red-950/40 text-red-300 border border-red-800/50' : 'bg-red-50 text-red-800 border border-red-200'}`}>
+                {t('training.courses.deleteMessage', { userName: deleteTarget.user_name ?? t('training.courses.thisUser'), trainingName: deleteTarget.training_name })}
+              </div>
             </div>
-            <div className={`flex justify-end gap-2 px-6 py-4 border-t ${borderMuted}`}>
-              <Button variant="outline" size="sm" onClick={() => setDeleteTarget(null)} className={`h-8 text-xs ${isDark ? 'border-white/8 hover:bg-white/5 text-gray-300' : ''}`}>
-                {t('training.courses.cancel')}
-              </Button>
-              <Button size="sm" onClick={handleDelete} className="h-8 text-xs bg-red-600 hover:bg-red-700 text-white">
-                {t('training.courses.deleteRecord')}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+          )}
+
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setDeleteTarget(null)}
+              className={isDark ? 'border-slate-600 text-slate-300 hover:bg-slate-700' : ''}>
+              {t('training.courses.cancel')}
+            </Button>
+            <Button variant="destructive" disabled={deleting} onClick={handleDelete}>
+              {deleting ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
+              {deleting ? t('training.courses.saving') : t('training.courses.deleteRecord')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

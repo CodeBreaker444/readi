@@ -10,6 +10,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { useAuthorization } from '@/components/authorization/AuthorizationProvider';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { OwnerData } from '../tables/OwnerColumn';
@@ -23,9 +24,22 @@ interface DeleteOwnerDialogProps {
 
 export default function DeleteOwnerDialog({ open, onClose, onSuccess, owner }: DeleteOwnerDialogProps) {
   const [loading, setLoading] = useState(false);
+  const { requireAuthorization } = useAuthorization();
 
   const handleDelete = async () => {
     if (!owner) return;
+
+    try {
+      await requireAuthorization({
+        actionType: 'delete',
+        entityType: 'owner',
+        entityId: String(owner.owner_id),
+        label: `Deactivate Company: ${owner.owner_name} (${owner.owner_code})`,
+      });
+    } catch {
+      return;
+    }
+
     setLoading(true);
     try {
       const res = await fetch(`/api/owner/${owner.owner_id}`, { method: 'DELETE' });

@@ -1,5 +1,6 @@
 'use client';
 
+import { useAuthorization } from '@/components/authorization/AuthorizationProvider';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -76,6 +77,7 @@ export function UserForm({
   companyFlytrelayEnabled = false,
   sessionRole,
 }: UserFormProps) {
+  const { requireAuthorization } = useAuthorization();
   const [formData, setFormData] = useState(() => {
     const defaults = {
       username: '',
@@ -268,6 +270,18 @@ export function UserForm({
 
   const handleCcRemove = async () => {
     if (!userData?.user_id) return;
+
+    try {
+      await requireAuthorization({
+        actionType: 'delete',
+        entityType: 'control_center_token',
+        entityId: String(userData.user_id),
+        label: `Remove Control Center Token: ${userData.fullname ?? `#${userData.user_id}`}`,
+      });
+    } catch {
+      return;
+    }
+
     setCcRemoving(true);
     try {
       await axios.delete('/api/team/user/control-center-token', { data: { user_id: userData.user_id } });

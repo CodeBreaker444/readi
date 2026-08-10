@@ -1,5 +1,6 @@
 'use client';
 import { Operation } from "@/app/operations/table/page";
+import { useAuthorization } from "@/components/authorization/AuthorizationProvider";
 import { useTimezone } from "@/components/TimezoneProvider";
 import { cn, formatDateInTz } from "@/lib/utils";
 import axios from "axios";
@@ -40,6 +41,7 @@ export function AttachmentsDialog({ open, onClose, operationId, operationName }:
 }) {
     const { t } = useTranslation();
     const { timezone } = useTimezone();
+    const { requireAuthorization } = useAuthorization();
     const [attachments, setAttachments] = useState<Attachment[]>([]);
     const [loading, setLoading] = useState(false);
     const [uploading, setUploading] = useState(false);
@@ -102,6 +104,18 @@ export function AttachmentsDialog({ open, onClose, operationId, operationName }:
     }
 
     async function handleDeleteAttachment(attachmentId: number) {
+        const attachment = attachments.find((a) => a.attachment_id === attachmentId);
+        try {
+            await requireAuthorization({
+                actionType: 'delete',
+                entityType: 'operation_attachment',
+                entityId: String(attachmentId),
+                label: `Delete Attachment: ${attachment?.file_name ?? `#${attachmentId}`}`,
+            });
+        } catch {
+            return;
+        }
+
         try {
             await axios.delete(`/api/operation/${operationId}/attachment/${attachmentId}`);
             setAttachments((prev) => prev.filter((a) => a.attachment_id !== attachmentId));
@@ -199,6 +213,7 @@ export function DeleteDialog({ open, onClose, operation, onDeleted }: {
     onDeleted: (id: number) => void;
 }) {
     const { t } = useTranslation();
+    const { requireAuthorization } = useAuthorization();
     const [isPending, startTransition] = useTransition();
     const [hasMaintenanceLog, setHasMaintenanceLog] = useState(false);
     const [revertMaintenance, setRevertMaintenance] = useState(false);
@@ -211,8 +226,18 @@ export function DeleteDialog({ open, onClose, operation, onDeleted }: {
             .catch(() => setHasMaintenanceLog(false));
     }, [open, operation]);
 
-    function handleDelete() {
+    async function handleDelete() {
         if (!operation) return;
+        try {
+            await requireAuthorization({
+                actionType: 'delete',
+                entityType: 'operation',
+                entityId: String(operation.pilot_mission_id),
+                label: `Delete Operation: ${operation.mission_name}`,
+            });
+        } catch {
+            return;
+        }
         startTransition(async () => {
             try {
                 const query = revertMaintenance ? '?revert_maintenance=1' : '';

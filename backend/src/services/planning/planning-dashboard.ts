@@ -333,7 +333,13 @@ export async function deletePlanning(ownerId: number, planningId: number) {
     throw new Error('Only planning with status NEW can be deleted');
   }
 
-  await prisma.planning.deleteMany({ where: { fk_owner_id: ownerId, planning_id: planningId } });
+  await prisma.$transaction([
+    prisma.pilot_mission.updateMany({
+      where: { fk_owner_id: ownerId, fk_planning_id: planningId },
+      data: { fk_planning_id: null },
+    }),
+    prisma.planning.deleteMany({ where: { fk_owner_id: ownerId, planning_id: planningId } }),
+  ]);
 
   return { deleted: true };
 }

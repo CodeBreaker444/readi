@@ -1,5 +1,6 @@
 'use client'
 
+import { useAuthorization } from '@/components/authorization/AuthorizationProvider'
 import {
   flexRender,
   getCoreRowModel,
@@ -49,6 +50,7 @@ type Tab = 'general' | 'location-group'
 
 export default function EmergencyContactPage() {
   const { t } = useTranslation()
+  const { requireAuthorization } = useAuthorization()
   const { isDark } = useTheme()
   const [activeTab, setActiveTab] = useState<Tab>('general')
 
@@ -122,6 +124,18 @@ export default function EmergencyContactPage() {
 
   const handleDelete = async () => {
     if (!deleteTarget) return
+
+    try {
+      await requireAuthorization({
+        actionType: 'delete',
+        entityType: 'erp',
+        entityId: String(deleteTarget.id),
+        label: `Delete Emergency Response Plan: #${deleteTarget.id}`,
+      })
+    } catch {
+      return
+    }
+
     try {
       await axios.post('/api/erp/delete', { id: deleteTarget.id })
       setData((prev) => prev.filter((r) => r.id !== deleteTarget.id))
@@ -219,6 +233,18 @@ export default function EmergencyContactPage() {
 
   const handleGroupDelete = async () => {
     if (!deleteGroup) return
+
+    try {
+      await requireAuthorization({
+        actionType: 'delete',
+        entityType: 'erp_location_group',
+        entityId: String(deleteGroup.group_id),
+        label: `Delete Location Group: ${deleteGroup.name}`,
+      })
+    } catch {
+      return
+    }
+
     try {
       await axios.post('/api/erp/location-group/delete', { id: deleteGroup.group_id })
       setGroups(prev => prev.filter(g => g.group_id !== deleteGroup.group_id))

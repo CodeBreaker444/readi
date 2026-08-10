@@ -1,5 +1,6 @@
 "use client";
 
+import { useAuthorization } from "@/components/authorization/AuthorizationProvider";
 import { Planning } from "@/config/types/evaluation-planning";
 import { cn } from "@/lib/utils";
 import axios from "axios";
@@ -32,6 +33,7 @@ type PlanningProps = {
 export default function PlanningDashboard({ isDark, userCanEdit, userCanDelete }: PlanningProps) {
   const router = useRouter();
   const { t } = useTranslation();
+  const { requireAuthorization } = useAuthorization();
   const [planningData, setPlanningData] = useState<Planning[]>([]);
   const [loading, setLoading] = useState(true);
   const [globalFilter, setGlobalFilter] = useState("");
@@ -67,6 +69,17 @@ export default function PlanningDashboard({ isDark, userCanEdit, userCanDelete }
 
   const handleDelete = async () => {
     if (!rowToDelete) return;
+
+    try {
+      await requireAuthorization({
+        actionType: 'delete',
+        entityType: 'planning',
+        entityId: String(rowToDelete.planning_id),
+        label: `Delete Planning: ${rowToDelete.planning_desc}`,
+      });
+    } catch {
+      return;
+    }
 
     const previousData = [...planningData];
     const idToRemove = rowToDelete.planning_id;

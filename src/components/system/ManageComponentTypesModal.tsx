@@ -1,5 +1,6 @@
 'use client';
 
+import { useAuthorization } from '@/components/authorization/AuthorizationProvider';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -20,6 +21,7 @@ interface Props {
 
 export function ManageComponentTypesModal({ open, onClose, types, onReload, isDark }: Props) {
   const { t } = useTranslation();
+  const { requireAuthorization } = useAuthorization();
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editLabel, setEditLabel] = useState('');
   const [savingId, setSavingId] = useState<number | null>(null);
@@ -79,6 +81,18 @@ export function ManageComponentTypesModal({ open, onClose, types, onReload, isDa
   };
 
   const handleDelete = async (typeId: number) => {
+    const componentType = types.find((tp) => tp.type_id === typeId);
+    try {
+      await requireAuthorization({
+        actionType: 'delete',
+        entityType: 'component_type',
+        entityId: String(typeId),
+        label: `Delete Component Type: ${componentType?.type_label ?? `#${typeId}`}`,
+      });
+    } catch {
+      return;
+    }
+
     setDeletingId(typeId);
     try {
       const { data } = await axios.delete(`/api/system/component-types/${typeId}`);

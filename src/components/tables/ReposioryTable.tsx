@@ -1,5 +1,6 @@
 'use client';
 
+import { useAuthorization } from '@/components/authorization/AuthorizationProvider';
 import type { DocType, RepositoryDocument } from '@/config/types/repository';
 import {
     ColumnFiltersState,
@@ -39,6 +40,7 @@ const AREA_OPTIONS = [
 export default function RepositoryTable() {
     const { t } = useTranslation();
     const { isDark } = useTheme()
+    const { requireAuthorization } = useAuthorization();
     const [documents, setDocuments] = useState<RepositoryDocument[]>([]);
     const [docTypes, setDocTypes] = useState<DocType[]>([]);
     const [statusOptions, setStatusOptions] = useState<string[]>([]);
@@ -103,6 +105,17 @@ export default function RepositoryTable() {
         if (!deleteTarget) return;
 
         try {
+            await requireAuthorization({
+                actionType: 'delete',
+                entityType: 'document',
+                entityId: String(deleteTarget.document_id),
+                label: `Delete Document: ${deleteTarget.title}`,
+            });
+        } catch {
+            return;
+        }
+
+        try {
             await axios.post(`/api/document/delete`, {
                 document_id: deleteTarget.document_id,
             });
@@ -115,7 +128,7 @@ export default function RepositoryTable() {
         } finally {
             setDeleteTarget(null);
         }
-    }, [deleteTarget, t]);
+    }, [deleteTarget, t, requireAuthorization]);
 
     const handleHistory = useCallback((doc: RepositoryDocument) => {
         setHistDoc(doc);

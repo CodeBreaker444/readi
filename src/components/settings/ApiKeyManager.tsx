@@ -1,6 +1,7 @@
 'use client';
 
 import '@/lib/i18n/config';
+import { useAuthorization } from '@/components/authorization/AuthorizationProvider';
 import { FeatureGate } from '@/components/permissions/FeatureGate';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -43,6 +44,7 @@ function CopyButton({ value }: { value: string }) {
 export default function ApiKeyManager() {
   const { t } = useTranslation();
   const { isDark } = useTheme();
+  const { requireAuthorization } = useAuthorization();
   const [keys, setKeys] = useState<ApiKey[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
@@ -96,6 +98,18 @@ export default function ApiKeyManager() {
   }
 
   async function handleDelete(id: number) {
+    const key = keys.find((k) => k.api_key_id === id);
+    try {
+      await requireAuthorization({
+        actionType: 'delete',
+        entityType: 'api_key',
+        entityId: String(id),
+        label: `Delete API Key: ${key?.key_name ?? `#${id}`}`,
+      });
+    } catch {
+      return;
+    }
+
     try {
       await axios.delete(`/api/settings/api-keys/${id}`);
       setKeys((prev) => prev.filter((k) => k.api_key_id !== id));

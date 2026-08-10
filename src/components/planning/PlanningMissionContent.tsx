@@ -10,6 +10,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { useAuthorization } from "@/components/authorization/AuthorizationProvider";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -47,6 +48,7 @@ interface PlanningMissionProps {
 }
 export const PlanningMissionContent: FC<PlanningMissionProps> = ({ user }) => {
   const { t } = useTranslation();
+  const { requireAuthorization } = useAuthorization();
   const { isDark } = useTheme();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -147,6 +149,18 @@ export const PlanningMissionContent: FC<PlanningMissionProps> = ({ user }) => {
 
   const handleDeleteLogbook = async () => {
     if (idToDelete === null) return;
+
+    try {
+      await requireAuthorization({
+        actionType: 'delete',
+        entityType: 'mission_planning_logbook',
+        entityId: String(idToDelete),
+        label: `Delete Mission Planning Logbook: #${idToDelete}`,
+      });
+    } catch {
+      return;
+    }
+
     const previousList = [...logbookList];
     try {
       setLogbookList((prev) =>

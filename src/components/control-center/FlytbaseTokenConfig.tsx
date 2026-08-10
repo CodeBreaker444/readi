@@ -1,5 +1,6 @@
 'use client';
 
+import { useAuthorization } from '@/components/authorization/AuthorizationProvider';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -45,6 +46,7 @@ type Step = 'idle' | 'verifying' | 'confirmed' | 'saving';
 export function FlytbaseTokenConfig() {
   const { isDark } = useTheme();
   const { t } = useTranslation();
+  const { requireAuthorization } = useAuthorization();
 
   const [hasToken, setHasToken] = useState<boolean | null>(null);
   const [tokenInput, setTokenInput] = useState('');
@@ -134,6 +136,16 @@ export function FlytbaseTokenConfig() {
   }
 
   async function handleRemove() {
+    try {
+      await requireAuthorization({
+        actionType: 'delete',
+        entityType: 'flytbase_token',
+        label: `Remove Flytbase Token: ${savedTokenName ?? 'current token'}`,
+      });
+    } catch {
+      return;
+    }
+
     setIsRemoving(true);
     try {
       await axios.delete('/api/flytbase/token');

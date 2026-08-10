@@ -10,6 +10,7 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import { useAuthorization } from '@/components/authorization/AuthorizationProvider'
 import { Shift } from '@/config/types/crewShift'
 import axios from 'axios'
 import { Loader2 } from 'lucide-react'
@@ -32,9 +33,22 @@ export function DeleteShiftDialog({
   isDark,
 }: DeleteShiftDialogProps) {
   const [isDeleting, setIsDeleting] = useState(false)
+  const { requireAuthorization } = useAuthorization()
 
   const handleDelete = async () => {
     if (!shift) return
+
+    try {
+      await requireAuthorization({
+        actionType: 'delete',
+        entityType: 'shift',
+        entityId: String(shift.shift_id),
+        label: `Delete Shift: ${shift.shift_category?.replace('_', ' ')} on ${shift.shift_date_start}`,
+      })
+    } catch {
+      return
+    }
+
     setIsDeleting(true)
 
     try {

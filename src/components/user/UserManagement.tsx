@@ -1,5 +1,6 @@
 'use client';
 
+import { useAuthorization } from '@/components/authorization/AuthorizationProvider';
 import { useTheme } from '@/components/useTheme';
 import { Session } from '@/lib/auth/server-session';
 import '@/lib/i18n/config';
@@ -65,6 +66,7 @@ const STAT_CONFIG = [
 
 export default function UserManagement({ session }: UserManagementProps) {
   const { t } = useTranslation();
+  const { requireAuthorization } = useAuthorization();
   const { isDark } = useTheme();
   const isSuperAdmin = session.user.role === 'SUPERADMIN';
   const canEditEmail = session.user.role === 'ADMIN' || isSuperAdmin;
@@ -179,6 +181,17 @@ export default function UserManagement({ session }: UserManagementProps) {
   const confirmDelete = async () => {
     if (!userToDelete) return;
     const userId = userToDelete.user_id;
+
+    try {
+      await requireAuthorization({
+        actionType: 'delete',
+        entityType: 'user',
+        entityId: String(userId),
+        label: `Delete User: ${userToDelete.fullname}`,
+      });
+    } catch {
+      return;
+    }
 
     setShowDeleteDialog(false);
     setUserToDelete(null);

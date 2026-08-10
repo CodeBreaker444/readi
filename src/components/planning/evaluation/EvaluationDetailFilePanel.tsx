@@ -11,6 +11,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
+import { useAuthorization } from '@/components/authorization/AuthorizationProvider';
 import { FeatureGate } from '@/components/permissions/FeatureGate';
 import { usePermissions } from '@/components/permissions/PermissionsProvider';
 import { getEvaluationFileColumns } from '@/components/tables/EvaluationFileColumn';
@@ -39,6 +40,7 @@ export function EvaluationDetailFilePanel({ evaluationId, clientId }: Props) {
   const [isLoading, setIsLoading] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const { t } = useTranslation();
+  const { requireAuthorization } = useAuthorization();
   const { canDelete } = usePermissions();
   const userCanDeleteFile = canDelete('planning_evaluation');
 
@@ -91,6 +93,17 @@ export function EvaluationDetailFilePanel({ evaluationId, clientId }: Props) {
   }
 
   async function handleDelete(file: EvaluationFile) {
+    try {
+      await requireAuthorization({
+        actionType: 'delete',
+        entityType: 'evaluation_file',
+        entityId: String(file.evaluation_file_id),
+        label: `Delete File: ${file.evaluation_file_filename ?? `#${file.evaluation_file_id}`}`,
+      });
+    } catch {
+      return;
+    }
+
     try {
       await axios.delete(
         `/api/evaluation/${evaluationId}/files?fileId=${file.evaluation_file_id}`,
