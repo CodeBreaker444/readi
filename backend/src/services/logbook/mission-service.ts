@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import type {
   ClientOption,
+  DroneOption,
   EvaluationOption,
   FilterParams,
   MissionPlanningLogbookItem,
@@ -21,6 +22,8 @@ export async function getMissionPlanningLogbookList(
     where.fk_planning_id = params.planning_id;
   if (params.user_id && params.user_id !== 0)
     where.fk_user_id = params.user_id;
+  if (params.tool_id && params.tool_id !== 0)
+    where.fk_tool_id = params.tool_id;
   if (params.date_start)
     where.updated_at = { ...(where.updated_at ?? {}), gte: new Date(params.date_start) };
   if (params.date_end)
@@ -39,9 +42,11 @@ export async function getMissionPlanningLogbookList(
       fk_planning_id: true,
       fk_client_id: true,
       fk_owner_id: true,
+      fk_tool_id: true,
       client: { select: { client_name: true } },
       evaluation: { select: { evaluation_name: true } },
       planning: { select: { planning_name: true } },
+      tool: { select: { tool_code: true, tool_name: true } },
     },
     orderBy: { mission_planning_id: 'desc' },
   });
@@ -76,6 +81,9 @@ export async function getMissionPlanningLogbookList(
     fk_planning_id: row.fk_planning_id ?? 0,
     fk_client_id: row.fk_client_id ?? 0,
     fk_owner_id: row.fk_owner_id ?? 0,
+    fk_tool_id: row.fk_tool_id ?? 0,
+    tool_code: row.tool?.tool_code ?? '',
+    tool_desc: row.tool?.tool_name ?? '',
   }));
 
   return { code: 200, data: mapped };
@@ -124,6 +132,23 @@ export async function getEvaluationList(ownerId: number): Promise<{ data: Evalua
     evaluation_desc: e.evaluation_code
       ? `[${e.evaluation_code}] ${e.evaluation_name}`
       : e.evaluation_name,
+  }));
+
+  return { data };
+}
+
+export async function getDroneList(ownerId: number): Promise<{ data: DroneOption[] }> {
+  const drones = await prisma.tool.findMany({
+    where: { fk_owner_id: ownerId, tool_active: 'Y' },
+    orderBy: { tool_code: 'asc' },
+    select: { tool_id: true, tool_code: true, tool_name: true },
+  });
+
+  const data: DroneOption[] = drones.map((t) => ({
+    tool_id: t.tool_id,
+    tool_code: t.tool_code ?? '',
+    tool_desc: t.tool_name ?? '',
+    tool_status: 'OPERATIONAL',
   }));
 
   return { data };

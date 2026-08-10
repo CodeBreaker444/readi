@@ -32,9 +32,14 @@ export async function getBatteryLogbookList(
     ...(params.component_status && params.component_status !== 'ALL' && {
       component_metadata: { path: ['component_status'], equals: params.component_status },
     }),
-    ...(params.date_start && { installation_date: { gte: new Date(params.date_start) } }),
-    ...(params.date_end && { installation_date: { lte: new Date(params.date_end) } }),
   };
+
+  if (params.date_start || params.date_end) {
+    componentWhere.installation_date = {
+      ...(params.date_start && { gte: new Date(params.date_start) }),
+      ...(params.date_end && { lte: new Date(params.date_end) }),
+    };
+  }
 
   const components = await prisma.tool_component.findMany({
     where: componentWhere,

@@ -2360,6 +2360,7 @@
         "allEvaluations": "Alle Bewertungen",
         "planning": "Planung",
         "allPlannings": "Alle Planungen",
+        "droneSystem": "System",
         "updateFrom": "Aktualisiert von",
         "updateTo": "Aktualisiert bis",
         "search": "Suchen",
@@ -2379,6 +2380,7 @@
         "planning": "Planung",
         "missionDesc": "Missionsbeschreibung",
         "missionPlan": "Missionsplan",
+        "system": "System",
         "version": "Version",
         "active": "Aktiv"
       }
