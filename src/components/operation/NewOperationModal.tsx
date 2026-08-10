@@ -236,7 +236,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
             categoryId: editOperation.fk_mission_category_id?.toString() ?? '',
             lucId: editOperation.fk_luc_procedure_id?.toString() ?? '',
         })
-        setStep(2)
+        setStep(1)
     }, [editOperation, open])
 
     // Seed mission code, start,and end distance from a flight log when this
@@ -593,7 +593,11 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
     }
 
 
-    const selectedClient = clients.find(c => String(c.client_id) === clientId)
+    const clientsForSelect = (isEdit && editOperation?.fk_client_id && !clients.some(c => c.client_id === editOperation.fk_client_id))
+        ? [...clients, { client_id: editOperation.fk_client_id, client_name: editOperation.client_name ?? '', client_code: '' }]
+        : clients
+
+    const selectedClient = clientsForSelect.find(c => String(c.client_id) === clientId)
     const selectedDrone = drones.find(d => String(d.tool_id) === droneId)
     const selectedPlan = clientPlannings.find(p => String(p.planning_id) === planId)
     const selectedPilot = pilots.find(p => String(p.user_id) === pilotId)
@@ -677,7 +681,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
 
                     {(!isEdit || editTab === 'data') && step === 1 && (
                         <OperationStepClient
-                            clients={clients}
+                            clients={clientsForSelect}
                             clientId={clientId}
                             onClientChange={setClientId}
                             loadingClients={loadingClients}

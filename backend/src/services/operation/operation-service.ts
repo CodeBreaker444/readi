@@ -93,6 +93,7 @@ export async function listOperations(
         distance_flown: true,
         notes: true,
         fk_pilot_user_id: true,
+        fk_client_id: true,
         fk_tool_id: true,
         fk_mission_status_id: true,
         fk_planning_id: true,

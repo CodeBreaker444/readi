@@ -8,6 +8,10 @@ import { ColumnDef } from "@tanstack/react-table";
 import { ArrowUpDown, Clock, Map } from "lucide-react";
 
 
+export interface OperationLogbookTableMeta {
+  onViewDetails: (mission: OperationLogbookItem) => void;
+}
+
 function formatMinutes(mins: number): string {
   if (!mins) return "—";
   const h = Math.floor(mins / 60);
@@ -40,14 +44,24 @@ const resultColors: Record<string, string> = {
 
 export const operationLogbookColumns: ColumnDef<OperationLogbookItem>[] = [
   {
-    accessorKey: "mission_id",
-    header: "#",
-    cell: ({ row }) => (
-      <span className="font-mono text-xs text-slate-400 dark:text-white">
-        {String(row.getValue("mission_id")).padStart(4, "0")}
-      </span>
-    ),
-    size: 60,
+    accessorKey: "mission_code",
+    header: "Mission ID",
+    cell: ({ row, table }) => {
+      const meta = table.options.meta as OperationLogbookTableMeta;
+      const code = row.original.mission_code || String(row.original.mission_id).padStart(4, "0");
+      return (
+        <button
+          className="font-mono text-xs text-violet-600 hover:underline cursor-pointer dark:text-violet-400"
+          onClick={(e) => {
+            e.stopPropagation();
+            meta.onViewDetails(row.original);
+          }}
+        >
+          {code}
+        </button>
+      );
+    },
+    size: 90,
   },
   {
     id: "date_start",
