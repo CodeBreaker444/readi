@@ -18,6 +18,7 @@ import {
     AlertCircle,
     Calendar,
     CheckCircle2,
+    Clock,
     Download,
     Eye,
     Loader2,
@@ -25,6 +26,13 @@ import {
     Trash2,
     XCircle
 } from 'lucide-react';
+
+function formatDuration(minutes: number | null | undefined): string {
+  if (!minutes) return '—';
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return h > 0 ? `${h}h ${m}m` : `${m}m`;
+}
 
 export interface OperationTableMeta {
   onEdit: (op: Operation) => void;
@@ -224,12 +232,18 @@ export const getOperationColumns = (t: TFunction, isDark = false, timezone = 'Eu
   {
     accessorKey: 'distance_flown',
     header: t('operations.table.detail.distance'),
-    cell: ({ getValue }) => {
+    cell: ({ getValue, row }) => {
       const val = getValue<number | null>();
       return (
-        <span className="text-xs tabular-nums text-muted-foreground">
-          {val != null ? `${val.toLocaleString()} m` : '—'}
-        </span>
+        <div className="flex flex-col gap-0.5">
+          <span className="text-xs tabular-nums text-muted-foreground">
+            {val != null ? `${val.toLocaleString()} m` : '—'}
+          </span>
+          <span className="text-[11px] tabular-nums text-muted-foreground/70 flex items-center gap-0.5">
+            <Clock className="h-2.5 w-2.5" />
+            {formatDuration(row.original.flight_duration)}
+          </span>
+        </div>
       );
     },
   },

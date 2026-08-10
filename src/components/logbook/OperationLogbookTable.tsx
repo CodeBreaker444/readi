@@ -25,7 +25,7 @@ import { OperationLogbookTableMeta, operationLogbookColumns } from "../tables/Op
 import { TablePagination } from "../tables/Pagination";
 import { MissionDetailModal } from "./MissionDetailModal";
 
-const SKELETON_COL_WIDTHS = [60, 110, 110, 150, 140, 120, 120, 140, 110, 100, 150, 80, 90, 180];
+const SKELETON_COL_WIDTHS = [90, 110, 110, 150, 140, 120, 120, 140, 110, 150, 100, 180];
 const SKELETON_ROWS = 10;
 
 interface OperationLogbookTableProps {
@@ -152,8 +152,8 @@ const table = useReactTable({
                     const skFaint = isDark ? "bg-slate-800/60" : "bg-slate-100";
                     const ratio = 0.5 + ((rowIdx * 3 + colIdx * 7) % 30) / 100;
 
-                    const isDouble = [1, 2, 7, 10].includes(colIdx);
-                    const isBadge = [5, 6, 8, 9].includes(colIdx);
+                    const isDouble = [1, 2, 7, 9, 10].includes(colIdx);
+                    const isBadge = [5, 6, 8].includes(colIdx);
 
                     return (
                       <td key={colIdx} className="px-3 py-3 align-middle">

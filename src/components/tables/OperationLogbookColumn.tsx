@@ -227,21 +227,6 @@ export const operationLogbookColumns: ColumnDef<OperationLogbookItem>[] = [
     size: 150,
   },
   {
-    accessorKey: "flown_time",
-    header: () => (
-      <div className="flex items-center gap-1">
-        <Clock className="h-3 w-3" />
-        <span>Time</span>
-      </div>
-    ),
-    cell: ({ row }) => (
-      <span className="font-mono text-xs text-slate-600 dark:text-slate-300">
-        {formatMinutes(row.getValue("flown_time"))}
-      </span>
-    ),
-    size: 80,
-  },
-  {
     accessorKey: "flown_meter",
     header: () => (
       <div className="flex items-center gap-1">
@@ -250,11 +235,17 @@ export const operationLogbookColumns: ColumnDef<OperationLogbookItem>[] = [
       </div>
     ),
     cell: ({ row }) => (
-      <span className="font-mono text-xs text-slate-600 dark:text-slate-300">
-        {formatKm(row.getValue("flown_meter"))}
-      </span>
+      <div className="flex flex-col gap-0.5">
+        <span className="font-mono text-xs text-slate-600 dark:text-slate-300">
+          {formatKm(row.original.flown_meter)}
+        </span>
+        <span className="font-mono text-[11px] text-slate-400 dark:text-slate-500 flex items-center gap-0.5">
+          <Clock className="h-2.5 w-2.5" />
+          {formatMinutes(row.original.flown_time)}
+        </span>
+      </div>
     ),
-    size: 90,
+    size: 100,
   },
   {
     accessorKey: "mission_notes",
