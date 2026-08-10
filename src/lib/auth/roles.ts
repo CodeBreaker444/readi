@@ -253,7 +253,6 @@ export const API_ROUTE_PERMISSIONS: Array<{ prefix: string; permission: ApiPermi
   { prefix: '/api/system/component/list', permission: ['view_config', 'view_operations'] },
   { prefix: '/api/system', permission: 'view_config' },
   { prefix: '/api/team/shift', permission: 'manage_users' },
-  { prefix: '/api/team/user/qualifications', permission: null },
   { prefix: '/api/team/user/list', permission: ['manage_users', 'view_logs'] },
   { prefix: '/api/team/user', permission: 'manage_users' },
   { prefix: '/api/client/list', permission: ['view_client', 'view_config', 'view_planning'] },

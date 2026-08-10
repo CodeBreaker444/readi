@@ -1,5 +1,5 @@
 import { deleteQualification } from '@/backend/services/user/qualification-service';
-import { requireAuth } from '@/lib/auth/api-auth';
+import { requirePermission } from '@/lib/auth/api-auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { z, ZodError } from 'zod';
 
@@ -12,7 +12,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-   const { session, error } = await requireAuth()
+   const { session, error } = await requirePermission('manage_users')
      if (error) return error
 
     const resolvedParams = await params; 

@@ -1,6 +1,14 @@
 'use client';
 
 import { useAuthorization } from '@/components/authorization/AuthorizationProvider';
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from '@/components/ui/breadcrumb';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,13 +19,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { UserPermissionMatrix } from '@/components/permissions/UserPermissionMatrix';
-import { AccessLevel, ALL_FEATURE_KEYS, FeatureKey } from '@/lib/auth/feature-permissions-types';
-import { Role } from '@/lib/auth/roles';
 import axios from 'axios';
-import { ArrowLeft, CheckCircle, ChevronDown, ChevronRight, Eye, EyeOff, Link2, Link2Off, Loader2, ShieldCheck, XCircle } from 'lucide-react';
+import { Award, ArrowLeft, Briefcase, Building2, CheckCircle, ChevronDown, ChevronRight, Eye, EyeOff, House, Link2, Link2Off, Loader2, Plus, ShieldCheck, Trash2, User, UserCog, X, XCircle } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { DEPARTMENT_OPTIONS } from '../tables/UserColumns';
 import { Skeleton } from '../ui/skeleton';
 
 const SUBROLE_MANAGER_ROLES = ['RM', 'ADMIN', 'SUPERADMIN'];
@@ -38,14 +44,76 @@ const ROLE_OPTIONS = [
   { value: 20, label: 'Viewer Manager (VM)' },
 ];
 
-// Numeric role IDs (as used by fk_user_profile_id) mapped to the Role code used by the permission matrix.
-const ROLE_ID_TO_CODE: Record<number, Role> = {
-  8: 'PIC', 9: 'OPM', 10: 'SM', 11: 'AM', 12: 'CMM', 13: 'RM',
-  14: 'TM', 15: 'DC', 16: 'SLA', 17: 'ADMIN', 18: 'OM', 19: 'MM', 20: 'VM',
+// Role-based access level mapping
+const ROLE_ACCESS_MAPPING: Record<number, { is_viewer: string; is_manager: string }> = {
+  8: { is_viewer: 'Y', is_manager: 'N' },  // PIC
+  10: { is_viewer: 'Y', is_manager: 'N' }, // SM
+  11: { is_viewer: 'Y', is_manager: 'N' }, // AM
+  20: { is_viewer: 'Y', is_manager: 'N' }, // VM
+
+  18: { is_viewer: 'N', is_manager: 'Y' }, // OM
+
+  12: { is_viewer: 'N', is_manager: 'Y' }, // CMM
+  14: { is_viewer: 'N', is_manager: 'Y' }, // TM
+  15: { is_viewer: 'N', is_manager: 'Y' }, // DC
+  19: { is_viewer: 'N', is_manager: 'Y' }, // MM
+
+  9: { is_viewer: 'N', is_manager: 'Y' },  // OPM
+  13: { is_viewer: 'N', is_manager: 'Y' }, // RM
+  16: { is_viewer: 'N', is_manager: 'Y' }, // SLA
+  17: { is_viewer: 'N', is_manager: 'Y' }, // ADMIN
 };
 
-const FULL_ACCESS_ROLE_IDS = [9, 17, 18]; // OPM, ADMIN, OM(*) — OM kept editable in the matrix, only OPM/ADMIN are locked
-const LOCKED_ROLE_IDS = [9, 17]; // OPM, ADMIN — always full access, matrix editing is a no-op for them
+function getRoleAccessLevel(roleId: number): { is_viewer: string; is_manager: string } {
+  return ROLE_ACCESS_MAPPING[roleId] || { is_viewer: 'N', is_manager: 'Y' };
+}
+
+interface UserQualification {
+  qualification_id: number;
+  qualification_name: string;
+  qualification_type: string;
+  status: string;
+  start_date: string | null;
+  expiry_date: string | null;
+}
+
+interface PendingQualification {
+  _key: string;
+  qualification_name: string;
+  qualification_type: 'Certification' | 'Training';
+  status: 'Active' | 'Inactive';
+  start_date: string | null;
+  expiry_date: string | null;
+}
+
+function SectionCard({
+  title,
+  description,
+  icon: Icon,
+  children,
+  isDark,
+}: {
+  title: string;
+  description: string;
+  icon: React.ElementType;
+  children: React.ReactNode;
+  isDark: boolean;
+}) {
+  return (
+    <div className={`rounded-lg border ${isDark ? 'border-slate-800 bg-slate-900/50' : 'border-slate-200 bg-white'} overflow-hidden`}>
+      <div className={`px-5 py-3.5 border-b ${isDark ? 'border-slate-800 bg-slate-900/30' : 'border-slate-100 bg-slate-50/60'} flex items-center gap-3`}>
+        <div className={`w-7 h-7 shrink-0 rounded-md flex items-center justify-center ${isDark ? 'bg-slate-800' : 'bg-violet-50'}`}>
+          <Icon size={14} className={isDark ? 'text-slate-300' : 'text-violet-600'} />
+        </div>
+        <div>
+          <p className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>{title}</p>
+          <p className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{description}</p>
+        </div>
+      </div>
+      <div className="p-5 space-y-4">{children}</div>
+    </div>
+  );
+}
 
 interface UserFormProps {
   clients: { client_id: number; client_name: string }[];
@@ -88,9 +156,11 @@ export function UserForm({
       fk_client_id: 0,
       owner_id: 0,
       user_type: 'EMPLOYEE',
+      is_viewer: 'N',
       is_manager: 'N',
       active: 1,
       flytrelay_access: false,
+      department: '',
     };
     if (!userData) return defaults;
     return {
@@ -100,9 +170,11 @@ export function UserForm({
       fk_user_profile_id: userData.fk_user_profile_id ?? userData.profile_id ?? 0,
       fk_client_id: userData.fk_client_id ?? 0,
       user_type: userData.user_type || 'EMPLOYEE',
+      is_viewer: userData.is_viewer || 'N',
       is_manager: userData.is_manager || 'N',
       active: userData.active ?? 1,
       flytrelay_access: userData.flytrelay_access ?? false,
+      department: userData.department || '',
     };
   });
 
@@ -129,11 +201,19 @@ export function UserForm({
   const [ccRemoving, setCcRemoving] = useState(false);
   const [ccShowForm, setCcShowForm] = useState(false);
 
-  // Permissions section state
-  const [permExpanded, setPermExpanded] = useState(false);
-  const [permLoading, setPermLoading] = useState(false);
-  const [useCustomPermissions, setUseCustomPermissions] = useState(false);
-  const [permValues, setPermValues] = useState<Partial<Record<FeatureKey, AccessLevel>>>({});
+  // Qualifications section state
+  const [qualExpanded, setQualExpanded] = useState(false);
+  const [qualLoading, setQualLoading] = useState(false);
+  const [qualItems, setQualItems] = useState<UserQualification[]>([]);
+  const [qualDeletingId, setQualDeletingId] = useState<number | null>(null);
+  const [qualShowAddForm, setQualShowAddForm] = useState(false);
+  const [qualPendingNew, setQualPendingNew] = useState<PendingQualification[]>([]);
+  const [qualSaving, setQualSaving] = useState(false);
+  const [qualNewName, setQualNewName] = useState('');
+  const [qualNewType, setQualNewType] = useState<'Certification' | 'Training'>('Certification');
+  const [qualNewStatus, setQualNewStatus] = useState<'Active' | 'Inactive'>('Active');
+  const [qualNewStart, setQualNewStart] = useState('');
+  const [qualNewExpiry, setQualNewExpiry] = useState('');
 
   // Debounced username availability check (add mode only)
   useEffect(() => {
@@ -299,33 +379,76 @@ export function UserForm({
     setCcVerifiedUser(null); setCcStep('idle'); setCcShowForm(false);
   };
 
-  const loadPermissions = useCallback(async () => {
-    const roleId = formData.fk_user_profile_id;
-    if (!roleId) return;
-    setPermLoading(true);
+  const fetchQualifications = useCallback(async () => {
+    if (mode !== 'edit' || !userData?.user_id) return;
+    setQualLoading(true);
     try {
-      if (mode === 'edit' && userData?.user_id) {
-        const res = await axios.get(`/api/permissions/user/${userData.user_id}`);
-        setUseCustomPermissions(!!res.data?.data?.hasCustomPermissions);
-        setPermValues(res.data?.data?.permissions ?? {});
-      } else {
-        const roleCode = ROLE_ID_TO_CODE[roleId];
-        const res = await axios.get('/api/permissions/role-defaults');
-        setUseCustomPermissions(false);
-        setPermValues(res.data?.data?.matrix?.[roleCode] ?? {});
-      }
+      const res = await axios.get('/api/team/user/qualifications', { params: { user_id: userData.user_id } });
+      setQualItems(res.data.data ?? []);
     } catch {
-      toast.error('Failed to load permissions');
+      toast.error('Failed to load qualifications');
     } finally {
-      setPermLoading(false);
+      setQualLoading(false);
     }
-  }, [mode, userData?.user_id, formData.fk_user_profile_id]);
+  }, [mode, userData?.user_id]);
 
   useEffect(() => {
-    if (permExpanded) loadPermissions();
-  }, [permExpanded, loadPermissions]);
+    if (qualExpanded) fetchQualifications();
+  }, [qualExpanded, fetchQualifications]);
 
-  const isLockedFullAccessRole = LOCKED_ROLE_IDS.includes(formData.fk_user_profile_id);
+  const resetQualForm = () => {
+    setQualNewName(''); setQualNewType('Certification'); setQualNewStatus('Active');
+    setQualNewStart(''); setQualNewExpiry(''); setQualShowAddForm(false);
+  };
+
+  const handleQualStage = () => {
+    if (!qualNewName.trim()) { toast.error('Qualification name is required'); return; }
+    if (qualPendingNew.length >= 10) { toast.error('You can stage up to 10 qualifications at a time'); return; }
+    setQualPendingNew((items) => [...items, {
+      _key: `${Date.now()}-${Math.random()}`,
+      qualification_name: qualNewName.trim(),
+      qualification_type: qualNewType,
+      status: qualNewStatus,
+      start_date: qualNewStart || null,
+      expiry_date: qualNewExpiry || null,
+    }]);
+    resetQualForm();
+  };
+
+  const handleQualUnstage = (key: string) => {
+    setQualPendingNew((items) => items.filter((q) => q._key !== key));
+  };
+
+  const handleQualSave = async () => {
+    if (!userData?.user_id || qualPendingNew.length === 0) return;
+    setQualSaving(true);
+    try {
+      const res = await axios.post('/api/team/user/qualifications', {
+        user_id: userData.user_id,
+        qualifications: qualPendingNew.map(({ _key, ...q }) => q),
+      });
+      setQualItems((items) => [...items, ...(res.data.data ?? [])]);
+      setQualPendingNew([]);
+      toast.success('Qualifications saved');
+    } catch (err: any) {
+      toast.error(err?.response?.data?.error ?? 'Failed to save qualifications');
+    } finally {
+      setQualSaving(false);
+    }
+  };
+
+  const handleQualDelete = async (id: number) => {
+    setQualDeletingId(id);
+    try {
+      await axios.delete(`/api/team/user/qualifications/${id}`);
+      setQualItems((items) => items.filter((q) => q.qualification_id !== id));
+      toast.success('Qualification removed');
+    } catch (err: any) {
+      toast.error(err?.response?.data?.error ?? 'Failed to remove qualification');
+    } finally {
+      setQualDeletingId(null);
+    }
+  };
 
   const handleSubmit = (e: React.SyntheticEvent) => {
     e.preventDefault();
@@ -359,13 +482,8 @@ export function UserForm({
     if (mode === 'add' && formData.fk_user_profile_id === 8) {
       payload.grant_pic_technician = subGrantOnCreate;
     }
-    if (permExpanded && !isLockedFullAccessRole) {
-      payload.permissions = {
-        useCustom: useCustomPermissions,
-        access: useCustomPermissions
-          ? Object.fromEntries(ALL_FEATURE_KEYS.map((k) => [k, permValues[k] ?? 'R']))
-          : undefined,
-      };
+    if (mode === 'add' && qualPendingNew.length > 0) {
+      payload.pendingQualifications = qualPendingNew.map(({ _key, ...q }) => q);
     }
 
     setIsSubmitting(true);
@@ -383,300 +501,331 @@ export function UserForm({
 
   return (
     <div className={`min-h-screen ${isDark ? 'bg-slate-950' : 'bg-gray-50'}`}>
-      <div className={`border-b px-6 py-4 ${isDark ? 'bg-slate-900/80 border-slate-700/60' : 'bg-white/80 border-gray-200'}`}>
+      <div className={`top-0 z-10 backdrop-blur-md transition-colors ${isDark ? 'bg-slate-900/80 border-b border-slate-800' : 'bg-white/80 border-b border-slate-200 shadow-[0_1px_3px_rgba(0,0,0,0.06)]'} px-6 py-4`}>
         <div className="mx-auto flex items-center gap-3">
           <button type="button" onClick={onCancel} className={`cursor-pointer p-1.5 rounded-md ${isDark ? 'hover:bg-slate-800 text-slate-400' : 'hover:bg-slate-100 text-slate-500'}`}>
             <ArrowLeft size={16} />
           </button>
-          <div className="w-1 h-6 rounded-full bg-violet-600" />
+          <div className={`w-9 h-9 shrink-0 rounded-lg flex items-center justify-center ${isDark ? 'bg-slate-800' : 'bg-violet-50'}`}>
+            <UserCog size={18} className={isDark ? 'text-slate-300' : 'text-violet-600'} />
+          </div>
           <div>
             <h1 className={`font-semibold text-base tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>{mode === 'add' ? 'Add New User' : 'Edit User'}</h1>
-            <p className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{mode === 'add' ? 'Create a new team member and assign their role.' : 'Update this team member\'s details and permissions.'}</p>
+            <p className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{mode === 'add' ? 'Create a new team member and assign their role.' : 'Update this team member\'s details and role.'}</p>
           </div>
         </div>
       </div>
 
+      <div className={`px-6 py-2.5 border-b ${isDark ? 'border-slate-800 bg-slate-900/40' : 'border-slate-100 bg-slate-50/60'}`}>
+        <div className="mx-auto">
+          <Breadcrumb>
+            <BreadcrumbList>
+              <BreadcrumbItem>
+                <BreadcrumbLink
+                  href="/team/personnel"
+                  className={`flex items-center gap-1 text-xs ${isDark ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-slate-900'}`}
+                >
+                  <House size={12} /> Personnel
+                </BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbPage className={`text-xs font-medium ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>
+                  {mode === 'add' ? 'Add User' : 'Edit User'}
+                </BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
+        </div>
+      </div>
+
       <div className="mx-auto px-6 py-8">
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            {/* Username */}
-            <div>
-              <Label htmlFor="username" className="pb-2">Username *</Label>
-              <div className="relative">
-                <Input
-                  id="username"
-                  value={formData.username}
-                  onChange={(e) => {
-                    setFormData({ ...formData, username: e.target.value.toLowerCase() });
-                    clearFieldError('username');
-                  }}
-                  required
-                  disabled={mode === 'edit'}
-                  className={`pr-8 ${inputError('username')}`}
-                />
-                {mode === 'add' && formData.username.length >= 3 && (
-                  <span className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none">
-                    {usernameStatus === 'checking' && <Loader2 size={14} className="animate-spin text-slate-400" />}
-                    {usernameStatus === 'available' && <CheckCircle size={14} className="text-emerald-500" />}
-                    {usernameStatus === 'taken' && <XCircle size={14} className="text-red-500" />}
-                  </span>
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <SectionCard
+            title="Account Details"
+            description="Login credentials and contact information"
+            icon={User}
+            isDark={isDark}
+          >
+            <div className="grid grid-cols-2 gap-4">
+              {/* Username */}
+              <div>
+                <Label htmlFor="username" className="pb-2">Username *</Label>
+                <div className="relative">
+                  <Input
+                    id="username"
+                    value={formData.username}
+                    onChange={(e) => {
+                      setFormData({ ...formData, username: e.target.value.toLowerCase() });
+                      clearFieldError('username');
+                    }}
+                    required
+                    disabled={mode === 'edit'}
+                    className={`pr-8 ${inputError('username')}`}
+                  />
+                  {mode === 'add' && formData.username.length >= 3 && (
+                    <span className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none">
+                      {usernameStatus === 'checking' && <Loader2 size={14} className="animate-spin text-slate-400" />}
+                      {usernameStatus === 'available' && <CheckCircle size={14} className="text-emerald-500" />}
+                      {usernameStatus === 'taken' && <XCircle size={14} className="text-red-500" />}
+                    </span>
+                  )}
+                </div>
+                {fieldErrors.username && (
+                  <p className="text-xs text-red-500 mt-1">{fieldErrors.username}</p>
                 )}
               </div>
-              {fieldErrors.username && (
-                <p className="text-xs text-red-500 mt-1">{fieldErrors.username}</p>
-              )}
-            </div>
 
-            {/* Full Name */}
-            <div>
-              <Label htmlFor="fullname" className="pb-2">Full Name *</Label>
-              <Input
-                id="fullname"
-                value={formData.fullname}
-                onChange={(e) => setFormData({ ...formData, fullname: e.target.value })}
-                required
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            {/* Email */}
-            <div>
-              <Label htmlFor="email" className="pb-2">Email *</Label>
-              <Input
-                id="email"
-                type="email"
-                value={formData.email}
-                onChange={(e) => {
-                  setFormData({ ...formData, email: e.target.value });
-                  clearFieldError('email');
-                }}
-                required
-                disabled={!canEditEmail && mode === 'edit'}
-                readOnly={!canEditEmail && mode === 'edit'}
-                className={`${!canEditEmail && mode === 'edit' ? 'opacity-60 cursor-not-allowed' : ''} ${inputError('email')}`}
-              />
-              {fieldErrors.email && (
-                <p className="text-xs text-red-500 mt-1">{fieldErrors.email}</p>
-              )}
-            </div>
-
-            {/* Phone */}
-            <div>
-              <Label htmlFor="phone" className="pb-2">Phone</Label>
-              <Input
-                id="phone"
-                type="tel"
-                value={formData.phone || ''}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-              />
-            </div>
-          </div>
-
-          {/* Company (super admin add mode) */}
-          {isSuperAdmin && mode === 'add' && (
-            <div>
-              <Label htmlFor="owner_id" className="pb-2">
-                Company <span className="text-red-500">*</span>
-              </Label>
-              <Select
-                value={formData.owner_id?.toString()}
-                onValueChange={(value) => {
-                  setFormData({ ...formData, owner_id: parseInt(value) });
-                  clearFieldError('owner_id');
-                }}
-              >
-                <SelectTrigger className={`${isDark ? 'bg-slate-900 border-slate-700' : ''} ${inputError('owner_id')}`}>
-                  <SelectValue placeholder="Select a Company" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="0">Select a Company</SelectItem>
-                  {owners.map((owner) => (
-                    <SelectItem key={owner.owner_id} value={owner.owner_id.toString()}>
-                      {owner.owner_name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {fieldErrors.owner_id && (
-                <p className="text-xs text-red-500 mt-1">{fieldErrors.owner_id}</p>
-              )}
-            </div>
-          )}
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="client">Assign Client</Label>
-              <Select
-                value={formData.fk_client_id?.toString()}
-                onValueChange={(value) => setFormData({ ...formData, fk_client_id: parseInt(value) })}
-              >
-                <SelectTrigger className={isDark ? 'bg-slate-900 border-slate-700' : ''}>
-                  <SelectValue placeholder="Select a Client" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="0">Select a Client</SelectItem>
-                  {clients.map((client) => (
-                    <SelectItem key={client.client_id} value={client.client_id.toString()}>
-                      {client.client_name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-36">
-            {/* Role */}
-            <div>
-              <Label htmlFor="role" className="pb-2">Role *</Label>
-              <Select
-                value={formData.fk_user_profile_id?.toString()}
-                onValueChange={(value) => {
-                  const id = parseInt(value);
-                  setFormData({ ...formData, fk_user_profile_id: id });
-                  clearFieldError('fk_user_profile_id');
-                  if (mode === 'add') {
-                    const isPic = id === 8;
-                    setSubExpanded(isPic);
-                    if (!isPic) setSubGrantOnCreate(false);
-                  }
-                }}
-                disabled={mode === 'edit'}
-              >
-                <SelectTrigger className={`${mode === 'edit' ? 'opacity-60 cursor-not-allowed' : ''} ${inputError('fk_user_profile_id')}`}>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="0">Select a Role</SelectItem>
-                  {ROLE_OPTIONS.map((role) => (
-                    <SelectItem key={role.value} value={role.value.toString()}>
-                      {role.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {fieldErrors.fk_user_profile_id && (
-                <p className="text-xs text-red-500 mt-1">{fieldErrors.fk_user_profile_id}</p>
-              )}
-            </div>
-
-            <div>
-              <Label htmlFor="user_type" className="pb-2">User Type *</Label>
-              <Select
-                value={formData.user_type}
-                onValueChange={(value) => setFormData({ ...formData, user_type: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="EMPLOYEE">Employee</SelectItem>
-                  <SelectItem value="EXTERNAL">External</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-36">
-            <div>
-              <Label htmlFor="is_manager" className="pb-2">Manager Role</Label>
-              <Select
-                value={formData.is_manager}
-                onValueChange={(value) => setFormData({ ...formData, is_manager: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="N">Not Manager</SelectItem>
-                  <SelectItem value="Y">Manager</SelectItem>
-                </SelectContent>
-              </Select>
-              <p className={`text-xs mt-1.5 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
-                Managers can delete records on features where this user has Full access.
-              </p>
-            </div>
-
-            {mode === 'edit' && (
+              {/* Full Name */}
               <div>
-                <Label htmlFor="active" className="pb-2">Status</Label>
+                <Label htmlFor="fullname" className="pb-2">Full Name *</Label>
+                <Input
+                  id="fullname"
+                  value={formData.fullname}
+                  onChange={(e) => setFormData({ ...formData, fullname: e.target.value })}
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              {/* Email */}
+              <div>
+                <Label htmlFor="email" className="pb-2">Email *</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => {
+                    setFormData({ ...formData, email: e.target.value });
+                    clearFieldError('email');
+                  }}
+                  required
+                  disabled={!canEditEmail && mode === 'edit'}
+                  readOnly={!canEditEmail && mode === 'edit'}
+                  className={`${!canEditEmail && mode === 'edit' ? 'opacity-60 cursor-not-allowed' : ''} ${inputError('email')}`}
+                />
+                {fieldErrors.email && (
+                  <p className="text-xs text-red-500 mt-1">{fieldErrors.email}</p>
+                )}
+              </div>
+
+              {/* Phone */}
+              <div>
+                <Label htmlFor="phone" className="pb-2">Phone</Label>
+                <Input
+                  id="phone"
+                  type="tel"
+                  value={formData.phone || ''}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                />
+              </div>
+            </div>
+          </SectionCard>
+
+          <SectionCard
+            title="Assignment"
+            description="Which company, client and department this user belongs to"
+            icon={Building2}
+            isDark={isDark}
+          >
+            {/* Company (super admin add mode) */}
+            {isSuperAdmin && mode === 'add' && (
+              <div>
+                <Label htmlFor="owner_id" className="pb-2">
+                  Company <span className="text-red-500">*</span>
+                </Label>
                 <Select
-                  value={formData.active?.toString()}
-                  onValueChange={(value) => setFormData({ ...formData, active: parseInt(value) })}
+                  value={formData.owner_id?.toString()}
+                  onValueChange={(value) => {
+                    setFormData({ ...formData, owner_id: parseInt(value) });
+                    clearFieldError('owner_id');
+                  }}
+                >
+                  <SelectTrigger className={`${isDark ? 'bg-slate-900 border-slate-700' : ''} ${inputError('owner_id')}`}>
+                    <SelectValue placeholder="Select a Company" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="0">Select a Company</SelectItem>
+                    {owners.map((owner) => (
+                      <SelectItem key={owner.owner_id} value={owner.owner_id.toString()}>
+                        {owner.owner_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {fieldErrors.owner_id && (
+                  <p className="text-xs text-red-500 mt-1">{fieldErrors.owner_id}</p>
+                )}
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="client">Assign Client</Label>
+                <Select
+                  value={formData.fk_client_id?.toString()}
+                  onValueChange={(value) => setFormData({ ...formData, fk_client_id: parseInt(value) })}
+                >
+                  <SelectTrigger className={isDark ? 'bg-slate-900 border-slate-700' : ''}>
+                    <SelectValue placeholder="Select a Client" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="0">Select a Client</SelectItem>
+                    {clients.map((client) => (
+                      <SelectItem key={client.client_id} value={client.client_id.toString()}>
+                        {client.client_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="department">Department</Label>
+                <Select
+                  value={formData.department || 'NONE'}
+                  onValueChange={(value) => setFormData({ ...formData, department: value === 'NONE' ? '' : value })}
+                >
+                  <SelectTrigger className={isDark ? 'bg-slate-900 border-slate-700' : ''}>
+                    <SelectValue placeholder="Select a Department" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="NONE">Unassigned</SelectItem>
+                    {DEPARTMENT_OPTIONS.map((dept) => (
+                      <SelectItem key={dept} value={dept}>
+                        {dept}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </SectionCard>
+
+          <SectionCard
+            title="Role & Access"
+            description="What this user can do and see in the platform"
+            icon={Briefcase}
+            isDark={isDark}
+          >
+            <div className="grid grid-cols-2 gap-4">
+              {/* Role */}
+              <div>
+                <Label htmlFor="role" className="pb-2">Role *</Label>
+                <Select
+                  value={formData.fk_user_profile_id?.toString()}
+                  onValueChange={(value) => {
+                    const id = parseInt(value);
+                    setFormData({ ...formData, fk_user_profile_id: id });
+                    clearFieldError('fk_user_profile_id');
+                    if (mode === 'add') {
+                      const isPic = id === 8;
+                      setSubExpanded(isPic);
+                      if (!isPic) setSubGrantOnCreate(false);
+
+                      // Auto-set is_viewer and is_manager based on role
+                      const accessLevel = getRoleAccessLevel(id);
+                      setFormData((prev: any) => ({
+                        ...prev,
+                        fk_user_profile_id: id,
+                        is_viewer: accessLevel.is_viewer,
+                        is_manager: accessLevel.is_manager,
+                      }));
+                    }
+                  }}
+                  disabled={mode === 'edit'}
+                >
+                  <SelectTrigger className={`${mode === 'edit' ? 'opacity-60 cursor-not-allowed' : ''} ${inputError('fk_user_profile_id')}`}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="0">Select a Role</SelectItem>
+                    {ROLE_OPTIONS.map((role) => (
+                      <SelectItem key={role.value} value={role.value.toString()}>
+                        {role.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {fieldErrors.fk_user_profile_id && (
+                  <p className="text-xs text-red-500 mt-1">{fieldErrors.fk_user_profile_id}</p>
+                )}
+              </div>
+
+              <div>
+                <Label htmlFor="user_type" className="pb-2">User Type *</Label>
+                <Select
+                  value={formData.user_type}
+                  onValueChange={(value) => setFormData({ ...formData, user_type: value })}
                 >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="1">Active</SelectItem>
-                    <SelectItem value="0">Inactive</SelectItem>
+                    <SelectItem value="EMPLOYEE">Employee</SelectItem>
+                    <SelectItem value="EXTERNAL">External</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-            )}
-          </div>
-
-          {/* Permissions section */}
-          {!!formData.fk_user_profile_id && (
-            <div className={`rounded-lg border ${isDark ? 'border-slate-600 bg-slate-900/40' : 'border-slate-200 bg-slate-50'}`}>
-              <button
-                type="button"
-                onClick={() => setPermExpanded((v) => !v)}
-                className={`cursor-pointer w-full flex items-center justify-between px-4 py-3 text-sm font-medium ${isDark ? 'text-slate-200' : 'text-slate-700'}`}
-              >
-                <span className="flex items-center gap-2">
-                  <ShieldCheck size={15} className={isDark ? 'text-slate-500' : 'text-slate-400'} />
-                  Permissions
-                  {isLockedFullAccessRole && (
-                    <span className="text-xs px-1.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 font-normal">Full access — locked</span>
-                  )}
-                  {!isLockedFullAccessRole && useCustomPermissions && (
-                    <span className="text-xs px-1.5 py-0.5 rounded-full bg-violet-500/15 text-violet-600 font-normal">Customized</span>
-                  )}
-                </span>
-                {permExpanded ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
-              </button>
-
-              {permExpanded && (
-                <div className={`px-4 pb-4 space-y-3 border-t ${isDark ? 'border-slate-700' : 'border-slate-200'}`}>
-                  {isLockedFullAccessRole ? (
-                    <p className={`text-xs pt-3 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                      This role always has full access to every feature and is not customizable.
-                    </p>
-                  ) : permLoading ? (
-                    <div className="pt-4 space-y-2">
-                      <Skeleton className="h-3 w-48" />
-                      <Skeleton className="h-40 w-full" />
-                    </div>
-                  ) : (
-                    <div className="pt-3 space-y-3">
-                      <label className={`flex items-center gap-2.5 cursor-pointer select-none text-xs font-medium ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
-                        <input
-                          type="checkbox"
-                          checked={useCustomPermissions}
-                          onChange={(e) => setUseCustomPermissions(e.target.checked)}
-                          className="w-3.5 h-3.5 accent-violet-600 cursor-pointer"
-                        />
-                        Customize permissions for this user
-                      </label>
-                      <p className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
-                        {useCustomPermissions
-                          ? 'These overrides apply only to this user. The role\'s default table is ignored for them.'
-                          : 'Following the role\'s default permission table — changes to that table apply to this user automatically.'}
-                      </p>
-                      <UserPermissionMatrix
-                        isDark={isDark}
-                        disabled={!useCustomPermissions}
-                        values={permValues}
-                        onChange={(key, value) => setPermValues((prev) => ({ ...prev, [key]: value }))}
-                      />
-                    </div>
-                  )}
-                </div>
-              )}
             </div>
-          )}
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="is_viewer" className="pb-2">Access Level</Label>
+                <Select
+                  value={formData.is_viewer}
+                  onValueChange={(value) => setFormData({ ...formData, is_viewer: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="N">Full Access</SelectItem>
+                    <SelectItem value="Y">Viewer Only</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="is_manager" className="pb-2">Manager Role</Label>
+                <Select
+                  value={formData.is_manager}
+                  onValueChange={(value) => setFormData({ ...formData, is_manager: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="N">Not Manager</SelectItem>
+                    <SelectItem value="Y">Manager</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className={`text-xs mt-1.5 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                  Managers can delete records on features where this user has Full access.
+                </p>
+              </div>
+            </div>
+
+            {mode === 'edit' && (
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="active" className="pb-2">Status</Label>
+                  <Select
+                    value={formData.active?.toString()}
+                    onValueChange={(value) => setFormData({ ...formData, active: parseInt(value) })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="1">Active</SelectItem>
+                      <SelectItem value="0">Inactive</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
+          </SectionCard>
 
           {/* Flytrelay Access section - only show if company has flytrelay enabled */}
           {companyFlytrelayEnabled && (
@@ -946,6 +1095,186 @@ export function UserForm({
               )}
             </div>
           )}
+
+          {/* Qualifications section */}
+          <div className={`rounded-lg border ${isDark ? 'border-slate-600 bg-slate-900/40' : 'border-slate-200 bg-slate-50'}`}>
+              <button
+                type="button"
+                onClick={() => setQualExpanded((v) => !v)}
+                className={`cursor-pointer w-full flex items-center justify-between px-4 py-3 text-sm font-medium ${isDark ? 'text-slate-200' : 'text-slate-700'}`}
+              >
+                <span className="flex items-center gap-2">
+                  <Award size={15} className={(mode === 'edit' ? qualItems.length : qualPendingNew.length) > 0 ? 'text-violet-500' : isDark ? 'text-slate-500' : 'text-slate-400'} />
+                  Qualifications
+                  {qualExpanded && !qualLoading && (
+                    <span className={`text-xs px-1.5 py-0.5 rounded-full font-normal ${isDark ? 'bg-slate-700 text-slate-400' : 'bg-slate-200 text-slate-500'}`}>
+                      {mode === 'edit' ? qualItems.length : qualPendingNew.length}
+                    </span>
+                  )}
+                </span>
+                {qualExpanded ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
+              </button>
+
+              {qualExpanded && (
+                <div className={`px-4 pb-4 space-y-3 border-t ${isDark ? 'border-slate-700' : 'border-slate-200'}`}>
+                  {mode === 'add' && (
+                    <p className={`text-xs pt-3 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                      Stage qualifications below — they'll be saved once the user is created.
+                    </p>
+                  )}
+
+                  {qualLoading && (
+                    <div className="pt-4 space-y-2">
+                      <Skeleton className="h-8 w-full" />
+                      <Skeleton className="h-8 w-full" />
+                    </div>
+                  )}
+
+                  {!qualLoading && (
+                    <div className="pt-3 space-y-2">
+                      {qualItems.length === 0 && qualPendingNew.length === 0 && (
+                        <p className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>No qualifications {mode === 'edit' ? 'on file yet' : 'staged yet'}.</p>
+                      )}
+
+                      {mode === 'edit' && qualItems.map((q) => {
+                        const today = new Date().toISOString().slice(0, 10);
+                        const isExpired = q.expiry_date != null && q.expiry_date < today;
+                        const effectiveStatus = q.status === 'Inactive' ? 'Inactive' : isExpired ? 'Expired' : 'Active';
+                        return (
+                          <div
+                            key={q.qualification_id}
+                            className={`flex items-center justify-between gap-2 rounded-md border px-3 py-2 text-xs ${isDark ? 'border-slate-700 bg-slate-800/40' : 'border-slate-200 bg-white'}`}
+                          >
+                            <div className="min-w-0">
+                              <p className={`font-medium truncate ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>{q.qualification_name}</p>
+                              <div className={`flex items-center gap-2 mt-0.5 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                                <span>{q.qualification_type}</span>
+                                {q.expiry_date && <span>· Expires {q.expiry_date}</span>}
+                                <span
+                                  className={
+                                    effectiveStatus === 'Active'
+                                      ? (isDark ? 'text-emerald-400' : 'text-emerald-600')
+                                      : effectiveStatus === 'Expired'
+                                        ? (isDark ? 'text-red-400' : 'text-red-600')
+                                        : (isDark ? 'text-slate-500' : 'text-slate-400')
+                                  }
+                                >
+                                  · {effectiveStatus}
+                                </span>
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              disabled={qualDeletingId === q.qualification_id}
+                              onClick={() => handleQualDelete(q.qualification_id)}
+                              className={`shrink-0 p-1 rounded transition-colors ${isDark ? 'hover:bg-slate-700 text-slate-500 hover:text-red-400' : 'hover:bg-slate-100 text-slate-400 hover:text-red-500'}`}
+                            >
+                              {qualDeletingId === q.qualification_id ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} />}
+                            </button>
+                          </div>
+                        );
+                      })}
+
+                      {qualPendingNew.map((q) => (
+                        <div
+                          key={q._key}
+                          className={`flex items-center justify-between gap-2 rounded-md border border-dashed px-3 py-2 text-xs ${isDark ? 'border-violet-700 bg-violet-900/10' : 'border-violet-300 bg-violet-50'}`}
+                        >
+                          <div className="min-w-0">
+                            <p className={`font-medium truncate ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>{q.qualification_name}</p>
+                            <div className={`flex items-center gap-2 mt-0.5 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                              <span>{q.qualification_type}</span>
+                              {q.expiry_date && <span>· Expires {q.expiry_date}</span>}
+                              <span className={isDark ? 'text-violet-400' : 'text-violet-600'}>· Pending save</span>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleQualUnstage(q._key)}
+                            className={`shrink-0 p-1 rounded transition-colors ${isDark ? 'hover:bg-slate-700 text-slate-500 hover:text-slate-300' : 'hover:bg-slate-100 text-slate-400 hover:text-slate-600'}`}
+                          >
+                            <X size={13} />
+                          </button>
+                        </div>
+                      ))}
+
+                      {!qualShowAddForm && (
+                        <Button type="button" variant="outline" size="sm" className="h-7 text-xs" onClick={() => setQualShowAddForm(true)}>
+                          <Plus size={12} className="mr-1" /> Add qualification
+                        </Button>
+                      )}
+
+                      {qualShowAddForm && (
+                        <div className={`rounded-md border p-3 space-y-2.5 ${isDark ? 'border-slate-700 bg-slate-800/40' : 'border-slate-200 bg-white'}`}>
+                          <div className="space-y-1.5">
+                            <Label className="text-xs">Name</Label>
+                            <Input
+                              value={qualNewName}
+                              onChange={(e) => setQualNewName(e.target.value)}
+                              placeholder="e.g. EASA A2 Certificate of Remote Pilot Competency"
+                              className={`h-8 text-sm ${isDark ? 'bg-slate-800 border-slate-700' : ''}`}
+                            />
+                          </div>
+                          <div className="grid grid-cols-2 gap-2.5">
+                            <div className="space-y-1.5">
+                              <Label className="text-xs">Type</Label>
+                              <Select value={qualNewType} onValueChange={(v) => setQualNewType(v as 'Certification' | 'Training')}>
+                                <SelectTrigger className={`h-8 text-sm ${isDark ? 'bg-slate-800 border-slate-700' : ''}`}><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="Certification">Certification</SelectItem>
+                                  <SelectItem value="Training">Training</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="space-y-1.5">
+                              <Label className="text-xs">Status</Label>
+                              <Select value={qualNewStatus} onValueChange={(v) => setQualNewStatus(v as 'Active' | 'Inactive')}>
+                                <SelectTrigger className={`h-8 text-sm ${isDark ? 'bg-slate-800 border-slate-700' : ''}`}><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="Active">Active</SelectItem>
+                                  <SelectItem value="Inactive">Inactive</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2.5">
+                            <div className="space-y-1.5">
+                              <Label className="text-xs">Start date <span className={`font-normal ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>(optional)</span></Label>
+                              <Input type="date" value={qualNewStart} onChange={(e) => setQualNewStart(e.target.value)} className={`h-8 text-sm ${isDark ? 'bg-slate-800 border-slate-700' : ''}`} />
+                            </div>
+                            <div className="space-y-1.5">
+                              <Label className="text-xs">Expiry date <span className={`font-normal ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>(optional)</span></Label>
+                              <Input type="date" value={qualNewExpiry} onChange={(e) => setQualNewExpiry(e.target.value)} className={`h-8 text-sm ${isDark ? 'bg-slate-800 border-slate-700' : ''}`} />
+                            </div>
+                          </div>
+                          <div className="flex gap-2 pt-1">
+                            <Button type="button" size="sm" onClick={handleQualStage} className="h-7 text-xs bg-violet-600 hover:bg-violet-500 text-white">
+                              Stage qualification
+                            </Button>
+                            <Button type="button" variant="outline" size="sm" className="h-7 text-xs" onClick={resetQualForm}>
+                              Cancel
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+
+                      {mode === 'edit' && qualPendingNew.length > 0 && (
+                        <Button
+                          type="button" size="sm"
+                          disabled={qualSaving}
+                          onClick={handleQualSave}
+                          className="h-7 text-xs bg-emerald-600 hover:bg-emerald-500 text-white"
+                        >
+                          {qualSaving
+                            ? <><Loader2 size={12} className="animate-spin mr-1.5" />Saving…</>
+                            : `Save ${qualPendingNew.length} qualification${qualPendingNew.length > 1 ? 's' : ''}`}
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
 
           <div className="flex justify-end gap-3 mt-6">
             <Button type="button" variant="outline" onClick={onCancel}>

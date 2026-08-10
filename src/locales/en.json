@@ -2180,7 +2180,20 @@
         "visualObserversOptional": "(optional)",
         "visualObserversDisabled": "Select a pilot first to add visual observers",
         "primaryPilotNote": "PIC — already assigned",
-        "noPilots": "No pilots available"
+        "noPilots": "No pilots available",
+        "viewQualifications": "Qualifications"
+      },
+      "pilotQualifications": {
+        "title": "Pilot Qualifications",
+        "qualificationsSection": "Qualifications",
+        "curriculumSection": "Training Curriculum",
+        "noQualifications": "No qualifications recorded",
+        "noCurriculum": "No training records",
+        "loadError": "Failed to load pilot qualifications",
+        "expiry": "Expiry",
+        "statusActive": "Active",
+        "statusInactive": "Inactive",
+        "statusExpired": "Expired"
       },
       "erp": {
         "sectionTitle": "Emergency Response Plans",
