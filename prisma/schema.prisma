@@ -1008,6 +1008,17 @@ model deleted_user {
   @@schema("public")
 }
 
+model department_config {
+  department_id   Int      @id @default(autoincrement())
+  department_name String   @db.VarChar(100)
+  fk_owner_id     Int
+  created_at      DateTime @default(now()) @db.Timestamp(6)
+
+  @@unique([fk_owner_id, department_name], map: "department_config_owner_name_key")
+  @@index([fk_owner_id], map: "idx_department_config_owner")
+  @@schema("public")
+}
+
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model drone_class_config {
   class_id    Int      @id @default(autoincrement())

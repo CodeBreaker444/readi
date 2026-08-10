@@ -20,10 +20,10 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import axios from 'axios';
-import { Award, ArrowLeft, Briefcase, Building2, CheckCircle, ChevronDown, ChevronRight, Eye, EyeOff, House, Link2, Link2Off, Loader2, Plus, ShieldCheck, Trash2, User, UserCog, X, XCircle } from 'lucide-react';
+import { Award, ArrowLeft, Briefcase, Building2, CheckCircle, ChevronDown, ChevronRight, Eye, EyeOff, House, Link2, Link2Off, Loader2, Pencil, Plus, ShieldCheck, Trash2, User, UserCog, X, XCircle } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { DEPARTMENT_OPTIONS } from '../tables/UserColumns';
+import { DepartmentRow, ManageDepartmentsModal } from '../system/ManageDepartmentsModal';
 import { Skeleton } from '../ui/skeleton';
 
 const SUBROLE_MANAGER_ROLES = ['RM', 'ADMIN', 'SUPERADMIN'];
@@ -214,6 +214,25 @@ export function UserForm({
   const [qualNewStatus, setQualNewStatus] = useState<'Active' | 'Inactive'>('Active');
   const [qualNewStart, setQualNewStart] = useState('');
   const [qualNewExpiry, setQualNewExpiry] = useState('');
+
+  // Department reference-data state
+  const [departments, setDepartments] = useState<DepartmentRow[]>([]);
+  const [departmentsLoading, setDepartmentsLoading] = useState(false);
+  const [showManageDepartments, setShowManageDepartments] = useState(false);
+
+  const reloadDepartments = useCallback(async () => {
+    setDepartmentsLoading(true);
+    try {
+      const { data } = await axios.get('/api/team/department');
+      if (data.code === 1) setDepartments(data.data ?? []);
+    } catch {
+      // non-fatal — department dropdown just stays empty
+    } finally {
+      setDepartmentsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { reloadDepartments(); }, [reloadDepartments]);
 
   // Debounced username availability check (add mode only)
   useEffect(() => {
@@ -500,6 +519,7 @@ export function UserForm({
     fieldErrors[field] ? 'border-red-500 focus-visible:ring-red-500' : '';
 
   return (
+    <>
     <div className={`min-h-screen ${isDark ? 'bg-slate-950' : 'bg-gray-50'}`}>
       <div className={`top-0 z-10 backdrop-blur-md transition-colors ${isDark ? 'bg-slate-900/80 border-b border-slate-800' : 'bg-white/80 border-b border-slate-200 shadow-[0_1px_3px_rgba(0,0,0,0.06)]'} px-6 py-4`}>
         <div className="mx-auto flex items-center gap-3">
@@ -682,19 +702,36 @@ export function UserForm({
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="department">Department</Label>
+                <div className="flex items-center gap-1.5">
+                  <Label htmlFor="department">Department</Label>
+                  <button
+                    type="button"
+                    onClick={() => setShowManageDepartments(true)}
+                    className={`cursor-pointer transition-colors ${isDark ? 'text-slate-500 hover:text-violet-400' : 'text-slate-400 hover:text-violet-600'}`}
+                    title="Manage departments"
+                  >
+                    <Pencil className="h-3 w-3" />
+                  </button>
+                </div>
                 <Select
                   value={formData.department || 'NONE'}
                   onValueChange={(value) => setFormData({ ...formData, department: value === 'NONE' ? '' : value })}
+                  disabled={departmentsLoading}
                 >
                   <SelectTrigger className={isDark ? 'bg-slate-900 border-slate-700' : ''}>
-                    <SelectValue placeholder="Select a Department" />
+                    {departmentsLoading ? (
+                      <span className="flex items-center gap-2 text-muted-foreground">
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading…
+                      </span>
+                    ) : (
+                      <SelectValue placeholder="Select a Department" />
+                    )}
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="NONE">Unassigned</SelectItem>
-                    {DEPARTMENT_OPTIONS.map((dept) => (
-                      <SelectItem key={dept} value={dept}>
-                        {dept}
+                    {departments.map((dept) => (
+                      <SelectItem key={dept.department_id} value={dept.department_name}>
+                        {dept.department_name}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -1292,5 +1329,13 @@ export function UserForm({
         </form>
       </div>
     </div>
+    <ManageDepartmentsModal
+      open={showManageDepartments}
+      onClose={() => setShowManageDepartments(false)}
+      departments={departments}
+      onReload={reloadDepartments}
+      isDark={isDark}
+    />
+    </>
   );
 }

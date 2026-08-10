@@ -19,7 +19,8 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import ExportButtons from '../system/ExportButtons';
 import { TablePagination } from '../tables/Pagination';
-import { DEPARTMENT_OPTIONS, getUserColumns, UserData } from '../tables/UserColumns';
+import { getUserColumns, UserData } from '../tables/UserColumns';
+import { DepartmentRow } from '../system/ManageDepartmentsModal';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -77,6 +78,7 @@ export default function UserManagement({ session }: UserManagementProps) {
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [companyFilter, setCompanyFilter] = useState('ALL');
   const [departmentFilter, setDepartmentFilter] = useState('ALL');
+  const [departmentOptions, setDepartmentOptions] = useState<DepartmentRow[]>([]);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [userToDelete, setUserToDelete] = useState<UserData | null>(null);
   const [resendingUserId, setResendingUserId] = useState<number | null>(null);
@@ -86,7 +88,17 @@ export default function UserManagement({ session }: UserManagementProps) {
 
   useEffect(() => {
     fetchUsers();
+    fetchDepartmentOptions();
   }, []);
+
+  const fetchDepartmentOptions = async () => {
+    try {
+      const { data } = await axios.get('/api/team/department');
+      if (data.code === 1) setDepartmentOptions(data.data ?? []);
+    } catch {
+      // non-fatal — filter just stays empty
+    }
+  };
 
   const fetchUsers = async () => {
     try {
@@ -322,8 +334,8 @@ export default function UserManagement({ session }: UserManagementProps) {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="ALL">{t('team.personnel.allDepartments')}</SelectItem>
-                  {DEPARTMENT_OPTIONS.map((dept) => (
-                    <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                  {departmentOptions.map((dept) => (
+                    <SelectItem key={dept.department_id} value={dept.department_name}>{dept.department_name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>

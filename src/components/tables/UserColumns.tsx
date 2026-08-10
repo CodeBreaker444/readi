@@ -11,17 +11,6 @@ import {
     TooltipTrigger,
 } from '../ui/tooltip';
 
-export const DEPARTMENT_OPTIONS = [
-  'Operations',
-  'Engineering',
-  'Flight Crew',
-  'Safety & Compliance',
-  'Administration',
-  'Sales & Client Relations',
-  'IT',
-  'Management',
-];
-
 export interface UserData {
   user_id: number;
   username: string;
