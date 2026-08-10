@@ -2089,6 +2089,8 @@
         "opTypeLabel": "Operation Type",
         "opTypeOpenDesc": "Pilot flies with RC — no mission plan required.",
         "opTypePdraDesc": "Pilot flies under risk analysis — mission plan required.",
+        "opTypeSts01Desc": "Standard Scenario STS-01 — same requirements as Open, no mission plan required.",
+        "opTypeSts02Desc": "Standard Scenario STS-02 — same requirements as Open, no mission plan required.",
         "droneLabel": "Drone System",
         "noDronesAssigned": "No drones assigned to this client",
         "noSystemsForClient": "The selected client doesn't have any systems.",

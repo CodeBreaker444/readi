@@ -33,9 +33,11 @@ export interface Operation {
   planning_name?: string | null;
   attachment_count?: number;
   flight_mode?: string | null;
+  op_type?: string | null;
   mission_metadata?: {
     visual_observers?: { user_id: number; name: string }[];
     flight_mode?: string;
+    op_type?: string;
     is_recurrent?: boolean;
     recurrent_start_date?: string;
     recurrent_end_date?: string;
@@ -74,6 +76,7 @@ export type CreateOperationSchema = {
   fk_mission_category_id?: number | null;
   fk_luc_procedure_id: number;
   flight_mode?: string | null;
+  op_type?: string | null;
   is_recurrent?: boolean;
   recurrent_start_date?: string | null;
   recurrent_end_date?: string | null;
@@ -97,6 +100,7 @@ export type UpdateOperationSchema = {
   distance_flown?: number | null;
   max_altitude?: number | null;
   flight_mode?: string | null;
+  op_type?: string | null;
 };
 export interface OperationAttachment {
   attachment_id: number;

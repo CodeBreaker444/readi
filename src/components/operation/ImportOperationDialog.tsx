@@ -23,7 +23,7 @@ import { Operation } from '@/config/types/operation';
 import { serialInList } from '@/lib/serial-number';
 import { cn } from '@/lib/utils';
 import axios from 'axios';
-import { MissionPlanningOption, PlanningOption } from './OperationModalTypes';
+import { MissionPlanningOption, OpType, PlanningOption } from './OperationModalTypes';
 import { PilotQualificationsSheet } from './PilotQualificationsSheet';
 import {
     AlertCircle,
@@ -152,7 +152,7 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
     const [missionCode, setMissionCode] = useState('');
     const [categoryId,  setCategoryId]  = useState('');
     const [typeId,      setTypeId]      = useState('');
-    const [opType,      setOpType]      = useState<'OPEN' | 'PDRA'>('OPEN');
+    const [opType,      setOpType]      = useState<OpType>('OPEN');
     const [flightMode,  setFlightMode]  = useState<'RC' | 'DOCK'>('RC');
     const [planId,      setPlanId]      = useState('');
     const [missionPlanningId, setMissionPlanningId] = useState('');
@@ -170,10 +170,10 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
     const [generatingId, setGeneratingId] = useState(false);
     const [existingMissionCodes, setExistingMissionCodes] = useState<Set<string>>(new Set());
 
-    const handleOpTypeChange = (newOpType: 'OPEN' | 'PDRA') => {
+    const handleOpTypeChange = (newOpType: OpType) => {
         setOpType(newOpType);
-        // Reset PDRA-specific fields when switching to OPEN
-        if (newOpType === 'OPEN') {
+        // Reset PDRA-specific fields when switching away from PDRA
+        if (newOpType !== 'PDRA') {
             setPlanId('');
             setMissionPlanningId('');
             setFlightMode('RC');
@@ -511,7 +511,9 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
             formData.append('mission_planning', missionPlanningId || 'N');
             
             formData.append('flight_mode', flightMode);
-            
+
+            formData.append('op_type', opType);
+
             formData.append('mission_result', '1');
             
             formData.append('mission_luc_procedure', lucProcedureId);
@@ -559,6 +561,7 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
 
     const serialNotDetected = !loadingSerialNumber && !logSerialNumber;
     const serialNoMatch     = !loadingSerialNumber && !loadingDrones && !!logSerialNumber && !matchingDrone;
+    const selectedClientObj = clients.find((c) => String(c.client_id) === clientId);
     const selectedPilot    = pilots.find((p) => String(p.user_id) === pilotId);
     const pilotLabel       = selectedPilot ? `${selectedPilot.first_name} ${selectedPilot.last_name}` : '';
     const selectedFlightObj = flights.find((f) => f.flight_id === selectedFlightId);
@@ -620,7 +623,11 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                                     <Label className="mb-1.5 block">{t(ns + '.fields.client')} <span className="text-red-500">*</span></Label>
                                     <Select value={clientId} onValueChange={setClientId} disabled={loadingClients}>
                                         <SelectTrigger>
-                                            {loadingClients ? <Loader2 className="h-4 w-4 animate-spin" /> : clientId ? <SelectValue /> : <SelectValue placeholder={t(ns + '.placeholders.selectClient')} />}
+                                            {loadingClients ? <Loader2 className="h-4 w-4 animate-spin" /> : (
+                                                <SelectValue placeholder={t(ns + '.placeholders.selectClient')}>
+                                                    {selectedClientObj ? `${selectedClientObj.client_name} (${selectedClientObj.client_code})` : undefined}
+                                                </SelectValue>
+                                            )}
                                         </SelectTrigger>
                                         <SelectContent>
                                             {clients.map((c) => (
@@ -974,10 +981,12 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                                 <div>
                                     <Label className="mb-1.5 block">{t(ns + '.fields.opType')}</Label>
                                     <Select value={opType} onValueChange={handleOpTypeChange}>
-                                        <SelectTrigger><SelectValue /></SelectTrigger>
+                                        <SelectTrigger><SelectValue>{opType}</SelectValue></SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="OPEN">OPEN</SelectItem>
                                             <SelectItem value="PDRA">PDRA</SelectItem>
+                                            <SelectItem value="STS-01">STS-01</SelectItem>
+                                            <SelectItem value="STS-02">STS-02</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>

@@ -2084,6 +2084,8 @@
         "opTypeLabel": "Tipo Operazione",
         "opTypeOpenDesc": "Il pilota vola con RC — nessun piano di missione richiesto.",
         "opTypePdraDesc": "Il pilota vola sotto analisi del rischio — piano di missione richiesto.",
+        "opTypeSts01Desc": "Scenario standard STS-01 — stessi requisiti di Open, nessun piano di missione richiesto.",
+        "opTypeSts02Desc": "Scenario standard STS-02 — stessi requisiti di Open, nessun piano di missione richiesto.",
         "droneLabel": "Sistema Drone",
         "noDronesAssigned": "Nessun drone assegnato a questo cliente",
         "noSystemsForClient": "Il cliente selezionato non ha alcun sistema.",

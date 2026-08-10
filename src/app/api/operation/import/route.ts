@@ -112,6 +112,7 @@ export async function POST(req: NextRequest) {
       groupLabel: String(formData.get('mission_group_label')  ?? ''),
       notes:      String(formData.get('mission_notes')        ?? ''),
       flightMode: String(formData.get('flight_mode')          ?? '').trim() || null,
+      opType:     String(formData.get('op_type')               ?? '').trim() || null,
       userId:     session!.user.userId,
       missionCode: String(formData.get('mission_code') ?? '').trim() || undefined,
       userTimezone: session!.user.timezone || undefined,

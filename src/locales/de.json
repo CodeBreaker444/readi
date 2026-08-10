@@ -2080,6 +2080,8 @@
         "opTypeLabel": "Vorgangstyp",
         "opTypeOpenDesc": "Pilot fliegt mit RC — kein Missionsplan erforderlich.",
         "opTypePdraDesc": "Pilot fliegt unter Risikoanalyse — Missionsplan erforderlich.",
+        "opTypeSts01Desc": "Standardszenario STS-01 — gleiche Anforderungen wie Open, kein Missionsplan erforderlich.",
+        "opTypeSts02Desc": "Standardszenario STS-02 — gleiche Anforderungen wie Open, kein Missionsplan erforderlich.",
         "droneLabel": "Drohnensystem",
         "noDronesAssigned": "Diesem Kunden sind keine Drohnen zugewiesen",
         "noSystemsForClient": "Der ausgewählte Kunde hat keine Systeme.",

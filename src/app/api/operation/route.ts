@@ -48,6 +48,7 @@ const createOperationSchema = z.object({
   visual_observer_ids: z.array(z.number().int().positive()).optional().nullable(),
   fk_erp_group_id: z.number().int().positive().nullable().optional(),
   flight_mode: z.enum(['RC', 'DOCK']).nullable().optional(),
+  op_type: z.enum(['OPEN', 'PDRA', 'STS-01', 'STS-02']).nullable().optional(),
   is_recurrent: z.boolean().optional(),
   recurrent_start_date: z.string().nullable().optional(),
   recurrent_end_date: z.string().nullable().optional(),

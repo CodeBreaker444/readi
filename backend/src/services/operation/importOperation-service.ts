@@ -46,6 +46,7 @@ export interface ImportMissionParams {
   userId: number;
   missionCode?: string;
   flightMode?: string | null;
+  opType?: string | null;
   userTimezone?: string;
   isRecurrent?: boolean;
   recurrentStartDate?: string;
@@ -238,6 +239,10 @@ async function processGutmaBuffer(
     }
   }
 
+  const missionMetadataFields: Record<string, unknown> = {};
+  if (params.missionPlanningId && params.flightMode) missionMetadataFields.flight_mode = params.flightMode;
+  if (params.opType) missionMetadataFields.op_type = params.opType;
+
   const inserted = await prisma.pilot_mission.create({
     data: {
       fk_owner_id: params.ownerId,
@@ -268,11 +273,11 @@ async function processGutmaBuffer(
         recurring_group_id: recurringGroupId,
         mission_date_until: params.recurrentEndDate ? new Date(params.recurrentEndDate) : null,
         mission_group_label: params.groupLabel || null,
-        ...(params.missionPlanningId && params.flightMode && { mission_metadata: { flight_mode: params.flightMode } }),
+        ...(Object.keys(missionMetadataFields).length && { mission_metadata: missionMetadataFields }),
       }),
       ...(!recurringGroupId && {
         mission_metadata: {
-          ...(params.missionPlanningId && params.flightMode && { flight_mode: params.flightMode }),
+          ...missionMetadataFields,
           ...(visualObservers?.length && { visual_observers: visualObservers }),
           is_imported: true,
         },

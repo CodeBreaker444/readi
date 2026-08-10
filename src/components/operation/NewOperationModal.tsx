@@ -221,7 +221,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
         setPilotId(editOperation.fk_pilot_user_id?.toString() ?? '')
         setVisualObserverIds((editOperation.visual_observer_ids ?? []).map(o => String(o.user_id)))
         setPlanId(editOperation.fk_planning_id?.toString() ?? '')
-        setOpType(editOperation.fk_planning_id ? 'PDRA' : 'OPEN')
+        setOpType((editOperation.op_type as OpType) || (editOperation.fk_planning_id ? 'PDRA' : 'OPEN'))
         setFlightMode(editOperation.flight_mode === 'DOCK' ? 'DOCK' : 'RC')
         setErpGroupId(editOperation.fk_erp_group_id?.toString() ?? '')
         setSchedulerForm({
@@ -486,6 +486,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                     notes: schedulerForm.notes || undefined,
                     distance_flown: schedulerForm.distanceFlown !== '' ? parseFloat(schedulerForm.distanceFlown) : null,
                     flight_mode: opType === 'PDRA' ? flightMode : null,
+                    op_type: opType,
                 }
                 const res = await axios.put(`/api/operation/${editOperation.pilot_mission_id}`, payload)
                 toast.success(t('operations.newOperation.toast.updateSuccess'))
@@ -512,6 +513,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                 notes: schedulerForm.notes || undefined,
                 distance_flown: schedulerForm.distanceFlown !== '' ? parseFloat(schedulerForm.distanceFlown) : null,
                 flight_mode: opType === 'PDRA' ? flightMode : null,
+                op_type: opType,
                 // A mission created to attach an already-flown log is inherently
                 // completed, not scheduled for the future.
                 status_name: createPrefill ? 'COMPLETED' : 'PLANNED',

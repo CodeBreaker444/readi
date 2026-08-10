@@ -39,6 +39,7 @@ const updateOperationSchema = z.object({
   max_altitude: z.number().nonnegative().nullable().optional(),
   fk_erp_group_id: z.number().int().positive().nullable().optional(),
   flight_mode: z.enum(['RC', 'DOCK']).nullable().optional(),
+  op_type: z.enum(['OPEN', 'PDRA', 'STS-01', 'STS-02']).nullable().optional(),
 });
 
 interface Params {
