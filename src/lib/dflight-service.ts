@@ -171,19 +171,19 @@ async function dFetch(
     ...(httpsAgent ? { agent: httpsAgent as any } : {}),
   } as RequestInit);
 
-  // Convert native fetch response to undici-compatible format
-  const body = await response.text();
+  // Convert native fetch response to undici-compatible format.
+  // Read raw bytes once and derive text/json from them — decoding straight to
+  // text (as before) corrupts binary bodies like PDFs, since invalid UTF-8
+  // byte sequences get replaced with U+FFFD and can't be recovered.
+  const buffer = Buffer.from(await response.arrayBuffer());
   const undiciResponse = {
     ok: response.ok,
     status: response.status,
     statusText: response.statusText,
     headers: Object.fromEntries(response.headers.entries()),
-    text: async () => body,
-    json: async () => JSON.parse(body),
-    arrayBuffer: async () => {
-      const buffer = Buffer.from(body, 'utf-8');
-      return buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
-    },
+    text: async () => buffer.toString('utf-8'),
+    json: async () => JSON.parse(buffer.toString('utf-8')),
+    arrayBuffer: async () => buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength),
   } as any;
 
   return undiciResponse;

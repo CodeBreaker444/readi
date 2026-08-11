@@ -30,6 +30,7 @@ export default function DFlightFleet() {
   const [rows, setRows]       = useState<DFlightDroneRow[]>([]);
   const [models, setModels]   = useState<any[]>([]);
   const [clients, setClients] = useState<any[]>([]);
+  const [tools, setTools]     = useState<any[]>([]);
   const [error, setError]     = useState<string | null>(null);
   const [notConfigured, setNotConfigured] = useState(false);
   const [missingCertificate, setMissingCertificate] = useState(false);
@@ -58,6 +59,15 @@ export default function DFlightFleet() {
       if (data.code === 1) setClients(data.data ?? []);
     } catch {
       setClients([]);
+    }
+  }, []);
+
+  const loadTools = useCallback(async () => {
+    try {
+      const { data } = await axios.post('/api/system/list', { active: 'ALL', status: 'ALL' });
+      if (data.code === 1) setTools(data.data ?? []);
+    } catch {
+      setTools([]);
     }
   }, []);
 
@@ -102,13 +112,14 @@ export default function DFlightFleet() {
     }
   }, [t]);
 
-  useEffect(() => { load(); loadModels(); loadClients(); }, [load, loadModels, loadClients]);
+  useEffect(() => { load(); loadModels(); loadClients(); loadTools(); }, [load, loadModels, loadClients, loadTools]);
 
   const handleImported = useCallback(() => {
     setImportDrone(null);
     load();
     loadModels();
-  }, [load, loadModels]);
+    loadTools();
+  }, [load, loadModels, loadTools]);
 
   const handleSync = useCallback(async (row: DFlightDroneRow) => {
     if (!row.componentId || !row.dFlightId) return;
@@ -341,6 +352,7 @@ export default function DFlightFleet() {
         drone={importDrone}
         models={models}
         clients={clients}
+        tools={tools}
         onModelsRefresh={loadModels}
       />
     </div>

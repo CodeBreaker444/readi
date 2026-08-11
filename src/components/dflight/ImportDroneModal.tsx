@@ -30,6 +30,7 @@ interface ImportDroneModalProps {
   drone: DFlightDroneRow | null;
   models: any[];
   clients: any[];
+  tools: any[];
   onModelsRefresh: () => Promise<void>;
 }
 
@@ -39,6 +40,7 @@ function sanitizeCode(name: string): string {
 }
 
 const EMPTY_FORM = {
+  fk_tool_id: '',
   tool_code: '',
   tool_description: '',
   component_code: '',
@@ -56,10 +58,11 @@ const EMPTY_FORM = {
   sts_declarations: '',
 };
 
-export default function ImportDroneModal({ open, onClose, onImported, drone, models, clients, onModelsRefresh }: ImportDroneModalProps) {
+export default function ImportDroneModal({ open, onClose, onImported, drone, models, clients, tools, onModelsRefresh }: ImportDroneModalProps) {
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState(EMPTY_FORM);
+  const [systemMode, setSystemMode] = useState<'new' | 'existing'>('new');
   const [showAddModel, setShowAddModel] = useState(false);
   const [insuranceExpanded, setInsuranceExpanded] = useState(true);
   const [classesExpanded, setClassesExpanded] = useState(true);
@@ -96,7 +99,9 @@ export default function ImportDroneModal({ open, onClose, onImported, drone, mod
     if (!open || !drone) return;
 
     const matched = matchModel(models);
+    setSystemMode('new');
     setFormData({
+      fk_tool_id: '',
       tool_code: sanitizeCode(drone.dFlightName || drone.dFlightId || ''),
       tool_description: '',
       component_code: drone.dFlightName || '',
@@ -243,10 +248,14 @@ export default function ImportDroneModal({ open, onClose, onImported, drone, mod
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!drone) return;
-    if (!formData.tool_code.trim()) { toast.error(t('dflight.import.toasts.systemCodeRequired')); return; }
+    if (systemMode === 'existing') {
+      if (!formData.fk_tool_id) { toast.error(t('dflight.import.toasts.systemRequired', { defaultValue: 'Please select a system' })); return; }
+    } else {
+      if (!formData.tool_code.trim()) { toast.error(t('dflight.import.toasts.systemCodeRequired')); return; }
+      if (!formData.fk_client_id) { toast.error(t('dflight.import.toasts.clientRequired')); return; }
+    }
     if (!formData.component_sn.trim()) { toast.error(t('dflight.import.toasts.serialRequired')); return; }
     if (!formData.fk_tool_model_id) { toast.error(t('dflight.import.toasts.modelRequired')); return; }
-    if (!formData.fk_client_id) { toast.error(t('dflight.import.toasts.clientRequired')); return; }
 
     const stsDeclarations = formData.sts_declarations.trim();
     const certifications = stsDeclarations
@@ -257,9 +266,10 @@ export default function ImportDroneModal({ open, onClose, onImported, drone, mod
     try {
       const payload = {
         dFlightId: drone.dFlightId,
-        fk_client_id: Number(formData.fk_client_id),
-        tool_code: formData.tool_code.trim(),
-        tool_description: formData.tool_description || null,
+        fk_tool_id: systemMode === 'existing' ? Number(formData.fk_tool_id) : null,
+        fk_client_id: systemMode === 'existing' ? null : Number(formData.fk_client_id),
+        tool_code: systemMode === 'existing' ? null : formData.tool_code.trim(),
+        tool_description: systemMode === 'existing' ? null : (formData.tool_description || null),
         component_code: formData.component_code.trim() || formData.tool_code.trim(),
         component_sn: formData.component_sn.trim(),
         uas_serial_number: formData.uas_serial_number.trim() || null,
@@ -303,27 +313,62 @@ export default function ImportDroneModal({ open, onClose, onImported, drone, mod
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
               <p className="text-sm font-medium text-muted-foreground mb-2">{t('dflight.import.sections.system')}</p>
-              <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
-                <div className="col-span-1 sm:col-span-4">
-                  <Label className="pb-2">{t('dflight.import.fields.systemCode')}</Label>
-                  <Input value={formData.tool_code} onChange={(e) => handleChange('tool_code', e.target.value)} required />
-                </div>
-                <div className="col-span-1 sm:col-span-4">
-                  <Label className="pb-2">{t('dflight.import.fields.systemDescription')} <span className="text-muted-foreground font-normal">{t('systems.components.common.optional')}</span></Label>
-                  <Input value={formData.tool_description} onChange={(e) => handleChange('tool_description', e.target.value)} />
-                </div>
-                <div className="col-span-1 sm:col-span-4">
-                  <Label className="pb-2">{t('dflight.import.fields.client')}</Label>
-                  <Select value={formData.fk_client_id} onValueChange={(v) => handleChange('fk_client_id', v)}>
-                    <SelectTrigger className="w-full"><SelectValue placeholder={t('systems.components.common.select')} /></SelectTrigger>
-                    <SelectContent>
-                      {clients.map((c: any) => (
-                        <SelectItem key={c.client_id} value={c.client_id.toString()}>{c.client_name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+              <div className="inline-flex rounded-md border border-slate-200 p-0.5 bg-slate-50 mb-3">
+                <button
+                  type="button"
+                  onClick={() => setSystemMode('new')}
+                  className={`px-3 py-1.5 text-xs font-medium rounded transition-colors ${systemMode === 'new' ? 'bg-white shadow-sm text-violet-700' : 'text-slate-500 hover:text-slate-700'}`}
+                >
+                  {t('dflight.import.systemMode.new', { defaultValue: 'Create new system' })}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSystemMode('existing')}
+                  className={`px-3 py-1.5 text-xs font-medium rounded transition-colors ${systemMode === 'existing' ? 'bg-white shadow-sm text-violet-700' : 'text-slate-500 hover:text-slate-700'}`}
+                >
+                  {t('dflight.import.systemMode.existing', { defaultValue: 'Select existing system' })}
+                </button>
               </div>
+
+              {systemMode === 'existing' ? (
+                <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
+                  <div className="col-span-1 sm:col-span-8">
+                    <Label className="pb-2">{t('dflight.import.sections.system')}</Label>
+                    <Select value={formData.fk_tool_id} onValueChange={(v) => handleChange('fk_tool_id', v)}>
+                      <SelectTrigger className="w-full"><SelectValue placeholder={t('systems.components.common.select')} /></SelectTrigger>
+                      <SelectContent>
+                        {tools.map((tool: any) => (
+                          <SelectItem key={tool.tool_id} value={tool.tool_id.toString()}>
+                            {tool.tool_code}{tool.tool_desc ? ` — ${tool.tool_desc}` : ''}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
+                  <div className="col-span-1 sm:col-span-4">
+                    <Label className="pb-2">{t('dflight.import.fields.systemCode')}</Label>
+                    <Input value={formData.tool_code} onChange={(e) => handleChange('tool_code', e.target.value)} required />
+                  </div>
+                  <div className="col-span-1 sm:col-span-4">
+                    <Label className="pb-2">{t('dflight.import.fields.systemDescription')} <span className="text-muted-foreground font-normal">{t('systems.components.common.optional')}</span></Label>
+                    <Input value={formData.tool_description} onChange={(e) => handleChange('tool_description', e.target.value)} />
+                  </div>
+                  <div className="col-span-1 sm:col-span-4">
+                    <Label className="pb-2">{t('dflight.import.fields.client')}</Label>
+                    <Select value={formData.fk_client_id} onValueChange={(v) => handleChange('fk_client_id', v)}>
+                      <SelectTrigger className="w-full"><SelectValue placeholder={t('systems.components.common.select')} /></SelectTrigger>
+                      <SelectContent>
+                        {clients.map((c: any) => (
+                          <SelectItem key={c.client_id} value={c.client_id.toString()}>{c.client_name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div>

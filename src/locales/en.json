@@ -5184,9 +5184,14 @@
         "model": "Brand / Model",
         "certifications": "Certifications"
       },
+      "systemMode": {
+        "new": "Create new system",
+        "existing": "Select existing system"
+      },
       "fields": {
         "systemCode": "System Code",
         "systemDescription": "System Description",
+        "selectSystem": "System",
         "componentName": "Component Name",
         "serialNumber": "Serial Number",
         "drc": "DRC (D-Flight ID)",
@@ -5208,6 +5213,7 @@
       "addClass": "Add:",
       "toasts": {
         "systemCodeRequired": "System code is required",
+        "systemRequired": "Please select a system",
         "serialRequired": "Serial number is required",
         "modelRequired": "Please select or create a model",
         "clientRequired": "Please select a client",
