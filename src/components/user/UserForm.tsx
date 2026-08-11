@@ -710,7 +710,7 @@ export function UserForm({
                     className={`cursor-pointer transition-colors ${isDark ? 'text-slate-500 hover:text-violet-400' : 'text-slate-400 hover:text-violet-600'}`}
                     title="Manage departments"
                   >
-                    <Pencil className="h-3 w-3" />
+                    <Plus className="h-3.5 w-3.5" />
                   </button>
                 </div>
                 <Select
