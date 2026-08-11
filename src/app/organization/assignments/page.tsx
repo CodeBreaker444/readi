@@ -1,5 +1,6 @@
 'use client'
 
+import { useAuthorization } from '@/components/authorization/AuthorizationProvider'
 import { AssignmentForm, AssignmentModal } from '@/components/organization/AssignmentUi'
 import { getAssignmentColumns } from '@/components/tables/AssignmentColumn'
 import { TablePagination } from '@/components/tables/Pagination'
@@ -37,6 +38,7 @@ const emptyForm: FormData = {
 
 export default function AssignmentPage() {
   const { t } = useTranslation();
+  const { requireAuthorization } = useAuthorization();
   const { isDark } = useTheme()
   const { timezone } = useTimezone()
   const [assignments, setAssignments] = useState<any[]>([])
@@ -132,6 +134,18 @@ export default function AssignmentPage() {
 
   const handleDelete = async () => {
     if (!confirmDelete) return
+
+    try {
+      await requireAuthorization({
+        actionType: 'delete',
+        entityType: 'assignment',
+        entityId: String(confirmDelete.assignment_id),
+        label: `Delete Assignment: ${confirmDelete.assignment_code}`,
+      })
+    } catch {
+      return
+    }
+
     setSubmitting(true)
     try {
       const res = await axios.delete(`/api/organization/assignment/${confirmDelete.assignment_id}`)

@@ -26,6 +26,7 @@ const UpdateUserSchema = z.object({
   user_image: z.string().optional().nullable(),
   user_signature: z.string().optional().nullable(),
   flytrelay_access: z.boolean().optional(),
+  department: z.string().max(100).optional().nullable(),
 });
 
 export async function POST(request: NextRequest) {
@@ -60,6 +61,7 @@ export async function POST(request: NextRequest) {
       user_image: d.user_image || undefined,
       user_signature: d.user_signature || undefined,
       flytrelay_access: d.flytrelay_access,
+      department: d.department,
     });
 
     return NextResponse.json({

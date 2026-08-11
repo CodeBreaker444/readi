@@ -1,5 +1,6 @@
 'use client';
 
+import { useAuthorization } from '@/components/authorization/AuthorizationProvider';
 import { TablePagination } from '@/components/tables/Pagination';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -22,6 +23,7 @@ import { DataTable, DeleteAlertDialog, EditUserDialog, OrgDialog, SearchBar } fr
 export default function C2Config() {
   const { isDark } = useTheme();
   const { t } = useTranslation();
+  const { requireAuthorization } = useAuthorization();
   const [activeTab, setActiveTab] = useState('organizations');
 
   const [organizations, setOrganizations] = useState<Organization[]>([]);
@@ -85,6 +87,18 @@ export default function C2Config() {
   };
 
   const handleOrgDeleteConfirm = async () => {
+    const org = organizations.find((o) => o.id === deleteTargetId);
+    try {
+      await requireAuthorization({
+        actionType: 'delete',
+        entityType: 'c2_organization',
+        entityId: deleteTargetId ?? undefined,
+        label: `Delete Organization: ${org?.name ?? deleteTargetId}`,
+      });
+    } catch {
+      return;
+    }
+
     try {
       await axios.delete('/api/admin/c2-config/organizations', { data: { id: deleteTargetId } });
       toast.success(t('flytbase.c2Config.organizations.toasts.deleted'));
@@ -114,9 +128,21 @@ export default function C2Config() {
   };
 
   const handleRevokeAccess = async (userId: string, organizationId: string) => {
+    const org = organizations.find((o) => o.id === organizationId);
     try {
-      await axios.delete('/api/admin/c2-config/permissions', { 
-        data: { userId, organizationId } 
+      await requireAuthorization({
+        actionType: 'delete',
+        entityType: 'c2_permission',
+        entityId: `${userId}:${organizationId}`,
+        label: `Revoke Access: ${org?.name ?? organizationId}`,
+      });
+    } catch {
+      return;
+    }
+
+    try {
+      await axios.delete('/api/admin/c2-config/permissions', {
+        data: { userId, organizationId }
       });
       toast.success(t('flytbase.c2Config.permissions.toasts.revoked'));
       setSelectedUser((prev) => {

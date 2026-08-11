@@ -1008,6 +1008,17 @@ model deleted_user {
   @@schema("public")
 }
 
+model department_config {
+  department_id   Int      @id @default(autoincrement())
+  department_name String   @db.VarChar(100)
+  fk_owner_id     Int
+  created_at      DateTime @default(now()) @db.Timestamp(6)
+
+  @@unique([fk_owner_id, department_name], map: "department_config_owner_name_key")
+  @@index([fk_owner_id], map: "idx_department_config_owner")
+  @@schema("public")
+}
+
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model drone_class_config {
   class_id    Int      @id @default(autoincrement())
@@ -1564,6 +1575,21 @@ model mission_flight_logs {
   @@schema("public")
 }
 
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model mission_maintenance_log {
+  mission_maintenance_log_id Int            @id @default(autoincrement())
+  fk_mission_id              Int
+  fk_component_id            Int
+  add_hours                  Decimal        @default(0) @db.Decimal
+  add_flights                Decimal        @default(0) @db.Decimal
+  created_at                 DateTime       @default(now()) @db.Timestamp(6)
+  tool_component             tool_component @relation(fields: [fk_component_id], references: [component_id], onDelete: Cascade, onUpdate: NoAction)
+  pilot_mission              pilot_mission  @relation(fields: [fk_mission_id], references: [pilot_mission_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([fk_mission_id], map: "idx_mission_maintenance_log_mission")
+  @@schema("public")
+}
+
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model module_email_notification_config {
@@ -1677,6 +1703,7 @@ model owner {
   daily_email_count                  Int                                @default(0)
   daily_email_count_reset_date       DateTime?                          @db.Date
   email_limit_notification_sent_date DateTime?                          @db.Date
+  training_email_enabled             Boolean                            @default(false)
   api_keys                           api_keys[]
   assignment                         assignment[]
   calendar_shift                     calendar_shift[]
@@ -2509,20 +2536,6 @@ model tool_component {
   @@schema("public")
 }
 
-model mission_maintenance_log {
-  mission_maintenance_log_id Int            @id @default(autoincrement())
-  fk_mission_id              Int
-  fk_component_id            Int
-  add_hours                  Decimal        @default(0) @db.Decimal
-  add_flights                Decimal        @default(0) @db.Decimal
-  created_at                 DateTime       @default(now()) @db.Timestamp(6)
-  tool_component             tool_component @relation(fields: [fk_component_id], references: [component_id], onDelete: Cascade, onUpdate: NoAction)
-  pilot_mission              pilot_mission  @relation(fields: [fk_mission_id], references: [pilot_mission_id], onDelete: Cascade, onUpdate: NoAction)
-
-  @@index([fk_mission_id], map: "idx_mission_maintenance_log_mission")
-  @@schema("public")
-}
-
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model tool_erp {
@@ -2912,6 +2925,7 @@ model public_users {
   flytbase_token_name                                                        String?
   flytrelay_access                                                           Boolean?                                 @default(false)
   has_custom_permissions                                                     Boolean?                                 @default(false)
+  department                                                                 String?                                  @db.VarChar(100)
   alert_log_alert_log_acknowledged_by_user_idTousers                         alert_log[]                              @relation("alert_log_acknowledged_by_user_idTousers")
   alert_log_alert_log_assigned_to_user_idTousers                             alert_log[]                              @relation("alert_log_assigned_to_user_idTousers")
   alert_log_alert_log_resolved_by_user_idTousers                             alert_log[]                              @relation("alert_log_resolved_by_user_idTousers")
@@ -2994,6 +3008,7 @@ model public_users {
   @@index([user_active], map: "idx_users_active")
   @@index([auth_user_id], map: "idx_users_auth_user_id")
   @@index([fk_client_id], map: "idx_users_client")
+  @@index([department], map: "idx_users_department")
   @@index([email], map: "idx_users_email")
   @@index([fk_owner_id], map: "idx_users_owner")
   @@index([fk_user_profile_id], map: "idx_users_profile_id")

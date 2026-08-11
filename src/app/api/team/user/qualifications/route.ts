@@ -1,5 +1,5 @@
 import { createQualifications, listQualifications } from '@/backend/services/user/qualification-service';
-import { requireAuth } from '@/lib/auth/api-auth';
+import { requirePermission } from '@/lib/auth/api-auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { z, ZodError } from 'zod';
 
@@ -23,13 +23,12 @@ const getSchema = z.object({
 
 export async function GET(req: NextRequest) {
   try {
-    const { session, error } = await requireAuth()
+    const { session, error } = await requirePermission('manage_users')
     if (error) return error
 
     const { user_id } = getSchema.parse({ user_id: req.nextUrl.searchParams.get('user_id') });
-    const userId = session!.user.userId
 
-    const data = await listQualifications(userId, session!.user.ownerId);
+    const data = await listQualifications(user_id, session!.user.ownerId);
     return NextResponse.json({ data });
   } catch (err) {
     if (err instanceof ZodError) {
@@ -42,7 +41,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const { session, error } = await requireAuth()
+    const { session, error } = await requirePermission('manage_users')
     if (error) return error
 
     const body = await req.json();

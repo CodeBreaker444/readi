@@ -20,6 +20,7 @@ export interface UserData {
   active: number;
   is_pending: boolean;
   user_role: string;
+  department?: string | null;
   user_unique_code: string;
   fk_user_profile_id?: number;
   fk_client_id?: number;
@@ -103,6 +104,23 @@ export function getUserColumns({
         }`}>
           {row.original.user_role}
         </span>
+      ),
+    },
+    {
+      accessorKey: 'department',
+      header: () => <span className={headerClass}>{t('team.department')}</span>,
+      cell: ({ row }) => (
+        row.original.department
+          ? (
+            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-md text-[11px] font-bold uppercase tracking-wide border ${
+              isDark
+                ? 'bg-teal-950/60 text-teal-300 border-teal-700/50'
+                : 'bg-teal-50 text-teal-600 border-teal-200'
+            }`}>
+              {row.original.department}
+            </span>
+          )
+          : <span className={`text-xs opacity-30 italic`}>—</span>
       ),
     },
     {

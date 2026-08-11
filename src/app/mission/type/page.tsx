@@ -1,4 +1,5 @@
 'use client';
+import { useAuthorization } from '@/components/authorization/AuthorizationProvider';
 import MissionTypeForm from '@/components/mission/MissionTypeForm';
 import MissionTypeSkeleton from '@/components/mission/MissionTypeSkeleton';
 import MissionTypeTable from '@/components/mission/MissionTypeTable';
@@ -16,6 +17,7 @@ import { toast } from 'sonner';
 export default function MissionTypePage() {
   const { isDark } = useTheme();
   const { t } = useTranslation();
+  const { requireAuthorization } = useAuthorization();
   const [missionTypes, setMissionTypes] = useState<MissionType[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -47,6 +49,18 @@ export default function MissionTypePage() {
   };
 
   const handleDeleteMissionType = async (id: number) => {
+    const missionType = missionTypes.find((type) => type.id === id);
+    try {
+      await requireAuthorization({
+        actionType: 'delete',
+        entityType: 'mission_type',
+        entityId: String(id),
+        label: `Delete Mission Type: ${missionType?.name ?? `#${id}`}`,
+      });
+    } catch {
+      return;
+    }
+
     try {
       const response = await axios.post(`/api/mission/type/${id}/delete`);
       const result = response.data;

@@ -32,7 +32,9 @@ export default function CreateUserPage() {
       try {
         const res = await axios.get('/api/client/list');
         if (res.data.code === 1 && res.data.data) setClients(res.data.data);
-      } catch { /* non-critical */ }
+      } catch {
+        
+       }
 
       if (superAdmin) {
         try {
@@ -56,9 +58,11 @@ export default function CreateUserPage() {
         profile: formData.fk_user_profile_id,
         ownerTerritorialUnit: 0,
         user_type: formData.user_type,
+        user_viewer: formData.is_viewer,
         user_manager: formData.is_manager,
         timezone: 'Europe/Berlin',
         flytrelay_access: formData.flytrelay_access,
+        department: formData.department || null,
         ...(isSuperAdmin && { owner_id: formData.owner_id }),
       });
       const data = res.data;
@@ -67,13 +71,6 @@ export default function CreateUserPage() {
         return;
       }
 
-      if (formData.permissions?.useCustom && data.newId) {
-        try {
-          await axios.patch(`/api/permissions/user/${data.newId}`, formData.permissions);
-        } catch {
-          toast.warning('User created but custom permissions could not be saved. You can set them from the edit page.');
-        }
-      }
       if (formData.ccToken && formData.ccOrgId && data.newId) {
         try {
           await axios.post('/api/team/user/control-center-token', {
@@ -95,6 +92,16 @@ export default function CreateUserPage() {
           });
         } catch {
           toast.warning('User created but PIC-Technician sub-role could not be granted.');
+        }
+      }
+      if (formData.pendingQualifications?.length && data.newId) {
+        try {
+          await axios.post('/api/team/user/qualifications', {
+            user_id: data.newId,
+            qualifications: formData.pendingQualifications,
+          });
+        } catch {
+          toast.warning('User created but qualifications could not be saved. You can add them from the edit page.');
         }
       }
 

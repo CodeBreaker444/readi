@@ -141,6 +141,7 @@
     "manager": "Manager",
     "viewer": "Betrachter",
     "username": "Benutzername",
+    "department": "Abteilung",
     "code": "Code",
     "permissions": "Berechtigungen",
     "updatePassword": "Passwort aktualisieren",
@@ -211,6 +212,7 @@
       "allRoles": "Alle Rollen",
       "allStatus": "Alle Status",
       "allCompanies": "Alle Unternehmen",
+      "allDepartments": "Alle Abteilungen",
       "noFound": "Keine Benutzer gefunden",
       "noFoundHint": "Passen Sie Ihre Filter an",
       "deleteTitle": "Benutzer löschen",
@@ -266,6 +268,7 @@
     "recentFlights": "Letzte Fluge",
     "training": "Schulung",
     "courses": "Kurse",
+    "trainingEmailNotifications": "E-Mail-Benachrichtigungen",
     "notifications": "Benachrichtigungen",
     "documentRepository": "Dokumentenablage",
     "auditLogs": "Audit-Protokolle",
@@ -2077,6 +2080,8 @@
         "opTypeLabel": "Vorgangstyp",
         "opTypeOpenDesc": "Pilot fliegt mit RC — kein Missionsplan erforderlich.",
         "opTypePdraDesc": "Pilot fliegt unter Risikoanalyse — Missionsplan erforderlich.",
+        "opTypeSts01Desc": "Standardszenario STS-01 — gleiche Anforderungen wie Open, kein Missionsplan erforderlich.",
+        "opTypeSts02Desc": "Standardszenario STS-02 — gleiche Anforderungen wie Open, kein Missionsplan erforderlich.",
         "droneLabel": "Drohnensystem",
         "noDronesAssigned": "Diesem Kunden sind keine Drohnen zugewiesen",
         "noSystemsForClient": "Der ausgewählte Kunde hat keine Systeme.",
@@ -2168,7 +2173,20 @@
         "visualObserversOptional": "(optional)",
         "visualObserversDisabled": "Zuerst einen Piloten auswählen",
         "primaryPilotNote": "PIC — bereits zugewiesen",
-        "noPilots": "Keine Piloten verfügbar"
+        "noPilots": "Keine Piloten verfügbar",
+        "viewQualifications": "Qualifikationen"
+      },
+      "pilotQualifications": {
+        "title": "Pilotenqualifikationen",
+        "qualificationsSection": "Qualifikationen",
+        "curriculumSection": "Schulungsverlauf",
+        "noQualifications": "Keine Qualifikationen erfasst",
+        "noCurriculum": "Keine Schulungsnachweise erfasst",
+        "loadError": "Pilotenqualifikationen konnten nicht geladen werden",
+        "expiry": "Ablauf",
+        "statusActive": "Aktiv",
+        "statusInactive": "Inaktiv",
+        "statusExpired": "Abgelaufen"
       },
       "erp": {
         "sectionTitle": "Notfallreaktionspläne",
@@ -2342,6 +2360,7 @@
         "allEvaluations": "Alle Bewertungen",
         "planning": "Planung",
         "allPlannings": "Alle Planungen",
+        "droneSystem": "System",
         "updateFrom": "Aktualisiert von",
         "updateTo": "Aktualisiert bis",
         "search": "Suchen",
@@ -2361,6 +2380,7 @@
         "planning": "Planung",
         "missionDesc": "Missionsbeschreibung",
         "missionPlan": "Missionsplan",
+        "system": "System",
         "version": "Version",
         "active": "Aktiv"
       }

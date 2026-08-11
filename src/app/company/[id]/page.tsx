@@ -77,6 +77,7 @@ type FeaturesForm = {
     email_notifications_enabled: boolean;
     operation_email_enabled: boolean;
     system_email_enabled: boolean;
+    training_email_enabled: boolean;
     easa_operator_code: string;
     daily_email_limit: string | number;
 };
@@ -113,6 +114,7 @@ function buildPayload(general: GeneralForm, security: SecurityForm, features: Fe
         email_notifications_enabled: features.email_notifications_enabled,
         operation_email_enabled: features.operation_email_enabled,
         system_email_enabled: features.system_email_enabled,
+        training_email_enabled: features.training_email_enabled,
         easa_operator_code: features.easa_operator_code || null,
         daily_email_limit: features.daily_email_limit || 100,
     };
@@ -150,7 +152,7 @@ export default function CompanyDetailPage() {
     });
     const [securityForm, setSecurityForm] = useState<SecurityForm>({ owner_active: 'Y' });
     const [featuresForm, setFeaturesForm] = useState<FeaturesForm>({
-        drone_atc_enabled: false, d_flight_enabled: false, flytrelay_enabled: false, email_notifications_enabled: false, operation_email_enabled: false, system_email_enabled: false, easa_operator_code: '', daily_email_limit: 100,
+        drone_atc_enabled: false, d_flight_enabled: false, flytrelay_enabled: false, email_notifications_enabled: false, operation_email_enabled: false, system_email_enabled: false, training_email_enabled: false, easa_operator_code: '', daily_email_limit: 100,
     });
 
     const [newPassword, setNewPassword] = useState('');
@@ -184,6 +186,7 @@ export default function CompanyDetailPage() {
             email_notifications_enabled: o.email_notifications_enabled ?? false,
             operation_email_enabled: o.operation_email_enabled ?? false,
             system_email_enabled: o.system_email_enabled ?? false,
+            training_email_enabled: o.training_email_enabled ?? false,
             easa_operator_code: toStr(o.easa_operator_code),
             daily_email_limit: o.daily_email_limit ?? 100,
         });
@@ -697,6 +700,7 @@ export default function CompanyDetailPage() {
                                     { key: 'email_notifications_enabled' as const, label: 'Default Email Notifications', desc: 'Send account activation, password reset, and other default emails' },
                                     { key: 'operation_email_enabled' as const, label: 'Operations Email Notifications', desc: 'Send operations-related email notifications' },
                                     { key: 'system_email_enabled' as const, label: 'System Email Notifications', desc: 'Send system/maintenance-related email notifications' },
+                                    { key: 'training_email_enabled' as const, label: 'Training Email Notifications', desc: 'Send training-related email notifications and enable the training email settings page' },
                                 ].map(({ key, label, desc }) => (
                                     <div key={key}>
                                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">

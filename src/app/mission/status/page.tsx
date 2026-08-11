@@ -1,4 +1,5 @@
 'use client';
+import { useAuthorization } from '@/components/authorization/AuthorizationProvider';
 import MissionStatusForm from '@/components/mission/MissionStatusForm';
 import MissionStatusTable from '@/components/mission/MissionStatusTable';
 import MissionStatusSkeleton from '@/components/mission/StatusSkeleton';
@@ -16,6 +17,7 @@ import { toast } from 'sonner';
 export default function MissionStatusPage() {
   const { isDark } = useTheme();
   const { t } = useTranslation();
+  const { requireAuthorization } = useAuthorization();
   const [statuses, setStatuses] = useState<Mission[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -60,6 +62,18 @@ export default function MissionStatusPage() {
   };
 
   const handleDeleteStatus = async (id: number) => {
+    const status = statuses.find((s) => s.id === id);
+    try {
+      await requireAuthorization({
+        actionType: 'delete',
+        entityType: 'mission_status',
+        entityId: String(id),
+        label: `Delete Mission Status: ${status?.name ?? `#${id}`}`,
+      });
+    } catch {
+      return;
+    }
+
     try {
       const response = await axios.post(`/api/mission/status/${id}/delete`);
       const result = response.data;

@@ -1,4 +1,5 @@
 'use client';
+import { useAuthorization } from '@/components/authorization/AuthorizationProvider';
 import axios from 'axios';
 import { FileText, Upload, X } from 'lucide-react';
 import React, { useState } from 'react';
@@ -33,6 +34,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
   disabled = false,
 }) => {
   const { t } = useTranslation();
+  const { requireAuthorization } = useAuthorization();
   const [description, setDescription] = useState('');
   const [version, setVersion] = useState('1.0');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -88,6 +90,18 @@ const FileUpload: React.FC<FileUploadProps> = ({
   };
 
   const handleRemove = async (fileId: number) => {
+    const file = files.find((f) => f.id === fileId);
+    try {
+      await requireAuthorization({
+        actionType: 'delete',
+        entityType: 'evaluation_file',
+        entityId: String(fileId),
+        label: `Delete File: ${file?.filename ?? `#${fileId}`}`,
+      });
+    } catch {
+      return;
+    }
+
     try {
       const response = await axios.delete(`/api/evaluation/new-req/files/${fileId}`);
       if (!response.data.success) throw new Error(t('planning.files.deleteFailed'));

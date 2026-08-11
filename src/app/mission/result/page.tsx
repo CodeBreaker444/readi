@@ -1,4 +1,5 @@
 'use client';
+import { useAuthorization } from '@/components/authorization/AuthorizationProvider';
 import MissionResultForm from '@/components/mission/MissionResultForm';
 import MissionResultSkeleton from '@/components/mission/MissionResultSkeleton';
 import MissionResultTable from '@/components/mission/MissionResultTable';
@@ -16,6 +17,7 @@ import { toast } from 'sonner';
 export default function MissionResultPage() {
   const { isDark } = useTheme();
   const { t } = useTranslation();
+  const { requireAuthorization } = useAuthorization();
   const [results, setResults] = useState<MissionResult[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -49,6 +51,18 @@ export default function MissionResultPage() {
   };
 
   const handleDeleteResult = async (id: number) => {
+    const missionResult = results.find((r) => r.id === id);
+    try {
+      await requireAuthorization({
+        actionType: 'delete',
+        entityType: 'mission_result',
+        entityId: String(id),
+        label: `Delete Mission Result: ${missionResult?.code ?? `#${id}`}`,
+      });
+    } catch {
+      return;
+    }
+
     try {
       const response = await axios.post(`/api/mission/result/${id}/delete`);
       const result = response.data;

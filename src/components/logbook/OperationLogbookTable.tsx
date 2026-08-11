@@ -21,10 +21,11 @@ import {
 } from "lucide-react";
 import { MdOutlineFlight } from "react-icons/md";
 import ExportButtons from "../system/ExportButtons";
-import { operationLogbookColumns } from "../tables/OperationLogbookColumn";
+import { OperationLogbookTableMeta, operationLogbookColumns } from "../tables/OperationLogbookColumn";
 import { TablePagination } from "../tables/Pagination";
+import { MissionDetailModal } from "./MissionDetailModal";
 
-const SKELETON_COL_WIDTHS = [60, 110, 110, 150, 140, 120, 120, 140, 110, 100, 150, 80, 90, 180];
+const SKELETON_COL_WIDTHS = [90, 110, 110, 150, 140, 120, 120, 140, 110, 150, 100, 180];
 const SKELETON_ROWS = 10;
 
 interface OperationLogbookTableProps {
@@ -37,6 +38,7 @@ export function OperationLogbookTable({ data, loading, isDark }: OperationLogboo
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
+  const [detailTarget, setDetailTarget] = useState<OperationLogbookItem | null>(null);
 
 const table = useReactTable({
     data,
@@ -49,11 +51,14 @@ const table = useReactTable({
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
-    initialState: { 
-      pagination: { 
-        pageSize: 8 
-      } 
+    initialState: {
+      pagination: {
+        pageSize: 8
+      }
     },
+    meta: {
+      onViewDetails: (mission) => setDetailTarget(mission),
+    } satisfies OperationLogbookTableMeta,
   });
 
   return (
@@ -147,8 +152,8 @@ const table = useReactTable({
                     const skFaint = isDark ? "bg-slate-800/60" : "bg-slate-100";
                     const ratio = 0.5 + ((rowIdx * 3 + colIdx * 7) % 30) / 100;
 
-                    const isDouble = [1, 2, 7, 10].includes(colIdx);
-                    const isBadge = [5, 6, 8, 9].includes(colIdx);
+                    const isDouble = [1, 2, 7, 9, 10].includes(colIdx);
+                    const isBadge = [5, 6, 8].includes(colIdx);
 
                     return (
                       <td key={colIdx} className="px-3 py-3 align-middle">
@@ -223,10 +228,12 @@ const table = useReactTable({
         <ExportButtons
           filename="Operation Logbook"
           headers={['Mission ID', 'Date Start', 'Date End', 'PIC', 'Client', 'Category', 'Type', 'Vehicle', 'Status', 'Result', 'Plan Code', 'Flown Time', 'Flown Meters', 'Notes']}
-          rows={data.map(d => [d.mission_id, d.date_start, d.date_end, d.pic_fullname, d.client_name, d.mission_category_desc, d.mission_type_desc, d.vehicle_code, d.mission_status_desc, d.mission_result_desc, d.mission_planning_code, d.flown_time, d.flown_meter, d.mission_notes])}
+          rows={data.map(d => [d.mission_code || d.mission_id, d.date_start, d.date_end, d.pic_fullname, d.client_name, d.mission_category_desc, d.mission_type_desc, d.vehicle_code, d.mission_status_desc, d.mission_result_desc, d.mission_planning_code, d.flown_time, d.flown_meter, d.mission_notes])}
         />
         <TablePagination table={table} />
       </div>
+
+      <MissionDetailModal mission={detailTarget} onClose={() => setDetailTarget(null)} />
     </div>
   );
 }

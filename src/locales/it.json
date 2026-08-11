@@ -141,6 +141,7 @@
     "manager": "Manager",
     "viewer": "Visualizzatore",
     "username": "Nome utente",
+    "department": "Reparto",
     "code": "Codice",
     "permissions": "Permessi",
     "updatePassword": "Aggiorna password",
@@ -211,6 +212,7 @@
       "allRoles": "Tutti i ruoli",
       "allStatus": "Tutti gli stati",
       "allCompanies": "Tutte le aziende",
+      "allDepartments": "Tutti i reparti",
       "noFound": "Nessun utente trovato",
       "noFoundHint": "Prova a modificare i filtri",
       "deleteTitle": "Elimina Utente",
@@ -266,6 +268,7 @@
     "recentFlights": "Voli recenti",
     "training": "Formazione",
     "courses": "Corsi",
+    "trainingEmailNotifications": "Notifiche Email",
     "notifications": "Notifiche",
     "documentRepository": "Archivio documenti",
     "auditLogs": "Log di audit",
@@ -2081,6 +2084,8 @@
         "opTypeLabel": "Tipo Operazione",
         "opTypeOpenDesc": "Il pilota vola con RC — nessun piano di missione richiesto.",
         "opTypePdraDesc": "Il pilota vola sotto analisi del rischio — piano di missione richiesto.",
+        "opTypeSts01Desc": "Scenario standard STS-01 — stessi requisiti di Open, nessun piano di missione richiesto.",
+        "opTypeSts02Desc": "Scenario standard STS-02 — stessi requisiti di Open, nessun piano di missione richiesto.",
         "droneLabel": "Sistema Drone",
         "noDronesAssigned": "Nessun drone assegnato a questo cliente",
         "noSystemsForClient": "Il cliente selezionato non ha alcun sistema.",
@@ -2172,7 +2177,20 @@
         "visualObserversOptional": "(opzionale)",
         "visualObserversDisabled": "Seleziona prima un pilota",
         "primaryPilotNote": "PIC — già assegnato",
-        "noPilots": "Nessun pilota disponibile"
+        "noPilots": "Nessun pilota disponibile",
+        "viewQualifications": "Qualifiche"
+      },
+      "pilotQualifications": {
+        "title": "Qualifiche del Pilota",
+        "qualificationsSection": "Qualifiche",
+        "curriculumSection": "Curriculum Formativo",
+        "noQualifications": "Nessuna qualifica registrata",
+        "noCurriculum": "Nessun corso di formazione registrato",
+        "loadError": "Impossibile caricare le qualifiche del pilota",
+        "expiry": "Scadenza",
+        "statusActive": "Attiva",
+        "statusInactive": "Inattiva",
+        "statusExpired": "Scaduta"
       },
       "erp": {
         "sectionTitle": "Piani di Risposta alle Emergenze",
@@ -2348,6 +2366,7 @@
         "allEvaluations": "Tutte le valutazioni",
         "planning": "Pianificazione",
         "allPlannings": "Tutte le pianificazioni",
+        "droneSystem": "Sistema",
         "updateFrom": "Aggiornato dal",
         "updateTo": "Aggiornato al",
         "search": "Cerca",
@@ -2367,6 +2386,7 @@
         "planning": "Pianificazione",
         "missionDesc": "Desc. Missione",
         "missionPlan": "Piano Missione",
+        "system": "Sistema",
         "version": "Versione",
         "active": "Attivo"
       }
@@ -4925,6 +4945,43 @@
           "intervention_ended": {
             "displayName": "Intervento Terminato",
             "description": "Quando termina l'intervento di manutenzione"
+          }
+        }
+      },
+      "training": {
+        "title": "Configura notifiche email formazione",
+        "enabled": "Notifiche email abilitate",
+        "disabled": "Notifiche email disabilitate",
+        "enabledDescription": "Le notifiche email formazione sono abilitate. Puoi configurare eventi di formazione specifici di seguito.",
+        "disabledDescription": "Le notifiche email formazione sono disabilitate. Contatta il tuo amministratore per abilitarle.",
+        "enabledLabel": "Abilitato",
+        "disabledLabel": "Disabilitato",
+        "unableToLoad": "Impossibile caricare le informazioni utente",
+        "moduleNotifications": "Notifiche Modulo Formazione",
+        "notifyRoles": "Notifica Ruoli",
+        "noRolesSelected": "Nessun ruolo selezionato. Nessuna email verrà inviata per questo evento.",
+        "selectRoles": "Seleziona ruoli",
+        "rolesSelected": "{{count}} ruolo{{plural}} selezionato{{plural}}",
+        "directToUsers": "Questa notifica viene inviata direttamente agli utenti assegnati. La selezione dei ruoli non è applicabile.",
+        "saving": "Salvataggio configurazione...",
+        "saveSuccess": "Configurazione salvata con successo",
+        "saveFailed": "Impossibile salvare la configurazione",
+        "events": {
+          "training_created": {
+            "displayName": "Formazione Creata",
+            "description": "Quando viene creato un nuovo record di formazione"
+          },
+          "training_updated": {
+            "displayName": "Formazione Aggiornata",
+            "description": "Quando un record di formazione viene aggiornato"
+          },
+          "training_deleted": {
+            "displayName": "Formazione Eliminata",
+            "description": "Quando un record di formazione viene eliminato"
+          },
+          "training_certification_expiring": {
+            "displayName": "Certificazione in Scadenza",
+            "description": "Inviata 30, 14, 7, 3 e 1 giorno/i prima della data di scadenza della certificazione"
           }
         }
       },

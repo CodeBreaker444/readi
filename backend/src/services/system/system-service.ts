@@ -806,6 +806,7 @@ function buildComponentListResult(data: any[]) {
         uas_serial_number: item.uas_serial_number ?? null,
         gcs_serial_number: item.gcs_serial_number ?? null,
         certifications: item.certifications ?? null,
+        sts_declarations: item.component_metadata?.sts_declarations ?? null,
         latitude: item.component_metadata?.latitude ?? null,
         longitude: item.component_metadata?.longitude ?? null,
         drone_classes: item.component_metadata?.drone_classes ?? null,

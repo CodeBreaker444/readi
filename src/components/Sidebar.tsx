@@ -206,6 +206,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
       subItems: [
         { name: t('sidebar.courses'), href: '/training/courses' },
         { name: t('sidebar.calendar'), href: '/training/calendar' },
+        ...(userData?.trainingEmailEnabled && role && ['ADMIN', 'OPM', 'SUPERADMIN'].includes(role)
+          ? [{ name: t('sidebar.trainingEmailNotifications'), href: '/training/email-notifications' }]
+          : []),
       ],
     },
     { name: t('sidebar.notifications'), href: '/notifications', icon: HiOutlineBell },

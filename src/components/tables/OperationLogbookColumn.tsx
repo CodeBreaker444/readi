@@ -8,6 +8,10 @@ import { ColumnDef } from "@tanstack/react-table";
 import { ArrowUpDown, Clock, Map } from "lucide-react";
 
 
+export interface OperationLogbookTableMeta {
+  onViewDetails: (mission: OperationLogbookItem) => void;
+}
+
 function formatMinutes(mins: number): string {
   if (!mins) return "—";
   const h = Math.floor(mins / 60);
@@ -40,14 +44,24 @@ const resultColors: Record<string, string> = {
 
 export const operationLogbookColumns: ColumnDef<OperationLogbookItem>[] = [
   {
-    accessorKey: "mission_id",
-    header: "#",
-    cell: ({ row }) => (
-      <span className="font-mono text-xs text-slate-400 dark:text-white">
-        {String(row.getValue("mission_id")).padStart(4, "0")}
-      </span>
-    ),
-    size: 60,
+    accessorKey: "mission_code",
+    header: "Mission ID",
+    cell: ({ row, table }) => {
+      const meta = table.options.meta as OperationLogbookTableMeta;
+      const code = row.original.mission_code || String(row.original.mission_id).padStart(4, "0");
+      return (
+        <button
+          className="font-mono text-xs text-violet-600 hover:underline cursor-pointer dark:text-violet-400"
+          onClick={(e) => {
+            e.stopPropagation();
+            meta.onViewDetails(row.original);
+          }}
+        >
+          {code}
+        </button>
+      );
+    },
+    size: 90,
   },
   {
     id: "date_start",
@@ -213,21 +227,6 @@ export const operationLogbookColumns: ColumnDef<OperationLogbookItem>[] = [
     size: 150,
   },
   {
-    accessorKey: "flown_time",
-    header: () => (
-      <div className="flex items-center gap-1">
-        <Clock className="h-3 w-3" />
-        <span>Time</span>
-      </div>
-    ),
-    cell: ({ row }) => (
-      <span className="font-mono text-xs text-slate-600 dark:text-slate-300">
-        {formatMinutes(row.getValue("flown_time"))}
-      </span>
-    ),
-    size: 80,
-  },
-  {
     accessorKey: "flown_meter",
     header: () => (
       <div className="flex items-center gap-1">
@@ -236,11 +235,17 @@ export const operationLogbookColumns: ColumnDef<OperationLogbookItem>[] = [
       </div>
     ),
     cell: ({ row }) => (
-      <span className="font-mono text-xs text-slate-600 dark:text-slate-300">
-        {formatKm(row.getValue("flown_meter"))}
-      </span>
+      <div className="flex flex-col gap-0.5">
+        <span className="font-mono text-xs text-slate-600 dark:text-slate-300">
+          {formatKm(row.original.flown_meter)}
+        </span>
+        <span className="font-mono text-[11px] text-slate-400 dark:text-slate-500 flex items-center gap-0.5">
+          <Clock className="h-2.5 w-2.5" />
+          {formatMinutes(row.original.flown_time)}
+        </span>
+      </div>
     ),
-    size: 90,
+    size: 100,
   },
   {
     accessorKey: "mission_notes",

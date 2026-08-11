@@ -35,10 +35,12 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    if (!config.pfx_content || !config.pfx_password) {
+    const hasCertificateWithPassword = config.pfx_content && config.pfx_password;
+    const hasPasswordOnly = config.password;
+    if (!hasCertificateWithPassword && !hasPasswordOnly) {
       return NextResponse.json({
         code: 0,
-        message: 'PFX certificate not configured',
+        message: 'D-Flight credentials are missing. Either a PFX certificate with password or just the password is required for authentication.',
       });
     }
 
@@ -69,8 +71,8 @@ export async function POST(req: NextRequest) {
       accessToken,
       userInfo.operatorRegistrationNumber,
       dFlightId,
-      config.pfx_content,
-      config.pfx_password,
+      config.pfx_content ?? undefined,
+      config.pfx_password ?? undefined,
     );
 
     if (declarations.length === 0) {

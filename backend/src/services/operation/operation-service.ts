@@ -93,6 +93,7 @@ export async function listOperations(
         distance_flown: true,
         notes: true,
         fk_pilot_user_id: true,
+        fk_client_id: true,
         fk_tool_id: true,
         fk_mission_status_id: true,
         fk_planning_id: true,
@@ -134,6 +135,7 @@ export async function listOperations(
     client_name: row.planning?.client?.client_name ?? row.client?.client_name ?? null,
     visual_observer_ids: (row.mission_metadata as any)?.visual_observers ?? null,
     flight_mode: (row.mission_metadata as any)?.flight_mode ?? null,
+    op_type: (row.mission_metadata as any)?.op_type ?? null,
   })) as unknown as Operation[];
 
   const toolIds = [...new Set(operations.filter((op) => op.fk_tool_id).map((op) => op.fk_tool_id as number))];
@@ -193,6 +195,7 @@ export async function getOperation(id: number): Promise<Operation | null> {
     type_name: data.pilot_mission_type?.type_name ?? null,
     visual_observer_ids: (data.mission_metadata as any)?.visual_observers ?? null,
     flight_mode: (data.mission_metadata as any)?.flight_mode ?? null,
+    op_type: (data.mission_metadata as any)?.op_type ?? null,
   } as unknown as Operation;
 }
 
@@ -253,6 +256,7 @@ export async function createOperation(input: CreateOperationSchema, ownerId: num
   const missionMetadata: Record<string, unknown> = {};
   if (visualObservers?.length) missionMetadata.visual_observers = visualObservers;
   if ((input as any).flight_mode) missionMetadata.flight_mode = (input as any).flight_mode;
+  if ((input as any).op_type) missionMetadata.op_type = (input as any).op_type;
   if (isRecurrent) {
     missionMetadata.is_recurrent = true;
     if (recurrentStartDate) missionMetadata.recurrent_start_date = recurrentStartDate;
@@ -514,12 +518,13 @@ export async function updateOperation(id: number, input: UpdateOperationSchema, 
     }
   }
 
-  if (visualObservers?.length || (input as any).flight_mode !== undefined) {
+  if (visualObservers?.length || (input as any).flight_mode !== undefined || (input as any).op_type !== undefined) {
     const currentMetadata = current?.mission_metadata as any ?? {};
     updatePayload.mission_metadata = {
       ...currentMetadata,
       ...(visualObservers?.length && { visual_observers: visualObservers }),
       ...((input as any).flight_mode !== undefined && { flight_mode: (input as any).flight_mode }),
+      ...((input as any).op_type !== undefined && { op_type: (input as any).op_type }),
     };
   }
 

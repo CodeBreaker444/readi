@@ -223,7 +223,7 @@ export default function EditComponentModal({
       alert_days_before: comp.alert_days_before != null ? String(comp.alert_days_before) : '30',
       sts_declarations: (() => {
         // If component_metadata has structured STS data, format it as text
-        const metaSts = comp.component_metadata?.sts_declarations;
+        const metaSts = comp.sts_declarations;
         if (Array.isArray(metaSts) && metaSts.length > 0) {
           return metaSts
             .map((sts: any) => `${sts.stsType} (Start: ${sts.startDate ? formatDateDDMMYYYY(sts.startDate) : 'N/A'})`)

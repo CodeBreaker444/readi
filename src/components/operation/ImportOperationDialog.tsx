@@ -17,13 +17,17 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { useTheme } from '@/components/useTheme';
 import { Operation } from '@/config/types/operation';
 import { serialInList } from '@/lib/serial-number';
 import { cn } from '@/lib/utils';
 import axios from 'axios';
-import { MissionPlanningOption, PlanningOption } from './OperationModalTypes';
+import { MissionPlanningOption, OpType, PlanningOption } from './OperationModalTypes';
+import { PilotQualificationsSheet } from './PilotQualificationsSheet';
 import {
     AlertCircle,
+    BadgeCheck,
     CheckCircle2,
     ChevronLeft,
     ChevronRight,
@@ -103,9 +107,11 @@ function formatFlightTime(timestamp?: number): string {
 
 export default function ImportOperationDialog({ open, onClose, onSaved }: ImportOperationDialogProps) {
     const { t } = useTranslation();
+    const { isDark } = useTheme();
     const ns = 'operations.importOperation';
 
     const [step, setStep]             = useState(1);
+    const [qualTarget, setQualTarget] = useState<{ id: number; name: string } | null>(null);
     const [submitting, setSubmitting] = useState(false);
     const [importedIds, setImportedIds] = useState<number[]>([]);
     const [skippedList, setSkippedList] = useState<string[]>([]);
@@ -146,7 +152,7 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
     const [missionCode, setMissionCode] = useState('');
     const [categoryId,  setCategoryId]  = useState('');
     const [typeId,      setTypeId]      = useState('');
-    const [opType,      setOpType]      = useState<'OPEN' | 'PDRA'>('OPEN');
+    const [opType,      setOpType]      = useState<OpType>('OPEN');
     const [flightMode,  setFlightMode]  = useState<'RC' | 'DOCK'>('RC');
     const [planId,      setPlanId]      = useState('');
     const [missionPlanningId, setMissionPlanningId] = useState('');
@@ -164,10 +170,10 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
     const [generatingId, setGeneratingId] = useState(false);
     const [existingMissionCodes, setExistingMissionCodes] = useState<Set<string>>(new Set());
 
-    const handleOpTypeChange = (newOpType: 'OPEN' | 'PDRA') => {
+    const handleOpTypeChange = (newOpType: OpType) => {
         setOpType(newOpType);
-        // Reset PDRA-specific fields when switching to OPEN
-        if (newOpType === 'OPEN') {
+        // Reset PDRA-specific fields when switching away from PDRA
+        if (newOpType !== 'PDRA') {
             setPlanId('');
             setMissionPlanningId('');
             setFlightMode('RC');
@@ -505,7 +511,9 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
             formData.append('mission_planning', missionPlanningId || 'N');
             
             formData.append('flight_mode', flightMode);
-            
+
+            formData.append('op_type', opType);
+
             formData.append('mission_result', '1');
             
             formData.append('mission_luc_procedure', lucProcedureId);
@@ -553,6 +561,7 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
 
     const serialNotDetected = !loadingSerialNumber && !logSerialNumber;
     const serialNoMatch     = !loadingSerialNumber && !loadingDrones && !!logSerialNumber && !matchingDrone;
+    const selectedClientObj = clients.find((c) => String(c.client_id) === clientId);
     const selectedPilot    = pilots.find((p) => String(p.user_id) === pilotId);
     const pilotLabel       = selectedPilot ? `${selectedPilot.first_name} ${selectedPilot.last_name}` : '';
     const selectedFlightObj = flights.find((f) => f.flight_id === selectedFlightId);
@@ -560,6 +569,7 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
     const selectedMissionPlanning = missionPlannings.find((m) => String(m.mission_planning_id) === missionPlanningId);
 
     return (
+        <>
         <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
             <DialogContent className="sm:max-w-3xl md:max-w-4xl lg:max-w-5xl gap-0 p-0 overflow-hidden max-h-[90vh] flex flex-col">
                 <DialogHeader className="px-6 pt-6 pb-4 border-b shrink-0">
@@ -613,7 +623,11 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                                     <Label className="mb-1.5 block">{t(ns + '.fields.client')} <span className="text-red-500">*</span></Label>
                                     <Select value={clientId} onValueChange={setClientId} disabled={loadingClients}>
                                         <SelectTrigger>
-                                            {loadingClients ? <Loader2 className="h-4 w-4 animate-spin" /> : clientId ? <SelectValue /> : <SelectValue placeholder={t(ns + '.placeholders.selectClient')} />}
+                                            {loadingClients ? <Loader2 className="h-4 w-4 animate-spin" /> : (
+                                                <SelectValue placeholder={t(ns + '.placeholders.selectClient')}>
+                                                    {selectedClientObj ? `${selectedClientObj.client_name} (${selectedClientObj.client_code})` : undefined}
+                                                </SelectValue>
+                                            )}
                                         </SelectTrigger>
                                         <SelectContent>
                                             {clients.map((c) => (
@@ -967,10 +981,12 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                                 <div>
                                     <Label className="mb-1.5 block">{t(ns + '.fields.opType')}</Label>
                                     <Select value={opType} onValueChange={handleOpTypeChange}>
-                                        <SelectTrigger><SelectValue /></SelectTrigger>
+                                        <SelectTrigger><SelectValue>{opType}</SelectValue></SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="OPEN">OPEN</SelectItem>
                                             <SelectItem value="PDRA">PDRA</SelectItem>
+                                            <SelectItem value="STS-01">STS-01</SelectItem>
+                                            <SelectItem value="STS-02">STS-02</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
@@ -1082,32 +1098,73 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                     )}
 
                     {step === 4 && (
+                        <TooltipProvider delayDuration={100}>
                         <div className="space-y-4">
                             <div>
                                 <Label className="mb-1.5 block">{t(ns + '.fields.pilotInCommand')} <span className="text-red-500">*</span></Label>
-                                <Select value={pilotId} onValueChange={setPilotId} disabled={loadingPilots}>
-                                    <SelectTrigger>
-                                        {loadingPilots ? <Loader2 className="h-4 w-4 animate-spin" /> : pilotId ? <SelectValue /> : <SelectValue placeholder={t(ns + '.placeholders.selectPilot')} />}
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {pilots.map((p) => <SelectItem key={p.user_id} value={String(p.user_id)}>{p.first_name} {p.last_name}</SelectItem>)}
-                                    </SelectContent>
-                                </Select>
+                                <div className="flex items-center gap-1.5">
+                                    <Select value={pilotId} onValueChange={setPilotId} disabled={loadingPilots}>
+                                        <SelectTrigger className="flex-1">
+                                            {loadingPilots ? <Loader2 className="h-4 w-4 animate-spin" /> : pilotId ? <SelectValue /> : <SelectValue placeholder={t(ns + '.placeholders.selectPilot')} />}
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {pilots.map((p) => <SelectItem key={p.user_id} value={String(p.user_id)}>{p.first_name} {p.last_name}</SelectItem>)}
+                                        </SelectContent>
+                                    </Select>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="icon"
+                                                disabled={!pilotId}
+                                                aria-label={t('operations.newOperation.pilot.viewQualifications')}
+                                                onClick={() => {
+                                                    const pilot = pilots.find(p => String(p.user_id) === pilotId)
+                                                    if (pilot) setQualTarget({ id: pilot.user_id, name: `${pilot.first_name} ${pilot.last_name}` })
+                                                }}
+                                            >
+                                                <BadgeCheck className="h-4 w-4" />
+                                            </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent side="top" className="text-xs">{t('operations.newOperation.pilot.viewQualifications')}</TooltipContent>
+                                    </Tooltip>
+                                </div>
                             </div>
                             <div>
                                 <Label className="mb-1.5 block">{t(ns + '.fields.visualObservers')}</Label>
-                                <Select
-                                    value={visualObserverIds.length > 0 ? visualObserverIds[0] : ''}
-                                    onValueChange={(v) => setVisualObserverIds([v])}
-                                    disabled={loadingPilots}
-                                >
-                                    <SelectTrigger>
-                                        {loadingPilots ? <Loader2 className="h-4 w-4 animate-spin" /> : visualObserverIds.length > 0 ? <SelectValue /> : <SelectValue placeholder={t(ns + '.placeholders.selectVisualObserver')} />}
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {pilots.filter(p => String(p.user_id) !== pilotId).map((p) => <SelectItem key={p.user_id} value={String(p.user_id)}>{p.first_name} {p.last_name}</SelectItem>)}
-                                    </SelectContent>
-                                </Select>
+                                <div className="flex items-center gap-1.5">
+                                    <Select
+                                        value={visualObserverIds.length > 0 ? visualObserverIds[0] : ''}
+                                        onValueChange={(v) => setVisualObserverIds([v])}
+                                        disabled={loadingPilots}
+                                    >
+                                        <SelectTrigger className="flex-1">
+                                            {loadingPilots ? <Loader2 className="h-4 w-4 animate-spin" /> : visualObserverIds.length > 0 ? <SelectValue /> : <SelectValue placeholder={t(ns + '.placeholders.selectVisualObserver')} />}
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {pilots.filter(p => String(p.user_id) !== pilotId).map((p) => <SelectItem key={p.user_id} value={String(p.user_id)}>{p.first_name} {p.last_name}</SelectItem>)}
+                                        </SelectContent>
+                                    </Select>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="icon"
+                                                disabled={visualObserverIds.length === 0}
+                                                aria-label={t('operations.newOperation.pilot.viewQualifications')}
+                                                onClick={() => {
+                                                    const observer = pilots.find(p => String(p.user_id) === visualObserverIds[0])
+                                                    if (observer) setQualTarget({ id: observer.user_id, name: `${observer.first_name} ${observer.last_name}` })
+                                                }}
+                                            >
+                                                <BadgeCheck className="h-4 w-4" />
+                                            </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent side="top" className="text-xs">{t('operations.newOperation.pilot.viewQualifications')}</TooltipContent>
+                                    </Tooltip>
+                                </div>
                             </div>
                             <div className="flex items-center gap-2">
                                 <input
@@ -1139,6 +1196,7 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                                 <p className="text-red-500 text-xs mt-1">{recurrentDateError}</p>
                             )}
                         </div>
+                        </TooltipProvider>
                     )}
 
                     {step === 5 && (
@@ -1258,5 +1316,13 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                 </div>
             </DialogContent>
         </Dialog>
+        <PilotQualificationsSheet
+            open={!!qualTarget}
+            onOpenChange={(o) => !o && setQualTarget(null)}
+            pilotId={qualTarget?.id ?? null}
+            pilotName={qualTarget?.name ?? ''}
+            isDark={isDark}
+        />
+        </>
     );
 }

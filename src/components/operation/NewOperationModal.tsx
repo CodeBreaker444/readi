@@ -221,7 +221,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
         setPilotId(editOperation.fk_pilot_user_id?.toString() ?? '')
         setVisualObserverIds((editOperation.visual_observer_ids ?? []).map(o => String(o.user_id)))
         setPlanId(editOperation.fk_planning_id?.toString() ?? '')
-        setOpType(editOperation.fk_planning_id ? 'PDRA' : 'OPEN')
+        setOpType((editOperation.op_type as OpType) || (editOperation.fk_planning_id ? 'PDRA' : 'OPEN'))
         setFlightMode(editOperation.flight_mode === 'DOCK' ? 'DOCK' : 'RC')
         setErpGroupId(editOperation.fk_erp_group_id?.toString() ?? '')
         setSchedulerForm({
@@ -236,7 +236,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
             categoryId: editOperation.fk_mission_category_id?.toString() ?? '',
             lucId: editOperation.fk_luc_procedure_id?.toString() ?? '',
         })
-        setStep(2)
+        setStep(1)
     }, [editOperation, open])
 
     // Seed mission code, start,and end distance from a flight log when this
@@ -486,6 +486,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                     notes: schedulerForm.notes || undefined,
                     distance_flown: schedulerForm.distanceFlown !== '' ? parseFloat(schedulerForm.distanceFlown) : null,
                     flight_mode: opType === 'PDRA' ? flightMode : null,
+                    op_type: opType,
                 }
                 const res = await axios.put(`/api/operation/${editOperation.pilot_mission_id}`, payload)
                 toast.success(t('operations.newOperation.toast.updateSuccess'))
@@ -512,6 +513,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                 notes: schedulerForm.notes || undefined,
                 distance_flown: schedulerForm.distanceFlown !== '' ? parseFloat(schedulerForm.distanceFlown) : null,
                 flight_mode: opType === 'PDRA' ? flightMode : null,
+                op_type: opType,
                 // A mission created to attach an already-flown log is inherently
                 // completed, not scheduled for the future.
                 status_name: createPrefill ? 'COMPLETED' : 'PLANNED',
@@ -593,7 +595,11 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
     }
 
 
-    const selectedClient = clients.find(c => String(c.client_id) === clientId)
+    const clientsForSelect = (isEdit && editOperation?.fk_client_id && !clients.some(c => c.client_id === editOperation.fk_client_id))
+        ? [...clients, { client_id: editOperation.fk_client_id, client_name: editOperation.client_name ?? '', client_code: '' }]
+        : clients
+
+    const selectedClient = clientsForSelect.find(c => String(c.client_id) === clientId)
     const selectedDrone = drones.find(d => String(d.tool_id) === droneId)
     const selectedPlan = clientPlannings.find(p => String(p.planning_id) === planId)
     const selectedPilot = pilots.find(p => String(p.user_id) === pilotId)
@@ -677,7 +683,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
 
                     {(!isEdit || editTab === 'data') && step === 1 && (
                         <OperationStepClient
-                            clients={clients}
+                            clients={clientsForSelect}
                             clientId={clientId}
                             onClientChange={setClientId}
                             loadingClients={loadingClients}

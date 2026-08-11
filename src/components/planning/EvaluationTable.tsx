@@ -18,6 +18,7 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { useAuthorization } from '@/components/authorization/AuthorizationProvider';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -32,6 +33,7 @@ import { getEvaluationColumns } from '../tables/EvaluationColumn';
 export function EvaluationTable({ onView, isDark }: { onView?: (ev: Evaluation) => void; isDark?: boolean }) {
   const { t } = useTranslation();
   const { timezone } = useTimezone();
+  const { requireAuthorization } = useAuthorization();
   const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -60,6 +62,16 @@ export function EvaluationTable({ onView, isDark }: { onView?: (ev: Evaluation) 
 
   async function handleDelete() {
     if (!deleteTarget) return;
+    try {
+      await requireAuthorization({
+        actionType: 'delete',
+        entityType: 'evaluation',
+        entityId: String(deleteTarget.evaluation_id),
+        label: `Delete Evaluation: EVAL_${deleteTarget.evaluation_id}`,
+      });
+    } catch {
+      return;
+    }
     try {
       setIsDeleting(true);
       await axios.delete(`/api/evaluation/${deleteTarget.evaluation_id}`);

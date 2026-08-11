@@ -6,7 +6,7 @@ import { MissionLogbookTable } from "@/components/logbook/MissionLogbookTable";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTheme } from "@/components/useTheme";
-import { ClientOption, EvaluationOption, FilterParams, MissionPlanningLogbookItem, PilotOption, PlanningOption } from "@/config/types/logbook";
+import { ClientOption, DroneOption, EvaluationOption, FilterParams, MissionPlanningLogbookItem, PilotOption, PlanningOption } from "@/config/types/logbook";
 import axios from "axios";
 import { Loader2, RefreshCw } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
@@ -18,6 +18,7 @@ interface FiltersState {
   pilots: PilotOption[];
   evaluations: EvaluationOption[];
   plannings: PlanningOption[];
+  drones: DroneOption[];
 }
 
 export default function MissionPlanningLogbookPage() {
@@ -29,6 +30,7 @@ export default function MissionPlanningLogbookPage() {
     pilots: [],
     evaluations: [],
     plannings: [],
+    drones: [],
   });
   const [loading, setLoading] = useState(false);
   const [filtersLoading, setFiltersLoading] = useState(false);
@@ -44,6 +46,7 @@ export default function MissionPlanningLogbookPage() {
           pilots: json.pilots?.data ?? [],
           evaluations: json.evaluations?.data ?? [],
           plannings: json.plannings?.data ?? [],
+          drones: json.drones?.data ?? [],
         });
       }
     } catch (e: any) {
@@ -140,7 +143,7 @@ export default function MissionPlanningLogbookPage() {
             }`}
           >
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-              {Array.from({ length: 6 }).map((_, i) => (
+              {Array.from({ length: 7 }).map((_, i) => (
                 <div key={i} className="space-y-1.5">
                   <Skeleton className={`h-2.5 w-16 ${isDark ? "bg-slate-800" : "bg-slate-100"}`} />
                   <Skeleton className={`h-8 w-full ${isDark ? "bg-slate-800" : "bg-slate-100"}`} />
@@ -162,6 +165,7 @@ export default function MissionPlanningLogbookPage() {
             pilots={filters.pilots}
             evaluations={filters.evaluations}
             plannings={filters.plannings}
+            drones={filters.drones}
             loading={loading}
             onSearch={(params) => fetchData(params)}
             isDark={isDark}

@@ -10,6 +10,7 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { useAuthorization } from "@/components/authorization/AuthorizationProvider";
 import { FeatureGate } from "@/components/permissions/FeatureGate";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -66,6 +67,7 @@ export default function MissionTestLogbookModal({
     onStatusChanged,
 }: MissionTestLogbookModalProps) {
     const { t } = useTranslation();
+    const { requireAuthorization } = useAuthorization();
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const [tests, setTests] = useState<MissionTestRow[]>([]);
@@ -195,6 +197,18 @@ export default function MissionTestLogbookModal({
 
     const handleDeleteTest = async () => {
         if (testIdToDelete === null) return;
+
+        try {
+            await requireAuthorization({
+                actionType: 'delete',
+                entityType: 'mission_test',
+                entityId: String(testIdToDelete),
+                label: `Delete Test Logbook Entry: #${testIdToDelete}`,
+            });
+        } catch {
+            return;
+        }
+
         try {
             await axios.post("/api/evaluation/mission/delete-test", {
                 test_id: testIdToDelete,

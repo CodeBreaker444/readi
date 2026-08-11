@@ -1,5 +1,6 @@
 'use client';
 
+import { useAuthorization } from '@/components/authorization/AuthorizationProvider';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useTheme } from '@/components/useTheme';
 import { AlertCircle, ArrowLeft, CheckCircle2, ExternalLink, FileText, HardDrive, Loader2, Search, Trash2, Upload } from 'lucide-react';
@@ -51,6 +52,7 @@ function DocumentListSkeleton({ isDark }: { isDark: boolean }) {
 export default function KnowledgeConfigPage() {
     const { isDark } = useTheme();
     const { t } = useTranslation();
+    const { requireAuthorization } = useAuthorization();
     const router = useRouter();
 
     const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
@@ -134,6 +136,18 @@ export default function KnowledgeConfigPage() {
 
     const confirmDelete = async () => {
         if (!deleteTarget) return;
+
+        try {
+            await requireAuthorization({
+                actionType: 'delete',
+                entityType: 'knowledge_document',
+                entityId: deleteTarget,
+                label: `Delete Knowledge Source: ${deleteTarget}`,
+            });
+        } catch {
+            return;
+        }
+
         setIsDeleting(true);
         try {
             const res = await fetch(`/api/agent/ingest?source=${encodeURIComponent(deleteTarget)}`, { method: 'DELETE' });

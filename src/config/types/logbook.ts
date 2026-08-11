@@ -13,6 +13,9 @@ export interface MissionPlanningLogbookItem {
   fk_planning_id: number;
   fk_client_id: number;
   fk_owner_id: number;
+  fk_tool_id: number;
+  tool_code: string;
+  tool_desc: string;
 }
 
 export interface FilterParams {
@@ -21,6 +24,7 @@ export interface FilterParams {
   evaluation_id?: number;
   planning_id?: number;
   user_id?: number;
+  tool_id?: number;
   date_start?: string;
   date_end?: string;
 }
@@ -98,6 +102,10 @@ export interface OperationFilterParams {
 
 export interface OperationLogbookItem {
   mission_id: number;
+  mission_code: string;
+  mission_name: string;
+  mission_description: string;
+  location: string;
   date_start: string;
   date_end: string;
   time_start: string;

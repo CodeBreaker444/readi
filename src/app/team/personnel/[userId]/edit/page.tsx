@@ -69,21 +69,15 @@ export default function EditUserPage() {
         fk_client_id: formData.fk_client_id || null,
         user_type: formData.user_type,
         active: formData.active,
+        is_viewer: formData.is_viewer,
         is_manager: formData.is_manager,
         flytrelay_access: formData.flytrelay_access,
+        department: formData.department || null,
       });
       const data = res.data;
       if (data.code !== 1) {
         toast.error(data.error || 'Failed to update user');
         return;
-      }
-
-      if (formData.permissions) {
-        try {
-          await axios.patch(`/api/permissions/user/${formData.user_id}`, formData.permissions);
-        } catch {
-          toast.warning('User updated but permissions could not be saved.');
-        }
       }
 
       toast.success('User updated successfully');

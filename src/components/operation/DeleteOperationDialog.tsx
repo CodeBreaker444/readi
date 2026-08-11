@@ -10,6 +10,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import { useAuthorization } from '@/components/authorization/AuthorizationProvider'
 import { useTimezone } from '@/components/TimezoneProvider'
 import { OperationItem } from '@/config/types/operation'
 import { formatDateInTz } from '@/lib/utils'
@@ -38,9 +39,22 @@ export function DeleteOperationDialog({
     const { t } = useTranslation()
     const { timezone } = useTimezone()
     const [isDeleting, setIsDeleting] = useState(false)
+    const { requireAuthorization } = useAuthorization()
 
     const handleDelete = async () => {
         if (!operation) return
+
+        try {
+            await requireAuthorization({
+                actionType: 'delete',
+                entityType: 'operation',
+                entityId: String(operation.pilot_mission_id),
+                label: `Delete Operation: ${operation.mission_name ?? `#${operation.pilot_mission_id}`}`,
+            })
+        } catch {
+            return
+        }
+
         setIsDeleting(true)
         try {
             const res = await axios.delete(`/api/operation/calendar/${operation.pilot_mission_id}`)

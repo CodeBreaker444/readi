@@ -1,4 +1,4 @@
-import { getClientList, getEvaluationList, getPilotList, getPlanningList } from "@/backend/services/logbook/mission-service";
+import { getClientList, getDroneList, getEvaluationList, getPilotList, getPlanningList } from "@/backend/services/logbook/mission-service";
 import { requirePermission } from "@/lib/auth/api-auth";
 import { internalError } from "@/lib/api-error";
 import { E } from "@/lib/error-codes";
@@ -13,14 +13,15 @@ export async function POST(request: NextRequest) {
         const ownerId = session!.user.ownerId
 
 
-        const [clients, pilots, evaluations, plannings] = await Promise.all([
+        const [clients, pilots, evaluations, plannings, drones] = await Promise.all([
             getClientList(ownerId),
             getPilotList(ownerId),
             getEvaluationList(ownerId),
             getPlanningList(ownerId),
+            getDroneList(ownerId),
         ]);
 
-        return NextResponse.json({ code: 200, status: "SUCCESS", clients, pilots, evaluations, plannings });
+        return NextResponse.json({ code: 200, status: "SUCCESS", clients, pilots, evaluations, plannings, drones });
     } catch (err) {
         return internalError(E.SV001, err);
     }

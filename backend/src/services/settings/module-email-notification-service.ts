@@ -13,6 +13,10 @@ import {
   sendInterventionEndedEmail as sendInterventionEndedEmailTemplate,
   sendMaintenanceAlertEmail as sendMaintenanceAlertEmailTemplate,
   sendMaintenanceDueEmail as sendMaintenanceDueEmailTemplate,
+  sendTrainingCreatedEmail as sendTrainingCreatedEmailTemplate,
+  sendTrainingUpdatedEmail as sendTrainingUpdatedEmailTemplate,
+  sendTrainingDeletedEmail as sendTrainingDeletedEmailTemplate,
+  sendTrainingCertificationExpiringEmail as sendTrainingCertificationExpiringEmailTemplate,
 } from "../../../../lib/resend/mail";
 import { isDailyEmailLimitReached, incrementDailyEmailCount, getDailyEmailStats } from "@/backend/services/email/email-limit-service";
 import { notifyAdminsOnEmailLimitReached, shouldNotifyEmailLimitReached, markEmailLimitNotificationSent } from "@/backend/services/email/admin-notification-service";
@@ -74,6 +78,20 @@ export interface CalendarEventData {
   changes?: string[];
 }
 
+export interface TrainingEmailData {
+  trainingName: string;
+  trainingType?: string | null;
+  certificateType?: string | null;
+  sessionDate?: string | null;
+  attendeeCount?: number;
+  createdBy?: string;
+  updatedBy?: string;
+  deletedBy?: string;
+  userName?: string | null;
+  expiryDate?: string;
+  daysRemaining?: number;
+}
+
 /**
  * Check if email notifications are enabled for a specific module event
  */
@@ -91,6 +109,7 @@ export async function isModuleEventEmailEnabled(
       email_notifications_enabled: true,
       operation_email_enabled: true,
       system_email_enabled: true,
+      training_email_enabled: true,
     },
   });
 
@@ -103,6 +122,7 @@ export async function isModuleEventEmailEnabled(
     email_notifications_enabled: owner.email_notifications_enabled,
     operation_email_enabled: owner.operation_email_enabled,
     system_email_enabled: owner.system_email_enabled,
+    training_email_enabled: owner.training_email_enabled,
   });
 
   let moduleEmailEnabled = false;
@@ -110,6 +130,8 @@ export async function isModuleEventEmailEnabled(
     moduleEmailEnabled = owner.operation_email_enabled === true;
   } else if (moduleName === 'maintenance') {
     moduleEmailEnabled = owner.system_email_enabled === true;
+  } else if (moduleName === 'training') {
+    moduleEmailEnabled = owner.training_email_enabled === true;
   } else {
     // For other modules, use the default email flag
     moduleEmailEnabled = owner.email_notifications_enabled === true;
@@ -808,3 +830,146 @@ export async function sendCalendarEventUpdatedModuleEmail(
   );
 }
 */
+
+/**
+ * Send training module email notification
+ */
+async function sendTrainingModuleEmail(
+  ownerId: number,
+  eventType: string,
+  emailFn: (emails: string[], ...args: any[]) => Promise<void>,
+  ...emailArgs: any[]
+): Promise<void> {
+  const isEnabled = await isModuleEventEmailEnabled(ownerId, 'training', eventType);
+  if (!isEnabled) {
+    console.log('[sendTrainingModuleEmail] Email is not enabled, skipping email send');
+    return;
+  }
+
+  const emails = await getRecipientEmails(ownerId, 'training', eventType);
+  if (emails.length === 0) {
+    console.log('[sendTrainingModuleEmail] No recipient emails found, skipping email send');
+    return;
+  }
+
+  const limitReached = await isDailyEmailLimitReached(ownerId);
+  if (limitReached) {
+    console.log('[sendTrainingModuleEmail] Daily email limit reached for owner:', ownerId);
+    const stats = await getDailyEmailStats(ownerId);
+
+    if (stats && await shouldNotifyEmailLimitReached(ownerId)) {
+      const owner = await prisma.owner.findUnique({
+        where: { owner_id: ownerId },
+        select: { owner_name: true },
+      });
+
+      if (owner) {
+        await notifyAdminsOnEmailLimitReached({
+          ownerId,
+          ownerName: owner.owner_name,
+          dailyLimit: stats.limit,
+          currentCount: stats.count,
+        });
+        await markEmailLimitNotificationSent(ownerId);
+      }
+    }
+    return;
+  }
+
+  await emailFn(emails, ...emailArgs);
+
+  const newCount = await incrementDailyEmailCount(ownerId);
+  console.log('[sendTrainingModuleEmail] Email sent, new daily count:', newCount);
+
+  const stats = await getDailyEmailStats(ownerId);
+  if (stats && stats.remaining === 0) {
+    const owner = await prisma.owner.findUnique({
+      where: { owner_id: ownerId },
+      select: { owner_name: true },
+    });
+
+    if (owner && await shouldNotifyEmailLimitReached(ownerId)) {
+      await notifyAdminsOnEmailLimitReached({
+        ownerId,
+        ownerName: owner.owner_name,
+        dailyLimit: stats.limit,
+        currentCount: stats.count,
+      });
+      await markEmailLimitNotificationSent(ownerId);
+    }
+  }
+}
+
+/**
+ * Send training created email
+ */
+export async function sendTrainingCreatedModuleEmail(
+  ownerId: number,
+  data: TrainingEmailData
+): Promise<void> {
+  await sendTrainingModuleEmail(
+    ownerId,
+    'training_created',
+    sendTrainingCreatedEmailTemplate,
+    data.trainingName,
+    data.trainingType,
+    data.certificateType,
+    data.sessionDate,
+    data.attendeeCount,
+    data.createdBy
+  );
+}
+
+/**
+ * Send training updated email
+ */
+export async function sendTrainingUpdatedModuleEmail(
+  ownerId: number,
+  data: TrainingEmailData
+): Promise<void> {
+  await sendTrainingModuleEmail(
+    ownerId,
+    'training_updated',
+    sendTrainingUpdatedEmailTemplate,
+    data.trainingName,
+    data.trainingType,
+    data.certificateType,
+    data.sessionDate,
+    data.updatedBy
+  );
+}
+
+/**
+ * Send training deleted email
+ */
+export async function sendTrainingDeletedModuleEmail(
+  ownerId: number,
+  data: TrainingEmailData
+): Promise<void> {
+  await sendTrainingModuleEmail(
+    ownerId,
+    'training_deleted',
+    sendTrainingDeletedEmailTemplate,
+    data.trainingName,
+    data.trainingType,
+    data.deletedBy
+  );
+}
+
+/**
+ * Send training certification expiring email
+ */
+export async function sendTrainingCertificationExpiringModuleEmail(
+  ownerId: number,
+  data: TrainingEmailData
+): Promise<void> {
+  await sendTrainingModuleEmail(
+    ownerId,
+    'training_certification_expiring',
+    sendTrainingCertificationExpiringEmailTemplate,
+    data.trainingName,
+    data.expiryDate || '',
+    data.daysRemaining || 0,
+    data.userName
+  );
+}

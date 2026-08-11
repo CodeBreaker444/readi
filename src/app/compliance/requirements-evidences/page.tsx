@@ -1,5 +1,6 @@
 'use client';
 
+import { useAuthorization } from '@/components/authorization/AuthorizationProvider';
 import { FeatureGate } from '@/components/permissions/FeatureGate';
 import { ComplianceRequirement, getComplianceRequirementsColumns } from '@/components/tables/ComplianceReqColumn';
 import { TablePagination } from '@/components/tables/Pagination';
@@ -104,6 +105,7 @@ const EMPTY_EVI: EvidenceForm = {
 
 export default function RequirementsEvidencesPage() {
   const { t } = useTranslation();
+  const { requireAuthorization } = useAuthorization();
   const { isDark } = useTheme();
 
   const [records, setRecords] = useState<ComplianceRequirement[]>([]);
@@ -250,6 +252,18 @@ export default function RequirementsEvidencesPage() {
   const handleDeleteReq = async () => {
     if (!deleteTarget) return;
     const id = deleteTarget.requirement_id;
+
+    try {
+      await requireAuthorization({
+        actionType: 'delete',
+        entityType: 'compliance_requirement',
+        entityId: String(id),
+        label: `Delete Requirement: ${deleteTarget.requirement_code}`,
+      });
+    } catch {
+      return;
+    }
+
     setDeleteTarget(null);
     try {
       await axios.post('/api/compliance/requirements-evidences/delete', { requirement_id: id });
@@ -316,6 +330,19 @@ export default function RequirementsEvidencesPage() {
   }
 
   const handleDeleteEvidence = async (evidenceId: number) => {
+    const evidence = evidences.find((e) => e.evidence_id === evidenceId);
+
+    try {
+      await requireAuthorization({
+        actionType: 'delete',
+        entityType: 'compliance_evidence',
+        entityId: String(evidenceId),
+        label: `Delete Evidence: ${evidence?.evidence_description ?? `#${evidenceId}`}`,
+      });
+    } catch {
+      return;
+    }
+
     try {
       await axios.post('/api/compliance/requirements-evidences/evidence/delete', { evidence_id: evidenceId });
       toast.success(t('compliance.requirementsEvidences.messages.evidenceDeleteSuccess'));

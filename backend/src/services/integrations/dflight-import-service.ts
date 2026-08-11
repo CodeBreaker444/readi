@@ -10,9 +10,10 @@ import {
 
 export interface ImportDFlightDroneInput {
   fk_owner_id: number;
-  fk_client_id: number;
+  fk_tool_id?: number | null;
+  fk_client_id?: number | null;
   dFlightId: string;
-  tool_code: string;
+  tool_code?: string | null;
   tool_description?: string | null;
   component_code: string;
   component_sn: string;
@@ -32,7 +33,9 @@ export interface ImportDFlightDroneInput {
 async function syncStsDeclarations(componentId: number, ownerId: number) {
   try {
     const config = await getDFlightIntegration(ownerId);
-    if (!config || !config.pfx_content || !config.pfx_password) {
+    const hasCertificateWithPassword = config?.pfx_content && config?.pfx_password;
+    const hasPasswordOnly = config?.password;
+    if (!config || (!hasCertificateWithPassword && !hasPasswordOnly)) {
       return; // Skip if D-Flight not configured
     }
 
@@ -61,8 +64,8 @@ async function syncStsDeclarations(componentId: number, ownerId: number) {
       tokenResponse.access_token,
       userInfo.operatorRegistrationNumber,
       component.drone_registration_code,
-      config.pfx_content,
-      config.pfx_password,
+      config.pfx_content ?? undefined,
+      config.pfx_password ?? undefined,
     );
 
     if (declarations.length === 0) return;
@@ -99,13 +102,32 @@ async function syncStsDeclarations(componentId: number, ownerId: number) {
 }
 
 export async function importDFlightDrone(input: ImportDFlightDroneInput) {
-  const existingTools = await prisma.tool.findMany({
-    where: { fk_owner_id: input.fk_owner_id, tool_code: input.tool_code },
-    select: { tool_id: true, tool_metadata: true },
-  });
-  const toolCodeTaken = existingTools.some((t) => (t.tool_metadata as any)?.deleted !== true);
-  if (toolCodeTaken) {
-    return { code: 0, message: `System code "${input.tool_code}" already exists for this owner.` };
+  const attachToExistingSystem = input.fk_tool_id != null;
+
+  let existingTool: { tool_id: number } | null = null;
+  if (attachToExistingSystem) {
+    existingTool = await prisma.tool.findFirst({
+      where: { tool_id: input.fk_tool_id!, fk_owner_id: input.fk_owner_id },
+      select: { tool_id: true },
+    });
+    if (!existingTool) {
+      return { code: 0, message: 'Selected system not found.' };
+    }
+  } else {
+    if (!input.tool_code?.trim()) {
+      return { code: 0, message: 'System code is required to create a new system.' };
+    }
+    if (input.fk_client_id == null) {
+      return { code: 0, message: 'Client is required to create a new system.' };
+    }
+    const existingTools = await prisma.tool.findMany({
+      where: { fk_owner_id: input.fk_owner_id, tool_code: input.tool_code },
+      select: { tool_id: true, tool_metadata: true },
+    });
+    const toolCodeTaken = existingTools.some((t) => (t.tool_metadata as any)?.deleted !== true);
+    if (toolCodeTaken) {
+      return { code: 0, message: `System code "${input.tool_code}" already exists for this owner.` };
+    }
   }
 
   const normalizedSerial = input.component_sn.trim();
@@ -123,24 +145,26 @@ export async function importDFlightDrone(input: ImportDFlightDroneInput) {
   }
 
   const result = await prisma.$transaction(async (tx) => {
-    const tool = await tx.tool.create({
-      data: {
-        fk_owner_id: input.fk_owner_id,
-        tool_code: input.tool_code,
-        tool_name: input.tool_code,
-        tool_description: input.tool_description || null,
-        tool_active: 'Y',
-        tool_metadata: {
-          clientId: input.fk_client_id,
-          latitude: null,
-          longitude: null,
-          activationDate: null,
-          maintenanceLogbook: 'N',
-          files: [],
-          source: 'D_FLIGHT_IMPORT',
-        } as unknown as Prisma.InputJsonValue,
-      },
-    });
+    const tool = existingTool
+      ? existingTool
+      : await tx.tool.create({
+          data: {
+            fk_owner_id: input.fk_owner_id,
+            tool_code: input.tool_code!,
+            tool_name: input.tool_code!,
+            tool_description: input.tool_description || null,
+            tool_active: 'Y',
+            tool_metadata: {
+              clientId: input.fk_client_id,
+              latitude: null,
+              longitude: null,
+              activationDate: null,
+              maintenanceLogbook: 'N',
+              files: [],
+              source: 'D_FLIGHT_IMPORT',
+            } as unknown as Prisma.InputJsonValue,
+          },
+        });
 
     const component = await tx.tool_component.create({
       data: {

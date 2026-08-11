@@ -21,7 +21,7 @@ import ExportButtons from "../system/ExportButtons";
 import { getColumns } from "../tables/LogbookColumn";
 import { TablePagination } from "../tables/Pagination";
 
-const SKELETON_COL_WIDTHS = [60, 150, 180, 180, 200, 100, 70, 80];
+const SKELETON_COL_WIDTHS = [60, 150, 180, 180, 200, 130, 100, 70, 80];
 const SKELETON_ROWS = 10;
 
 interface MissionLogbookTableProps {
@@ -145,8 +145,8 @@ export function MissionLogbookTable({ data, loading, isDark }: MissionLogbookTab
                                         const skFaint = isDark ? "bg-slate-800/60" : "bg-slate-100";
                                         const ratio = 0.5 + ((rowIdx * 3 + colIdx * 7) % 30) / 100;
 
-                                        const isDouble = [1, 2, 3, 4].includes(colIdx);
-                                        const isBadge = [5, 6].includes(colIdx);
+                                        const isDouble = [1, 2, 3, 4, 5].includes(colIdx);
+                                        const isBadge = [7].includes(colIdx);
 
                                         return (
                                             <td key={colIdx} className="px-3 py-3 align-middle">
@@ -227,6 +227,7 @@ export function MissionLogbookTable({ data, loading, isDark }: MissionLogbookTab
                         t('logbooks.missionPlanning.columns.evaluation'),
                         t('logbooks.missionPlanning.columns.planning'),
                         t('logbooks.missionPlanning.columns.missionPlan'),
+                        t('logbooks.missionPlanning.columns.system'),
                         t('logbooks.missionPlanning.code'),
                         t('logbooks.missionPlanning.columns.version'),
                         t('logbooks.missionPlanning.tests'),
@@ -237,6 +238,7 @@ export function MissionLogbookTable({ data, loading, isDark }: MissionLogbookTab
                         d.evaluation_desc,
                         d.planning_desc,
                         d.mission_planning_desc,
+                        d.tool_code,
                         d.mission_planning_code,
                         d.mission_planning_ver,
                         d.tot_test,
