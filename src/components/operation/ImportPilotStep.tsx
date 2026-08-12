@@ -1,7 +1,6 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
     Select,
@@ -27,27 +26,12 @@ interface ImportPilotStepProps {
 
     visualObserverIds: string[];
     setVisualObserverIds: (ids: string[]) => void;
-
-    isRecurrent: boolean;
-    handleRecurrentToggle: (checked: boolean) => void;
-    recurrentStartDate: string;
-    handleRecurrentStartDateChange: (value: string) => void;
-    recurrentEndDate: string;
-    handleRecurrentEndDateChange: (value: string) => void;
-    recurrentTime: string;
-    setRecurrentTime: (v: string) => void;
-    recurrentDateError: string;
 }
 
 export function ImportPilotStep({
     t, ns,
     pilotId, setPilotId, loadingPilots, pilots, setQualTarget,
     visualObserverIds, setVisualObserverIds,
-    isRecurrent, handleRecurrentToggle,
-    recurrentStartDate, handleRecurrentStartDateChange,
-    recurrentEndDate, handleRecurrentEndDateChange,
-    recurrentTime, setRecurrentTime,
-    recurrentDateError,
 }: ImportPilotStepProps) {
     return (
         <TooltipProvider delayDuration={100}>
@@ -118,35 +102,6 @@ export function ImportPilotStep({
                     </Tooltip>
                 </div>
             </div>
-            <div className="flex items-center gap-2">
-                <input
-                    type="checkbox"
-                    id="isRecurrent"
-                    checked={isRecurrent}
-                    onChange={(e) => handleRecurrentToggle(e.target.checked)}
-                    className="h-4 w-4"
-                />
-                <Label htmlFor="isRecurrent" className="text-sm cursor-pointer">{t(ns + '.fields.recurrent')}</Label>
-            </div>
-            {isRecurrent && (
-                <div className="grid grid-cols-3 gap-4">
-                    <div>
-                        <Label className="mb-1.5 block">{t(ns + '.fields.recurrentStartDate')}</Label>
-                        <Input type="date" value={recurrentStartDate} onChange={(e) => handleRecurrentStartDateChange(e.target.value)} />
-                    </div>
-                    <div>
-                        <Label className="mb-1.5 block">{t(ns + '.fields.recurrentEndDate')}</Label>
-                        <Input type="date" value={recurrentEndDate} onChange={(e) => handleRecurrentEndDateChange(e.target.value)} className={recurrentDateError ? 'border-red-500' : ''} />
-                    </div>
-                    <div>
-                        <Label className="mb-1.5 block">{t(ns + '.fields.recurrentTime')}</Label>
-                        <Input type="time" value={recurrentTime} onChange={(e) => setRecurrentTime(e.target.value)} />
-                    </div>
-                </div>
-            )}
-            {recurrentDateError && (
-                <p className="text-red-500 text-xs mt-1">{recurrentDateError}</p>
-            )}
         </div>
         </TooltipProvider>
     );

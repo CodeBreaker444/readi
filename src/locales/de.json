@@ -2148,6 +2148,8 @@
         "distancePlaceholder": "z.B. 1500",
         "location": "Standort",
         "locationPlaceholder": "Zone A",
+        "groupLabel": "Gruppenbezeichnung",
+        "groupLabelPlaceholder": "z.B. Frühjahrsvermessung 2025",
         "notes": "Notizen",
         "notesPlaceholder": "Optionale Notizen"
       },

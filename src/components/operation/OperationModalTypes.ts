@@ -33,4 +33,5 @@ export interface SchedulerFormData {
     typeId: string
     categoryId: string
     lucId: string
+    groupLabel: string
 }

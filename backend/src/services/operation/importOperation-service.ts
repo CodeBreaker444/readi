@@ -60,6 +60,12 @@ export interface ImportMissionResult {
   skipped: string[];
 }
 
+function asUtc(ts: Date | string | null | undefined): string | null {
+  if (!ts) return null;
+  const s = ts instanceof Date ? ts.toISOString() : ts;
+  return s.endsWith('Z') || s.includes('+') ? s : s + 'Z';
+}
+
 function parseDurationSeconds(start?: string | null, end?: string | null): number | null {
   if (!start || !end) return null;
   const ms = new Date(end).getTime() - new Date(start).getTime();
@@ -269,10 +275,10 @@ async function processGutmaBuffer(
       battery_charge_end: batteryChargeEnd,
       weather_temperature: weatherTemperature,
       notes: notesArr.join(' | ') || null,
+      mission_group_label: params.groupLabel || null,
       ...(recurringGroupId && {
         recurring_group_id: recurringGroupId,
         mission_date_until: params.recurrentEndDate ? new Date(params.recurrentEndDate) : null,
-        mission_group_label: params.groupLabel || null,
         ...(Object.keys(missionMetadataFields).length && { mission_metadata: missionMetadataFields }),
       }),
       ...(!recurringGroupId && {
@@ -388,28 +394,32 @@ async function processGutmaBuffer(
 
   const full = await prisma.pilot_mission.findUnique({
     where: { pilot_mission_id: inserted.pilot_mission_id },
-    select: {
-      pilot_mission_id: true,
-      mission_code: true,
-      mission_name: true,
-      status_name: true,
-      scheduled_start: true,
-      actual_start: true,
-      actual_end: true,
-      distance_flown: true,
-      location: true,
-      notes: true,
+    include: {
       users: { select: { first_name: true, last_name: true } },
-      tool: { select: { tool_code: true } },
+      tool: { select: { tool_code: true, tool_name: true } },
+      client: { select: { client_name: true } },
+      planning: { select: { planning_name: true, client: { select: { client_name: true } } } },
+      pilot_mission_category: { select: { category_name: true } },
+      pilot_mission_type: { select: { type_name: true } },
     },
   });
 
   const operation = full ? {
     ...full,
+    actual_start: asUtc(full.actual_start),
+    actual_end: asUtc(full.actual_end),
     pilot_name: full.users
       ? `${full.users.first_name ?? ''} ${full.users.last_name ?? ''}`.trim()
       : null,
     tool_code: full.tool?.tool_code ?? null,
+    tool_name: full.tool?.tool_name ?? null,
+    client_name: full.planning?.client?.client_name ?? full.client?.client_name ?? null,
+    planning_name: full.planning?.planning_name ?? null,
+    category_name: full.pilot_mission_category?.category_name ?? null,
+    type_name: full.pilot_mission_type?.type_name ?? null,
+    visual_observer_ids: (full.mission_metadata as any)?.visual_observers ?? null,
+    flight_mode: (full.mission_metadata as any)?.flight_mode ?? null,
+    op_type: (full.mission_metadata as any)?.op_type ?? null,
   } : null;
 
   return { missionId: inserted.pilot_mission_id, operation };
