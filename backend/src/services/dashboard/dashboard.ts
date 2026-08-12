@@ -315,6 +315,7 @@ export async function getSPIKPIData(input: SPIKPIDataInput) {
         kpi_type: true,
         kpi_category: true,
         measurement_unit: true,
+        target_direction: true,
       },
     });
 
@@ -337,6 +338,7 @@ export async function getSPIKPIData(input: SPIKPIDataInput) {
         indicator_name: def?.kpi_name || '',
         value: parseFloat(String(record.actual_value ?? 0)),
         target: parseFloat(String(record.target_value ?? 0)),
+        target_direction: def?.target_direction || 'HIGHER_IS_BETTER',
         unit: def?.measurement_unit || '',
         status: normalizeStatus(record.status || ''),
         raw_status: record.status,
@@ -426,10 +428,12 @@ export async function getSPIKPITrend(input: SPIKPITrendInput) {
         kpi_name: input.name,
         definition_id: { in: ownerDefIds },
       },
-      select: { definition_id: true },
+      select: { definition_id: true, target_direction: true },
     });
 
     if (!definition) throw new Error('Indicator not found');
+
+    const targetDirection = definition.target_direction || 'HIGHER_IS_BETTER';
 
     const kpiData = await prisma.spi_kpi.findMany({
       where: {
@@ -477,10 +481,10 @@ export async function getSPIKPITrend(input: SPIKPITrendInput) {
         }
       });
 
-    return { code: 1, status: 'SUCCESS', labels, values, target };
+    return { code: 1, status: 'SUCCESS', labels, values, target, target_direction: targetDirection };
   } catch (error: any) {
     console.error('Error in getSPIKPITrend:', error);
-    return { code: 0, status: 'ERROR', message: error.message, labels: [], values: [], target: 100 };
+    return { code: 0, status: 'ERROR', message: error.message, labels: [], values: [], target: 100, target_direction: 'HIGHER_IS_BETTER' as const };
   }
 }
 

@@ -130,7 +130,6 @@ const handleSave = async (payload: any) => {
     measurement_date: string
     actual_value: number
     target_value: number
-    status: 'GREEN' | 'YELLOW' | 'RED'
   }) => {
     setIsLogging(true)
     try {

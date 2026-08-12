@@ -10,7 +10,6 @@ const schema = z.object({
   measurement_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be YYYY-MM-DD'),
   actual_value: z.coerce.number(),
   target_value: z.coerce.number(),
-  status: z.enum(['GREEN', 'YELLOW', 'RED']),
 })
 
 export async function POST(req: NextRequest) {

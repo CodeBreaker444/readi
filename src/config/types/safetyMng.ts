@@ -1,6 +1,7 @@
 export type IndicatorType = 'KPI' | 'SPI'
 export type IndicatorArea = 'COMPLIANCE' | 'TRAINING' | 'OPERATIONS' | 'MAINTENANCE'
 export type FrequencyType = 'MONTHLY' | 'WEEKLY' | 'QUARTERLY' | 'YEARLY'
+export type TargetDirection = 'HIGHER_IS_BETTER' | 'LOWER_IS_BETTER'
 
 export interface SpiKpiDefinition {
   id: number
@@ -10,6 +11,7 @@ export interface SpiKpiDefinition {
   indicator_name: string
   indicator_desc: string | null
   target_value: number
+  target_direction: TargetDirection
   unit: string
   frequency: FrequencyType
   is_active: 0 | 1
@@ -43,6 +45,7 @@ export type SpiKpiCreateInput = {
   indicator_name: string;
   indicator_desc?: string | null;
   target_value: number;
+  target_direction?: TargetDirection;
   unit: string;
   frequency?: 'MONTHLY' | 'WEEKLY' | 'QUARTERLY' | 'YEARLY';
   is_active?: number;
@@ -53,6 +56,7 @@ export type SpiKpiUpdateInput = {
   indicator_name: string;
   indicator_desc?: string | null;
   target_value: number;
+  target_direction?: TargetDirection;
   unit: string;
   frequency?: 'MONTHLY' | 'WEEKLY' | 'QUARTERLY' | 'YEARLY';
   is_active?: number;
@@ -73,3 +77,4 @@ export type SpiKpiListInput = {
 export const AREAS = ['COMPLIANCE', 'TRAINING', 'OPERATIONS', 'MAINTENANCE'] as const
 export const TYPES = ['KPI', 'SPI'] as const
 export const FREQUENCIES = ['MONTHLY', 'WEEKLY', 'QUARTERLY', 'YEARLY'] as const
+export const TARGET_DIRECTIONS = ['HIGHER_IS_BETTER', 'LOWER_IS_BETTER'] as const

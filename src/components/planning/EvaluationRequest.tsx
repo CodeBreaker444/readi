@@ -7,7 +7,7 @@ import { useTheme } from '../useTheme';
 import AreaTable from './AreaTable';
 import EvaluationForm from './EvaluationForm';
 import FileUpload from './FileUpload';
-import MapDrawing from './MapDrawing';
+import MapDrawing, { MapDrawingHandle } from './MapDrawing';
 
 interface DrawnArea {
   id: string;
@@ -45,6 +45,7 @@ const EvaluationRequest: React.FC = () => {
   const [files, setFiles] = useState<EvaluationFile[]>([]);
 
   const fileUploadRef = useRef<HTMLDivElement>(null);
+  const mapDrawingRef = useRef<MapDrawingHandle>(null);
 
   const handleAreasChange = (areas: DrawnArea[]) => setDrawnAreas(areas);
 
@@ -91,8 +92,8 @@ const EvaluationRequest: React.FC = () => {
 
   const handleFileAdded = (file: EvaluationFile) => setFiles(prev => [...prev, file]);
   const handleFileRemoved = (fileId: number) => setFiles(prev => prev.filter(f => f.id !== fileId));
-  const handleEditArea = (id: string) => console.log('Edit area:', id);
-  const handleDeleteArea = (id: string) => setDrawnAreas(prev => prev.filter(area => area.id !== id));
+  const handleEditArea = (id: string) => mapDrawingRef.current?.editArea(id);
+  const handleDeleteArea = (id: string) => mapDrawingRef.current?.removeArea(id);
 
   const bg = isDark ? 'bg-gray-950' : 'bg-gray-50';
   const cardBg = isDark ? 'bg-gray-900 border-gray-700/60' : 'bg-white border-gray-200';
@@ -138,7 +139,7 @@ const EvaluationRequest: React.FC = () => {
             </div>
           </div>
           <div className="p-4">
-            <MapDrawing onAreasChange={handleAreasChange} isDark={isDark} />
+            <MapDrawing ref={mapDrawingRef} onAreasChange={handleAreasChange} isDark={isDark} />
             <AreaTable areas={drawnAreas} onEdit={handleEditArea} onDelete={handleDeleteArea} isDark={isDark} />
           </div>
         </div>
