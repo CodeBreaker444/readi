@@ -459,6 +459,12 @@ function MissionDetailSheet({ mission, isDark, onClose, onOpenLuc, onUpdateMaint
                                         {mission.maintenance_status.replace("_", " ")}
                                     </Badge>
                                 )}
+                                {mission.mission_group_label && (
+                                    <Badge variant="secondary" className="px-1.5 py-0 text-[10px] font-normal">
+                                        <Tag className="mr-0.5 h-2.5 w-2.5" />
+                                        {mission.mission_group_label}
+                                    </Badge>
+                                )}
                             </div>
                             <SheetTitle className={cn("text-left text-base mt-1", isDark ? "text-white" : "")}>
                                 {mission.mission_name || `${mission.vehicle_code}${mission.vehicle_desc ? ` — ${mission.vehicle_desc}` : ""}`}

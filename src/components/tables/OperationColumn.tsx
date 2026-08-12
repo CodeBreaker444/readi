@@ -23,6 +23,7 @@ import {
     Eye,
     Loader2,
     Pencil,
+    Tag,
     Trash2,
     XCircle
 } from 'lucide-react';
@@ -183,13 +184,22 @@ export const getOperationColumns = (t: TFunction, isDark = false, timezone = 'Eu
     header: t('operations.table.detail.missionId'),
     cell: ({ getValue, row, table }) => {
       const meta = table.options.meta as any;
+      const groupLabel = (row.original as Operation).mission_group_label;
       return (
-        <button
-          className="font-mono text-xs text-violet-600 hover:underline cursor-pointer"
-          onClick={(e) => { e.stopPropagation(); meta.onViewDetails(row.original); }}
-        >
-          {getValue<string>()}
-        </button>
+        <div className="flex items-center gap-1.5">
+          <button
+            className="font-mono text-xs text-violet-600 hover:underline cursor-pointer"
+            onClick={(e) => { e.stopPropagation(); meta.onViewDetails(row.original); }}
+          >
+            {getValue<string>()}
+          </button>
+          {groupLabel && (
+            <Badge variant="secondary" className="px-1.5 py-0 text-[10px] font-normal shrink-0">
+              <Tag className="mr-0.5 h-2.5 w-2.5" />
+              {groupLabel}
+            </Badge>
+          )}
+        </div>
       );
     },
   },

@@ -174,6 +174,12 @@ export function OperationDetailSheet({
                         {statusLabel}
                       </Badge>
                     )}
+                    {operation.mission_group_label && (
+                      <Badge variant="secondary" className="px-1.5 py-0 text-[10px] font-normal">
+                        <Tag className="mr-0.5 h-2.5 w-2.5" />
+                        {operation.mission_group_label}
+                      </Badge>
+                    )}
                   </div>
                   {onEdit && (
                     <FeatureGate feature="operation_mission_table" require="edit">
