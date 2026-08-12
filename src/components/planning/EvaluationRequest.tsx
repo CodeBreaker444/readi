@@ -36,6 +36,19 @@ interface EvaluationFormData {
   evaluation_sale_manager: string;
 }
 
+function extractValidationMessage(details: unknown): string | null {
+  if (!details || typeof details !== 'object') return null;
+  for (const [key, value] of Object.entries(details as Record<string, any>)) {
+    if (key === '_errors') continue;
+    if (Array.isArray(value?._errors) && value._errors.length > 0) {
+      return value._errors[0];
+    }
+    const nested = extractValidationMessage(value);
+    if (nested) return nested;
+  }
+  return null;
+}
+
 const EvaluationRequest: React.FC = () => {
   const { isDark } = useTheme();
   const { t } = useTranslation();
@@ -86,7 +99,10 @@ const EvaluationRequest: React.FC = () => {
       }, 150);
     } catch (error) {
       console.error('Error creating evaluation:', error);
-      toast.error(error instanceof Error ? error.message : t('planning.evaluationRequest.createError'));
+      const serverMessage = axios.isAxiosError(error)
+        ? extractValidationMessage(error.response?.data?.details) ?? error.response?.data?.error
+        : undefined;
+      toast.error(serverMessage ?? t('planning.evaluationRequest.createError'));
     }
   };
 

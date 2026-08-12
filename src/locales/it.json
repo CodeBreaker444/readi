@@ -897,6 +897,8 @@
       "missionCode": "Codice Missione",
       "missionOperationLimits": "Limiti Operativi Missione",
       "drone": "Drone",
+      "system": "Sistema",
+      "selectSystem": "Seleziona Sistema",
       "loadingClients": "Caricamento clienti...",
       "selectClient": "Seleziona Cliente",
       "loadingProcedures": "Caricamento procedure...",
@@ -934,6 +936,7 @@
       "selectLucProcedure": "Seleziona una Procedura.",
       "selectPic": "Assegna un Pilota in Comando.",
       "enterDescription": "Inserisci una descrizione",
+      "descriptionMinLength": "La descrizione deve contenere almeno 4 caratteri",
       "descriptionRequired": "La descrizione è obbligatoria.",
       "requestDateRequired": "La data di richiesta è obbligatoria.",
       "clientRequired": "Seleziona un cliente",
@@ -1318,7 +1321,8 @@
       "observerDiff": "L'Osservatore deve essere diverso dal Pilota in Comando",
       "testCodeRequired": "Il codice test è obbligatorio",
       "startDateRequired": "La data di inizio è obbligatoria",
-      "endDateRequired": "La data di fine è obbligatoria"
+      "endDateRequired": "La data di fine è obbligatoria",
+      "endDateBeforeStart": "La data di fine non può essere precedente alla data di inizio"
     },
     "tasks": {
       "title": "Tabella Compiti",
@@ -1445,6 +1449,7 @@
       "loadError": "Errore nel caricamento degli utenti"
     },
     "editPlanning": {
+      "editTitle": "Modifica Richiesta di Pianificazione",
       "selectStatus": "Seleziona stato",
       "selectResult": "Seleziona risultato"
     },

@@ -20,6 +20,7 @@ export interface MissionTemplateRow {
   planning_code: string | null;
   planning_name: string | null;
   planning_status: string | null;
+  evaluation_id: number | null;
   evaluation_code: string | null;
   client_name: string | null;
   pilot_fullname: string | null;
@@ -62,15 +63,15 @@ export function getMissionTemplateColumns({
     },
 
     {
-      accessorKey: 'evaluation_code',
+      accessorKey: 'evaluation_id',
       header: t('planning.missionTemplate.evaluationCol'),
       size: 120,
       cell: ({ getValue }) => {
         const val = getValue();
-        if (!val) return <span className="opacity-30">—</span>;
+        if (val === null || val === undefined) return <span className="opacity-30">—</span>;
         return (
           <span className="font-mono text-[11px] tabular-nums">
-            {String(val)}
+            EVAL-{String(val)}
           </span>
         );
       },

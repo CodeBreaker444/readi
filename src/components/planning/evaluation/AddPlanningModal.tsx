@@ -36,6 +36,7 @@ interface PilotUser {
     user_id: number;
     fullname: string;
     user_profile_code?: string;
+    userActive?: string;
 }
 
 interface AddPlanningModalProps {
@@ -80,17 +81,11 @@ export function AddPlanningModal({
             try {
                 setLoadingDropdowns(true);
                 const [procRes, pilotRes, evalRes] = await Promise.all([
-                    axios.get("/api/evaluation/luc-procedures?type=PLANNING"),
+                    axios.get("/api/evaluation/luc-procedures?sector=PLANNING"),
                     axios.get('/api/evaluation/planning/pilot'),
                     axios.get(`/api/evaluation/${evaluationId}`),
                 ]);
-                const formattedProcedures = (procRes.data.data ?? []).map((p: any) => ({
-                    procedure_id: p.luc_procedure_id,
-                    procedure_code: p.luc_procedure_code,
-                    procedure_name: p.luc_procedure_desc
-                }));
 
-                setProcedures(formattedProcedures);
                 setProcedures(procRes.data.data ?? []);
                 setPilots(pilotRes.data.data ?? []);
                 
@@ -296,17 +291,26 @@ export function AddPlanningModal({
                                                 {t('planning.form.noPilots')}
                                             </SelectItem>
                                         ) : (
-                                            pilots.map((p) => (
-                                                <SelectItem
-                                                    key={p.user_id}
-                                                    value={String(p.user_id)}
-                                                >
-                                                    {p.fullname}
-                                                    {p.user_profile_code
-                                                        ? ` [${p.user_profile_code}]`
-                                                        : ''}
-                                                </SelectItem>
-                                            ))
+                                            pilots.map((p) => {
+                                                const isInactive = p.userActive !== undefined && p.userActive !== 'Y';
+                                                return (
+                                                    <SelectItem
+                                                        key={p.user_id}
+                                                        value={String(p.user_id)}
+                                                        disabled={isInactive}
+                                                    >
+                                                        {p.fullname}
+                                                        {p.user_profile_code
+                                                            ? ` [${p.user_profile_code}]`
+                                                            : ''}
+                                                        {isInactive && (
+                                                            <span className="text-red-500 ml-1">
+                                                                ({t('common.inactive')})
+                                                            </span>
+                                                        )}
+                                                    </SelectItem>
+                                                );
+                                            })
                                         )}
                                     </SelectContent>
                                 </Select>

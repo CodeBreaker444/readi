@@ -15,6 +15,8 @@ const schema = z.object({
     planning_request_date: z.string().default(""),
     planning_desc: z.string().default(""),
     planning_type: z.string().default(""),
+    planning_year: z.union([z.string(), z.number()]).optional(),
+    planning_active: z.string().optional(),
 });
 
 export async function POST(request: Request) {

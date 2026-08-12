@@ -82,6 +82,8 @@ export const PlanningMissionContent: FC<PlanningMissionProps> = ({ user }) => {
   const [testModalOpen, setTestModalOpen] = useState<boolean>(false);
   const [testModalRow, setTestModalRow] = useState<PlanningLogbookRow | null>(null);
 
+  const [commRefreshKey, setCommRefreshKey] = useState(0);
+
   useEffect(() => {
     if (!c_id || !e_id || !p_id) {
       router.replace("/planning/planning-dashboard");
@@ -295,7 +297,7 @@ export const PlanningMissionContent: FC<PlanningMissionProps> = ({ user }) => {
           <Card className={isDark ? "bg-slate-900 border-slate-800" : "bg-white"}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className={`text-base ${isDark ? "text-slate-100" : "text-slate-900"}`}>
-                {t("planning.evaluation.editTitle")}
+                {t("planning.editPlanning.editTitle")}
               </CardTitle>
               <Button
                 variant="ghost"
@@ -390,9 +392,10 @@ export const PlanningMissionContent: FC<PlanningMissionProps> = ({ user }) => {
         clientId={c_id}
         evaluationId={e_id}
         ownerId={user.ownerId}
+        onCommunicationSent={() => setCommRefreshKey((k) => k + 1)}
       />
 
-      <PlanningCommunicationTable planningId={p_id} />
+      <PlanningCommunicationTable planningId={p_id} refreshKey={commRefreshKey} />
 
       <Card className={isDark ? "bg-slate-900 border-slate-800" : ""}>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">

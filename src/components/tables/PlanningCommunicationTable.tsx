@@ -42,9 +42,10 @@ const LEVEL_STYLES: Record<string, string> = {
 
 interface Props {
     planningId: number;
+    refreshKey?: number;
 }
 
-export function PlanningCommunicationTable({ planningId }: Props) {
+export function PlanningCommunicationTable({ planningId, refreshKey }: Props) {
     const { isDark } = useTheme();
     const { t } = useTranslation();
     const [communications, setCommunications] = useState<Communication[]>([]);
@@ -66,7 +67,7 @@ export function PlanningCommunicationTable({ planningId }: Props) {
             }
         }
         fetchCommunications();
-    }, [planningId, t]);
+    }, [planningId, refreshKey, t]);
 
     const card = cn('shadow-sm', isDark ? 'bg-slate-800 border-slate-700' : 'border-slate-200');
     const cardText = isDark ? 'text-white' : 'text-slate-900';

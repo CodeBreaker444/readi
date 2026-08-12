@@ -900,6 +900,8 @@
       "missionCode": "Mission Code",
       "missionOperationLimits": "Mission Operation Limits",
       "drone": "Drone",
+      "system": "System",
+      "selectSystem": "Select System",
       "loadingClients": "Loading clients...",
       "selectClient": "Select Client",
       "loadingProcedures": "Loading procedures...",
@@ -937,6 +939,7 @@
       "selectLucProcedure": "Please select a Procedure.",
       "selectPic": "Please assign a Pilot in Command.",
       "enterDescription": "Please enter a description",
+      "descriptionMinLength": "Description must be at least 4 characters",
       "descriptionRequired": "Description is required.",
       "requestDateRequired": "Request date is required.",
       "clientRequired": "Please select a client",
@@ -1319,7 +1322,8 @@
       "observerDiff": "Observer must be different from the Pilot in Command",
       "testCodeRequired": "Test Code is required",
       "startDateRequired": "Start Date is required",
-      "endDateRequired": "End Date is required"
+      "endDateRequired": "End Date is required",
+      "endDateBeforeStart": "End Date cannot be before Start Date"
     },
     "tasks": {
       "title": "Task Table",
@@ -1446,6 +1450,7 @@
       "loadError": "Failed to load users"
     },
     "editPlanning": {
+      "editTitle": "Edit Planning Request",
       "selectStatus": "Select status",
       "selectResult": "Select result"
     },

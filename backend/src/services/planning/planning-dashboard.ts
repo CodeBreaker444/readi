@@ -533,7 +533,7 @@ export async function getDroneToolList(
   active: string = 'ALL',
   status: string = 'ALL'
 ): Promise<DroneTool[]> {
-  const data = await prisma.tool.findMany({
+  const rawData = await prisma.tool.findMany({
     where: {
       fk_owner_id: ownerId,
       ...(active !== 'ALL' && { tool_active: active }),
@@ -545,7 +545,13 @@ export async function getDroneToolList(
     },
   });
 
-  if (!data) return [];
+  if (!rawData) return [];
+
+  // Excludes the synthetic "__WAREHOUSE__" bookkeeping tool used to hold
+  // components detached from a deleted system — it's not a real asset.
+  const data = rawData.filter(
+    (row) => (row.tool_metadata as any)?.is_warehouse !== true && (row.tool_metadata as any)?.deleted !== true,
+  );
 
   return data.map((row) => ({
     tool_id: row.tool_id,
