@@ -13,7 +13,7 @@ import {
   SortingState,
   useReactTable,
 } from "@tanstack/react-table";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { cn } from "@/lib/utils";
 import {
@@ -27,6 +27,17 @@ import { MissionDetailModal } from "./MissionDetailModal";
 
 const SKELETON_COL_WIDTHS = [90, 110, 110, 150, 140, 120, 120, 140, 110, 150, 100, 180];
 const SKELETON_ROWS = 10;
+const SORT_STORAGE_KEY = "operationLogbook.sorting";
+
+function loadStoredSorting(): SortingState {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = window.localStorage.getItem(SORT_STORAGE_KEY);
+    return raw ? (JSON.parse(raw) as SortingState) : [];
+  } catch {
+    return [];
+  }
+}
 
 interface OperationLogbookTableProps {
   data: OperationLogbookItem[];
@@ -35,10 +46,14 @@ interface OperationLogbookTableProps {
 }
 
 export function OperationLogbookTable({ data, loading, isDark }: OperationLogbookTableProps) {
-  const [sorting, setSorting] = useState<SortingState>([]);
+  const [sorting, setSorting] = useState<SortingState>(loadStoredSorting);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
   const [detailTarget, setDetailTarget] = useState<OperationLogbookItem | null>(null);
+
+  useEffect(() => {
+    window.localStorage.setItem(SORT_STORAGE_KEY, JSON.stringify(sorting));
+  }, [sorting]);
 
 const table = useReactTable({
     data,
