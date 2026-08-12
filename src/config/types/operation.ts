@@ -77,6 +77,7 @@ export type CreateOperationSchema = {
   fk_luc_procedure_id: number;
   flight_mode?: string | null;
   op_type?: string | null;
+  mission_group_label?: string | null;
   is_recurrent?: boolean;
   recurrent_start_date?: string | null;
   recurrent_end_date?: string | null;
@@ -101,6 +102,7 @@ export type UpdateOperationSchema = {
   max_altitude?: number | null;
   flight_mode?: string | null;
   op_type?: string | null;
+  mission_group_label?: string | null;
 };
 export interface OperationAttachment {
   attachment_id: number;

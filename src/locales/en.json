@@ -2157,6 +2157,8 @@
         "distancePlaceholder": "e.g. 1500",
         "location": "Location",
         "locationPlaceholder": "Zone A",
+        "groupLabel": "Group Label",
+        "groupLabelPlaceholder": "e.g. Spring Survey 2025",
         "notes": "Notes",
         "notesPlaceholder": "Optional notes"
       },

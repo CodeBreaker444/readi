@@ -2152,6 +2152,8 @@
         "distancePlaceholder": "es. 1500",
         "location": "Posizione",
         "locationPlaceholder": "Zona A",
+        "groupLabel": "Etichetta Gruppo",
+        "groupLabelPlaceholder": "es. Rilevamento Primaverile 2025",
         "notes": "Note",
         "notesPlaceholder": "Note opzionali"
       },

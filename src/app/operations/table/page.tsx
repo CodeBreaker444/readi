@@ -70,6 +70,7 @@ export interface Operation {
   visual_observer_ids?: Array<{ user_id: number; name: string }> | null;
   flight_mode?: string | null;
   op_type?: string | null;
+  mission_group_label?: string | null;
   created_at: string;
   updated_at: string;
 }

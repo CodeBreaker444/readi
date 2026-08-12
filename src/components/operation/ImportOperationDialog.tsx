@@ -277,11 +277,11 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                 const selected = clientPlannings.find(p => String(p.planning_id) === planId);
                 if (selected && selected.planning_active === 'N') return false;
             }
+            if (isRecurrent && !validateRecurrentDates()) return false;
             return true;
         }
         if (step === 4) {
             if (!pilotId) return false;
-            if (isRecurrent && !validateRecurrentDates()) return false;
             return true;
         }
         return true;
@@ -612,6 +612,15 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                                 setGroupLabel={setGroupLabel}
                                 notes={notes}
                                 setNotes={setNotes}
+                                isRecurrent={isRecurrent}
+                                handleRecurrentToggle={handleRecurrentToggle}
+                                recurrentStartDate={recurrentStartDate}
+                                handleRecurrentStartDateChange={handleRecurrentStartDateChange}
+                                recurrentEndDate={recurrentEndDate}
+                                handleRecurrentEndDateChange={handleRecurrentEndDateChange}
+                                recurrentTime={recurrentTime}
+                                setRecurrentTime={setRecurrentTime}
+                                recurrentDateError={recurrentDateError}
                             />
                         )}
 
@@ -626,15 +635,6 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                                 setQualTarget={setQualTarget}
                                 visualObserverIds={visualObserverIds}
                                 setVisualObserverIds={setVisualObserverIds}
-                                isRecurrent={isRecurrent}
-                                handleRecurrentToggle={handleRecurrentToggle}
-                                recurrentStartDate={recurrentStartDate}
-                                handleRecurrentStartDateChange={handleRecurrentStartDateChange}
-                                recurrentEndDate={recurrentEndDate}
-                                handleRecurrentEndDateChange={handleRecurrentEndDateChange}
-                                recurrentTime={recurrentTime}
-                                setRecurrentTime={setRecurrentTime}
-                                recurrentDateError={recurrentDateError}
                             />
                         )}
 

@@ -76,6 +76,16 @@ interface ImportMissionDataStepProps {
     setGroupLabel: (v: string) => void;
     notes: string;
     setNotes: (v: string) => void;
+
+    isRecurrent: boolean;
+    handleRecurrentToggle: (checked: boolean) => void;
+    recurrentStartDate: string;
+    handleRecurrentStartDateChange: (value: string) => void;
+    recurrentEndDate: string;
+    handleRecurrentEndDateChange: (value: string) => void;
+    recurrentTime: string;
+    setRecurrentTime: (v: string) => void;
+    recurrentDateError: string;
 }
 
 export function ImportMissionDataStep({
@@ -91,6 +101,11 @@ export function ImportMissionDataStep({
     missionPlanningId, setMissionPlanningId, loadingMissionPlannings, missionPlannings,
     lucProcedureId, setLucProcedureId, lucProcedures,
     location, setLocation, groupLabel, setGroupLabel, notes, setNotes,
+    isRecurrent, handleRecurrentToggle,
+    recurrentStartDate, handleRecurrentStartDateChange,
+    recurrentEndDate, handleRecurrentEndDateChange,
+    recurrentTime, setRecurrentTime,
+    recurrentDateError,
 }: ImportMissionDataStepProps) {
     return (
         <div className="space-y-4">
@@ -303,6 +318,36 @@ export function ImportMissionDataStep({
                     <span>{t(ns + '.info.detectedSerialNumber')}: {logSerialNumber}</span>
                 </div>
             )}
+
+            <div className="rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-900/20 p-3 space-y-3">
+                <div className="grid grid-cols-3 gap-4">
+                    <div>
+                        <Label className="mb-1.5 block">{t(ns + '.fields.recurrentStartDate')}</Label>
+                        <Input type="date" value={recurrentStartDate} onChange={(e) => handleRecurrentStartDateChange(e.target.value)} disabled={!isRecurrent} />
+                    </div>
+                    <div>
+                        <Label className="mb-1.5 block">{t(ns + '.fields.recurrentEndDate')}</Label>
+                        <Input type="date" value={recurrentEndDate} onChange={(e) => handleRecurrentEndDateChange(e.target.value)} disabled={!isRecurrent} className={recurrentDateError ? 'border-red-500' : ''} />
+                    </div>
+                    <div>
+                        <Label className="mb-1.5 block">{t(ns + '.fields.recurrentTime')}</Label>
+                        <Input type="time" value={recurrentTime} onChange={(e) => setRecurrentTime(e.target.value)} disabled={!isRecurrent} />
+                    </div>
+                </div>
+                {recurrentDateError && (
+                    <p className="text-red-500 text-xs">{recurrentDateError}</p>
+                )}
+                <div className="flex items-center gap-2">
+                    <input
+                        type="checkbox"
+                        id="isRecurrent"
+                        checked={isRecurrent}
+                        onChange={(e) => handleRecurrentToggle(e.target.checked)}
+                        className="h-4 w-4"
+                    />
+                    <Label htmlFor="isRecurrent" className="text-sm cursor-pointer">{t(ns + '.fields.recurrent')}</Label>
+                </div>
+            </div>
         </div>
     );
 }
