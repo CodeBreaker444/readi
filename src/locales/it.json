@@ -522,7 +522,7 @@
     "table": {
       "colName": "Nome",
       "colCode": "Codice",
-      "colLabel": "Etichetta",
+      "colDescription": "Descrizione",
       "colActions": "Azioni",
       "emptyTitle": "Nessun tipo definito",
       "emptySubtitle": "Crea il tuo primo tipo missione per iniziare",
@@ -535,8 +535,6 @@
       "descriptionPlaceholder": "Inserisci descrizione tipo missione",
       "codeLabel": "Codice",
       "codePlaceholder": "es. SURV",
-      "labelLabel": "Etichetta",
-      "labelPlaceholder": "Inserisci etichetta tipo missione",
       "saving": "Salvataggio...",
       "adding": "Aggiunta...",
       "saveChanges": "Salva modifiche",

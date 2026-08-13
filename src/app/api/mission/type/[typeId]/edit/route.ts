@@ -8,7 +8,7 @@ import z from 'zod';
 const UpdateMissionTypeSchema = z.object({
   mission_type_name: z.string().min(1, 'Mission type name is required'),
   mission_type_code: z.string().min(1, 'Mission type code is required'),
-  mission_type_label: z.string().optional(),
+  mission_type_desc: z.string().optional(),
 });
 
 export async function PUT(

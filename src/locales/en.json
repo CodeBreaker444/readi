@@ -522,7 +522,7 @@
     "table": {
       "colName": "Name",
       "colCode": "Code",
-      "colLabel": "Label",
+      "colDescription": "Description",
       "colActions": "Actions",
       "emptyTitle": "No types defined yet",
       "emptySubtitle": "Create your first mission type to get started",
@@ -535,8 +535,6 @@
       "descriptionPlaceholder": "Enter mission type description",
       "codeLabel": "Code",
       "codePlaceholder": "e.g., SURV",
-      "labelLabel": "Label",
-      "labelPlaceholder": "Enter mission type label",
       "saving": "Saving...",
       "adding": "Adding...",
       "saveChanges": "Save Changes",
