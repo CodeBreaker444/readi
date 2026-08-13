@@ -10,14 +10,8 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select'
 import { SpiKpiDefinition } from '@/config/types/safetyMng'
+import { computeIndicatorStatus } from '@/lib/spiKpi'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
@@ -25,7 +19,6 @@ interface FormState {
     measurement_date: string
     actual_value: string
     target_value: string
-    status: 'GREEN' | 'YELLOW' | 'RED'
 }
 
 interface FormErrors {
@@ -41,7 +34,6 @@ interface Props {
         measurement_date: string
         actual_value: number
         target_value: number
-        status: 'GREEN' | 'YELLOW' | 'RED'
     }) => Promise<void>
     indicator: SpiKpiDefinition | null
     loading?: boolean
@@ -66,7 +58,6 @@ export function LogMeasurementDialog({ open, onClose, onSubmit, indicator, loadi
         measurement_date: todayStr(),
         actual_value: '',
         target_value: '',
-        status: 'GREEN',
     })
     const [errors, setErrors] = useState<FormErrors>({})
 
@@ -77,10 +68,13 @@ export function LogMeasurementDialog({ open, onClose, onSubmit, indicator, loadi
                 measurement_date: todayStr(),
                 actual_value: '',
                 target_value: String(indicator.target_value),
-                status: 'GREEN',
             })
         }
     }, [open, indicator])
+
+    const previewStatus = form.actual_value !== '' && !isNaN(Number(form.actual_value)) && !isNaN(Number(form.target_value))
+        ? computeIndicatorStatus(Number(form.actual_value), Number(form.target_value), indicator?.target_direction ?? 'HIGHER_IS_BETTER')
+        : null
 
     const set = <K extends keyof FormState>(key: K, value: FormState[K]) =>
         setForm((prev) => ({ ...prev, [key]: value }))
@@ -95,7 +89,6 @@ export function LogMeasurementDialog({ open, onClose, onSubmit, indicator, loadi
             measurement_date: form.measurement_date,
             actual_value: Number(form.actual_value),
             target_value: Number(form.target_value),
-            status: form.status,
         })
     }
 
@@ -103,11 +96,12 @@ export function LogMeasurementDialog({ open, onClose, onSubmit, indicator, loadi
     const inputClass = isDark ? 'bg-slate-800 border-slate-700 text-white placeholder:text-slate-500' : 'bg-slate-50 border-slate-200 text-gray-900'
     const labelClass = isDark ? 'text-slate-400' : 'text-slate-500'
 
-const STATUS_OPTIONS: { value: 'GREEN' | 'YELLOW' | 'RED'; label: string; dot: string }[] = [
-    { value: 'GREEN', label: t('safety.spiKpi.log.statusGreen'), dot: 'bg-green-500' },
-    { value: 'YELLOW', label: t('safety.spiKpi.log.statusYellow'), dot: 'bg-yellow-400' },
-    { value: 'RED', label: t('safety.spiKpi.log.statusRed'), dot: 'bg-red-500' },
-]
+    const STATUS_META: Record<'GREEN' | 'YELLOW' | 'RED', { label: string; dot: string }> = {
+        GREEN: { label: t('safety.spiKpi.log.statusGreen'), dot: 'bg-green-500' },
+        YELLOW: { label: t('safety.spiKpi.log.statusYellow'), dot: 'bg-yellow-400' },
+        RED: { label: t('safety.spiKpi.log.statusRed'), dot: 'bg-red-500' },
+    }
+
     return (
         <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
             <DialogContent className={`max-w-md transition-colors duration-300 flex flex-col overflow-hidden p-0 gap-0 ${bgClass}`}>
@@ -177,21 +171,17 @@ const STATUS_OPTIONS: { value: 'GREEN' | 'YELLOW' | 'RED'; label: string; dot: s
                         <Label className={`text-[10px] uppercase tracking-widest font-bold ${labelClass}`}>
                         {t('safety.spiKpi.log.status')}
                         </Label>
-                        <Select value={form.status} onValueChange={(v) => set('status', v as FormState['status'])}>
-                            <SelectTrigger className={`h-10 ${inputClass}`}>
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent className={isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white'}>
-                                {STATUS_OPTIONS.map((opt) => (
-                                    <SelectItem key={opt.value} value={opt.value}>
-                                        <div className="flex items-center gap-2">
-                                            <span className={`w-2 h-2 rounded-full ${opt.dot}`} />
-                                            {opt.label}
-                                        </div>
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
+                        <div className={`h-10 flex items-center gap-2 px-3 rounded-md border ${inputClass}`}>
+                            {previewStatus ? (
+                                <>
+                                    <span className={`w-2 h-2 rounded-full ${STATUS_META[previewStatus].dot}`} />
+                                    <span className="text-sm">{STATUS_META[previewStatus].label}</span>
+                                </>
+                            ) : (
+                                <span className={`text-sm ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>—</span>
+                            )}
+                        </div>
+                        <p className="text-slate-500 text-[10px] italic">{t('safety.spiKpi.log.statusHint')}</p>
                     </div>
 
                 </div>

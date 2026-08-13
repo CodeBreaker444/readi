@@ -1,5 +1,6 @@
 'use client';
 import { cn } from '@/lib/utils';
+import { computeAchievementPct, getIndicatorZoneThresholds, TargetDirection } from '@/lib/spiKpi';
 import React, { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -7,6 +8,7 @@ interface Indicator {
   indicator_name: string;
   value: number;
   target: number;
+  target_direction?: TargetDirection;
   unit?: string;
   status: 'GREEN' | 'YELLOW' | 'RED';
 }
@@ -59,18 +61,28 @@ const IndicatorCards: React.FC<IndicatorCardsProps> = ({ dataByArea, isDark = fa
               const id = `gauge_${area}_${i}`;
               const el = document.getElementById(id);
               if (el) {
+                const direction = ind.target_direction ?? 'HIGHER_IS_BETTER';
                 const color = ind.status === 'GREEN' ? '#10b981' : ind.status === 'YELLOW' ? '#f59e0b' : '#ef4444';
+                const { lower, upper } = getIndicatorZoneThresholds(ind.target, direction);
+                const max = Math.max(ind.target * 1.5, ind.value * 1.2, upper * 1.5, 10);
+                const customSectors = direction === 'LOWER_IS_BETTER'
+                  ? [
+                      { color: '#10b981', lo: 0,      hi: lower },
+                      { color: '#f59e0b', lo: lower,  hi: upper },
+                      { color: '#ef4444', lo: upper,  hi: max },
+                    ]
+                  : [
+                      { color: '#ef4444', lo: 0,      hi: lower },
+                      { color: '#f59e0b', lo: lower,  hi: upper },
+                      { color: '#10b981', lo: upper,  hi: max },
+                    ];
                 const g = new (window as any).JustGage({
                   id, value: ind.value ?? 0, min: 0,
-                  max: ind.target > 0 ? ind.target * 1.5 : 100,
+                  max,
                   gaugeWidthScale: 0.6, pointer: true, counter: true,
                   hideInnerShadow: true, donut: false,
                   relativeGaugeSize: true, label: ind.unit ?? '', title: '',
-                  customSectors: [
-                    { color: '#ef4444', lo: 0,              hi: ind.target * 0.6 },
-                    { color: '#f59e0b', lo: ind.target * 0.6, hi: ind.target * 0.9 },
-                    { color: '#10b981', lo: ind.target * 0.9, hi: ind.target * 1.5 },
-                  ],
+                  customSectors,
                   valueFontColor: color,
                 });
                 gaugeRefs.current.set(id, g);
@@ -112,7 +124,7 @@ const IndicatorCards: React.FC<IndicatorCardsProps> = ({ dataByArea, isDark = fa
             {indicators.map((ind, i) => {
               const id  = `gauge_${area}_${i}`;
               const cfg = getStatusConfig(ind.status, isDark, t);
-              const pct = ind.target > 0 ? Math.min(100, Math.round((ind.value / ind.target) * 100)) : 0;
+              const pct = computeAchievementPct(ind.value, ind.target, ind.target_direction ?? 'HIGHER_IS_BETTER');
 
               return (
                 <div key={i} className={cn(

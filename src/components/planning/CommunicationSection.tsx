@@ -35,12 +35,14 @@ interface CommunicationSectionProps {
   clientId: number;
   planningId: number;
   evaluationId: number;
+  onSent?: () => void;
 }
 
 export default function CommunicationSection({
   clientId,
   planningId,
   evaluationId,
+  onSent,
 }: CommunicationSectionProps) {
   const { t } = useTranslation();
   const [sendDialogOpen, setSendDialogOpen] = useState(false);
@@ -110,6 +112,7 @@ export default function CommunicationSection({
       setSendDialogOpen(false);
       setSendForm({ message: "", communication_level: "info" });
       setSelectedUsers([]);
+      onSent?.();
     } catch (err) {
       toast.error(t("planning.communication.sendFailed"));
     } finally {

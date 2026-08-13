@@ -156,18 +156,18 @@ export default function MissionPlanningLogbookAddNew({
             />
           </div>
           <div className="md:col-span-3 space-y-2">
-            <Label className={labelStyle}>{t("planning.form.drone")}</Label>
+            <Label className={labelStyle}>{t("planning.form.system")}</Label>
             <Select
               value={form.mission_planning_tool}
               onValueChange={(val) => handleSelectChange("mission_planning_tool", val)}
             >
               <SelectTrigger className={inputStyle}>
-                <SelectValue placeholder={t("planning.form.selectDrone")} />
+                <SelectValue placeholder={t("planning.form.selectSystem")} />
               </SelectTrigger>
 
               <SelectContent className={isDark ? "bg-slate-900 border-slate-800 text-slate-200" : ""}>
                 <SelectItem value="0" className="text-muted-foreground opacity-70">
-                  {t("planning.form.selectDrone")}
+                  {t("planning.form.selectSystem")}
                 </SelectItem>
 
                 {droneTools.map((tool) => {

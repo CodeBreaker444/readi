@@ -897,6 +897,8 @@
       "missionCode": "Missionscode",
       "missionOperationLimits": "Missionsbetriebsgrenzen",
       "drone": "Drohne",
+      "system": "System",
+      "selectSystem": "System auswählen",
       "loadingClients": "Kunden werden geladen...",
       "selectClient": "Kunden auswählen",
       "loadingProcedures": "Verfahren werden geladen...",
@@ -934,6 +936,7 @@
       "selectLucProcedure": "Bitte wählen Sie ein Verfahren aus.",
       "selectPic": "Bitte weisen Sie einen Pilot in Command zu.",
       "enterDescription": "Bitte geben Sie eine Beschreibung ein",
+      "descriptionMinLength": "Die Beschreibung muss mindestens 4 Zeichen lang sein",
       "descriptionRequired": "Beschreibung ist erforderlich.",
       "requestDateRequired": "Anfragedatum ist erforderlich.",
       "clientRequired": "Bitte wählen Sie einen Kunden aus",
@@ -1316,7 +1319,8 @@
       "observerDiff": "Beobachter muss sich vom Pilot in Command unterscheiden",
       "testCodeRequired": "Testcode ist erforderlich",
       "startDateRequired": "Startdatum ist erforderlich",
-      "endDateRequired": "Enddatum ist erforderlich"
+      "endDateRequired": "Enddatum ist erforderlich",
+      "endDateBeforeStart": "Enddatum darf nicht vor dem Startdatum liegen"
     },
     "tasks": {
       "title": "Aufgabentabelle",
@@ -1443,6 +1447,7 @@
       "loadError": "Benutzer konnten nicht geladen werden"
     },
     "editPlanning": {
+      "editTitle": "Planungsanfrage bearbeiten",
       "selectStatus": "Status auswählen",
       "selectResult": "Ergebnis auswählen"
     },
@@ -2558,6 +2563,10 @@
         "indicatorName": "Indikatorname",
         "namePlaceholder": "Beschreibenden Namen eingeben...",
         "targetValue": "Zielwert",
+        "targetDirection": "Zielrichtung",
+        "higherIsBetter": "Höher ist besser",
+        "lowerIsBetter": "Niedriger ist besser",
+        "targetDirectionHint": "Bestimmt, welche Seite des Zielwerts als gut gilt (z. B. sollten Vorfallzahlen 'Niedriger ist besser' sein).",
         "frequency": "Berichtsfrequenz",
         "description": "Beschreibung",
         "descPlaceholder": "Erklären Sie, was dieser Indikator misst...",
@@ -2590,7 +2599,8 @@
         "actualValue": "Ist-Wert",
         "actualPlaceholder": "z.B. 87,5",
         "targetValue": "Zielwert",
-        "status": "Status",
+        "status": "Status (automatisch berechnet)",
+        "statusHint": "Wird automatisch aus Ist- gegenüber Zielwert berechnet, basierend auf der konfigurierten Zielrichtung des Indikators.",
         "statusGreen": "Im Soll / Über Ziel",
         "statusYellow": "Gefährdet / Im Ziel",
         "statusRed": "Überschritten / Unter Ziel",

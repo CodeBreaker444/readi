@@ -1,5 +1,5 @@
 'use client';
-import React, { useEffect, useRef } from 'react';
+import React, { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
 
 interface DrawnArea {
   id: string;
@@ -14,10 +14,16 @@ interface MapDrawingProps {
   isDark?: boolean;
 }
 
-const MapDrawing: React.FC<MapDrawingProps> = ({ onAreasChange, isDark = false }) => {
+export interface MapDrawingHandle {
+  removeArea: (id: string) => void;
+  editArea: (id: string) => void;
+}
+
+const MapDrawing = forwardRef<MapDrawingHandle, MapDrawingProps>(({ onAreasChange, isDark = false }, ref) => {
   const mapRef = useRef<any>(null);
   const drawnItemsRef = useRef<any>(null);
   const areasRef = useRef<DrawnArea[]>([]);
+  const layersRef = useRef<Map<string, any>>(new Map());
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -88,8 +94,11 @@ const MapDrawing: React.FC<MapDrawingProps> = ({ onAreasChange, isDark = false }
       const type = e.layerType;
       drawnItems.addLayer(layer);
 
+      const id = L.stamp(layer).toString();
+      layersRef.current.set(id, layer);
+
       const drawnArea: DrawnArea = {
-        id: L.stamp(layer).toString(),
+        id,
         type,
         area: calculateArea(layer, type),
         center: calculateCenter(layer, type),
@@ -119,13 +128,39 @@ const MapDrawing: React.FC<MapDrawingProps> = ({ onAreasChange, isDark = false }
 
     map.on(L.Draw.Event.DELETED, (e: any) => {
       const deletedIds: string[] = [];
-      e.layers.eachLayer((layer: any) => deletedIds.push(L.stamp(layer).toString()));
+      e.layers.eachLayer((layer: any) => {
+        const id = L.stamp(layer).toString();
+        deletedIds.push(id);
+        layersRef.current.delete(id);
+      });
       areasRef.current = areasRef.current.filter(a => !deletedIds.includes(a.id));
       onAreasChange([...areasRef.current]);
     });
 
     mapRef.current = map;
   };
+
+  useImperativeHandle(ref, () => ({
+    removeArea: (id: string) => {
+      const layer = layersRef.current.get(id);
+      if (!layer || !drawnItemsRef.current) return;
+      drawnItemsRef.current.removeLayer(layer);
+      layersRef.current.delete(id);
+      areasRef.current = areasRef.current.filter(a => a.id !== id);
+      onAreasChange([...areasRef.current]);
+    },
+    editArea: (id: string) => {
+      const layer = layersRef.current.get(id);
+      const map = mapRef.current;
+      if (!layer) return;
+      if (layer.getBounds) {
+        map?.fitBounds(layer.getBounds(), { maxZoom: 16 });
+      } else if (layer.getLatLng) {
+        map?.setView(layer.getLatLng(), Math.max(map.getZoom(), 14));
+      }
+      layer.editing?.enable();
+    },
+  }));
 
   const calculateArea = (layer: any, type: string): number => {
     const L = (window as any).L;
@@ -158,6 +193,8 @@ const MapDrawing: React.FC<MapDrawingProps> = ({ onAreasChange, isDark = false }
       />
     </div>
   );
-};
+});
+
+MapDrawing.displayName = 'MapDrawing';
 
 export default MapDrawing;

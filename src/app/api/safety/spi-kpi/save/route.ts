@@ -1,6 +1,6 @@
 
 import { createSpiKpiDefinition, updateSpiKpiDefinition } from '@/backend/services/safetyManagement/spi-kpi-service'
-import { AREAS, FREQUENCIES, TYPES } from '@/config/types/safetyMng'
+import { AREAS, FREQUENCIES, TARGET_DIRECTIONS, TYPES } from '@/config/types/safetyMng'
 import { requireFeatureAccess, requirePermission } from '@/lib/auth/api-auth'
 import { internalError, zodError } from '@/lib/api-error'
 import { E } from '@/lib/error-codes'
@@ -18,6 +18,7 @@ const spiKpiCreateSchema = z.object({
   indicator_name: z.string().min(2, 'Name is required').max(255),
   indicator_desc: z.string().max(1000).optional().nullable(),
   target_value: z.coerce.number().min(0, 'Target must be positive'),
+  target_direction: z.enum(TARGET_DIRECTIONS).default('HIGHER_IS_BETTER'),
   unit: z.string().min(1, 'Unit is required').max(20),
   frequency: z.enum(FREQUENCIES).default('MONTHLY'),
   is_active: z.coerce.number().int().min(0).max(1).default(1),

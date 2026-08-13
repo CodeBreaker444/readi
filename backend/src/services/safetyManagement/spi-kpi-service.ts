@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma';
-import { SpiKpiCreateInput, SpiKpiDefinition, SpiKpiListInput, SpiKpiToggleInput, SpiKpiUpdateInput } from "@/config/types/safetyMng";
+import { SpiKpiCreateInput, SpiKpiDefinition, SpiKpiListInput, SpiKpiToggleInput, SpiKpiUpdateInput, TargetDirection } from "@/config/types/safetyMng";
+import { computeIndicatorStatus } from '@/lib/spiKpi';
 
 export interface SpiKpiMeasurementInput {
   definition_id: number;
@@ -7,10 +8,18 @@ export interface SpiKpiMeasurementInput {
   measurement_date: string;
   actual_value: number;
   target_value: number;
-  status: 'GREEN' | 'YELLOW' | 'RED';
 }
 
-export async function logSpiKpiMeasurement(input: SpiKpiMeasurementInput): Promise<{ kpi_id: number }> {
+export async function logSpiKpiMeasurement(input: SpiKpiMeasurementInput): Promise<{ kpi_id: number; status: 'GREEN' | 'YELLOW' | 'RED' }> {
+  const definition = await prisma.spi_kpi_definition.findUnique({
+    where: { definition_id: input.definition_id },
+    select: { target_direction: true },
+  });
+  const targetDirection = (definition?.target_direction as TargetDirection) ?? 'HIGHER_IS_BETTER';
+  // Status is derived here rather than trusted from the caller so it can never
+  // drift out of sync with the indicator's actual/target values and direction.
+  const status = computeIndicatorStatus(input.actual_value, input.target_value, targetDirection);
+
   const row = await prisma.spi_kpi.upsert({
     where: {
       fk_definition_id_measurement_date: {
@@ -22,7 +31,7 @@ export async function logSpiKpiMeasurement(input: SpiKpiMeasurementInput): Promi
       fk_owner_id: input.owner_id,
       actual_value: input.actual_value,
       target_value: input.target_value,
-      status: input.status,
+      status,
     },
     create: {
       fk_definition_id: input.definition_id,
@@ -30,11 +39,11 @@ export async function logSpiKpiMeasurement(input: SpiKpiMeasurementInput): Promi
       measurement_date: new Date(input.measurement_date),
       actual_value: input.actual_value,
       target_value: input.target_value,
-      status: input.status,
+      status,
     },
     select: { kpi_id: true },
   });
-  return { kpi_id: row.kpi_id };
+  return { kpi_id: row.kpi_id, status };
 }
 
 function mapRow(row: any): SpiKpiDefinition {
@@ -46,6 +55,7 @@ function mapRow(row: any): SpiKpiDefinition {
     indicator_name: row.kpi_name as string,
     indicator_desc: row.kpi_description ?? null,
     target_value: row.target_value != null ? Number(row.target_value) : 0,
+    target_direction: (row.target_direction as TargetDirection) ?? 'HIGHER_IS_BETTER',
     unit: row.measurement_unit as string,
     frequency: (row.frequency as SpiKpiDefinition['frequency']) ?? 'MONTHLY',
     is_active: row.is_active ? 1 : 0,
@@ -93,6 +103,7 @@ export async function createSpiKpiDefinition(input: SpiKpiCreateInput): Promise<
       kpi_name: input.indicator_name,
       kpi_description: input.indicator_desc ?? null,
       target_value: input.target_value,
+      target_direction: input.target_direction ?? 'HIGHER_IS_BETTER',
       measurement_unit: input.unit,
       frequency: input.frequency,
       is_active: input.is_active === 1,
@@ -109,6 +120,7 @@ export async function updateSpiKpiDefinition(input: SpiKpiUpdateInput): Promise<
       kpi_name: input.indicator_name,
       kpi_description: input.indicator_desc ?? null,
       target_value: input.target_value,
+      target_direction: input.target_direction,
       measurement_unit: input.unit,
       frequency: input.frequency,
       is_active: input.is_active === 1,

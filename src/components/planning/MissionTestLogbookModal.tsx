@@ -101,7 +101,7 @@ export default function MissionTestLogbookModal({
                 axios.get("/api/evaluation/planning/pilot"),
             ]);
             setTests(testsRes.data.data ?? []);
-            setPilots(pilotsRes.data.data ?? []);
+            setPilots((pilotsRes.data.data ?? []).filter((p: PilotUser) => p.userActive === 'Y'));
         } catch (err) {
             toast.error(t("planning.testLogbook.loadError"));
         } finally {
@@ -148,6 +148,12 @@ export default function MissionTestLogbookModal({
             newErrors.mission_test_date_start = t("planning.testLogbook.startDateRequired");
         if (!form.mission_test_date_end)
             newErrors.mission_test_date_end = t("planning.testLogbook.endDateRequired");
+        if (
+            form.mission_test_date_start &&
+            form.mission_test_date_end &&
+            form.mission_test_date_end < form.mission_test_date_start
+        )
+            newErrors.mission_test_date_end = t("planning.testLogbook.endDateBeforeStart");
 
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
@@ -348,7 +354,7 @@ export default function MissionTestLogbookModal({
 
                                         <div className="space-y-2">
                                             <Label className={isDark ? "text-slate-300" : ""}>{t("planning.testLogbook.endDate")} <span className="text-red-500">*</span></Label>
-                                            <Input type="date" className={`h-11 ${errors.mission_test_date_end ? "border-red-500" : ""} ${isDark ? "bg-slate-950 border-slate-800 text-white" : ""}`} value={form.mission_test_date_end} onChange={(e) => handleFieldChange("mission_test_date_end", e.target.value)} />
+                                            <Input type="date" min={form.mission_test_date_start || undefined} className={`h-11 ${errors.mission_test_date_end ? "border-red-500" : ""} ${isDark ? "bg-slate-950 border-slate-800 text-white" : ""}`} value={form.mission_test_date_end} onChange={(e) => handleFieldChange("mission_test_date_end", e.target.value)} />
                                             {errors.mission_test_date_end && <p className="text-xs text-red-500">{errors.mission_test_date_end}</p>}
                                         </div>
 

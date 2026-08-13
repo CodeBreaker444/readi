@@ -65,8 +65,9 @@ export function PlanningTaskTableSection(props: {
   clientId: number;
   evaluationId: number;
   ownerId: number;
+  onCommunicationSent?: () => void;
 }) {
-  const { isDark, planningId, clientId, evaluationId, ownerId, } = props;
+  const { isDark, planningId, clientId, evaluationId, ownerId, onCommunicationSent } = props;
   const { t } = useTranslation();
   const { canEdit } = usePermissions();
   const userCanEditTasks = canEdit('planning_evaluation');
@@ -79,6 +80,7 @@ export function PlanningTaskTableSection(props: {
   const [filterMode, setFilterMode] = useState<FilterMode>("all");
   const [globalFilter, setGlobalFilter] = useState("");
   const [sorting, setSorting] = useState<SortingState>([]);
+  const [commTableRefreshKey, setCommTableRefreshKey] = useState(0);
 
   const fetchTasks = useCallback(async () => {
     if (planningId <= 0) return;
@@ -165,6 +167,7 @@ export function PlanningTaskTableSection(props: {
       }
     }
     fetchTasks();
+    setCommTableRefreshKey((k) => k + 1);
     closeModal();
   }
 
@@ -255,6 +258,7 @@ export function PlanningTaskTableSection(props: {
                 clientId={clientId}
                 planningId={planningId}
                 evaluationId={evaluationId}
+                onSent={onCommunicationSent}
               />
             </div>
           </div>
@@ -303,7 +307,7 @@ export function PlanningTaskTableSection(props: {
 
         <CardContent>
           {filterMode === "communication" ? (
-            <EvaluationCommunicationTable evaluationId={evaluationId} clientId={clientId} />
+            <EvaluationCommunicationTable evaluationId={evaluationId} clientId={clientId} refreshKey={commTableRefreshKey} />
           ) : (
             <div className={`rounded-md border ${isDark ? "border-slate-800" : "border-slate-200"} overflow-hidden`}>
               <Table>

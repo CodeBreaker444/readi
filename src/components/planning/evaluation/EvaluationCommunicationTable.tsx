@@ -41,9 +41,10 @@ interface Communication {
 interface Props {
     evaluationId: number;
     clientId: number;
+    refreshKey?: number;
 }
 
-export function EvaluationCommunicationTable({ evaluationId, clientId }: Props) {
+export function EvaluationCommunicationTable({ evaluationId, clientId, refreshKey }: Props) {
     const { isDark } = useTheme();
     const { t } = useTranslation();
     const [communications, setCommunications] = useState<Communication[]>([]);
@@ -63,7 +64,7 @@ export function EvaluationCommunicationTable({ evaluationId, clientId }: Props) 
             }
         }
         fetchCommunications();
-    }, [evaluationId, t]);
+    }, [evaluationId, refreshKey, t]);
 
     const card = cn('shadow-sm', isDark ? 'bg-slate-800 border-slate-700' : 'border-slate-200');
     const cardText = isDark ? 'text-white' : 'text-slate-900';

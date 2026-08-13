@@ -897,6 +897,8 @@
       "missionCode": "Codice Missione",
       "missionOperationLimits": "Limiti Operativi Missione",
       "drone": "Drone",
+      "system": "Sistema",
+      "selectSystem": "Seleziona Sistema",
       "loadingClients": "Caricamento clienti...",
       "selectClient": "Seleziona Cliente",
       "loadingProcedures": "Caricamento procedure...",
@@ -934,6 +936,7 @@
       "selectLucProcedure": "Seleziona una Procedura.",
       "selectPic": "Assegna un Pilota in Comando.",
       "enterDescription": "Inserisci una descrizione",
+      "descriptionMinLength": "La descrizione deve contenere almeno 4 caratteri",
       "descriptionRequired": "La descrizione è obbligatoria.",
       "requestDateRequired": "La data di richiesta è obbligatoria.",
       "clientRequired": "Seleziona un cliente",
@@ -1318,7 +1321,8 @@
       "observerDiff": "L'Osservatore deve essere diverso dal Pilota in Comando",
       "testCodeRequired": "Il codice test è obbligatorio",
       "startDateRequired": "La data di inizio è obbligatoria",
-      "endDateRequired": "La data di fine è obbligatoria"
+      "endDateRequired": "La data di fine è obbligatoria",
+      "endDateBeforeStart": "La data di fine non può essere precedente alla data di inizio"
     },
     "tasks": {
       "title": "Tabella Compiti",
@@ -1445,6 +1449,7 @@
       "loadError": "Errore nel caricamento degli utenti"
     },
     "editPlanning": {
+      "editTitle": "Modifica Richiesta di Pianificazione",
       "selectStatus": "Seleziona stato",
       "selectResult": "Seleziona risultato"
     },
@@ -2564,6 +2569,10 @@
         "indicatorName": "Nome Indicatore",
         "namePlaceholder": "Inserisci nome descrittivo...",
         "targetValue": "Valore Obiettivo",
+        "targetDirection": "Direzione Obiettivo",
+        "higherIsBetter": "Più Alto è Meglio",
+        "lowerIsBetter": "Più Basso è Meglio",
+        "targetDirectionHint": "Determina quale lato dell'obiettivo è considerato positivo (es. il numero di incidenti dovrebbe essere 'Più Basso è Meglio').",
         "frequency": "Frequenza di Reportistica",
         "description": "Descrizione",
         "descPlaceholder": "Spiega cosa misura questo indicatore...",
@@ -2596,7 +2605,8 @@
         "actualValue": "Valore Effettivo",
         "actualPlaceholder": "es. 87.5",
         "targetValue": "Valore Obiettivo",
-        "status": "Stato",
+        "status": "Stato (calcolato automaticamente)",
+        "statusHint": "Calcolato automaticamente dal valore effettivo rispetto all'obiettivo, in base alla direzione configurata dell'indicatore.",
         "statusGreen": "In Linea / Sopra Obiettivo",
         "statusYellow": "A Rischio / Sul Bersaglio",
         "statusRed": "Superato / Sotto Obiettivo",
