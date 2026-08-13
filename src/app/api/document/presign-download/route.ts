@@ -19,6 +19,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ code: 1, ...result });
   } catch (error: any) {
     console.error('[presign_download]', error);
-    return internalError(E.AU002, error);
+    return internalError(E.SV001, error);
   }
 }

@@ -1,5 +1,5 @@
 import { uploadDocumentRevision } from '@/backend/services/document/document-service';
-import { internalError, zodError } from '@/lib/api-error';
+import { apiError, internalError, zodError } from '@/lib/api-error';
 import { requirePermission } from '@/lib/auth/api-auth';
 import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
@@ -36,7 +36,12 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ code: 1, message: 'Revision uploaded', ...result });
   } catch (error: any) {
+    const msg = error instanceof Error ? error.message : '';
+    if (msg === 'This version label already exists for this document.') {
+      return apiError(E.DB005, 409);
+    }
+
     console.error('[document_upload_revision]', error);
-    return internalError(E.AU002, error);
+    return internalError(E.SV001, error);
   }
 }

@@ -292,6 +292,18 @@ export async function createDocument(
 
 
 export async function updateDocument(input: DocumentUpdateInput): Promise<void> {
+  if (input.doc_code) {
+    const existing = await prisma.luc_document.findFirst({
+      where: {
+        fk_owner_id:   input.owner_id,
+        document_code: input.doc_code,
+        document_id:   { not: input.document_id },
+      },
+      select: { document_id: true },
+    });
+    if (existing) throw new Error('A document with code already exists.');
+  }
+
   await prisma.luc_document.updateMany({
     where: { document_id: input.document_id, document_active: 'Y' },
     data: {
@@ -361,6 +373,12 @@ export async function uploadDocumentRevision(
   });
 
   const newVersion = input.version_label ?? autoIncrementVersion(latest?.revision_number);
+
+  const existing = await prisma.luc_document_rev.findFirst({
+    where:  { fk_document_id: input.document_id, revision_number: newVersion },
+    select: { revision_id: true },
+  });
+  if (existing) throw new Error('This version label already exists for this document.');
 
   const rev = await prisma.luc_document_rev.create({
     data: {

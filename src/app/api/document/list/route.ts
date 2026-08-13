@@ -31,6 +31,6 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ code: 1, message: 'Success', ...data });
     } catch (error: any) {
         console.error('[document_list]', error);
-        return internalError(E.AU002, error);
+        return internalError(E.SV001, error);
     }
 }
