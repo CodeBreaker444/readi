@@ -601,6 +601,7 @@ export default function DroneToolPage({ dFlightEnabled }: DroneToolPageProps) {
                 open={showDuplicateSystem}
                 sourceSystemId={duplicateSourceSystemId}
                 clients={clients}
+                models={models}
                 onClose={() => { setShowDuplicateSystem(false); setDuplicateSourceSystemId(null); }}
                 onSuccess={() => {
                     setShowDuplicateSystem(false);

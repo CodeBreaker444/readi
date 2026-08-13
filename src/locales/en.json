@@ -4574,6 +4574,7 @@
           "speedPositive": "Max speed must be greater than 0",
           "altitudePositive": "Max altitude must be greater than 0",
           "weightPositive": "Weight must be greater than 0",
+          "mtomPositive": "MTOM must be greater than 0",
           "success": "Model added successfully",
           "failed": "Failed to add model",
           "error": "Error adding model"
@@ -4595,6 +4596,7 @@
           "manufacturerRequired": "Manufacturer (Brand) is required",
           "modelCodeRequired": "Model code (Serie) is required",
           "modelNameRequired": "Model name is required",
+          "mtomPositive": "MTOM must be greater than 0",
           "loadError": "Error loading models",
           "loadModelError": "Error loading model",
           "updateSuccess": "Model updated successfully",
@@ -4651,7 +4653,7 @@
         "placeholders": {
           "selectClient": "Select client",
           "noneTopLevel": "None (top-level)",
-          "toolModelId": "Tool model id"
+          "noModel": "No model"
         },
         "toasts": {
           "systemCodeRequired": "System code is required",

@@ -4570,6 +4570,7 @@
           "speedPositive": "La velocità massima deve essere maggiore di 0",
           "altitudePositive": "L'altitudine massima deve essere maggiore di 0",
           "weightPositive": "Il peso deve essere maggiore di 0",
+          "mtomPositive": "L'MTOM deve essere maggiore di 0",
           "success": "Modello aggiunto con successo",
           "failed": "Aggiunta modello fallita",
           "error": "Errore durante l'aggiunta del modello"
@@ -4591,6 +4592,7 @@
           "manufacturerRequired": "Il produttore (Marca) è obbligatorio",
           "modelCodeRequired": "Il codice modello (Serie) è obbligatorio",
           "modelNameRequired": "Il nome del modello è obbligatorio",
+          "mtomPositive": "L'MTOM deve essere maggiore di 0",
           "loadError": "Errore nel caricamento dei modelli",
           "loadModelError": "Errore nel caricamento del modello",
           "updateSuccess": "Modello aggiornato con successo",
@@ -4647,7 +4649,7 @@
         "placeholders": {
           "selectClient": "Seleziona cliente",
           "noneTopLevel": "Nessuno (livello principale)",
-          "toolModelId": "ID modello strumento"
+          "noModel": "Nessun modello"
         },
         "toasts": {
           "systemCodeRequired": "Il codice sistema è obbligatorio",

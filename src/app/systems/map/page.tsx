@@ -118,7 +118,7 @@ export default function DroneToolMapPage() {
   const fetchClients = useCallback(async () => {
     try {
       const response = await axios.get("/api/client/list");
-      if (response.data?.clients) setClients(response.data.clients);
+      if (response.data?.data) setClients(response.data.data);
     } catch (error) {
       console.error("Error fetching clients:", error);
     }

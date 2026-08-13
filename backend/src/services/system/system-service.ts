@@ -215,7 +215,7 @@ export async function addSystem(toolData: AddSystemInput) {
   });
 
   const existing = existingTools.find((t) => (t.tool_metadata as any)?.deleted !== true);
-  if (existing) throw new Error('System code already exists for this owner');
+  if (existing) return { code: 0, message: 'System code already exists' };
 
   const filesToUpload: File[] = Array.isArray(toolData.files)
     ? toolData.files.filter((f) => f instanceof File && f.size > 0)
@@ -595,6 +595,21 @@ export async function detachComponent(ownerId: number, componentId: number) {
 
 
 export async function addModel(modelData: any) {
+  const normalizedCode = typeof modelData.factory_serie === 'string'
+    ? modelData.factory_serie.trim()
+    : '';
+
+  if (normalizedCode) {
+    const duplicate = await prisma.tool_model.findFirst({
+      where: { model_code: { equals: normalizedCode, mode: 'insensitive' } },
+      select: { model_id: true },
+    });
+
+    if (duplicate) {
+      return { code: 0, message: `Model code "${normalizedCode}" already exists.` };
+    }
+  }
+
   const specsWithOwner = {
     ...(modelData.technical_specs || {}),
     fk_owner_id: modelData.fk_owner_id,
@@ -616,6 +631,24 @@ export async function addModel(modelData: any) {
 
 
 export async function updateModel(modelId: number, modelData: any) {
+  const normalizedCode = typeof modelData.model_code === 'string'
+    ? modelData.model_code.trim()
+    : '';
+
+  if (normalizedCode) {
+    const duplicate = await prisma.tool_model.findFirst({
+      where: {
+        model_code: { equals: normalizedCode, mode: 'insensitive' },
+        model_id: { not: modelId },
+      },
+      select: { model_id: true },
+    });
+
+    if (duplicate) {
+      return { code: 0, message: `Model code "${normalizedCode}" already exists.` };
+    }
+  }
+
   const existing = await prisma.tool_model.findUnique({
     where: { model_id: modelId },
     select: { specifications: true },
@@ -873,6 +906,24 @@ export async function addComponent(componentData: any, ownerId: number) {
     }
   }
 
+  const normalizedCode = typeof componentData.component_code === 'string'
+    ? componentData.component_code.trim()
+    : '';
+
+  if (normalizedCode) {
+    const duplicateCode = await prisma.tool_component.findFirst({
+      where: {
+        component_code: { equals: normalizedCode, mode: 'insensitive' },
+        tool: { fk_owner_id: ownerId },
+      },
+      select: { component_id: true },
+    });
+
+    if (duplicateCode) {
+      return { code: 0, message: `Component code "${normalizedCode}" already exists.` };
+    }
+  }
+
   let maintenanceCycle: string | null = null;
   let maintenanceCycleHour: number | null = null;
   let maintenanceCycleDay: number | null = null;
@@ -1032,6 +1083,25 @@ export async function updateComponent(componentId: number, componentData: any, o
 
     if (duplicate) {
       return { code: 0, message: `Component serial number "${normalizedSerial}" already exists.` };
+    }
+  }
+
+  const normalizedCode = typeof componentData.component_code === 'string'
+    ? componentData.component_code.trim()
+    : '';
+
+  if (normalizedCode) {
+    const duplicateCode = await prisma.tool_component.findFirst({
+      where: {
+        component_code: { equals: normalizedCode, mode: 'insensitive' },
+        component_id: { not: componentId },
+        tool: { fk_owner_id: ownerId },
+      },
+      select: { component_id: true },
+    });
+
+    if (duplicateCode) {
+      return { code: 0, message: `Component code "${normalizedCode}" already exists.` };
     }
   }
 
