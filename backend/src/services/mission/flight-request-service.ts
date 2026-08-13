@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
 import { createHash, randomUUID } from 'crypto';
+import { logEvent } from '@/backend/services/auditLog/audit-log';
 
 export function hashApiKey(rawKey: string): string {
   return createHash('sha256').update(rawKey).digest('hex');
@@ -181,6 +182,9 @@ export async function createApiKey(
   key_name: string,
   created_by_user_id: number,
   expires_at?: string,
+  userName?: string,
+  userEmail?: string,
+  userRole?: string,
 ): Promise<{ api_key_id: number; key_value: string }> {
   const rawKey  = `rdi_${randomUUID().replace(/-/g, '')}`;
   const keyHash = hashApiKey(rawKey);
@@ -199,13 +203,51 @@ export async function createApiKey(
     },
     select: { api_key_id: true },
   });
+
+  logEvent({
+    eventType: 'CREATE',
+    entityType: 'api_key',
+    entityId: row.api_key_id,
+    description: `API key '${key_name}' created`,
+    userId: created_by_user_id,
+    userName: userName,
+    userEmail: userEmail,
+    userRole: userRole,
+    ownerId: owner_id,
+    metadata: { keyName: key_name, keyPrefix: prefix, expiresAt: expires_at },
+  });
+
   return { api_key_id: row.api_key_id, key_value: rawKey };
 }
 
-export async function revokeApiKey(api_key_id: number, owner_id: number): Promise<void> {
+export async function revokeApiKey(
+  api_key_id: number,
+  owner_id: number,
+  userId?: number,
+  userName?: string,
+  userEmail?: string,
+  userRole?: string,
+): Promise<void> {
+  const existing = await prisma.api_keys.findFirst({
+    where: { api_key_id, fk_owner_id: owner_id },
+    select: { key_name: true },
+  });
+
   await prisma.api_keys.updateMany({
     where: { api_key_id, fk_owner_id: owner_id },
     data: { is_active: false },
+  });
+
+  logEvent({
+    eventType: 'UPDATE',
+    entityType: 'api_key',
+    entityId: api_key_id,
+    description: `API key '${existing?.key_name ?? `#${api_key_id}`}' revoked`,
+    userId: userId,
+    userName: userName,
+    userEmail: userEmail,
+    userRole: userRole,
+    ownerId: owner_id,
   });
 }
 
@@ -412,12 +454,36 @@ export async function deleteFlightRequest(request_id: number, owner_id: number):
   });
 }
 
-export async function deleteApiKey(api_key_id: number, owner_id: number): Promise<void> {
+export async function deleteApiKey(
+  api_key_id: number,
+  owner_id: number,
+  userId?: number,
+  userName?: string,
+  userEmail?: string,
+  userRole?: string,
+): Promise<void> {
+  const existing = await prisma.api_keys.findFirst({
+    where: { api_key_id, fk_owner_id: owner_id },
+    select: { key_name: true },
+  });
+
   await prisma.flight_requests.updateMany({
     where: { fk_api_key_id: api_key_id },
     data: { fk_api_key_id: null },
   });
   await prisma.api_keys.deleteMany({
     where: { api_key_id, fk_owner_id: owner_id },
+  });
+
+  logEvent({
+    eventType: 'DELETE',
+    entityType: 'api_key',
+    entityId: api_key_id,
+    description: `API key '${existing?.key_name ?? `#${api_key_id}`}' deleted`,
+    userId: userId,
+    userName: userName,
+    userEmail: userEmail,
+    userRole: userRole,
+    ownerId: owner_id,
   });
 }

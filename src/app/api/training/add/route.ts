@@ -46,7 +46,14 @@ export async function POST(req: NextRequest) {
       if (!parsed.success) {
         return zodError(E.VL001, parsed.error);
       }
-      await updateFlatTraining(parsed.data);
+      await updateFlatTraining(
+        parsed.data,
+        session!.user.ownerId,
+        session!.user.userId,
+        session!.user.fullname,
+        session!.user.email,
+        session!.user.role
+      );
 
       sendTrainingUpdatedModuleEmail(session!.user.ownerId, {
         trainingName: parsed.data.training_name,
@@ -64,7 +71,13 @@ export async function POST(req: NextRequest) {
       return zodError(E.VL001, parsed.error);
     }
 
-    const ids = await addFlatTraining({ owner_id: session!.user.ownerId, ...parsed.data });
+    const ids = await addFlatTraining(
+      { owner_id: session!.user.ownerId, ...parsed.data },
+      session!.user.userId,
+      session!.user.fullname,
+      session!.user.email,
+      session!.user.role
+    );
 
     sendTrainingCreatedModuleEmail(session!.user.ownerId, {
       trainingName: parsed.data.training_name,

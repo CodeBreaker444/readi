@@ -44,10 +44,13 @@ export async function POST(req: NextRequest) {
             return apiError(E.AU003, 403);
         }
 
-        const updated = await updateComplianceRequirement({
-            owner_id: ownerId,
-            ...parsed.data,
-        });
+        const updated = await updateComplianceRequirement(
+            { owner_id: ownerId, ...parsed.data },
+            session!.user.userId,
+            session!.user.fullname,
+            session!.user.email,
+            session!.user.role
+        );
 
         return NextResponse.json({ code: 1, message: 'Requirement updated', data: updated });
     } catch (error: any) {

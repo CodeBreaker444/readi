@@ -30,6 +30,10 @@ export async function POST(req: NextRequest) {
       action: parsed.data.action,
       approved_by_user_id: session!.user.userId,
       justification: parsed.data.notes,
+      owner_id: session!.user.ownerId,
+      userName: session!.user.fullname,
+      userEmail: session!.user.email,
+      userRole: session!.user.role,
     });
 
     const msg =

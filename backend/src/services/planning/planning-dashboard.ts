@@ -3,6 +3,7 @@ import { EvaluationTask } from '@/config/types/evaluation';
 import { DroneTool, FileType, MissionTemplate, PilotUser, PlanningLogbookRow, PlanningTestLogbookRow, RepositoryFile } from '@/config/types/evaluation-planning';
 import { ProcedureSteps } from '@/config/types/lcuProcedures';
 import { deleteFileFromS3, getPresignedDownloadUrl } from '@/lib/s3Client';
+import { logEvent } from '@/backend/services/auditLog/audit-log';
 
 export type UpdatePlanning = {
   planning_id: number;
@@ -36,7 +37,10 @@ type CreatePlanningInput = {
 export async function addPlanningWithAssignment(
   input: CreatePlanningInput,
   userId: number,
-  ownerId: number
+  ownerId: number,
+  userName?: string,
+  userEmail?: string,
+  userRole?: string
 ) {
   const inserted = await prisma.planning.create({
     data: {
@@ -55,6 +59,19 @@ export async function addPlanningWithAssignment(
       },
     },
     select: { planning_id: true, created_by_user_id: true, assigned_to_user_id: true },
+  });
+
+  logEvent({
+    eventType: 'CREATE',
+    entityType: 'planning',
+    entityId: inserted.planning_id,
+    description: `Planning #${inserted.planning_id} created from evaluation #${input.fk_evaluation_id}`,
+    userId: userId,
+    userName: userName,
+    userEmail: userEmail,
+    userRole: userRole,
+    ownerId: ownerId,
+    metadata: { evaluationId: input.fk_evaluation_id, clientId: input.fk_client_id, assignedToUserId: inserted.assigned_to_user_id },
   });
 
   return {
@@ -278,7 +295,14 @@ export async function getPlanningData(ownerId: number, planningId: number) {
   };
 }
 
-export async function updatePlanning(payload: UpdatePlanning, ownerId: number) {
+export async function updatePlanning(
+  payload: UpdatePlanning,
+  ownerId: number,
+  userId?: number,
+  userName?: string,
+  userEmail?: string,
+  userRole?: string
+) {
   const { planning_id, ...updates } = payload;
 
   const updateObj: Record<string, unknown> = {
@@ -317,6 +341,19 @@ export async function updatePlanning(payload: UpdatePlanning, ownerId: number) {
   });
 
   if (result.count === 0) throw new Error('Planning not found or access denied');
+
+  logEvent({
+    eventType: 'UPDATE',
+    entityType: 'planning',
+    entityId: planning_id,
+    description: `Planning #${planning_id} updated`,
+    userId: userId,
+    userName: userName,
+    userEmail: userEmail,
+    userRole: userRole,
+    ownerId: ownerId,
+    metadata: { updateObj },
+  });
 
   // Return the updated planning data
   return await getPlanningData(ownerId, planning_id);
@@ -413,7 +450,7 @@ export async function addMissionPlanningLogbook(params: {
   mission_planning_folder: string;
   mission_planning_s3_key: string;
   mission_planning_s3_url: string;
-}) {
+}, userName?: string, userEmail?: string, userRole?: string) {
   const data = await prisma.planning_logbook.create({
     data: {
       fk_planning_id: params.fk_planning_id,
@@ -434,6 +471,19 @@ export async function addMissionPlanningLogbook(params: {
       mission_planning_s3_url: params.mission_planning_s3_url,
     },
     select: { mission_planning_id: true },
+  });
+
+  logEvent({
+    eventType: 'CREATE',
+    entityType: 'mission_planning_logbook',
+    entityId: data.mission_planning_id,
+    description: `Mission planning "${params.mission_planning_code}" added to planning #${params.fk_planning_id}`,
+    userId: params.fk_user_id,
+    userName: userName,
+    userEmail: userEmail,
+    userRole: userRole,
+    ownerId: params.fk_owner_id,
+    metadata: { planningId: params.fk_planning_id, missionPlanningCode: params.mission_planning_code },
   });
 
   return data;
@@ -711,7 +761,7 @@ export async function addCommunicationGeneral(params: {
   communication_file_name: string | null;
   communication_file_key: string | null;
   communication_file_url: string | null;
-}): Promise<number> {
+}, userName?: string, userEmail?: string, userRole?: string): Promise<number> {
   const data = await prisma.communication_general.create({
     data: {
       fk_owner_id: params.fk_owner_id,
@@ -732,6 +782,19 @@ export async function addCommunicationGeneral(params: {
       communication_file_url: params.communication_file_url,
     },
     select: { communication_id: true },
+  });
+
+  logEvent({
+    eventType: 'CREATE',
+    entityType: 'communication',
+    entityId: data.communication_id,
+    description: `Communication "${params.subject}" sent`,
+    userId: params.sent_by_user_id,
+    userName: userName,
+    userEmail: userEmail,
+    userRole: userRole,
+    ownerId: params.fk_owner_id,
+    metadata: { planningId: params.fk_planning_id, evaluationId: params.fk_evaluation_id, recipients: params.recipients },
   });
 
   return data.communication_id;
@@ -1077,7 +1140,11 @@ export async function updatePlanningTask(
   ownerId: number,
   planningId: number,
   taskId: number,
-  newStatus: 'pending' | 'in_progress' | 'completed' | 'skipped'
+  newStatus: 'pending' | 'in_progress' | 'completed' | 'skipped',
+  userId?: number,
+  userName?: string,
+  userEmail?: string,
+  userRole?: string
 ): Promise<{ success: boolean; message?: string }> {
   const planningBase = await prisma.planning.findFirst({
     where: { planning_id: planningId, fk_owner_id: ownerId },
@@ -1099,11 +1166,25 @@ export async function updatePlanningTask(
   const idx = (planningJson.procedure_tasks as StoredTask[]).findIndex((t) => t.task_id === taskId);
   if (idx === -1) return { success: false, message: `Task ${taskId} not found` };
 
+  const taskName = (planningJson.procedure_tasks as StoredTask[])[idx].task_name ?? `Task #${taskId}`;
   planningJson.procedure_tasks[idx].task_status = newStatus;
 
   await prisma.planning.updateMany({
     where: { planning_id: planningId, fk_owner_id: ownerId },
     data: { planning_json: planningJson },
+  });
+
+  logEvent({
+    eventType: 'UPDATE',
+    entityType: 'planning_task',
+    entityId: taskId,
+    description: `${taskName} status updated to ${newStatus} for planning #${planningId}`,
+    userId: userId,
+    userName: userName,
+    userEmail: userEmail,
+    userRole: userRole,
+    ownerId: ownerId,
+    metadata: { newStatus, planningId, taskName },
   });
 
   return { success: true };

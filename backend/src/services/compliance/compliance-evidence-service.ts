@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma';
+import { logEvent } from '@/backend/services/auditLog/audit-log';
 
 export type EvidenceType = 'DOC' | 'RECORD' | 'AUDIT' | 'LINK';
 
@@ -43,10 +44,15 @@ export async function listEvidenceByRequirement(
   return rows as unknown as ComplianceEvidence[];
 }
 
-export async function addEvidence(params: CreateEvidenceParams): Promise<ComplianceEvidence> {
+export async function addEvidence(
+  params: CreateEvidenceParams,
+  userName?: string,
+  userEmail?: string,
+  userRole?: string
+): Promise<ComplianceEvidence> {
   const req = await prisma.compliance_requirement.findFirst({
     where: { requirement_id: params.requirement_id, fk_owner_id: params.owner_id },
-    select: { requirement_id: true },
+    select: { requirement_id: true, requirement_code: true },
   });
   if (!req) throw new Error('Requirement not found or access denied');
 
@@ -61,10 +67,31 @@ export async function addEvidence(params: CreateEvidenceParams): Promise<Complia
       verification_status: 'PENDING',
     },
   });
+
+  logEvent({
+    eventType: 'CREATE',
+    entityType: 'compliance_evidence',
+    entityId: row.evidence_id,
+    description: `Evidence added to requirement ${req.requirement_code}`,
+    userId: params.submitted_by_user_id ?? undefined,
+    userName: userName,
+    userEmail: userEmail,
+    userRole: userRole,
+    ownerId: params.owner_id,
+    metadata: { requirementId: params.requirement_id, evidenceType: params.evidence_type },
+  });
+
   return row as unknown as ComplianceEvidence;
 }
 
-export async function deleteEvidence(evidenceId: number, ownerId: number): Promise<void> {
+export async function deleteEvidence(
+  evidenceId: number,
+  ownerId: number,
+  userId?: number,
+  userName?: string,
+  userEmail?: string,
+  userRole?: string
+): Promise<void> {
   const ev = await prisma.compliance_evidence.findUnique({
     where: { evidence_id: evidenceId },
     select: { evidence_id: true, fk_requirement_id: true },
@@ -73,11 +100,24 @@ export async function deleteEvidence(evidenceId: number, ownerId: number): Promi
 
   const req = await prisma.compliance_requirement.findFirst({
     where: { requirement_id: ev.fk_requirement_id, fk_owner_id: ownerId },
-    select: { requirement_id: true },
+    select: { requirement_id: true, requirement_code: true },
   });
   if (!req) throw new Error('Access denied');
 
   await prisma.compliance_evidence.delete({ where: { evidence_id: evidenceId } });
+
+  logEvent({
+    eventType: 'DELETE',
+    entityType: 'compliance_evidence',
+    entityId: evidenceId,
+    description: `Evidence deleted from requirement ${req.requirement_code}`,
+    userId: userId,
+    userName: userName,
+    userEmail: userEmail,
+    userRole: userRole,
+    ownerId: ownerId,
+    metadata: { requirementId: ev.fk_requirement_id },
+  });
 }
 
 export async function updateRequirementStatus(params: {
@@ -86,12 +126,15 @@ export async function updateRequirementStatus(params: {
   new_status: string;
   changed_by_user_id: number;
   comment?: string | null;
+  userName?: string;
+  userEmail?: string;
+  userRole?: string;
 }): Promise<void> {
-  const { requirement_id, owner_id, new_status, changed_by_user_id, comment } = params;
+  const { requirement_id, owner_id, new_status, changed_by_user_id, comment, userName, userEmail, userRole } = params;
 
   const current = await prisma.compliance_requirement.findFirst({
     where: { requirement_id, fk_owner_id: owner_id },
-    select: { requirement_status: true },
+    select: { requirement_status: true, requirement_code: true },
   });
   if (!current) throw new Error('Requirement not found or access denied');
 
@@ -108,5 +151,18 @@ export async function updateRequirementStatus(params: {
       changed_by_user_id,
       change_reason: comment ?? null,
     },
+  });
+
+  logEvent({
+    eventType: 'UPDATE',
+    entityType: 'compliance_requirement_status',
+    entityId: requirement_id,
+    description: `Requirement ${current.requirement_code} status changed from ${current.requirement_status} to ${new_status}`,
+    userId: changed_by_user_id,
+    userName: userName,
+    userEmail: userEmail,
+    userRole: userRole,
+    ownerId: owner_id,
+    metadata: { statusFrom: current.requirement_status, statusTo: new_status, comment },
   });
 }

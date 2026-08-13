@@ -45,11 +45,16 @@ export async function POST(request: NextRequest) {
       return zodError(E.VL001, parsed.error)
     }
 
-    const result = await createAssignment({
-      ...parsed.data,
-      fk_owner_id: session!.user.ownerId,
-      fk_user_id: session!.user.userId,
-    })
+    const result = await createAssignment(
+      {
+        ...parsed.data,
+        fk_owner_id: session!.user.ownerId,
+        fk_user_id: session!.user.userId,
+      },
+      session!.user.fullname,
+      session!.user.email,
+      session!.user.role
+    )
 
    return NextResponse.json({ 
       code: 1, 

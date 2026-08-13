@@ -1,12 +1,15 @@
 import { prisma } from '@/lib/prisma';
 import { sendNotificationEmail } from '../../../../lib/resend/mail';
 import { buildS3Url, uploadFileToS3 } from '@/lib/s3Client';
+import { logEvent } from '@/backend/services/auditLog/audit-log';
 
 
 export interface SendCommunicationParams {
   ownerId: number;
   userId: number;
   userEmail: string;
+  userName?: string;
+  userRole?: string;
   procedureName: string;
   fkEvaluationId: number;
   fkPlanningId: number;
@@ -81,6 +84,25 @@ export async function sendGeneralCommunication(
   });
 
   const newId = commRecord.communication_id;
+
+  logEvent({
+    eventType: 'CREATE',
+    entityType: 'communication',
+    entityId: newId,
+    description: `Communication sent for ${params.procedureName}`,
+    userId: params.userId,
+    userName: params.userName,
+    userEmail: params.userEmail,
+    userRole: params.userRole,
+    ownerId: params.ownerId,
+    metadata: {
+      procedureName: params.procedureName,
+      evaluationId: params.fkEvaluationId || null,
+      planningId: params.fkPlanningId || null,
+      missionId: params.fkMissionId || null,
+      recipients: params.communicationTo,
+    },
+  });
 
   if (params.communicationTo.length > 0) {
     await prisma.notification.createMany({

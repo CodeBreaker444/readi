@@ -12,6 +12,8 @@ export async function POST(req: NextRequest) {
     const ownerId: number  = session!.user.ownerId
     const userId: number   = session!.user.userId
     const userEmail: string = session!.user.email
+    const userName: string  = session!.user.fullname
+    const userRole: string  = session!.user.role
 
     const formData = await req.formData();
 
@@ -24,6 +26,8 @@ export async function POST(req: NextRequest) {
       ownerId,
       userId,
       userEmail,
+      userName,
+      userRole,
       procedureName:    String(formData.get('procedure_name')       ?? 'operation'),
       fkEvaluationId:   Number(formData.get('fk_evaluation_id'))     || 0,
       fkPlanningId:     Number(formData.get('fk_planning_id'))       || 0,

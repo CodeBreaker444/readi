@@ -1,5 +1,6 @@
 import 'server-only';
 import { prisma } from '@/lib/prisma';
+import { logEvent } from '@/backend/services/auditLog/audit-log';
 
 export interface DccIntegration {
   id: number;
@@ -30,8 +31,17 @@ export async function upsertDccIntegration(
   ownerId: number,
   displayName: string,
   callbackUrl: string,
+  userId?: number,
+  userName?: string,
+  userEmail?: string,
+  userRole?: string,
 ): Promise<void> {
-  await prisma.dcc_integrations.upsert({
+  const existing = await prisma.dcc_integrations.findUnique({
+    where: { fk_owner_id: ownerId },
+    select: { id: true },
+  });
+
+  const row = await prisma.dcc_integrations.upsert({
     where: { fk_owner_id: ownerId },
     update: {
       display_name: displayName,
@@ -43,6 +53,19 @@ export async function upsertDccIntegration(
       display_name: displayName,
       callback_url: callbackUrl,
     },
+  });
+
+  logEvent({
+    eventType: existing ? 'UPDATE' : 'CREATE',
+    entityType: 'dcc_integration',
+    entityId: row.id,
+    description: `DCC integration '${displayName}' ${existing ? 'updated' : 'connected'}`,
+    userId: userId,
+    userName: userName,
+    userEmail: userEmail,
+    userRole: userRole,
+    ownerId: ownerId,
+    metadata: { displayName, callbackUrl },
   });
 }
 

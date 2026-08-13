@@ -84,7 +84,10 @@ export async function POST(req: NextRequest) {
         assigned_to_user_id: parsed.data.assigned_to_user_id,
       },
       session!.user.userId,
-      session!.user.ownerId
+      session!.user.ownerId,
+      session!.user.fullname,
+      session!.user.email,
+      session!.user.role
     );
 
     return NextResponse.json({
@@ -124,7 +127,14 @@ export async function PUT(req: NextRequest) {
         const parsed = updatePlanningSchema.safeParse(body);
         if (!parsed.success) return zodError(E.VL001, parsed.error);
 
-        const data = await updatePlanning(parsed.data, session!.user.ownerId);
+        const data = await updatePlanning(
+          parsed.data,
+          session!.user.ownerId,
+          session!.user.userId,
+          session!.user.fullname,
+          session!.user.email,
+          session!.user.role
+        );
         return NextResponse.json({ code: 1, message: "Planning updated", data });
     } catch (err) {
         return internalError(E.SV001, err);

@@ -57,14 +57,21 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
             )
         }
 
-        const result = await updateChecklist({ 
-            ...validatedBody.data,
-            checklist_id: Number(id), 
-            checklist_ver: validatedBody.data.checklist_ver || '1.0', 
-            checklist_active: validatedBody.data.checklist_active || 'Y', 
-            checklist_json: validatedBody.data.checklist_json || '{}', 
-            fk_owner_id: session!.user.ownerId ,
-            fk_user_id: session!.user.userId })
+        const result = await updateChecklist(
+            {
+                ...validatedBody.data,
+                checklist_id: Number(id),
+                checklist_ver: validatedBody.data.checklist_ver || '1.0',
+                checklist_active: validatedBody.data.checklist_active || 'Y',
+                checklist_json: validatedBody.data.checklist_json || '{}',
+                fk_owner_id: session!.user.ownerId,
+                fk_user_id: session!.user.userId
+            },
+            session!.user.userId,
+            session!.user.fullname,
+            session!.user.email,
+            session!.user.role
+        )
 
         return NextResponse.json({ ...result, message: 'Checklist updated successfully' }, { status: 200 })
     } catch (error) {
@@ -85,7 +92,14 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
         if (featureError) return featureError
     const ownerId = session!.user.ownerId
 
-    const result = await deleteChecklist(ownerId, Number(id))
+    const result = await deleteChecklist(
+        ownerId,
+        Number(id),
+        session!.user.userId,
+        session!.user.fullname,
+        session!.user.email,
+        session!.user.role
+    )
     return NextResponse.json({ ...result, message: 'Checklist deleted successfully' }, { status:  200  })
     }catch (error) {
         return NextResponse.json(

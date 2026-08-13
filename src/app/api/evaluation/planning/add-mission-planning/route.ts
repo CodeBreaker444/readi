@@ -94,7 +94,7 @@ export async function POST(request: Request) {
   mission_planning_folder: s3Key ? s3Key.substring(0, s3Key.lastIndexOf("/")) : "",
   mission_planning_s3_key: s3Key,
   mission_planning_s3_url: s3Url,
-});
+}, session!.user.fullname, session!.user.email, session!.user.role);
 
     return NextResponse.json({ code: 1, message: "Success", data });
   } catch (err) {

@@ -29,7 +29,14 @@ export async function POST(req: NextRequest) {
       return apiError(E.AU003, 403);
     }
 
-    await deleteComplianceRequirement(parsed.data.requirement_id, ownerId);
+    await deleteComplianceRequirement(
+      parsed.data.requirement_id,
+      ownerId,
+      session!.user.userId,
+      session!.user.fullname,
+      session!.user.email,
+      session!.user.role
+    );
 
     return NextResponse.json({ code: 1, message: 'Requirement deleted' });
   } catch (error: any) {

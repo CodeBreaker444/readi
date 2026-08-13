@@ -45,7 +45,15 @@ export async function PUT(request: NextRequest) {
     const ownerId = session!.user.ownerId;
     const { communication_id, ...updatePayload } = parsed.data;
 
-    const result = await updateCommunication(communication_id, ownerId, updatePayload);
+    const result = await updateCommunication(
+      communication_id,
+      ownerId,
+      updatePayload,
+      session!.user.userId,
+      session!.user.fullname,
+      session!.user.email,
+      session!.user.role
+    );
 
     const status = result.code === 1 ? 200 : 422;
     return NextResponse.json(result, { status });

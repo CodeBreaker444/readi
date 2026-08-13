@@ -60,7 +60,7 @@ const sentByUserId = formData.get("sent_by_user_id")
       communication_file_name: fileName,
       communication_file_key: fileKey,
       communication_file_url: fileUrl,
-    });
+    }, session!.user.fullname, session!.user.email, session!.user.role);
 
     return NextResponse.json({ code: 1, message: "Sent successfully", data: { communication_id: commId } });
   } catch (err) {

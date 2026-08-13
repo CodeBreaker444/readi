@@ -37,6 +37,9 @@ export async function POST(req: NextRequest) {
       new_status: parsed.data.new_status,
       changed_by_user_id: Number(userId),
       comment: parsed.data.comment,
+      userName: session!.user.fullname,
+      userEmail: session!.user.email,
+      userRole: session!.user.role,
     });
 
     return NextResponse.json({ code: 1, message: 'Status updated' });
