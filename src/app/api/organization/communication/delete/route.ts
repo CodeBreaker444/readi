@@ -29,7 +29,14 @@ export async function POST(request: NextRequest) {
 
     const ownerId = session!.user.ownerId;
 
-    const result = await deleteCommunication(parsed.data, ownerId);
+    const result = await deleteCommunication(
+      parsed.data,
+      ownerId,
+      session!.user.userId,
+      session!.user.fullname,
+      session!.user.email,
+      session!.user.role
+    );
 
     const status = result.code === 1 ? 200 : 422;
     return NextResponse.json(result, { status });

@@ -41,7 +41,14 @@ export async function POST(request: NextRequest) {
     const ownerId = session!.user.ownerId;
     const userId = session!.user.userId;
 
-    const data = await addCommunication(parsed.data, ownerId, Number(userId));
+    const data = await addCommunication(
+      parsed.data,
+      ownerId,
+      Number(userId),
+      session!.user.fullname,
+      session!.user.email,
+      session!.user.role
+    );
 
     return NextResponse.json({ data, message: "Communication added successfully" }, { status: 201 });
   } catch (err) {

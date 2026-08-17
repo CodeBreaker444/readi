@@ -103,7 +103,10 @@ export async function POST(req: NextRequest) {
       ownerId,
       userId,
       parsed.data,
-      fileData
+      fileData,
+      session!.user.fullname,
+      session!.user.email,
+      session!.user.role
     );
 
     return NextResponse.json({ success: true, data: newEntry });

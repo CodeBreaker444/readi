@@ -13,7 +13,14 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (featureError) return featureError;
 
     const { id } = await params;
-    await revokeApiKey(Number(id), session!.user.ownerId);
+    await revokeApiKey(
+      Number(id),
+      session!.user.ownerId,
+      session!.user.userId,
+      session!.user.fullname,
+      session!.user.email,
+      session!.user.role,
+    );
     return NextResponse.json({ code: 1, message: 'API key revoked' });
   } catch (err) {
     return internalError(E.SV001, err);
@@ -29,7 +36,14 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     if (featureError) return featureError;
 
     const { id } = await params;
-    await deleteApiKey(Number(id), session!.user.ownerId);
+    await deleteApiKey(
+      Number(id),
+      session!.user.ownerId,
+      session!.user.userId,
+      session!.user.fullname,
+      session!.user.email,
+      session!.user.role,
+    );
     return NextResponse.json({ code: 1, message: 'API key deleted' });
   } catch (err) {
     return internalError(E.SV001, err);

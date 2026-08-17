@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma';
+import { logEvent } from '@/backend/services/auditLog/audit-log';
 
 
 export interface TrainingRecord {
@@ -403,7 +404,13 @@ export async function getFlatTrainingList(owner_id: number): Promise<FlatTrainin
   });
 }
 
-export async function addFlatTraining(input: AddFlatTrainingInput): Promise<number[]> {
+export async function addFlatTraining(
+  input: AddFlatTrainingInput,
+  actingUserId?: number,
+  userName?: string,
+  userEmail?: string,
+  userRole?: string
+): Promise<number[]> {
   const { owner_id, user_ids, training_name, training_type, certificate_type, session_code, session_date, completion_date, expiry_date } = input;
 
   // Each attendee gets their own training record so that editing one
@@ -438,15 +445,37 @@ export async function addFlatTraining(input: AddFlatTrainingInput): Promise<numb
         select: { attendance_id: true },
       });
 
-      rows.push(attendance);
+      rows.push({ attendance_id: attendance.attendance_id, training_id: created.training_id, user_id: uid });
     }
     return rows;
   });
 
+  for (const row of inserted) {
+    logEvent({
+      eventType: 'CREATE',
+      entityType: 'training',
+      entityId: row.attendance_id,
+      description: `Course "${training_name}" added for user #${row.user_id}`,
+      userId: actingUserId,
+      userName: userName,
+      userEmail: userEmail,
+      userRole: userRole,
+      ownerId: owner_id,
+      metadata: { trainingId: row.training_id, userId: row.user_id, trainingType: training_type, certificateType: certificate_type },
+    });
+  }
+
   return inserted.map((r) => r.attendance_id);
 }
 
-export async function updateFlatTraining(input: UpdateFlatTrainingInput): Promise<void> {
+export async function updateFlatTraining(
+  input: UpdateFlatTrainingInput,
+  ownerId: number,
+  actingUserId?: number,
+  userName?: string,
+  userEmail?: string,
+  userRole?: string
+): Promise<void> {
   const { attendance_id, fk_training_id, training_name, training_type, certificate_type, session_code, session_date, completion_date, expiry_date } = input;
 
   await prisma.$transaction([
@@ -471,10 +500,48 @@ export async function updateFlatTraining(input: UpdateFlatTrainingInput): Promis
       },
     }),
   ]);
+
+  logEvent({
+    eventType: 'UPDATE',
+    entityType: 'training',
+    entityId: attendance_id,
+    description: `Course "${training_name}" updated`,
+    userId: actingUserId,
+    userName: userName,
+    userEmail: userEmail,
+    userRole: userRole,
+    ownerId: ownerId,
+    metadata: { trainingId: fk_training_id, trainingType: training_type, certificateType: certificate_type },
+  });
 }
 
-export async function deleteFlatTraining(attendance_id: number): Promise<void> {
+export async function deleteFlatTraining(
+  attendance_id: number,
+  ownerId: number,
+  actingUserId?: number,
+  userName?: string,
+  userEmail?: string,
+  userRole?: string
+): Promise<void> {
+  const existing = await prisma.training_attendance.findUnique({
+    where: { attendance_id },
+    select: { fk_training_id: true, fk_user_id: true, training: { select: { training_name: true } } },
+  });
+
   await prisma.training_attendance.delete({ where: { attendance_id } });
+
+  logEvent({
+    eventType: 'DELETE',
+    entityType: 'training',
+    entityId: attendance_id,
+    description: `Course "${existing?.training?.training_name ?? `#${existing?.fk_training_id ?? ''}`}" record deleted`,
+    userId: actingUserId,
+    userName: userName,
+    userEmail: userEmail,
+    userRole: userRole,
+    ownerId: ownerId,
+    metadata: { trainingId: existing?.fk_training_id, userId: existing?.fk_user_id },
+  });
 }
 
 

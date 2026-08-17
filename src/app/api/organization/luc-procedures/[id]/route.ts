@@ -44,7 +44,7 @@ export async function PUT(
       eventType: 'UPDATE',
       entityType: 'luc_procedure',
       entityId: Number(id),
-      description: `Updated LUC procedure ${id}`,
+      description: `Updated LUC procedure '${updated.procedure_code}' - ${updated.procedure_name}`,
       userId: session!.user.userId,
       userName: session!.user.fullname,
       userEmail: session!.user.email,
@@ -74,13 +74,17 @@ export async function DELETE(
     const { error: featureError } = await requireFeatureAccess('org_procedures', 'delete');
     if (featureError) return featureError;
 
+    const existing = await getLucProcedureById(Number(id));
+
     await deleteLucProcedure(Number(id));
 
     logEvent({
       eventType: 'DELETE',
       entityType: 'luc_procedure',
       entityId: Number(id),
-      description: `Deleted LUC procedure ${id}`,
+      description: existing
+        ? `Deleted LUC procedure '${existing.procedure_code}' - ${existing.procedure_name}`
+        : `Deleted LUC procedure #${id}`,
       userId: session!.user.userId,
       userName: session!.user.fullname,
       userEmail: session!.user.email,

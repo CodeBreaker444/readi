@@ -28,7 +28,14 @@ export async function POST(req: NextRequest) {
       return apiError(E.AU003, 403);
     }
 
-    await deleteEvidence(parsed.data.evidence_id, ownerId);
+    await deleteEvidence(
+      parsed.data.evidence_id,
+      ownerId,
+      session!.user.userId,
+      session!.user.fullname,
+      session!.user.email,
+      session!.user.role
+    );
 
     return NextResponse.json({ code: 1, message: 'Evidence deleted' });
   } catch (error: any) {

@@ -119,6 +119,7 @@ export type DocumentCreateInput = {
 
 export type DocumentUpdateInput = {
   document_id: number;
+  owner_id: number;
   doc_type_id: number;
   doc_code?: string | null;
   status: "DRAFT" | "IN_REVIEW" | "APPROVED" | "OBSOLETE";

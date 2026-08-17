@@ -522,7 +522,7 @@
     "table": {
       "colName": "Name",
       "colCode": "Code",
-      "colLabel": "Bezeichnung",
+      "colDescription": "Beschreibung",
       "colActions": "Aktionen",
       "emptyTitle": "Keine Typen definiert",
       "emptySubtitle": "Erstellen Sie Ihren ersten Missionstyp, um zu beginnen",
@@ -535,8 +535,6 @@
       "descriptionPlaceholder": "Missionstyp-Beschreibung eingeben",
       "codeLabel": "Code",
       "codePlaceholder": "z.B. SURV",
-      "labelLabel": "Bezeichnung",
-      "labelPlaceholder": "Missionstyp-Bezeichnung eingeben",
       "saving": "Speichern...",
       "adding": "Hinzufugen...",
       "saveChanges": "Anderungen speichern",
@@ -4489,6 +4487,7 @@
           "speedPositive": "Max. Geschwindigkeit muss größer als 0 sein",
           "altitudePositive": "Max. Höhe muss größer als 0 sein",
           "weightPositive": "Gewicht muss größer als 0 sein",
+          "mtomPositive": "MTOM muss größer als 0 sein",
           "success": "Modell erfolgreich hinzugefügt",
           "failed": "Modell konnte nicht hinzugefügt werden",
           "error": "Fehler beim Hinzufügen des Modells"
@@ -4510,6 +4509,7 @@
           "manufacturerRequired": "Hersteller (Marke) ist erforderlich",
           "modelCodeRequired": "Modellcode (Serie) ist erforderlich",
           "modelNameRequired": "Modellname ist erforderlich",
+          "mtomPositive": "MTOM muss größer als 0 sein",
           "loadError": "Fehler beim Laden der Modelle",
           "loadModelError": "Fehler beim Laden des Modells",
           "updateSuccess": "Modell erfolgreich aktualisiert",
@@ -4566,7 +4566,7 @@
         "placeholders": {
           "selectClient": "Mandant auswählen",
           "noneTopLevel": "Keiner (oberste Ebene)",
-          "toolModelId": "Gerätemodell-ID"
+          "noModel": "Kein Modell"
         },
         "toasts": {
           "systemCodeRequired": "Systemcode ist erforderlich",

@@ -27,25 +27,16 @@ export function getMissionTypeColumns({
   const headerClass = `text-[11px] font-semibold uppercase tracking-widest ${isDark ? 'text-gray-400' : 'text-gray-400'}`;
 
   return [
-    {
-      accessorKey: 'id',
-      header: () => <span className={headerClass}>#</span>,
-      cell: ({ row }) => (
-        <span className={`text-[11px] font-mono tabular-nums ${isDark ? 'text-gray-600' : 'text-gray-300'}`}>
-          {String(row.original.id).padStart(3, '0')}
-        </span>
-      ),
-      size: 60,
-    },
-    {
-      accessorKey: 'name',
-      header: () => <span className={headerClass}>{t('missionType.table.colName')}</span>,
-      cell: ({ row }) => (
-        <span className={`text-[13px] font-medium ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
-          {row.original.name}
-        </span>
-      ),
-    },
+    // {
+    //   accessorKey: 'id',
+    //   header: () => <span className={headerClass}>#</span>,
+    //   cell: ({ row }) => (
+    //     <span className={`text-[11px] font-mono tabular-nums ${isDark ? 'text-gray-600' : 'text-gray-300'}`}>
+    //       {String(row.original.id).padStart(3, '0')}
+    //     </span>
+    //   ),
+    //   size: 60,
+    // },
     {
       accessorKey: 'code',
       header: () => <span className={headerClass}>{t('missionType.table.colCode')}</span>,
@@ -60,11 +51,20 @@ export function getMissionTypeColumns({
       ),
     },
     {
-      accessorKey: 'label',
-      header: () => <span className={headerClass}>{t('missionType.table.colLabel')}</span>,
+      accessorKey: 'name',
+      header: () => <span className={headerClass}>{t('missionType.table.colName')}</span>,
       cell: ({ row }) => (
-        <span className={`text-xs truncate max-w-[240px] block leading-relaxed ${isDark ? 'text-gray-500' : 'text-gray-400'}`} title={row.original.label}>
-          {row.original.label || <span className={`italic ${isDark ? 'text-gray-700' : 'text-gray-300'}`}>—</span>}
+        <span className={`text-[13px] font-medium ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
+          {row.original.name}
+        </span>
+      ),
+    },
+    {
+      accessorKey: 'description',
+      header: () => <span className={headerClass}>{t('missionType.table.colDescription')}</span>,
+      cell: ({ row }) => (
+        <span className={`text-xs truncate max-w-[280px] block leading-relaxed ${isDark ? 'text-gray-500' : 'text-gray-400'}`} title={row.original.description}>
+          {row.original.description || <span className={`italic ${isDark ? 'text-gray-700' : 'text-gray-300'}`}>—</span>}
         </span>
       ),
     },

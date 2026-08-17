@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma';
+import { logEvent } from '@/backend/services/auditLog/audit-log';
 
 export interface Assignment {
   assignment_id: number
@@ -66,7 +67,7 @@ export async function createAssignment(payload: {
   assignment_json: string
   fk_owner_id: number
   fk_user_id: number
-}): Promise<Assignment | null> {
+}, userName?: string, userEmail?: string, userRole?: string): Promise<Assignment | null> {
   let parsedJson: unknown;
   try {
     parsedJson = payload.assignment_json ? JSON.parse(payload.assignment_json) : null;
@@ -91,10 +92,29 @@ export async function createAssignment(payload: {
       assignment_json: parsedJson ?? undefined,
     },
   });
+
+  logEvent({
+    eventType: 'CREATE',
+    entityType: 'assignment',
+    entityId: row.assignment_id,
+    description: `Assignment '${row.assignment_code}' - ${row.assignment_desc} created`,
+    userId: payload.fk_user_id,
+    userName: userName,
+    userEmail: userEmail,
+    userRole: userRole,
+    ownerId: payload.fk_owner_id,
+    metadata: { assignmentCode: row.assignment_code },
+  });
+
   return mapAssignment(row);
 }
 
-export async function updateAssignment(payload: AssignmentUpdatePayload): Promise<Assignment | null> {
+export async function updateAssignment(
+  payload: AssignmentUpdatePayload,
+  userName?: string,
+  userEmail?: string,
+  userRole?: string
+): Promise<Assignment | null> {
   let parsedJson: unknown;
   try {
     parsedJson = payload.assignment_json ? JSON.parse(payload.assignment_json) : null;
@@ -119,21 +139,52 @@ export async function updateAssignment(payload: AssignmentUpdatePayload): Promis
       fk_user_id: payload.fk_user_id,
     },
   });
+
+  logEvent({
+    eventType: 'UPDATE',
+    entityType: 'assignment',
+    entityId: row.assignment_id,
+    description: `Assignment '${row.assignment_code}' - ${row.assignment_desc} updated`,
+    userId: payload.fk_user_id,
+    userName: userName,
+    userEmail: userEmail,
+    userRole: userRole,
+    ownerId: payload.fk_owner_id,
+    metadata: { assignmentCode: row.assignment_code },
+  });
+
   return mapAssignment(row);
 }
 
 export async function deleteAssignment(
   ownerId: number,
   assignmentId: number,
+  userId?: number,
+  userName?: string,
+  userEmail?: string,
+  userRole?: string
 ): Promise<{ code: number; message: string; dataRows: number; data: null }> {
   const existing = await prisma.assignment.findFirst({
     where: { assignment_id: assignmentId, fk_owner_id: ownerId },
-    select: { assignment_id: true, assignment_active: true },
+    select: { assignment_id: true, assignment_active: true, assignment_code: true, assignment_desc: true },
   });
   if (!existing) throw new Error('Assignment not found');
   if (existing.assignment_active === 'Y') {
     throw new Error('Cannot delete an active assignment. Set it to inactive first.');
   }
   await prisma.assignment.delete({ where: { assignment_id: assignmentId } });
+
+  logEvent({
+    eventType: 'DELETE',
+    entityType: 'assignment',
+    entityId: assignmentId,
+    description: `Assignment '${existing.assignment_code}' - ${existing.assignment_desc} deleted`,
+    userId: userId,
+    userName: userName,
+    userEmail: userEmail,
+    userRole: userRole,
+    ownerId: ownerId,
+  });
+
   return { code: 1, message: 'Assignment deleted', dataRows: 0, data: null };
 }

@@ -54,12 +54,17 @@ export async function PUT(request: NextRequest,  { params }: { params: Promise<{
       return zodError(E.VL001, parsed.error)
     }
 
-    const result = await updateAssignment({
-      assignment_id: id,
-      fk_owner_id: session!.user.ownerId,
-      fk_user_id: session!.user.userId,
-      ...parsed.data,
-    })
+    const result = await updateAssignment(
+      {
+        assignment_id: id,
+        fk_owner_id: session!.user.ownerId,
+        fk_user_id: session!.user.userId,
+        ...parsed.data,
+      },
+      session!.user.fullname,
+      session!.user.email,
+      session!.user.role
+    )
 
     return NextResponse.json({ ...result, message: 'Assignment updated successfully' }, { status: 200 })
   } catch (err) {
@@ -81,7 +86,14 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
       return apiError(E.VL002, 400)
     }
 
-    const result = await deleteAssignment(session!.user.ownerId, id)
+    const result = await deleteAssignment(
+      session!.user.ownerId,
+      id,
+      session!.user.userId,
+      session!.user.fullname,
+      session!.user.email,
+      session!.user.role
+    )
     return NextResponse.json({...result, message: 'Assignment deleted successfully'}, { status: 200 })
   } catch (err) {
     return internalError(E.SV001, err)

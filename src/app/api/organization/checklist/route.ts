@@ -47,15 +47,20 @@ export async function POST(request: NextRequest) {
             )
         }
 
-        const result = await createChecklist({
-            checklist_code: body.checklist_code,
-            checklist_desc: body.checklist_desc,
-            checklist_ver: body.checklist_ver ?? '1.0',
-            checklist_active: body.checklist_active ?? 'Y',
-            checklist_json: body.checklist_json ?? '{}',
-            fk_owner_id: session!.user.ownerId,
-            fk_user_id: session!.user.userId,
-        })
+        const result = await createChecklist(
+            {
+                checklist_code: body.checklist_code,
+                checklist_desc: body.checklist_desc,
+                checklist_ver: body.checklist_ver ?? '1.0',
+                checklist_active: body.checklist_active ?? 'Y',
+                checklist_json: body.checklist_json ?? '{}',
+                fk_owner_id: session!.user.ownerId,
+                fk_user_id: session!.user.userId,
+            },
+            session!.user.fullname,
+            session!.user.email,
+            session!.user.role
+        )
 
         return NextResponse.json({...result, message: 'Checklist created successfully'}, { status: 201 })
     } catch (error) {

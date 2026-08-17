@@ -522,7 +522,7 @@
     "table": {
       "colName": "Name",
       "colCode": "Code",
-      "colLabel": "Label",
+      "colDescription": "Description",
       "colActions": "Actions",
       "emptyTitle": "No types defined yet",
       "emptySubtitle": "Create your first mission type to get started",
@@ -535,8 +535,6 @@
       "descriptionPlaceholder": "Enter mission type description",
       "codeLabel": "Code",
       "codePlaceholder": "e.g., SURV",
-      "labelLabel": "Label",
-      "labelPlaceholder": "Enter mission type label",
       "saving": "Saving...",
       "adding": "Adding...",
       "saveChanges": "Save Changes",
@@ -4576,6 +4574,7 @@
           "speedPositive": "Max speed must be greater than 0",
           "altitudePositive": "Max altitude must be greater than 0",
           "weightPositive": "Weight must be greater than 0",
+          "mtomPositive": "MTOM must be greater than 0",
           "success": "Model added successfully",
           "failed": "Failed to add model",
           "error": "Error adding model"
@@ -4597,6 +4596,7 @@
           "manufacturerRequired": "Manufacturer (Brand) is required",
           "modelCodeRequired": "Model code (Serie) is required",
           "modelNameRequired": "Model name is required",
+          "mtomPositive": "MTOM must be greater than 0",
           "loadError": "Error loading models",
           "loadModelError": "Error loading model",
           "updateSuccess": "Model updated successfully",
@@ -4653,7 +4653,7 @@
         "placeholders": {
           "selectClient": "Select client",
           "noneTopLevel": "None (top-level)",
-          "toolModelId": "Tool model id"
+          "noModel": "No model"
         },
         "toasts": {
           "systemCodeRequired": "System code is required",

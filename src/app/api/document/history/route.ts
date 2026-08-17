@@ -22,6 +22,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ items });
   } catch (error: any) {
     console.error('[document_history]', error);
-    return internalError(E.AU002, error);
+    return internalError(E.SV001, error);
   }
 }

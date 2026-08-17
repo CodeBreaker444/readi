@@ -5,6 +5,7 @@ import { Loader2, Settings2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { useAuthorization } from '@/components/authorization/AuthorizationProvider';
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -91,6 +92,7 @@ function SystemOptionLabel({ tool, isDark }: { tool: SystemOption; isDark: boole
 export default function DocumentFormModal({ open, onClose, onSaved, docTypes, onTypesReload, document }: Props) {
   const { t } = useTranslation();
   const { isDark } = useTheme();
+  const { requireAuthorization } = useAuthorization();
   const fileRef = useRef<HTMLInputElement>(null);
   const [saving, setSaving] = useState(false);
   const [manageTypesOpen, setManageTypesOpen] = useState(false);
@@ -185,24 +187,41 @@ export default function DocumentFormModal({ open, onClose, onSaved, docTypes, on
     if (effectiveDate && expiryDate && expiryDate < effectiveDate) {
       toast.error(t('repository.form.errorDates')); return;
     }
+
+    const file = fileRef.current?.files?.[0];
+    if (!isEdit) {
+      if (!file) { toast.error(t('repository.form.errorFile')); return; }
+      if (file.size > MAX_FILE_SIZE) { toast.error(t('repository.form.errorFileSize'), { duration: 6000 }); return; }
+    } else if (file && file.size > MAX_FILE_SIZE) {
+      toast.error(t('repository.form.errorFileSize'), { duration: 6000 }); return;
+    }
+
+    const willUploadFile = !isEdit || !!file;
+    if (willUploadFile) {
+      try {
+        await requireAuthorization({
+          actionType: isEdit ? 'upload_revision' : 'create',
+          entityType: 'document',
+          entityId: isEdit ? String(document!.document_id) : undefined,
+          label: isEdit
+            ? `Upload New Revision: ${title || document?.title || 'Document'}`
+            : `Upload Document: ${title}`,
+        });
+      } catch {
+        return;
+      }
+    }
+
     setSaving(true);
     try {
       if (!isEdit) {
-        const file = fileRef.current?.files?.[0];
-        if (!file) { toast.error(t('repository.form.errorFile')); setSaving(false); return; }
-        if (file.size > MAX_FILE_SIZE) {
-          toast.error(t('repository.form.errorFileSize'), { duration: 6000 });
-          setSaving(false);
-          return;
-        }
-
-        const { s3_key } = await uploadToS3(file);
+        const { s3_key } = await uploadToS3(file!);
 
         await axios.post('/api/document/create', {
           doc_type_id:     Number(docTypeId),
           s3_key,
-          file_name:       file.name,
-          file_size:       file.size,
+          file_name:       file!.name,
+          file_size:       file!.size,
           doc_code:         docCode || undefined,
           status,
           title,
@@ -218,13 +237,7 @@ export default function DocumentFormModal({ open, onClose, onSaved, docTypes, on
           fk_component_id:  fkComponentId !== '__none__' ? Number(fkComponentId) : undefined,
         });
       } else {
-        const file = fileRef.current?.files?.[0];
         if (file) {
-          if (file.size > MAX_FILE_SIZE) {
-            toast.error(t('repository.form.errorFileSize'), { duration: 6000 });
-            setSaving(false);
-            return;
-          }
           const { s3_key } = await uploadToS3(file);
           await axios.post('/api/document/upload-revision', {
             document_id:   document!.document_id,
@@ -528,6 +541,7 @@ export default function DocumentFormModal({ open, onClose, onSaved, docTypes, on
                   {!isEdit && <span className="text-red-500">*</span>}
                 </Label>
                 <Input ref={fileRef} type="file" required={!isEdit}
+                  onChange={() => { if (isEdit) setVersionLabel(''); }}
                   className={`cursor-pointer text-sm ${inputCls}`} />
                 <p className={`text-[11px] ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
                   {t('repository.form.maxSize')}

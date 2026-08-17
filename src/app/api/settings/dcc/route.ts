@@ -37,6 +37,10 @@ export async function POST(req: NextRequest) {
       session!.user.ownerId,
       parsed.data.display_name,
       parsed.data.callback_url,
+      session!.user.userId,
+      session!.user.fullname,
+      session!.user.email,
+      session!.user.role,
     );
 
     return NextResponse.json({ code: 1, message: 'DCC integration saved' });

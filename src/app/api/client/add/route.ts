@@ -1,4 +1,5 @@
 import { addClient } from '@/backend/services/client/client-service';
+import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { requireFeatureAccess } from '@/lib/auth/api-auth';
 import { getUserSession } from '@/lib/auth/server-session';
 import { internalError, unauthorized, zodError } from '@/lib/api-error';
@@ -44,6 +45,22 @@ export async function POST(req: NextRequest) {
         }
 
         const result = await addClient({ ...parsed.data, fk_owner_id: session.user.ownerId });
+
+        if (result.code === 1 && result.data) {
+          logEvent({
+            eventType: 'CREATE',
+            entityType: 'client',
+            entityId: result.data.client_id,
+            description: `Created client '${parsed.data.client_name}' — email: ${parsed.data.client_email}`,
+            userId: session.user.userId,
+            userName: session.user.fullname,
+            userEmail: session.user.email,
+            userRole: session.user.role,
+            ownerId: session.user.ownerId,
+            metadata: { clientCode: parsed.data.client_code, clientEmail: parsed.data.client_email },
+          });
+        }
+
         return NextResponse.json(result);
     } catch (err) {
         return internalError(E.SV001, err);

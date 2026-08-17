@@ -102,6 +102,15 @@ const EMPTY_EVI: EvidenceForm = {
   notes: '',
 };
 
+function extractErrorMessage(err: unknown, fallback: string): string {
+  if (axios.isAxiosError(err)) {
+    const data = err.response?.data as { error?: string; errors?: Record<string, string[] | undefined> } | undefined;
+    const firstFieldError = data?.errors && Object.values(data.errors).flat().find(Boolean);
+    return firstFieldError || data?.error || fallback;
+  }
+  return fallback;
+}
+
 
 export default function RequirementsEvidencesPage() {
   const { t } = useTranslation();
@@ -242,8 +251,8 @@ export default function RequirementsEvidencesPage() {
         ? t('compliance.requirementsEvidences.messages.updateSuccess')
         : t('compliance.requirementsEvidences.messages.createSuccess'));
       fetchRecords(page);
-    } catch {
-      toast.error(t('compliance.requirementsEvidences.messages.saveFailed'));
+    } catch (err) {
+      toast.error(extractErrorMessage(err, t('compliance.requirementsEvidences.messages.saveFailed')));
     } finally {
       setSaving(false);
     }
@@ -270,8 +279,7 @@ export default function RequirementsEvidencesPage() {
       toast.success(t('compliance.requirementsEvidences.messages.deleteSuccess'));
       fetchRecords(page);
     } catch (err) {
-      if (axios.isAxiosError(err)) toast.error(err.response?.data?.error || t('compliance.requirementsEvidences.messages.deleteFailed'));
-      else toast.error(t('compliance.requirementsEvidences.messages.deleteFailed'));
+      toast.error(extractErrorMessage(err, t('compliance.requirementsEvidences.messages.deleteFailed')));
     }
   }
 
@@ -294,8 +302,8 @@ export default function RequirementsEvidencesPage() {
       setStatusTarget(null);
       toast.success(t('compliance.requirementsEvidences.messages.statusUpdateSuccess'));
       fetchRecords(page);
-    } catch {
-      toast.error(t('compliance.requirementsEvidences.messages.statusUpdateFailed'));
+    } catch (err) {
+      toast.error(extractErrorMessage(err, t('compliance.requirementsEvidences.messages.statusUpdateFailed')));
     } finally {
       setStatusSaving(false);
     }
@@ -322,8 +330,8 @@ export default function RequirementsEvidencesPage() {
       setEviForm(EMPTY_EVI);
       toast.success(t('compliance.requirementsEvidences.messages.evidenceAddSuccess'));
       fetchEvidences(eviTarget.requirement_id);
-    } catch {
-      toast.error(t('compliance.requirementsEvidences.messages.evidenceAddFailed'));
+    } catch (err) {
+      toast.error(extractErrorMessage(err, t('compliance.requirementsEvidences.messages.evidenceAddFailed')));
     } finally {
       setEviSaving(false);
     }
@@ -347,8 +355,8 @@ export default function RequirementsEvidencesPage() {
       await axios.post('/api/compliance/requirements-evidences/evidence/delete', { evidence_id: evidenceId });
       toast.success(t('compliance.requirementsEvidences.messages.evidenceDeleteSuccess'));
       if (eviTarget) fetchEvidences(eviTarget.requirement_id);
-    } catch {
-      toast.error(t('compliance.requirementsEvidences.messages.evidenceDeleteFailed'));
+    } catch (err) {
+      toast.error(extractErrorMessage(err, t('compliance.requirementsEvidences.messages.evidenceDeleteFailed')));
     }
   }
 
@@ -665,7 +673,20 @@ export default function RequirementsEvidencesPage() {
                   <label className={`block text-[11px] font-semibold uppercase tracking-wider mb-1.5 ${textMuted}`}>
                     {t('compliance.requirementsEvidences.requirementModal.fields.criticality')}
                   </label>
-                  <Input type="number" min={1} max={5} value={reqForm.review_frequency} onChange={(e) => setReqForm(f => ({ ...f, review_frequency: e.target.value }))} className={`h-9 text-xs ${inputCls}`} />
+                  <Input
+                    type="number"
+                    min={1}
+                    max={5}
+                    value={reqForm.review_frequency}
+                    onChange={(e) => {
+                      const raw = e.target.value;
+                      if (raw === '') { setReqForm(f => ({ ...f, review_frequency: raw })); return; }
+                      const num = Number(raw);
+                      if (Number.isNaN(num)) return;
+                      setReqForm(f => ({ ...f, review_frequency: String(Math.min(5, Math.max(1, num))) }));
+                    }}
+                    className={`h-9 text-xs ${inputCls}`}
+                  />
                 </div>
                 <div>
                   <label className={`block text-[11px] font-semibold uppercase tracking-wider mb-1.5 ${textMuted}`}>

@@ -73,7 +73,7 @@ export const ROLE_PERMISSIONS: Record<Role, RolePermission[]> = {
     'view_logbooks',
     'view_erp',
   ],
-  OPM: ['view_dashboard', 'view_operations', 'view_operations_full', 'view_logs', 'view_repository', 'view_planning', 'view_planning_advanced', 'view_logbooks', 'view_safety_mgmt', 'view_config', 'view_notifications', 'view_client', 'manage_users', 'view_erp', 'view_drone_atc'],
+  OPM: ['view_dashboard', 'view_operations', 'view_operations_full', 'view_logs', 'view_repository', 'view_planning', 'view_planning_advanced', 'view_logbooks', 'view_safety_mgmt', 'view_config', 'view_notifications', 'view_client', 'manage_users', 'view_erp', 'view_drone_atc', 'view_compliance'],
   SM:  ['view_dashboard', 'view_planning', 'view_planning_advanced', 'view_safety_mgmt', 'view_repository', 'view_notifications', 'view_config', 'view_erp',
     'view_operations', 'view_logbooks', 'view_compliance', 'view_drone_atc', 'view_training', 'view_logs', 'manage_users', 'view_client'],
   AM:  ['view_dashboard', 'view_planning', 'view_planning_advanced', 'view_operations_full', 'view_safety_mgmt', 'view_logs', 'view_repository', 'view_logbooks', 'view_compliance','view_config', 'view_notifications', 'manage_users', 'view_erp',  'view_drone_atc', 'view_training',

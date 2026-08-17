@@ -57,6 +57,7 @@ interface DuplicateSystemModalProps {
   open: boolean;
   sourceSystemId: number | null;
   clients: any[];
+  models: any[];
   onClose: () => void;
   onSuccess: () => void;
 }
@@ -79,6 +80,7 @@ export default function DuplicateSystemModal({
   open,
   sourceSystemId,
   clients,
+  models,
   onClose,
   onSuccess,
 }: DuplicateSystemModalProps) {
@@ -463,7 +465,20 @@ export default function DuplicateSystemModal({
                         </div>
                         <div>
                           <Label className="pb-2">{t('systems.components.duplicateSystem.componentFields.model')}</Label>
-                          <Input className={inputCls} value={component.fk_tool_model_id} onChange={(e) => handleComponentChange(component.tempId, 'fk_tool_model_id', e.target.value)} placeholder={t('systems.components.duplicateSystem.placeholders.toolModelId')} />
+                          <Select
+                            value={component.fk_tool_model_id || '_none'}
+                            onValueChange={(v) => handleComponentChange(component.tempId, 'fk_tool_model_id', v === '_none' ? '' : v)}
+                          >
+                            <SelectTrigger className={inputCls}><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="_none">{t('systems.components.duplicateSystem.placeholders.noModel')}</SelectItem>
+                              {models.map((m: any) => (
+                                <SelectItem key={m.tool_model_id} value={m.tool_model_id.toString()}>
+                                  {m.factory_serie || m.factory_model || `#${m.tool_model_id}`}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </div>
                         <div>
                           <Label className="pb-2">{t('systems.components.duplicateSystem.componentFields.status')}</Label>

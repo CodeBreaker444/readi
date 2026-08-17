@@ -155,7 +155,6 @@ export interface MissionType {
   name: string;
   code: string;
   description: string;
-  label: string;
 }
 
 export interface MissionCategory {

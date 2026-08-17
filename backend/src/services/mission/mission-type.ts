@@ -1,11 +1,11 @@
 import { prisma } from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
 
 export interface MissionType {
   mission_type_id: number;
   mission_type_name: string;
   mission_type_desc: string;
   mission_type_code: string;
-  mission_type_label: string;
   tot_mission?: number;
   fk_owner_id: number;
 }
@@ -29,7 +29,7 @@ export async function getMissionTypeList(ownerId: number) {
       id:          item.mission_type_id,
       name:        item.type_name,
       code:        item.type_code,
-      label:       item.type_description,
+      description: item.type_description,
       tot_mission: 0,
     })),
   };
@@ -40,27 +40,34 @@ export async function addMissionType(
   missionType: Omit<MissionType, 'mission_type_id'>,
 ) {
   const existing = await prisma.pilot_mission_type.findFirst({
-    where: { fk_owner_id: ownerId, type_code: missionType.mission_type_code, is_active: true },
+    where: { fk_owner_id: ownerId, type_code: missionType.mission_type_code },
     select: { mission_type_id: true },
   });
 
   if (existing) throw new Error('Mission type code already exists');
 
-  const created = await prisma.pilot_mission_type.create({
-    data: {
-      type_name:        missionType.mission_type_name,
-      fk_owner_id:      ownerId,
-      type_code:        missionType.mission_type_code,
-      type_description: missionType.mission_type_label,
-      is_active:        true,
-    },
-  });
+  try {
+    const created = await prisma.pilot_mission_type.create({
+      data: {
+        type_name:        missionType.mission_type_name,
+        fk_owner_id:      ownerId,
+        type_code:        missionType.mission_type_code,
+        type_description: missionType.mission_type_desc,
+        is_active:        true,
+      },
+    });
 
-  return {
-    code: 1,
-    message: 'Mission type added successfully',
-    data: created,
-  };
+    return {
+      code: 1,
+      message: 'Mission type added successfully',
+      data: created,
+    };
+  } catch (e) {
+    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
+      throw new Error('Mission type code already exists');
+    }
+    throw e;
+  }
 }
 
  
@@ -94,7 +101,6 @@ export async function updateMissionType(
       where: {
         fk_owner_id: ownerId,
         type_code:   missionType.mission_type_code,
-        is_active:   true,
         NOT:         { mission_type_id: missionTypeId },
       },
       select: { mission_type_id: true },
@@ -103,14 +109,21 @@ export async function updateMissionType(
     if (existing) throw new Error('Mission type code already exists');
   }
 
-  const updated = await prisma.pilot_mission_type.update({
-    where: { mission_type_id: missionTypeId },
-    data: {
-      ...(missionType.mission_type_name  && { type_name:        missionType.mission_type_name }),
-      ...(missionType.mission_type_code  && { type_code:        missionType.mission_type_code }),
-      ...(missionType.mission_type_label && { type_description: missionType.mission_type_label }),
-    },
-  });
+  try {
+    const updated = await prisma.pilot_mission_type.update({
+      where: { mission_type_id: missionTypeId },
+      data: {
+        ...(missionType.mission_type_name && { type_name:        missionType.mission_type_name }),
+        ...(missionType.mission_type_code && { type_code:        missionType.mission_type_code }),
+        ...(missionType.mission_type_desc && { type_description: missionType.mission_type_desc }),
+      },
+    });
 
-  return { code: 1, message: 'Mission type updated successfully', data: updated };
+    return { code: 1, message: 'Mission type updated successfully', data: updated };
+  } catch (e) {
+    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
+      throw new Error('Mission type code already exists');
+    }
+    throw e;
+  }
 }

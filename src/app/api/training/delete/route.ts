@@ -29,7 +29,14 @@ export async function POST(req: NextRequest) {
       select: { training: { select: { training_name: true, training_type: true } } },
     });
 
-    await deleteFlatTraining(parsed.data.attendance_id);
+    await deleteFlatTraining(
+      parsed.data.attendance_id,
+      session!.user.ownerId,
+      session!.user.userId,
+      session!.user.fullname,
+      session!.user.email,
+      session!.user.role
+    );
 
     if (attendance?.training) {
       sendTrainingDeletedModuleEmail(session!.user.ownerId, {

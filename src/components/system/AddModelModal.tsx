@@ -129,6 +129,9 @@ export default function AddModelModal({ open, onClose, onSuccess, initialValues 
     if (formData.weight && Number(formData.weight) <= 0) {
       toast.error(t('systems.components.addModel.toasts.weightPositive')); return;
     }
+    if (formData.mtom && Number(formData.mtom) <= 0) {
+      toast.error(t('systems.components.addModel.toasts.mtomPositive')); return;
+    }
 
     setLoading(true);
 
@@ -255,7 +258,7 @@ export default function AddModelModal({ open, onClose, onSuccess, initialValues 
               </div>
               <div className="col-span-1 sm:col-span-4">
                 <Label className="pb-2">{t('systems.components.addModel.fields.mtom')}</Label>
-                <Input type="number" step="0.01" value={formData.mtom} onChange={(e) => handleChange('mtom', e.target.value)} />
+                <Input type="number" step="0.01" min={0} value={formData.mtom} onChange={(e) => handleChange('mtom', e.target.value)} />
               </div>
               <div className="col-span-1 sm:col-span-4">
                 <Label className="pb-2">{t('systems.components.addModel.fields.weight')}</Label>

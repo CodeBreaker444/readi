@@ -1,5 +1,5 @@
 import { updateDocument } from '@/backend/services/document/document-service';
-import { internalError, zodError } from '@/lib/api-error';
+import { apiError, internalError, zodError } from '@/lib/api-error';
 import { requireFeatureAccess, requirePermission } from '@/lib/auth/api-auth';
 import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
@@ -22,7 +22,7 @@ const DocumentUpdateSchema = z.object({
 });
 export async function POST(req: NextRequest) {
   try {
-    const { session: _session, error } = await requirePermission('view_repository');
+    const { session, error } = await requirePermission('view_repository');
     if (error) return error;
 
     const { error: featureError } = await requireFeatureAccess('document_repository', 'edit');
@@ -33,10 +33,15 @@ export async function POST(req: NextRequest) {
     if (!parsed.success) {
       return zodError(E.VL001, parsed.error);
     }
-    await updateDocument(parsed.data);
+    await updateDocument({ ...parsed.data, owner_id: session!.user.ownerId });
     return NextResponse.json({ code: 1, message: 'Documento aggiornato' });
   } catch (error: any) {
+    const msg = error instanceof Error ? error.message : '';
+    if (msg === 'A document with code already exists.') {
+      return apiError(E.DB005, 409);
+    }
+
     console.error('[document_update]', error);
-    return internalError(E.AU002, error);
+    return internalError(E.SV001, error);
     }
 }

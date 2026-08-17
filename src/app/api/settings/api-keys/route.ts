@@ -41,6 +41,9 @@ export async function POST(req: NextRequest) {
       parsed.data.key_name,
       session!.user.userId,
       parsed.data.expires_at,
+      session!.user.fullname,
+      session!.user.email,
+      session!.user.role,
     );
 
     return NextResponse.json({ code: 1, ...result }, { status: 201 });

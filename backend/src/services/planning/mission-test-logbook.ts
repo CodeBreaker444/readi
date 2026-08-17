@@ -6,6 +6,7 @@ import type {
   PilotUser,
 } from '@/config/types/evaluation-planning';
 import { deleteFileFromS3, getPresignedDownloadUrl } from '@/lib/s3Client';
+import { logEvent } from '@/backend/services/auditLog/audit-log';
 
 
 function formatUserName(user: unknown): string {
@@ -103,7 +104,10 @@ export async function addMissionTestLogbook(
     s3Url: string;
     filename: string;
     filesize: number;
-  }
+  },
+  userName?: string,
+  userEmail?: string,
+  userRole?: string
 ): Promise<MissionTestRow> {
   if (input.fk_pic_id === input.fk_observer_id) {
     throw new Error('Pilot in Command and Observer must be different users');
@@ -140,6 +144,19 @@ export async function addMissionTestLogbook(
         mission_test_folder: fileData.s3Key,
       }),
     },
+  });
+
+  logEvent({
+    eventType: 'CREATE',
+    entityType: 'mission_test_logbook',
+    entityId: data.test_id,
+    description: `Test entry "${input.mission_test_code}" added to mission planning #${input.fk_mission_planning_id}`,
+    userId: userId,
+    userName: userName,
+    userEmail: userEmail,
+    userRole: userRole,
+    ownerId: ownerId,
+    metadata: { missionPlanningId: input.fk_mission_planning_id, testCode: input.mission_test_code, result: input.mission_test_result },
   });
 
   return data as unknown as MissionTestRow;
