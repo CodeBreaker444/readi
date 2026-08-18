@@ -40,9 +40,12 @@ export function ChecklistTaskModal({ open, task, evaluationId, onClose, onComple
     }
   }
 
+  const isViewMode = task.task_status === 'completed' || task.task_status === 'skipped';
+  const initialData = isViewMode ? (task.checklist_result || {}) : {};
+
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto p-0">
+      <DialogContent className="w-full sm:max-w-4xl md:max-w-6xl lg:max-w-7xl xl:max-w-8xl max-h-[90vh] overflow-y-auto p-0">
         <DialogHeader className="px-6 pt-5 pb-3 border-b border-slate-100">
           <div className="flex items-start gap-3">
             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-50 border border-emerald-100">
@@ -56,7 +59,7 @@ export function ChecklistTaskModal({ open, task, evaluationId, onClose, onComple
             </div>
           </div>
         </DialogHeader>
-        <div className="px-6 py-4">
+        <div className="px-6 py-4 w-full overflow-x-auto">
           {!task.checklist_json ? (
             <div className="flex flex-col items-center justify-center gap-3 py-16 text-slate-400">
               <AlertCircle className="h-8 w-8" />
@@ -72,6 +75,8 @@ export function ChecklistTaskModal({ open, task, evaluationId, onClose, onComple
             <ChecklistRenderer
               checklistJson={task.checklist_json}
               onComplete={handleSurveyComplete}
+              initialData={initialData}
+              readOnly={isViewMode}
             />
           )}
         </div>

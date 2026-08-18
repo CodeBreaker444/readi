@@ -1,7 +1,7 @@
 import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { addMissionType } from '@/backend/services/mission/mission-type';
 import { requireFeatureAccess, requirePermission } from '@/lib/auth/api-auth';
-import { internalError, zodError } from '@/lib/api-error';
+import { apiError, internalError, zodError } from '@/lib/api-error';
 import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
@@ -10,7 +10,6 @@ const missionTypeSchema = z.object({
   mission_type_name: z.string().min(1, 'Mission type name is required'),
   mission_type_desc: z.string().optional(),
   mission_type_code: z.string().min(1, 'Mission type code is required'),
-  mission_type_label: z.string().optional(),
 });
 
 export async function POST( request: NextRequest ) {
@@ -33,7 +32,6 @@ export async function POST( request: NextRequest ) {
       mission_type_name: body.mission_type_name,
       mission_type_desc: body.mission_type_desc,
       mission_type_code: body.mission_type_code,
-      mission_type_label: body.mission_type_label,
       fk_owner_id: ownerId
     });
 
@@ -49,7 +47,9 @@ export async function POST( request: NextRequest ) {
     });
 
     return NextResponse.json(result);
-  } catch (err) {
+  } catch (err: any) {
+    const msg = err instanceof Error ? err.message : '';
+    if (msg === 'Mission type code already exists') return apiError(E.BL001, 409);
     return internalError(E.SV001, err);
   }
 }

@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import { RepositoryFile } from '@/config/types/evaluation-planning';
 import { getPresignedDownloadUrl } from '@/lib/s3Client';
+import { logEvent } from '@/backend/services/auditLog/audit-log';
 
 interface EvaluationCreateData {
   client_id: number;
@@ -46,7 +47,10 @@ async function generateEvaluationCode(ownerId: number, year: number): Promise<st
 export async function createNewEvaluationRequest(
   ownerId: number,
   userId: number,
-  data: EvaluationCreateData
+  data: EvaluationCreateData,
+  userName?: string,
+  userEmail?: string,
+  userRole?: string
 ) {
   try {
     const evaluationCode = await generateEvaluationCode(ownerId, data.evaluation_year);
@@ -91,6 +95,19 @@ export async function createNewEvaluationRequest(
         },
       },
       select: { evaluation_id: true, evaluation_code: true },
+    });
+
+    logEvent({
+      eventType: 'CREATE',
+      entityType: 'evaluation',
+      entityId: evaluation.evaluation_id,
+      description: `Evaluation ${evaluation.evaluation_code} created`,
+      userId: userId,
+      userName: userName,
+      userEmail: userEmail,
+      userRole: userRole,
+      ownerId: ownerId,
+      metadata: { evaluationCode: evaluation.evaluation_code, clientId: data.client_id },
     });
 
     return {

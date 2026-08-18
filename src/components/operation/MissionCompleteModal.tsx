@@ -67,6 +67,14 @@ interface FlightLog {
   download_url: string;
 }
 
+interface MaintenanceLogEntry {
+  component_id: number;
+  component_code: string | null;
+  add_hours: number;
+  add_flights: number;
+  applied_at: string;
+}
+
 interface FlytbaseFlight {
   flight_id: string;
   flight_name?: string;
@@ -110,6 +118,8 @@ function secondsToHhmm(seconds: number): number {
   return h + m / 100;
 }
 
+const DEFAULT_ADD_HOURS_MINUTES = 30;
+
 /** Convert an ISO timestamp to the "YYYY-MM-DDTHH:MM" format for datetime-local inputs */
 function isoToLocalInput(iso: string | null | undefined): string {
   if (!iso) return "";
@@ -132,6 +142,8 @@ export function MissionCompleteModal({ open, onClose, onSkip, toolId, missionId,
   const [loadingMaint, setLoadingMaint] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [systemData, setSystemData] = useState<SystemData | null>(null);
+  const [maintenanceLog, setMaintenanceLog] = useState<MaintenanceLogEntry[] | null>(null);
+  const maintenanceApplied = !!maintenanceLog && maintenanceLog.length > 0;
   const [inputs, setInputs] = useState<Record<number, ComponentInput>>({});
   const [hoursRaw, setHoursRaw] = useState<Record<number, string>>({});
   const [cyclesRaw, setCyclesRaw] = useState<Record<number, string>>({});
@@ -196,8 +208,18 @@ export function MissionCompleteModal({ open, onClose, onSkip, toolId, missionId,
         const initCyclesRaw: Record<number, string> = {};
         const initManual: Record<number, boolean> = {};
         for (const c of sys.components) {
-          init[c.component_id] = { component_id: c.component_id, add_flights: 0, add_hours: 0 };
-          initRaw[c.component_id] = "";
+          const ratio = c.battery_cycle_ratio || 1;
+          const remainingFlights = c.limit_flight - c.current_flights;
+          const canPrefillFlight = c.limit_flight > 0 && remainingFlights >= ratio;
+
+          const remainingHourMin = c.limit_hour > 0
+            ? hhmmToMinutes(c.limit_hour) - hhmmToMinutes(c.current_hours)
+            : 0;
+          const canPrefillHours = c.limit_hour > 0 && remainingHourMin >= DEFAULT_ADD_HOURS_MINUTES;
+          const defaultAddHours = canPrefillHours ? secondsToHhmm(DEFAULT_ADD_HOURS_MINUTES * 60) : 0;
+
+          init[c.component_id] = { component_id: c.component_id, add_flights: canPrefillFlight ? 1 : 0, add_hours: defaultAddHours };
+          initRaw[c.component_id] = canPrefillHours ? defaultAddHours.toFixed(2) : "";
           initCyclesRaw[c.component_id] = "";
           initManual[c.component_id] = false;
         }
@@ -212,6 +234,15 @@ export function MissionCompleteModal({ open, onClose, onSkip, toolId, missionId,
       setLoadingMaint(false);
     }
   }, [toolId, t]);
+
+  const loadMaintenanceLog = useCallback(async () => {
+    try {
+      const { data } = await axios.get(`/api/operation/board/maintenance-cycle/log?mission_id=${missionId}`);
+      if (data.code === 1) setMaintenanceLog(data.data ?? []);
+    } catch (e) {
+      console.error("Failed to load maintenance log:", e);
+    }
+  }, [missionId]);
 
   const loadWaypoints = useCallback(async (flightId: string, organizationId?: number | null) => {
     setLoadingWaypoints(true);
@@ -299,11 +330,12 @@ export function MissionCompleteModal({ open, onClose, onSkip, toolId, missionId,
   useEffect(() => {
     if (open && toolId > 0) {
       loadMaintenance();
+      loadMaintenanceLog();
       loadLogs();
       loadPostFlight();
       loadOrganizations();
     }
-  }, [open, toolId, loadMaintenance, loadLogs, loadPostFlight, loadOrganizations]);
+  }, [open, toolId, loadMaintenance, loadMaintenanceLog, loadLogs, loadPostFlight, loadOrganizations]);
 
   // Reload waypoints when switching to postflight tab if waypoints are not loaded but a FlytBase log exists
   useEffect(() => {
@@ -409,7 +441,7 @@ export function MissionCompleteModal({ open, onClose, onSkip, toolId, missionId,
   };
 
   const handleSubmitMaintenance = async () => {
-    if (!systemData) return;
+    if (!systemData || maintenanceApplied) return;
     const components = Object.values(inputs).filter((i) => i.add_flights > 0 || i.add_hours > 0);
     if (components.length === 0) { onClose(); return; }
     setSubmitting(true);
@@ -422,6 +454,9 @@ export function MissionCompleteModal({ open, onClose, onSkip, toolId, missionId,
       if (data.code === 1) {
         toast.success(t("operations.missionComplete.toast.updateSuccess"));
         onClose();
+      } else if (data.alreadyApplied) {
+        toast.error(t("operations.missionComplete.toast.maintenanceAlreadyApplied"));
+        loadMaintenanceLog();
       } else {
         toast.error(data.message || t("operations.missionComplete.toast.loadError"));
       }
@@ -616,10 +651,13 @@ export function MissionCompleteModal({ open, onClose, onSkip, toolId, missionId,
                 if (!gutmaSnMap.has(sn)) continue;
                 if (manualCyclesInput[comp.component_id]) continue;
                 newSyncedIds.add(comp.component_id);
+                const ratio = comp.battery_cycle_ratio || 1;
+                const remainingFlights = comp.limit_flight - comp.current_flights;
+                const canSyncFlight = comp.limit_flight > 0 && remainingFlights >= ratio;
                 const current = next[comp.component_id] ?? { component_id: comp.component_id, add_flights: 0, add_hours: 0 };
                 next[comp.component_id] = {
                   ...current,
-                  add_flights: comp.limit_flight > 0 ? 1 : current.add_flights,
+                  add_flights: canSyncFlight ? 1 : current.add_flights,
                   add_hours: comp.limit_hour > 0 && durationHhmm > 0 ? durationHhmm : current.add_hours,
                 };
               }
@@ -753,6 +791,8 @@ export function MissionCompleteModal({ open, onClose, onSkip, toolId, missionId,
               manualCyclesInput={manualCyclesInput}
               autoSyncedIds={autoSyncedIds}
               isDark={isDark}
+              maintenanceApplied={maintenanceApplied}
+              maintenanceLog={maintenanceLog}
               onToggleFlight={handleToggleFlight}
               onManualCyclesToggle={handleManualCyclesToggle}
               onCyclesChange={handleCyclesChange}
@@ -825,7 +865,7 @@ export function MissionCompleteModal({ open, onClose, onSkip, toolId, missionId,
               }
             </Button>
 
-            {activeTab === "maintenance" && (
+            {activeTab === "maintenance" && !maintenanceApplied && (
               <Button
                 onClick={handleSubmitMaintenance}
                 disabled={submitting || loadingMaint || !hasComponents}

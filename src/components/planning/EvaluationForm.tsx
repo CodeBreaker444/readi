@@ -110,8 +110,8 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ onSubmit, isDark }) => 
       toast.error(t('planning.validation.selectLucProcedure'));
       return;
     }
-    if (!formData.evaluation_description.trim()) {
-      toast.error(t('planning.validation.enterDescription'));
+    if (formData.evaluation_description.trim().length < 4) {
+      toast.error(t('planning.validation.descriptionMinLength'));
       return;
     }
 

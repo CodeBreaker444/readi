@@ -1,5 +1,6 @@
 "use client";
 
+import { useAuthorization } from "@/components/authorization/AuthorizationProvider";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -51,6 +52,7 @@ function FileTable({
   isDark: boolean;
 }) {
   const { t } = useTranslation();
+  const { requireAuthorization } = useAuthorization();
   const [downloading, setDownloading] = useState<number | null>(null);
   const [deleting, setDeleting] = useState<number | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -85,6 +87,18 @@ function FileTable({
 
   const handleDelete = async () => {
     if (!fileToDelete) return;
+
+    try {
+      await requireAuthorization({
+        actionType: 'delete',
+        entityType: 'repository_file',
+        entityId: String(fileToDelete.file_id),
+        label: `Delete File: ${fileToDelete.repository_filename}`,
+      });
+    } catch {
+      return;
+    }
+
     try {
       setDeleting(fileToDelete.file_id);
       setDeleteDialogOpen(false);

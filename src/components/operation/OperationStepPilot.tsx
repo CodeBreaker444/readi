@@ -1,13 +1,18 @@
 'use client'
 
+import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { formatDateTimeInTz } from '@/lib/utils'
 import { cn } from '@/lib/utils'
+import { BadgeCheck } from 'lucide-react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { inputCls, labelCls, scCls, siCls, ReviewRow, SectionTitle } from './OperationModalHelpers'
 import { FlightMode, GenericOption, LucOption, OpType, PilotOption } from './OperationModalTypes'
+import { PilotQualificationsSheet } from './PilotQualificationsSheet'
 
 interface SummaryData {
     clientName?: string
@@ -41,6 +46,7 @@ interface Props {
 
 export function OperationStepPilot({ pilots, pilotId, onPilotChange, visualObserverIds = [], onVisualObserverChange, loadingOptions = false, summary, isDark }: Props) {
     const { t } = useTranslation()
+    const [qualTarget, setQualTarget] = useState<{ id: number; name: string } | null>(null)
 
     const toggleObserver = (id: string) => {
         if (!onVisualObserverChange) return
@@ -52,6 +58,7 @@ export function OperationStepPilot({ pilots, pilotId, onPilotChange, visualObser
     }
 
     return (
+        <TooltipProvider delayDuration={100}>
         <div className="space-y-4">
             <SectionTitle isDark={isDark}>{t('operations.newOperation.pilot.sectionTitle')}</SectionTitle>
 
@@ -60,16 +67,37 @@ export function OperationStepPilot({ pilots, pilotId, onPilotChange, visualObser
                 {loadingOptions ? (
                     <Skeleton className="h-9 w-full rounded-md" />
                 ) : (
-                    <Select value={pilotId} onValueChange={id => { onPilotChange(id); onVisualObserverChange?.(visualObserverIds.filter(v => v !== id)) }}>
-                        <SelectTrigger className={inputCls(isDark)}><SelectValue placeholder={t('operations.newOperation.pilot.selectPilot')} /></SelectTrigger>
-                        <SelectContent className={scCls(isDark)}>
-                            {pilots.map(p => (
-                                <SelectItem key={p.user_id} value={String(p.user_id)} className={siCls(isDark)}>
-                                    {p.first_name} {p.last_name}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
+                    <div className="flex items-center gap-1.5">
+                        <Select value={pilotId} onValueChange={id => { onPilotChange(id); onVisualObserverChange?.(visualObserverIds.filter(v => v !== id)) }}>
+                            <SelectTrigger className={cn(inputCls(isDark), 'flex-1')}><SelectValue placeholder={t('operations.newOperation.pilot.selectPilot')} /></SelectTrigger>
+                            <SelectContent className={scCls(isDark)}>
+                                {pilots.map(p => (
+                                    <SelectItem key={p.user_id} value={String(p.user_id)} className={siCls(isDark)}>
+                                        {p.first_name} {p.last_name}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="icon"
+                                    disabled={!pilotId}
+                                    aria-label={t('operations.newOperation.pilot.viewQualifications')}
+                                    onClick={() => {
+                                        const pilot = pilots.find(p => String(p.user_id) === pilotId)
+                                        if (pilot) setQualTarget({ id: pilot.user_id, name: `${pilot.first_name} ${pilot.last_name}` })
+                                    }}
+                                    className={inputCls(isDark)}
+                                >
+                                    <BadgeCheck className="h-4 w-4" />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="text-xs">{t('operations.newOperation.pilot.viewQualifications')}</TooltipContent>
+                        </Tooltip>
+                    </div>
                 )}
             </div>
 
@@ -125,6 +153,23 @@ export function OperationStepPilot({ pilots, pilotId, onPilotChange, visualObser
                                             {t('operations.newOperation.pilot.primaryPilotNote')}
                                         </span>
                                     )}
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <button
+                                                type="button"
+                                                aria-label={t('operations.newOperation.pilot.viewQualifications')}
+                                                onClick={(e) => {
+                                                    e.preventDefault()
+                                                    e.stopPropagation()
+                                                    setQualTarget({ id: p.user_id, name: `${p.first_name} ${p.last_name}` })
+                                                }}
+                                                className={cn('ml-auto shrink-0 p-1 rounded transition-colors', isDark ? 'hover:bg-slate-600 text-slate-400 hover:text-slate-200' : 'hover:bg-slate-200 text-slate-400 hover:text-slate-600')}
+                                            >
+                                                <BadgeCheck className="h-3.5 w-3.5" />
+                                            </button>
+                                        </TooltipTrigger>
+                                        <TooltipContent side="top" className="text-xs">{t('operations.newOperation.pilot.viewQualifications')}</TooltipContent>
+                                    </Tooltip>
                                 </label>
                             )
                         })}
@@ -150,6 +195,15 @@ export function OperationStepPilot({ pilots, pilotId, onPilotChange, visualObser
                 {pilotId && <ReviewRow label={t('operations.newOperation.pilot.summaryPilot')} value={summary.pilotName} isDark={isDark} />}
                 {summary.location && <ReviewRow label={t('operations.newOperation.pilot.summaryLocation')} value={summary.location} isDark={isDark} />}
             </div>
+
+            <PilotQualificationsSheet
+                open={!!qualTarget}
+                onOpenChange={(o) => !o && setQualTarget(null)}
+                pilotId={qualTarget?.id ?? null}
+                pilotName={qualTarget?.name ?? ''}
+                isDark={isDark}
+            />
         </div>
+        </TooltipProvider>
     )
 }

@@ -1,4 +1,5 @@
 'use client';
+import { useAuthorization } from '@/components/authorization/AuthorizationProvider';
 import MissionTypeForm from '@/components/mission/MissionTypeForm';
 import MissionTypeSkeleton from '@/components/mission/MissionTypeSkeleton';
 import MissionTypeTable from '@/components/mission/MissionTypeTable';
@@ -16,6 +17,7 @@ import { toast } from 'sonner';
 export default function MissionTypePage() {
   const { isDark } = useTheme();
   const { t } = useTranslation();
+  const { requireAuthorization } = useAuthorization();
   const [missionTypes, setMissionTypes] = useState<MissionType[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -37,16 +39,28 @@ export default function MissionTypePage() {
 
   const handleAddMissionType = async (newType: Omit<MissionType, 'id'>) => {
     try {
-      const response = await axios.post(`/api/mission/type/add`, { mission_type_name: newType.name, mission_type_desc: newType.description, mission_type_code: newType.code, mission_type_label: newType.label });
+      const response = await axios.post(`/api/mission/type/add`, { mission_type_name: newType.name, mission_type_desc: newType.description, mission_type_code: newType.code });
       const result = response.data;
       if (result.code === 1) {
-        setMissionTypes(prev => [...prev, { id: result.data.mission_type_id, name: result.data.type_name, code: result.data.type_code, label: result.data.type_description, description: result.data.type_description }]);
+        setMissionTypes(prev => [...prev, { id: result.data.mission_type_id, name: result.data.type_name, code: result.data.type_code, description: result.data.type_description }]);
         toast.success(t('missionType.success.added')); setIsAddDialogOpen(false);
       } else { toast.error(result.message || t('missionType.errors.add')); }
     } catch (error: any) { toast.error(error.response?.data?.message || t('missionType.errors.add')); }
   };
 
   const handleDeleteMissionType = async (id: number) => {
+    const missionType = missionTypes.find((type) => type.id === id);
+    try {
+      await requireAuthorization({
+        actionType: 'delete',
+        entityType: 'mission_type',
+        entityId: String(id),
+        label: `Delete Mission Type: ${missionType?.name ?? `#${id}`}`,
+      });
+    } catch {
+      return;
+    }
+
     try {
       const response = await axios.post(`/api/mission/type/${id}/delete`);
       const result = response.data;
@@ -59,7 +73,7 @@ export default function MissionTypePage() {
     if (!editItem) return;
     const updatedType: MissionType = { ...data, id: editItem.id };
     try {
-      const response = await axios.put(`/api/mission/type/${updatedType.id}/edit`, { mission_type_name: updatedType.name, mission_type_desc: updatedType.description, mission_type_code: updatedType.code, mission_type_label: updatedType.label });
+      const response = await axios.put(`/api/mission/type/${updatedType.id}/edit`, { mission_type_name: updatedType.name, mission_type_desc: updatedType.description, mission_type_code: updatedType.code });
       const result = response.data;
       if (result.code === 1) {
         setMissionTypes(prev => prev.map(type => type.id === updatedType.id ? updatedType : type));

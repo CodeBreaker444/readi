@@ -14,6 +14,10 @@ import { NotificationEmail } from '@/components/email-template/NotificationEmail
 import { TicketAssignedEmail } from '@/components/email-template/TicketAssignedEmail';
 import { TicketClosedEmail } from '@/components/email-template/TicketClosedEmail';
 import { TicketCreatedEmail } from '@/components/email-template/TicketCreatedEmail';
+import { TrainingCreatedEmail } from '@/components/email-template/TrainingCreatedEmail';
+import { TrainingUpdatedEmail } from '@/components/email-template/TrainingUpdatedEmail';
+import { TrainingDeletedEmail } from '@/components/email-template/TrainingDeletedEmail';
+import { TrainingCertificationExpiringEmail } from '@/components/email-template/TrainingCertificationExpiringEmail';
 import { UserActivationEmail } from '@/components/email-template/UserActivationEmail';
 import { render } from '@react-email/components';
 import { Resend } from 'resend';
@@ -480,6 +484,108 @@ export const sendCalendarEventUpdatedEmail = async (
     if (error) console.error('sendCalendarEventUpdatedEmail error:', error);
   } catch (err) {
     console.error('sendCalendarEventUpdatedEmail exception:', err);
+  }
+};
+
+export const sendTrainingCreatedEmail = async (
+  emails: string[],
+  trainingName: string,
+  trainingType?: string | null,
+  certificateType?: string | null,
+  sessionDate?: string | null,
+  attendeeCount?: number,
+  createdBy?: string
+) => {
+  if (!emails.length) return;
+  try {
+    const emailHtml = await render(
+      TrainingCreatedEmail({ trainingName, trainingType, certificateType, sessionDate, attendeeCount, createdBy })
+    );
+
+    const { error } = await resend.emails.send({
+      from: 'ReADI <no-reply@readi.theun1t.com>',
+      to: emails,
+      subject: `New Training Record — ${trainingName}`,
+      html: emailHtml,
+    });
+    if (error) console.error('sendTrainingCreatedEmail error:', error);
+  } catch (err) {
+    console.error('sendTrainingCreatedEmail exception:', err);
+  }
+};
+
+export const sendTrainingUpdatedEmail = async (
+  emails: string[],
+  trainingName: string,
+  trainingType?: string | null,
+  certificateType?: string | null,
+  sessionDate?: string | null,
+  updatedBy?: string
+) => {
+  if (!emails.length) return;
+  try {
+    const emailHtml = await render(
+      TrainingUpdatedEmail({ trainingName, trainingType, certificateType, sessionDate, updatedBy })
+    );
+
+    const { error } = await resend.emails.send({
+      from: 'ReADI <no-reply@readi.theun1t.com>',
+      to: emails,
+      subject: `Training Record Updated — ${trainingName}`,
+      html: emailHtml,
+    });
+    if (error) console.error('sendTrainingUpdatedEmail error:', error);
+  } catch (err) {
+    console.error('sendTrainingUpdatedEmail exception:', err);
+  }
+};
+
+export const sendTrainingDeletedEmail = async (
+  emails: string[],
+  trainingName: string,
+  trainingType?: string | null,
+  deletedBy?: string
+) => {
+  if (!emails.length) return;
+  try {
+    const emailHtml = await render(
+      TrainingDeletedEmail({ trainingName, trainingType, deletedBy })
+    );
+
+    const { error } = await resend.emails.send({
+      from: 'ReADI <no-reply@readi.theun1t.com>',
+      to: emails,
+      subject: `Training Record Deleted — ${trainingName}`,
+      html: emailHtml,
+    });
+    if (error) console.error('sendTrainingDeletedEmail error:', error);
+  } catch (err) {
+    console.error('sendTrainingDeletedEmail exception:', err);
+  }
+};
+
+export const sendTrainingCertificationExpiringEmail = async (
+  emails: string[],
+  trainingName: string,
+  expiryDate: string,
+  daysRemaining: number,
+  userName?: string | null
+) => {
+  if (!emails.length) return;
+  try {
+    const emailHtml = await render(
+      TrainingCertificationExpiringEmail({ trainingName, userName, expiryDate, daysRemaining })
+    );
+
+    const { error } = await resend.emails.send({
+      from: 'ReADI <no-reply@readi.theun1t.com>',
+      to: emails,
+      subject: `Certification Expiring — ${trainingName}`,
+      html: emailHtml,
+    });
+    if (error) console.error('sendTrainingCertificationExpiringEmail error:', error);
+  } catch (err) {
+    console.error('sendTrainingCertificationExpiringEmail exception:', err);
   }
 };
 

@@ -215,7 +215,7 @@ export async function addSystem(toolData: AddSystemInput) {
   });
 
   const existing = existingTools.find((t) => (t.tool_metadata as any)?.deleted !== true);
-  if (existing) throw new Error('System code already exists for this owner');
+  if (existing) return { code: 0, message: 'System code already exists' };
 
   const filesToUpload: File[] = Array.isArray(toolData.files)
     ? toolData.files.filter((f) => f instanceof File && f.size > 0)
@@ -595,6 +595,21 @@ export async function detachComponent(ownerId: number, componentId: number) {
 
 
 export async function addModel(modelData: any) {
+  const normalizedCode = typeof modelData.factory_serie === 'string'
+    ? modelData.factory_serie.trim()
+    : '';
+
+  if (normalizedCode) {
+    const duplicate = await prisma.tool_model.findFirst({
+      where: { model_code: { equals: normalizedCode, mode: 'insensitive' } },
+      select: { model_id: true },
+    });
+
+    if (duplicate) {
+      return { code: 0, message: `Model code "${normalizedCode}" already exists.` };
+    }
+  }
+
   const specsWithOwner = {
     ...(modelData.technical_specs || {}),
     fk_owner_id: modelData.fk_owner_id,
@@ -616,6 +631,24 @@ export async function addModel(modelData: any) {
 
 
 export async function updateModel(modelId: number, modelData: any) {
+  const normalizedCode = typeof modelData.model_code === 'string'
+    ? modelData.model_code.trim()
+    : '';
+
+  if (normalizedCode) {
+    const duplicate = await prisma.tool_model.findFirst({
+      where: {
+        model_code: { equals: normalizedCode, mode: 'insensitive' },
+        model_id: { not: modelId },
+      },
+      select: { model_id: true },
+    });
+
+    if (duplicate) {
+      return { code: 0, message: `Model code "${normalizedCode}" already exists.` };
+    }
+  }
+
   const existing = await prisma.tool_model.findUnique({
     where: { model_id: modelId },
     select: { specifications: true },
@@ -806,6 +839,7 @@ function buildComponentListResult(data: any[]) {
         uas_serial_number: item.uas_serial_number ?? null,
         gcs_serial_number: item.gcs_serial_number ?? null,
         certifications: item.certifications ?? null,
+        sts_declarations: item.component_metadata?.sts_declarations ?? null,
         latitude: item.component_metadata?.latitude ?? null,
         longitude: item.component_metadata?.longitude ?? null,
         drone_classes: item.component_metadata?.drone_classes ?? null,
@@ -869,6 +903,24 @@ export async function addComponent(componentData: any, ownerId: number) {
 
     if (duplicate) {
       return { code: 0, message: `Component serial number "${normalizedSerial}" already exists.` };
+    }
+  }
+
+  const normalizedCode = typeof componentData.component_code === 'string'
+    ? componentData.component_code.trim()
+    : '';
+
+  if (normalizedCode) {
+    const duplicateCode = await prisma.tool_component.findFirst({
+      where: {
+        component_code: { equals: normalizedCode, mode: 'insensitive' },
+        tool: { fk_owner_id: ownerId },
+      },
+      select: { component_id: true },
+    });
+
+    if (duplicateCode) {
+      return { code: 0, message: `Component code "${normalizedCode}" already exists.` };
     }
   }
 
@@ -1031,6 +1083,25 @@ export async function updateComponent(componentId: number, componentData: any, o
 
     if (duplicate) {
       return { code: 0, message: `Component serial number "${normalizedSerial}" already exists.` };
+    }
+  }
+
+  const normalizedCode = typeof componentData.component_code === 'string'
+    ? componentData.component_code.trim()
+    : '';
+
+  if (normalizedCode) {
+    const duplicateCode = await prisma.tool_component.findFirst({
+      where: {
+        component_code: { equals: normalizedCode, mode: 'insensitive' },
+        component_id: { not: componentId },
+        tool: { fk_owner_id: ownerId },
+      },
+      select: { component_id: true },
+    });
+
+    if (duplicateCode) {
+      return { code: 0, message: `Component code "${normalizedCode}" already exists.` };
     }
   }
 
@@ -1281,39 +1352,84 @@ export async function getComponentFlightLogs(
 
   if (!tool) return { code: 0, message: 'Access denied', data: [] };
 
-  const missions = await prisma.pilot_mission.findMany({
-    where: { fk_tool_id: toolId },
-    select: { pilot_mission_id: true, mission_code: true, actual_start: true, actual_end: true, flight_duration: true, distance_flown: true },
+  // Get completed missions for this tool (component usage)
+  const completedMissions = await prisma.pilot_mission.findMany({
+    where: { 
+      fk_tool_id: toolId,
+      status_name: 'COMPLETED',
+      actual_start: { not: null },
+    },
+    select: { 
+      pilot_mission_id: true, 
+      mission_code: true, 
+      actual_start: true, 
+      actual_end: true, 
+      flight_duration: true, 
+      distance_flown: true 
+    },
     orderBy: { actual_start: 'desc' },
   });
 
-  if (!missions.length) return { code: 1, message: 'No missions found', data: [] };
+  if (!completedMissions.length) return { code: 1, message: 'No completed missions found', data: [] };
 
-  const missionIds = missions.map((m) => BigInt(m.pilot_mission_id));
-  const missionMap = new Map(missions.map((m) => [m.pilot_mission_id, m]));
+  const missionIds = completedMissions.map((m) => BigInt(m.pilot_mission_id));
+  const missionMap = new Map(completedMissions.map((m) => [m.pilot_mission_id, m]));
 
+  // Get attached flight logs for these missions
   const logs = await prisma.mission_flight_logs.findMany({
     where: { fk_mission_id: { in: missionIds } },
     select: { log_id: true, fk_mission_id: true, log_source: true, original_filename: true, flytbase_flight_id: true, uploaded_at: true },
     orderBy: { uploaded_at: 'desc' },
   });
 
-  const data: ComponentFlightLog[] = logs.map((log) => {
+  const logMissionIds = new Set(logs.map((log) => Number(log.fk_mission_id)));
+  const data: ComponentFlightLog[] = [];
+
+  // First, add missions with attached logs
+  logs.forEach((log) => {
     const missionId = Number(log.fk_mission_id);
     const mission = missionMap.get(missionId);
-    return {
-      log_id: Number(log.log_id),
-      mission_id: missionId,
-      mission_code: mission?.mission_code ?? null,
-      log_source: log.log_source,
-      original_filename: log.original_filename ?? '',
-      flytbase_flight_id: log.flytbase_flight_id ?? null,
-      uploaded_at: log.uploaded_at?.toISOString() ?? '',
-      flight_duration: mission?.flight_duration ?? null,
-      distance_flown: mission?.distance_flown != null ? Number(mission.distance_flown) : null,
-      actual_start: mission?.actual_start?.toISOString() ?? null,
-      actual_end: mission?.actual_end?.toISOString() ?? null,
-    };
+    if (mission) {
+      data.push({
+        log_id: Number(log.log_id),
+        mission_id: missionId,
+        mission_code: mission?.mission_code ?? null,
+        log_source: log.log_source,
+        original_filename: log.original_filename ?? '',
+        flytbase_flight_id: log.flytbase_flight_id ?? null,
+        uploaded_at: log.uploaded_at?.toISOString() ?? '',
+        flight_duration: mission?.flight_duration ?? null,
+        distance_flown: mission?.distance_flown != null ? Number(mission.distance_flown) : null,
+        actual_start: mission?.actual_start?.toISOString() ?? null,
+        actual_end: mission?.actual_end?.toISOString() ?? null,
+      });
+    }
+  });
+
+  // Then, add completed missions without attached logs (from mission log book)
+  completedMissions.forEach((mission) => {
+    if (!logMissionIds.has(mission.pilot_mission_id)) {
+      data.push({
+        log_id: 0, // No log attached
+        mission_id: mission.pilot_mission_id,
+        mission_code: mission.mission_code ?? null,
+        log_source: 'mission_logbook', // Indicate this is from mission log book
+        original_filename: `Mission #${mission.pilot_mission_id}`,
+        flytbase_flight_id: null,
+        uploaded_at: mission.actual_start?.toISOString() ?? '',
+        flight_duration: mission.flight_duration ?? null,
+        distance_flown: mission.distance_flown != null ? Number(mission.distance_flown) : null,
+        actual_start: mission.actual_start?.toISOString() ?? null,
+        actual_end: mission.actual_end?.toISOString() ?? null,
+      });
+    }
+  });
+
+  // Sort by actual_start descending
+  data.sort((a, b) => {
+    const dateA = a.actual_start ? new Date(a.actual_start).getTime() : 0;
+    const dateB = b.actual_start ? new Date(b.actual_start).getTime() : 0;
+    return dateB - dateA;
   });
 
   return { code: 1, message: 'Success', data };

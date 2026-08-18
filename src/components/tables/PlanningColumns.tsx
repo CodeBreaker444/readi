@@ -3,13 +3,14 @@
 import { Planning } from "@/config/types/evaluation-planning";
 import { type ColumnDef } from "@tanstack/react-table";
 import { TFunction } from "i18next";
-import { ExternalLink, Trash2 } from "lucide-react";
+import { Eye, ExternalLink, Trash2 } from "lucide-react";
 import PlanningStatusBadge from "../planning/StatusBadge";
 
 interface ColumnOptions {
   isDark: boolean;
   onDelete: (row: Planning) => void;
   onOpen: (row: Planning) => void;
+  onViewDetails: (row: Planning) => void;
   deleting: boolean;
   t: TFunction;
   canDelete: boolean;
@@ -19,6 +20,7 @@ export function getPlanningColumns({
   isDark,
   onDelete,
   onOpen,
+  onViewDetails,
   deleting,
   t,
   canDelete,
@@ -31,17 +33,6 @@ export function getPlanningColumns({
       cell: ({ getValue }) => (
         <span className="font-mono text-[11px] tabular-nums font-medium">
           {String(getValue() ?? "—")}
-        </span>
-      ),
-    },
-
-    {
-      accessorKey: "fk_evaluation_id",
-      header: t("planning.columns.evaluationCode"),
-      size: 110,
-      cell: ({ getValue }) => (
-        <span className="font-mono text-[11px] tabular-nums">
-          EVAL_{String(getValue())}
         </span>
       ),
     },
@@ -67,67 +58,12 @@ export function getPlanningColumns({
     },
 
     {
-      accessorKey: "user_fullname",
-      header: t("planning.columns.requestedBy"),
-      size: 150,
-      cell: ({ row }) => (
-        <span>
-          {row.original.user_fullname}{" "}
-          <span className="opacity-40 text-[10px]">[{row.original.user_profile_code}]</span>
-        </span>
-      ),
-    },
-
-    {
-      id: "assigned_to",
-      header: t("planning.columns.assignedTo"),
-      size: 150,
-      cell: ({ row }) => {
-        const pic = row.original.pic_data;
-        if (!pic?.fullname) return <span className="opacity-30">—</span>;
-        return (
-          <span>
-            {pic.fullname}{" "}
-            <span className="opacity-40 text-[10px]">[{pic.user_profile_code}]</span>
-          </span>
-        );
-      },
-    },
-
-    {
-      accessorKey: "planning_request_date",
-      header: t("planning.form.requestDate"),
-      size: 110,
-      cell: ({ getValue }) => (
-        <span className="tabular-nums text-[11px]">{String(getValue() ?? "")}</span>
-      ),
-    },
-    {
-      accessorKey: "last_update",
-      header: t("planning.columns.lastAction"),
-      size: 110,
-      cell: ({ getValue }) => (
-        <span className="tabular-nums text-[11px]">{String(getValue() ?? "")}</span>
-      ),
-    },
-    {
       accessorKey: "planning_desc",
       header: t("planning.form.description"),
       size: 240,
       cell: ({ getValue }) => (
         <span className="truncate max-w-[230px] inline-block" title={String(getValue() ?? "")}>
           {String(getValue() ?? "")}
-        </span>
-      ),
-    },
-    {
-      accessorKey: "luc_procedure_code",
-      header: t("planning.columns.procedureCode"),
-      size: 160,
-      cell: ({ row }) => (
-        <span>
-          {row.original.luc_procedure_code}{" "}
-          <span className="opacity-40 text-[10px]">[{row.original.luc_procedure_ver}]</span>
         </span>
       ),
     },
@@ -153,26 +89,33 @@ export function getPlanningColumns({
     {
       id: "actions",
       header: "",
-      size: 110,
+      size: 100,
       cell: ({ row }) => (
         <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+          <button
+            onClick={() => onViewDetails(row.original)}
+            className="inline-flex cursor-pointer items-center justify-center p-1.5 rounded-md bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+            title={t("common.viewDetails")}
+          >
+            <Eye className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => onOpen(row.original)}
+            className="inline-flex cursor-pointer items-center justify-center p-1.5 rounded-md bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+            title={t("planning.columns.open")}
+          >
+            <ExternalLink className="w-4 h-4" />
+          </button>
           {row.original.planning_status === "NEW" && canDelete && (
             <button
               onClick={() => onDelete(row.original)}
               disabled={deleting}
-              className="inline-flex cursor-pointer items-center gap-1 px-2 py-1 text-[11px] rounded-md bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-colors disabled:opacity-40"
+              className="inline-flex cursor-pointer items-center justify-center p-1.5 rounded-md bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors disabled:opacity-40 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+              title={t("common.delete")}
             >
-              <Trash2 className="w-3 h-3" />
-              {t("common.delete")}
+              <Trash2 className="w-4 h-4" />
             </button>
           )}
-          <button
-            onClick={() => onOpen(row.original)}
-            className="inline-flex cursor-pointer items-center gap-1 px-2 py-1 text-[11px] rounded-md bg-violet-500/10 text-violet-500 hover:bg-violet-500/20 transition-colors"
-          >
-            <ExternalLink className="w-3 h-3" />
-            {t("planning.columns.open")}
-          </button>
         </div>
       ),
     },

@@ -1,5 +1,6 @@
 'use client';
 
+import { useAuthorization } from '@/components/authorization/AuthorizationProvider';
 import { FlightRequestDetailModal } from '@/components/operation/flight-requests/FlightRequestDetailModal';
 import { FlightRequestsHeader } from '@/components/operation/flight-requests/FlightRequestsHeader';
 import { FlightRequestsLogModal } from '@/components/operation/flight-requests/FlightRequestsLogModal';
@@ -31,6 +32,7 @@ interface Planning {
 export default function FlightRequestsTable() {
   const { isDark } = useTheme();
   const { t } = useTranslation();
+  const { requireAuthorization } = useAuthorization();
   const [requests, setRequests] = useState<FlightRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState('ALL');
@@ -111,6 +113,18 @@ export default function FlightRequestsTable() {
   async function handleDelete() {
     if (!deleteConfirm) return;
     const request_id = deleteConfirm;
+
+    try {
+      await requireAuthorization({
+        actionType: 'delete',
+        entityType: 'flight_request',
+        entityId: String(request_id),
+        label: `Delete Flight Request: #${request_id}`,
+      });
+    } catch {
+      return;
+    }
+
     setDeleteConfirm(null);
     setDeleting(request_id);
     try {

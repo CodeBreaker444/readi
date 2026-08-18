@@ -148,7 +148,7 @@ function MissionChecklistModal({
   return (
     <>
       <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-        <DialogContent className="w-full sm:max-w-4xl max-h-[90vh] overflow-y-auto p-0 md:rounded-lg">
+        <DialogContent className="w-full sm:max-w-4xl md:max-w-6xl lg:max-w-7xl xl:max-w-8xl max-h-[90vh] overflow-y-auto overflow-x-hidden p-0 md:rounded-lg">
           <DialogHeader className="px-6 pt-5 pb-3 border-b border-slate-100 dark:border-slate-700">
             <div className="flex items-start gap-3">
               <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-50 border border-emerald-100">
@@ -163,7 +163,7 @@ function MissionChecklistModal({
             </div>
           </DialogHeader>
 
-          <div className="px-4 py-4 sm:px-6">
+          <div className="px-4 py-4 sm:px-6 w-full overflow-x-hidden">
             {loading ? (
               <div className="flex items-center justify-center py-16">
                 <Loader2 className="h-6 w-6 animate-spin text-violet-500" />
@@ -280,7 +280,7 @@ function MissionAssignmentModal({
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="w-full sm:max-w-2xl md:max-w-3xl lg:max-w-4xl xl:max-w-5xl max-h-[90vh] overflow-y-auto overflow-x-hidden">
         <DialogHeader>
           <div className="flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 border border-emerald-100">
@@ -429,7 +429,7 @@ function MissionCommunicationModal({
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="w-full sm:max-w-2xl md:max-w-3xl lg:max-w-4xl xl:max-w-5xl max-h-[90vh] overflow-y-auto overflow-x-hidden">
         <DialogHeader>
           <div className="flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-50 border border-violet-100">
@@ -792,7 +792,7 @@ export function MissionLucProcedureModal({ mission, isDark, onClose }: Props) {
               onClick={onClose}
               className={`h-8 text-xs ${isDark ? 'border-slate-600 text-slate-300 hover:bg-slate-700' : ''}`}
             >
-              {t('planning.form.no')}
+              {t('common.close')}
             </Button>
           </div>
         </div>

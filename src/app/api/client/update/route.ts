@@ -10,6 +10,7 @@ import { z } from 'zod';
 const schema = z.object({
     client_id: z.number().int().positive('Client ID is required'),
     client_name: z.string().min(1).max(255).optional(),
+    client_code: z.string().max(50).optional(),
     client_legal_name: z.string().max(255).optional(),
     client_address: z.string().optional(),
     client_city: z.string().max(100).optional(),

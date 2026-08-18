@@ -1,0 +1,492 @@
+---
+title: "Comprehensive Parameter Reference"
+description: "Master index of all business logic parameters across modules with their dependencies and cross-module relationships."
+---
+
+# Comprehensive Parameter Reference
+
+## Overview
+
+This document provides a master index of all business logic parameters across the Readi platform, their database mappings, validation rules, and cross-module dependencies. Use this to understand how parameters flow through the system and which modules they impact.
+
+---
+
+## Parameter Index by Module
+
+### Maintenance Module Parameters
+
+#### Component Parameters
+
+| Frontend Label | Parameter | Type | Default | Validation | Maintenance Impact |
+|---|---|---|---|---|---|
+| System | `fk_tool_id` | number | Required | FK | Links component to drone system |
+| Parent Component | `fk_parent_component_id` | number | null | FK | Hierarchical component structure |
+| Component Type | `component_type` | string | null | Required | Categorizes maintenance cycles |
+| Code | `component_code` | string | null | Unique per tool | Component identification |
+| Serial Number | `component_sn` | string | null | Unique per owner | GUTMA/DFlight sync |
+| Name | `component_name` | string | null | Required | Display name |
+| Brand/Model | `fk_tool_model_id` | number | null | FK | Model-specific maintenance cycles |
+| Description | `component_desc` | string | null | Free text | Display |
+| Status | `component_status` | string | 'OPERATIONAL' | Enum | **YES** - Determines if maintenance required |
+| Activation Date | `component_activation_date` | date | null | Valid date | Day calculations |
+| Purchase Date | `component_purchase_date` | date | null | Valid date | Warranty tracking |
+| Expiration Type | `expiry_type` | string | 'EXPIRATION_DATE' | Enum | Determines expiry calculation method |
+| Expiration Date | `expiration_date` | date | null | Valid date | **YES** - Auto-decommission trigger |
+| Expiration Flights | `expiration_flights` | number | null | >= 0 | **YES** - Flight-based expiry |
+| Expiration Flight Hours | `expiration_flight_hours` | number | null | >= 0 | **YES** - Hour-based expiry |
+| Vendor | `component_vendor` | string | null | Free text | Support contact |
+| Guarantee | `component_guarantee_day` | number | null | >= 0 | Warranty period tracking |
+| Battery Cycle Ratio | `battery_cycle_ratio` | number | 1.0 | > 0 | **YES** - Multiplies flight count for maintenance |
+| Usage Hours | `initial_usage_hours` | number | 0 | >= 0 | Lifetime tracking |
+| Maintenance Hours | `initial_maintenance_hours` | number | 0 | >= 0 | **YES** - Current usage vs limit |
+| Maintenance Flights | `initial_maintenance_flights` | number | 0 | >= 0 | **YES** - Current flights vs limit |
+| Insurance Name | `insurance_name` | string | null | Free text | Compliance tracking |
+| Insurance Company | `insurance_company` | string | null | Free text | Compliance tracking |
+| Insurance Expiry Date | `insurance_expiry_date` | date | null | Valid date | **YES** - Expiry alert trigger |
+| Drone Classes | `drone_classes` | string[] | null | Array | Classification for compliance |
+| C2 Platform | `cc_platform` | string | null | Enum | Integration type |
+| GCS | `gcs_type` | string | null | Enum | Ground control station type |
+| DCC Drone ID | `dcc_drone_id` | string | null | Free text | DCC integration |
+| Drone Registration Code | `drone_registration_code` | string | null | Required for sync | **YES** - DFlight compliance sync |
+| UAS Serial Number | `uas_serial_number` | string | null | Required format | DFlight compliance |
+| GCS Serial Number | `gcs_serial_number` | string | null | Required format | DFlight compliance |
+
+#### System Parameters
+
+| Frontend Label | Parameter | Type | Default | Validation | Maintenance Impact |
+|---|---|---|---|---|---|
+| Code | `tool_code` | string | Auto | Unique per owner | System identification |
+| Description | `tool_desc` | string | null | Free text | Display |
+| Status | `tool_status` | string | 'OPERATIONAL' | Enum | **YES** - Determines mission eligibility |
+| Active | `tool_active` | string | 'Y' | Enum: 'Y', 'N' | Dashboard visibility |
+| Client | `fk_client_id` | number | Required | FK | Ownership scoping |
+| Location | `location` | string | null | Free text | Display |
+| Activation Date | `date_activation` | date | null | Valid date | Tracking |
+| Maintenance Logbook | `tool_maintenance_logbook` | string | 'N' | Enum: 'Y', 'N' | Enables maintenance tracking |
+
+#### Maintenance Ticket Parameters
+
+| Frontend Label | Parameter | Type | Default | Validation | Maintenance Impact |
+|---|---|---|---|---|---|
+| System | `fk_tool_id` | number | null | FK | **YES** - Forces system to MAINTENANCE status |
+| Component | `fk_component_id` | number | null | FK | **YES** - Links ticket to component |
+| Status | `ticket_status` | string | 'NEW' | Enum | **YES** - Open tickets force MAINTENANCE status |
+| Type | `ticket_type` | string | null | Enum | Categorization (preventive, corrective, etc.) |
+| Priority | `ticket_priority` | string | null | Enum | Notification routing |
+| Title | `ticket_title` | string | null | Required | Display |
+| Description | `ticket_description` | string | null | Free text | Details |
+| Technician | `fk_technician_id` | number | null | FK | Assignment |
+| Assigned By | `assigned_by_user_id` | number | null | FK | Audit trail |
+| Created At | `created_at` | date | now | Valid date | Audit |
+| Updated At | `updated_at` | date | now | Valid date | Audit |
+
+---
+
+### Operations Module Parameters
+
+#### Mission Parameters
+
+| Frontend Label | Parameter | Type | Default | Validation | Maintenance Impact |
+|---|---|---|---|---|---|
+| Mission Code | `mission_code` | string | Auto | Unique per owner | Identification |
+| Mission Name | `mission_name` | string | null | Free text | Display |
+| Planning | `fk_planning_id` | number | null | FK | Links to approved planning |
+| Pilot | `fk_pilot_user_id` | number | null | FK | Pilot assignment |
+| Drone/System | `fk_tool_id` | number | null | FK | **YES** - Drone assignment for maintenance update |
+| Client | `fk_client_id` | number | null | FK | Client association |
+| Mission Type | `fk_mission_type_id` | number | null | FK | Categorization |
+| Mission Category | `fk_mission_category_id` | number | null | FK | Categorization |
+| LUC Procedure | `fk_luc_procedure_id` | number | Required | FK | Compliance |
+| Scheduled Start | `scheduled_start` | datetime | null | Valid datetime | Scheduling |
+| Actual Start | `actual_start` | datetime | null | Valid datetime | Status transition |
+| Actual End | `actual_end` | datetime | null | Valid datetime | **YES** - Triggers maintenance update |
+| Flight Duration | `flight_duration` | number | null | >= 0 | **YES** - Added to component maintenance hours |
+| Distance Flown | `distance_flown` | number | null | >= 0 | Compliance |
+| Max Altitude | `max_altitude` | number | null | >= 0 | Compliance (>120m flag) |
+| Location | `location` | string | null | Free text | Reporting |
+| Notes | `notes` | string | null | Free text | Details |
+| Status | `status_name` | string | 'PLANNED' | Enum | Lifecycle |
+| Pre-Flight Check OK | `pre_flight_check_ok` | boolean | false | boolean | Mission start requirement |
+| Post-Flight Check OK | `post_flight_check_ok` | boolean | false | boolean | Mission completion |
+| Incident Flag | `incident_flag` | boolean | false | boolean | Safety tracking |
+| Unplanned RTH | `rth_unplanned` | boolean | false | boolean | Incident tracking |
+| Link Loss | `link_loss` | boolean | false | boolean | Incident tracking |
+| Deviation Flag | `deviation_flag` | boolean | false | boolean | Compliance |
+| Battery Charge Start | `battery_charge_start` | number | null | 0-100 | Telemetry |
+| Battery Charge End | `battery_charge_end` | number | null | 0-100 | Telemetry |
+
+#### Flight Log Parameters
+
+| Frontend Label | Parameter | Type | Default | Validation | Maintenance Impact |
+|---|---|---|---|---|---|
+| Flight ID | `flytbase_flight_id` | string | null | Unique | FlytBase linkage |
+| Log Source | `log_source` | string | null | Enum: 'flytbase', 'manual' | Source tracking |
+| Original Filename | `original_filename` | string | null | Free text | Display |
+| Uploaded At | `uploaded_at` | date | now | Valid date | Audit |
+
+---
+
+### Email Notification Parameters
+
+#### Company Email Settings
+
+| Frontend Label | Parameter | Type | Default | Validation | Maintenance Impact |
+|---|---|---|---|---|---|
+| Email Notifications Enabled | `email_notifications_enabled` | boolean | false | boolean | General email master switch |
+| Operations Email Enabled | `operation_email_enabled` | boolean | false | boolean | Operations email master switch |
+| System Email Enabled | `system_email_enabled` | boolean | false | boolean | **YES** - Maintenance email master switch |
+| Daily Email Limit | `daily_email_limit` | number | 1000 | > 0 | Email throttling |
+| Daily Email Count | `daily_email_count` | number | 0 | >= 0 | Current count |
+| Daily Email Count Reset Date | `daily_email_count_reset_date` | date | today | Valid date | Counter reset |
+
+#### Module Email Configuration
+
+| Frontend Label | Parameter | Type | Default | Validation | Maintenance Impact |
+|---|---|---|---|---|---|
+| Module Name | `module_name` | string | Required | Enum: 'maintenance', 'operations', 'planning' | Module scoping |
+| Event Type | `event_type` | string | Required | Enum per module | Event scoping |
+| Is Enabled | `is_enabled` | boolean | false | boolean | **YES** - Per-event enablement for maintenance alerts |
+| Notification Roles | `notification_roles` | string[] | [] | Array of valid roles | Recipient selection |
+| Notification User IDs | `notification_user_ids` | number[] | [] | Array of valid user IDs | Recipient selection |
+| Created At | `created_at` | date | now | Valid date | Audit |
+| Updated At | `updated_at` | date | now | Valid date | Audit |
+
+---
+
+### Evaluation and Planning Module Parameters
+
+#### Evaluation Parameters
+
+| Frontend Label | Parameter | Type | Default | Validation | Maintenance Impact |
+|---|---|---|---|---|---|
+| Client | `client_id` | number | Required | FK | Client association |
+| LUC Procedure | `fk_luc_procedure_id` | number | Required | FK | Procedure linkage |
+| Status | `evaluation_status` | string | 'NEW' | Enum: 'NEW', 'PROCESSING', 'DONE' | Lifecycle |
+| Request Date | `evaluation_request_date` | date | today | Valid date | Scheduling |
+| Year Reference | `evaluation_year` | number | Current year | Valid year | Reporting |
+| Description | `evaluation_description` | string | null | Required | Display |
+| Offer Reference | `evaluation_offer` | string | null | Free text | Business reference |
+| Sales Manager | `evaluation_sale_manager` | string | null | Free text | Contact tracking |
+
+#### Planning Parameters
+
+| Frontend Label | Parameter | Type | Default | Validation | Maintenance Impact |
+|---|---|---|---|---|---|
+| Planning Code | `planning_code` | string | Auto | Unique per owner | Identification |
+| Planning Description | `planning_description` | string | null | Required | Display |
+| Planning Status | `planning_status` | string | 'NEW' | Enum: 'NEW', 'PROCESSING', 'REQ_FEEDBACK', 'POSITIVE_RESULT', 'NEGATIVE_RESULT', 'TESTING' | Lifecycle |
+| Planning Type | `planning_type` | string | null | Free text | Categorization |
+| Planning Result | `planning_result` | string | 'PROGRESS' | Enum: 'PROGRESS', 'POSITIVE', 'NEGATIVE' | Outcome |
+| Planned Date | `planned_date` | date | null | Valid date | Scheduling |
+| Planning Active | `planning_active` | string | 'Y' | Enum: 'Y', 'N' | Visibility |
+| Planning JSON | `planning_json` | JSON | {} | Valid JSON | Tasks, procedure_tasks |
+| Client | `fk_client_id` | number | null | FK | Client association |
+| Evaluation | `fk_evaluation_id` | number | null | FK | Evaluation linkage |
+| Assigned To (PIC) | `assigned_to_user_id` | number | null | FK | PIC assignment |
+| Created By | `created_by_user_id` | number | Required | FK | Creator |
+| Created At | `created_at` | date | now | Valid date | Audit |
+| Updated At | `updated_at` | date | now | Valid date | Audit |
+
+#### LUC Procedure Parameters
+
+| Frontend Label | Parameter | Type | Default | Validation | Maintenance Impact |
+|---|---|---|---|---|---|
+| Procedure Code | `procedure_code` | string | Required | Unique per owner | Identification |
+| Procedure Name | `procedure_name` | string | Required | Free text | Display |
+| Procedure Version | `procedure_version` | string | '1.0' | Free text | Versioning |
+| Procedure Status | `procedure_status` | string | null | Free text | Sector/category |
+| Procedure Active | `procedure_active` | string | 'Y' | Enum: 'Y', 'N' | Visibility |
+
+---
+
+### Integration Services Parameters
+
+#### FlytBase Credentials
+
+| Frontend Label | Parameter | Type | Default | Validation | Maintenance Impact |
+|---|---|---|---|---|---|
+| FlytBase API Token | `flytbase_api_token` | string | null | JWT format | API authentication |
+| FlytBase Org ID | `flytbase_org_id` | string | null | Required with token | API scoping |
+| FlytBase Token Name | `flytbase_token_name` | string | null | Free text | Display |
+
+#### DFlight Sync Parameters
+
+| Frontend Label | Parameter | Type | Default | Validation | Maintenance Impact |
+|---|---|---|---|---|---|
+| Drone Registration Code | `drone_registration_code` | string | null | Required for sync | **YES** - DFlight compliance sync |
+| DRC Synced At | `drc_synced_at` | date | null | Valid date | Sync tracking |
+| QR Code Image | `qr_code_image` | string | null | Valid image data | QR code |
+| UAS Serial Number | `uas_serial_number` | string | null | Required format | DFlight compliance |
+| GCS Serial Number | `gcs_serial_number` | string | null | Required format | DFlight compliance |
+| Drone Classes | `drone_classes` | string[] | null | Array of strings | Classification |
+
+#### Insurance Parameters
+
+| Frontend Label | Parameter | Type | Default | Validation | Maintenance Impact |
+|---|---|---|---|---|---|
+| Insurance Name | `insurance_name` | string | null | Free text | Policy name |
+| Insurance Company | `insurance_company` | string | null | Free text | Provider |
+| Insurance Expiry Date | `insurance_expiry_date` | date | null | Valid date | **YES** - Expiry alert trigger |
+| Alert Recipients | `alert_recipients` | string[] | [] | Array of emails | Expiry notification recipients |
+| Alert Days Before | `alert_days_before` | number | 30 | >= 0 | Days before expiry to send alert |
+| Updated At | `updated_at` | date | now | Valid date | Audit |
+
+---
+
+## Cross-Module Parameter Dependencies
+
+### Maintenance → Operations
+
+| Maintenance Parameter | Operations Parameter | Dependency Logic |
+|---|---|---|
+| System Status (tool_status) | Drone Assignment (fk_tool_id) | Only OPERATIONAL systems can be assigned to missions |
+| Component Status (component_status) | Mission Status (status_name) | System must be OPERATIONAL for mission start |
+| Maintenance Hours (initial_maintenance_hours) | Flight Duration (flight_duration) | Mission duration updates component hours |
+| Maintenance Flights (initial_maintenance_flights) | Mission Completion | Each mission increments component flights (multiplied by battery_cycle_ratio) |
+| Open Maintenance Ticket | Mission Start | Open tickets prevent mission start (system in MAINTENANCE status) |
+
+### Operations → Maintenance
+
+| Operations Parameter | Maintenance Parameter | Dependency Logic |
+|---|---|---|
+| Actual End (actual_end) | Maintenance Hours (initial_maintenance_hours) | Mission completion triggers maintenance cycle update |
+| Flight Duration (flight_duration) | Maintenance Hours (initial_maintenance_hours) | Flight duration added to component hours |
+| Drone Assignment (fk_tool_id) | Maintenance Ticket System (fk_tool_id) | Missions linked to systems can have maintenance tickets |
+| Mission Completion | Component Status | Recalculates OK/ALERT/DUE status based on updated metrics |
+
+### Planning → Operations
+
+| Planning Parameter | Operations Parameter | Dependency Logic |
+|---|---|---|
+| Planning Status (planning_status) | Mission Planning Link (fk_planning_id) | Only POSITIVE_RESULT planning allows mission creation |
+| Evaluation LUC Procedure (fk_luc_procedure_id) | Mission LUC Procedure (fk_luc_procedure_id) | LUC procedure from evaluation linked to mission |
+| Assigned To PIC (assigned_to_user_id) | Pilot Assignment (fk_pilot_user_id) | PIC from planning can be assigned to mission |
+
+### Operations → Email
+
+| Operations Parameter | Email Parameter | Dependency Logic |
+|---|---|---|
+| Mission Status (status_name) | Event Type (event_type) | Mission status changes trigger email events |
+| Pilot Assignment (fk_pilot_user_id) | Notification User IDs (notification_user_ids) | Assigned pilot receives direct email |
+| Operations Email Enabled (operation_email_enabled) | Email Send | Company-level switch for operations emails |
+
+### Maintenance → Email
+
+| Maintenance Parameter | Email Parameter | Dependency Logic |
+|---|---|---|
+| Ticket Status (ticket_status) | Event Type (event_type) | Ticket status changes trigger email events |
+| Technician Assignment (fk_technician_id) | Notification User IDs (notification_user_ids) | Assigned technician receives direct email |
+| System Email Enabled (system_email_enabled) | Email Send | Company-level switch for maintenance emails |
+| Component Status (component_status) | Email Trigger | ALERT/DUE status triggers maintenance notifications |
+| Insurance Expiry Date (insurance_expiry_date) | Alert Recipients (alert_recipients) | Expiry triggers email to configured recipients |
+
+### Email → All Modules
+
+| Email Parameter | All Modules | Dependency Logic |
+|---|---|---|
+| Daily Email Limit (daily_email_limit) | All Email Sends | Hard limit on emails per day |
+| Daily Email Count (daily_email_count) | All Email Sends | Current count, auto-resets daily |
+| Is Enabled (is_enabled) | All Email Sends | Per-event enablement check |
+| Notification Roles (notification_roles) | All Email Sends | Role-based recipient selection |
+
+### Integration → Operations
+
+| Integration Parameter | Operations Parameter | Dependency Logic |
+|---|---|---|
+| FlytBase API Token (flytbase_api_token) | Flight ID (flytbase_flight_id) | FlytBase credentials required for flight log attachment |
+| Flight ID (flytbase_flight_id) | Mission Telemetry | Flight log provides mission telemetry data |
+| GUTMA Duration | Flight Duration (flight_duration) | GUTMA duration auto-syncs to mission |
+
+### Integration → Maintenance
+
+| Integration Parameter | Maintenance Parameter | Dependency Logic |
+|---|---|---|
+| Serial Number (component_sn) | GUTMA Sync Matching | Serial number matches components for usage updates |
+| GUTMA Duration | Maintenance Hours (initial_maintenance_hours) | GUTMA duration updates component hours |
+| GUTMA Flight Count | Maintenance Flights (initial_maintenance_flights) | GUTMA flights update component flights |
+| Drone Registration Code (drone_registration_code) | DFlight Sync | DFlight ID stored on component for compliance |
+| DFlight Sync | Component Status | DFlight compliance data affects operational status |
+
+---
+
+## Parameter Validation Rules
+
+### Common Validation Patterns
+
+#### String Validation
+- Trim whitespace before storage
+- Convert to uppercase for codes (tool_code, mission_code, etc.)
+- Reject empty strings for required fields
+- Max length: 255 characters for most fields
+
+#### Numeric Validation
+- Must be >= 0 for counts and durations
+- Must be > 0 for limits and ratios
+- Decimal precision: 2 decimal places for hours
+- Integer for counts and IDs
+
+#### Date Validation
+- Must be valid ISO 8601 format
+- End date must be >= start date (where applicable)
+- Future dates allowed for scheduling
+- Past dates allowed for historical records
+
+#### Enum Validation
+- Status fields: restricted to defined enum values
+- Type fields: restricted to defined enum values
+- Active flags: 'Y' or 'N' only
+
+#### JSON Validation
+- Must be valid JSON object
+- Nested objects validated recursively
+- Arrays must contain valid elements
+- Null allowed for optional fields
+
+### Module-Specific Validation
+
+#### Maintenance Module
+- `maintenance_cycle_hour`: Only used if > 0
+- `maintenance_cycle_flight`: Only used if > 0
+- `maintenance_cycle_day`: Only used if > 0
+- `battery_cycle_ratio`: Must be > 0, default 1.0
+- `component_active`: Only 'Y' components evaluated
+
+#### Operations Module
+- `flight_duration`: Calculated from actual_start and actual_end
+- `max_altitude`: > 120m triggers compliance flag
+- `battery_charge_start/end`: Must be 0-100
+- `status_name`: Must follow defined transitions
+
+#### Email Module
+- `daily_email_limit`: Must be > 0
+- `notification_roles`: Must be valid user roles
+- `notification_user_ids`: Must be valid user IDs
+- `module_name`: Must be 'maintenance', 'operations', or 'planning'
+
+#### Planning Module
+- `planning_status`: Only 'NEW' can be deleted
+- `evaluation_status`: Only 'NEW' can be deleted
+- `planning_json`: Must contain valid tasks array
+
+#### Integration Module
+- `flytbase_api_token`: Must be valid JWT
+- `flytbase_org_id`: Required with token
+- `serial_number`: Case-insensitive matching
+- Placeholder SNS: 'n/a', 'na', 'unknown', 'none', '-', 'null' filtered
+
+---
+
+
+## Parameter State Transitions
+
+### Maintenance Status Transitions
+
+```
+OK → ALERT (at 80% of limit)
+ALERT → DUE (at 100% of limit)
+DUE → OK (after maintenance, counters reset)
+OK → IN_MAINTENANCE (ticket created)
+IN_MAINTENANCE → OK (ticket closed)
+```
+
+### Mission Status Transitions
+
+```
+PLANNED → IN_PROGRESS (pre-flight check OK, system OPERATIONAL)
+IN_PROGRESS → COMPLETED (post-flight check OK)
+IN_PROGRESS → FAILED (incident flags)
+PLANNED → CANCELLED (user action)
+```
+
+### Planning Status Transitions
+
+```
+NEW → PROCESSING (review started)
+PROCESSING → REQ_FEEDBACK (awaiting sign-off)
+REQ_FEEDBACK → POSITIVE_RESULT (approved)
+REQ_FEEDBACK → NEGATIVE_RESULT (rejected)
+NEGATIVE_RESULT → PROCESSING (revision)
+PROCESSING → TESTING (testing phase)
+TESTING → POSITIVE_RESULT (testing passed)
+TESTING → NEGATIVE_RESULT (testing failed)
+```
+
+### Evaluation Status Transitions
+
+```
+NEW → PROCESSING (assessment started)
+PROCESSING → DONE (assessment complete)
+```
+
+---
+
+## Parameter Audit Trail
+
+### Audit Log Parameters
+
+| Parameter | DB Column | Type | Purpose |
+|---|---|---|---|
+| `audit_id` | `audit_logs.audit_id` | number | Primary key |
+| `user_id` | `audit_logs.user_id` | number | User who made change |
+| `owner_id` | `audit_logs.owner_id` | number | Company context |
+| `event_type` | `audit_logs.event_type` | string | Type of change |
+| `entity_type` | `audit_logs.entity_type` | string | Entity affected |
+| `entity_id` | `audit_logs.entity_id` | string | Entity ID |
+| `description` | `audit_logs.description` | string | Human-readable description |
+| `metadata` | `audit_logs.metadata` | JSON | Additional context |
+| `created_at` | `audit_logs.created_at` | date | Timestamp |
+
+### Audited Parameters
+
+**High-Value Parameters (Always Audited):**
+- `tool.tool_active` (system activation/deactivation)
+- `maintenance_ticket.ticket_status` (ticket lifecycle)
+- `pilot_mission.status_name` (mission lifecycle)
+- `public_users.user_active` (user activation)
+- `owner.daily_email_limit` (email limit changes)
+
+**Medium-Value Parameters (Audited on Critical Changes):**
+- `tool_component.component_active` (component activation)
+- `planning.planning_status` (planning approval)
+- `evaluation.evaluation_status` (evaluation completion)
+
+**Low-Value Parameters (Not Audited):**
+- Display names and descriptions
+- Timestamp updates
+- Counter increments (maintenance cycles, email counts)
+
+---
+
+### Computed Parameter Caching
+
+**Cached Computations:**
+- System operational status (computed per dashboard load)
+- Component maintenance status (computed per dashboard load)
+- Daily email count (reset daily, cached in DB)
+
+**Not Cached (Real-Time):**
+- Mission duration (calculated on demand)
+- Flight telemetry (from FlytBase API)
+- GUTMA sync results (per sync operation)
+
+---
+
+## Summary
+
+This parameter reference provides:
+
+1. **Complete Parameter Index:** All parameters across modules with database mappings
+2. **Validation Rules:** Input validation and business rule constraints
+3. **Dependencies:** Cross-module parameter relationships
+4. **Computation Logic:** How derived parameters are calculated
+5. **State Transitions:** Valid parameter value transitions
+6. **Audit Trail:** Which parameters are audited and why
+7. **Security:** Sensitive parameter handling
+8. **Performance:** Indexing and caching strategies
+
+Use this document to:
+- Understand parameter flow through the system
+- Implement new features with correct parameter handling
+- Debug parameter-related issues
+- Plan database schema changes
+- Implement security controls

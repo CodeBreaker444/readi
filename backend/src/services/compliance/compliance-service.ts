@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma';
+import { logEvent } from '@/backend/services/auditLog/audit-log';
 
 type ComplianceStatus = 'COMPLIANT' | 'PARTIAL' | 'NON_COMPLIANT' | 'NOT_APPLICABLE';
 
@@ -106,7 +107,11 @@ export async function getComplianceRequirementById(
 }
 
 export async function createComplianceRequirement(
-  params: CreateComplianceRequirementParams
+  params: CreateComplianceRequirementParams,
+  userId?: number,
+  userName?: string,
+  userEmail?: string,
+  userRole?: string
 ): Promise<ComplianceRequirement> {
   const row = await prisma.compliance_requirement.create({
     data: {
@@ -121,11 +126,29 @@ export async function createComplianceRequirement(
       requirement_description: params.requirement_description ?? null,
     },
   });
+
+  logEvent({
+    eventType: 'CREATE',
+    entityType: 'compliance_requirement',
+    entityId: row.requirement_id,
+    description: `Compliance requirement ${params.requirement_code} created`,
+    userId: userId,
+    userName: userName,
+    userEmail: userEmail,
+    userRole: userRole,
+    ownerId: params.owner_id,
+    metadata: { requirementCode: params.requirement_code, requirementType: params.requirement_type },
+  });
+
   return row as unknown as ComplianceRequirement;
 }
 
 export async function updateComplianceRequirement(
-  params: UpdateComplianceRequirementParams
+  params: UpdateComplianceRequirementParams,
+  userId?: number,
+  userName?: string,
+  userEmail?: string,
+  userRole?: string
 ): Promise<ComplianceRequirement> {
   const { requirement_id, owner_id, ...fields } = params;
 
@@ -150,17 +173,52 @@ export async function updateComplianceRequirement(
     where: { requirement_id },
     data: updateData as any,
   });
+
+  logEvent({
+    eventType: 'UPDATE',
+    entityType: 'compliance_requirement',
+    entityId: requirement_id,
+    description: `Compliance requirement ${updated.requirement_code} updated`,
+    userId: userId,
+    userName: userName,
+    userEmail: userEmail,
+    userRole: userRole,
+    ownerId: owner_id,
+    metadata: { updateData },
+  });
+
   return updated as unknown as ComplianceRequirement;
 }
 
 export async function deleteComplianceRequirement(
   requirementId: number,
-  ownerId: number
+  ownerId: number,
+  userId?: number,
+  userName?: string,
+  userEmail?: string,
+  userRole?: string
 ): Promise<void> {
+  const existing = await prisma.compliance_requirement.findFirst({
+    where: { requirement_id: requirementId, fk_owner_id: ownerId },
+    select: { requirement_code: true },
+  });
+
   await prisma.compliance_status_log.deleteMany({ where: { fk_requirement_id: requirementId } });
   await prisma.compliance_evidence.deleteMany({ where: { fk_requirement_id: requirementId } });
   await prisma.compliance_requirement.deleteMany({
     where: { requirement_id: requirementId, fk_owner_id: ownerId },
+  });
+
+  logEvent({
+    eventType: 'DELETE',
+    entityType: 'compliance_requirement',
+    entityId: requirementId,
+    description: `Compliance requirement ${existing?.requirement_code ?? `#${requirementId}`} deleted`,
+    userId: userId,
+    userName: userName,
+    userEmail: userEmail,
+    userRole: userRole,
+    ownerId: ownerId,
   });
 }
 

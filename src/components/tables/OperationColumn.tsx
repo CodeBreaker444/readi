@@ -18,13 +18,22 @@ import {
     AlertCircle,
     Calendar,
     CheckCircle2,
+    Clock,
     Download,
     Eye,
     Loader2,
     Pencil,
+    Tag,
     Trash2,
     XCircle
 } from 'lucide-react';
+
+function formatDuration(minutes: number | null | undefined): string {
+  if (!minutes) return '—';
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return h > 0 ? `${h}h ${m}m` : `${m}m`;
+}
 
 export interface OperationTableMeta {
   onEdit: (op: Operation) => void;
@@ -93,21 +102,23 @@ function formatShortDate(val: string | null | undefined, tz: string): string {
   return formatDateTimeInTz(val, tz);
 }
 
-function getProcedureStatus(op: Operation): { assignmentDone: boolean; checklistDone: boolean; hasLuc: boolean } {
+function getProcedureStatus(op: Operation): { assignmentDone: boolean; checklistDone: boolean; communicationDone: boolean; hasLuc: boolean } {
   const hasLuc = !!op.fk_luc_procedure_id;
   if (!hasLuc || !op.luc_procedure_progress) {
-    return { hasLuc, assignmentDone: false, checklistDone: false };
+    return { hasLuc, assignmentDone: false, checklistDone: false, communicationDone: false };
   }
   const progress = op.luc_procedure_progress;
   const assignmentEntries = Object.values(progress.assignment ?? {});
   const checklistEntries = Object.values(progress.checklist ?? {});
+  const communicationEntries = Object.values(progress.communication ?? {});
   const assignmentDone = assignmentEntries.length === 0 || assignmentEntries.every(v => v === 'Y');
   const checklistDone = checklistEntries.length === 0 || checklistEntries.every(v => v === 'Y');
-  return { hasLuc, assignmentDone, checklistDone };
+  const communicationDone = communicationEntries.length === 0 || communicationEntries.every(v => v === 'Y');
+  return { hasLuc, assignmentDone, checklistDone, communicationDone };
 }
 
 function ProcedureBadge({ op, isDark, t }: { op: Operation; isDark: boolean; t: TFunction }) {
-  const { hasLuc, assignmentDone, checklistDone } = getProcedureStatus(op);
+  const { hasLuc, assignmentDone, checklistDone, communicationDone } = getProcedureStatus(op);
 
   if (!hasLuc) {
     return (
@@ -124,7 +135,7 @@ function ProcedureBadge({ op, isDark, t }: { op: Operation; isDark: boolean; t: 
     );
   }
 
-  const allDone = !!op.luc_completed_at || (assignmentDone && checklistDone);
+  const allDone = !!op.luc_completed_at || (assignmentDone && checklistDone && communicationDone);
 
   return (
     <Tooltip>
@@ -141,6 +152,7 @@ function ProcedureBadge({ op, isDark, t }: { op: Operation; isDark: boolean; t: 
         <div className="text-xs space-y-0.5">
           <p>{t('operations.table.procedureBadge.assignment')}: {assignmentDone ? t('operations.table.procedureBadge.complete') : t('operations.table.procedureBadge.incomplete')}</p>
           <p>{t('operations.table.procedureBadge.checklist')}: {checklistDone ? t('operations.table.procedureBadge.complete') : t('operations.table.procedureBadge.incomplete')}</p>
+          <p>{t('operations.table.procedureBadge.communication')}: {communicationDone ? t('operations.table.procedureBadge.complete') : t('operations.table.procedureBadge.incomplete')}</p>
         </div>
       </TooltipContent>
     </Tooltip>
@@ -172,13 +184,22 @@ export const getOperationColumns = (t: TFunction, isDark = false, timezone = 'Eu
     header: t('operations.table.detail.missionId'),
     cell: ({ getValue, row, table }) => {
       const meta = table.options.meta as any;
+      const groupLabel = (row.original as Operation).mission_group_label;
       return (
-        <button
-          className="font-mono text-xs text-violet-600 hover:underline cursor-pointer"
-          onClick={(e) => { e.stopPropagation(); meta.onViewDetails(row.original); }}
-        >
-          {getValue<string>()}
-        </button>
+        <div className="flex items-center gap-1.5">
+          <button
+            className="font-mono text-xs text-violet-600 hover:underline cursor-pointer"
+            onClick={(e) => { e.stopPropagation(); meta.onViewDetails(row.original); }}
+          >
+            {getValue<string>()}
+          </button>
+          {groupLabel && (
+            <Badge variant="secondary" className="px-1.5 py-0 text-[10px] font-normal shrink-0">
+              <Tag className="mr-0.5 h-2.5 w-2.5" />
+              {groupLabel}
+            </Badge>
+          )}
+        </div>
       );
     },
   },
@@ -221,12 +242,18 @@ export const getOperationColumns = (t: TFunction, isDark = false, timezone = 'Eu
   {
     accessorKey: 'distance_flown',
     header: t('operations.table.detail.distance'),
-    cell: ({ getValue }) => {
+    cell: ({ getValue, row }) => {
       const val = getValue<number | null>();
       return (
-        <span className="text-xs tabular-nums text-muted-foreground">
-          {val != null ? `${val.toLocaleString()} m` : '—'}
-        </span>
+        <div className="flex flex-col gap-0.5">
+          <span className="text-xs tabular-nums text-muted-foreground">
+            {val != null ? `${val.toLocaleString()} m` : '—'}
+          </span>
+          <span className="text-[11px] tabular-nums text-muted-foreground/70 flex items-center gap-0.5">
+            <Clock className="h-2.5 w-2.5" />
+            {formatDuration(row.original.flight_duration)}
+          </span>
+        </div>
       );
     },
   },

@@ -10,6 +10,7 @@ const filterParamsSchema = z.object({
   evaluation_id: z.coerce.number().int().optional().default(0),
   planning_id: z.coerce.number().int().optional().default(0),
   user_id: z.coerce.number().int().optional().default(0),
+  tool_id: z.coerce.number().int().optional().default(0),
   date_start: z.string().optional(),
   date_end: z.string().optional(),
 });

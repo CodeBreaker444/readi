@@ -15,6 +15,7 @@ export interface MissionTemplateRow {
   planning_code: string | null;
   planning_name: string | null;
   planning_status: string | null;
+  evaluation_id: number | null;
   evaluation_code: string | null;
   client_name: string | null;
   pilot_fullname: string | null;
@@ -43,8 +44,12 @@ export async function getMissionTemplateLogbook(
       ...(filters.pilot_id && filters.pilot_id > 0 && { fk_user_id: filters.pilot_id }),
       ...(filters.evaluation_id && filters.evaluation_id > 0 && { fk_evaluation_id: filters.evaluation_id }),
       ...(filters.planning_id && filters.planning_id > 0 && { fk_planning_id: filters.planning_id }),
-      ...(filters.date_start && { updated_at: { gte: new Date(filters.date_start) } }),
-      ...(filters.date_end && { updated_at: { lte: new Date(`${filters.date_end}T23:59:59`) } }),
+      ...((filters.date_start || filters.date_end) && {
+        updated_at: {
+          ...(filters.date_start && { gte: new Date(filters.date_start) }),
+          ...(filters.date_end && { lte: new Date(`${filters.date_end}T23:59:59`) }),
+        },
+      }),
     },
     orderBy: { updated_at: 'desc' },
     select: {
@@ -113,6 +118,7 @@ export async function getMissionTemplateLogbook(
       planning_code: planning?.planning_code ?? null,
       planning_name: planning?.planning_name ?? null,
       planning_status: planning?.planning_status ?? null,
+      evaluation_id: planning?.evaluation?.evaluation_id ?? null,
       evaluation_code: planning?.evaluation?.evaluation_code ?? null,
       client_name: planning?.client?.client_name ?? null,
       pilot_fullname: pilot ? `${pilot.first_name ?? ''} ${pilot.last_name ?? ''}`.trim() : null,
@@ -132,7 +138,7 @@ export async function getMissionTemplateFilterOptions(ownerId: number) {
       select: { client_id: true, client_name: true, client_active: true },
     }),
     prisma.public_users.findMany({
-      where: { fk_owner_id: ownerId , NOT: { user_role: 'CLIENT' }},
+      where: { fk_owner_id: ownerId, user_role: 'PIC' },
       orderBy: { first_name: 'asc' },
       select: { user_id: true, first_name: true, last_name: true, user_active: true },
     }),
@@ -161,7 +167,7 @@ export async function getMissionTemplateFilterOptions(ownerId: number) {
     })),
     evaluations: evaluations.map((e) => ({
       id: e.evaluation_id,
-      name: e.evaluation_code ?? `EVAL_${e.evaluation_id}`,
+      name: `EVAL_${e.evaluation_id}`,
       active: e.evaluation_active === 'Y',
     })),
     plannings: plannings.map((p) => ({

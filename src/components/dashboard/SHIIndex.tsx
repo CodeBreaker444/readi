@@ -13,7 +13,7 @@ import SHITrendChart from './SHITrendChart';
 import { AreaGaugesSkeleton, GaugeSkeleton, IndicatorCardsSkeleton, IndicatorTrendSkeleton, TrendChartSkeleton } from './SHIIndexSkeletons';
 
 interface SHIData { code: number; safety_index: number; data: Record<string, any[]> }
-interface TrendData { code: number; labels: string[]; values: number[]; target?: number }
+interface TrendData { code: number; labels: string[]; values: number[]; target?: number; target_direction?: 'HIGHER_IS_BETTER' | 'LOWER_IS_BETTER' }
 interface shiIndexProps { user: SessionUser }
 
 const SHIIndex: React.FC<shiIndexProps> = (user) => {
@@ -169,6 +169,7 @@ const SHIIndex: React.FC<shiIndexProps> = (user) => {
                   labels={indicatorTrend.labels}
                   values={indicatorTrend.values}
                   target={indicatorTrend.target || 100}
+                  targetDirection={indicatorTrend.target_direction ?? 'HIGHER_IS_BETTER'}
                   isDark={isDark}
                 />
               ) : (

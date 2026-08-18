@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
 import { AddCommunicationPayload, Communication, CommunicationListResponse, DeleteCommunicationPayload } from "@/config/types/communication";
+import { logEvent } from '@/backend/services/auditLog/audit-log';
 
 export async function fetchCommunicationList(ownerId: number): Promise<CommunicationListResponse> {
   const rows = await prisma.communication.findMany({
@@ -19,6 +20,9 @@ export async function addCommunication(
   payload: AddCommunicationPayload,
   ownerId: number,
   userId: number,
+  userName?: string,
+  userEmail?: string,
+  userRole?: string,
 ): Promise<Communication> {
   let parsedJson: object | null = null;
   if (payload.communication_json?.trim()) {
@@ -41,6 +45,20 @@ export async function addCommunication(
         communication_json: parsedJson ?? undefined,
       },
     });
+
+    logEvent({
+      eventType: 'CREATE',
+      entityType: 'communication_template',
+      entityId: row.communication_id,
+      description: `Communication '${row.communication_code}' - ${row.communication_desc} created`,
+      userId: userId,
+      userName: userName,
+      userEmail: userEmail,
+      userRole: userRole,
+      ownerId: ownerId,
+      metadata: { communicationCode: row.communication_code },
+    });
+
     return row as unknown as Communication;
   } catch (e) {
     if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
@@ -53,10 +71,14 @@ export async function addCommunication(
 export async function deleteCommunication(
   payload: DeleteCommunicationPayload,
   ownerId: number,
+  userId?: number,
+  userName?: string,
+  userEmail?: string,
+  userRole?: string,
 ): Promise<{ code: number; message: string }> {
   const existing = await prisma.communication.findFirst({
     where: { communication_id: payload.communication_id, fk_owner_id: ownerId },
-    select: { communication_id: true, communication_active: true },
+    select: { communication_id: true, communication_active: true, communication_code: true, communication_desc: true },
   });
   if (!existing) return { code: 0, message: 'Communication not found.' };
   if (existing.communication_active === 'Y') {
@@ -65,6 +87,19 @@ export async function deleteCommunication(
   await prisma.communication.deleteMany({
     where: { communication_id: payload.communication_id, fk_owner_id: ownerId },
   });
+
+  logEvent({
+    eventType: 'DELETE',
+    entityType: 'communication_template',
+    entityId: payload.communication_id,
+    description: `Communication '${existing.communication_code}' - ${existing.communication_desc} deleted`,
+    userId: userId,
+    userName: userName,
+    userEmail: userEmail,
+    userRole: userRole,
+    ownerId: ownerId,
+  });
+
   return { code: 1, message: 'Communication deleted successfully.' };
 }
 
@@ -78,6 +113,10 @@ export async function updateCommunication(
     communication_active: 'Y' | 'N';
     communication_json?: string;
   },
+  userId?: number,
+  userName?: string,
+  userEmail?: string,
+  userRole?: string,
 ): Promise<{ code: number; message: string; data?: Communication }> {
   const existing = await prisma.communication.findFirst({
     where: { communication_id: communicationId, fk_owner_id: ownerId },
@@ -105,6 +144,20 @@ export async function updateCommunication(
         communication_json: parsedJson ?? undefined,
       },
     });
+
+    logEvent({
+      eventType: 'UPDATE',
+      entityType: 'communication_template',
+      entityId: communicationId,
+      description: `Communication '${row.communication_code}' - ${row.communication_desc} updated`,
+      userId: userId,
+      userName: userName,
+      userEmail: userEmail,
+      userRole: userRole,
+      ownerId: ownerId,
+      metadata: { communicationCode: row.communication_code },
+    });
+
     return { code: 1, message: 'Communication updated successfully.', data: row as unknown as Communication };
   } catch (e) {
     if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {

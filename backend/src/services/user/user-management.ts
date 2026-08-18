@@ -19,6 +19,7 @@ export interface UserCreateData {
   fk_territorial_unit?: number;
   owner_id: number;
   flytrelay_access?: boolean;
+  department?: string | null;
 }
 
 export interface UserUpdateData {
@@ -37,6 +38,7 @@ export interface UserUpdateData {
   user_image?: string;
   user_signature?: string;
   flytrelay_access?: boolean;
+  department?: string | null;
 }
 
 export async function getUserListByOwner(ownerId: number, userProfileId: number, currentUserId: number) {
@@ -55,6 +57,7 @@ export async function getUserListByOwner(ownerId: number, userProfileId: number,
         phone: true,
         user_active: true,
         user_role: true,
+        department: true,
         user_unique_code: true,
         auth_user_id: true,
         key_: true,
@@ -83,6 +86,7 @@ export async function getUserListByOwner(ownerId: number, userProfileId: number,
       email: user.email,
       phone: user.phone || '',
       user_role: user.user_role || 'Unknown',
+      department: user.department || null,
       user_unique_code: user.user_unique_code || '',
       fk_user_profile_id: user.fk_user_profile_id || getRoleIdFromCode(user.user_role ?? '') || 0,
       active: user.user_active === 'Y' ? 1 : 0,
@@ -165,6 +169,7 @@ export async function createUser(userData: UserCreateData) {
         user_type: userData.user_type,
         user_active: 'N',
         user_role: getRoleCode(userData.fk_user_profile_id),
+        department: userData.department || null,
         is_viewer: userData.is_viewer,
         is_manager: userData.is_manager,
         user_timezone: userData.timezone,
@@ -274,6 +279,7 @@ export async function updateUser(userData: UserUpdateData) {
         user_active: userData.active === 1 ? 'Y' : 'N',
         ...(userData.is_viewer ? { is_viewer: userData.is_viewer } : {}),
         is_manager: userData.is_manager || null,
+        department: userData.department,
         fk_territorial_unit: toIntOrNull(userData.fk_territorial_unit),
         fk_client_id: toIntOrNull(userData.fk_client_id),
         flytrelay_access: userData.flytrelay_access,

@@ -113,7 +113,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
     const [schedulerForm, setSchedulerForm] = useState<SchedulerFormData>({
         missionCode: '', scheduledStart: '', scheduledEnd: '',
         missionName: '', location: '', notes: '', distanceFlown: '',
-        typeId: '', categoryId: '', lucId: '',
+        typeId: '', categoryId: '', lucId: '', groupLabel: '',
     })
 
     const [conflicts, setConflicts] = useState<ConflictEvent[]>([])
@@ -123,6 +123,29 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
     const [pilots, setPilots] = useState<PilotOption[]>([])
     const [pilotId, setPilotId] = useState('')
     const [visualObserverIds, setVisualObserverIds] = useState<string[]>([])
+
+    const [isRecurrent, setIsRecurrent] = useState(false)
+    const [recurrentStartDate, setRecurrentStartDate] = useState('')
+    const [recurrentEndDate, setRecurrentEndDate] = useState('')
+    const [recurrentTime, setRecurrentTime] = useState('')
+    const [recurrentDateError, setRecurrentDateError] = useState('')
+
+    const validateRecurrentDates = () => {
+        if (!isRecurrent) return true
+        if (!recurrentStartDate || !recurrentEndDate) {
+            setRecurrentDateError(t('operations.importOperation.errors.datesRequired'))
+            return false
+        }
+        if (recurrentDateError) return false
+        return true
+    }
+
+    const handleRecurrentToggle = (checked: boolean) => {
+        setIsRecurrent(checked)
+        if (!checked) {
+            setRecurrentDateError('')
+        }
+    }
 
     const [erps, setErps] = useState<EmergencyResponsePlan[]>([])
     const [loadingErps, setLoadingErps] = useState(false)
@@ -198,7 +221,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
         setPilotId(editOperation.fk_pilot_user_id?.toString() ?? '')
         setVisualObserverIds((editOperation.visual_observer_ids ?? []).map(o => String(o.user_id)))
         setPlanId(editOperation.fk_planning_id?.toString() ?? '')
-        setOpType(editOperation.fk_planning_id ? 'PDRA' : 'OPEN')
+        setOpType((editOperation.op_type as OpType) || (editOperation.fk_planning_id ? 'PDRA' : 'OPEN'))
         setFlightMode(editOperation.flight_mode === 'DOCK' ? 'DOCK' : 'RC')
         setErpGroupId(editOperation.fk_erp_group_id?.toString() ?? '')
         setSchedulerForm({
@@ -212,8 +235,9 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
             typeId: editOperation.fk_mission_type_id?.toString() ?? '',
             categoryId: editOperation.fk_mission_category_id?.toString() ?? '',
             lucId: editOperation.fk_luc_procedure_id?.toString() ?? '',
+            groupLabel: editOperation.mission_group_label ?? '',
         })
-        setStep(2)
+        setStep(1)
     }, [editOperation, open])
 
     // Seed mission code, start,and end distance from a flight log when this
@@ -382,10 +406,11 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
         setErps([]); setResultOptions([])
         setFlightWaypoints([]); setLoadingWaypoints(false)
         setErpGroupId(''); setErpGroups([]); setLoadingErpGroups(false)
+        setIsRecurrent(false); setRecurrentStartDate(''); setRecurrentEndDate(''); setRecurrentTime(''); setRecurrentDateError('')
         setSchedulerForm({
             missionCode: '', scheduledStart: '', scheduledEnd: '',
             missionName: '', location: '', notes: '', distanceFlown: '',
-            typeId: '', categoryId: '', lucId: '',
+            typeId: '', categoryId: '', lucId: '', groupLabel: '',
         })
         setPostFlight({
             actual_start: '', actual_end: '', result_id: null, flight_duration_min: '', distance_m: '',
@@ -419,10 +444,19 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
             return true
         }
         if (step === 3) {
-            if (!schedulerForm.missionCode.trim() || !schedulerForm.scheduledStart || !schedulerForm.lucId) return false
+            if (!schedulerForm.missionCode.trim() || !schedulerForm.lucId) return false
+            if (!schedulerForm.typeId || !schedulerForm.categoryId) return false
+            if (isRecurrent) {
+                if (!validateRecurrentDates()) return false
+            } else if (!schedulerForm.scheduledStart) {
+                return false
+            }
             return true
         }
-        if (step === 4) return !!pilotId
+        if (step === 4) {
+            if (!pilotId) return false
+            return true
+        }
         return true
     }
 
@@ -457,6 +491,8 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                     notes: schedulerForm.notes || undefined,
                     distance_flown: schedulerForm.distanceFlown !== '' ? parseFloat(schedulerForm.distanceFlown) : null,
                     flight_mode: opType === 'PDRA' ? flightMode : null,
+                    op_type: opType,
+                    mission_group_label: schedulerForm.groupLabel.trim() || null,
                 }
                 const res = await axios.put(`/api/operation/${editOperation.pilot_mission_id}`, payload)
                 toast.success(t('operations.newOperation.toast.updateSuccess'))
@@ -468,7 +504,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
             const payload = {
                 mission_code: schedulerForm.missionCode.trim(),
                 mission_name: schedulerForm.missionName.trim(),
-                scheduled_start: schedulerForm.scheduledStart,
+                scheduled_start: schedulerForm.scheduledStart || undefined,
                 actual_end: schedulerForm.scheduledEnd || undefined,
                 fk_pilot_user_id: parseInt(pilotId),
                 fk_tool_id: droneId ? parseInt(droneId) : null,
@@ -483,14 +519,29 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                 notes: schedulerForm.notes || undefined,
                 distance_flown: schedulerForm.distanceFlown !== '' ? parseFloat(schedulerForm.distanceFlown) : null,
                 flight_mode: opType === 'PDRA' ? flightMode : null,
+                op_type: opType,
+                mission_group_label: schedulerForm.groupLabel.trim() || undefined,
                 // A mission created to attach an already-flown log is inherently
                 // completed, not scheduled for the future.
                 status_name: createPrefill ? 'COMPLETED' : 'PLANNED',
                 ...(visualObserverIds.length > 0 && { visual_observer_ids: visualObserverIds.map(Number) }),
+                ...(isRecurrent && {
+                    is_recurrent: true,
+                    recurrent_start_date: recurrentStartDate || undefined,
+                    recurrent_end_date: recurrentEndDate || undefined,
+                    recurrent_time: recurrentTime || undefined,
+                }),
             }
             const res = await axios.post('/api/operation', payload)
             if (!res.data.success) throw new Error(res.data.error ?? t('operations.newOperation.toast.createError'))
-            toast.success(t('operations.newOperation.toast.createSuccess'))
+            
+            // Show appropriate success message for recurrent missions
+            if (res.data.created_missions && res.data.created_missions.length > 1) {
+                toast.success(t('operations.newOperation.toast.createRecurrentSuccess', { count: res.data.created_missions.length }))
+            } else {
+                toast.success(t('operations.newOperation.toast.createSuccess'))
+            }
+            
             onSaved?.(res.data)
             onSuccess(); onClose()
         } catch (err: any) {
@@ -551,7 +602,11 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
     }
 
 
-    const selectedClient = clients.find(c => String(c.client_id) === clientId)
+    const clientsForSelect = (isEdit && editOperation?.fk_client_id && !clients.some(c => c.client_id === editOperation.fk_client_id))
+        ? [...clients, { client_id: editOperation.fk_client_id, client_name: editOperation.client_name ?? '', client_code: '' }]
+        : clients
+
+    const selectedClient = clientsForSelect.find(c => String(c.client_id) === clientId)
     const selectedDrone = drones.find(d => String(d.tool_id) === droneId)
     const selectedPlan = clientPlannings.find(p => String(p.planning_id) === planId)
     const selectedPilot = pilots.find(p => String(p.user_id) === pilotId)
@@ -560,7 +615,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
 
     return (
         <Dialog open={open} onOpenChange={v => !v && onClose()}>
-            <DialogContent className={cn('max-w-4xl gap-0 p-0 overflow-hidden', isDark && 'bg-slate-800 border-slate-700 text-white')}>
+            <DialogContent className={cn('sm:max-w-4xl md:max-w-5xl lg:max-w-6xl gap-0 p-0 overflow-hidden', isDark && 'bg-slate-800 border-slate-700 text-white')}>
                 <DialogHeader className={cn('px-6 pt-6 pb-4 border-b', isDark ? 'border-slate-700' : 'border-gray-100')}>
                     <DialogTitle className={cn('text-base font-semibold', isDark && 'text-white')}>
                         {isEdit ? t('operations.newOperation.editTitle') : t('operations.newOperation.title')}
@@ -569,7 +624,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
 
                 {/* Edit tab bar */}
                 {isEdit && (
-                    <div className={cn('flex border-b overflow-x-auto scrollbar-thin', isDark ? 'border-slate-700' : 'border-gray-200')}>
+                    <div className={cn('flex border-b', isDark ? 'border-slate-700' : 'border-gray-200')}>
                         {EDIT_TABS.map(tab => {
                             const Icon = tab.icon
                             return (
@@ -578,7 +633,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                                     type="button"
                                     onClick={() => setEditTab(tab.id)}
                                     className={cn(
-                                        'flex items-center cursor-pointer gap-1.5 px-4 py-2.5 text-xs font-medium border-b-2 transition-colors whitespace-nowrap shrink-0',
+                                        'flex flex-1 items-center justify-center cursor-pointer gap-1.5 px-4 py-2.5 text-xs font-medium border-b-2 transition-colors whitespace-nowrap',
                                         editTab === tab.id
                                             ? 'border-violet-600 text-violet-600'
                                             : isDark
@@ -635,7 +690,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
 
                     {(!isEdit || editTab === 'data') && step === 1 && (
                         <OperationStepClient
-                            clients={clients}
+                            clients={clientsForSelect}
                             clientId={clientId}
                             onClientChange={setClientId}
                             loadingClients={loadingClients}
@@ -692,6 +747,15 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                             lucProcedures={lucProcedures}
                             loadingOptions={loadingOptions}
                             isDark={isDark}
+                            isRecurrent={isRecurrent}
+                            onRecurrentToggle={handleRecurrentToggle}
+                            recurrentStartDate={recurrentStartDate}
+                            onRecurrentStartDateChange={setRecurrentStartDate}
+                            recurrentEndDate={recurrentEndDate}
+                            onRecurrentEndDateChange={setRecurrentEndDate}
+                            recurrentTime={recurrentTime}
+                            onRecurrentTimeChange={setRecurrentTime}
+                            onRecurrentDateErrorChange={setRecurrentDateError}
                         />
                     )}
 
@@ -784,7 +848,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                             <Button
                                 size="sm"
                                 onClick={handleSubmit}
-                                disabled={isSubmitting || !pilotId || !schedulerForm.missionCode.trim() || !schedulerForm.lucId || !schedulerForm.scheduledStart}
+                                disabled={isSubmitting || !pilotId || !schedulerForm.missionCode.trim() || !schedulerForm.lucId || !schedulerForm.typeId || !schedulerForm.categoryId || (!isRecurrent && !schedulerForm.scheduledStart)}
                                 className="gap-2 cursor-pointer bg-violet-600 hover:bg-violet-700 text-white min-w-40"
                             >
                                 {isSubmitting

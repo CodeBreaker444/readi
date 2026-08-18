@@ -51,6 +51,15 @@ export const getColumns = (isDark: boolean, t: (key: string) => string): ColumnD
         ),
     },
     {
+        accessorKey: "tool_code",
+        header: t('logbooks.missionPlanning.columns.system'),
+        cell: ({ getValue, row }) => (
+            <span className={`text-sm ${isDark ? "text-slate-200" : "text-slate-800"}`}>
+                {row.original.tool_desc ? `${String(getValue() || "—")} — ${row.original.tool_desc}` : String(getValue() || "—")}
+            </span>
+        ),
+    },
+    {
         accessorKey: "mission_planning_code",
         header: t('logbooks.missionPlanning.code'),
         cell: ({ getValue }) => (

@@ -15,11 +15,12 @@ export async function GET(request: NextRequest) {
 
     const owner = await prisma.owner.findUnique({
       where: { owner_id: session.user.ownerId },
-      select: { 
+      select: {
         owner_id: true,
         email_notifications_enabled: true,
         operation_email_enabled: true,
         system_email_enabled: true,
+        training_email_enabled: true,
       },
     });
 
@@ -35,6 +36,7 @@ export async function GET(request: NextRequest) {
       emailNotificationsEnabled: owner.email_notifications_enabled,
       operationEmailEnabled: owner.operation_email_enabled,
       systemEmailEnabled: owner.system_email_enabled,
+      trainingEmailEnabled: owner.training_email_enabled,
     });
   } catch (error: any) {
     console.error('Error fetching owner data:', error);

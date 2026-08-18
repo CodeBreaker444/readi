@@ -13,6 +13,6 @@ export async function POST() {
     return NextResponse.json(data);
   } catch (error: any) {
     console.error("[doc_types_list]", error);
-    return internalError(E.AU002, error);
+    return internalError(E.SV001, error);
   }
 }

@@ -60,6 +60,7 @@ export interface Planning {
   user_profile_code: string;
   luc_procedure_code: string;
   luc_procedure_ver: string;
+  luc_procedure_desc: string;
   pic_data: { fullname: string; user_profile_code: string };
 }
 
@@ -108,7 +109,7 @@ export interface PlanningData {
   planning_result: string;
   planning_ver: string;
   planning_request_date: string | null;
-  planning_year: string;
+  planning_year: string | number;
   planning_type: string;
   planning_folder: string;
   planning_json: string | null;

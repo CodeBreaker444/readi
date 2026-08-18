@@ -35,12 +35,14 @@ interface CommunicationSectionProps {
   clientId: number;
   planningId: number;
   evaluationId: number;
+  onSent?: () => void;
 }
 
 export default function CommunicationSection({
   clientId,
   planningId,
   evaluationId,
+  onSent,
 }: CommunicationSectionProps) {
   const { t } = useTranslation();
   const [sendDialogOpen, setSendDialogOpen] = useState(false);
@@ -110,6 +112,7 @@ export default function CommunicationSection({
       setSendDialogOpen(false);
       setSendForm({ message: "", communication_level: "info" });
       setSelectedUsers([]);
+      onSent?.();
     } catch (err) {
       toast.error(t("planning.communication.sendFailed"));
     } finally {
@@ -129,7 +132,7 @@ export default function CommunicationSection({
       </Button>
 
       <Dialog open={sendDialogOpen} onOpenChange={setSendDialogOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="sm:max-w-2xl md:max-w-3xl lg:max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{t("planning.communication.title")}</DialogTitle>
           </DialogHeader>
@@ -156,14 +159,35 @@ export default function CommunicationSection({
                   placeholder={t("planning.communication.searchUsers")}
                   value={userSearch}
                   onChange={(e) => { setUserSearch(e.target.value); setDropdownOpen(true); }}
+                  onFocus={() => setDropdownOpen(true)}
+                  onBlur={() => setTimeout(() => setDropdownOpen(false), 200)}
                 />
-                {dropdownOpen && userSearch && (
-                  <div className="absolute z-50 mt-1 w-full border bg-popover rounded-md shadow-md">
-                    {availableUsers.filter(u => u.first_name.toLowerCase().includes(userSearch.toLowerCase())).map(user => (
-                      <button key={user.user_id} className="cursor-pointer w-full text-left px-3 py-2 text-sm hover:bg-accent transition-colors" onClick={() => addUser(user)}>
+                {dropdownOpen && (
+                  <div className="absolute z-50 mt-1 w-full border bg-popover rounded-md shadow-md max-h-60 overflow-y-auto">
+                    {availableUsers
+                      .filter(u => 
+                        userSearch === '' || 
+                        u.first_name.toLowerCase().includes(userSearch.toLowerCase()) ||
+                        u.email.toLowerCase().includes(userSearch.toLowerCase())
+                      )
+                      .map(user => (
+                      <button 
+                        key={user.user_id} 
+                        className="cursor-pointer w-full text-left px-3 py-2 text-sm hover:bg-accent transition-colors" 
+                        onClick={() => addUser(user)}
+                      >
                         {user.first_name} ({user.email})
                       </button>
                     ))}
+                    {availableUsers.filter(u => 
+                      userSearch === '' || 
+                      u.first_name.toLowerCase().includes(userSearch.toLowerCase()) ||
+                      u.email.toLowerCase().includes(userSearch.toLowerCase())
+                    ).length === 0 && (
+                      <div className="px-3 py-2 text-sm text-slate-500">
+                        {t("planning.communication.noUsersFound")}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

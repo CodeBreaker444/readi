@@ -1,5 +1,6 @@
 'use client';
 
+import { useAuthorization } from '@/components/authorization/AuthorizationProvider';
 import AddComponentModal from '@/components/system/AddComponentModal';
 import AddModelModal from '@/components/system/AddModelModal';
 import AddSystemModal from '@/components/system/AddSystemModal';
@@ -54,6 +55,7 @@ interface DroneToolPageProps {
 export default function DroneToolPage({ dFlightEnabled }: DroneToolPageProps) {
     const { isDark } = useTheme();
     const { t } = useTranslation();
+    const { requireAuthorization } = useAuthorization();
 
     const [loading, setLoading] = useState<boolean>(false);
     const [toolData, setToolData] = useState<DroneToolData[]>([]);
@@ -283,6 +285,18 @@ export default function DroneToolPage({ dFlightEnabled }: DroneToolPageProps) {
 
     const handleConfirmDelete = async () => {
         if (!deleteConfirm) return;
+
+        try {
+            await requireAuthorization({
+                actionType: 'delete',
+                entityType: deleteConfirm.type === 'system' ? 'system' : deleteConfirm.type === 'model' ? 'system_model' : 'component',
+                entityId: String(deleteConfirm.id),
+                label: `Delete ${deleteConfirm.type}: ${deleteConfirm.name}`,
+            });
+        } catch {
+            return;
+        }
+
         setDeleting(true);
         try {
             if (deleteConfirm.type === 'system') {
@@ -587,6 +601,7 @@ export default function DroneToolPage({ dFlightEnabled }: DroneToolPageProps) {
                 open={showDuplicateSystem}
                 sourceSystemId={duplicateSourceSystemId}
                 clients={clients}
+                models={models}
                 onClose={() => { setShowDuplicateSystem(false); setDuplicateSourceSystemId(null); }}
                 onSuccess={() => {
                     setShowDuplicateSystem(false);

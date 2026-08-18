@@ -1,0 +1,357 @@
+---
+title: "Evaluation and Planning Module Business Logic"
+description: "Business logic flow for evaluation and planning module including parameters, triggers, and dependencies."
+---
+
+# Evaluation and Planning Module Business Logic
+
+## Overview
+
+The evaluation and planning module manages the pre-flight assessment and flight plan approval process. Evaluations assess operational feasibility, while planning builds detailed flight plans with checklists, logbooks, and communications. This module is the gateway to mission execution.
+
+---
+
+## Core Business Flow
+
+```
+Client Request
+  → Evaluation Created (NEW status)
+  → LUC Procedure Assigned
+  → Evaluation Tasks Created (checklist items)
+  → Evaluation Status Updated (PROCESSING → DONE)
+  → Planning Created (linked to evaluation)
+  → Planning Status Flow (NEW → PROCESSING → REQ_FEEDBACK → POSITIVE_RESULT/NEGATIVE_RESULT)
+  → Mission Logbook Added
+  → Test Logbook Added
+  → Planning Approved (POSITIVE_RESULT)
+  → Mission Creation Unlocked
+```
+
+---
+
+## Key Parameters
+
+### Evaluation Parameters
+
+| Frontend Label | Parameter | Maintenance Impact |
+|---|---|---|
+| Client | `client_id` | Client association |
+| LUC Procedure | `fk_luc_procedure_id` | LUC procedure reference for compliance |
+| Status | `evaluation_status` | Status: NEW, PROCESSING, DONE |
+| Request Date | `evaluation_request_date` | Target completion date |
+| Year Reference | `evaluation_year` | Reporting year reference |
+| Description | `evaluation_description` | Evaluation description |
+| Offer Reference | `evaluation_offer` | Business offer reference |
+| Sales Manager | `evaluation_sale_manager` | Sales manager contact |
+
+### Evaluation Status Logic
+
+| Status | Allowed Transitions | Business Logic |
+|---|---|---|
+| NEW | PROCESSING, DONE | Initial state, can be deleted |
+| PROCESSING | DONE | Under review, tasks in progress |
+| DONE | None | Completed, unlocks planning |
+
+**Deletion Rule:** Only evaluations with status NEW can be deleted. Once in PROCESSING or DONE, deletion is blocked.
+
+---
+
+## Planning Parameters
+
+| Frontend Label | Parameter | Maintenance Impact |
+|---|---|---|
+| Planning Code | `planning_code` | Auto-generated unique code |
+| Planning Description | `planning_description` | Planning description |
+| Planning Status | `planning_status` | Status: NEW, PROCESSING, REQ_FEEDBACK, POSITIVE_RESULT, NEGATIVE_RESULT, TESTING |
+| Planning Type | `planning_type` | Type of planning |
+| Planning Result | `planning_result` | Result: PROGRESS, POSITIVE, NEGATIVE |
+| Planned Date | `planned_date` | Target execution date |
+| Planning JSON | `planning_json` | Stores: tasks, procedure_tasks |
+| Client | `fk_client_id` | Client association |
+| Evaluation | `fk_evaluation_id` | Links to evaluation |
+| Assigned To (PIC) | `assigned_to_user_id` | PIC assignment for mission execution |
+| Created By | `created_by_user_id` | Creator tracking |
+
+### Planning Status Logic
+
+| Status | Allowed Transitions | Business Logic |
+|---|---|---|
+| NEW | PROCESSING, TESTING | Initial state, can be deleted |
+| PROCESSING | REQ_FEEDBACK, POSITIVE_RESULT, NEGATIVE_RESULT, TESTING | Under internal review |
+| REQ_FEEDBACK | PROCESSING, POSITIVE_RESULT, NEGATIVE_RESULT, TESTING | Awaiting sign-off |
+| POSITIVE_RESULT | None | Approved - ready for mission creation |
+| NEGATIVE_RESULT | PROCESSING | Rejected - must be revised |
+| TESTING | POSITIVE_RESULT, NEGATIVE_RESULT | In testing phase |
+
+**Deletion Rule:** Only planning with status NEW can be deleted. Once in PROCESSING or beyond, deletion is blocked.
+
+---
+
+## LUC Procedure
+
+**Description:** LUC (Light Unmanned Aircraft) procedures provide standardized task templates for different types of operations.
+
+**Parameters:**
+- Procedure code and name
+- Version string
+- Sector/category (e.g., SURVEILLANCE, DELIVERY, INSPECTION)
+- Active status
+
+---
+
+## Evaluation Files
+
+**Description:** Documents uploaded during evaluation process.
+
+**Parameters:**
+- File name and description
+- S3 storage path and URL
+- File size and version
+- Upload tracking (user, timestamp)
+- Category classification
+
+---
+
+## Planning Logbooks
+
+### Mission Planning Logbook
+
+**Description:** Stores flight plan documents and parameters.
+
+**Parameters:**
+- Planning code and description
+- Flight limits/parameters (JSON)
+- Drone/system assignment
+- File metadata (name, size, S3 info)
+- Version tracking
+
+### Planning Test Logbook
+
+**Description:** Stores test results for planning validation.
+
+**Parameters:**
+- Test code and filename
+- Test result (success/failure)
+- File size and S3 storage
+- Creation timestamp
+
+---
+
+## Communications
+
+**Description:** Internal communications linked to planning and evaluation.
+
+**Parameters:**
+- Subject and message
+- Communication type (planning, evaluation, etc.)
+- Priority and status
+- Recipients (primary and additional)
+- Attachments (file metadata)
+- Sent and read timestamps
+- Links to client, planning, evaluation
+
+---
+
+## Evaluation Creation Logic
+
+**Logic:**
+1. Create planning record with provided parameters
+2. Link to evaluation
+3. Set initial status (typically NEW or PROCESSING)
+4. Assign PIC
+5. Return planning ID and assignment details
+
+**Assignment Tracking:**
+- User who created the planning
+- PIC responsible for execution
+- Both tracked for audit trail
+
+---
+
+## Evaluation Deletion Logic
+
+**Logic:**
+1. Fetch evaluation by ID and owner
+2. Check status
+3. If status != NEW → throw error
+4. If status == NEW → delete evaluation
+5. Cascade delete related evaluation files
+
+**Error:** "Only evaluations with status NEW can be deleted"
+
+---
+
+## Planning Deletion Logic
+
+**Logic:**
+1. Fetch planning by ID and owner
+2. Check status
+3. If status != NEW → throw error
+4. If status == NEW → delete planning
+5. Cascade delete related logbook entries
+
+**Error:** "Only planning with status NEW can be deleted"
+
+---
+
+## Planning Update Logic
+
+**Logic:**
+1. Validate planning exists and belongs to owner
+2. Update fields (description, status, type, date, etc.)
+3. Synchronize planning_name with planning_desc
+4. Return updated planning record
+
+---
+
+## Planning Task Management
+
+### Add Checklist Task to Planning
+
+**Logic:**
+1. Fetch planning and current planning JSON
+2. Parse or initialize tasks array
+3. Fetch checklist by ID
+4. Generate new task ID (auto-increment)
+5. Create task object with checklist
+6. Push to tasks array
+7. Update planning record
+
+### Get Planning Tasks
+
+**Logic:**
+1. Fetch planning with planning JSON
+2. Check for procedure tasks from LUC procedure
+3. If procedure tasks exist:
+   - Extract checklist codes
+   - Fetch checklist JSON for each
+   - Merge into task objects
+4. If no procedure tasks:
+   - Fetch linked evaluation
+   - Load procedure tasks from evaluation
+5. Calculate completion flag (all tasks completed/skipped)
+
+### Move Planning to Testing
+
+**Logic:**
+1. Fetch planning by ID and owner
+2. Check current status
+3. If already TESTING → throw error
+4. Update status to TESTING
+5. Return confirmation
+
+**Error:** "Planning is already in TESTING status"
+
+---
+
+## Planning Logbook Management
+
+### Add Mission Planning Logbook
+
+**Logic:**
+1. Create logbook record
+2. Store file metadata (name, size, S3 info)
+3. Store limit parameters as JSON
+4. Link to planning, evaluation, client, tool
+5. Return created record ID
+
+**Limit JSON:** Stores flight parameters (altitude, distance, duration limits) for compliance checking.
+
+### Delete Mission Planning Logbook
+
+**Logic:**
+1. Fetch logbook entry
+2. Check for related test logbook entries
+3. If test entries exist:
+   - Delete S3 files for each test
+   - Delete test logbook records
+4. Delete S3 file for main logbook
+5. Delete logbook entry
+6. Return confirmation with test entries flag
+
+**S3 Cleanup:** Main logbook and all associated test files deleted. Errors logged but don't fail operation.
+
+---
+
+## Repository File Management
+
+### Get Repository List
+
+**Logic:**
+1. Query repository file table
+2. Filter by owner and file category
+3. Optional filter by planning
+4. Order by file ID desc
+5. Return list of files
+
+**Repository Types:** mission_planning_logbook, mission_planning_test_logbook, evaluation_files, custom categories
+
+### Delete Repository File
+
+**Logic:**
+1. Delete S3 file if key provided
+2. Update database record to nullify file fields
+3. Return success confirmation
+
+**Field Nullification:** All file-related fields set to NULL. Record preserved (soft delete).
+
+---
+
+## Communication Management
+
+### Add Communication
+
+**Logic:**
+1. Create communication record
+2. Store recipients as JSON array
+3. Link to client, planning, evaluation if provided
+4. Store attachment metadata if provided
+5. Return communication ID
+
+### Get Communications by Planning
+
+**Logic:**
+1. Query communications linked to planning
+2. Include sender user details
+3. Order by sent_at desc
+4. Return with sender name populated
+
+---
+
+## Parameter Dependencies
+
+### Direct Dependencies
+
+- Planning Status (planning_status) depends on: evaluation completion, task completion, approval workflow
+- Planning tasks depend on: LUC Procedure (fk_luc_procedure_id), checklist assignments
+- Mission planning limits depend on: regulatory requirements, client specifications
+- Evaluation Status (evaluation_status) depends on: task completion, document uploads
+- Evaluation link depends on: evaluation existence and status
+- PIC Assignment (assigned_to_user_id) depends on: user with appropriate role
+
+### Cross-Module Dependencies
+
+- **Operations Module:** Planning with POSITIVE_RESULT status unlocks mission creation
+- **Maintenance Module:** Tool assignment in logbook requires operational system (System Status = OPERATIONAL)
+- **User Module:** PIC assignment requires active user with appropriate role
+- **Client Module:** Client association required for billing and reporting
+- **Document Module:** File uploads stored in S3 with metadata tracking
+- **Communication Module:** Communications linked to planning for audit trail
+
+---
+
+
+## Key Business Rules
+
+1. **Status Flow:** Evaluation (NEW → PROCESSING → DONE) → Planning (NEW → PROCESSING → REQ_FEEDBACK → POSITIVE_RESULT)
+2. **Deletion Restriction:** Only NEW status can be deleted (both evaluation and planning)
+3. **Procedure Integration:** LUC Procedure (fk_luc_procedure_id) provides task templates
+4. **Task Management:** Tasks stored in planning JSON, support checklists
+5. **Logbook Tracking:** Mission planning and test results tracked separately
+6. **Communication Audit:** All communications linked to planning for traceability
+7. **File Management:** S3 integration with metadata tracking
+8. **Assignment Tracking:** Both creator (created_by_user_id) and PIC (assigned_to_user_id) tracked for audit
+9. **Testing Phase:** Planning can move to TESTING before final approval
+10. **Client Linkage:** Both evaluation and planning linked to client for billing
+11. **Mission Unlock:** Only planning with POSITIVE_RESULT status allows mission creation
+12. **System Requirement:** Tool assignment in logbook requires operational system (System Status = OPERATIONAL)

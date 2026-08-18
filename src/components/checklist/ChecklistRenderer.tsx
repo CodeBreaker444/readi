@@ -1,7 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useTranslation } from 'react-i18next';
+import { useEffect, useRef, useState } from 'react';
 import { Model } from 'survey-core';
 import 'survey-core/survey-core.min.css';
 import { Survey } from 'survey-react-ui';
@@ -12,6 +11,8 @@ interface ChecklistRendererProps {
   userEmail?: string;
   onComplete?: (survey: Model) => void;
   isDark?: boolean;
+  initialData?: Record<string, unknown>;
+  readOnly?: boolean;
 }
 
 export function ChecklistRenderer({
@@ -20,14 +21,20 @@ export function ChecklistRenderer({
   userEmail = '',
   onComplete,
   isDark = false,
+  initialData = {},
+  readOnly = false,
 }: ChecklistRendererProps) {
   const [surveyModel, setSurveyModel] = useState<Model | null>(null);
-  const { t } = useTranslation();
+
+  const onCompleteRef = useRef(onComplete);
+  useEffect(() => { onCompleteRef.current = onComplete; }, [onComplete]);
+
+  const initialDataKey = Object.keys(initialData).length > 0 ? JSON.stringify(initialData) : '';
 
   useEffect(() => {
     try {
-      const jsonSchema = typeof checklistJson === 'string' 
-        ? JSON.parse(checklistJson) 
+      const jsonSchema = typeof checklistJson === 'string'
+        ? JSON.parse(checklistJson)
         : checklistJson;
 
       const survey = new Model(jsonSchema);
@@ -37,18 +44,28 @@ export function ChecklistRenderer({
         isPanelless: false,
       });
 
+      // Prevent auto-scrolling on focus
+      survey.focusFirstQuestionAutomatic = false;
+      survey.scrollToTopOnChangingPage = false;
+
       if (userFullname) survey.setValue('user_fullname', userFullname);
       if (userEmail) survey.setValue('email', userEmail);
 
-      if (onComplete) {
-        survey.onComplete.add((sender) => onComplete(sender));
+      if (initialDataKey) {
+        survey.data = JSON.parse(initialDataKey);
       }
+
+      if (readOnly) {
+        survey.mode = 'display';
+      }
+
+      survey.onComplete.add((sender) => onCompleteRef.current?.(sender));
 
       setSurveyModel(survey);
     } catch (error) {
       console.error('Error rendering checklist:', error);
     }
-  }, [checklistJson, userFullname, userEmail, onComplete, isDark]);
+  }, [checklistJson, userFullname, userEmail, isDark, initialDataKey, readOnly]);
 
   if (!surveyModel) {
     return (
@@ -75,7 +92,7 @@ export function ChecklistRenderer({
   }
 
   return (
-    <div className={`w-full checklist-container ${isDark ? 'survey-dark' : ''}`}>
+    <div className={`w-full checklist-container overflow-x-auto ${isDark ? 'survey-dark' : ''}`}>
       <Survey model={surveyModel} />
     </div>
   );

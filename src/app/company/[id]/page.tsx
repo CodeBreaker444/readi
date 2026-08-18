@@ -77,6 +77,7 @@ type FeaturesForm = {
     email_notifications_enabled: boolean;
     operation_email_enabled: boolean;
     system_email_enabled: boolean;
+    training_email_enabled: boolean;
     easa_operator_code: string;
     daily_email_limit: string | number;
 };
@@ -113,6 +114,7 @@ function buildPayload(general: GeneralForm, security: SecurityForm, features: Fe
         email_notifications_enabled: features.email_notifications_enabled,
         operation_email_enabled: features.operation_email_enabled,
         system_email_enabled: features.system_email_enabled,
+        training_email_enabled: features.training_email_enabled,
         easa_operator_code: features.easa_operator_code || null,
         daily_email_limit: features.daily_email_limit || 100,
     };
@@ -150,7 +152,7 @@ export default function CompanyDetailPage() {
     });
     const [securityForm, setSecurityForm] = useState<SecurityForm>({ owner_active: 'Y' });
     const [featuresForm, setFeaturesForm] = useState<FeaturesForm>({
-        drone_atc_enabled: false, d_flight_enabled: false, flytrelay_enabled: false, email_notifications_enabled: false, operation_email_enabled: false, system_email_enabled: false, easa_operator_code: '', daily_email_limit: 100,
+        drone_atc_enabled: false, d_flight_enabled: false, flytrelay_enabled: false, email_notifications_enabled: false, operation_email_enabled: false, system_email_enabled: false, training_email_enabled: false, easa_operator_code: '', daily_email_limit: 100,
     });
 
     const [newPassword, setNewPassword] = useState('');
@@ -159,6 +161,10 @@ export default function CompanyDetailPage() {
     const [showConfirmPw, setShowConfirmPw] = useState(false);
     const [pwSaving, setPwSaving] = useState(false);
     const [pwError, setPwError] = useState('');
+
+    const [newAdminEmail, setNewAdminEmail] = useState('');
+    const [emailSaving, setEmailSaving] = useState(false);
+    const [emailError, setEmailError] = useState('');
 
     const populateForms = useCallback((o: OwnerData) => {
         setGeneralForm({
@@ -172,6 +178,7 @@ export default function CompanyDetailPage() {
             license_expiry: o.license_expiry ? o.license_expiry.slice(0, 10) : '',
         });
         setSecurityForm({ owner_active: o.owner_active });
+        setNewAdminEmail(toStr(o.admin_user?.email));
         setFeaturesForm({
             drone_atc_enabled: o.drone_atc_enabled ?? false,
             d_flight_enabled: o.d_flight_enabled ?? false,
@@ -179,6 +186,7 @@ export default function CompanyDetailPage() {
             email_notifications_enabled: o.email_notifications_enabled ?? false,
             operation_email_enabled: o.operation_email_enabled ?? false,
             system_email_enabled: o.system_email_enabled ?? false,
+            training_email_enabled: o.training_email_enabled ?? false,
             easa_operator_code: toStr(o.easa_operator_code),
             daily_email_limit: o.daily_email_limit ?? 100,
         });
@@ -235,6 +243,28 @@ export default function CompanyDetailPage() {
             } else { setPwError(res.data.message || 'Failed to update password'); }
         } catch { setPwError('Network error'); }
         finally { setPwSaving(false); }
+    };
+
+    const handleAdminEmailUpdate = async () => {
+        setEmailError('');
+        if (!owner?.admin_user) return;
+        const email = newAdminEmail.trim();
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setEmailError('Enter a valid email address'); return; }
+        if (email.toLowerCase() === owner.admin_user.email?.toLowerCase()) { setEmailError('This is already the current email'); return; }
+        setEmailSaving(true);
+        try {
+            const res = await axios.put(`/api/owner/${id}/admin-email`, {
+                admin_user_id: owner.admin_user.user_id,
+                new_email: email,
+            });
+            if (res.data.code === 1) {
+                toast.success(res.data.data?.activationEmailSent
+                    ? 'Admin email updated — activation link resent to the new address'
+                    : 'Admin email updated successfully');
+                await fetchOwner();
+            } else { setEmailError(res.data.message || 'Failed to update email'); }
+        } catch (err: any) { setEmailError(err?.response?.data?.message || 'Network error'); }
+        finally { setEmailSaving(false); }
     };
 
     const handleActivate = async () => {
@@ -567,6 +597,34 @@ export default function CompanyDetailPage() {
                                 )}
                             </div>
 
+                            {/* Update Admin Email */}
+                            {owner.admin_user && (
+                                <div className={`${cardClass} p-6 space-y-5`}>
+                                    <div>
+                                        <h2 className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>Update Admin Email</h2>
+                                        <p className={`text-xs mt-0.5 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                                            Change the login email for <span className="font-medium">{owner.admin_user.username}</span>.
+                                        </p>
+                                    </div>
+                                    <Separator />
+                                    <div className="max-w-xl space-y-1.5">
+                                        <Label className={labelClass}>Email <span className="text-red-500">*</span></Label>
+                                        <Input
+                                            type="email"
+                                            value={newAdminEmail}
+                                            onChange={(e) => { setNewAdminEmail(e.target.value); setEmailError(''); }}
+                                            placeholder="admin@company.com"
+                                            className="h-9 text-sm"
+                                        />
+                                    </div>
+                                    {emailError && <p className="text-xs text-red-500">{emailError}</p>}
+                                    <Button size="sm" className="h-8 text-xs gap-1.5 bg-violet-600 hover:bg-violet-700 text-white"
+                                        onClick={handleAdminEmailUpdate} disabled={emailSaving || !newAdminEmail}>
+                                        <Save size={13} /> {emailSaving ? 'Updating…' : 'Update Email'}
+                                    </Button>
+                                </div>
+                            )}
+
                             {/* Reset Admin Password */}
                             {owner.admin_user && (
                                 <div className={`${cardClass} p-6 space-y-5`}>
@@ -642,6 +700,7 @@ export default function CompanyDetailPage() {
                                     { key: 'email_notifications_enabled' as const, label: 'Default Email Notifications', desc: 'Send account activation, password reset, and other default emails' },
                                     { key: 'operation_email_enabled' as const, label: 'Operations Email Notifications', desc: 'Send operations-related email notifications' },
                                     { key: 'system_email_enabled' as const, label: 'System Email Notifications', desc: 'Send system/maintenance-related email notifications' },
+                                    { key: 'training_email_enabled' as const, label: 'Training Email Notifications', desc: 'Send training-related email notifications and enable the training email settings page' },
                                 ].map(({ key, label, desc }) => (
                                     <div key={key}>
                                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">

@@ -3,16 +3,18 @@ import { EvaluationTask } from '@/config/types/evaluation';
 import { DroneTool, FileType, MissionTemplate, PilotUser, PlanningLogbookRow, PlanningTestLogbookRow, RepositoryFile } from '@/config/types/evaluation-planning';
 import { ProcedureSteps } from '@/config/types/lcuProcedures';
 import { deleteFileFromS3, getPresignedDownloadUrl } from '@/lib/s3Client';
+import { logEvent } from '@/backend/services/auditLog/audit-log';
 
 export type UpdatePlanning = {
   planning_id: number;
-  fk_evaluation_id: number;
+  fk_evaluation_id?: number;
   fk_client_id?: number;
-  planning_desc: string;
-  planning_status: string;
+  planning_desc?: string;
+  planning_status?: string;
   planning_result?: string;
-  planning_request_date: string;
-  planning_type: string;
+  planning_request_date?: string;
+  planning_year?: string | number;
+  planning_type?: string;
   planning_active?: string;
 };
 
@@ -23,7 +25,7 @@ type CreatePlanningInput = {
   planning_desc: string;
   planning_status: 'NEW' | 'PROCESSING' | 'REQ_FEEDBACK' | 'POSITIVE_RESULT' | 'NEGATIVE_RESULT';
   planning_request_date: string;
-  planning_year: number;
+  planning_year: number | string;
   planning_type?: string;
   planning_folder?: string;
   planning_result?: string;
@@ -35,7 +37,10 @@ type CreatePlanningInput = {
 export async function addPlanningWithAssignment(
   input: CreatePlanningInput,
   userId: number,
-  ownerId: number
+  ownerId: number,
+  userName?: string,
+  userEmail?: string,
+  userRole?: string
 ) {
   const inserted = await prisma.planning.create({
     data: {
@@ -49,8 +54,24 @@ export async function addPlanningWithAssignment(
       planning_type: input.planning_type ?? '',
       planned_date: input.planning_request_date ? new Date(input.planning_request_date) : null,
       assigned_to_user_id: input.assigned_to_user_id ?? null,
+      planning_json: {
+        planning_year: typeof input.planning_year === 'string' ? parseInt(input.planning_year, 10) : input.planning_year,
+      },
     },
     select: { planning_id: true, created_by_user_id: true, assigned_to_user_id: true },
+  });
+
+  logEvent({
+    eventType: 'CREATE',
+    entityType: 'planning',
+    entityId: inserted.planning_id,
+    description: `Planning #${inserted.planning_id} created from evaluation #${input.fk_evaluation_id}`,
+    userId: userId,
+    userName: userName,
+    userEmail: userEmail,
+    userRole: userRole,
+    ownerId: ownerId,
+    metadata: { evaluationId: input.fk_evaluation_id, clientId: input.fk_client_id, assignedToUserId: inserted.assigned_to_user_id },
   });
 
   return {
@@ -77,6 +98,7 @@ export async function getPlanningList(ownerId: number) {
       planning_result: true,
       planned_date: true,
       planning_active: true,
+      planning_json: true,
       created_at: true,
       updated_at: true,
       created_by_user_id: true,
@@ -103,6 +125,19 @@ export async function getPlanningList(ownerId: number) {
       } catch { /* ignore */ }
     }
 
+    // Get planning year from JSON field, planned_date, or current year
+    let planningYear = new Date().getFullYear();
+    if (row.planning_json) {
+      try {
+        const meta = typeof row.planning_json === 'string' ? JSON.parse(row.planning_json) : row.planning_json;
+        if (meta.planning_year) {
+          planningYear = meta.planning_year;
+        }
+      } catch { /* ignore */ }
+    } else if (row.planned_date) {
+      planningYear = new Date(row.planned_date).getFullYear();
+    }
+
     return {
       planning_id: row.planning_id,
       fk_owner_id: row.fk_owner_id,
@@ -115,7 +150,7 @@ export async function getPlanningList(ownerId: number) {
       planning_status: row.planning_status ?? '',
       planning_type: row.planning_type ?? '',
       planning_request_date: row.planned_date?.toISOString().split('T')[0] ?? '',
-      planning_year: new Date().getFullYear(),
+      planning_year: planningYear,
       planning_ver: '1.0',
       planning_folder: '',
       planning_result: row.planning_result ?? 'PROGRESS',
@@ -134,6 +169,7 @@ export async function getPlanningList(ownerId: number) {
         : null,
       luc_procedure_code: '',
       luc_procedure_ver: '',
+      luc_procedure_desc: '',
       _procedure_id: procedureId,
     };
   });
@@ -143,11 +179,11 @@ export async function getPlanningList(ownerId: number) {
   if (procedureIds.length > 0) {
     const procedures = await prisma.luc_procedure.findMany({
       where: { procedure_id: { in: procedureIds } },
-      select: { procedure_id: true, procedure_code: true, procedure_version: true },
+      select: { procedure_id: true, procedure_code: true, procedure_version: true, procedure_description: true },
     });
 
     const procMap = new Map(
-      procedures.map((p) => [p.procedure_id, { code: p.procedure_code ?? '', ver: p.procedure_version ?? '' }])
+      procedures.map((p) => [p.procedure_id, { code: p.procedure_code ?? '', ver: p.procedure_version ?? '', desc: p.procedure_description ?? '' }])
     );
 
     for (const row of mapped) {
@@ -155,6 +191,7 @@ export async function getPlanningList(ownerId: number) {
         const proc = procMap.get(row._procedure_id)!;
         row.luc_procedure_code = proc.code;
         row.luc_procedure_ver = proc.ver;
+        row.luc_procedure_desc = proc.desc;
       }
     }
   }
@@ -179,6 +216,7 @@ export async function getPlanningData(ownerId: number, planningId: number) {
       planning_result: true,
       planned_date: true,
       planning_active: true,
+      planning_json: true,
       assigned_to_user_id: true,
       created_at: true,
       updated_at: true,
@@ -197,6 +235,7 @@ export async function getPlanningData(ownerId: number, planningId: number) {
 
   let lucCode = '';
   let lucVer = '';
+  let lucDesc = '';
   const evalMeta = evaluation?.evaluation_metadata;
   if (evalMeta) {
     try {
@@ -204,14 +243,28 @@ export async function getPlanningData(ownerId: number, planningId: number) {
       if ((meta as any).procedure_id) {
         const proc = await prisma.luc_procedure.findUnique({
           where: { procedure_id: (meta as any).procedure_id },
-          select: { procedure_code: true, procedure_version: true },
+          select: { procedure_code: true, procedure_version: true, procedure_description: true },
         });
         if (proc) {
           lucCode = proc.procedure_code ?? '';
           lucVer = proc.procedure_version ?? '';
+          lucDesc = proc.procedure_description ?? '';
         }
       }
     } catch { /* ignore */ }
+  }
+
+  // Get planning year from JSON field, planned_date, or current year
+  let planningYear = new Date().getFullYear();
+  if (data.planning_json) {
+    try {
+      const meta = typeof data.planning_json === 'string' ? JSON.parse(data.planning_json) : data.planning_json;
+      if (meta.planning_year) {
+        planningYear = meta.planning_year;
+      }
+    } catch { /* ignore */ }
+  } else if (data.planned_date) {
+    planningYear = new Date(data.planned_date).getFullYear();
   }
 
   return {
@@ -226,11 +279,13 @@ export async function getPlanningData(ownerId: number, planningId: number) {
     planning_result: data.planning_result ?? 'PROGRESS',
     planning_type: data.planning_type ?? '',
     planning_request_date: data.planned_date?.toISOString().split('T')[0] ?? '',
+    planning_year: String(planningYear),
     planning_active: data.planning_active ?? 'Y',
     last_update: data.updated_at?.toISOString() ?? '',
     client_name: client?.client_name ?? '',
     luc_procedure_code: lucCode,
     luc_procedure_ver: lucVer,
+    luc_procedure_desc: lucDesc,
     pic_data: assignedToUser
       ? {
         fullname: `${assignedToUser.first_name ?? ''} ${assignedToUser.last_name ?? ''}`.trim(),
@@ -240,7 +295,14 @@ export async function getPlanningData(ownerId: number, planningId: number) {
   };
 }
 
-export async function updatePlanning(payload: UpdatePlanning, ownerId: number) {
+export async function updatePlanning(
+  payload: UpdatePlanning,
+  ownerId: number,
+  userId?: number,
+  userName?: string,
+  userEmail?: string,
+  userRole?: string
+) {
   const { planning_id, ...updates } = payload;
 
   const updateObj: Record<string, unknown> = {
@@ -255,6 +317,23 @@ export async function updatePlanning(payload: UpdatePlanning, ownerId: number) {
   if (updates.fk_evaluation_id !== undefined) updateObj.fk_evaluation_id = updates.fk_evaluation_id;
   if (updates.fk_client_id !== undefined) updateObj.fk_client_id = updates.fk_client_id;
   if (updates.planning_result !== undefined) updateObj.planning_result = updates.planning_result;
+  
+  // Update planning year in JSON field if provided
+  if (updates.planning_year !== undefined) {
+    const existingPlanning = await prisma.planning.findUnique({
+      where: { planning_id },
+      select: { planning_json: true },
+    });
+    
+    const existingMeta = existingPlanning?.planning_json 
+      ? (typeof existingPlanning.planning_json === 'string' ? JSON.parse(existingPlanning.planning_json) : existingPlanning.planning_json)
+      : {};
+    
+    updateObj.planning_json = {
+      ...existingMeta,
+      planning_year: typeof updates.planning_year === 'string' ? parseInt(updates.planning_year, 10) : updates.planning_year,
+    };
+  }
 
   const result = await prisma.planning.updateMany({
     where: { planning_id, fk_owner_id: ownerId },
@@ -263,7 +342,21 @@ export async function updatePlanning(payload: UpdatePlanning, ownerId: number) {
 
   if (result.count === 0) throw new Error('Planning not found or access denied');
 
-  return prisma.planning.findUnique({ where: { planning_id } });
+  logEvent({
+    eventType: 'UPDATE',
+    entityType: 'planning',
+    entityId: planning_id,
+    description: `Planning #${planning_id} updated`,
+    userId: userId,
+    userName: userName,
+    userEmail: userEmail,
+    userRole: userRole,
+    ownerId: ownerId,
+    metadata: { updateObj },
+  });
+
+  // Return the updated planning data
+  return await getPlanningData(ownerId, planning_id);
 }
 
 export async function deletePlanning(ownerId: number, planningId: number) {
@@ -277,7 +370,13 @@ export async function deletePlanning(ownerId: number, planningId: number) {
     throw new Error('Only planning with status NEW can be deleted');
   }
 
-  await prisma.planning.deleteMany({ where: { fk_owner_id: ownerId, planning_id: planningId } });
+  await prisma.$transaction([
+    prisma.pilot_mission.updateMany({
+      where: { fk_owner_id: ownerId, fk_planning_id: planningId },
+      data: { fk_planning_id: null },
+    }),
+    prisma.planning.deleteMany({ where: { fk_owner_id: ownerId, planning_id: planningId } }),
+  ]);
 
   return { deleted: true };
 }
@@ -351,7 +450,7 @@ export async function addMissionPlanningLogbook(params: {
   mission_planning_folder: string;
   mission_planning_s3_key: string;
   mission_planning_s3_url: string;
-}) {
+}, userName?: string, userEmail?: string, userRole?: string) {
   const data = await prisma.planning_logbook.create({
     data: {
       fk_planning_id: params.fk_planning_id,
@@ -372,6 +471,19 @@ export async function addMissionPlanningLogbook(params: {
       mission_planning_s3_url: params.mission_planning_s3_url,
     },
     select: { mission_planning_id: true },
+  });
+
+  logEvent({
+    eventType: 'CREATE',
+    entityType: 'mission_planning_logbook',
+    entityId: data.mission_planning_id,
+    description: `Mission planning "${params.mission_planning_code}" added to planning #${params.fk_planning_id}`,
+    userId: params.fk_user_id,
+    userName: userName,
+    userEmail: userEmail,
+    userRole: userRole,
+    ownerId: params.fk_owner_id,
+    metadata: { planningId: params.fk_planning_id, missionPlanningCode: params.mission_planning_code },
   });
 
   return data;
@@ -471,7 +583,7 @@ export async function getDroneToolList(
   active: string = 'ALL',
   status: string = 'ALL'
 ): Promise<DroneTool[]> {
-  const data = await prisma.tool.findMany({
+  const rawData = await prisma.tool.findMany({
     where: {
       fk_owner_id: ownerId,
       ...(active !== 'ALL' && { tool_active: active }),
@@ -483,7 +595,13 @@ export async function getDroneToolList(
     },
   });
 
-  if (!data) return [];
+  if (!rawData) return [];
+
+  // Excludes the synthetic "__WAREHOUSE__" bookkeeping tool used to hold
+  // components detached from a deleted system — it's not a real asset.
+  const data = rawData.filter(
+    (row) => (row.tool_metadata as any)?.is_warehouse !== true && (row.tool_metadata as any)?.deleted !== true,
+  );
 
   return data.map((row) => ({
     tool_id: row.tool_id,
@@ -643,7 +761,7 @@ export async function addCommunicationGeneral(params: {
   communication_file_name: string | null;
   communication_file_key: string | null;
   communication_file_url: string | null;
-}): Promise<number> {
+}, userName?: string, userEmail?: string, userRole?: string): Promise<number> {
   const data = await prisma.communication_general.create({
     data: {
       fk_owner_id: params.fk_owner_id,
@@ -664,6 +782,19 @@ export async function addCommunicationGeneral(params: {
       communication_file_url: params.communication_file_url,
     },
     select: { communication_id: true },
+  });
+
+  logEvent({
+    eventType: 'CREATE',
+    entityType: 'communication',
+    entityId: data.communication_id,
+    description: `Communication "${params.subject}" sent`,
+    userId: params.sent_by_user_id,
+    userName: userName,
+    userEmail: userEmail,
+    userRole: userRole,
+    ownerId: params.fk_owner_id,
+    metadata: { planningId: params.fk_planning_id, evaluationId: params.fk_evaluation_id, recipients: params.recipients },
   });
 
   return data.communication_id;
@@ -1009,7 +1140,11 @@ export async function updatePlanningTask(
   ownerId: number,
   planningId: number,
   taskId: number,
-  newStatus: 'pending' | 'in_progress' | 'completed' | 'skipped'
+  newStatus: 'pending' | 'in_progress' | 'completed' | 'skipped',
+  userId?: number,
+  userName?: string,
+  userEmail?: string,
+  userRole?: string
 ): Promise<{ success: boolean; message?: string }> {
   const planningBase = await prisma.planning.findFirst({
     where: { planning_id: planningId, fk_owner_id: ownerId },
@@ -1031,11 +1166,25 @@ export async function updatePlanningTask(
   const idx = (planningJson.procedure_tasks as StoredTask[]).findIndex((t) => t.task_id === taskId);
   if (idx === -1) return { success: false, message: `Task ${taskId} not found` };
 
+  const taskName = (planningJson.procedure_tasks as StoredTask[])[idx].task_name ?? `Task #${taskId}`;
   planningJson.procedure_tasks[idx].task_status = newStatus;
 
   await prisma.planning.updateMany({
     where: { planning_id: planningId, fk_owner_id: ownerId },
     data: { planning_json: planningJson },
+  });
+
+  logEvent({
+    eventType: 'UPDATE',
+    entityType: 'planning_task',
+    entityId: taskId,
+    description: `${taskName} status updated to ${newStatus} for planning #${planningId}`,
+    userId: userId,
+    userName: userName,
+    userEmail: userEmail,
+    userRole: userRole,
+    ownerId: ownerId,
+    metadata: { newStatus, planningId, taskName },
   });
 
   return { success: true };

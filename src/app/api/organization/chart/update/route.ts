@@ -1,4 +1,4 @@
-import { upsertChartOverride, updateUserPosition } from "@/backend/services/organization/chart-override-service";
+import { updateOrgChartNode } from "@/backend/services/organization/chart-override-service";
 import { requireFeatureAccess, requirePermission } from "@/lib/auth/api-auth";
 import { internalError, zodError } from "@/lib/api-error";
 import { E } from "@/lib/error-codes";
@@ -26,8 +26,16 @@ export async function PATCH(request: NextRequest) {
     const ownerId = session!.user.ownerId;
     const { userId, position, parentUserId } = parsed.data;
 
-    await updateUserPosition(ownerId, userId, position);
-    await upsertChartOverride({ owner_id: ownerId, user_id: userId, parent_user_id: parentUserId });
+    await updateOrgChartNode(
+      ownerId,
+      userId,
+      position,
+      parentUserId,
+      session!.user.userId,
+      session!.user.fullname,
+      session!.user.email,
+      session!.user.role
+    );
 
     return NextResponse.json({ code: 1, message: "Chart node updated successfully" });
   } catch (err) {

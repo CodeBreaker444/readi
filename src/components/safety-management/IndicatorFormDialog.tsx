@@ -29,6 +29,7 @@ interface FormState {
     indicator_name: string
     indicator_desc: string
     target_value: string
+    target_direction: 'HIGHER_IS_BETTER' | 'LOWER_IS_BETTER'
     unit: string
     frequency: 'MONTHLY' | 'WEEKLY' | 'QUARTERLY' | 'YEARLY'
     is_active: '1' | '0'
@@ -48,6 +49,7 @@ const DEFAULT_STATE: FormState = {
     indicator_name: '',
     indicator_desc: '',
     target_value: '0',
+    target_direction: 'HIGHER_IS_BETTER',
     unit: '%',
     frequency: 'MONTHLY',
     is_active: '1',
@@ -99,6 +101,7 @@ export function IndicatorFormDialog({ open, onClose, onSubmit, initial, loading,
                         indicator_name: initial.indicator_name,
                         indicator_desc: initial.indicator_desc ?? '',
                         target_value: String(initial.target_value),
+                        target_direction: initial.target_direction ?? 'HIGHER_IS_BETTER',
                         unit: initial.unit,
                         frequency: initial.frequency,
                         is_active: initial.is_active === 1 ? '1' : '0',
@@ -123,6 +126,7 @@ export function IndicatorFormDialog({ open, onClose, onSubmit, initial, loading,
             indicator_name: form.indicator_name,
             indicator_desc: form.indicator_desc || null,
             target_value: Number(form.target_value),
+            target_direction: form.target_direction,
             unit: form.unit,
             frequency: form.frequency,
             is_active: form.is_active === '1' ? 1 : 0,
@@ -220,6 +224,20 @@ export function IndicatorFormDialog({ open, onClose, onSubmit, initial, loading,
                                 className={`h-10 font-mono ${inputClass}`}
                             />
                             {errors.target_value && <p className="text-red-500 text-xs font-medium">{errors.target_value}</p>}
+                        </div>
+
+                        <div className="space-y-1.5">
+                            <Label className={`text-[10px] uppercase tracking-widest font-bold ${labelClass}`}>{t('safety.spiKpi.form.targetDirection')}</Label>
+                            <Select value={form.target_direction} onValueChange={(v) => set('target_direction', v as FormState['target_direction'])}>
+                                <SelectTrigger className={`h-10 ${inputClass}`}>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent className={isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white'}>
+                                    <SelectItem value="HIGHER_IS_BETTER">{t('safety.spiKpi.form.higherIsBetter')}</SelectItem>
+                                    <SelectItem value="LOWER_IS_BETTER">{t('safety.spiKpi.form.lowerIsBetter')}</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <p className="text-slate-500 text-[10px] italic">{t('safety.spiKpi.form.targetDirectionHint')}</p>
                         </div>
 
                         <div className="space-y-1.5">

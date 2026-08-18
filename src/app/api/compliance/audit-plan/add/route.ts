@@ -43,10 +43,13 @@ export async function POST(req: NextRequest) {
             return apiError(E.AU003, 403);
         }
 
-        const created = await createComplianceRequirement({
-            owner_id: ownerId,
-            ...parsed.data,
-        });
+        const created = await createComplianceRequirement(
+            { owner_id: ownerId, ...parsed.data },
+            session!.user.userId,
+            session!.user.fullname,
+            session!.user.email,
+            session!.user.role
+        );
 
         return NextResponse.json({ code: 1, message: 'Requirement created', data: created });
     } catch (error: any) {

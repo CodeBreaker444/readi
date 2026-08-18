@@ -1,16 +1,13 @@
-import { getPageMarkdownUrl, source } from '@/lib/docs/source';
+import { source } from '@/lib/docs/source';
 import {
   DocsBody,
   DocsDescription,
   DocsPage,
   DocsTitle,
-  MarkdownCopyButton,
-  ViewOptionsPopover,
 } from 'fumadocs-ui/layouts/docs/page';
 import { notFound } from 'next/navigation';
 import { getMDXComponents } from '@/components/docs/mdx';
 import { createRelativeLink } from 'fumadocs-ui/mdx';
-import { gitConfig } from '@/lib/docs/shared';
 import { Mermaid } from '@/components/docs/mermaid';
 import { isValidElement, type ReactNode } from 'react';
 import defaultMdxComponents from 'fumadocs-ui/mdx';
@@ -50,24 +47,26 @@ function Pre(props: any) {
 
 export default async function Page(props: { params: Promise<{ slug?: string[] }> }) {
   const params = await props.params;
-  const page = source.getPage(params.slug);
+  const slug = params.slug;
+  
+  // Handle empty slug - try empty array first, then introduction
+  const pageSlug = (!slug || slug.length === 0) ? undefined : slug;
+  let page = source.getPage(pageSlug);
+  
+  // If still not found, try ['introduction']
+  if (!page && (!slug || slug.length === 0)) {
+    page = source.getPage(['introduction']);
+  }
+  
   if (!page)
     notFound();
 
   const MDX = page.data.body;
-  const markdownUrl = getPageMarkdownUrl(page).url;
 
   return (
     <DocsPage toc={page.data.toc} full={page.data.full}>
       <DocsTitle>{page.data.title}</DocsTitle>
       <DocsDescription className="mb-0">{page.data.description}</DocsDescription>
-      <div className="flex flex-row gap-2 items-center border-b pb-6">
-        <MarkdownCopyButton markdownUrl={markdownUrl} />
-        <ViewOptionsPopover
-          markdownUrl={markdownUrl}
-          githubUrl={`https://github.com/${gitConfig.user}/${gitConfig.repo}/blob/${gitConfig.branch}/content/docs/${page.path}`}
-        />
-      </div>
       <DocsBody>
         <MDX
           components={getMDXComponents({
@@ -86,7 +85,17 @@ export async function generateStaticParams() {
 
 export async function generateMetadata(props: { params: Promise<{ slug?: string[] }> }) {
   const params = await props.params;
-  const page = source.getPage(params.slug);
+  const slug = params.slug;
+  
+  // Handle empty slug - try empty array first, then introduction
+  const pageSlug = (!slug || slug.length === 0) ? undefined : slug;
+  let page = source.getPage(pageSlug);
+  
+  // If still not found, try ['introduction']
+  if (!page && (!slug || slug.length === 0)) {
+    page = source.getPage(['introduction']);
+  }
+  
   if (!page)
     notFound();
 

@@ -1,5 +1,6 @@
 'use client';
 
+import { useAuthorization } from '@/components/authorization/AuthorizationProvider';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -24,6 +25,7 @@ interface Props {
 }
 
 export function ManageDocTypesModal({ open, onClose, types, onReload, isDark }: Props) {
+  const { requireAuthorization } = useAuthorization();
   const [localTypes, setLocalTypes] = useState<DocType[]>(types);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editLabel, setEditLabel] = useState('');
@@ -81,6 +83,18 @@ export function ManageDocTypesModal({ open, onClose, types, onReload, isDark }: 
   };
 
   const handleDelete = async (typeId: number) => {
+    const docType = localTypes.find((item) => item.doc_type_id === typeId);
+    try {
+      await requireAuthorization({
+        actionType: 'delete',
+        entityType: 'document_type',
+        entityId: String(typeId),
+        label: `Delete Document Type: ${docType?.doc_type_name ?? docType?.doc_name ?? `#${typeId}`}`,
+      });
+    } catch {
+      return;
+    }
+
     setDeletingId(typeId);
     try {
       const { data } = await axios.delete(`/api/document/types/${typeId}`);

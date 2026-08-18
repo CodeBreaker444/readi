@@ -1,5 +1,6 @@
 'use client';
 
+import { useAuthorization } from '@/components/authorization/AuthorizationProvider';
 import { useTimezone } from '@/components/TimezoneProvider';
 import { useTheme } from '@/components/useTheme';
 import { Session } from '@/lib/auth/server-session';
@@ -71,6 +72,7 @@ export default function ClientManagement({ session }: ClientManagementProps) {
   const { t } = useTranslation();
   const { isDark } = useTheme();
   const { timezone } = useTimezone();
+  const { requireAuthorization } = useAuthorization();
   const isSuperAdmin = session.user.role === 'SUPERADMIN';
   const [clients, setClients] = useState<ClientData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -122,6 +124,19 @@ export default function ClientManagement({ session }: ClientManagementProps) {
   };
 
   const handleDelete = async (clientId: number) => {
+    const client = clients.find((c) => c.client_id === clientId);
+
+    try {
+      await requireAuthorization({
+        actionType: 'delete',
+        entityType: 'client',
+        entityId: String(clientId),
+        label: `Delete Client: ${client?.client_name ?? `#${clientId}`}`,
+      });
+    } catch {
+      return;
+    }
+
     try {
       const res = await fetch('/api/client/delete', {
         method: 'DELETE',
@@ -179,8 +194,11 @@ export default function ClientManagement({ session }: ClientManagementProps) {
       } else {
         toast.error(data.error || t('team.client.toast.updateFailed'));
       }
-    } catch {
-      toast.error(t('team.client.toast.updateError'));
+    } catch (err: any) {
+      const respData = err?.response?.data;
+      const firstFieldError = respData?.errors && Object.values(respData.errors).flat().find(Boolean);
+      const msg = (firstFieldError as string) || respData?.error || t('team.client.toast.updateError');
+      toast.error(msg);
     }
   };
 
@@ -282,7 +300,7 @@ export default function ClientManagement({ session }: ClientManagementProps) {
               >
                 <div className="absolute -right-4 -bottom-4 w-20 h-20 rounded-full opacity-10 bg-current" />
                 <p className={`text-[10px] font-bold uppercase tracking-widest ${isDark ? 'text-gray-400' : 'text-gray-400'}`}>{t(`team.client.stats.${cfg.key}`)}</p>
-                <p className={`text-4xl font-black mt-2 tabular-nums leading-none ${isDark ? cfg.valueColor.dark : cfg.valueColor.light}`}>
+                <p className={`text-3xl font-black mt-2 tabular-nums leading-none ${isDark ? cfg.valueColor.dark : cfg.valueColor.light}`}>
                   {stats[cfg.key]}
                 </p>
               </div>

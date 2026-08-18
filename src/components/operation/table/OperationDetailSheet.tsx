@@ -72,21 +72,30 @@ function DetailRow({
 function getProcedureStatus(op: Operation) {
   const hasLuc = !!op.fk_luc_procedure_id;
   if (!hasLuc || !op.luc_procedure_progress) {
-    return { hasLuc, assignmentDone: false, checklistDone: false, assignmentTotal: 0, assignmentComplete: 0, checklistTotal: 0, checklistComplete: 0 };
+    return {
+      hasLuc, assignmentDone: false, checklistDone: false, communicationDone: false,
+      assignmentTotal: 0, assignmentComplete: 0, checklistTotal: 0, checklistComplete: 0,
+      communicationTotal: 0, communicationComplete: 0,
+    };
   }
   const progress = op.luc_procedure_progress;
   const assignmentEntries = Object.values(progress.assignment ?? {});
   const checklistEntries = Object.values(progress.checklist ?? {});
+  const communicationEntries = Object.values(progress.communication ?? {});
   const assignmentComplete = assignmentEntries.filter(v => v === 'Y').length;
   const checklistComplete = checklistEntries.filter(v => v === 'Y').length;
+  const communicationComplete = communicationEntries.filter(v => v === 'Y').length;
   return {
     hasLuc,
     assignmentDone: assignmentEntries.length === 0 || assignmentComplete === assignmentEntries.length,
     checklistDone: checklistEntries.length === 0 || checklistComplete === checklistEntries.length,
+    communicationDone: communicationEntries.length === 0 || communicationComplete === communicationEntries.length,
     assignmentTotal: assignmentEntries.length,
     assignmentComplete,
     checklistTotal: checklistEntries.length,
     checklistComplete,
+    communicationTotal: communicationEntries.length,
+    communicationComplete,
   };
 }
 
@@ -137,7 +146,7 @@ export function OperationDetailSheet({
     : '';
 
   const proc = operation ? getProcedureStatus(operation) : null;
-  const procAllDone = proc ? proc.assignmentDone && proc.checklistDone : false;
+  const procAllDone = proc ? proc.assignmentDone && proc.checklistDone && proc.communicationDone : false;
   const lucCompleted = !!operation?.luc_completed_at;
 
   return (
@@ -163,6 +172,12 @@ export function OperationDetailSheet({
                         className={cn('text-xs', STATUS_BADGE[operation.status_name].className)}
                       >
                         {statusLabel}
+                      </Badge>
+                    )}
+                    {operation.mission_group_label && (
+                      <Badge variant="secondary" className="px-1.5 py-0 text-[10px] font-normal">
+                        <Tag className="mr-0.5 h-2.5 w-2.5" />
+                        {operation.mission_group_label}
                       </Badge>
                     )}
                   </div>
@@ -233,7 +248,7 @@ export function OperationDetailSheet({
                               : t('operations.table.detail.stepsCompleteNotFinalized')}
                         </p>
                       </div>
-                      <div className="grid grid-cols-2 gap-2 pt-1">
+                      <div className="grid grid-cols-3 gap-2 pt-1">
                         <div className="flex items-center gap-1.5 text-xs">
                           {proc.assignmentDone
                             ? <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
@@ -248,6 +263,14 @@ export function OperationDetailSheet({
                             : <XCircle className="h-3.5 w-3.5 text-amber-500" />}
                           <span className="text-muted-foreground">
                             {t('operations.table.detail.checklist')}{proc.checklistTotal > 0 ? ` (${proc.checklistComplete}/${proc.checklistTotal})` : ''}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-xs">
+                          {proc.communicationDone
+                            ? <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                            : <XCircle className="h-3.5 w-3.5 text-amber-500" />}
+                          <span className="text-muted-foreground">
+                            {t('operations.table.detail.communication')}{proc.communicationTotal > 0 ? ` (${proc.communicationComplete}/${proc.communicationTotal})` : ''}
                           </span>
                         </div>
                       </div>

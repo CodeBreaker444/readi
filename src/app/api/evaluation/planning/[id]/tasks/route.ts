@@ -52,6 +52,10 @@ export async function PUT(
             id,
             validated.task_id,
             validated.task_status,
+            session!.user.userId,
+            session!.user.fullname,
+            session!.user.email,
+            session!.user.role
         );
         if (!result.success) {
             return apiError(E.BL001, 422, { message: [result.message ?? ''] });

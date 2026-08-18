@@ -1,6 +1,7 @@
 'use client';
 
 
+import { useAuthorization } from '@/components/authorization/AuthorizationProvider';
 import { ComplianceRequirement, getComplianceRequirementsColumns } from '@/components/tables/ComplianceReqColumn';
 import { TablePagination } from '@/components/tables/Pagination';
 import { Button } from '@/components/ui/button';
@@ -117,6 +118,7 @@ const EMPTY_FORM: FormState = {
 
 export default function GeneralAuditPlanPage() {
   const { t } = useTranslation();
+  const { requireAuthorization } = useAuthorization();
   const { isDark } = useTheme();
 
   const [records, setRecords] = useState<ComplianceRequirement[]>([]);
@@ -264,6 +266,18 @@ export default function GeneralAuditPlanPage() {
   async function handleDelete() {
     if (!deleteTarget) return;
     const id = deleteTarget.requirement_id;
+
+    try {
+      await requireAuthorization({
+        actionType: 'delete',
+        entityType: 'compliance_requirement',
+        entityId: String(id),
+        label: `Delete Audit Plan Requirement: ${deleteTarget.requirement_code}`,
+      });
+    } catch {
+      return;
+    }
+
     setDeleteTarget(null);
     try {
       await axios.post('/api/compliance/audit-plan/delete', { requirement_id: id });

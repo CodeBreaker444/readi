@@ -1,5 +1,6 @@
 'use client';
 
+import { useAuthorization } from '@/components/authorization/AuthorizationProvider';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -19,6 +20,7 @@ interface Props {
 }
 
 export function ManageDroneClassesModal({ open, onClose, classes, onReload, isDark }: Props) {
+  const { requireAuthorization } = useAuthorization();
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editLabel, setEditLabel] = useState('');
   const [savingId, setSavingId] = useState<number | null>(null);
@@ -48,6 +50,18 @@ export function ManageDroneClassesModal({ open, onClose, classes, onReload, isDa
   };
 
   const handleDelete = async (classId: number) => {
+    const droneClass = classes.find((c) => c.class_id === classId);
+    try {
+      await requireAuthorization({
+        actionType: 'delete',
+        entityType: 'drone_class',
+        entityId: String(classId),
+        label: `Delete Drone Class: ${droneClass?.class_label ?? `#${classId}`}`,
+      });
+    } catch {
+      return;
+    }
+
     setDeletingId(classId);
     try {
       const { data } = await axios.delete(`/api/system/drone-classes/${classId}`);

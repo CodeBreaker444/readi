@@ -81,7 +81,7 @@ export function OperationStepDrone({
             <div>
                 <Label className={labelCls(isDark)}>{t('operations.newOperation.drone.opTypeLabel')} <span className="text-red-500">*</span></Label>
                 <div className="flex gap-2 mt-1">
-                    {(['OPEN', 'PDRA'] as OpType[]).map(type => (
+                    {(['OPEN', 'PDRA', 'STS-01', 'STS-02'] as OpType[]).map(type => (
                         <button
                             key={type}
                             type="button"
@@ -100,9 +100,13 @@ export function OperationStepDrone({
                     ))}
                 </div>
                 <p className={cn('text-xs mt-1.5', isDark ? 'text-slate-400' : 'text-muted-foreground')}>
-                    {opType === 'OPEN'
-                        ? t('operations.newOperation.drone.opTypeOpenDesc')
-                        : t('operations.newOperation.drone.opTypePdraDesc')}
+                    {opType === 'PDRA'
+                        ? t('operations.newOperation.drone.opTypePdraDesc')
+                        : opType === 'STS-01'
+                            ? t('operations.newOperation.drone.opTypeSts01Desc')
+                            : opType === 'STS-02'
+                                ? t('operations.newOperation.drone.opTypeSts02Desc')
+                                : t('operations.newOperation.drone.opTypeOpenDesc')}
                 </p>
             </div>
 

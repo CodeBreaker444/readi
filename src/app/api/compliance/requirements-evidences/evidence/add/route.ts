@@ -34,11 +34,16 @@ export async function POST(req: NextRequest) {
       return apiError(E.AU003, 403);
     }
 
-    const created = await addEvidence({
-      ...parsed.data,
-      owner_id: ownerId,
-      submitted_by_user_id: Number(userId),
-    });
+    const created = await addEvidence(
+      {
+        ...parsed.data,
+        owner_id: ownerId,
+        submitted_by_user_id: Number(userId),
+      },
+      session!.user.fullname,
+      session!.user.email,
+      session!.user.role
+    );
 
     return NextResponse.json({ code: 1, message: 'Evidence added', data: created });
   } catch (error: any) { 

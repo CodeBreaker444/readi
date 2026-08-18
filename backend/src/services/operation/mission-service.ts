@@ -94,7 +94,7 @@ export async function createAndAttachMission(
       missionType: missionType?.type_name || 'Unknown',
       createdBy,
       scheduledDate: scheduled_start,
-      description: mission_name || notes || undefined,
+      description: notes || undefined,
     });
   } catch (emailError) {
     console.error('Failed to send mission created email:', emailError);
@@ -247,7 +247,7 @@ export async function getAttachableMissions(droneSerialNumber: string, ownerId: 
     orderBy: {
       actual_start: 'desc',
     },
-    take: 50,
+    take: 20,
   });
 
   return missions.map((mission) => ({

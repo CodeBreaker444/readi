@@ -8,7 +8,7 @@ export async function GET(req: NextRequest) {
     const { session, error } = await requirePermission('view_client')
     if(error) return error
 
-    const result = await listClients(session!.user.ownerId);
+    const result = await listClients(session!.user.ownerId, false);
     return NextResponse.json(result);
   } catch (error) {
       return internalError(E.AU002, error);

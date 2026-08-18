@@ -1,11 +1,12 @@
 'use client';
 
 import axios from 'axios';
-import { Loader2, MessageSquarePlus, Send } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { Loader2, MessageSquarePlus, Send, X } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -50,16 +51,21 @@ export function EvaluationCommunicationModal({
 }: Props) {
   const { t } = useTranslation();  
   const [users, setUsers] = useState<User[]>([]);
-  const [toUserId, setToUserId] = useState('');
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [loadingUsers, setLoadingUsers] = useState(false);
+  const [userSearch, setUserSearch] = useState('');
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!open) return;
-    setToUserId('');
+    setSelectedUser(null);
     setMessage('');
+    setUserSearch('');
+    setDropdownOpen(false);
     setSubject(
       task
         ? `[${task.task_name}] Evaluation #${evaluationId}`
@@ -80,14 +86,30 @@ export function EvaluationCommunicationModal({
     }
   }
 
+  const filteredUsers = users.filter(u => 
+    u.first_name.toLowerCase().includes(userSearch.toLowerCase()) ||
+    (u.last_name && u.last_name.toLowerCase().includes(userSearch.toLowerCase())) ||
+    u.email.toLowerCase().includes(userSearch.toLowerCase())
+  );
+
+  const handleSelectUser = (user: User) => {
+    setSelectedUser(user);
+    setUserSearch('');
+    setDropdownOpen(false);
+  };
+
+  const handleRemoveUser = () => {
+    setSelectedUser(null);
+  };
+
   async function handleSend() {
-    if (!toUserId) { toast.error(t('planning.communication.recipientSingle')); return; }
+    if (!selectedUser) { toast.error(t('planning.communication.recipientSingle')); return; }
     if (!message.trim()) { toast.error(t('planning.communication.messageSingle')); return; }
 
     try {
       setIsSending(true);
       await axios.post(`/api/evaluation/${evaluationId}/communication`, {
-        to_user_id: Number(toUserId),
+        to_user_id: selectedUser.user_id,
         subject:    subject.trim(),
         message:    message.trim(),
       });
@@ -103,7 +125,7 @@ export function EvaluationCommunicationModal({
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="w-full sm:max-w-3xl md:max-w-4xl lg:max-w-5xl xl:max-w-6xl max-h-[90vh] overflow-y-auto overflow-x-hidden">
         <DialogHeader>
           <div className="flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-50 border border-violet-100">
@@ -139,18 +161,45 @@ export function EvaluationCommunicationModal({
                 Loading users…
               </div>
             ) : (
-              <Select value={toUserId} onValueChange={setToUserId}>
-                <SelectTrigger className="h-8 text-xs">
-                  <SelectValue placeholder="Select recipient" />
-                </SelectTrigger>
-                <SelectContent>
-                  {users.map((u) => (
-                    <SelectItem key={u.user_id} value={String(u.user_id)} className="text-xs">
-                      {u.first_name} {u.last_name ?? ''} — {u.email}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <>
+                {selectedUser && (
+                  <div className="flex flex-wrap gap-1.5 mb-2">
+                    <Badge variant="secondary" className="flex items-center gap-1">
+                      <span className="text-xs">{selectedUser.first_name} {selectedUser.last_name ?? ''}</span>
+                      <X className="h-3 w-3 cursor-pointer" onClick={handleRemoveUser} />
+                    </Badge>
+                  </div>
+                )}
+                <div className="relative" ref={dropdownRef}>
+                  <Input
+                    className="h-8 text-xs"
+                    placeholder={t('planning.communication.searchUsers')}
+                    value={userSearch}
+                    onChange={(e) => { setUserSearch(e.target.value); setDropdownOpen(true); }}
+                    onFocus={() => setDropdownOpen(true)}
+                    onBlur={() => setTimeout(() => setDropdownOpen(false), 200)}
+                  />
+                  {dropdownOpen && (
+                    <div className="absolute z-50 mt-1 w-full border bg-popover rounded-md shadow-md max-h-60 overflow-y-auto">
+                      {filteredUsers.length > 0 ? (
+                        filteredUsers.map(user => (
+                          <button 
+                            key={user.user_id} 
+                            className="cursor-pointer w-full text-left px-3 py-2 text-sm hover:bg-accent transition-colors" 
+                            onClick={() => handleSelectUser(user)}
+                          >
+                            {user.first_name} {user.last_name ?? ''} ({user.email})
+                          </button>
+                        ))
+                      ) : (
+                        <div className="px-3 py-2 text-sm text-slate-500">
+                          {t('planning.communication.noUsersFound')}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </>
             )}
           </div>
 
@@ -182,7 +231,7 @@ export function EvaluationCommunicationModal({
           <Button
             size="sm"
             onClick={handleSend}
-            disabled={isSending || !toUserId}
+            disabled={isSending || !selectedUser}
             className="gap-1.5 bg-violet-600 hover:bg-violet-700 text-white"
           >
             {isSending ? (

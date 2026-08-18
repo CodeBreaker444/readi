@@ -20,6 +20,7 @@ export interface OwnerData {
     email_notifications_enabled: boolean;
     operation_email_enabled: boolean;
     system_email_enabled: boolean;
+    training_email_enabled: boolean;
     easa_operator_code: string | null;
     daily_email_limit: number | null;
     created_at: string;
@@ -44,6 +45,7 @@ export interface AddOwnerWithAdminPayload {
     email_notifications_enabled?: boolean;
     operation_email_enabled?: boolean;
     system_email_enabled?: boolean;
+    training_email_enabled?: boolean;
     easa_operator_code?: string;
     tax_id?: string;
     registration_number?: string;
@@ -84,6 +86,7 @@ export interface UpdateOwnerPayload {
     email_notifications_enabled?: boolean;
     operation_email_enabled?: boolean;
     system_email_enabled?: boolean;
+    training_email_enabled?: boolean;
     easa_operator_code?: string | null;
     daily_email_limit?: number | null;
     tax_id?: string | null;
@@ -298,6 +301,7 @@ export async function updateOwner(id: string, payload: UpdateOwnerPayload) {
             email_notifications_enabled: payload.email_notifications_enabled ?? false,
             operation_email_enabled: payload.operation_email_enabled ?? false,
             system_email_enabled: payload.system_email_enabled ?? false,
+            training_email_enabled: payload.training_email_enabled ?? false,
             easa_operator_code: payload.easa_operator_code ?? null,
             daily_email_limit: payload.daily_email_limit ?? 100,
             tax_id: payload.tax_id ?? null,
@@ -675,4 +679,66 @@ export async function updateAdminPassword(ownerId: string, adminUserId: number, 
     );
 
     return { message: 'Password updated successfully' };
+}
+
+export async function updateAdminEmail(ownerId: string, adminUserId: number, newEmail: string) {
+    const ownerIdNum = parseInt(ownerId);
+    const email = newEmail.toLowerCase().trim();
+
+    const user = await prisma.public_users.findFirst({
+        where: { user_id: adminUserId, fk_owner_id: ownerIdNum },
+        select: {
+            user_id: true, email: true, username: true, user_active: true,
+            first_name: true, last_name: true, user_unique_code: true,
+        },
+    });
+    if (!user) throw new Error('Admin user not found for this company');
+
+    if (user.email?.toLowerCase() === email) {
+        return { message: 'Email unchanged', email: user.email, activationEmailSent: false };
+    }
+
+    const existing = await prisma.public_users.findFirst({
+        where: { email: { equals: email, mode: 'insensitive' }, user_id: { not: adminUserId } },
+        select: { user_id: true },
+    });
+    if (existing) throw new Error('A user with this email already exists');
+
+    // Pending (not yet activated) accounts get a fresh activation link at the new address —
+    // the old link's key_ is bound to the old email and would fail the activate route's lookup.
+    const isPending = user.user_active !== 'Y';
+    const activationToken = isPending ? generateActivationToken(128) : undefined;
+
+    await prisma.public_users.update({
+        where: { user_id: adminUserId },
+        data: {
+            email,
+            updated_at: new Date(),
+            ...(activationToken ? { key_: activationToken } : {}),
+        },
+    });
+
+    let activationEmailSent = false;
+    if (isPending && activationToken) {
+        const owner = await prisma.owner.findUnique({
+            where: { owner_id: ownerIdNum },
+            select: { owner_name: true },
+        });
+        const fullname = [user.first_name, user.last_name].filter(Boolean).join(' ');
+        const activationLink = `${env.APP_URL}/auth/activate?o=${ownerIdNum}&email=${encodeURIComponent(email)}&username=${encodeURIComponent(user.username!)}&id=${activationToken}`;
+
+        await sendUserActivationEmail(email, fullname, {
+            organization: owner?.owner_name ?? 'ReADI',
+            username: user.username!,
+            passcode: user.user_unique_code || activationToken.substring(0, 10),
+            loginlink: activationLink,
+        });
+        activationEmailSent = true;
+    }
+
+    return {
+        message: activationEmailSent ? 'Email updated and activation link resent' : 'Email updated successfully',
+        email,
+        activationEmailSent,
+    };
 }

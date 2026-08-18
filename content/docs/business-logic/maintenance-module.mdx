@@ -1,0 +1,246 @@
+---
+title: "Maintenance Module Business Logic"
+description: "Business logic flow for maintenance module including parameters, triggers, and dependencies."
+---
+
+# Maintenance Module Business Logic
+
+## Overview
+
+The maintenance module tracks component and system health through usage metrics (hours, flights, days) and triggers maintenance alerts when limits are approached or exceeded. This module is tightly integrated with missions, notifications, and system operational status.
+
+---
+
+## Core Business Flow
+
+```
+Mission Completion
+  → Component Usage Updated (hours, flights, days)
+  → Maintenance Cycle Check (threshold_alert = 80%)
+  → Status Computed (OK/ALERT/DUE)
+  → Notifications Sent (if ALERT or DUE)
+  → System Status Updated (OPERATIONAL/MAINTENANCE/NOT_OPERATIONAL)
+```
+
+---
+
+## Key Parameters
+
+### Component Parameters
+
+| Frontend Label | Parameter | Maintenance Impact |
+|---|---|---|
+| System | `fk_tool_id` | Links component to drone system for maintenance tracking |
+| Parent Component | `fk_parent_component_id` | Hierarchical structure for maintenance dependency |
+| Component Type | `component_type` | Determines maintenance cycle configuration |
+| Code | `component_code` | Component identification for maintenance records |
+| Serial Number | `component_sn` | **YES** - Used for GUTMA/DFlight sync and maintenance updates |
+| Name | `component_name` | Display name in maintenance dashboard |
+| Brand/Model | `fk_tool_model_id` | **YES** - Model-specific maintenance cycle configuration |
+| Description | `component_desc` | Display information |
+| Status | `component_status` | **YES** - OPERATIONAL/NOT_OPERATIONAL/MAINTENANCE/DECOMMISSIONED affects maintenance eligibility |
+| Activation Date | `component_activation_date` | **YES** - Reference point for day-based maintenance calculations |
+| Purchase Date | `component_purchase_date` | Warranty tracking |
+| Expiration Type | `expiry_type` | **YES** - Determines if component auto-decommissions (EXPIRATION_DATE/FLIGHTS/FLIGHT_HOURS/MIXED) |
+| Expiration Date | `expiration_date` | **YES** - Auto-decommissions component when reached |
+| Expiration Flights | `expiration_flights` | **YES** - Auto-decommissions component when flight limit reached |
+| Expiration Flight Hours | `expiration_flight_hours` | **YES** - Auto-decommissions component when hour limit reached |
+| Vendor | `component_vendor` | Support contact for maintenance |
+| Guarantee | `component_guarantee_day` | Warranty period for maintenance coverage |
+| Battery Cycle Ratio | `battery_cycle_ratio` | **YES** - Multiplies flight count for maintenance calculations (default: 1.0) |
+| Usage Hours | `initial_usage_hours` | Lifetime tracking for component |
+| Maintenance Hours | `initial_maintenance_hours` | **YES** - Current usage vs maintenance cycle hour limit |
+| Maintenance Flights | `initial_maintenance_flights` | **YES** - Current flights vs maintenance cycle flight limit |
+| Insurance Name | `insurance_name` | Compliance tracking |
+| Insurance Company | `insurance_company` | Compliance tracking |
+| Insurance Expiry Date | `insurance_expiry_date` | **YES** - Triggers expiry alert notifications |
+| Drone Registration Code | `drone_registration_code` | **YES** - DFlight compliance sync affects maintenance status |
+| UAS Serial Number | `uas_serial_number` | DFlight compliance |
+| GCS Serial Number | `gcs_serial_number` | DFlight compliance |
+
+### System Parameters
+
+| Frontend Label | Parameter | Maintenance Impact |
+|---|---|---|
+| Code | `tool_code` | System identification for maintenance records |
+| Description | `tool_desc` | Display information |
+| Status | `tool_status` | **YES** - OPERATIONAL/MAINTENANCE/NOT_OPERATIONAL determines mission eligibility and maintenance requirements |
+| Active | `tool_active` | Dashboard visibility - only active systems appear in maintenance dashboard |
+| Client | `fk_client_id` | Ownership scoping for maintenance |
+| Location | `location` | Display information |
+| Activation Date | `date_activation` | Tracking for maintenance scheduling |
+| Maintenance Logbook | `tool_maintenance_logbook` | **YES** - Enables/disables maintenance tracking for the system |
+
+---
+
+## Status Computation Logic
+
+### Component Status Calculation
+
+For each component with a maintenance cycle defined:
+
+1. Calculate ratio for each metric: current usage / limit
+   - Maintenance Hours (initial_maintenance_hours) vs model hour limit
+   - Maintenance Flights (initial_maintenance_flights) vs model flight limit
+   - Days since Activation Date (component_activation_date) vs model day limit
+2. If any ratio >= 1.0 → status = DUE
+3. Else if any ratio >= 0.8 → status = ALERT
+4. Else → status = OK
+
+**Priority:** DUE > ALERT > OK (worst status wins)
+
+**Threshold:** ALERT triggers at 80% (configurable)
+
+**Battery Cycle Ratio Impact:** Flight count is multiplied by battery_cycle_ratio before comparing to flight limit.
+
+**Expiration Impact:** If Expiration Date (expiration_date) is reached, component status becomes NOT_OPERATIONAL regardless of maintenance status.
+
+### System Status Calculation
+
+System status is the worst status among all its components:
+- If any component has Expiration Date reached → NOT_OPERATIONAL
+- If any open maintenance ticket exists → MAINTENANCE
+- If any component status is DUE → MAINTENANCE
+- If any component status is ALERT → MAINTENANCE (or OPERATIONAL based on policy)
+- Otherwise → OPERATIONAL
+
+**Priority:** NOT_OPERATIONAL > MAINTENANCE > OPERATIONAL
+
+---
+
+## Maintenance Notification Logic
+
+### Alert Trigger Conditions
+
+Notifications are sent when:
+1. Component status is ALERT or DUE
+2. Component has not been notified today (deduplication)
+3. Recipients are active users with roles: OPM, RM, ADMIN
+
+### Deduplication Logic
+
+Each component is notified only once per calendar day for the same status to prevent spam.
+
+---
+
+## Maintenance Cycle Update Logic
+
+### Mission Completion Integration
+
+When a mission completes (actual_end recorded), component usage is updated:
+- Flight Duration (flight_duration) is added to Maintenance Hours (initial_maintenance_hours)
+- Flight count is incremented and multiplied by Battery Cycle Ratio (battery_cycle_ratio) before adding to Maintenance Flights (initial_maintenance_flights)
+- Last mission ID and update timestamp are recorded
+- Component status is recalculated (OK/ALERT/DUE)
+- Maintenance notifications triggered if status changes to ALERT or DUE
+
+**Battery Cycle Ratio Impact:**
+- Default: 1.0
+- Purpose: Accounts for battery discharge cycles vs flight count (e.g., hover operations)
+- Applied automatically to flight count increment
+- Example: 1 flight with ratio 2.0 = 2 effective flights for maintenance
+
+---
+
+## Maintenance Ticket Integration
+
+### Ticket Impact on Status
+
+| Ticket Status | Impact on System Status |
+|---|---|
+| NEW, IN_PROGRESS, ASSIGNED | System = MAINTENANCE (prevents mission start) |
+| CLOSED | System status re-evaluated based on components |
+| CANCELLED | System status re-evaluated based on components |
+
+**Maintenance Ticket Parameters:**
+- System (fk_tool_id) - Links ticket to drone system
+- Component (fk_component_id) - Links ticket to specific component
+- Status (ticket_status) - Controls system maintenance status
+- Type (ticket_type) - Categorization (preventive, corrective, inspection, calibration)
+
+### Maintenance Types
+
+| Type | Trigger | Typical Parameters |
+|---|---|---|
+| preventive | Calendar schedule | Day-based cycle, Activation Date |
+| corrective | Damage discovered | Manual ticket creation, Component Status |
+| inspection | Regulatory periodic check | Day-based cycle, Expiration Date |
+| calibration | Sensor recalibration | Hour or flight-based cycle, Maintenance Hours/Flights |
+
+---
+
+## Email Notification Integration
+
+### Maintenance Email Events
+
+| Event Type | Trigger |
+|---|---|
+| ticket_created | New maintenance ticket created |
+| ticket_assigned | Ticket assigned to technician |
+| ticket_closed | Ticket closed/resolved |
+| intervention_started | Maintenance intervention begins |
+| intervention_ended | Maintenance intervention ends |
+
+### Email Enablement
+
+Emails are sent only when:
+1. Company-level system email is enabled
+2. Module-level email notification is enabled for the specific event
+3. Daily email limit has not been reached
+
+---
+
+## System Operational Status Integration
+
+### Maintenance to Operational Status Mapping
+
+| Maintenance Status | Operational Status | Condition |
+|---|---|---|
+| IN_MAINTENANCE | MAINTENANCE | Open ticket exists |
+| DUE | MAINTENANCE | Component at limit (if no ticket) |
+| ALERT | OPERATIONAL | Approaching limit (if no ticket) |
+| OK | OPERATIONAL | Within limits (if no ticket) |
+| Component expired | NOT_OPERATIONAL | Expiration date reached |
+
+**Priority:** NOT_OPERATIONAL > MAINTENANCE > OPERATIONAL
+
+---
+
+## Parameter Dependencies
+
+### Direct Dependencies
+
+- Maintenance Hours (initial_maintenance_hours) depends on: model hour limit, mission Flight Duration (flight_duration)
+- Maintenance Flights (initial_maintenance_flights) depends on: model flight limit, mission count, Battery Cycle Ratio (battery_cycle_ratio)
+- Days since last maintenance depends on: model day limit, Activation Date (component_activation_date)
+- Component Status (component_status) depends on: all three current metrics vs limits, Expiration Date (expiration_date)
+- System Status (tool_status) depends on: all component statuses, open maintenance tickets
+- Component auto-decommission depends on: Expiration Type (expiry_type), Expiration Date (expiration_date), Expiration Flights (expiration_flights), Expiration Flight Hours (expiration_flight_hours)
+
+### Cross-Module Dependencies
+
+- **Mission Module:** Updates Maintenance Hours/Flights on mission completion (actual_end, flight_duration)
+- **Notification Module:** Sends alerts based on Component Status (ALERT/DUE)
+- **Email Module:** Sends emails based on ticket events, Insurance Expiry Date (insurance_expiry_date)
+- **System Module:** Operational status computed from maintenance status
+- **Planning Module:** Maintenance requirements can be specified in planning
+- **Integration Module:** GUTMA/DFlight sync updates Maintenance Hours/Flights via Serial Number (component_sn) and Drone Registration Code (drone_registration_code)
+
+---
+
+ 
+
+## Key Business Rules
+
+1. **Threshold-Based Alerts:** ALERT at 80%, DUE at 100% of maintenance limits (Maintenance Hours/Flights vs model limits)
+2. **Worst Status Wins:** System status = worst component status (NOT_OPERATIONAL > MAINTENANCE > OPERATIONAL)
+3. **Ticket Override:** Open maintenance ticket forces system to MAINTENANCE status
+4. **Daily Deduplication:** Each component notified once per day per status
+5. **Battery Ratio:** Flight cycles multiplied by Battery Cycle Ratio (battery_cycle_ratio) before maintenance calculation
+6. **Active Only:** Only active components (Status != DECOMMISSIONED) and systems (Active = Y) evaluated
+7. **Exclusions:** Detached (Warehouse), decommissioned, inactive items excluded from dashboard
+8. **Email Limits:** Daily email limit enforced before sending notifications
+9. **Module Enablement:** Both company-level (System Email Enabled) and event-level (Is Enabled) enablement required
+10. **Mission Integration:** Maintenance Hours/Flights updated automatically on mission completion
+11. **Expiration Auto-Decommission:** Components auto-decommission when Expiration Date/Flights/Hours reached
+12. **Insurance Expiry Alerts:** Insurance expiry triggers email to configured recipients before expiry date

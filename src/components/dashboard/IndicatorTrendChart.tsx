@@ -1,5 +1,6 @@
 'use client';
 import { cn } from '@/lib/utils';
+import { computeAchievementPct, computeIndicatorStatus, getIndicatorZoneThresholds, TargetDirection } from '@/lib/spiKpi';
 import React, { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -8,11 +9,12 @@ interface IndicatorTrendChartProps {
   labels: string[];
   values: number[];
   target: number;
+  targetDirection?: TargetDirection;
   isDark?: boolean;
 }
 
 const IndicatorTrendChart: React.FC<IndicatorTrendChartProps> = ({
-  indicatorName, labels, values, target, isDark = false,
+  indicatorName, labels, values, target, targetDirection = 'HIGHER_IS_BETTER', isDark = false,
 }) => {
   const { t } = useTranslation();
   const chartRef = useRef<HTMLDivElement>(null);
@@ -22,12 +24,13 @@ const IndicatorTrendChart: React.FC<IndicatorTrendChartProps> = ({
   const prev = values[values.length - 2] ?? latest;
   const delta = latest - prev;
   const deltaSign = delta >= 0 ? '+' : '';
-  const targetPct = target > 0 ? Math.min(100, Math.round((latest / target) * 100)) : 0;
-  const statusColor = targetPct >= 90 ? '#10b981' : targetPct >= 60 ? '#f59e0b' : '#ef4444';
-  const statusLabel = targetPct >= 90 ? t('shi.indicatorTrend.status.onTarget') : targetPct >= 60 ? t('shi.indicatorTrend.status.marginal') : t('shi.indicatorTrend.status.belowTarget');
-  const statusBadge = targetPct >= 90
+  const targetPct = computeAchievementPct(latest, target, targetDirection);
+  const status = computeIndicatorStatus(latest, target, targetDirection);
+  const statusColor = status === 'GREEN' ? '#10b981' : status === 'YELLOW' ? '#f59e0b' : '#ef4444';
+  const statusLabel = status === 'GREEN' ? t('shi.indicatorTrend.status.onTarget') : status === 'YELLOW' ? t('shi.indicatorTrend.status.marginal') : t('shi.indicatorTrend.status.belowTarget');
+  const statusBadge = status === 'GREEN'
     ? isDark ? 'bg-emerald-500/10 text-emerald-400 ring-1 ring-emerald-500/25' : 'bg-emerald-50 text-emerald-600 ring-1 ring-emerald-200'
-    : targetPct >= 60
+    : status === 'YELLOW'
     ? isDark ? 'bg-yellow-500/10 text-yellow-400 ring-1 ring-yellow-500/25' : 'bg-yellow-50 text-yellow-600 ring-1 ring-yellow-200'
     : isDark ? 'bg-red-500/10 text-red-400 ring-1 ring-red-500/25' : 'bg-red-50 text-red-600 ring-1 ring-red-200';
 
@@ -95,11 +98,21 @@ const IndicatorTrendChart: React.FC<IndicatorTrendChartProps> = ({
         },
         legend: { show: false },
         annotations: {
-          yaxis: [
-            { y: targetVal * 0.6, y2: 0, fillColor: 'rgba(239,68,68,0.05)', borderColor: 'transparent' },
-            { y: targetVal * 0.9, y2: targetVal * 0.6, fillColor: 'rgba(245,158,11,0.05)', borderColor: 'transparent' },
-            { y: Math.ceil(maxVal * 1.25), y2: targetVal * 0.9, fillColor: 'rgba(16,185,129,0.05)', borderColor: 'transparent' },
-          ],
+          yaxis: (() => {
+            const { lower, upper } = getIndicatorZoneThresholds(targetVal, targetDirection);
+            const top = Math.ceil(maxVal * 1.25);
+            return targetDirection === 'LOWER_IS_BETTER'
+              ? [
+                  { y: lower, y2: 0,     fillColor: 'rgba(16,185,129,0.05)', borderColor: 'transparent' },
+                  { y: upper, y2: lower, fillColor: 'rgba(245,158,11,0.05)', borderColor: 'transparent' },
+                  { y: top,   y2: upper, fillColor: 'rgba(239,68,68,0.05)',  borderColor: 'transparent' },
+                ]
+              : [
+                  { y: lower, y2: 0,     fillColor: 'rgba(239,68,68,0.05)',  borderColor: 'transparent' },
+                  { y: upper, y2: lower, fillColor: 'rgba(245,158,11,0.05)', borderColor: 'transparent' },
+                  { y: top,   y2: upper, fillColor: 'rgba(16,185,129,0.05)', borderColor: 'transparent' },
+                ];
+          })(),
         },
       });
       chartInstance.current.render();
@@ -116,7 +129,7 @@ const IndicatorTrendChart: React.FC<IndicatorTrendChartProps> = ({
     }
 
     return () => { chartInstance.current?.destroy(); };
-  }, [indicatorName, labels, values, target, isDark]);
+  }, [indicatorName, labels, values, target, targetDirection, isDark]);
 
   return (
     <div className={cn(

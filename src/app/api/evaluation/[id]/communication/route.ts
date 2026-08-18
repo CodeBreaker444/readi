@@ -36,6 +36,9 @@ export async function POST(
                 message: validated.message,
                 subject: validated.subject,
             },
+            session!.user.fullname,
+            session!.user.email,
+            session!.user.role
         );
 
         if (!result.success) {

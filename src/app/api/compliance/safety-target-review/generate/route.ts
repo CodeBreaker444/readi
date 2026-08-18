@@ -20,7 +20,14 @@ export async function GET(req: NextRequest) {
       return zodError(E.VL001, parsed.error);
     }
 
-    const result = await generateTargetProposals(parsed.data.months, session!.user.userId);
+    const result = await generateTargetProposals(
+      parsed.data.months,
+      session!.user.userId,
+      session!.user.ownerId,
+      session!.user.fullname,
+      session!.user.email,
+      session!.user.role
+    );
     return NextResponse.json({ code: 1, message: 'Success', ...result });
   } catch (error: any) {
     console.error('[safety-target-review/generate] error:', error);

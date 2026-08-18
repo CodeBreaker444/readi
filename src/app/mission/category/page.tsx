@@ -1,4 +1,5 @@
 'use client';
+import { useAuthorization } from '@/components/authorization/AuthorizationProvider';
 import MissionCategoryForm from '@/components/mission/MissionCategoryForm';
 import MissionCategorySkeleton from '@/components/mission/MissionCategorySkeleton';
 import MissionCategoryTable from '@/components/mission/MissionCategoryTable';
@@ -16,6 +17,7 @@ import { toast } from 'sonner';
 export default function MissionCategoryPage() {
   const { isDark } = useTheme();
   const { t } = useTranslation();
+  const { requireAuthorization } = useAuthorization();
   const [categories, setCategories] = useState<MissionCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -49,6 +51,18 @@ export default function MissionCategoryPage() {
   };
 
   const handleDeleteCategory = async (id: number) => {
+    const category = categories.find((cat) => cat.id === id);
+    try {
+      await requireAuthorization({
+        actionType: 'delete',
+        entityType: 'mission_category',
+        entityId: String(id),
+        label: `Delete Mission Category: ${category?.name ?? `#${id}`}`,
+      });
+    } catch {
+      return;
+    }
+
     try {
       const response = await axios.post(`/api/mission/category/${id}/delete`);
       const result = response.data;

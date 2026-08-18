@@ -268,6 +268,9 @@ export default function EditModelModal({ open, toolId, onClose, onSuccess, initi
     if (!formData.manufacturer.trim()) { toast.error(t('systems.components.editModel.toasts.manufacturerRequired')); return; }
     if (!formData.model_code.trim()) { toast.error(t('systems.components.editModel.toasts.modelCodeRequired')); return; }
     if (!formData.model_name.trim()) { toast.error(t('systems.components.editModel.toasts.modelNameRequired')); return; }
+    if (formData.mtom && Number(formData.mtom) <= 0) {
+      toast.error(t('systems.components.editModel.toasts.mtomPositive')); return;
+    }
 
     setLoading(true);
     try {
@@ -435,7 +438,7 @@ export default function EditModelModal({ open, toolId, onClose, onSuccess, initi
                     </div>
                     <div className="col-span-1 sm:col-span-4">
                       <Label className={labelCls}>{t('systems.components.addModel.fields.mtom')}</Label>
-                      <Input type="number" step="0.01" className={inputCls} value={formData.mtom} onChange={e => handleChange('mtom', e.target.value)} />
+                      <Input type="number" step="0.01" min={0} className={inputCls} value={formData.mtom} onChange={e => handleChange('mtom', e.target.value)} />
                     </div>
                     <div className="col-span-1 sm:col-span-4">
                       <Label className={labelCls}>{t('systems.components.addModel.fields.weight')}</Label>

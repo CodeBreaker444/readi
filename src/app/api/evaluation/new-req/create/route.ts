@@ -51,7 +51,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const result = await createNewEvaluationRequest(ownerId, userId, validation.data);
+    const result = await createNewEvaluationRequest(
+      ownerId,
+      userId,
+      validation.data,
+      session!.user.fullname,
+      session!.user.email,
+      session!.user.role
+    );
 
     return NextResponse.json(result);
   } catch (error) {

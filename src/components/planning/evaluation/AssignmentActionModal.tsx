@@ -1,8 +1,8 @@
 'use client';
 
 import axios from 'axios';
-import { Loader2, Send } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { Filter, Loader2, Send } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
@@ -54,6 +54,7 @@ export function AssignmentActionModal({
     const [users, setUsers] = useState<OrgUser[]>([]);
     const [toUserId, setToUserId] = useState('');
     const [message, setMessage] = useState('');
+    const [roleFilter, setRoleFilter] = useState<string>('all');
 
     const [isSending, setIsSending] = useState(false);
     const [loadingUsers, setLoadingUsers] = useState(false);
@@ -61,6 +62,7 @@ export function AssignmentActionModal({
     useEffect(() => {
         if (!open) return;
         setToUserId('');
+        setRoleFilter('all');
         setMessage(defaultMessage(task));
         loadUsers();
     }, [open, task.task_id]);
@@ -80,6 +82,19 @@ export function AssignmentActionModal({
             setLoadingUsers(false);
         }
     }
+
+    const uniqueRoles = useMemo(() => {
+        const roles = new Set<string>();
+        users.forEach(u => {
+            if (u.user_role) roles.add(u.user_role);
+        });
+        return Array.from(roles).sort();
+    }, [users]);
+
+    const filteredUsers = useMemo(() => {
+        if (roleFilter === 'all') return users;
+        return users.filter(u => u.user_role === roleFilter);
+    }, [users, roleFilter]);
 
 
 
@@ -113,7 +128,7 @@ export function AssignmentActionModal({
 
     return (
         <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-            <DialogContent className="max-w-lg">
+            <DialogContent className="w-full sm:max-w-3xl md:max-w-4xl lg:max-w-5xl xl:max-w-6xl max-h-[90vh] overflow-y-auto overflow-x-hidden">
                 <DialogHeader>
                     <div className="flex items-center gap-2">
                         <div>
@@ -150,24 +165,44 @@ export function AssignmentActionModal({
                                 Loading users…
                             </div>
                         ) : (
-                            <Select value={toUserId} onValueChange={setToUserId}>
-                                <SelectTrigger className="h-8 text-xs">
-                                    <SelectValue placeholder="Select recipient" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {users.map((u) => (
-                                        <SelectItem
-                                            key={u.user_id}
-                                            value={String(u.user_id)}
-                                            className="text-xs"
-                                        >
-                                            {u.first_name} {u.last_name}
-                                            {u.user_role ? ` — ${u.user_role}` : ''}
-                                            <span className="text-slate-400 ml-1">({u.email})</span>
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                            <>
+                                {uniqueRoles.length > 0 && (
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <Filter className="h-3.5 w-3.5 text-slate-400" />
+                                        <Select value={roleFilter} onValueChange={setRoleFilter}>
+                                            <SelectTrigger className="h-7 text-xs w-40">
+                                                <SelectValue placeholder="Filter by role" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="all" className="text-xs">All Roles</SelectItem>
+                                                {uniqueRoles.map(role => (
+                                                    <SelectItem key={role} value={role} className="text-xs">
+                                                        {role}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                )}
+                                <Select value={toUserId} onValueChange={setToUserId}>
+                                    <SelectTrigger className="h-8 text-xs">
+                                        <SelectValue placeholder="Select recipient" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {filteredUsers.map((u) => (
+                                            <SelectItem
+                                                key={u.user_id}
+                                                value={String(u.user_id)}
+                                                className="text-xs"
+                                            >
+                                                {u.first_name} {u.last_name}
+                                                {u.user_role ? ` — ${u.user_role}` : ''}
+                                                <span className="text-slate-400 ml-1">({u.email})</span>
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </>
                         )}
                     </div>
 

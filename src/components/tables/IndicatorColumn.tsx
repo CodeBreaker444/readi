@@ -3,7 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { SpiKpiDefinition } from "@/config/types/safetyMng";
 import { createColumnHelper } from "@tanstack/react-table";
-import { ClipboardList, Pencil, RefreshCw, ToggleLeft, ToggleRight } from "lucide-react";
+import { ArrowDown, ArrowUp, ClipboardList, Pencil, RefreshCw, ToggleLeft, ToggleRight } from "lucide-react";
 
 const columnHelper = createColumnHelper<SpiKpiDefinition>();
 
@@ -52,14 +52,22 @@ export const getIndicatorColumns = (
     columnHelper.display({
       id: "target",
    header: t('safety.spiKpi.table.target'),
-      cell: ({ row }) => (
-        <div className="font-mono text-sm">
-          <span className={isDark ? "text-gray-200" : "text-gray-700"}>{row.original.target_value}</span>
-          <span className={`text-[10px] ml-1 italic ${isDark ? "text-gray-500" : "text-gray-400"}`}>
-            {row.original.unit}
-          </span>
-        </div>
-      ),
+      cell: ({ row }) => {
+        const lowerIsBetter = row.original.target_direction === 'LOWER_IS_BETTER'
+        return (
+          <div className="font-mono text-sm flex items-center gap-1">
+            <span className={isDark ? "text-gray-200" : "text-gray-700"}>{row.original.target_value}</span>
+            <span className={`text-[10px] italic ${isDark ? "text-gray-500" : "text-gray-400"}`}>
+              {row.original.unit}
+            </span>
+            <span title={lowerIsBetter ? t('safety.spiKpi.form.lowerIsBetter') : t('safety.spiKpi.form.higherIsBetter')}>
+              {lowerIsBetter
+                ? <ArrowDown className="w-3 h-3 text-gray-400" />
+                : <ArrowUp className="w-3 h-3 text-gray-400" />}
+            </span>
+          </div>
+        )
+      },
     }),
     columnHelper.accessor("is_active", {
     header: t('safety.spiKpi.table.status'),

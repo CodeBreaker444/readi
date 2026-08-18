@@ -1,6 +1,7 @@
 import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import type { Checklist, ChecklistCreatePayload, ChecklistUpdatePayload } from '@/config/types/checklist';
+import { logEvent } from '@/backend/services/auditLog/audit-log';
 
 export async function getChecklistsByOwner(
   ownerId: number,
@@ -70,6 +71,9 @@ export async function saveChecklistResult(
 
 export async function createChecklist(
   payload: ChecklistCreatePayload,
+  userName?: string,
+  userEmail?: string,
+  userRole?: string
 ): Promise<{ code: number; dataRows: number; data: Checklist | null }> {
   let parsedJson: Prisma.InputJsonValue;
   try {
@@ -95,11 +99,29 @@ export async function createChecklist(
       checklist_json: parsedJson,
     },
   });
+
+  logEvent({
+    eventType: 'CREATE',
+    entityType: 'checklist',
+    entityId: row.checklist_id,
+    description: `Checklist '${row.checklist_code}' - ${row.checklist_desc} created`,
+    userId: payload.fk_user_id ?? undefined,
+    userName: userName,
+    userEmail: userEmail,
+    userRole: userRole,
+    ownerId: row.fk_owner_id ?? 0,
+    metadata: { checklistCode: row.checklist_code },
+  });
+
   return { code: 1, dataRows: 1, data: row as unknown as Checklist };
 }
 
 export async function updateChecklist(
   payload: ChecklistUpdatePayload,
+  userId?: number,
+  userName?: string,
+  userEmail?: string,
+  userRole?: string
 ): Promise<{ dataRows: number; data: Checklist | null }> {
   let parsedJson: Prisma.InputJsonValue;
   try {
@@ -120,21 +142,52 @@ export async function updateChecklist(
       fk_user_id: payload.fk_user_id ?? null,
     },
   });
+
+  logEvent({
+    eventType: 'UPDATE',
+    entityType: 'checklist',
+    entityId: row.checklist_id,
+    description: `Checklist '${row.checklist_code}' - ${row.checklist_desc} updated`,
+    userId: userId,
+    userName: userName,
+    userEmail: userEmail,
+    userRole: userRole,
+    ownerId: payload.fk_owner_id,
+    metadata: { checklistCode: row.checklist_code },
+  });
+
   return { dataRows: 1, data: row as unknown as Checklist };
 }
 
 export async function deleteChecklist(
   ownerId: number,
   checklistId: number,
+  userId?: number,
+  userName?: string,
+  userEmail?: string,
+  userRole?: string
 ): Promise<{ code: number; message: string; dataRows: number; data: null }> {
   const existing = await prisma.checklist.findFirst({
     where: { checklist_id: checklistId, fk_owner_id: ownerId },
-    select: { checklist_active: true },
+    select: { checklist_active: true, checklist_code: true, checklist_desc: true },
   });
   if (!existing) throw new Error('Checklist not found or does not belong to the owner.');
   if (existing.checklist_active === 'Y') {
     throw new Error('Cannot delete an active checklist. Please deactivate it first.');
   }
   await prisma.checklist.deleteMany({ where: { checklist_id: checklistId, fk_owner_id: ownerId } });
+
+  logEvent({
+    eventType: 'DELETE',
+    entityType: 'checklist',
+    entityId: checklistId,
+    description: `Checklist '${existing.checklist_code}' - ${existing.checklist_desc} deleted`,
+    userId: userId,
+    userName: userName,
+    userEmail: userEmail,
+    userRole: userRole,
+    ownerId: ownerId,
+  });
+
   return { code: 1, message: 'Checklist deleted successfully', dataRows: 1, data: null };
 }

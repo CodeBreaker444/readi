@@ -61,6 +61,11 @@ function getFileIcon(filename: string) {
     return <File className="w-4 h-4 text-slate-400" />;
 }
 
+function getFileExtension(filename: string): string {
+    const ext = filename.split('.').pop()?.toLowerCase() ?? '';
+    return ext ? `.${ext}` : '';
+}
+
 function formatBytes(bytes: number): string {
     if (!bytes || bytes === 0) return '—';
     if (bytes < 1024) return `${bytes} B`;
@@ -238,15 +243,20 @@ export function FilesDownloadModal({
                                         {getFileIcon(file.filename)}
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <p
-                                            className={cn(
-                                                'text-xs font-medium truncate',
-                                                isDark ? 'text-slate-200' : 'text-slate-800',
-                                            )}
-                                            title={file.filename}
-                                        >
-                                            {file.filename}
-                                        </p>
+                                        <div className="flex items-center gap-2">
+                                            <p
+                                                className={cn(
+                                                    'text-xs font-medium truncate',
+                                                    isDark ? 'text-slate-200' : 'text-slate-800',
+                                                )}
+                                                title={file.filename}
+                                            >
+                                                {file.filename}
+                                            </p>
+                                            <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 font-mono">
+                                                {getFileExtension(file.filename)}
+                                            </Badge>
+                                        </div>
                                         <div className="flex items-center gap-2 mt-0.5">
                                             <span className={cn('text-[10px]', isDark ? 'text-slate-500' : 'text-slate-400')}>
                                                 {formatBytes(file.filesize)}
@@ -306,9 +316,16 @@ export function FilesDownloadModal({
                                             {getFileIcon(doc.file_name ?? '')}
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <p className={cn('text-xs font-medium truncate', isDark ? 'text-slate-200' : 'text-slate-800')} title={doc.title}>
-                                                {doc.title}
-                                            </p>
+                                            <div className="flex items-center gap-2">
+                                                <p className={cn('text-xs font-medium truncate', isDark ? 'text-slate-200' : 'text-slate-800')} title={doc.title}>
+                                                    {doc.title}
+                                                </p>
+                                                {doc.file_name && (
+                                                    <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 font-mono">
+                                                        {getFileExtension(doc.file_name)}
+                                                    </Badge>
+                                                )}
+                                            </div>
                                             <div className="flex items-center gap-2 mt-0.5">
                                                 {(doc.component_code || doc.component_name) && (
                                                     <span className={cn('text-[10px] font-mono', isDark ? 'text-slate-500' : 'text-slate-400')}>

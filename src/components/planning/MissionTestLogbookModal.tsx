@@ -10,6 +10,7 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { useAuthorization } from "@/components/authorization/AuthorizationProvider";
 import { FeatureGate } from "@/components/permissions/FeatureGate";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -66,6 +67,7 @@ export default function MissionTestLogbookModal({
     onStatusChanged,
 }: MissionTestLogbookModalProps) {
     const { t } = useTranslation();
+    const { requireAuthorization } = useAuthorization();
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const [tests, setTests] = useState<MissionTestRow[]>([]);
@@ -99,7 +101,7 @@ export default function MissionTestLogbookModal({
                 axios.get("/api/evaluation/planning/pilot"),
             ]);
             setTests(testsRes.data.data ?? []);
-            setPilots(pilotsRes.data.data ?? []);
+            setPilots((pilotsRes.data.data ?? []).filter((p: PilotUser) => p.userActive === 'Y'));
         } catch (err) {
             toast.error(t("planning.testLogbook.loadError"));
         } finally {
@@ -115,9 +117,23 @@ export default function MissionTestLogbookModal({
     }, [open, loadData, missionPlanningActive]);
 
     const handleFieldChange = (field: string, value: string) => {
-        setForm((prev) => ({ ...prev, [field]: value }));
+        setForm((prev) => {
+            const updated = { ...prev, [field]: value };
+            // Clear observer if PIC is set to the same value
+            if (field === "fk_pic_id" && value === prev.fk_observer_id) {
+                updated.fk_observer_id = "";
+            }
+            // Clear PIC if observer is set to the same value
+            if (field === "fk_observer_id" && value === prev.fk_pic_id) {
+                updated.fk_pic_id = "";
+            }
+            return updated;
+        });
         setErrors((prev) => ({ ...prev, [field]: "" }));
     };
+
+    const availablePilots = pilots.filter((p: PilotUser) => String(p.user_id) !== form.fk_observer_id);
+    const availableObservers = pilots.filter((p: PilotUser) => String(p.user_id) !== form.fk_pic_id);
 
     const validateForm = (): boolean => {
         const newErrors: Record<string, string> = {};
@@ -126,14 +142,18 @@ export default function MissionTestLogbookModal({
             newErrors.fk_pic_id = t("planning.testLogbook.picRequired");
         if (!form.fk_observer_id || form.fk_observer_id === "0")
             newErrors.fk_observer_id = t("planning.testLogbook.observerRequired");
-        if (form.fk_pic_id && form.fk_observer_id && form.fk_pic_id === form.fk_observer_id)
-            newErrors.fk_observer_id = t("planning.testLogbook.observerDiff");
         if (!form.mission_test_code.trim())
             newErrors.mission_test_code = t("planning.testLogbook.testCodeRequired");
         if (!form.mission_test_date_start)
             newErrors.mission_test_date_start = t("planning.testLogbook.startDateRequired");
         if (!form.mission_test_date_end)
             newErrors.mission_test_date_end = t("planning.testLogbook.endDateRequired");
+        if (
+            form.mission_test_date_start &&
+            form.mission_test_date_end &&
+            form.mission_test_date_end < form.mission_test_date_start
+        )
+            newErrors.mission_test_date_end = t("planning.testLogbook.endDateBeforeStart");
 
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
@@ -183,6 +203,18 @@ export default function MissionTestLogbookModal({
 
     const handleDeleteTest = async () => {
         if (testIdToDelete === null) return;
+
+        try {
+            await requireAuthorization({
+                actionType: 'delete',
+                entityType: 'mission_test',
+                entityId: String(testIdToDelete),
+                label: `Delete Test Logbook Entry: #${testIdToDelete}`,
+            });
+        } catch {
+            return;
+        }
+
         try {
             await axios.post("/api/evaluation/mission/delete-test", {
                 test_id: testIdToDelete,
@@ -265,7 +297,7 @@ export default function MissionTestLogbookModal({
                                                     <SelectValue placeholder={t("planning.testLogbook.selectPic")} />
                                                 </SelectTrigger>
                                                 <SelectContent className={isDark ? "bg-slate-900 border-slate-800 text-white" : ""}>
-                                                    {pilots.map((p) => (
+                                                    {availablePilots.map((p: PilotUser) => (
                                                         <SelectItem key={p.user_id} value={String(p.user_id)}>
                                                             {p.fullname}
                                                         </SelectItem>
@@ -282,7 +314,7 @@ export default function MissionTestLogbookModal({
                                                     <SelectValue placeholder={t("planning.testLogbook.selectObserver")} />
                                                 </SelectTrigger>
                                                 <SelectContent className={isDark ? "bg-slate-900 border-slate-800 text-white" : ""}>
-                                                    {pilots.map((p) => (
+                                                    {availableObservers.map((p: PilotUser) => (
                                                         <SelectItem key={p.user_id} value={String(p.user_id)}>
                                                             {p.fullname}
                                                         </SelectItem>
@@ -322,7 +354,7 @@ export default function MissionTestLogbookModal({
 
                                         <div className="space-y-2">
                                             <Label className={isDark ? "text-slate-300" : ""}>{t("planning.testLogbook.endDate")} <span className="text-red-500">*</span></Label>
-                                            <Input type="date" className={`h-11 ${errors.mission_test_date_end ? "border-red-500" : ""} ${isDark ? "bg-slate-950 border-slate-800 text-white" : ""}`} value={form.mission_test_date_end} onChange={(e) => handleFieldChange("mission_test_date_end", e.target.value)} />
+                                            <Input type="date" min={form.mission_test_date_start || undefined} className={`h-11 ${errors.mission_test_date_end ? "border-red-500" : ""} ${isDark ? "bg-slate-950 border-slate-800 text-white" : ""}`} value={form.mission_test_date_end} onChange={(e) => handleFieldChange("mission_test_date_end", e.target.value)} />
                                             {errors.mission_test_date_end && <p className="text-xs text-red-500">{errors.mission_test_date_end}</p>}
                                         </div>
 
@@ -362,7 +394,7 @@ export default function MissionTestLogbookModal({
                                                     </TableCell>
                                                 </TableRow>
                                             ) : (
-                                                tests.map((test) => (
+                                                tests.map((test: MissionTestRow) => (
                                                     <TableRow key={test.test_id} className={`transition-colors ${isDark ? "border-slate-800 hover:bg-slate-800/40" : "hover:bg-muted/50"}`}>
                                                         <TableCell className="font-mono font-medium text-violet-500">{test.test_code}</TableCell>
                                                         <TableCell>

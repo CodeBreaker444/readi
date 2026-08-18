@@ -60,10 +60,10 @@ export default function ViewComponentModal({ open, component, systemCode, onClos
         }
     };
 
-    const hasMaintCycle = component.maintenance_cycle ||
+    const hasMaintCycle = !!(component.maintenance_cycle ||
         component.maintenance_cycle_hour ||
         component.maintenance_cycle_day ||
-        component.maintenance_cycle_flight;
+        component.maintenance_cycle_flight);
 
     return (
         <Dialog open={open} onOpenChange={onClose}>
@@ -142,9 +142,9 @@ export default function ViewComponentModal({ open, component, systemCode, onClos
                                     {component.certifications.sts_declarations && (
                                         <div>
                                             <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">STS Declarations</p>
-                                            {Array.isArray(component.component_metadata?.sts_declarations) ? (
+                                            {Array.isArray(component.sts_declarations) ? (
                                                 <div className="space-y-2">
-                                                    {component.component_metadata.sts_declarations.map((sts: any, idx: number) => (
+                                                    {component.sts_declarations.map((sts: any, idx: number) => (
                                                         <div key={idx} className="flex items-center justify-between p-2 bg-slate-50 rounded border border-slate-200">
                                                             <div className="flex-1">
                                                                 <p className="text-xs font-medium text-slate-700">{sts.stsType}</p>
@@ -193,7 +193,7 @@ export default function ViewComponentModal({ open, component, systemCode, onClos
                         </>
                     )}
 
-                    {(component.component_purchase_date || component.component_guarantee_day) && (
+                    {!!(component.component_purchase_date || component.component_guarantee_day) && (
                         <>
                             <div className="border-t border-slate-100" />
                             <div>

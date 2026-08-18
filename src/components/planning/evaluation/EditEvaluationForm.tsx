@@ -22,6 +22,13 @@ interface Props {
   onUpdated?: (ev: Evaluation) => void;
 }
 
+// API returns full ISO datetimes (e.g. "2026-08-06T00:00:00.000Z"); this field only
+// ever needs the date part.
+function toDateOnly(value?: string | null): string {
+  if (!value) return '';
+  return value.slice(0, 10);
+}
+
 export function EditEvaluationForm({ evaluation, onUpdated }: Props) {
   const { t } = useTranslation();
   const [form, setForm] = useState({
@@ -43,7 +50,7 @@ export function EditEvaluationForm({ evaluation, onUpdated }: Props) {
         rawStatus === 'COMPLETED'   ? 'DONE'     :
         rawStatus as EvaluationStatus;
     setForm({
-      evaluation_request_date: evaluation.evaluation_request_date ?? '',
+      evaluation_request_date: toDateOnly(evaluation.evaluation_request_date),
       evaluation_year: String(evaluation.evaluation_year ?? ''),
       evaluation_desc: evaluation.evaluation_desc ?? '',
       evaluation_offer: evaluation.evaluation_offer ?? '',
@@ -97,9 +104,9 @@ export function EditEvaluationForm({ evaluation, onUpdated }: Props) {
         <div className="space-y-1.5">
           <Label className="text-xs font-medium text-slate-500">{t('planning.form.requestDate')}</Label>
           <Input
+            type="date"
             value={form.evaluation_request_date}
             onChange={(e) => handleChange('evaluation_request_date', e.target.value)}
-            placeholder="DD/MM/YYYY"
             className="h-8 text-sm"
           />
         </div>

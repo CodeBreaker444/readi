@@ -36,6 +36,7 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { EditEvaluationForm } from './EditEvaluationForm';
 import { EvaluationCommunicationModal } from './EvaluationCommunicationModal';
+import { EvaluationCommunicationTable } from './EvaluationCommunicationTable';
 import { EvaluationDetailFilePanel } from './EvaluationDetailFilePanel';
 import { EvaluationMapPanel } from './EvaluationMapPanel';
 import { EvaluationDetailSkeleton } from './EvaluationSkeleton';
@@ -146,7 +147,7 @@ export const EvaluationDetailContent: FC<Props> = ({ ownerId }) => {
                             </div>
                         </div>
                         <div className="flex items-center gap-2">
-                            <Button
+                            {/* <Button
                                 size="sm"
                                 variant="outline"
                                 className="gap-1.5 text-xs"
@@ -154,7 +155,7 @@ export const EvaluationDetailContent: FC<Props> = ({ ownerId }) => {
                             >
                                 <MessageSquarePlus className="h-3.5 w-3.5" />
                                 {t('planning.evaluation.newCommunication')}
-                            </Button>
+                            </Button> */}
                         </div>
                     </div>
                 </div>
@@ -245,6 +246,8 @@ export const EvaluationDetailContent: FC<Props> = ({ ownerId }) => {
                             />
                         </CardContent>
                     </Card>
+
+                    <EvaluationCommunicationTable evaluationId={evaluationId} clientId={clientId} />
 
                     <Card className={card}>
                         <CardHeader className="pb-3">

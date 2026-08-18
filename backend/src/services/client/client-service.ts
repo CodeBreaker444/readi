@@ -57,11 +57,11 @@ export interface UpdateClientInput extends Partial<CreateClientInput> {
   client_active?: string;
 }
 
-export async function listClients(owner_id?: number): Promise<{ code: number; data?: ClientData[]; error?: string }> {
+export async function listClients(owner_id?: number, activeOnly = true): Promise<{ code: number; data?: ClientData[]; error?: string }> {
   try {
     const rows = await prisma.client.findMany({
       where: {
-        client_active: 'Y',
+        ...(activeOnly ? { client_active: 'Y' } : {}),
         ...(owner_id ? { fk_owner_id: owner_id } : {}),
       },
       include: {

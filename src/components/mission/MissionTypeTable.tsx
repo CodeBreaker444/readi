@@ -120,8 +120,8 @@ export default function MissionTypeTable({ data, onDelete, onEdit, isDark }: Mis
       <div className={`border-t flex items-center justify-between px-3 ${isDark ? 'border-white/[0.06]' : 'border-gray-100'}`}>
         <ExportButtons
           filename={t('missionType.table.exportFilename')}
-          headers={['ID', t('missionType.table.colCode'), t('missionType.table.colName'), t('missionType.table.colLabel')]}
-          rows={data.map(d => [d.id, d.code, d.name, d.description, d.label])}
+          headers={['ID', t('missionType.table.colCode'), t('missionType.table.colName'), t('missionType.table.colDescription')]}
+          rows={data.map(d => [d.id, d.code, d.name, d.description])}
         />
         <TablePagination table={table} />
       </div>

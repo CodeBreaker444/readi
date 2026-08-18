@@ -1,5 +1,6 @@
 'use client'
 
+import { useAuthorization } from '@/components/authorization/AuthorizationProvider';
 import { ChecklistPreview } from '@/components/checklist/ChecklistUi';
 import { ChecklistForm, Modal } from '@/components/organization/ChecklistUi';
 import { getColumns } from '@/components/tables/CheckListColumn';
@@ -37,6 +38,7 @@ const emptyForm: FormData = {
 
 export default function ChecklistPage() {
   const { t } = useTranslation();
+  const { requireAuthorization } = useAuthorization();
   const { isDark } = useTheme();
   const [checklists, setChecklists] = useState<Checklist[]>([])
   const [loading, setLoading] = useState(true)
@@ -109,6 +111,18 @@ export default function ChecklistPage() {
 
   const handleDelete = async () => {
     if (!confirmDelete) return
+
+    try {
+      await requireAuthorization({
+        actionType: 'delete',
+        entityType: 'checklist',
+        entityId: String(confirmDelete.checklist_id),
+        label: `Delete Checklist: ${confirmDelete.checklist_code}`,
+      })
+    } catch {
+      return
+    }
+
     setSubmitting(true)
     try {
       const res = await axios.delete(`/api/organization/checklist/${confirmDelete.checklist_id}`)

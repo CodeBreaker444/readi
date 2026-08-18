@@ -56,6 +56,10 @@ export async function getOperationLogbookList(
     where,
     select: {
       pilot_mission_id: true,
+      mission_code: true,
+      mission_name: true,
+      mission_description: true,
+      location: true,
       fk_mission_status_id: true,
       fk_client_id: true,
       actual_start: true,
@@ -95,6 +99,10 @@ export async function getOperationLogbookList(
 
     return {
       mission_id: row.pilot_mission_id,
+      mission_code: row.mission_code ?? '',
+      mission_name: row.mission_name ?? '',
+      mission_description: row.mission_description ?? '',
+      location: row.location ?? '',
       date_start: startDT ? startDT.toISOString().split('T')[0] : '',
       date_end: endDT ? endDT.toISOString().split('T')[0] : '',
       time_start: startDT ? startDT.toTimeString().slice(0, 5) : '',

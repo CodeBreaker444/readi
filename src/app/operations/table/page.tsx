@@ -1,5 +1,6 @@
 'use client';
 
+import { useAuthorization } from '@/components/authorization/AuthorizationProvider';
 import GeneralCommunicationDialog from '@/components/operation/GeneralCommunicationDialog';
 import ImportOperationDialog from '@/components/operation/ImportOperationDialog';
 import { NewOperationModal } from '@/components/operation/NewOperationModal';
@@ -68,6 +69,8 @@ export interface Operation {
   planning_name?: string | null;
   visual_observer_ids?: Array<{ user_id: number; name: string }> | null;
   flight_mode?: string | null;
+  op_type?: string | null;
+  mission_group_label?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -96,6 +99,7 @@ export default function OperationsPage() {
   const { isDark } = useTheme();
   const { timezone } = useTimezone();
   const { t } = useTranslation();
+  const { requireAuthorization } = useAuthorization();
 
   const [operations, setOperations] = useState<Operation[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -196,6 +200,18 @@ const table = useReactTable({
 
   async function handleBatchDelete() {
     if (!selectedRows.length) return;
+
+    try {
+      await requireAuthorization({
+        actionType: 'delete',
+        entityType: 'operation',
+        label: `Delete ${selectedRows.length} Operation(s)`,
+        details: { pilot_mission_ids: selectedRows.map((op) => op.pilot_mission_id) },
+      });
+    } catch {
+      return;
+    }
+
     setBatchDeleting(true);
     try {
       await Promise.all(

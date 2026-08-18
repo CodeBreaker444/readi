@@ -33,7 +33,8 @@
     "today": "Heute",
     "yesterday": "Gestern",
     "daysAgo": "Vor {{count}} Tagen",
-    "monthsAgo": "Vor {{count}} Monaten"
+    "monthsAgo": "Vor {{count}} Monaten",
+    "viewDetails": "Details anzeigen"
   },
   "topbar": {
     "askAnything": "Frag etwas…",
@@ -140,6 +141,7 @@
     "manager": "Manager",
     "viewer": "Betrachter",
     "username": "Benutzername",
+    "department": "Abteilung",
     "code": "Code",
     "permissions": "Berechtigungen",
     "updatePassword": "Passwort aktualisieren",
@@ -210,6 +212,7 @@
       "allRoles": "Alle Rollen",
       "allStatus": "Alle Status",
       "allCompanies": "Alle Unternehmen",
+      "allDepartments": "Alle Abteilungen",
       "noFound": "Keine Benutzer gefunden",
       "noFoundHint": "Passen Sie Ihre Filter an",
       "deleteTitle": "Benutzer löschen",
@@ -265,6 +268,7 @@
     "recentFlights": "Letzte Fluge",
     "training": "Schulung",
     "courses": "Kurse",
+    "trainingEmailNotifications": "E-Mail-Benachrichtigungen",
     "notifications": "Benachrichtigungen",
     "documentRepository": "Dokumentenablage",
     "auditLogs": "Audit-Protokolle",
@@ -518,7 +522,7 @@
     "table": {
       "colName": "Name",
       "colCode": "Code",
-      "colLabel": "Bezeichnung",
+      "colDescription": "Beschreibung",
       "colActions": "Aktionen",
       "emptyTitle": "Keine Typen definiert",
       "emptySubtitle": "Erstellen Sie Ihren ersten Missionstyp, um zu beginnen",
@@ -531,8 +535,6 @@
       "descriptionPlaceholder": "Missionstyp-Beschreibung eingeben",
       "codeLabel": "Code",
       "codePlaceholder": "z.B. SURV",
-      "labelLabel": "Bezeichnung",
-      "labelPlaceholder": "Missionstyp-Bezeichnung eingeben",
       "saving": "Speichern...",
       "adding": "Hinzufugen...",
       "saveChanges": "Anderungen speichern",
@@ -676,18 +678,16 @@
       "notAssigned": "Nicht zugewiesen"
     },
     "missionStatus": {
-      "completed": "Abgeschlossen",
-      "waiting": "Warten",
-      "left": "Verlassen"
+      "unknown": "Unbekannt"
     },
     "missions": {
       "past": {
-        "title": "Letzte 10 Missionen",
+        "title": "Letzte Missionen",
         "eyebrow": "Verlauf",
         "empty": "Keine vergangenen Missionen"
       },
       "next": {
-        "title": "Nächste 10 Missionen",
+        "title": "Nächste Missionen",
         "eyebrow": "Kommend",
         "empty": "Keine kommenden Missionen"
       },
@@ -862,7 +862,8 @@
       "savedSuccess": "Checkliste gespeichert",
       "saveFailed": "Checklisten-Ergebnis konnte nicht gespeichert werden",
       "checklistNotFound": "Checkliste nicht gefunden",
-      "noChecklistDef": "Keine Checklistendefinition für Code vorhanden"
+      "noChecklistDef": "Keine Checklistendefinition für Code vorhanden",
+      "saving": "Wird gespeichert..."
     },
     "evaluationRequest": {
       "pageTitle": "Planung · Neue Bewertungsanfrage",
@@ -894,6 +895,8 @@
       "missionCode": "Missionscode",
       "missionOperationLimits": "Missionsbetriebsgrenzen",
       "drone": "Drohne",
+      "system": "System",
+      "selectSystem": "System auswählen",
       "loadingClients": "Kunden werden geladen...",
       "selectClient": "Kunden auswählen",
       "loadingProcedures": "Verfahren werden geladen...",
@@ -931,6 +934,7 @@
       "selectLucProcedure": "Bitte wählen Sie ein Verfahren aus.",
       "selectPic": "Bitte weisen Sie einen Pilot in Command zu.",
       "enterDescription": "Bitte geben Sie eine Beschreibung ein",
+      "descriptionMinLength": "Die Beschreibung muss mindestens 4 Zeichen lang sein",
       "descriptionRequired": "Beschreibung ist erforderlich.",
       "requestDateRequired": "Anfragedatum ist erforderlich.",
       "clientRequired": "Bitte wählen Sie einen Kunden aus",
@@ -947,7 +951,8 @@
       "saveChanges": "Änderungen speichern",
       "searchLogbook": "Logbuch durchsuchen",
       "edit": "Bearbeiten",
-      "delete": "Löschen"
+      "delete": "Löschen",
+      "view": "Ansehen"
     },
     "modal": {
       "addPlanningTitle": "Planungsantrag hinzufügen",
@@ -1312,7 +1317,8 @@
       "observerDiff": "Beobachter muss sich vom Pilot in Command unterscheiden",
       "testCodeRequired": "Testcode ist erforderlich",
       "startDateRequired": "Startdatum ist erforderlich",
-      "endDateRequired": "Enddatum ist erforderlich"
+      "endDateRequired": "Enddatum ist erforderlich",
+      "endDateBeforeStart": "Enddatum darf nicht vor dem Startdatum liegen"
     },
     "tasks": {
       "title": "Aufgabentabelle",
@@ -1386,6 +1392,8 @@
     },
     "communication": {
       "title": "Kommunikation senden",
+      "subtitle": "Für diese Bewertung gesendete Kommunikation",
+      "noCommunications": "Noch keine Kommunikation gesendet",
       "newCommunication": "Neue Kommunikation",
       "to": "An",
       "selected": "ausgewählt",
@@ -1412,7 +1420,13 @@
       "messageSingle": "Nachricht darf nicht leer sein",
       "sentSuccess": "Kommunikation gesendet",
       "sendError": "Senden fehlgeschlagen",
-      "loadError": "Benutzer konnten nicht geladen werden"
+      "loadError": "Benutzer konnten nicht geladen werden",
+      "sender": "Absender",
+      "status": "Status",
+      "sentAt": "Gesendet am",
+      "file": "Datei",
+      "download": "Herunterladen",
+      "noFile": "Keine Datei"
     },
     "assignment": {
       "title": "Zuweisungsaktion",
@@ -1431,6 +1445,7 @@
       "loadError": "Benutzer konnten nicht geladen werden"
     },
     "editPlanning": {
+      "editTitle": "Planungsanfrage bearbeiten",
       "selectStatus": "Status auswählen",
       "selectResult": "Ergebnis auswählen"
     },
@@ -1537,6 +1552,7 @@
         "stepsCompleteNotFinalized": "Schritte abgeschlossen, nicht finalisiert",
         "assignment": "Zuweisung",
         "checklist": "Checkliste",
+        "communication": "Kommunikation",
         "manageProcedure": "Verfahren verwalten",
         "missionDetails": "Missionsdetails",
         "client": "Kunde",
@@ -1565,6 +1581,7 @@
         "pending": "Ausstehend",
         "assignment": "Zuweisung",
         "checklist": "Checkliste",
+        "communication": "Kommunikation",
         "complete": "✓ Abgeschlossen",
         "incomplete": "✗ Unvollständig"
       }
@@ -1673,8 +1690,13 @@
         "daysTracked": "Tage werden automatisch ab dem letzten Wartungsdatum erfasst.",
         "overdue": "Wartung ist überfällig — Wartung bald einplanen",
         "autoSynced": "Auto-synchronisiert",
+        "auto": "Automatisch",
+        "manual": "Manuell",
         "manualInput": "Manuelle Eingabe",
-        "cycles": "Zyklen"
+        "cycles": "Zyklen",
+        "alreadyRecorded": "Für diese Mission wurde die Wartung bereits erfasst und kann nicht erneut aktualisiert werden.",
+        "recordedUsage": "Erfasste Nutzung",
+        "noUsageRecorded": "Keine Nutzung für diese Komponente erfasst."
       },
       "logs": {
         "attachedLogs": "Angehängte Protokolle",
@@ -1747,7 +1769,8 @@
         "attachSuccess": "Flugprotokoll von Control Center angehängt",
         "autoSyncSuccess_one": "Nutzung für {{count}} Komponente aus GUTMA ausgefüllt",
         "autoSyncSuccess_other": "Nutzung für {{count}} Komponenten aus GUTMA ausgefüllt",
-        "postFlightSuccess": "Nachflugdaten gespeichert"
+        "postFlightSuccess": "Nachflugdaten gespeichert",
+        "maintenanceAlreadyApplied": "Für diese Mission wurde die Wartung bereits erfasst"
       }
     },
     "dialog": {
@@ -1877,7 +1900,8 @@
         "cancel": "Abbrechen",
         "delete": "Löschen",
         "success": "Vorgang erfolgreich gelöscht",
-        "error": "Löschen fehlgeschlagen"
+        "error": "Löschen fehlgeschlagen",
+        "revertMaintenance": "Die von dieser Mission an ihren Komponenten erfassten Wartungsstunden/-flüge rückgängig machen"
       }
     },
     "importOperation": {
@@ -1905,6 +1929,8 @@
         "logFile": "Protokolldatei",
         "flytbaseWindow": "Control Center Fenster",
         "selectFlightLog": "Flugprotokoll auswählen",
+        "timeWindow": "Zeitfenster",
+        "selectFlight": "Flug auswählen",
         "missionCode": "Missionscode",
         "droneSystem": "Drohnensystem",
         "missionCategory": "Missionskategorie",
@@ -1956,7 +1982,8 @@
         "noPlanningAvailable": "Keine Planung verfügbar",
         "selectMissionPlanning": "Missionsplanung auswählen…",
         "noMissionPlanningAvailable": "Keine Missionsplanung verfügbar",
-        "selectVisualObserver": "Visuellen Beobachter auswählen…"
+        "selectVisualObserver": "Visuellen Beobachter auswählen…",
+        "searchFlights": "Flüge nach Namen suchen…"
       },
       "info": {
         "gutmaAutoExtract": "Höhe, Distanz und Zeitstempel werden automatisch aus der GUTMA-Protokolldatei extrahiert. Der Missionscode wird automatisch generiert, sofern Sie unten keinen eigenen festlegen.",
@@ -1977,7 +2004,12 @@
         "inMaintenance": "Wartung",
         "maintenanceDue": "Wartung Fällig",
         "snMismatch": "SN-Abweichung",
-        "noSystemWithSerial": "Es ist kein System mit der Seriennummer {{serial}} vorhanden"
+        "noSystemWithSerial": "Es ist kein System mit der Seriennummer {{serial}} vorhanden",
+        "noSerialDetected": "In dieser Protokolldatei konnte keine Seriennummer erkannt werden, daher kann das System nicht automatisch ausgewählt werden.",
+        "systemAutoSelected": "System automatisch anhand der Seriennummer im Protokoll ausgewählt: {{name}}",
+        "systemLockedForImport": "Das System wird automatisch anhand der Seriennummer im Protokoll bestimmt und kann beim Import nicht manuell geändert werden.",
+        "clickToFetchFlights": "Klicken Sie auf \"Flüge aktualisieren\", um Flüge vom Control Center zu laden",
+        "noFlightsMatchSearch": "Keine Flüge entsprechen Ihrer Suche"
       },
       "review": {
         "client": "Kunde",
@@ -2007,14 +2039,18 @@
         "done": "Fertig",
         "back":"Zurück"
       },
+      "errors": {
+        "endDateBeforeStart": "Enddatum muss nach oder am Startdatum liegen",
+        "datesRequired": "Sowohl Start- als auch Enddatum sind für wiederkehrende Missionen erforderlich"
+      },
       "toast": {
         "loadClientsError": "Kunden konnten nicht geladen werden",
         "loadDronesError": "Drohnen konnten nicht geladen werden",
         "loadMissionOptionsError": "Missionsoptionen konnten nicht geladen werden",
         "loadPilotsError": "Piloten konnten nicht geladen werden",
-        "importSuccess": "{{count}} Mission(en) importiert",
-        "importSuccessWithSkipped": "{{count}} Mission(en) importiert, {{skipped}} Duplikat(e) übersprungen",
-        "allDuplicates": "Alle {{count}} Mission(en) wurden bereits importiert (Duplikate übersprungen)",
+        "importSuccess": "Mission(en) erfolgreich importiert",
+        "importSuccessWithSkipped": "Mission(en) erfolgreich importiert, einige Duplikate übersprungen",
+        "allDuplicates": "Alle Mission(en) wurden bereits importiert (Duplikate übersprungen)",
         "importFailed": "Import fehlgeschlagen"
       },
       "result": {
@@ -2047,6 +2083,8 @@
         "opTypeLabel": "Vorgangstyp",
         "opTypeOpenDesc": "Pilot fliegt mit RC — kein Missionsplan erforderlich.",
         "opTypePdraDesc": "Pilot fliegt unter Risikoanalyse — Missionsplan erforderlich.",
+        "opTypeSts01Desc": "Standardszenario STS-01 — gleiche Anforderungen wie Open, kein Missionsplan erforderlich.",
+        "opTypeSts02Desc": "Standardszenario STS-02 — gleiche Anforderungen wie Open, kein Missionsplan erforderlich.",
         "droneLabel": "Drohnensystem",
         "noDronesAssigned": "Diesem Kunden sind keine Drohnen zugewiesen",
         "noSystemsForClient": "Der ausgewählte Kunde hat keine Systeme.",
@@ -2113,6 +2151,8 @@
         "distancePlaceholder": "z.B. 1500",
         "location": "Standort",
         "locationPlaceholder": "Zone A",
+        "groupLabel": "Gruppenbezeichnung",
+        "groupLabelPlaceholder": "z.B. Frühjahrsvermessung 2025",
         "notes": "Notizen",
         "notesPlaceholder": "Optionale Notizen"
       },
@@ -2138,7 +2178,20 @@
         "visualObserversOptional": "(optional)",
         "visualObserversDisabled": "Zuerst einen Piloten auswählen",
         "primaryPilotNote": "PIC — bereits zugewiesen",
-        "noPilots": "Keine Piloten verfügbar"
+        "noPilots": "Keine Piloten verfügbar",
+        "viewQualifications": "Qualifikationen"
+      },
+      "pilotQualifications": {
+        "title": "Pilotenqualifikationen",
+        "qualificationsSection": "Qualifikationen",
+        "curriculumSection": "Schulungsverlauf",
+        "noQualifications": "Keine Qualifikationen erfasst",
+        "noCurriculum": "Keine Schulungsnachweise erfasst",
+        "loadError": "Pilotenqualifikationen konnten nicht geladen werden",
+        "expiry": "Ablauf",
+        "statusActive": "Aktiv",
+        "statusInactive": "Inaktiv",
+        "statusExpired": "Abgelaufen"
       },
       "erp": {
         "sectionTitle": "Notfallreaktionspläne",
@@ -2312,6 +2365,7 @@
         "allEvaluations": "Alle Bewertungen",
         "planning": "Planung",
         "allPlannings": "Alle Planungen",
+        "droneSystem": "System",
         "updateFrom": "Aktualisiert von",
         "updateTo": "Aktualisiert bis",
         "search": "Suchen",
@@ -2331,6 +2385,7 @@
         "planning": "Planung",
         "missionDesc": "Missionsbeschreibung",
         "missionPlan": "Missionsplan",
+        "system": "System",
         "version": "Version",
         "active": "Aktiv"
       }
@@ -2506,6 +2561,10 @@
         "indicatorName": "Indikatorname",
         "namePlaceholder": "Beschreibenden Namen eingeben...",
         "targetValue": "Zielwert",
+        "targetDirection": "Zielrichtung",
+        "higherIsBetter": "Höher ist besser",
+        "lowerIsBetter": "Niedriger ist besser",
+        "targetDirectionHint": "Bestimmt, welche Seite des Zielwerts als gut gilt (z. B. sollten Vorfallzahlen 'Niedriger ist besser' sein).",
         "frequency": "Berichtsfrequenz",
         "description": "Beschreibung",
         "descPlaceholder": "Erklären Sie, was dieser Indikator misst...",
@@ -2538,7 +2597,8 @@
         "actualValue": "Ist-Wert",
         "actualPlaceholder": "z.B. 87,5",
         "targetValue": "Zielwert",
-        "status": "Status",
+        "status": "Status (automatisch berechnet)",
+        "statusHint": "Wird automatisch aus Ist- gegenüber Zielwert berechnet, basierend auf der konfigurierten Zielrichtung des Indikators.",
         "statusGreen": "Im Soll / Über Ziel",
         "statusYellow": "Gefährdet / Im Ziel",
         "statusRed": "Überschritten / Unter Ziel",
@@ -4427,6 +4487,7 @@
           "speedPositive": "Max. Geschwindigkeit muss größer als 0 sein",
           "altitudePositive": "Max. Höhe muss größer als 0 sein",
           "weightPositive": "Gewicht muss größer als 0 sein",
+          "mtomPositive": "MTOM muss größer als 0 sein",
           "success": "Modell erfolgreich hinzugefügt",
           "failed": "Modell konnte nicht hinzugefügt werden",
           "error": "Fehler beim Hinzufügen des Modells"
@@ -4448,6 +4509,7 @@
           "manufacturerRequired": "Hersteller (Marke) ist erforderlich",
           "modelCodeRequired": "Modellcode (Serie) ist erforderlich",
           "modelNameRequired": "Modellname ist erforderlich",
+          "mtomPositive": "MTOM muss größer als 0 sein",
           "loadError": "Fehler beim Laden der Modelle",
           "loadModelError": "Fehler beim Laden des Modells",
           "updateSuccess": "Modell erfolgreich aktualisiert",
@@ -4504,7 +4566,7 @@
         "placeholders": {
           "selectClient": "Mandant auswählen",
           "noneTopLevel": "Keiner (oberste Ebene)",
-          "toolModelId": "Gerätemodell-ID"
+          "noModel": "Kein Modell"
         },
         "toasts": {
           "systemCodeRequired": "Systemcode ist erforderlich",

@@ -15,6 +15,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
+import { useAuthorization } from '@/components/authorization/AuthorizationProvider';
 import { getLucProcedureColumns } from '@/components/organization/LcuProcedureColumn';
 import { LcuDeleteDialog, LcuEditModal } from '@/components/organization/LcuProcedureSections';
 import { TablePagination } from '@/components/tables/Pagination';
@@ -72,6 +73,7 @@ function SortIcon({ direction }: { direction: 'asc' | 'desc' | false }) {
 
 export default function LucProceduresPage() {
   const { t } = useTranslation();
+  const { requireAuthorization } = useAuthorization();
   const { isDark } = useTheme();
 
   const STATUS_FILTER_OPTIONS: { value: LucProcedureStatus | 'ALL'; label: string }[] = [
@@ -137,6 +139,18 @@ export default function LucProceduresPage() {
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
+
+    try {
+      await requireAuthorization({
+        actionType: 'delete',
+        entityType: 'luc_procedure',
+        entityId: String(deleteTarget.procedure_id),
+        label: `Delete LUC Procedure: ${deleteTarget.procedure_code}`,
+      });
+    } catch {
+      return;
+    }
+
     try {
       await axios.delete(`/api/organization/luc-procedures/${deleteTarget.procedure_id}`);
       toast.success(t('organization.lucProcedures.toasts.deleted'));

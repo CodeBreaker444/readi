@@ -196,6 +196,14 @@ export async function updateSession(request: NextRequest) {
       }
     }
 
+    // Training email notification settings — ADMIN/OPM/SUPERADMIN only
+    if (pathname.startsWith('/training/email-notifications')) {
+      const role = decodeJwtRole(jwtToken)
+      if (role && !['ADMIN', 'OPM', 'SUPERADMIN'].includes(role)) {
+        return NextResponse.redirect(new URL('/unauthorized', request.url))
+      }
+    }
+
     // D-Flight settings & fleet — ADMIN/OPM/SUPERADMIN only
     if (pathname.startsWith('/dflight')) {
       const role = decodeJwtRole(jwtToken)

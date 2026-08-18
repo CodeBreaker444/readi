@@ -45,6 +45,7 @@ export async function POST(
       const lng = parsed.data.tool_longitude;
       const hasCoords = lat != null && lng != null;
       const hasOldPosition = result.oldPosition && (result.oldPosition.latitude != null || result.oldPosition.longitude != null);
+      const isPositionUpdate = hasCoords || (result.oldPosition && (result.oldPosition.latitude != null || result.oldPosition.longitude != null));
       
       let positionPart = '';
       if (hasCoords && hasOldPosition) {
@@ -60,7 +61,7 @@ export async function POST(
       const statusPart = parsed.data.tool_status ? `, status: ${parsed.data.tool_status}` : '';
       
       const metadata: Record<string, unknown> = {};
-      if (hasOldPosition) {
+      if (isPositionUpdate && result.oldPosition) {
         metadata.oldPosition = result.oldPosition;
       }
       

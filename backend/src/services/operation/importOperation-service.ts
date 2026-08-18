@@ -46,6 +46,7 @@ export interface ImportMissionParams {
   userId: number;
   missionCode?: string;
   flightMode?: string | null;
+  opType?: string | null;
   userTimezone?: string;
   isRecurrent?: boolean;
   recurrentStartDate?: string;
@@ -57,6 +58,12 @@ export interface ImportMissionResult {
   newMissionIds: number[];
   operations: any[];
   skipped: string[];
+}
+
+function asUtc(ts: Date | string | null | undefined): string | null {
+  if (!ts) return null;
+  const s = ts instanceof Date ? ts.toISOString() : ts;
+  return s.endsWith('Z') || s.includes('+') ? s : s + 'Z';
 }
 
 function parseDurationSeconds(start?: string | null, end?: string | null): number | null {
@@ -183,6 +190,21 @@ async function processGutmaBuffer(
     `Source: ${filename}`,
   ].filter(Boolean);
 
+  // Handle visual observers
+  let visualObservers: { user_id: number; name: string }[] | null = null;
+  if (params.visualObserverIds?.length) {
+    const observerUsers = await prisma.public_users.findMany({
+      where: { user_id: { in: params.visualObserverIds } },
+      select: { user_id: true, first_name: true, last_name: true },
+    });
+    if (observerUsers.length) {
+      visualObservers = observerUsers.map((u) => ({
+        user_id: u.user_id,
+        name: `${u.first_name ?? ''} ${u.last_name ?? ''}`.trim(),
+      }));
+    }
+  }
+
   // Convert dates to user's timezone for storage
   let scheduledStart: Date | null = null;
   let actualStart: Date | null = null;
@@ -223,6 +245,10 @@ async function processGutmaBuffer(
     }
   }
 
+  const missionMetadataFields: Record<string, unknown> = {};
+  if (params.missionPlanningId && params.flightMode) missionMetadataFields.flight_mode = params.flightMode;
+  if (params.opType) missionMetadataFields.op_type = params.opType;
+
   const inserted = await prisma.pilot_mission.create({
     data: {
       fk_owner_id: params.ownerId,
@@ -249,18 +275,16 @@ async function processGutmaBuffer(
       battery_charge_end: batteryChargeEnd,
       weather_temperature: weatherTemperature,
       notes: notesArr.join(' | ') || null,
-      ...(params.visualObserverIds && params.visualObserverIds.length > 0 && {
-        visual_observer_ids: params.visualObserverIds,
-      }),
+      mission_group_label: params.groupLabel || null,
       ...(recurringGroupId && {
         recurring_group_id: recurringGroupId,
         mission_date_until: params.recurrentEndDate ? new Date(params.recurrentEndDate) : null,
-        mission_group_label: params.groupLabel || null,
-        ...(params.missionPlanningId && params.flightMode && { mission_metadata: { flight_mode: params.flightMode } }),
+        ...(Object.keys(missionMetadataFields).length && { mission_metadata: missionMetadataFields }),
       }),
       ...(!recurringGroupId && {
         mission_metadata: {
-          ...(params.missionPlanningId && params.flightMode && { flight_mode: params.flightMode }),
+          ...missionMetadataFields,
+          ...(visualObservers?.length && { visual_observers: visualObservers }),
           is_imported: true,
         },
       }),
@@ -370,28 +394,32 @@ async function processGutmaBuffer(
 
   const full = await prisma.pilot_mission.findUnique({
     where: { pilot_mission_id: inserted.pilot_mission_id },
-    select: {
-      pilot_mission_id: true,
-      mission_code: true,
-      mission_name: true,
-      status_name: true,
-      scheduled_start: true,
-      actual_start: true,
-      actual_end: true,
-      distance_flown: true,
-      location: true,
-      notes: true,
+    include: {
       users: { select: { first_name: true, last_name: true } },
-      tool: { select: { tool_code: true } },
+      tool: { select: { tool_code: true, tool_name: true } },
+      client: { select: { client_name: true } },
+      planning: { select: { planning_name: true, client: { select: { client_name: true } } } },
+      pilot_mission_category: { select: { category_name: true } },
+      pilot_mission_type: { select: { type_name: true } },
     },
   });
 
   const operation = full ? {
     ...full,
+    actual_start: asUtc(full.actual_start),
+    actual_end: asUtc(full.actual_end),
     pilot_name: full.users
       ? `${full.users.first_name ?? ''} ${full.users.last_name ?? ''}`.trim()
       : null,
     tool_code: full.tool?.tool_code ?? null,
+    tool_name: full.tool?.tool_name ?? null,
+    client_name: full.planning?.client?.client_name ?? full.client?.client_name ?? null,
+    planning_name: full.planning?.planning_name ?? null,
+    category_name: full.pilot_mission_category?.category_name ?? null,
+    type_name: full.pilot_mission_type?.type_name ?? null,
+    visual_observer_ids: (full.mission_metadata as any)?.visual_observers ?? null,
+    flight_mode: (full.mission_metadata as any)?.flight_mode ?? null,
+    op_type: (full.mission_metadata as any)?.op_type ?? null,
   } : null;
 
   return { missionId: inserted.pilot_mission_id, operation };

@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma';
+import { logEvent } from '@/backend/services/auditLog/audit-log';
 
 export type ProposalStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
 
@@ -47,11 +48,19 @@ export interface ApproveTargetProposalParams {
   action: 'APPROVED' | 'REJECTED';
   approved_by_user_id: number;
   justification?: string | null;
+  owner_id: number;
+  userName?: string;
+  userEmail?: string;
+  userRole?: string;
 }
 
 export async function generateTargetProposals(
   months: number,
-  proposedByUserId: number
+  proposedByUserId: number,
+  ownerId: number,
+  userName?: string,
+  userEmail?: string,
+  userRole?: string
 ): Promise<{
   total_pending: number;
   months: number;
@@ -98,7 +107,7 @@ export async function generateTargetProposals(
         ? Math.round((values.reduce((a, b) => a + b, 0) / values.length) * 10000) / 10000
         : currentTarget;
 
-    await prisma.spi_kpi_target_proposal.create({
+    const created = await prisma.spi_kpi_target_proposal.create({
       data: {
         fk_definition_id: def.definition_id,
         proposal_year: proposalYear,
@@ -108,6 +117,19 @@ export async function generateTargetProposals(
         justification: `Auto-generated from average of last ${months} month(s) of measurements.`,
         proposal_status: 'PENDING',
       },
+    });
+
+    logEvent({
+      eventType: 'CREATE',
+      entityType: 'safety_target_proposal',
+      entityId: created.proposal_id,
+      description: `Safety target proposal auto-generated for KPI definition #${def.definition_id}`,
+      userId: proposedByUserId,
+      userName: userName,
+      userEmail: userEmail,
+      userRole: userRole,
+      ownerId: ownerId,
+      metadata: { definitionId: def.definition_id, proposedTarget: suggested, currentTarget, monthsAnalyzed: months },
     });
   }
 
@@ -203,7 +225,7 @@ export async function getTargetProposalById(
 export async function approveTargetProposal(
   params: ApproveTargetProposalParams
 ): Promise<SafetyTargetProposal> {
-  const { proposal_id, action, approved_by_user_id, justification } = params;
+  const { proposal_id, action, approved_by_user_id, justification, owner_id, userName, userEmail, userRole } = params;
 
   const proposal = await prisma.spi_kpi_target_proposal.findUnique({
     where: { proposal_id },
@@ -229,6 +251,19 @@ export async function approveTargetProposal(
       data: { target_value: proposal.proposed_target, updated_at: new Date() },
     });
   }
+
+  logEvent({
+    eventType: 'UPDATE',
+    entityType: 'safety_target_proposal',
+    entityId: proposal_id,
+    description: `Safety target proposal #${proposal_id} ${action === 'APPROVED' ? 'approved' : 'rejected'}`,
+    userId: approved_by_user_id,
+    userName: userName,
+    userEmail: userEmail,
+    userRole: userRole,
+    ownerId: owner_id,
+    metadata: { action, definitionId: proposal.fk_definition_id, proposedTarget: proposal.proposed_target, justification },
+  });
 
   return updated as unknown as SafetyTargetProposal;
 }

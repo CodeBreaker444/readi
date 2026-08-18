@@ -33,7 +33,8 @@
     "today": "Today",
     "yesterday": "Yesterday",
     "daysAgo": "{{count}} days ago",
-    "monthsAgo": "{{count}} months ago"
+    "monthsAgo": "{{count}} months ago",
+    "viewDetails": "View Details"
   },
   "topbar": {
     "askAnything": "Ask anything…",
@@ -140,6 +141,7 @@
     "manager": "Manager",
     "viewer": "Viewer",
     "username": "Username",
+    "department": "Department",
     "code": "Code",
     "permissions": "Permissions",
     "updatePassword": "Update password",
@@ -210,6 +212,7 @@
       "allRoles": "All Roles",
       "allStatus": "All Status",
       "allCompanies": "All Companies",
+      "allDepartments": "All Departments",
       "noFound": "No users found",
       "noFoundHint": "Try adjusting your filters",
       "deleteTitle": "Delete User",
@@ -265,6 +268,7 @@
     "recentFlights": "Recent Flights",
     "training": "Training",
     "courses": "Courses",
+    "trainingEmailNotifications": "Email Notifications",
     "notifications": "Notifications",
     "documentRepository": "Document Repository",
     "auditLogs": "Audit Logs",
@@ -518,7 +522,7 @@
     "table": {
       "colName": "Name",
       "colCode": "Code",
-      "colLabel": "Label",
+      "colDescription": "Description",
       "colActions": "Actions",
       "emptyTitle": "No types defined yet",
       "emptySubtitle": "Create your first mission type to get started",
@@ -531,8 +535,6 @@
       "descriptionPlaceholder": "Enter mission type description",
       "codeLabel": "Code",
       "codePlaceholder": "e.g., SURV",
-      "labelLabel": "Label",
-      "labelPlaceholder": "Enter mission type label",
       "saving": "Saving...",
       "adding": "Adding...",
       "saveChanges": "Save Changes",
@@ -676,18 +678,16 @@
       "notAssigned": "Not Assigned"
     },
     "missionStatus": {
-      "completed": "Completed",
-      "waiting": "Waiting",
-      "left": "Left"
+      "unknown": "Unknown"
     },
     "missions": {
       "past": {
-        "title": "Past 10 Missions",
+        "title": "Past Missions",
         "eyebrow": "History",
         "empty": "No past missions"
       },
       "next": {
-        "title": "Next 10 Missions",
+        "title": "Next Missions",
         "eyebrow": "Upcoming",
         "empty": "No upcoming missions"
       },
@@ -865,7 +865,8 @@
       "savedSuccess": "Checklist saved",
       "saveFailed": "Failed to save checklist result",
       "checklistNotFound": "Checklist not found",
-      "noChecklistDef": "No checklist definition for code"
+      "noChecklistDef": "No checklist definition for code",
+      "saving": "Saving..."
     },
     "evaluationRequest": {
       "pageTitle": "Planning · New Evaluation Request",
@@ -897,6 +898,8 @@
       "missionCode": "Mission Code",
       "missionOperationLimits": "Mission Operation Limits",
       "drone": "Drone",
+      "system": "System",
+      "selectSystem": "Select System",
       "loadingClients": "Loading clients...",
       "selectClient": "Select Client",
       "loadingProcedures": "Loading procedures...",
@@ -934,6 +937,7 @@
       "selectLucProcedure": "Please select a Procedure.",
       "selectPic": "Please assign a Pilot in Command.",
       "enterDescription": "Please enter a description",
+      "descriptionMinLength": "Description must be at least 4 characters",
       "descriptionRequired": "Description is required.",
       "requestDateRequired": "Request date is required.",
       "clientRequired": "Please select a client",
@@ -950,7 +954,8 @@
       "saveChanges": "Save Changes",
       "searchLogbook": "Search Logbook",
       "edit": "Edit",
-      "delete": "Delete"
+      "delete": "Delete",
+      "view": "View"
     },
     "modal": {
       "addPlanningTitle": "Add Planning Request",
@@ -1315,7 +1320,8 @@
       "observerDiff": "Observer must be different from the Pilot in Command",
       "testCodeRequired": "Test Code is required",
       "startDateRequired": "Start Date is required",
-      "endDateRequired": "End Date is required"
+      "endDateRequired": "End Date is required",
+      "endDateBeforeStart": "End Date cannot be before Start Date"
     },
     "tasks": {
       "title": "Task Table",
@@ -1389,6 +1395,8 @@
     },
     "communication": {
       "title": "Send Communication",
+      "subtitle": "Communications sent for this evaluation",
+      "noCommunications": "No communications sent yet",
       "newCommunication": "New Communication",
       "to": "To",
       "selected": "selected",
@@ -1415,7 +1423,13 @@
       "messageSingle": "Message cannot be empty",
       "sentSuccess": "Communication sent",
       "sendError": "Failed to send",
-      "loadError": "Failed to load users"
+      "loadError": "Failed to load users",
+      "sender": "Sender",
+      "status": "Status",
+      "sentAt": "Sent At",
+      "file": "File",
+      "download": "Download",
+      "noFile": "No file"
     },
     "assignment": {
       "title": "Assignment Action",
@@ -1434,6 +1448,7 @@
       "loadError": "Failed to load users"
     },
     "editPlanning": {
+      "editTitle": "Edit Planning Request",
       "selectStatus": "Select status",
       "selectResult": "Select result"
     },
@@ -1541,6 +1556,7 @@
         "stepsCompleteNotFinalized": "Steps complete, not finalized",
         "assignment": "Assignment",
         "checklist": "Checklist",
+        "communication": "Communication",
         "manageProcedure": "Manage Procedure",
         "missionDetails": "Mission Details",
         "client": "Client",
@@ -1569,6 +1585,7 @@
         "pending": "Pending",
         "assignment": "Assignment",
         "checklist": "Checklist",
+        "communication": "Communication",
         "complete": "✓ Complete",
         "incomplete": "✗ Incomplete"
       }
@@ -1680,8 +1697,13 @@
         "daysTracked": "Days are tracked automatically from the last maintenance date.",
         "overdue": "Maintenance is overdue — schedule maintenance soon",
         "autoSynced": "Auto-synced",
+        "auto": "Automatic",
+        "manual": "Manual",
         "manualInput": "Manual input",
-        "cycles": "Cycles"
+        "cycles": "Cycles",
+        "alreadyRecorded": "Maintenance has already been recorded for this mission and can't be updated again.",
+        "recordedUsage": "Recorded Usage",
+        "noUsageRecorded": "No usage recorded for this component."
       },
       "logs": {
         "attachedLogs": "Attached Logs",
@@ -1754,7 +1776,8 @@
         "attachSuccess": "Flight log attached from Control Center",
         "autoSyncSuccess_one": "Auto-filled usage for {{count}} component from GUTMA",
         "autoSyncSuccess_other": "Auto-filled usage for {{count}} components from GUTMA",
-        "postFlightSuccess": "Post-flight data saved"
+        "postFlightSuccess": "Post-flight data saved",
+        "maintenanceAlreadyApplied": "Maintenance has already been recorded for this mission"
       }
     },
     "dialog": {
@@ -1884,7 +1907,8 @@
         "cancel": "Cancel",
         "delete": "Delete",
         "success": "Operation deleted successfully",
-        "error": "Delete failed"
+        "error": "Delete failed",
+        "revertMaintenance": "Revert the maintenance hours/flights this mission recorded on its components"
       }
     },
     "importOperation": {
@@ -1912,6 +1936,8 @@
         "logFile": "Log File",
         "flytbaseWindow": "Control Center Window",
         "selectFlightLog": "Select Flight Log",
+        "timeWindow": "Time Window",
+        "selectFlight": "Select Flight",
         "missionCode": "Mission Code",
         "droneSystem": "Drone System",
         "missionCategory": "Mission Category",
@@ -1963,7 +1989,8 @@
         "noPlanningAvailable": "No planning available",
         "selectMissionPlanning": "Select mission planning…",
         "noMissionPlanningAvailable": "No mission planning available",
-        "selectVisualObserver": "Select visual observer…"
+        "selectVisualObserver": "Select visual observer…",
+        "searchFlights": "Search flights by name…"
       },
       "info": {
         "gutmaAutoExtract": "Altitude, distance and timestamps are extracted automatically from the GUTMA log file. The mission code is auto-generated unless you set one below.",
@@ -1984,7 +2011,12 @@
         "inMaintenance": "Maintenance",
         "maintenanceDue": "Maintenance Due",
         "snMismatch": "SN Mismatch",
-        "noSystemWithSerial": "No system is present with the serial number {{serial}}"
+        "noSystemWithSerial": "No system is present with the serial number {{serial}}",
+        "noSerialDetected": "No serial number could be detected in this log file, so the system cannot be auto-selected.",
+        "systemAutoSelected": "System auto-selected from log serial number: {{name}}",
+        "systemLockedForImport": "The system is determined automatically from the log's serial number and can't be changed manually during import.",
+        "clickToFetchFlights": "Click \"Refresh Flights\" to load flights from Control Center",
+        "noFlightsMatchSearch": "No flights match your search"
       },
       "review": {
         "client": "Client",
@@ -2014,6 +2046,10 @@
         "done": "Done",
         "back": "Back"
       },
+      "errors": {
+        "endDateBeforeStart": "End date must be on or after start date",
+        "datesRequired": "Both start and end dates are required for recurrent missions"
+      },
       "toast": {
         "loadClientsError": "Failed to load clients",
         "loadDronesError": "Failed to load drones",
@@ -2021,9 +2057,9 @@
         "loadPilotsError": "Failed to load pilots",
         "loadFlightsError": "Failed to load Control Center flights",
         "noFlightsFound": "No Control Center flights found in this time window",
-        "importSuccess": "Imported {{count}} mission(s)",
-        "importSuccessWithSkipped": "Imported {{count}} mission(s), {{skipped}} duplicate(s) skipped",
-        "allDuplicates": "All {{count}} mission(s) were already imported (duplicates skipped)",
+        "importSuccess": "Imported mission(s) successfully",
+        "importSuccessWithSkipped": "Imported mission(s) successfully with some duplicates skipped",
+        "allDuplicates": "All mission(s) were already imported (duplicates skipped)",
         "importFailed": "Import failed"
       },
       "result": {
@@ -2056,6 +2092,8 @@
         "opTypeLabel": "Operation Type",
         "opTypeOpenDesc": "Pilot flies with RC — no mission plan required.",
         "opTypePdraDesc": "Pilot flies under risk analysis — mission plan required.",
+        "opTypeSts01Desc": "Standard Scenario STS-01 — same requirements as Open, no mission plan required.",
+        "opTypeSts02Desc": "Standard Scenario STS-02 — same requirements as Open, no mission plan required.",
         "droneLabel": "Drone System",
         "noDronesAssigned": "No drones assigned to this client",
         "noSystemsForClient": "The selected client doesn't have any systems.",
@@ -2122,6 +2160,8 @@
         "distancePlaceholder": "e.g. 1500",
         "location": "Location",
         "locationPlaceholder": "Zone A",
+        "groupLabel": "Group Label",
+        "groupLabelPlaceholder": "e.g. Spring Survey 2025",
         "notes": "Notes",
         "notesPlaceholder": "Optional notes"
       },
@@ -2147,7 +2187,20 @@
         "visualObserversOptional": "(optional)",
         "visualObserversDisabled": "Select a pilot first to add visual observers",
         "primaryPilotNote": "PIC — already assigned",
-        "noPilots": "No pilots available"
+        "noPilots": "No pilots available",
+        "viewQualifications": "Qualifications"
+      },
+      "pilotQualifications": {
+        "title": "Pilot Qualifications",
+        "qualificationsSection": "Qualifications",
+        "curriculumSection": "Training Curriculum",
+        "noQualifications": "No qualifications recorded",
+        "noCurriculum": "No training records",
+        "loadError": "Failed to load pilot qualifications",
+        "expiry": "Expiry",
+        "statusActive": "Active",
+        "statusInactive": "Inactive",
+        "statusExpired": "Expired"
       },
       "erp": {
         "sectionTitle": "Emergency Response Plans",
@@ -2165,6 +2218,7 @@
         "updateSuccess": "Operation updated successfully",
         "updateError": "Failed to update operation",
         "createSuccess": "Operation created successfully",
+        "createRecurrentSuccess": "{{count}} recurrent missions created successfully",
         "createError": "Failed to create operation",
         "postFlightSuccess": "Post-flight data saved successfully",
         "postFlightError": "Failed to save post-flight data"
@@ -2321,6 +2375,7 @@
         "allEvaluations": "All evaluations",
         "planning": "Planning",
         "allPlannings": "All plannings",
+        "droneSystem": "System",
         "updateFrom": "Update From",
         "updateTo": "Update To",
         "search": "Search",
@@ -2340,6 +2395,7 @@
         "planning": "Planning",
         "missionDesc": "Mission Desc",
         "missionPlan": "Mission Plan",
+        "system": "System",
         "version": "Version",
         "active": "Active"
       }
@@ -2515,6 +2571,10 @@
         "indicatorName": "Indicator Name",
         "namePlaceholder": "Enter descriptive name...",
         "targetValue": "Target Value",
+        "targetDirection": "Target Direction",
+        "higherIsBetter": "Higher is Better",
+        "lowerIsBetter": "Lower is Better",
+        "targetDirectionHint": "Determines which side of the target counts as good (e.g. incident counts should be Lower is Better).",
         "frequency": "Reporting Frequency",
         "description": "Description",
         "descPlaceholder": "Explain what this indicator measures...",
@@ -2547,7 +2607,8 @@
         "actualValue": "Actual Value",
         "actualPlaceholder": "e.g. 87.5",
         "targetValue": "Target Value",
-        "status": "Status",
+        "status": "Status (auto-computed)",
+        "statusHint": "Computed automatically from actual vs. target value, based on the indicator's configured direction.",
         "statusGreen": "On Track / Above Target",
         "statusYellow": "At Risk / On Target",
         "statusRed": "Breached / Below Target",
@@ -4513,6 +4574,7 @@
           "speedPositive": "Max speed must be greater than 0",
           "altitudePositive": "Max altitude must be greater than 0",
           "weightPositive": "Weight must be greater than 0",
+          "mtomPositive": "MTOM must be greater than 0",
           "success": "Model added successfully",
           "failed": "Failed to add model",
           "error": "Error adding model"
@@ -4534,6 +4596,7 @@
           "manufacturerRequired": "Manufacturer (Brand) is required",
           "modelCodeRequired": "Model code (Serie) is required",
           "modelNameRequired": "Model name is required",
+          "mtomPositive": "MTOM must be greater than 0",
           "loadError": "Error loading models",
           "loadModelError": "Error loading model",
           "updateSuccess": "Model updated successfully",
@@ -4590,7 +4653,7 @@
         "placeholders": {
           "selectClient": "Select client",
           "noneTopLevel": "None (top-level)",
-          "toolModelId": "Tool model id"
+          "noModel": "No model"
         },
         "toasts": {
           "systemCodeRequired": "System code is required",
@@ -4903,6 +4966,43 @@
           }
         }
       },
+      "training": {
+        "title": "Configure training email notifications",
+        "enabled": "Email notifications enabled",
+        "disabled": "Email notifications disabled",
+        "enabledDescription": "Training email notifications are enabled. You can configure specific training events below.",
+        "disabledDescription": "Training email notifications are disabled. Contact your administrator to enable them.",
+        "enabledLabel": "Enabled",
+        "disabledLabel": "Disabled",
+        "unableToLoad": "Unable to load user information",
+        "moduleNotifications": "Training Module Notifications",
+        "notifyRoles": "Notify Roles",
+        "noRolesSelected": "No roles selected. No emails will be sent for this event.",
+        "selectRoles": "Select roles",
+        "rolesSelected": "{{count}} role{{plural}} selected",
+        "directToUsers": "This notification is sent directly to assigned users. Role selection is not applicable.",
+        "saving": "Saving configuration...",
+        "saveSuccess": "Configuration saved successfully",
+        "saveFailed": "Failed to save configuration",
+        "events": {
+          "training_created": {
+            "displayName": "Training Created",
+            "description": "When a new training record is created"
+          },
+          "training_updated": {
+            "displayName": "Training Updated",
+            "description": "When a training record is updated"
+          },
+          "training_deleted": {
+            "displayName": "Training Deleted",
+            "description": "When a training record is deleted"
+          },
+          "training_certification_expiring": {
+            "displayName": "Certification Expiring",
+            "description": "Sent 30, 14, 7, 3, and 1 day(s) before a certification's expiry date"
+          }
+        }
+      },
       "companyDisabled": "Email notifications are disabled at the company level. Contact your administrator to enable them."
     },
     "integrations": {
@@ -5096,9 +5196,14 @@
         "model": "Brand / Model",
         "certifications": "Certifications"
       },
+      "systemMode": {
+        "new": "Create new system",
+        "existing": "Select existing system"
+      },
       "fields": {
         "systemCode": "System Code",
         "systemDescription": "System Description",
+        "selectSystem": "System",
         "componentName": "Component Name",
         "serialNumber": "Serial Number",
         "drc": "DRC (D-Flight ID)",
@@ -5120,6 +5225,7 @@
       "addClass": "Add:",
       "toasts": {
         "systemCodeRequired": "System code is required",
+        "systemRequired": "Please select a system",
         "serialRequired": "Serial number is required",
         "modelRequired": "Please select or create a model",
         "clientRequired": "Please select a client",

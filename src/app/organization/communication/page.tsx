@@ -1,5 +1,6 @@
 "use client";
 
+import { useAuthorization } from "@/components/authorization/AuthorizationProvider";
 import { AddCommunicationForm, CommunicationModal } from "@/components/organization/AddCommunicationForm";
 import { CommunicationTable } from "@/components/organization/CommunicationTable";
 import { EditCommunicationModal } from "@/components/organization/EditCommunicationModal";
@@ -15,6 +16,7 @@ import { toast } from "sonner";
 export default function CommunicationPage() {
   const { t } = useTranslation();
   const { isDark } = useTheme();
+  const { requireAuthorization } = useAuthorization();
   const [communications, setCommunications] = useState<Communication[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isAddOpen, setIsAddOpen] = useState(false);
@@ -69,6 +71,19 @@ export default function CommunicationPage() {
   }
 
   async function handleDelete(communicationId: number) {
+    const communication = communications.find((c) => c.communication_id === communicationId);
+
+    try {
+      await requireAuthorization({
+        actionType: 'delete',
+        entityType: 'communication',
+        entityId: String(communicationId),
+        label: `Delete Communication: ${communication?.communication_code ?? `#${communicationId}`}`,
+      });
+    } catch {
+      return;
+    }
+
     try {
       const res = await axios.post("/api/organization/communication/delete", {
         communication_id: communicationId,

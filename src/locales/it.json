@@ -33,7 +33,8 @@
     "today": "Oggi",
     "yesterday": "Ieri",
     "daysAgo": "{{count}} giorni fa",
-    "monthsAgo": "{{count}} mesi fa"
+    "monthsAgo": "{{count}} mesi fa",
+    "viewDetails": "Visualizza dettagli"
   },
   "topbar": {
     "askAnything": "Chiedi qualcosa…",
@@ -140,6 +141,7 @@
     "manager": "Manager",
     "viewer": "Visualizzatore",
     "username": "Nome utente",
+    "department": "Reparto",
     "code": "Codice",
     "permissions": "Permessi",
     "updatePassword": "Aggiorna password",
@@ -210,6 +212,7 @@
       "allRoles": "Tutti i ruoli",
       "allStatus": "Tutti gli stati",
       "allCompanies": "Tutte le aziende",
+      "allDepartments": "Tutti i reparti",
       "noFound": "Nessun utente trovato",
       "noFoundHint": "Prova a modificare i filtri",
       "deleteTitle": "Elimina Utente",
@@ -265,6 +268,7 @@
     "recentFlights": "Voli recenti",
     "training": "Formazione",
     "courses": "Corsi",
+    "trainingEmailNotifications": "Notifiche Email",
     "notifications": "Notifiche",
     "documentRepository": "Archivio documenti",
     "auditLogs": "Log di audit",
@@ -518,7 +522,7 @@
     "table": {
       "colName": "Nome",
       "colCode": "Codice",
-      "colLabel": "Etichetta",
+      "colDescription": "Descrizione",
       "colActions": "Azioni",
       "emptyTitle": "Nessun tipo definito",
       "emptySubtitle": "Crea il tuo primo tipo missione per iniziare",
@@ -531,8 +535,6 @@
       "descriptionPlaceholder": "Inserisci descrizione tipo missione",
       "codeLabel": "Codice",
       "codePlaceholder": "es. SURV",
-      "labelLabel": "Etichetta",
-      "labelPlaceholder": "Inserisci etichetta tipo missione",
       "saving": "Salvataggio...",
       "adding": "Aggiunta...",
       "saveChanges": "Salva modifiche",
@@ -676,18 +678,16 @@
       "notAssigned": "Non assegnato"
     },
     "missionStatus": {
-      "completed": "Completato",
-      "waiting": "In attesa",
-      "left": "Rimasto"
+      "unknown": "Sconosciuto"
     },
     "missions": {
       "past": {
-        "title": "Ultime 10 missioni",
+        "title": "Ultime missioni",
         "eyebrow": "Storico",
         "empty": "Nessuna missione passata"
       },
       "next": {
-        "title": "Prossime 10 missioni",
+        "title": "Prossime missioni",
         "eyebrow": "In arrivo",
         "empty": "Nessuna missione in arrivo"
       },
@@ -862,7 +862,8 @@
       "savedSuccess": "Checklist salvata",
       "saveFailed": "Salvataggio checklist fallito",
       "checklistNotFound": "Checklist non trovata",
-      "noChecklistDef": "Nessuna definizione checklist per il codice"
+      "noChecklistDef": "Nessuna definizione checklist per il codice",
+      "saving": "Salvataggio in corso..."
     },
     "evaluationRequest": {
       "pageTitle": "Pianificazione · Nuova Richiesta di Valutazione",
@@ -894,6 +895,8 @@
       "missionCode": "Codice Missione",
       "missionOperationLimits": "Limiti Operativi Missione",
       "drone": "Drone",
+      "system": "Sistema",
+      "selectSystem": "Seleziona Sistema",
       "loadingClients": "Caricamento clienti...",
       "selectClient": "Seleziona Cliente",
       "loadingProcedures": "Caricamento procedure...",
@@ -931,6 +934,7 @@
       "selectLucProcedure": "Seleziona una Procedura.",
       "selectPic": "Assegna un Pilota in Comando.",
       "enterDescription": "Inserisci una descrizione",
+      "descriptionMinLength": "La descrizione deve contenere almeno 4 caratteri",
       "descriptionRequired": "La descrizione è obbligatoria.",
       "requestDateRequired": "La data di richiesta è obbligatoria.",
       "clientRequired": "Seleziona un cliente",
@@ -947,7 +951,8 @@
       "saveChanges": "Salva Modifiche",
       "searchLogbook": "Cerca nel Registro",
       "edit": "Modifica",
-      "delete": "Elimina"
+      "delete": "Elimina",
+      "view": "Visualizza"
     },
     "modal": {
       "addPlanningTitle": "Aggiungi Richiesta di Pianificazione",
@@ -1314,7 +1319,8 @@
       "observerDiff": "L'Osservatore deve essere diverso dal Pilota in Comando",
       "testCodeRequired": "Il codice test è obbligatorio",
       "startDateRequired": "La data di inizio è obbligatoria",
-      "endDateRequired": "La data di fine è obbligatoria"
+      "endDateRequired": "La data di fine è obbligatoria",
+      "endDateBeforeStart": "La data di fine non può essere precedente alla data di inizio"
     },
     "tasks": {
       "title": "Tabella Compiti",
@@ -1388,6 +1394,8 @@
     },
     "communication": {
       "title": "Invia Comunicazione",
+      "subtitle": "Comunicazioni inviate per questa valutazione",
+      "noCommunications": "Nessuna comunicazione inviata ancora",
       "newCommunication": "Nuova Comunicazione",
       "to": "A",
       "selected": "selezionati",
@@ -1414,7 +1422,13 @@
       "messageSingle": "Il messaggio non può essere vuoto",
       "sentSuccess": "Comunicazione inviata",
       "sendError": "Invio fallito",
-      "loadError": "Errore nel caricamento degli utenti"
+      "loadError": "Errore nel caricamento degli utenti",
+      "sender": "Mittente",
+      "status": "Stato",
+      "sentAt": "Inviato il",
+      "file": "File",
+      "download": "Scarica",
+      "noFile": "Nessun file"
     },
     "assignment": {
       "title": "Azione di Assegnazione",
@@ -1433,6 +1447,7 @@
       "loadError": "Errore nel caricamento degli utenti"
     },
     "editPlanning": {
+      "editTitle": "Modifica Richiesta di Pianificazione",
       "selectStatus": "Seleziona stato",
       "selectResult": "Seleziona risultato"
     },
@@ -1539,6 +1554,7 @@
         "stepsCompleteNotFinalized": "Passaggi completati, non finalizzati",
         "assignment": "Assegnazione",
         "checklist": "Lista di controllo",
+        "communication": "Comunicazione",
         "manageProcedure": "Gestisci procedura",
         "missionDetails": "Dettagli missione",
         "client": "Cliente",
@@ -1567,6 +1583,7 @@
         "pending": "In attesa",
         "assignment": "Assegnazione",
         "checklist": "Lista di controllo",
+        "communication": "Comunicazione",
         "complete": "✓ Completo",
         "incomplete": "✗ Incompleto"
       }
@@ -1675,8 +1692,13 @@
         "daysTracked": "I giorni vengono tracciati automaticamente dalla data dell'ultima manutenzione.",
         "overdue": "La manutenzione è in ritardo — pianifica la manutenzione al più presto",
         "autoSynced": "Sincronizzato automaticamente",
+        "auto": "Automatico",
+        "manual": "Manuale",
         "manualInput": "Inserimento manuale",
-        "cycles": "Cicli"
+        "cycles": "Cicli",
+        "alreadyRecorded": "La manutenzione è già stata registrata per questa missione e non può essere aggiornata di nuovo.",
+        "recordedUsage": "Utilizzo registrato",
+        "noUsageRecorded": "Nessun utilizzo registrato per questo componente."
       },
       "logs": {
         "attachedLogs": "Log allegati",
@@ -1749,7 +1771,8 @@
         "attachSuccess": "Log di volo allegato da Control Center",
         "autoSyncSuccess_one": "Utilizzo per {{count}} componente compilato automaticamente da GUTMA",
         "autoSyncSuccess_other": "Utilizzo per {{count}} componenti compilato automaticamente da GUTMA",
-        "postFlightSuccess": "Dati post-volo salvati"
+        "postFlightSuccess": "Dati post-volo salvati",
+        "maintenanceAlreadyApplied": "La manutenzione è già stata registrata per questa missione"
       }
     },
     "dialog": {
@@ -1879,7 +1902,8 @@
         "cancel": "Annulla",
         "delete": "Elimina",
         "success": "Operazione eliminata con successo",
-        "error": "Eliminazione fallita"
+        "error": "Eliminazione fallita",
+        "revertMaintenance": "Ripristina le ore/voli di manutenzione registrati da questa missione sui suoi componenti"
       }
     },
     "importOperation": {
@@ -1907,6 +1931,8 @@
         "logFile": "File Log",
         "flytbaseWindow": "Finestra Control Center",
         "selectFlightLog": "Seleziona Volo",
+        "timeWindow": "Finestra Temporale",
+        "selectFlight": "Seleziona Volo",
         "missionCode": "Codice Missione",
         "droneSystem": "Sistema Drone",
         "missionCategory": "Categoria Missione",
@@ -1958,7 +1984,8 @@
         "noPlanningAvailable": "Nessuna pianificazione disponibile",
         "selectMissionPlanning": "Seleziona pianificazione missione…",
         "noMissionPlanningAvailable": "Nessuna pianificazione missione disponibile",
-        "selectVisualObserver": "Seleziona osservatore visivo…"
+        "selectVisualObserver": "Seleziona osservatore visivo…",
+        "searchFlights": "Cerca voli per nome…"
       },
       "info": {
         "gutmaAutoExtract": "Altitudine, distanza e timestamp vengono estratti automaticamente dal file di log GUTMA. Il codice missione viene generato automaticamente a meno che non ne imposti uno qui sotto.",
@@ -1979,7 +2006,12 @@
         "inMaintenance": "Manutenzione",
         "maintenanceDue": "Manutenzione in Scadenza",
         "snMismatch": "SN non corrispondente",
-        "noSystemWithSerial": "Nessun sistema è presente con il numero di serie {{serial}}"
+        "noSystemWithSerial": "Nessun sistema è presente con il numero di serie {{serial}}",
+        "noSerialDetected": "Non è stato possibile rilevare un numero di serie in questo file di log, quindi il sistema non può essere selezionato automaticamente.",
+        "systemAutoSelected": "Sistema selezionato automaticamente dal numero di serie del log: {{name}}",
+        "systemLockedForImport": "Il sistema viene determinato automaticamente dal numero di serie del log e non può essere modificato manualmente durante l'importazione.",
+        "clickToFetchFlights": "Clicca su \"Aggiorna Voli\" per caricare i voli dal Control Center",
+        "noFlightsMatchSearch": "Nessun volo corrisponde alla tua ricerca"
       },
       "review": {
         "client": "Cliente",
@@ -2009,6 +2041,10 @@
         "done": "Fine",
         "back":"Indietro"
       },
+      "errors": {
+        "endDateBeforeStart": "La data di fine deve essere successiva o uguale alla data di inizio",
+        "datesRequired": "Sia la data di inizio che quella di fine sono obbligatorie per le missioni ricorrenti"
+      },
       "toast": {
         "loadClientsError": "Impossibile caricare i clienti",
         "loadDronesError": "Impossibile caricare i droni",
@@ -2016,9 +2052,9 @@
         "loadPilotsError": "Impossibile caricare i piloti",
         "loadFlightsError": "Impossibile caricare i voli Control Center",
         "noFlightsFound": "Nessun volo Control Center trovato in questa finestra temporale",
-        "importSuccess": "{{count}} missione/i importata/e",
-        "importSuccessWithSkipped": "{{count}} missione/i importata/e, {{skipped}} duplicato/i ignorato/i",
-        "allDuplicates": "Tutte le {{count}} missioni erano già state importate (duplicati ignorati)",
+        "importSuccess": "Missione/i importata/e con successo",
+        "importSuccessWithSkipped": "Missione/i importata/e con successo, alcuni duplicati ignorati",
+        "allDuplicates": "Tutte le missioni erano già state importate (duplicati ignorati)",
         "importFailed": "Importazione fallita"
       },
       "result": {
@@ -2051,6 +2087,8 @@
         "opTypeLabel": "Tipo Operazione",
         "opTypeOpenDesc": "Il pilota vola con RC — nessun piano di missione richiesto.",
         "opTypePdraDesc": "Il pilota vola sotto analisi del rischio — piano di missione richiesto.",
+        "opTypeSts01Desc": "Scenario standard STS-01 — stessi requisiti di Open, nessun piano di missione richiesto.",
+        "opTypeSts02Desc": "Scenario standard STS-02 — stessi requisiti di Open, nessun piano di missione richiesto.",
         "droneLabel": "Sistema Drone",
         "noDronesAssigned": "Nessun drone assegnato a questo cliente",
         "noSystemsForClient": "Il cliente selezionato non ha alcun sistema.",
@@ -2117,6 +2155,8 @@
         "distancePlaceholder": "es. 1500",
         "location": "Posizione",
         "locationPlaceholder": "Zona A",
+        "groupLabel": "Etichetta Gruppo",
+        "groupLabelPlaceholder": "es. Rilevamento Primaverile 2025",
         "notes": "Note",
         "notesPlaceholder": "Note opzionali"
       },
@@ -2142,7 +2182,20 @@
         "visualObserversOptional": "(opzionale)",
         "visualObserversDisabled": "Seleziona prima un pilota",
         "primaryPilotNote": "PIC — già assegnato",
-        "noPilots": "Nessun pilota disponibile"
+        "noPilots": "Nessun pilota disponibile",
+        "viewQualifications": "Qualifiche"
+      },
+      "pilotQualifications": {
+        "title": "Qualifiche del Pilota",
+        "qualificationsSection": "Qualifiche",
+        "curriculumSection": "Curriculum Formativo",
+        "noQualifications": "Nessuna qualifica registrata",
+        "noCurriculum": "Nessun corso di formazione registrato",
+        "loadError": "Impossibile caricare le qualifiche del pilota",
+        "expiry": "Scadenza",
+        "statusActive": "Attiva",
+        "statusInactive": "Inattiva",
+        "statusExpired": "Scaduta"
       },
       "erp": {
         "sectionTitle": "Piani di Risposta alle Emergenze",
@@ -2318,6 +2371,7 @@
         "allEvaluations": "Tutte le valutazioni",
         "planning": "Pianificazione",
         "allPlannings": "Tutte le pianificazioni",
+        "droneSystem": "Sistema",
         "updateFrom": "Aggiornato dal",
         "updateTo": "Aggiornato al",
         "search": "Cerca",
@@ -2337,6 +2391,7 @@
         "planning": "Pianificazione",
         "missionDesc": "Desc. Missione",
         "missionPlan": "Piano Missione",
+        "system": "Sistema",
         "version": "Versione",
         "active": "Attivo"
       }
@@ -2512,6 +2567,10 @@
         "indicatorName": "Nome Indicatore",
         "namePlaceholder": "Inserisci nome descrittivo...",
         "targetValue": "Valore Obiettivo",
+        "targetDirection": "Direzione Obiettivo",
+        "higherIsBetter": "Più Alto è Meglio",
+        "lowerIsBetter": "Più Basso è Meglio",
+        "targetDirectionHint": "Determina quale lato dell'obiettivo è considerato positivo (es. il numero di incidenti dovrebbe essere 'Più Basso è Meglio').",
         "frequency": "Frequenza di Reportistica",
         "description": "Descrizione",
         "descPlaceholder": "Spiega cosa misura questo indicatore...",
@@ -2544,7 +2603,8 @@
         "actualValue": "Valore Effettivo",
         "actualPlaceholder": "es. 87.5",
         "targetValue": "Valore Obiettivo",
-        "status": "Stato",
+        "status": "Stato (calcolato automaticamente)",
+        "statusHint": "Calcolato automaticamente dal valore effettivo rispetto all'obiettivo, in base alla direzione configurata dell'indicatore.",
         "statusGreen": "In Linea / Sopra Obiettivo",
         "statusYellow": "A Rischio / Sul Bersaglio",
         "statusRed": "Superato / Sotto Obiettivo",
@@ -4510,6 +4570,7 @@
           "speedPositive": "La velocità massima deve essere maggiore di 0",
           "altitudePositive": "L'altitudine massima deve essere maggiore di 0",
           "weightPositive": "Il peso deve essere maggiore di 0",
+          "mtomPositive": "L'MTOM deve essere maggiore di 0",
           "success": "Modello aggiunto con successo",
           "failed": "Aggiunta modello fallita",
           "error": "Errore durante l'aggiunta del modello"
@@ -4531,6 +4592,7 @@
           "manufacturerRequired": "Il produttore (Marca) è obbligatorio",
           "modelCodeRequired": "Il codice modello (Serie) è obbligatorio",
           "modelNameRequired": "Il nome del modello è obbligatorio",
+          "mtomPositive": "L'MTOM deve essere maggiore di 0",
           "loadError": "Errore nel caricamento dei modelli",
           "loadModelError": "Errore nel caricamento del modello",
           "updateSuccess": "Modello aggiornato con successo",
@@ -4587,7 +4649,7 @@
         "placeholders": {
           "selectClient": "Seleziona cliente",
           "noneTopLevel": "Nessuno (livello principale)",
-          "toolModelId": "ID modello strumento"
+          "noModel": "Nessun modello"
         },
         "toasts": {
           "systemCodeRequired": "Il codice sistema è obbligatorio",
@@ -4895,6 +4957,43 @@
           "intervention_ended": {
             "displayName": "Intervento Terminato",
             "description": "Quando termina l'intervento di manutenzione"
+          }
+        }
+      },
+      "training": {
+        "title": "Configura notifiche email formazione",
+        "enabled": "Notifiche email abilitate",
+        "disabled": "Notifiche email disabilitate",
+        "enabledDescription": "Le notifiche email formazione sono abilitate. Puoi configurare eventi di formazione specifici di seguito.",
+        "disabledDescription": "Le notifiche email formazione sono disabilitate. Contatta il tuo amministratore per abilitarle.",
+        "enabledLabel": "Abilitato",
+        "disabledLabel": "Disabilitato",
+        "unableToLoad": "Impossibile caricare le informazioni utente",
+        "moduleNotifications": "Notifiche Modulo Formazione",
+        "notifyRoles": "Notifica Ruoli",
+        "noRolesSelected": "Nessun ruolo selezionato. Nessuna email verrà inviata per questo evento.",
+        "selectRoles": "Seleziona ruoli",
+        "rolesSelected": "{{count}} ruolo{{plural}} selezionato{{plural}}",
+        "directToUsers": "Questa notifica viene inviata direttamente agli utenti assegnati. La selezione dei ruoli non è applicabile.",
+        "saving": "Salvataggio configurazione...",
+        "saveSuccess": "Configurazione salvata con successo",
+        "saveFailed": "Impossibile salvare la configurazione",
+        "events": {
+          "training_created": {
+            "displayName": "Formazione Creata",
+            "description": "Quando viene creato un nuovo record di formazione"
+          },
+          "training_updated": {
+            "displayName": "Formazione Aggiornata",
+            "description": "Quando un record di formazione viene aggiornato"
+          },
+          "training_deleted": {
+            "displayName": "Formazione Eliminata",
+            "description": "Quando un record di formazione viene eliminato"
+          },
+          "training_certification_expiring": {
+            "displayName": "Certificazione in Scadenza",
+            "description": "Inviata 30, 14, 7, 3 e 1 giorno/i prima della data di scadenza della certificazione"
           }
         }
       },

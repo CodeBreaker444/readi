@@ -10,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ClientOption, EvaluationOption, PilotOption, PlanningOption } from "@/config/types/logbook";
+import { ClientOption, DroneOption, EvaluationOption, PilotOption, PlanningOption } from "@/config/types/logbook";
 import { Search, SlidersHorizontal, X } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -20,6 +20,7 @@ interface FilterPanelProps {
   pilots: PilotOption[];
   evaluations: EvaluationOption[];
   plannings: PlanningOption[];
+  drones: DroneOption[];
   loading: boolean;
   isDark: boolean;
   onSearch: (params: {
@@ -27,6 +28,7 @@ interface FilterPanelProps {
     user_id?: number;
     evaluation_id?: number;
     planning_id?: number;
+    tool_id?: number;
     date_start?: string;
     date_end?: string;
   }) => void;
@@ -39,6 +41,7 @@ export function FilterPanel({
   pilots,
   evaluations,
   plannings,
+  drones,
   loading,
   isDark,
   onSearch,
@@ -48,6 +51,7 @@ export function FilterPanel({
   const [pilotId, setPilotId] = useState(NONE);
   const [evaluationId, setEvaluationId] = useState(NONE);
   const [planningId, setPlanningId] = useState(NONE);
+  const [toolId, setToolId] = useState(NONE);
   const [dateStart, setDateStart] = useState("");
   const [dateEnd, setDateEnd] = useState("");
 
@@ -57,6 +61,7 @@ export function FilterPanel({
       user_id: parseInt(pilotId) || 0,
       evaluation_id: parseInt(evaluationId) || 0,
       planning_id: parseInt(planningId) || 0,
+      tool_id: parseInt(toolId) || 0,
       date_start: dateStart || undefined,
       date_end: dateEnd || undefined,
     });
@@ -67,6 +72,7 @@ export function FilterPanel({
     setPilotId(NONE);
     setEvaluationId(NONE);
     setPlanningId(NONE);
+    setToolId(NONE);
     setDateStart("");
     setDateEnd("");
     onSearch({});
@@ -156,6 +162,15 @@ export function FilterPanel({
           onChange={setPlanningId}
           isDark={isDark}
           options={plannings.map((p) => ({ value: String(p.planning_id), label: p.planning_desc }))}
+        />
+
+        <FilterSelect
+          label={t('logbooks.missionPlanning.filter.droneSystem')}
+          allLabel={allLabel}
+          value={toolId}
+          onChange={setToolId}
+          isDark={isDark}
+          options={drones.map((d) => ({ value: String(d.tool_id), label: `${d.tool_code} — ${d.tool_desc}` }))}
         />
       </div>
 

@@ -21,7 +21,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuthorization } from '@/components/authorization/AuthorizationProvider';
 import axios from 'axios';
-import { CalendarDays, ClipboardPlus, FileText, FolderOpen, Loader2, User } from 'lucide-react';
+import { CalendarDays, ClipboardPlus, FileText, Loader2, User } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -36,6 +36,7 @@ interface PilotUser {
     user_id: number;
     fullname: string;
     user_profile_code?: string;
+    userActive?: string;
 }
 
 interface AddPlanningModalProps {
@@ -60,7 +61,6 @@ export function AddPlanningModal({
 
     const [lucProcedureId, setLucProcedureId] = useState('');
     const [pilotId, setPilotId] = useState('');
-    const [planningFolder, setPlanningFolder] = useState('');
     const [planningStatus] = useState('NEW');
     const [requestDate, setRequestDate] = useState(() =>
         new Date().toISOString().split('T')[0]
@@ -73,25 +73,27 @@ export function AddPlanningModal({
     const [pilots, setPilots] = useState<PilotUser[]>([]);
     const [loadingDropdowns, setLoadingDropdowns] = useState(false);
     const [submitting, setSubmitting] = useState(false);
+    const [evaluationYear, setEvaluationYear] = useState<number | null>(null);
 
     useEffect(() => {
         if (!open) return;
         async function loadDropdowns() {
             try {
                 setLoadingDropdowns(true);
-                const [procRes, pilotRes] = await Promise.all([
-                    axios.get("/api/evaluation/luc-procedures?type=PLANNING"),
+                const [procRes, pilotRes, evalRes] = await Promise.all([
+                    axios.get("/api/evaluation/luc-procedures?sector=PLANNING"),
                     axios.get('/api/evaluation/planning/pilot'),
+                    axios.get(`/api/evaluation/${evaluationId}`),
                 ]);
-                const formattedProcedures = (procRes.data.data ?? []).map((p: any) => ({
-                    procedure_id: p.luc_procedure_id,
-                    procedure_code: p.luc_procedure_code,
-                    procedure_name: p.luc_procedure_desc
-                }));
 
-                setProcedures(formattedProcedures);
                 setProcedures(procRes.data.data ?? []);
                 setPilots(pilotRes.data.data ?? []);
+                
+                // Set planning year from evaluation year reference
+                if (evalRes.data?.data?.evaluation_year) {
+                    setEvaluationYear(evalRes.data.data.evaluation_year);
+                    setPlanningYear(String(evalRes.data.data.evaluation_year));
+                }
             } catch {
                 toast.error(t('planning.toast.loadFormError'));
             } finally {
@@ -99,16 +101,16 @@ export function AddPlanningModal({
             }
         }
         loadDropdowns();
-    }, [open]);
+    }, [open, evaluationId]);
 
     function handleClose() {
         setLucProcedureId('');
         setPilotId('');
-        setPlanningFolder('');
         setRequestDate(new Date().toISOString().split('T')[0]);
         setPlanningYear(String(currentYear));
         setPlanningDesc('');
         setPlanningType('');
+        setEvaluationYear(null);
         onClose();
     }
 
@@ -153,9 +155,8 @@ export function AddPlanningModal({
             planning_desc: planningDesc.trim(),
             planning_status: planningStatus,
             planning_request_date: requestDate,
-            planning_year: Number(planningYear),
+            planning_year: planningYear, // Send as string, backend will handle validation
             planning_type: planningType.trim(),
-            planning_folder: planningFolder.trim(),
             planning_result: 'PROGRESS',
         };
 
@@ -290,38 +291,33 @@ export function AddPlanningModal({
                                                 {t('planning.form.noPilots')}
                                             </SelectItem>
                                         ) : (
-                                            pilots.map((p) => (
-                                                <SelectItem
-                                                    key={p.user_id}
-                                                    value={String(p.user_id)}
-                                                >
-                                                    {p.fullname}
-                                                    {p.user_profile_code
-                                                        ? ` [${p.user_profile_code}]`
-                                                        : ''}
-                                                </SelectItem>
-                                            ))
+                                            pilots.map((p) => {
+                                                const isInactive = p.userActive !== undefined && p.userActive !== 'Y';
+                                                return (
+                                                    <SelectItem
+                                                        key={p.user_id}
+                                                        value={String(p.user_id)}
+                                                        disabled={isInactive}
+                                                    >
+                                                        {p.fullname}
+                                                        {p.user_profile_code
+                                                            ? ` [${p.user_profile_code}]`
+                                                            : ''}
+                                                        {isInactive && (
+                                                            <span className="text-red-500 ml-1">
+                                                                ({t('common.inactive')})
+                                                            </span>
+                                                        )}
+                                                    </SelectItem>
+                                                );
+                                            })
                                         )}
                                     </SelectContent>
                                 </Select>
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-4 gap-4">
-                            <div className="space-y-1.5">
-                                <Label htmlFor="folder" className="text-xs font-medium flex items-center gap-1">
-                                    <FolderOpen className="w-3 h-3 text-slate-400" />
-                                    {t('planning.form.folderDocs')}
-                                </Label>
-                                <Input
-                                    id="folder"
-                                    className="h-9 text-sm"
-                                    placeholder={t('planning.form.folderDocsPlaceholder')}
-                                    value={planningFolder}
-                                    onChange={(e) => setPlanningFolder(e.target.value)}
-                                />
-                            </div>
-
+                        <div className="grid grid-cols-3 gap-4">
                             <div className="space-y-1.5">
                                 <Label className="text-xs font-medium">{t('planning.form.status')}</Label>
                                 <Input

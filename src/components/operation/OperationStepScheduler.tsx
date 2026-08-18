@@ -5,6 +5,7 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { cn, formatDateTimeInTz } from '@/lib/utils'
 import { AlertTriangle, CheckCircle2, Loader2, RefreshCw } from 'lucide-react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { inputCls, labelCls, scCls, SectionTitle, siCls } from './OperationModalHelpers'
 import { ConflictEvent, GenericOption, LucOption, SchedulerFormData } from './OperationModalTypes'
@@ -25,14 +26,61 @@ interface Props {
     lucProcedures: LucOption[]
     loadingOptions: boolean
     isDark: boolean
+    isRecurrent?: boolean
+    onRecurrentToggle?: (checked: boolean) => void
+    recurrentStartDate?: string
+    onRecurrentStartDateChange?: (value: string) => void
+    recurrentEndDate?: string
+    onRecurrentEndDateChange?: (value: string) => void
+    recurrentTime?: string
+    onRecurrentTimeChange?: (value: string) => void
+    onRecurrentDateErrorChange?: (error: string) => void
 }
 
 export function OperationStepScheduler({
     form, onChange, isEdit, statusName, generatingId, onRefreshMissionId,
     loadingConflicts, conflictChecked, conflicts, timezone,
     types, categories, lucProcedures, loadingOptions, isDark,
+    isRecurrent = false, onRecurrentToggle,
+    recurrentStartDate = '', onRecurrentStartDateChange,
+    recurrentEndDate = '', onRecurrentEndDateChange,
+    recurrentTime = '', onRecurrentTimeChange,
+    onRecurrentDateErrorChange,
 }: Props) {
     const { t } = useTranslation()
+    const [recurrentDateError, setRecurrentDateError] = useState('')
+
+    const handleRecurrentStartDateChange = (value: string) => {
+        onRecurrentStartDateChange?.(value)
+        if (value && recurrentEndDate && new Date(recurrentEndDate) < new Date(value)) {
+            const error = t('operations.importOperation.errors.endDateBeforeStart')
+            setRecurrentDateError(error)
+            onRecurrentDateErrorChange?.(error)
+        } else if (!value && isRecurrent) {
+            const error = t('operations.importOperation.errors.datesRequired')
+            setRecurrentDateError(error)
+            onRecurrentDateErrorChange?.(error)
+        } else {
+            setRecurrentDateError('')
+            onRecurrentDateErrorChange?.('')
+        }
+    }
+
+    const handleRecurrentEndDateChange = (value: string) => {
+        onRecurrentEndDateChange?.(value)
+        if (value && recurrentStartDate && new Date(value) < new Date(recurrentStartDate)) {
+            const error = t('operations.importOperation.errors.endDateBeforeStart')
+            setRecurrentDateError(error)
+            onRecurrentDateErrorChange?.(error)
+        } else if (!value && isRecurrent) {
+            const error = t('operations.importOperation.errors.datesRequired')
+            setRecurrentDateError(error)
+            onRecurrentDateErrorChange?.(error)
+        } else {
+            setRecurrentDateError('')
+            onRecurrentDateErrorChange?.('')
+        }
+    }
 
     return (
         <div className="space-y-3">
@@ -65,15 +113,53 @@ export function OperationStepScheduler({
                 </div>
             </div>
 
-            <div className="max-w-xs">
-                <Label className={labelCls(isDark)}>{t('operations.newOperation.scheduler.startDateTime')} <span className="text-red-500">*</span></Label>
-                <Input
-                    type="datetime-local"
-                    value={form.scheduledStart}
-                    onChange={e => onChange('scheduledStart', e.target.value)}
-                    className={inputCls(isDark)}
-                />
-            </div>
+            {!isRecurrent && (
+                <div className="max-w-xs">
+                    <Label className={labelCls(isDark)}>{t('operations.newOperation.scheduler.startDateTime')} <span className="text-red-500">*</span></Label>
+                    <Input
+                        type="datetime-local"
+                        value={form.scheduledStart}
+                        onChange={e => onChange('scheduledStart', e.target.value)}
+                        className={inputCls(isDark)}
+                    />
+                </div>
+            )}
+
+            {!isEdit && (
+                <div className={cn('rounded-lg border p-3 space-y-3', isDark ? 'border-slate-600 bg-slate-700/30' : 'border-slate-200 bg-slate-50/60')}>
+                    <div className="flex items-center gap-2">
+                        <input
+                            type="checkbox"
+                            id="isRecurrent"
+                            checked={isRecurrent}
+                            onChange={(e) => onRecurrentToggle?.(e.target.checked)}
+                            className="h-4 w-4 accent-violet-600"
+                        />
+                        <Label htmlFor="isRecurrent" className={cn('text-sm cursor-pointer', isDark ? 'text-slate-200' : 'text-slate-700')}>
+                            {t('operations.importOperation.fields.recurrent')}
+                        </Label>
+                    </div>
+                    {isRecurrent && (
+                        <div className="grid grid-cols-3 gap-3">
+                            <div>
+                                <Label className={cn(labelCls(isDark), 'text-xs')}>{t('operations.importOperation.fields.recurrentStartDate')}</Label>
+                                <Input type="date" value={recurrentStartDate} onChange={e => handleRecurrentStartDateChange(e.target.value)} className={inputCls(isDark)} />
+                            </div>
+                            <div>
+                                <Label className={cn(labelCls(isDark), 'text-xs')}>{t('operations.importOperation.fields.recurrentEndDate')}</Label>
+                                <Input type="date" value={recurrentEndDate} onChange={e => handleRecurrentEndDateChange(e.target.value)} className={cn(inputCls(isDark), recurrentDateError ? 'border-red-500' : '')} />
+                            </div>
+                            <div>
+                                <Label className={cn(labelCls(isDark), 'text-xs')}>{t('operations.importOperation.fields.recurrentTime')}</Label>
+                                <Input type="time" value={recurrentTime} onChange={e => onRecurrentTimeChange?.(e.target.value)} className={inputCls(isDark)} />
+                            </div>
+                        </div>
+                    )}
+                    {recurrentDateError && (
+                        <p className="text-red-500 text-xs">{recurrentDateError}</p>
+                    )}
+                </div>
+            )}
 
             {loadingConflicts && (
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -104,7 +190,7 @@ export function OperationStepScheduler({
 
             <div className="grid grid-cols-2 gap-3">
                 <div>
-                    <Label className={labelCls(isDark)}>{t('operations.newOperation.scheduler.missionType')}</Label>
+                    <Label className={labelCls(isDark)}>{t('operations.newOperation.scheduler.missionType')} <span className="text-red-500">*</span></Label>
                     <Select value={form.typeId} onValueChange={v => onChange('typeId', v)} disabled={loadingOptions}>
                         <SelectTrigger className={inputCls(isDark)}>
                             <SelectValue placeholder={t('operations.newOperation.scheduler.selectType')} />
@@ -115,7 +201,7 @@ export function OperationStepScheduler({
                     </Select>
                 </div>
                 <div>
-                    <Label className={labelCls(isDark)}>{t('operations.newOperation.scheduler.category')}</Label>
+                    <Label className={labelCls(isDark)}>{t('operations.newOperation.scheduler.category')} <span className="text-red-500">*</span></Label>
                     <Select value={form.categoryId} onValueChange={v => onChange('categoryId', v)} disabled={loadingOptions}>
                         <SelectTrigger className={inputCls(isDark)}>
                             <SelectValue placeholder={t('operations.newOperation.scheduler.selectCategory')} />
@@ -161,6 +247,10 @@ export function OperationStepScheduler({
                 <div className="col-span-2">
                     <Label className={labelCls(isDark)}>{t('operations.newOperation.scheduler.location')} <span className="text-[10px] text-muted-foreground font-normal">{t('operations.newOperation.scheduler.optional')}</span></Label>
                     <Input value={form.location} onChange={e => onChange('location', e.target.value)} placeholder={t('operations.newOperation.scheduler.locationPlaceholder')} className={inputCls(isDark)} />
+                </div>
+                <div className="col-span-2">
+                    <Label className={labelCls(isDark)}>{t('operations.newOperation.scheduler.groupLabel')} <span className="text-[10px] text-muted-foreground font-normal">{t('operations.newOperation.scheduler.optional')}</span></Label>
+                    <Input value={form.groupLabel} onChange={e => onChange('groupLabel', e.target.value)} placeholder={t('operations.newOperation.scheduler.groupLabelPlaceholder')} className={inputCls(isDark)} />
                 </div>
             </div>
 

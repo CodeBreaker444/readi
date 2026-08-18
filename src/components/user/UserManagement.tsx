@@ -1,5 +1,6 @@
 'use client';
 
+import { useAuthorization } from '@/components/authorization/AuthorizationProvider';
 import { useTheme } from '@/components/useTheme';
 import { Session } from '@/lib/auth/server-session';
 import '@/lib/i18n/config';
@@ -11,13 +12,15 @@ import {
   useReactTable,
 } from '@tanstack/react-table';
 import axios from 'axios';
-import { Building2, Filter, Plus, Search, User } from 'lucide-react';
+import { Briefcase, Building2, Filter, Plus, Search, User } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import ExportButtons from '../system/ExportButtons';
 import { TablePagination } from '../tables/Pagination';
 import { getUserColumns, UserData } from '../tables/UserColumns';
+import { DepartmentRow } from '../system/ManageDepartmentsModal';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -47,7 +50,6 @@ import {
   TableRow,
 } from '../ui/table';
 import { UpdatePasswordModal } from '../team/UpdatePasswordModal';
-import { UserFormModal } from './UserFormModal';
 import { SkeletonRow, StatSkeleton } from './UserSkeleton';
 
 interface UserManagementProps {
@@ -65,20 +67,18 @@ const STAT_CONFIG = [
 
 export default function UserManagement({ session }: UserManagementProps) {
   const { t } = useTranslation();
+  const { requireAuthorization } = useAuthorization();
   const { isDark } = useTheme();
+  const router = useRouter();
   const isSuperAdmin = session.user.role === 'SUPERADMIN';
-  const canEditEmail = session.user.role === 'ADMIN' || isSuperAdmin;
   const [users, setUsers] = useState<UserData[]>([]);
-  const [clients, setClients] = useState<{ client_id: number, client_name: string }[]>([]);
-  const [owners, setOwners] = useState<{ owner_id: number; owner_name: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('ALL');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [companyFilter, setCompanyFilter] = useState('ALL');
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
+  const [departmentFilter, setDepartmentFilter] = useState('ALL');
+  const [departmentOptions, setDepartmentOptions] = useState<DepartmentRow[]>([]);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [userToDelete, setUserToDelete] = useState<UserData | null>(null);
   const [resendingUserId, setResendingUserId] = useState<number | null>(null);
@@ -88,28 +88,15 @@ export default function UserManagement({ session }: UserManagementProps) {
 
   useEffect(() => {
     fetchUsers();
-    fetchClients();
-    if (isSuperAdmin) fetchOwners();
+    fetchDepartmentOptions();
   }, []);
 
-  const fetchOwners = async () => {
+  const fetchDepartmentOptions = async () => {
     try {
-      const res = await axios.get('/api/owner');
-      if (res.data.code === 1 && res.data.data) setOwners(res.data.data);
-    } catch (e) {
-      console.error('Failed to fetch owners', e);
-    }
-  };
-
-  const fetchClients = async () => {
-    try {
-      const res = await axios.get('/api/client/list');
-      const data = res.data;
-      if (data.code === 1 && data.data) {
-        setClients(data.data);
-      }
-    } catch (e) {
-      console.error("Failed to fetch clients", e);
+      const { data } = await axios.get('/api/team/department');
+      if (data.code === 1) setDepartmentOptions(data.data ?? []);
+    } catch {
+      // non-fatal — filter just stays empty
     }
   };
 
@@ -127,7 +114,7 @@ export default function UserManagement({ session }: UserManagementProps) {
     finally { setLoading(false); }
   };
 
-  const handleEdit = (user: UserData) => { setSelectedUser(user); setShowEditModal(true); };
+  const handleEdit = (user: UserData) => { router.push(`/team/personnel/${user.user_id}/edit`); };
   const handleDelete = (user: UserData) => {
     setUserToDelete(user);
     setShowDeleteDialog(true);
@@ -179,6 +166,17 @@ export default function UserManagement({ session }: UserManagementProps) {
     if (!userToDelete) return;
     const userId = userToDelete.user_id;
 
+    try {
+      await requireAuthorization({
+        actionType: 'delete',
+        entityType: 'user',
+        entityId: String(userId),
+        label: `Delete User: ${userToDelete.fullname}`,
+      });
+    } catch {
+      return;
+    }
+
     setShowDeleteDialog(false);
     setUserToDelete(null);
 
@@ -197,98 +195,6 @@ export default function UserManagement({ session }: UserManagementProps) {
       }
     } catch (e) {
       console.error(e);
-    }
-  };
-
-  const handleAddUser = async (formData: any): Promise<{ fieldErrors?: Record<string, string> } | void> => {
-    try {
-      const res = await axios.post('/api/team/user/add', {
-        username: formData.username,
-        fullname: formData.fullname,
-        email: formData.email,
-        phone: formData.phone || '',
-        fk_client_id: formData.fk_client_id,
-        profile: formData.fk_user_profile_id,
-        ownerTerritorialUnit: 0,
-        user_type: formData.user_type,
-        user_viewer: formData.is_viewer,
-        user_manager: formData.is_manager,
-        timezone: 'Europe/Berlin',
-        flytrelay_access: formData.flytrelay_access,
-        ...(isSuperAdmin && { owner_id: formData.owner_id }),
-      });
-      const data = res.data;
-      if (data.code === 1) {
-        if (formData.ccToken && formData.ccOrgId && data.newId) {
-          try {
-            await axios.post('/api/team/user/control-center-token', {
-              user_id: data.newId,
-              token: formData.ccToken,
-              orgId: formData.ccOrgId,
-              tokenName: formData.ccTokenName || undefined,
-            });
-          } catch {
-            toast.warning(t('team.personnel.toast.ccTokenWarning'));
-          }
-        }
-        if (formData.grant_pic_technician && data.newId) {
-          try {
-            await axios.post('/api/team/user/subrole', {
-              user_id: data.newId,
-              subrole: 'PIC_TECHNICIAN',
-              action: 'grant',
-            });
-          } catch {
-            toast.warning('User created but PIC-Technician sub-role could not be granted. You can grant it from the edit user panel.');
-          }
-        }
-        toast.success(t('team.personnel.toast.created'));
-        setShowAddModal(false);
-        fetchUsers();
-      } else toast.error(data.error || t('team.personnel.toast.createFailed'));
-    } catch (err: any) {
-      const responseData = err?.response?.data;
-      if (responseData?.status === 'PENDING_ACTIVATION') {
-        toast.error(responseData.error_list?.[0] || responseData.message, {
-          description: 'Find the user in the list and click the resend invite button.',
-          duration: 6000,
-        });
-        return;
-      }
-      const msg = responseData?.error_list?.[0] || responseData?.message || t('team.personnel.toast.createError');
-
-      const lowerMsg = msg.toLowerCase();
-      if (lowerMsg.includes('email')) return { fieldErrors: { email: msg } };
-      if (lowerMsg.includes('username')) return { fieldErrors: { username: msg } };
-
-      toast.error(msg);
-    }
-  };
-
-  const handleUpdateUser = async (formData: any) => {
-    try {
-      const res = await axios.post('/api/team/user/update', {
-        user_id: formData.user_id,
-        fullname: formData.fullname,
-        email: formData.email,
-        phone: formData.phone,
-        fk_user_profile_id: formData.fk_user_profile_id,
-        fk_client_id: formData.fk_client_id || null,
-        user_type: formData.user_type,
-        active: formData.active,
-        is_viewer: formData.is_viewer,
-        is_manager: formData.is_manager,
-        flytrelay_access: formData.flytrelay_access,
-      });
-      const data = res.data;
-      if (data.code === 1) {
-        toast.success(t('team.personnel.toast.updated'));
-        setShowEditModal(false);
-        setSelectedUser(null);
-        fetchUsers();
-      } else toast.error(data.error || t('team.personnel.toast.updateFailed'));
-    } catch {
-      toast.error(t('team.personnel.toast.updateError'));
     }
   };
 
@@ -314,8 +220,9 @@ export default function UserManagement({ session }: UserManagementProps) {
       || (statusFilter === 'PENDING' && user.is_pending)
       || (statusFilter === 'INACTIVE' && user.active === 0 && !user.is_pending);
     const matchesCompany = !isSuperAdmin || companyFilter === 'ALL' || user.owner_name === companyFilter;
-    return matchesSearch && matchesRole && matchesStatus && matchesCompany;
-  }), [users, searchTerm, roleFilter, statusFilter, companyFilter, isSuperAdmin]);
+    const matchesDepartment = departmentFilter === 'ALL' || user.department === departmentFilter;
+    return matchesSearch && matchesRole && matchesStatus && matchesCompany && matchesDepartment;
+  }), [users, searchTerm, roleFilter, statusFilter, companyFilter, departmentFilter, isSuperAdmin]);
 
   const columns = useMemo(() => getUserColumns({ isDark, onEdit: handleEdit, onDelete: handleDelete, onResendInvite: handleResendInvite, onUpdatePassword: handleUpdatePassword, resendingUserId, t }), [isDark, handleEdit, handleDelete, handleResendInvite, handleUpdatePassword, resendingUserId, t]);
 
@@ -346,7 +253,7 @@ export default function UserManagement({ session }: UserManagementProps) {
           </div>
           <Button
             size="sm"
-            onClick={() => setShowAddModal(true)}
+            onClick={() => router.push('/team/personnel/create')}
             className={`h-8 gap-1.5 text-xs font-semibold shadow-sm ${isDark ? 'bg-white hover:bg-white/90 text-black' : 'bg-violet-600 hover:bg-violet-700 text-white'}`}
           >
             <Plus size={14} />
@@ -373,7 +280,7 @@ export default function UserManagement({ session }: UserManagementProps) {
         </div>
 
         <div className={`rounded-xl border p-4 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
-          <div className={`grid grid-cols-1 gap-3 ${isSuperAdmin ? 'md:grid-cols-4' : 'md:grid-cols-3'}`}>
+          <div className={`grid grid-cols-1 sm:grid-cols-2 gap-3 ${isSuperAdmin ? 'lg:grid-cols-5' : 'lg:grid-cols-4'}`}>
 
             <div className="space-y-1.5">
               <Label className={`flex items-center gap-1.5 text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
@@ -413,6 +320,23 @@ export default function UserManagement({ session }: UserManagementProps) {
                   <SelectItem value="ACTIVE">{t('common.active')}</SelectItem>
                   <SelectItem value="PENDING">{t('team.pendingActivation')}</SelectItem>
                   <SelectItem value="INACTIVE">{t('common.inactive')}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className={`flex items-center gap-1.5 text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                <Briefcase size={13} /> {t('team.department')}
+              </Label>
+              <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+                <SelectTrigger className={`h-8 text-sm ${isDark ? 'bg-gray-900 border-gray-700 text-gray-200' : ''}`}>
+                  <SelectValue placeholder={t('team.personnel.allDepartments')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL">{t('team.personnel.allDepartments')}</SelectItem>
+                  {departmentOptions.map((dept) => (
+                    <SelectItem key={dept.department_id} value={dept.department_name}>{dept.department_name}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -484,19 +408,13 @@ export default function UserManagement({ session }: UserManagementProps) {
         <div className="flex items-center justify-between px-2">
           <ExportButtons
             filename="Users"
-            headers={['ID', 'Username', 'Full Name', 'Email', 'Phone', 'Role', 'Active']}
-            rows={table.getFilteredRowModel().rows.map(r => { const u = r.original as UserData; return [u.user_id, u.username, u.fullname, u.email, u.phone ?? '', u.user_role, u.active]; })}
+            headers={['ID', 'Username', 'Full Name', 'Email', 'Phone', 'Role', 'Department', 'Active']}
+            rows={table.getFilteredRowModel().rows.map(r => { const u = r.original as UserData; return [u.user_id, u.username, u.fullname, u.email, u.phone ?? '', u.user_role, u.department ?? '', u.active]; })}
           />
           <TablePagination table={table} />
         </div>
       </div>
 
-      {showAddModal && (
-        <UserFormModal isOpen={showAddModal} clients={clients} owners={owners} isSuperAdmin={isSuperAdmin} onClose={() => setShowAddModal(false)} mode="add" onSubmit={handleAddUser} isDark={isDark} canEditEmail={canEditEmail} sessionRole={session.user.role} companyFlytrelayEnabled={session.user.flytrelayEnabled} />
-      )}
-      {showEditModal && selectedUser && (
-        <UserFormModal isOpen={showEditModal} clients={clients} onClose={() => { setShowEditModal(false); setSelectedUser(null); }} mode="edit" userData={selectedUser} onSubmit={handleUpdateUser} isDark={isDark} canEditEmail={canEditEmail} sessionRole={session.user.role} companyFlytrelayEnabled={session.user.flytrelayEnabled} />
-      )}
 
       {showPasswordModal && passwordUser && (
         <UpdatePasswordModal
