@@ -36,6 +36,7 @@ interface Communication {
         email: string;
     };
     recipients: number[];
+    recipient_names: string[];
 }
 
 interface Props {
@@ -114,6 +115,9 @@ export function EvaluationCommunicationTable({ evaluationId, clientId, refreshKe
                                         {t('planning.communication.sender')}
                                     </TableHead>
                                     <TableHead className={cn('text-xs h-8 px-3', isDark ? 'text-slate-400' : 'text-slate-600')}>
+                                        {t('planning.communication.receiver')}
+                                    </TableHead>
+                                    <TableHead className={cn('text-xs h-8 px-3', isDark ? 'text-slate-400' : 'text-slate-600')}>
                                         {t('planning.communication.status')}
                                     </TableHead>
                                     <TableHead className={cn('text-xs h-8 px-3', isDark ? 'text-slate-400' : 'text-slate-600')}>
@@ -148,6 +152,11 @@ export function EvaluationCommunicationTable({ evaluationId, clientId, refreshKe
                                             </p>
                                             <p className={cn('text-[10px]', isDark ? 'text-slate-500' : 'text-slate-400')}>
                                                 {comm.sender.email}
+                                            </p>
+                                        </TableCell>
+                                        <TableCell className="px-3 py-2">
+                                            <p className={cn('text-xs max-w-[160px] truncate', isDark ? 'text-slate-300' : 'text-slate-600')}>
+                                                {comm.recipient_names?.length ? comm.recipient_names.join(', ') : '-'}
                                             </p>
                                         </TableCell>
                                         <TableCell className="px-3 py-2">

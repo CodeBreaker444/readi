@@ -129,9 +129,7 @@ export async function getEvaluationList(ownerId: number): Promise<{ data: Evalua
 
   const data: EvaluationOption[] = evaluations.map((e) => ({
     evaluation_id: e.evaluation_id,
-    evaluation_desc: e.evaluation_code
-      ? `[${e.evaluation_code}] ${e.evaluation_name}`
-      : e.evaluation_name,
+    evaluation_desc: `EVAL-${e.evaluation_id}`,
   }));
 
   return { data };

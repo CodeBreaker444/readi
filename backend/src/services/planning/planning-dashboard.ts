@@ -847,6 +847,22 @@ export async function getCommunicationsByPlanning(
     },
   });
 
+  const recipientIds = Array.from(
+    new Set(
+      data.flatMap((row) => (Array.isArray(row.recipients) ? (row.recipients as unknown[]) : []))
+        .filter((id): id is number => typeof id === 'number')
+    )
+  );
+
+  const recipientUsers = recipientIds.length > 0
+    ? await prisma.public_users.findMany({
+        where: { user_id: { in: recipientIds } },
+        select: { user_id: true, first_name: true, last_name: true },
+      })
+    : [];
+
+  const recipientMap = new Map(recipientUsers.map((u) => [u.user_id, `${u.first_name ?? ''} ${u.last_name ?? ''}`.trim()]));
+
   return data.map((row) => ({
     communication_id: row.communication_id,
     subject: row.subject ?? '',
@@ -860,6 +876,9 @@ export async function getCommunicationsByPlanning(
       ? `${row.users.first_name ?? ''} ${row.users.last_name ?? ''}`.trim()
       : '',
     recipients: row.recipients ?? [],
+    recipient_names: (Array.isArray(row.recipients) ? (row.recipients as unknown[]) : [])
+      .filter((id): id is number => typeof id === 'number')
+      .map((id) => recipientMap.get(id) ?? `#${id}`),
     communication_to: row.communication_to ?? [],
     fk_client_id: row.fk_client_id,
     fk_planning_id: row.fk_planning_id,
@@ -1144,7 +1163,8 @@ export async function updatePlanningTask(
   userId?: number,
   userName?: string,
   userEmail?: string,
-  userRole?: string
+  userRole?: string,
+  checklistResult?: Record<string, unknown> | null
 ): Promise<{ success: boolean; message?: string }> {
   const planningBase = await prisma.planning.findFirst({
     where: { planning_id: planningId, fk_owner_id: ownerId },
@@ -1168,6 +1188,9 @@ export async function updatePlanningTask(
 
   const taskName = (planningJson.procedure_tasks as StoredTask[])[idx].task_name ?? `Task #${taskId}`;
   planningJson.procedure_tasks[idx].task_status = newStatus;
+  if (checklistResult !== undefined) {
+    planningJson.procedure_tasks[idx].checklist_result = checklistResult;
+  }
 
   await prisma.planning.updateMany({
     where: { planning_id: planningId, fk_owner_id: ownerId },

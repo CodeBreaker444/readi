@@ -27,7 +27,10 @@ const DocumentCreateSchema = z.object({
   version_label:   z.string().max(20).optional().nullable(),
   change_log:      z.string().max(500).optional().nullable(),
   fk_component_id: z.number().int().positive().optional().nullable(),
-});
+}).refine(
+  (data) => !data.effective_date || !data.expiry_date || data.expiry_date >= data.effective_date,
+  { message: 'Expiry date cannot be before effective date', path: ['expiry_date'] }
+);
 
 export async function POST(req: NextRequest) {
   try {
