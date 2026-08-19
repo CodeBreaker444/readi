@@ -157,14 +157,21 @@ export default function DocumentFormModal({ open, onClose, onSaved, docTypes, on
       setVersionLabel(document.version_label ?? '');
       setChangeLog(document.change_log ?? '');
       setFkComponentId(document.fk_component_id ? String(document.fk_component_id) : '__none__');
+      if (document.fk_component_id) {
+        const comp = components.find(c => c.tool_component_id === document.fk_component_id);
+        setFilterSystem(comp?.fk_tool_id != null ? String(comp.fk_tool_id) : '__all__');
+      } else {
+        setFilterSystem('__all__');
+      }
     } else {
       setDocTypeId(''); setDocCode(''); setStatus('DRAFT'); setTitle('');
       setConfidentiality('INTERNAL'); setOwnerRole('__none__'); setEffectiveDate('');
       setExpiryDate(''); setDescription(''); setKeywords(''); setTags('');
       setVersionLabel(''); setChangeLog(''); setFkComponentId('__none__');
+      setFilterSystem('__all__');
     }
     if (fileRef.current) fileRef.current.value = '';
-  }, [document, open]);
+  }, [document, open, components]);
 
   const MAX_FILE_SIZE = 25 * 1024 * 1024;
 
@@ -508,12 +515,14 @@ export default function DocumentFormModal({ open, onClose, onSaved, docTypes, on
               <div className="space-y-1.5">
                 <Label className={labelCls}>{t('repository.columns.effectiveDate')}</Label>
                 <Input type="date" value={effectiveDate} onChange={(e) => setEffectiveDate(e.target.value)}
+                  max={expiryDate || undefined}
                   className={`text-sm ${inputCls}`} />
               </div>
 
               <div className="space-y-1.5">
                 <Label className={labelCls}>{t('repository.columns.expiryDate')}</Label>
                 <Input type="date" value={expiryDate} onChange={(e) => setExpiryDate(e.target.value)}
+                  min={effectiveDate || undefined}
                   className={`text-sm ${inputCls}`} />
               </div>
 

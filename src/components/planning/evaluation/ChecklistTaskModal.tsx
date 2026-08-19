@@ -18,21 +18,30 @@ interface Props {
   open: boolean;
   task: EvaluationTask;
   evaluationId?: number;
+  planningId?: number;
   onClose: () => void;
   onComplete: (data: any) => void;
 }
 
-export function ChecklistTaskModal({ open, task, evaluationId, onClose, onComplete }: Props) {
+export function ChecklistTaskModal({ open, task, evaluationId, planningId, onClose, onComplete }: Props) {
   const { t } = useTranslation();
 
   async function handleSurveyComplete(survey: any) {
     try {
-      await axios.post('/api/organization/checklist/result', {
-        checklist_data: survey.data,
-        checklist_code: task.task_code,
-        evaluation_id: evaluationId,
-        task_id: task.task_id,
-      });
+      if (planningId) {
+        await axios.put(`/api/evaluation/planning/${planningId}/tasks`, {
+          task_id: task.task_id,
+          task_status: 'completed',
+          checklist_result: survey.data,
+        });
+      } else {
+        await axios.post('/api/organization/checklist/result', {
+          checklist_data: survey.data,
+          checklist_code: task.task_code,
+          evaluation_id: evaluationId,
+          task_id: task.task_id,
+        });
+      }
       onComplete(survey.data);
       toast.success(t('planning.evaluation.savedSuccess'));
     } catch {
