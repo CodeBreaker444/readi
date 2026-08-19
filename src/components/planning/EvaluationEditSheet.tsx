@@ -116,13 +116,18 @@ const form = useForm<UpdateEvaluationFormValues>({
                     ? (rawStatus as z.infer<typeof EvaluationStatusEnum>)
                     : 'NEW';
 
+            const normalizedResult: z.infer<typeof EvaluationResultEnum> =
+                EvaluationResultEnum.safeParse(evaluation.evaluation_result).success
+                    ? (evaluation.evaluation_result as z.infer<typeof EvaluationResultEnum>)
+                    : 'PROCESSING';
+
             form.reset({
                 evaluation_id: evaluation.evaluation_id,
                 fk_owner_id: evaluation.fk_owner_id,
                 fk_client_id: evaluation.fk_client_id,
                 fk_luc_procedure_id: evaluation.fk_luc_procedure_id,
                 evaluation_status: normalizedStatus,
-                evaluation_result: evaluation.evaluation_result,
+                evaluation_result: normalizedResult,
                 evaluation_request_date: evaluation.evaluation_request_date ?? '',
                 evaluation_year: evaluation.evaluation_year ?? new Date().getFullYear(),
                 evaluation_desc: evaluation.evaluation_desc ?? '',

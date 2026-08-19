@@ -1,7 +1,10 @@
+import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { RepositoryFile } from '@/config/types/evaluation-planning';
 import { getPresignedDownloadUrl } from '@/lib/s3Client';
 import { logEvent } from '@/backend/services/auditLog/audit-log';
+
+type PrismaTx = Prisma.TransactionClient;
 
 interface EvaluationCreateData {
   client_id: number;
@@ -21,10 +24,10 @@ interface EvaluationCreateData {
   }>;
 }
 
-async function generateEvaluationCode(ownerId: number, year: number): Promise<string> {
+async function generateEvaluationCode(tx: PrismaTx, ownerId: number, year: number): Promise<string> {
   const prefix = `EVA-${year}-`;
 
-  const data = await prisma.evaluation.findFirst({
+  const data = await tx.evaluation.findFirst({
     where: { fk_owner_id: ownerId, evaluation_year: year },
     orderBy: { evaluation_code: 'desc' },
     select: { evaluation_code: true },
@@ -53,8 +56,6 @@ export async function createNewEvaluationRequest(
   userRole?: string
 ) {
   try {
-    const evaluationCode = await generateEvaluationCode(ownerId, data.evaluation_year);
-
     const polygonData = {
       type: 'FeatureCollection' as const,
       features: data.areas.map((area, index) => ({
@@ -70,31 +71,37 @@ export async function createNewEvaluationRequest(
 
     const totalArea = data.areas.reduce((sum, area) => sum + area.area_sqm, 0);
 
-    const evaluation = await prisma.evaluation.create({
-      data: {
-        fk_owner_id: ownerId,
-        fk_client_id: data.client_id,
-        fk_luc_procedure_id: data.fk_luc_procedure_id || null,
-        evaluation_code: evaluationCode,
-        evaluation_name: `Evaluation ${evaluationCode}`,
-        evaluation_description: data.evaluation_description,
-        evaluation_type: 'General',
-        evaluation_status: data.evaluation_status,
-        evaluation_year: data.evaluation_year,
-        scheduled_date: data.evaluation_request_date ? new Date(data.evaluation_request_date) : null,
-        created_by_user_id: userId,
-        evaluation_active: 'Y',
-        evaluation_result: 'PROCESSING',
-        evaluation_metadata: {
-          polygon: polygonData,
-          area_sqm: totalArea,
-          procedure_id: data.fk_luc_procedure_id,
-          year: data.evaluation_year,
-          offer: data.evaluation_offer ?? '',
-          sale_manager: data.evaluation_sale_manager ?? '',
+    const evaluation = await prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(${ownerId})`;
+
+      const evaluationCode = await generateEvaluationCode(tx, ownerId, data.evaluation_year);
+
+      return tx.evaluation.create({
+        data: {
+          fk_owner_id: ownerId,
+          fk_client_id: data.client_id,
+          fk_luc_procedure_id: data.fk_luc_procedure_id || null,
+          evaluation_code: evaluationCode,
+          evaluation_name: `Evaluation ${evaluationCode}`,
+          evaluation_description: data.evaluation_description,
+          evaluation_type: 'General',
+          evaluation_status: data.evaluation_status,
+          evaluation_year: data.evaluation_year,
+          scheduled_date: data.evaluation_request_date ? new Date(data.evaluation_request_date) : null,
+          created_by_user_id: userId,
+          evaluation_active: 'Y',
+          evaluation_result: 'PROCESSING',
+          evaluation_metadata: {
+            polygon: polygonData,
+            area_sqm: totalArea,
+            procedure_id: data.fk_luc_procedure_id,
+            year: data.evaluation_year,
+            offer: data.evaluation_offer ?? '',
+            sale_manager: data.evaluation_sale_manager ?? '',
+          },
         },
-      },
-      select: { evaluation_id: true, evaluation_code: true },
+        select: { evaluation_id: true, evaluation_code: true },
+      });
     });
 
     logEvent({

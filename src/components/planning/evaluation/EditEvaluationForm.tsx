@@ -22,11 +22,22 @@ interface Props {
   onUpdated?: (ev: Evaluation) => void;
 }
 
-// API returns full ISO datetimes (e.g. "2026-08-06T00:00:00.000Z"); this field only
-// ever needs the date part.
 function toDateOnly(value?: string | null): string {
   if (!value) return '';
   return value.slice(0, 10);
+}
+
+const VALID_STATUSES: EvaluationStatus[] = ['NEW', 'PROGRESS', 'REVIEW', 'SUSPENDED', 'DONE'];
+const VALID_RESULTS: EvaluationResult[] = ['PROCESSING', 'RESULT_POSITIVE', 'RESULT_NEGATIVE'];
+
+function normalizeStatus(raw?: string | null): EvaluationStatus {
+  if (raw === 'IN_PROGRESS') return 'PROGRESS';
+  if (raw === 'COMPLETED') return 'DONE';
+  return VALID_STATUSES.includes(raw as EvaluationStatus) ? (raw as EvaluationStatus) : 'NEW';
+}
+
+function normalizeResult(raw?: string | null): EvaluationResult {
+  return VALID_RESULTS.includes(raw as EvaluationResult) ? (raw as EvaluationResult) : 'PROCESSING';
 }
 
 export function EditEvaluationForm({ evaluation, onUpdated }: Props) {
@@ -44,19 +55,14 @@ export function EditEvaluationForm({ evaluation, onUpdated }: Props) {
 
   useEffect(() => {
     if (!evaluation) return;
-    const rawStatus = (evaluation.evaluation_status ?? 'NEW') as string;
-    const normalizedStatus: EvaluationStatus =
-        rawStatus === 'IN_PROGRESS' ? 'PROGRESS' :
-        rawStatus === 'COMPLETED'   ? 'DONE'     :
-        rawStatus as EvaluationStatus;
     setForm({
       evaluation_request_date: toDateOnly(evaluation.evaluation_request_date),
       evaluation_year: String(evaluation.evaluation_year ?? ''),
       evaluation_desc: evaluation.evaluation_desc ?? '',
       evaluation_offer: evaluation.evaluation_offer ?? '',
       evaluation_sale_manager: evaluation.evaluation_sale_manager ?? '',
-      evaluation_status: normalizedStatus,
-      evaluation_result: evaluation.evaluation_result ?? 'PROCESSING',
+      evaluation_status: normalizeStatus(evaluation.evaluation_status),
+      evaluation_result: normalizeResult(evaluation.evaluation_result),
     });
   }, [evaluation]);
 
@@ -70,7 +76,7 @@ export function EditEvaluationForm({ evaluation, onUpdated }: Props) {
 
     try {
       setIsSaving(true);
-      await axios.put(`/api/evaluation/${evaluation.evaluation_id}`, {
+      const response = await axios.put(`/api/evaluation/${evaluation.evaluation_id}`, {
         evaluation_id: evaluation.evaluation_id,
         fk_owner_id: evaluation.fk_owner_id,
         fk_client_id: evaluation.fk_client_id,
@@ -80,7 +86,8 @@ export function EditEvaluationForm({ evaluation, onUpdated }: Props) {
         evaluation_year: Number(form.evaluation_year),
       });
       toast.success(t('planning.evaluation.updated'));
-      onUpdated?.({ ...evaluation, ...form, evaluation_year: Number(form.evaluation_year) });
+      const merged = { ...evaluation, ...form, evaluation_year: Number(form.evaluation_year) };
+      onUpdated?.({ ...merged, ...response.data?.data });
     } catch {
       toast.error(t('planning.evaluation.updateFailed'));
     } finally {

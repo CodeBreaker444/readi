@@ -175,31 +175,31 @@ const EvaluationRequest: React.FC = () => {
           <div className="p-5">
             <EvaluationForm onSubmit={handleFormSubmit} isDark={isDark} />
           </div>
-        </div>
-      </div>
 
-      <div ref={fileUploadRef} className={`rounded-xl shadow-sm border ${cardBg} overflow-hidden mx-2 mb-6`}>
-        <div className={`px-5 py-4 border-b ${dividerColor} flex items-center gap-3`}>
-          <span className="flex items-center justify-center w-8 h-8 rounded-lg bg-violet-500/10 text-violet-500">
-            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-            </svg>
-          </span>
-          <div>
-            <h2 className={`text-base font-semibold ${headingColor}`}>{t('planning.evaluationRequest.filesTitle')}</h2>
-            <p className={`text-xs ${subColor}`}>{t('planning.evaluationRequest.filesSubtitle')}</p>
+          <div ref={fileUploadRef} className={`border-t ${dividerColor}`}>
+            <div className={`px-5 py-4 border-b ${dividerColor} flex items-center gap-3`}>
+              <span className="flex items-center justify-center w-8 h-8 rounded-lg bg-violet-500/10 text-violet-500">
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                </svg>
+              </span>
+              <div>
+                <h2 className={`text-base font-semibold ${headingColor}`}>{t('planning.evaluationRequest.filesTitle')}</h2>
+                <p className={`text-xs ${subColor}`}>{t('planning.evaluationRequest.filesSubtitle')}</p>
+              </div>
+            </div>
+            <div className="p-5">
+              <FileUpload
+                evaluationId={evaluationId ?? 0}
+                clientId={clientId ?? 0}
+                files={files}
+                onFileAdded={handleFileAdded}
+                onFileRemoved={handleFileRemoved}
+                isDark={isDark}
+                disabled={!evaluationId}
+              />
+            </div>
           </div>
-        </div>
-        <div className="p-5">
-          <FileUpload
-            evaluationId={evaluationId ?? 0}
-            clientId={clientId ?? 0}
-            files={files}
-            onFileAdded={handleFileAdded}
-            onFileRemoved={handleFileRemoved}
-            isDark={isDark}
-            disabled={!evaluationId}
-          />
         </div>
       </div>
     </div>
