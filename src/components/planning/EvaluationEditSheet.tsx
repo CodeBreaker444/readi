@@ -72,7 +72,6 @@ const updateEvaluationSchema = z.object({
   evaluation_sale_manager: z.string().max(100).default(''),
   evaluation_folder: z.string().default(''),
   fk_luc_procedure_id: z.number().int().positive().optional(),
-  fk_evaluation_code: z.string().optional(),
 });
 
 type UpdateEvaluationFormValues = z.infer<typeof updateEvaluationSchema>;
@@ -101,8 +100,7 @@ const form = useForm<UpdateEvaluationFormValues>({
             evaluation_offer: '',
             evaluation_sale_manager: '',
             evaluation_folder: '',
-            fk_evaluation_code: '',
-            fk_luc_procedure_id: undefined, 
+            fk_luc_procedure_id: undefined,
         },
     });
 
@@ -134,7 +132,6 @@ const form = useForm<UpdateEvaluationFormValues>({
                 evaluation_offer: evaluation.evaluation_offer ?? '',
                 evaluation_sale_manager: evaluation.evaluation_sale_manager ?? '',
                 evaluation_folder: evaluation.evaluation_folder ?? '',
-                fk_evaluation_code: evaluation.fk_evaluation_code ?? '',
             });
         }
     }, [evaluation, form]);

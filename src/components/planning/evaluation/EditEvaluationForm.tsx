@@ -80,7 +80,6 @@ export function EditEvaluationForm({ evaluation, onUpdated }: Props) {
         evaluation_id: evaluation.evaluation_id,
         fk_owner_id: evaluation.fk_owner_id,
         fk_client_id: evaluation.fk_client_id,
-        fk_evaluation_code: evaluation.fk_evaluation_code,
         evaluation_folder: evaluation.evaluation_folder,
         ...form,
         evaluation_year: Number(form.evaluation_year),

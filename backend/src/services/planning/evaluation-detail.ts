@@ -92,7 +92,6 @@ export interface EvaluationUpdateInput {
   evaluation_id: number;
   fk_owner_id: number;
   fk_client_id: number;
-  fk_evaluation_code?: string;
   evaluation_request_date?: string;
   evaluation_year?: number;
   evaluation_desc?: string;
@@ -111,14 +110,13 @@ export async function updateEvaluation(
   userRole?: string
 ): Promise<{ success: boolean; message: string; data?: Evaluation }> {
   const {
-    evaluation_id, fk_owner_id, fk_client_id, fk_evaluation_code,
+    evaluation_id, fk_owner_id, fk_client_id,
     evaluation_request_date, evaluation_year, evaluation_desc,
     evaluation_status, evaluation_result, evaluation_offer, evaluation_sale_manager,
   } = payload;
 
   const updateData: Record<string, any> = { fk_client_id };
 
-  if (fk_evaluation_code !== undefined) updateData.evaluation_code = fk_evaluation_code;
   if (evaluation_request_date !== undefined) updateData.scheduled_date = evaluation_request_date ? new Date(evaluation_request_date) : null;
   if (evaluation_year !== undefined) updateData.evaluation_year = evaluation_year;
   if (evaluation_desc !== undefined) updateData.evaluation_description = evaluation_desc;
@@ -150,11 +148,6 @@ export async function updateEvaluation(
     return { success: false, message: 'Update failed: record not found' };
   }
 
-  const evalWithCode = await prisma.evaluation.findUnique({
-    where: { evaluation_id },
-    select: { evaluation_code: true, },
-  });
-
   const evalIdentifier = `EVAL_${evaluation_id}`;
 
   logEvent({
@@ -167,7 +160,7 @@ export async function updateEvaluation(
     userEmail: userEmail,
     userRole: userRole,
     ownerId: fk_owner_id,
-    metadata: { updateData, evaluationCode: evalWithCode?.evaluation_code },
+    metadata: { updateData },
   });
 
   const updated = await prisma.evaluation.findUnique({
@@ -561,7 +554,7 @@ export async function updateEvaluationTask(
 ): Promise<{ success: boolean; message?: string }> {
   const evalRow = await prisma.evaluation.findFirst({
     where: { evaluation_id: evaluationId, fk_owner_id: ownerId },
-    select: { evaluation_id: true, evaluation_code: true },
+    select: { evaluation_id: true },
   });
 
   if (!evalRow) return { success: false, message: 'Evaluation not found or access denied' };
@@ -576,7 +569,7 @@ export async function updateEvaluationTask(
     data: { action_status: newStatus },
   });
 
-  const evalIdentifier = evalRow.evaluation_code ? `EVAL_${evalRow.evaluation_code}` : `Evaluation #${evaluationId}`;
+  const evalIdentifier = `EVAL_${evaluationId}`;
   const taskName = actionRow?.action_title ?? `Task #${actionId}`;
 
   logEvent({
@@ -665,7 +658,7 @@ export async function sendEvaluationCommunication(
 ): Promise<{ success: boolean; message?: string }> {
   const evalCheck = await prisma.evaluation.findFirst({
     where: { evaluation_id: evaluationId, fk_owner_id: ownerId },
-    select: { evaluation_id: true, evaluation_code: true },
+    select: { evaluation_id: true },
   });
 
   if (!evalCheck) {
@@ -691,7 +684,7 @@ export async function sendEvaluationCommunication(
     },
   });
 
-  const evalIdentifier = evalCheck.evaluation_code ? `EVAL_${evalCheck.evaluation_code}` : `Evaluation #${evaluationId}`;
+  const evalIdentifier = `EVAL_${evaluationId}`;
   const recipientName = recipientUser ? `${recipientUser.first_name} ${recipientUser.last_name}`.trim() : `User #${params.to_user_id}`;
 
   logEvent({
@@ -735,7 +728,7 @@ export async function sendAssignment(
 
   const evalRow = await prisma.evaluation.findFirst({
     where: { evaluation_id: evaluationId, fk_owner_id: ownerId },
-    select: { evaluation_id: true, evaluation_code: true },
+    select: { evaluation_id: true },
   });
 
   if (!evalRow) {
@@ -749,7 +742,7 @@ export async function sendAssignment(
     return { success: false, message: e.message };
   }
 
-  const subject = `[Assignment] ${taskName} — Evaluation ${evalRow.evaluation_code ?? evaluationId}`;
+  const subject = `[Assignment] ${taskName} — Evaluation EVAL_${evaluationId}`;
 
   try {
     await prisma.messages.create({

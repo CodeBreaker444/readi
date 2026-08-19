@@ -1096,7 +1096,6 @@ model evaluation {
   evaluation_id          Int                     @id @default(autoincrement())
   fk_owner_id            Int
   fk_client_id           Int?
-  evaluation_code        String?                 @db.VarChar(50)
   evaluation_name        String                  @db.VarChar(255)
   evaluation_description String?
   evaluation_type        String?                 @db.VarChar(50)
@@ -1122,7 +1121,6 @@ model evaluation {
   planning_logbook       planning_logbook[]
   planning_test_logbook  planning_test_logbook[]
 
-  @@unique([fk_owner_id, evaluation_code])
   @@index([fk_client_id], map: "idx_evaluation_client")
   @@index([scheduled_date], map: "idx_evaluation_date")
   @@index([evaluation_metadata], map: "idx_evaluation_metadata_gin", type: Gin)

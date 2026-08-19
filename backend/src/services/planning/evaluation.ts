@@ -1,10 +1,7 @@
-import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { RepositoryFile } from '@/config/types/evaluation-planning';
 import { getPresignedDownloadUrl } from '@/lib/s3Client';
 import { logEvent } from '@/backend/services/auditLog/audit-log';
-
-type PrismaTx = Prisma.TransactionClient;
 
 interface EvaluationCreateData {
   client_id: number;
@@ -22,29 +19,6 @@ interface EvaluationCreateData {
     center_lng: number;
     geojson: any;
   }>;
-}
-
-async function generateEvaluationCode(tx: PrismaTx, ownerId: number, year: number): Promise<string> {
-  const prefix = `EVA-${year}-`;
-
-  const data = await tx.evaluation.findFirst({
-    where: { fk_owner_id: ownerId, evaluation_year: year },
-    orderBy: { evaluation_code: 'desc' },
-    select: { evaluation_code: true },
-  });
-
-  let nextNumber = 1;
-
-  if (data?.evaluation_code) {
-    const parts = data.evaluation_code.split('-');
-    const lastSeq = parseInt(parts[parts.length - 1], 10);
-    if (!isNaN(lastSeq)) {
-      nextNumber = lastSeq + 1;
-    }
-  }
-
-  const seq = nextNumber.toString().padStart(4, '0');
-  return `${prefix}${seq}`;
 }
 
 export async function createNewEvaluationRequest(
@@ -71,56 +45,48 @@ export async function createNewEvaluationRequest(
 
     const totalArea = data.areas.reduce((sum, area) => sum + area.area_sqm, 0);
 
-    const evaluation = await prisma.$transaction(async (tx) => {
-      await tx.$executeRaw`SELECT pg_advisory_xact_lock(${ownerId})`;
-
-      const evaluationCode = await generateEvaluationCode(tx, ownerId, data.evaluation_year);
-
-      return tx.evaluation.create({
-        data: {
-          fk_owner_id: ownerId,
-          fk_client_id: data.client_id,
-          fk_luc_procedure_id: data.fk_luc_procedure_id || null,
-          evaluation_code: evaluationCode,
-          evaluation_name: `Evaluation ${evaluationCode}`,
-          evaluation_description: data.evaluation_description,
-          evaluation_type: 'General',
-          evaluation_status: data.evaluation_status,
-          evaluation_year: data.evaluation_year,
-          scheduled_date: data.evaluation_request_date ? new Date(data.evaluation_request_date) : null,
-          created_by_user_id: userId,
-          evaluation_active: 'Y',
-          evaluation_result: 'PROCESSING',
-          evaluation_metadata: {
-            polygon: polygonData,
-            area_sqm: totalArea,
-            procedure_id: data.fk_luc_procedure_id,
-            year: data.evaluation_year,
-            offer: data.evaluation_offer ?? '',
-            sale_manager: data.evaluation_sale_manager ?? '',
-          },
+    const evaluation = await prisma.evaluation.create({
+      data: {
+        fk_owner_id: ownerId,
+        fk_client_id: data.client_id,
+        fk_luc_procedure_id: data.fk_luc_procedure_id || null,
+        evaluation_name: `Evaluation ${data.evaluation_year}`,
+        evaluation_description: data.evaluation_description,
+        evaluation_type: 'General',
+        evaluation_status: data.evaluation_status,
+        evaluation_year: data.evaluation_year,
+        scheduled_date: data.evaluation_request_date ? new Date(data.evaluation_request_date) : null,
+        created_by_user_id: userId,
+        evaluation_active: 'Y',
+        evaluation_result: 'PROCESSING',
+        evaluation_metadata: {
+          polygon: polygonData,
+          area_sqm: totalArea,
+          procedure_id: data.fk_luc_procedure_id,
+          year: data.evaluation_year,
+          offer: data.evaluation_offer ?? '',
+          sale_manager: data.evaluation_sale_manager ?? '',
         },
-        select: { evaluation_id: true, evaluation_code: true },
-      });
+      },
+      select: { evaluation_id: true },
     });
 
     logEvent({
       eventType: 'CREATE',
       entityType: 'evaluation',
       entityId: evaluation.evaluation_id,
-      description: `Evaluation ${evaluation.evaluation_code} created`,
+      description: `Evaluation #${evaluation.evaluation_id} created`,
       userId: userId,
       userName: userName,
       userEmail: userEmail,
       userRole: userRole,
       ownerId: ownerId,
-      metadata: { evaluationCode: evaluation.evaluation_code, clientId: data.client_id },
+      metadata: { clientId: data.client_id },
     });
 
     return {
       success: true,
       evaluation_id: evaluation.evaluation_id,
-      evaluation_code: evaluation.evaluation_code,
       message: 'Evaluation created successfully',
     };
   } catch (error) {

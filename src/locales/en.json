@@ -968,7 +968,6 @@
     },
     "columns": {
       "yearRef": "Year Ref",
-      "evaluationCode": "Evaluation Code",
       "planCode": "Plan Code",
       "customer": "Customer",
       "requestedBy": "Requested By",

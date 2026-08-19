@@ -3,7 +3,6 @@ export interface Evaluation {
   fk_owner_id: number;
   fk_client_id: number | null;
   fk_luc_procedure_id: number;
-  fk_evaluation_code: string;
   evaluation_desc: string;
   evaluation_status: EvaluationStatus;
   evaluation_result: string;

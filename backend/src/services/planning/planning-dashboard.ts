@@ -104,7 +104,7 @@ export async function getPlanningList(ownerId: number) {
       created_by_user_id: true,
       assigned_to_user_id: true,
       client: { select: { client_id: true, client_name: true } },
-      evaluation: { select: { evaluation_id: true, evaluation_code: true, evaluation_metadata: true } },
+      evaluation: { select: { evaluation_id: true, evaluation_metadata: true } },
       users_planning_created_by_user_idTousers: { select: { user_id: true, first_name: true, last_name: true, user_role: true } },
       users_planning_assigned_to_user_idTousers: { select: { user_id: true, first_name: true, last_name: true, user_role: true } },
     },

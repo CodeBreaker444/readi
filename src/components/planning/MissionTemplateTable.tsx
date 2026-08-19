@@ -7,7 +7,6 @@ interface MissionTemplate {
   template_code: string;
   client_name: string;
   pilot_name: string;
-  evaluation_code: string;
   planning_code: string;
   mission_type: string;
   last_update: string;
@@ -24,7 +23,6 @@ const MissionTemplateTable: React.FC<MissionTemplateTableProps> = ({ data, isDar
     { title: 'Template Code', data: 'template_code' },
     { title: 'Client', data: 'client_name' },
     { title: 'PiC', data: 'pilot_name' },
-    { title: 'Evaluation', data: 'evaluation_code' },
     { title: 'Planning', data: 'planning_code' },
     { title: 'Mission Type', data: 'mission_type' },
     { title: 'Last Update', data: 'last_update' },
