@@ -30,6 +30,7 @@ interface Communication {
     sent_at: string;
     sent_by_user_id: number;
     sender_name: string;
+    recipient_names: string[];
     communication_file_name: string | null;
     communication_file_url: string | null;
 }
@@ -117,6 +118,9 @@ export function PlanningCommunicationTable({ planningId, refreshKey }: Props) {
                                         {t('planning.communication.sender')}
                                     </TableHead>
                                     <TableHead className={cn('text-xs h-8 px-3', isDark ? 'text-slate-400' : 'text-slate-600')}>
+                                        {t('planning.communication.receiver')}
+                                    </TableHead>
+                                    <TableHead className={cn('text-xs h-8 px-3', isDark ? 'text-slate-400' : 'text-slate-600')}>
                                         {t('planning.communication.level')}
                                     </TableHead>
                                     <TableHead className={cn('text-xs h-8 px-3', isDark ? 'text-slate-400' : 'text-slate-600')}>
@@ -154,6 +158,11 @@ export function PlanningCommunicationTable({ planningId, refreshKey }: Props) {
                                         <TableCell className="px-3 py-2">
                                             <p className={cn('text-xs', isDark ? 'text-slate-300' : 'text-slate-600')}>
                                                 {comm.sender_name || '-'}
+                                            </p>
+                                        </TableCell>
+                                        <TableCell className="px-3 py-2">
+                                            <p className={cn('text-xs max-w-[160px] truncate', isDark ? 'text-slate-300' : 'text-slate-600')}>
+                                                {comm.recipient_names?.length ? comm.recipient_names.join(', ') : '-'}
                                             </p>
                                         </TableCell>
                                         <TableCell className="px-3 py-2">

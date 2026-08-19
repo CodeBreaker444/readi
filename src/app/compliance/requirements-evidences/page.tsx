@@ -221,7 +221,7 @@ export default function RequirementsEvidencesPage() {
       regulatory_body: r.regulatory_body ?? 'INTERNAL',
       requirement_status: r.requirement_status as ComplianceStatus,
       review_frequency: r.review_frequency != null ? String(r.review_frequency) : '2',
-      next_review_date: r.next_review_date ?? '',
+      next_review_date: r.next_review_date ? r.next_review_date.slice(0, 10) : '',
       requirement_description: r.requirement_description ?? '',
     });
     setReqModalOpen(true);

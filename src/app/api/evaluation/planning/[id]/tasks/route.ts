@@ -12,6 +12,7 @@ const planningIdParamSchema = z.object({
 const planningTaskUpdateSchema = z.object({
     task_id: z.coerce.number().int().nonnegative(),
     task_status: z.enum(['pending', 'in_progress', 'completed', 'skipped']),
+    checklist_result: z.record(z.string(), z.unknown()).optional(),
 });
 
 export async function GET(
@@ -55,7 +56,8 @@ export async function PUT(
             session!.user.userId,
             session!.user.fullname,
             session!.user.email,
-            session!.user.role
+            session!.user.role,
+            validated.checklist_result
         );
         if (!result.success) {
             return apiError(E.BL001, 422, { message: [result.message ?? ''] });

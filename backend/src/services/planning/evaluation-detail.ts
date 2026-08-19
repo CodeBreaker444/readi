@@ -863,8 +863,15 @@ export async function getCommunicationsByEvaluation(
   });
 
   const userIds = communications.map(c => c.sent_by_user_id).filter(Boolean);
-  const users = userIds.length > 0 ? await prisma.public_users.findMany({
-    where: { user_id: { in: userIds as number[] } },
+  const recipientIds = Array.from(
+    new Set(
+      communications.flatMap((c) => (Array.isArray(c.recipients) ? (c.recipients as unknown[]) : []))
+        .filter((id): id is number => typeof id === 'number')
+    )
+  );
+  const allUserIds = Array.from(new Set([...(userIds as number[]), ...recipientIds]));
+  const users = allUserIds.length > 0 ? await prisma.public_users.findMany({
+    where: { user_id: { in: allUserIds } },
     select: {
       user_id: true,
       first_name: true,
@@ -884,5 +891,11 @@ export async function getCommunicationsByEvaluation(
     sent_by_user_id: comm.sent_by_user_id,
     sender: comm.sent_by_user_id ? userMap.get(comm.sent_by_user_id) : null,
     recipients: comm.recipients,
+    recipient_names: (Array.isArray(comm.recipients) ? (comm.recipients as unknown[]) : [])
+      .filter((id): id is number => typeof id === 'number')
+      .map((id) => {
+        const u = userMap.get(id);
+        return u ? `${u.first_name ?? ''} ${u.last_name ?? ''}`.trim() : `#${id}`;
+      }),
   }));
 }

@@ -91,6 +91,15 @@ const STATIC_AUDIT_SCHEDULE = [
   },
 ];
 
+function extractErrorMessage(err: unknown, fallback: string): string {
+  if (axios.isAxiosError(err)) {
+    const data = err.response?.data as { error?: string; errors?: Record<string, string[] | undefined> } | undefined;
+    const firstFieldError = data?.errors && Object.values(data.errors).flat().find(Boolean);
+    return firstFieldError || data?.error || fallback;
+  }
+  return fallback;
+}
+
 
 interface FormState {
   requirement_id?: number;
@@ -257,7 +266,7 @@ export default function GeneralAuditPlanPage() {
       fetchRecords();
     } catch (err) {
       console.error('Failed to save requirement', err);
-      toast.error(t('compliance.generalAuditPlan.messages.saveFailed'));
+      toast.error(extractErrorMessage(err, t('compliance.generalAuditPlan.messages.saveFailed')));
     } finally {
       setSaving(false);
     }

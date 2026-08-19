@@ -127,17 +127,9 @@ export function PlanningTaskTableSection(props: {
     setModal({ type: "none" });
   }
 
-  async function handleChecklistComplete(task: EvaluationTask, _data: any) {
-    try {
-      await axios.put(`/api/evaluation/planning/${planningId}/tasks`, {
-        task_id: task.task_id,
-        task_status: "completed",
-      });
-      toast.success(t("planning.tasks.checklistCompleted"));
-      fetchTasks();
-    } catch {
-      toast.error(t("planning.tasks.updateFailed"));
-    }
+  async function handleChecklistComplete(_task: EvaluationTask, _data: any) {
+    toast.success(t("planning.tasks.checklistCompleted"));
+    fetchTasks();
     closeModal();
   }
 
@@ -389,6 +381,7 @@ export function PlanningTaskTableSection(props: {
           open
           task={modal.task}
           evaluationId={evaluationId}
+          planningId={planningId}
           onClose={closeModal}
           onComplete={(data) => handleChecklistComplete(modal.task, data)}
         />
