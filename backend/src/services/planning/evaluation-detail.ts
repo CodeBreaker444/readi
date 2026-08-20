@@ -207,17 +207,28 @@ export async function getEvaluationFiles(
   ownerId: number,
   evaluationId: number
 ): Promise<EvaluationFile[]> {
-  const evalCheck = await prisma.evaluation.findFirst({
-    where: { evaluation_id: evaluationId, fk_owner_id: ownerId },
-    select: { evaluation_id: true },
-  });
+  const [evalCheck, data] = await Promise.all([
+    prisma.evaluation.findFirst({
+      where: { evaluation_id: evaluationId, fk_owner_id: ownerId },
+      select: { evaluation_id: true },
+    }),
+    prisma.evaluation_file.findMany({
+      where: { fk_evaluation_id: evaluationId },
+      orderBy: { uploaded_at: 'desc' },
+      select: {
+        file_id: true,
+        fk_evaluation_id: true,
+        file_name: true,
+        file_path: true,
+        file_description: true,
+        file_version: true,
+        file_size: true,
+        uploaded_at: true,
+      },
+    }),
+  ]);
 
   if (!evalCheck) throw new Error('Evaluation not found or access denied');
-
-  const data = await prisma.evaluation_file.findMany({
-    where: { fk_evaluation_id: evaluationId },
-    orderBy: { uploaded_at: 'desc' },
-  });
 
   const files = await Promise.all(
     data.map(async (row) => {
@@ -527,11 +538,17 @@ export async function getEvaluationTasks(
 
   if (seedRows.length === 0) return { tasks: [], allCompleted: false };
 
-  await prisma.evaluation_action.createMany({ data: seedRows as any[] });
-
-  const seeded = await prisma.evaluation_action.findMany({
-    where: { fk_evaluation_id: evaluationId },
-    orderBy: { action_order: 'asc' },
+  const seeded = await prisma.evaluation_action.createManyAndReturn({
+    data: seedRows as any[],
+    select: {
+      action_id: true,
+      action_code: true,
+      action_title: true,
+      action_type: true,
+      action_status: true,
+      action_order: true,
+      dependencies: true,
+    },
   });
 
   const checklistCodes = seeded
@@ -834,26 +851,36 @@ export async function getCommunicationsByEvaluation(
   ownerId: number,
   evaluationId: number
 ): Promise<any[]> {
-  const evalRow = await prisma.evaluation.findFirst({
-    where: { evaluation_id: evaluationId, fk_owner_id: ownerId },
-    select: { evaluation_id: true },
-  });
+  const [evalRow, communications] = await Promise.all([
+    prisma.evaluation.findFirst({
+      where: { evaluation_id: evaluationId, fk_owner_id: ownerId },
+      select: { evaluation_id: true },
+    }),
+    prisma.communication_general.findMany({
+      where: {
+        fk_owner_id: ownerId,
+        communication_type: 'evaluation',
+        OR: [
+          { fk_evaluation_id: evaluationId },
+          { communication_id: evaluationId },
+        ],
+      },
+      orderBy: { sent_at: 'desc' },
+      select: {
+        communication_id: true,
+        subject: true,
+        message: true,
+        status: true,
+        sent_at: true,
+        sent_by_user_id: true,
+        recipients: true,
+      },
+    }),
+  ]);
 
   if (!evalRow) {
     throw new Error('Evaluation not found or access denied');
   }
-
-  const communications = await prisma.communication_general.findMany({
-    where: {
-      fk_owner_id: ownerId,
-      communication_type: 'evaluation',
-      OR: [
-        { fk_evaluation_id: evaluationId },
-        { communication_id: evaluationId },
-      ],
-    },
-    orderBy: { sent_at: 'desc' },
-  });
 
   const userIds = communications.map(c => c.sent_by_user_id).filter(Boolean);
   const recipientIds = Array.from(

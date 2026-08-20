@@ -396,7 +396,19 @@ export async function getPlanningLogbookList(
     prisma.planning_logbook.findMany({
       where: { fk_planning_id: planningId, fk_owner_id: ownerId },
       orderBy: { mission_planning_id: 'asc' },
-      include: {
+      select: {
+        mission_planning_id: true,
+        fk_planning_id: true,
+        fk_evaluation_id: true,
+        fk_client_id: true,
+        fk_tool_id: true,
+        mission_planning_code: true,
+        mission_planning_desc: true,
+        mission_planning_limit_json: true,
+        mission_planning_active: true,
+        mission_planning_ver: true,
+        mission_planning_filename: true,
+        mission_planning_filesize: true,
         planning: { select: { planning_description: true } },
         tool: { select: { tool_code: true, tool_description: true } },
       },
@@ -595,9 +607,19 @@ export async function getDroneToolList(
     where: {
       fk_owner_id: ownerId,
       ...(active !== 'ALL' && { tool_active: active }),
+      ...(clientId ? { OR: [{ assigned_client_id: clientId }, { assigned_client_id: null }] } : {}),
+      ...(status !== 'ALL' && { tool_status: { status_code: status } }),
     },
     orderBy: { tool_id: 'asc' },
-    include: {
+    select: {
+      tool_id: true,
+      tool_code: true,
+      tool_description: true,
+      tool_name: true,
+      tool_active: true,
+      tool_metadata: true,
+      fk_owner_id: true,
+      fk_model_id: true,
       tool_model: { select: { model_id: true, model_code: true, model_name: true, manufacturer: true } },
       tool_status: { select: { status_code: true, status_name: true } },
     },
