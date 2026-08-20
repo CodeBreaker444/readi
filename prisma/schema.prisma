@@ -777,6 +777,8 @@ model communication_general {
   owner                   owner?        @relation(fields: [fk_owner_id], references: [owner_id], onDelete: NoAction, onUpdate: NoAction)
   users                   public_users? @relation(fields: [sent_by_user_id], references: [user_id], onUpdate: NoAction)
 
+  @@index([fk_owner_id, fk_evaluation_id], map: "idx_communication_general_owner_evaluation")
+  @@index([fk_owner_id, fk_planning_id], map: "idx_communication_general_owner_planning")
   @@schema("public")
 }
 
@@ -1152,6 +1154,7 @@ model evaluation_action {
   users               public_users? @relation(fields: [assigned_to_user_id], references: [user_id], onUpdate: NoAction)
   evaluation          evaluation    @relation(fields: [fk_evaluation_id], references: [evaluation_id], onDelete: Cascade, onUpdate: NoAction)
 
+  @@index([fk_evaluation_id], map: "idx_evaluation_action_evaluation")
   @@schema("public")
 }
 
@@ -1174,6 +1177,7 @@ model evaluation_file {
   evaluation          evaluation    @relation(fields: [fk_evaluation_id], references: [evaluation_id], onDelete: Cascade, onUpdate: NoAction)
   users               public_users? @relation(fields: [uploaded_by_user_id], references: [user_id], onUpdate: NoAction)
 
+  @@index([fk_evaluation_id], map: "idx_evaluation_file_evaluation")
   @@schema("public")
 }
 
@@ -2103,6 +2107,7 @@ model planning_logbook {
   planning_test_logbook       planning_test_logbook[]
 
   @@index([waypoints], map: "idx_mission_planning_waypoints_gin", type: Gin)
+  @@index([fk_planning_id, fk_owner_id], map: "idx_planning_logbook_planning_owner")
   @@schema("public")
 }
 
