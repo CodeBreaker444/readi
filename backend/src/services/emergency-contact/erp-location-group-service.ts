@@ -53,18 +53,17 @@ export async function listLocationGroups(ownerId: number): Promise<LocationGroup
 }
 
 export async function createLocationGroup(input: LocationGroupCreateInput, ownerId: number): Promise<LocationGroup> {
-  const newErpIds: bigint[] = [];
-  for (const nc of input.new_contacts) {
-    const erp = await prisma.emergency_response_plan.create({
-      data: {
-        description: nc.description,
-        contact: nc.contact,
-        erp_type: nc.type,
-        fk_owner_id: ownerId,
-      },
-    });
-    newErpIds.push(erp.erp_id);
-  }
+  const newErpIds: bigint[] = input.new_contacts.length > 0
+    ? (await prisma.emergency_response_plan.createManyAndReturn({
+        data: input.new_contacts.map((nc) => ({
+          description: nc.description,
+          contact: nc.contact,
+          erp_type: nc.type,
+          fk_owner_id: ownerId,
+        })),
+        select: { erp_id: true },
+      })).map((r) => r.erp_id)
+    : [];
 
   const allContactIds = [
     ...input.existing_contact_ids.map((id) => BigInt(id)),
@@ -100,18 +99,17 @@ export async function createLocationGroup(input: LocationGroupCreateInput, owner
 }
 
 export async function updateLocationGroup(id: number, input: LocationGroupCreateInput, ownerId: number): Promise<LocationGroup> {
-  const newErpIds: bigint[] = [];
-  for (const nc of input.new_contacts) {
-    const erp = await prisma.emergency_response_plan.create({
-      data: {
-        description: nc.description,
-        contact: nc.contact,
-        erp_type: nc.type,
-        fk_owner_id: ownerId,
-      },
-    });
-    newErpIds.push(erp.erp_id);
-  }
+  const newErpIds: bigint[] = input.new_contacts.length > 0
+    ? (await prisma.emergency_response_plan.createManyAndReturn({
+        data: input.new_contacts.map((nc) => ({
+          description: nc.description,
+          contact: nc.contact,
+          erp_type: nc.type,
+          fk_owner_id: ownerId,
+        })),
+        select: { erp_id: true },
+      })).map((r) => r.erp_id)
+    : [];
 
   const allContactIds = [
     ...input.existing_contact_ids.map((eid) => BigInt(eid)),
