@@ -221,7 +221,13 @@ export async function getPlanningData(ownerId: number, planningId: number) {
       created_at: true,
       updated_at: true,
       client: { select: { client_id: true, client_name: true } },
-      evaluation: { select: { evaluation_id: true, evaluation_metadata: true } },
+      evaluation: {
+        select: {
+          evaluation_id: true,
+          evaluation_metadata: true,
+          luc_procedure: { select: { procedure_code: true, procedure_version: true, procedure_description: true } },
+        },
+      },
       users_planning_created_by_user_idTousers: { select: { user_id: true, first_name: true, last_name: true, user_role: true } },
       users_planning_assigned_to_user_idTousers: { select: { user_id: true, first_name: true, last_name: true, user_role: true } },
     },
@@ -233,11 +239,12 @@ export async function getPlanningData(ownerId: number, planningId: number) {
   const evaluation = data.evaluation;
   const assignedToUser = data.users_planning_assigned_to_user_idTousers;
 
-  let lucCode = '';
-  let lucVer = '';
-  let lucDesc = '';
+  let lucCode = evaluation?.luc_procedure?.procedure_code ?? '';
+  let lucVer = evaluation?.luc_procedure?.procedure_version ?? '';
+  let lucDesc = evaluation?.luc_procedure?.procedure_description ?? '';
+
   const evalMeta = evaluation?.evaluation_metadata;
-  if (evalMeta) {
+  if (!lucCode && evalMeta) {
     try {
       const meta = typeof evalMeta === 'string' ? JSON.parse(evalMeta) : evalMeta;
       if ((meta as any).procedure_id) {
@@ -385,20 +392,21 @@ export async function getPlanningLogbookList(
   ownerId: number,
   planningId: number
 ): Promise<PlanningLogbookRow[]> {
-  const data = await prisma.planning_logbook.findMany({
-    where: { fk_planning_id: planningId, fk_owner_id: ownerId },
-    orderBy: { mission_planning_id: 'asc' },
-    include: {
-      planning: { select: { planning_description: true } },
-      tool: { select: { tool_code: true, tool_description: true } },
-    },
-  });
+  const [data, testCounts] = await Promise.all([
+    prisma.planning_logbook.findMany({
+      where: { fk_planning_id: planningId, fk_owner_id: ownerId },
+      orderBy: { mission_planning_id: 'asc' },
+      include: {
+        planning: { select: { planning_description: true } },
+        tool: { select: { tool_code: true, tool_description: true } },
+      },
+    }),
+    prisma.planning_test_logbook.count({
+      where: { fk_planning_id: planningId },
+    }),
+  ]);
 
   if (!data || data.length === 0) return [];
-
-  const testCounts = await prisma.planning_test_logbook.count({
-    where: { fk_planning_id: planningId },
-  });
 
   return data.map((row) => ({
     mission_planning_id: row.mission_planning_id,
