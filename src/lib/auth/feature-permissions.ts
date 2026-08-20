@@ -50,8 +50,25 @@ export async function getEffectiveUserPermissions(user: EffectivePermissionsUser
     return result;
   }
 
+  if (!role) {
+    for (const key of ALL_FEATURE_KEYS) result[key] = null;
+    return result;
+  }
+
+  if (!MATRIX_ROLES.includes(role)) {
+    for (const key of ALL_FEATURE_KEYS) {
+      result[key] = roleHasPermission(role, featureToLegacyPermission(key)) ? 'A' : null;
+    }
+    return result;
+  }
+
+  const rows = await prisma.role_feature_permission.findMany({
+    where: { fk_owner_id: user.fk_owner_id, role },
+    select: { feature_key: true, access: true },
+  });
+  const overrides = new Map(rows.map((r) => [r.feature_key as FeatureKey, r.access as AccessLevel]));
   for (const key of ALL_FEATURE_KEYS) {
-    result[key] = await getRoleFeatureAccess(user.fk_owner_id, role, key);
+    result[key] = overrides.get(key) ?? DEFAULT_ROLE_FEATURE_ACCESS[role]?.[key] ?? null;
   }
   return result;
 }
