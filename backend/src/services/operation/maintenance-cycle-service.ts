@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma';
-import { refreshMaintenanceDaysForTool } from '@/backend/utils/refresh-maintenance-days';
+import { refreshMaintenanceDays, refreshMaintenanceDaysForTool } from '@/backend/utils/refresh-maintenance-days';
 import { MaintenanceStatus } from '@/config/types/maintenance';
 
 
@@ -408,52 +408,90 @@ export async function updateComponentMaintenanceCycle(
 
 
 export async function getToolMaintenanceStatus(toolId: number): Promise<MaintenanceStatus> {
-  const openTicket = await prisma.maintenance_ticket.findFirst({
-    where: { fk_tool_id: toolId, NOT: { ticket_status: 'CLOSED' } },
-    select: { ticket_id: true },
+  const statusMap = await getToolMaintenanceStatusBatch([toolId]);
+  return statusMap[toolId] ?? 'OK';
+}
+
+/**
+ * Batched form of getToolMaintenanceStatus: resolves maintenance status for many tools
+ * with a fixed number of queries instead of ~3 sequential queries per tool.
+ */
+export async function getToolMaintenanceStatusBatch(toolIds: number[]): Promise<Record<number, MaintenanceStatus>> {
+  const result: Record<number, MaintenanceStatus> = {};
+  if (toolIds.length === 0) return result;
+
+  const openTickets = await prisma.maintenance_ticket.findMany({
+    where: { fk_tool_id: { in: toolIds }, NOT: { ticket_status: 'CLOSED' } },
+    select: { fk_tool_id: true },
   });
+  const inMaintenanceSet = new Set(openTickets.map((t) => t.fk_tool_id));
 
-  if (openTicket) return 'IN_MAINTENANCE';
+  const remainingToolIds = toolIds.filter((id) => !inMaintenanceSet.has(id));
 
-  await refreshMaintenanceDaysForTool(toolId);
-
-  const components = await prisma.tool_component.findMany({
-    where: { fk_tool_id: toolId, component_active: 'Y' },
-    select: {
-      maintenance_cycle: true,
-      maintenance_cycle_hour: true,
-      maintenance_cycle_day: true,
-      maintenance_cycle_flight: true,
-      current_maintenance_hours: true,
-      current_maintenance_days: true,
-      current_maintenance_flights: true,
-    },
-  });
-
-  if (!components || components.length === 0) return 'OK';
-
-  let worst: MaintenanceStatus = 'OK';
-
-  for (const comp of components) {
-    const cycleType = comp.maintenance_cycle || 'NONE';
-    if (cycleType === 'NONE') continue;
-
-    const limitHour = Number(comp.maintenance_cycle_hour ?? 0);
-    const limitFlight = Number(comp.maintenance_cycle_flight ?? 0);
-    const limitDay = Number(comp.maintenance_cycle_day ?? 0);
-
-    const currentHours = Number(comp.current_maintenance_hours ?? 0);
-    const currentFlights = Number(comp.current_maintenance_flights ?? 0);
-    const currentDays = Number(comp.current_maintenance_days ?? 0);
-
-    const { status } = computeComponentStatus(
-      currentHours, currentFlights, currentDays,
-      { hour: limitHour, flight: limitFlight, day: limitDay }
-    );
-
-    if (status === 'DUE') { worst = 'DUE'; break; }
-    if (status === 'ALERT') worst = 'ALERT';
+  if (remainingToolIds.length > 0) {
+    await refreshMaintenanceDays(remainingToolIds);
   }
 
-  return worst;
+  const components = remainingToolIds.length > 0
+    ? await prisma.tool_component.findMany({
+        where: { fk_tool_id: { in: remainingToolIds }, component_active: 'Y' },
+        select: {
+          fk_tool_id: true,
+          maintenance_cycle: true,
+          maintenance_cycle_hour: true,
+          maintenance_cycle_day: true,
+          maintenance_cycle_flight: true,
+          current_maintenance_hours: true,
+          current_maintenance_days: true,
+          current_maintenance_flights: true,
+        },
+      })
+    : [];
+
+  const componentsByTool = new Map<number, typeof components>();
+  for (const comp of components) {
+    const arr = componentsByTool.get(comp.fk_tool_id) ?? [];
+    arr.push(comp);
+    componentsByTool.set(comp.fk_tool_id, arr);
+  }
+
+  for (const toolId of toolIds) {
+    if (inMaintenanceSet.has(toolId)) {
+      result[toolId] = 'IN_MAINTENANCE';
+      continue;
+    }
+
+    const toolComponents = componentsByTool.get(toolId);
+    if (!toolComponents || toolComponents.length === 0) {
+      result[toolId] = 'OK';
+      continue;
+    }
+
+    let worst: MaintenanceStatus = 'OK';
+
+    for (const comp of toolComponents) {
+      const cycleType = comp.maintenance_cycle || 'NONE';
+      if (cycleType === 'NONE') continue;
+
+      const limitHour = Number(comp.maintenance_cycle_hour ?? 0);
+      const limitFlight = Number(comp.maintenance_cycle_flight ?? 0);
+      const limitDay = Number(comp.maintenance_cycle_day ?? 0);
+
+      const currentHours = Number(comp.current_maintenance_hours ?? 0);
+      const currentFlights = Number(comp.current_maintenance_flights ?? 0);
+      const currentDays = Number(comp.current_maintenance_days ?? 0);
+
+      const { status } = computeComponentStatus(
+        currentHours, currentFlights, currentDays,
+        { hour: limitHour, flight: limitFlight, day: limitDay }
+      );
+
+      if (status === 'DUE') { worst = 'DUE'; break; }
+      if (status === 'ALERT') worst = 'ALERT';
+    }
+
+    result[toolId] = worst;
+  }
+
+  return result;
 }

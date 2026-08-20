@@ -1,7 +1,7 @@
 import { Mission, MissionBoardData, MissionStatusCode, UpdateMissionStatusPayload } from '@/config/types/operation';
 import { prisma } from '@/lib/prisma';
 import { autoAbortStaleMissions } from './auto-abort-service';
-import { getToolMaintenanceStatus } from './maintenance-cycle-service';
+import { getToolMaintenanceStatusBatch } from './maintenance-cycle-service';
 import { assertMissionEditable } from './mission-lock';
 import { sendMissionStartedModuleEmail, sendMissionCompletedModuleEmail } from '../settings/module-email-notification-service';
 
@@ -157,16 +157,12 @@ export async function getMissionBoard(
   const allMissions = [...scheduled, ...in_progress, ...done];
   const uniqueToolIds = [...new Set(allMissions.map(m => m.fk_vehicle_id).filter(Boolean))];
 
-  const statusMap: Record<number, string> = {};
-  await Promise.all(
-    uniqueToolIds.map(async (toolId) => {
-      try {
-        statusMap[toolId] = await getToolMaintenanceStatus(toolId);
-      } catch {
-        statusMap[toolId] = 'OK';
-      }
-    })
-  );
+  let statusMap: Record<number, string> = {};
+  try {
+    statusMap = await getToolMaintenanceStatusBatch(uniqueToolIds);
+  } catch {
+    // leave statusMap empty; missing entries fall back to 'OK' below
+  }
 
   for (const m of allMissions) {
     m.maintenance_status = (statusMap[m.fk_vehicle_id] as Mission['maintenance_status']) ?? 'OK';
