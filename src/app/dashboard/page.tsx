@@ -14,13 +14,17 @@ export default async function DashboardPage() {
   const userProfileCode = session.user.role;
   const userId = session.user.userId;
 
-  const dashboardData = await getDashboardData({
-    owner_id: ownerId,
-    user_id: userId,
-    user_timezone: session.user.timezone || 'Europe/Berlin',
-    user_profile_code: userProfileCode,
-  });
-  
+  let dashboardData = null;
+  try {
+    dashboardData = await getDashboardData({
+      owner_id: ownerId,
+      user_id: userId,
+      user_timezone: session.user.timezone || 'Europe/Berlin',
+      user_profile_code: userProfileCode,
+    });
+  } catch (err) {
+    console.error('[DashboardPage] SSR dashboard fetch failed, falling back to client-side fetch:', err);
+  }
 
   return (
     <DashboardClient 
