@@ -300,8 +300,7 @@ export async function updateMissionStatus(
     data: updateFields,
   });
 
-  // Send email notifications based on status change
-  try {
+  (async () => {
     const mission = await prisma.pilot_mission.findUnique({
       where: { pilot_mission_id: payload.mission_id },
       select: {
@@ -315,33 +314,33 @@ export async function updateMissionStatus(
       },
     });
 
-    if (!mission) return { code: 1, message: 'Mission status updated successfully' };
+    if (!mission) return;
 
-    const missionType = mission.fk_mission_type_id 
+    const missionType = mission.fk_mission_type_id
       ? await prisma.pilot_mission_type.findUnique({
           where: { mission_type_id: mission.fk_mission_type_id },
           select: { type_name: true },
         })
       : null;
 
-    const user = payload.pilot_id 
+    const user = payload.pilot_id
       ? await prisma.public_users.findUnique({
           where: { user_id: payload.pilot_id },
           select: { first_name: true, last_name: true, user_timezone: true },
         })
       : null;
 
-    const userName = user 
-      ? `${user.first_name} ${user.last_name}`.trim() 
+    const userName = user
+      ? `${user.first_name} ${user.last_name}`.trim()
       : 'System';
-    
+
     const userTimezone = user?.user_timezone || 'UTC';
 
     if (payload.workflow_mission_status === '_START') {
-      const startTime = mission.actual_start 
+      const startTime = mission.actual_start
         ? dateConversionUtcToLocal(mission.actual_start, userTimezone)
         : dateConversionUtcToLocal(new Date(), userTimezone);
-      
+
       await sendMissionStartedModuleEmail(mission.fk_owner_id, {
         missionCode: mission.mission_code || '',
         missionType: missionType?.type_name || 'Unknown',
@@ -361,7 +360,7 @@ export async function updateMissionStatus(
         duration = `${diffHours}h ${diffMins}m`;
       }
 
-      const completionTime = mission.actual_end 
+      const completionTime = mission.actual_end
         ? dateConversionUtcToLocal(mission.actual_end, userTimezone)
         : dateConversionUtcToLocal(new Date(), userTimezone);
 
@@ -374,10 +373,10 @@ export async function updateMissionStatus(
         notes: mission.notes || undefined,
       });
     }
-  } catch (emailError) {
+  })().catch((emailError) => {
     console.error('Failed to send mission status email:', emailError);
     // Don't fail the status update if email fails
-  }
+  });
 
   return { code: 1, message: 'Mission status updated successfully' };
 }
