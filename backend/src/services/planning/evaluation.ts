@@ -2,6 +2,10 @@ import { prisma } from '@/lib/prisma';
 import { RepositoryFile } from '@/config/types/evaluation-planning';
 import { getPresignedDownloadUrl } from '@/lib/s3Client';
 import { logEvent } from '@/backend/services/auditLog/audit-log';
+import { Prisma } from '@prisma/client';
+
+export const EVALUATION_FK_MISSING_MESSAGE =
+  'Selected client or procedure could not be found — it may have been removed or deactivated';
 
 interface EvaluationCreateData {
   client_id: number;
@@ -90,6 +94,9 @@ export async function createNewEvaluationRequest(
       message: 'Evaluation created successfully',
     };
   } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2003') {
+      throw new Error(EVALUATION_FK_MISSING_MESSAGE);
+    }
     console.error('createNewEvaluationRequest error:', error);
     throw new Error(
       error instanceof Error ? error.message : 'Failed to create evaluation'
