@@ -21,7 +21,6 @@ export interface MissionTemplateRow {
   planning_name: string | null;
   planning_status: string | null;
   evaluation_id: number | null;
-  evaluation_code: string | null;
   client_name: string | null;
   pilot_fullname: string | null;
   tool_code: string | null;

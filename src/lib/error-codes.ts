@@ -163,6 +163,9 @@ export const E = {
   /** DCC report-bug payload missing required fields. */
   VL020: { code: 'VL020', category: 'Validation', message: 'Validation failed', detail: 'POST /api/dcc/report-bug: title or dcc field absent from request body.' },
 
+  /** Request body could not be parsed as JSON. */
+  VL021: { code: 'VL021', category: 'Validation', message: 'Request body must be valid JSON', detail: 'request.json() threw a SyntaxError before schema validation could run.' },
+
   // ── Not Found (NF) ───────────────────────────────────────────────────────
 
   /** users table returned null for given user_id. */
@@ -250,6 +253,9 @@ export const E = {
 
   /** Catch-all for unexpected Postgres/PostgREST error codes. */
   DB007: { code: 'DB007', category: 'Database', message: 'A database error occurred', detail: 'Supabase returned an error code not specifically handled; raw details logged server-side.' },
+
+  /** Prisma foreign_key_violation (P2003) on create/update. */
+  DB008: { code: 'DB008', category: 'Database', message: 'The selected record could not be found — it may have been removed or deactivated', detail: 'Prisma error code P2003 (foreign key constraint violated) — referenced row no longer exists.' },
 
   // ── Internal Server (SV) ─────────────────────────────────────────────────
 

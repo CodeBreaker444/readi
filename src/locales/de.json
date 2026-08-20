@@ -965,7 +965,6 @@
     },
     "columns": {
       "yearRef": "Jahresreferenz",
-      "evaluationCode": "Bewertungscode",
       "planCode": "Plancode",
       "customer": "Kunde",
       "requestedBy": "Angefragt von",

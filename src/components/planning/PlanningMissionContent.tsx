@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/card";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { FC, useCallback, useEffect, useState } from "react";
+import { FC, useCallback, useEffect, useRef, useState } from "react";
 import EditPlanningRequestCard from "./EditPlanningRequestCard";
 import MissionPlanningLogbookAddNew from "./MissionPlanningLogbookAddNew";
 import MissionPlanningLogbookTable from "./MissionPlanningLogbookTable";
@@ -84,6 +84,8 @@ export const PlanningMissionContent: FC<PlanningMissionProps> = ({ user }) => {
 
   const [commRefreshKey, setCommRefreshKey] = useState(0);
 
+  const isInitialLoadRef = useRef(true);
+
   useEffect(() => {
     if (!c_id || !e_id || !p_id) {
       router.replace("/planning/planning-dashboard");
@@ -92,7 +94,7 @@ export const PlanningMissionContent: FC<PlanningMissionProps> = ({ user }) => {
 
   const loadPageData = useCallback(async () => {
     if (!p_id) return;
-    if (initialLoad) setLoading(true);
+    if (isInitialLoadRef.current) setLoading(true);
 
     try {
       const [
@@ -130,9 +132,12 @@ export const PlanningMissionContent: FC<PlanningMissionProps> = ({ user }) => {
       toast.error(t("planning.missionPlanning.loadError"));
     } finally {
       setLoading(false);
-      setInitialLoad(false);
+      if (isInitialLoadRef.current) {
+        isInitialLoadRef.current = false;
+        setInitialLoad(false);
+      }
     }
-  }, [p_id, c_id, initialLoad, t]);
+  }, [p_id, c_id, t]);
 
   useEffect(() => {
     loadPageData();

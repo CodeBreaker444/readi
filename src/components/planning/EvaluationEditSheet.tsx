@@ -72,7 +72,6 @@ const updateEvaluationSchema = z.object({
   evaluation_sale_manager: z.string().max(100).default(''),
   evaluation_folder: z.string().default(''),
   fk_luc_procedure_id: z.number().int().positive().optional(),
-  fk_evaluation_code: z.string().optional(),
 });
 
 type UpdateEvaluationFormValues = z.infer<typeof updateEvaluationSchema>;
@@ -101,8 +100,7 @@ const form = useForm<UpdateEvaluationFormValues>({
             evaluation_offer: '',
             evaluation_sale_manager: '',
             evaluation_folder: '',
-            fk_evaluation_code: '',
-            fk_luc_procedure_id: undefined, 
+            fk_luc_procedure_id: undefined,
         },
     });
 
@@ -116,20 +114,24 @@ const form = useForm<UpdateEvaluationFormValues>({
                     ? (rawStatus as z.infer<typeof EvaluationStatusEnum>)
                     : 'NEW';
 
+            const normalizedResult: z.infer<typeof EvaluationResultEnum> =
+                EvaluationResultEnum.safeParse(evaluation.evaluation_result).success
+                    ? (evaluation.evaluation_result as z.infer<typeof EvaluationResultEnum>)
+                    : 'PROCESSING';
+
             form.reset({
                 evaluation_id: evaluation.evaluation_id,
                 fk_owner_id: evaluation.fk_owner_id,
                 fk_client_id: evaluation.fk_client_id,
                 fk_luc_procedure_id: evaluation.fk_luc_procedure_id,
                 evaluation_status: normalizedStatus,
-                evaluation_result: evaluation.evaluation_result,
+                evaluation_result: normalizedResult,
                 evaluation_request_date: evaluation.evaluation_request_date ?? '',
                 evaluation_year: evaluation.evaluation_year ?? new Date().getFullYear(),
                 evaluation_desc: evaluation.evaluation_desc ?? '',
                 evaluation_offer: evaluation.evaluation_offer ?? '',
                 evaluation_sale_manager: evaluation.evaluation_sale_manager ?? '',
                 evaluation_folder: evaluation.evaluation_folder ?? '',
-                fk_evaluation_code: evaluation.fk_evaluation_code ?? '',
             });
         }
     }, [evaluation, form]);
