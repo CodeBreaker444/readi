@@ -118,8 +118,6 @@ export const getUserSession = cache(async (): Promise<Session | null> => {
       userData.email ||
       '';
 
-    const avatarUrl = await resolveAvatarUrl(userData.users_profile?.profile_picture);
-
     let droneAtcEnabled = false;
     let dFlightEnabled = false;
     let trainingEmailEnabled = false;
@@ -128,11 +126,23 @@ export const getUserSession = cache(async (): Promise<Session | null> => {
     let companyEasaCode: string | null = null;
     let ownerName: string | null = null;
     let hasFlytbaseOrganizations = false;
-    if (userData.user_role !== 'SUPERADMIN' && userData.fk_owner_id) {
-      const ownerData = await prisma.owner.findUnique({
-        where: { owner_id: userData.fk_owner_id },
-        select: { drone_atc_enabled: true, d_flight_enabled: true, flytrelay_enabled: true, training_email_enabled: true, easa_operator_code: true, owner_name: true },
-      });
+
+    const isNonSuperAdminWithOwner = userData.user_role !== 'SUPERADMIN' && !!userData.fk_owner_id;
+
+    const [avatarUrl, ownerData, userOrgs] = await Promise.all([
+      resolveAvatarUrl(userData.users_profile?.profile_picture),
+      isNonSuperAdminWithOwner
+        ? prisma.owner.findUnique({
+            where: { owner_id: userData.fk_owner_id! },
+            select: { drone_atc_enabled: true, d_flight_enabled: true, flytrelay_enabled: true, training_email_enabled: true, easa_operator_code: true, owner_name: true },
+          })
+        : Promise.resolve(null),
+      isNonSuperAdminWithOwner
+        ? getUserFlytbaseOrganizations(userData.user_id, userData.fk_owner_id!)
+        : Promise.resolve([]),
+    ]);
+
+    if (isNonSuperAdminWithOwner) {
       droneAtcEnabled = ownerData?.drone_atc_enabled ?? false;
       dFlightEnabled  = ownerData?.d_flight_enabled  ?? false;
       trainingEmailEnabled = ownerData?.training_email_enabled ?? false;
@@ -141,9 +151,6 @@ export const getUserSession = cache(async (): Promise<Session | null> => {
       flytrelayAccess = (ownerData?.flytrelay_enabled ?? false) && (userData.flytrelay_access ?? false);
       companyEasaCode = ownerData?.easa_operator_code ?? null;
       ownerName = ownerData?.owner_name ?? null;
-
-      // Check if user has any FlytBase organizations assigned
-      const userOrgs = await getUserFlytbaseOrganizations(userData.user_id, userData.fk_owner_id);
       hasFlytbaseOrganizations = userOrgs.length > 0;
     } else if (userData.user_role === 'SUPERADMIN') {
       droneAtcEnabled = true;
