@@ -43,7 +43,7 @@ export default function MissionStatusForm({ onSubmit, isDark, initialData, mode 
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 pt-2">
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-1.5">
           <Label className={isDark ? 'text-gray-300' : 'text-gray-700'}>
             {t('missionStatus.form.codeLabel')} <span className="text-red-500">*</span>
@@ -86,7 +86,7 @@ export default function MissionStatusForm({ onSubmit, isDark, initialData, mode 
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-1.5">
           <Label className={isDark ? 'text-gray-300' : 'text-gray-700'}>{t('missionStatus.form.orderLabel')}</Label>
           <Input

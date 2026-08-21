@@ -299,17 +299,17 @@ export default function DocumentFormModal({ open, onClose, onSaved, docTypes, on
   return (
     <>
       <Dialog open={open} onOpenChange={(val) => !val && onClose()}>
-        <DialogContent className={`w-[95vw] sm:max-w-2xl max-h-[95vh] flex flex-col p-0 overflow-hidden rounded-xl
+        <DialogContent className={`w-[95vw] sm:max-w-3xl lg:max-w-5xl max-h-[95vh] flex flex-col p-0 overflow-hidden rounded-xl
           ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
 
-          <DialogHeader className={`px-6 py-4 border-b ${isDark ? 'border-slate-700/60' : 'border-gray-100'}`}>
+          <DialogHeader className={`px-4 sm:px-6 py-4 border-b shrink-0 ${isDark ? 'border-slate-700/60' : 'border-gray-100'}`}>
             <DialogTitle className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
               {isEdit ? t('repository.form.editTitle') : t('repository.form.newTitle')}
             </DialogTitle>
           </DialogHeader>
 
-          <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-5 space-y-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
 
               <div className="space-y-1.5">
                 <div className="flex items-center gap-2">
@@ -343,7 +343,7 @@ export default function DocumentFormModal({ open, onClose, onSaved, docTypes, on
                   placeholder="e.g. DOC-001" className={`text-sm ${inputCls}`} />
               </div>
 
-              <div className="sm:col-span-2 space-y-1.5">
+              <div className="sm:col-span-2 lg:col-span-3 space-y-1.5">
                 <Label className={labelCls}>{t('repository.columns.title')} <span className="text-red-500">*</span></Label>
                 <Input value={title} onChange={(e) => setTitle(e.target.value)}
                   required className={`text-sm ${inputCls}`} />
@@ -384,19 +384,19 @@ export default function DocumentFormModal({ open, onClose, onSaved, docTypes, on
                 </Select>
               </div>
 
-              <div className="sm:col-span-2 space-y-1.5">
+              <div className="sm:col-span-2 lg:col-span-3 space-y-1.5">
                 <Label className={labelCls}>{t('repository.form.component')} <span className={`font-normal ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>{t('repository.form.componentOptional')}</span></Label>
-                <div className="flex gap-2">
+                <div className="flex flex-col sm:flex-row gap-2">
                   <Select
                     value={filterSystem}
-                    onValueChange={(v) => { 
-                      setFilterSystem(v); 
+                    onValueChange={(v) => {
+                      setFilterSystem(v);
                       setSystemSearch('');
-                      // Only reset component selection if current component is not in the new filtered list
-                      if (fkComponentId !== '__none__') {
-                        const newFilteredComponents = v === '__all__'
-                          ? components
-                          : components.filter(c => c.fk_tool_id != null && String(c.fk_tool_id) === v);
+                      if (v === '__all__') {
+                        setFkComponentId('__none__');
+                      } else if (fkComponentId !== '__none__') {
+                        // Only reset component selection if current component is not in the new filtered list
+                        const newFilteredComponents = components.filter(c => c.fk_tool_id != null && String(c.fk_tool_id) === v);
                         const componentExistsInNewFilter = newFilteredComponents.some(c => String(c.tool_component_id) === fkComponentId);
                         if (!componentExistsInNewFilter) {
                           setFkComponentId('__none__');
@@ -405,7 +405,7 @@ export default function DocumentFormModal({ open, onClose, onSaved, docTypes, on
                     }}
                     disabled={componentsLoading}
                   >
-                    <SelectTrigger className={`text-sm w-52 shrink-0 ${selectTriggerCls}`}>
+                    <SelectTrigger className={`text-sm w-full sm:w-52 sm:shrink-0 ${selectTriggerCls}`}>
                       <SelectValue placeholder={t('repository.form.filterBySystem')}>
                         {filterSystem === '__all__'
                           ? <span>{t('repository.form.allSystems')}</span>
@@ -446,10 +446,24 @@ export default function DocumentFormModal({ open, onClose, onSaved, docTypes, on
                       </div>
                     </SelectContent>
                   </Select>
-                  <Select value={fkComponentId} onValueChange={setFkComponentId} disabled={componentsLoading}>
+                  <Select value={fkComponentId} onValueChange={setFkComponentId} disabled={componentsLoading || filterSystem === '__all__'}>
                     <SelectTrigger className={`text-sm flex-1 ${selectTriggerCls}`}>
                       <SelectValue placeholder={componentsLoading ? t('systems.components.common.loading') : t('repository.form.componentNone')}>
-                        {fkComponentId !== '__none__' && (() => {
+                        {(() => {
+                          if (filterSystem === '__all__') {
+                            return (
+                              <span className={`italic truncate ${isDark ? 'text-slate-500' : 'text-muted-foreground'}`}>
+                                {t('repository.form.selectSystemFirst')}
+                              </span>
+                            );
+                          }
+                          if (fkComponentId === '__none__') {
+                            return (
+                              <span className={`italic truncate ${isDark ? 'text-slate-400' : 'text-muted-foreground'}`}>
+                                {componentsLoading ? t('systems.components.common.loading') : t('repository.form.componentNone')}
+                              </span>
+                            );
+                          }
                           const c = filteredComponents.find(x => String(x.tool_component_id) === fkComponentId);
                           if (!c) return null;
                           const statusClass = STATUS_COLORS[c.component_status ?? ''] || (isDark ? 'bg-slate-600 text-slate-300' : 'bg-gray-100 text-gray-600');
@@ -494,7 +508,7 @@ export default function DocumentFormModal({ open, onClose, onSaved, docTypes, on
               {filterSystem !== '__all__' && (() => {
                 const sel = systems.find(s => String(s.tool_id) === filterSystem);
                 if (sel?.tool_status === 'NOT_OPERATIONAL') return (
-                  <div className="sm:col-span-2 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 dark:border-red-800 dark:bg-red-950/40">
+                  <div className="sm:col-span-2 lg:col-span-3 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 dark:border-red-800 dark:bg-red-950/40">
                     <span className="mt-0.5 text-red-500 dark:text-red-400 text-sm">⚠</span>
                     <p className="text-xs text-red-700 dark:text-red-400 leading-snug">
                       The selected system is <span className="font-semibold">Not Operational</span> — one of its components has expired. This document will still be saved, but the system cannot be used for new missions.
@@ -502,7 +516,7 @@ export default function DocumentFormModal({ open, onClose, onSaved, docTypes, on
                   </div>
                 );
                 if (sel?.tool_status === 'DISMISSED') return (
-                  <div className="sm:col-span-2 flex items-start gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 dark:border-slate-700 dark:bg-slate-800/60">
+                  <div className="sm:col-span-2 lg:col-span-3 flex items-start gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 dark:border-slate-700 dark:bg-slate-800/60">
                     <span className="mt-0.5 text-slate-500 dark:text-slate-400 text-sm">⚠</span>
                     <p className="text-xs text-slate-600 dark:text-slate-400 leading-snug">
                       The selected system is <span className="font-semibold">Dismissed</span> — it has been administratively removed from active use. This document will still be saved, but the system cannot be used for new missions.
@@ -526,7 +540,7 @@ export default function DocumentFormModal({ open, onClose, onSaved, docTypes, on
                   className={`text-sm ${inputCls}`} />
               </div>
 
-              <div className="sm:col-span-2 space-y-1.5">
+              <div className="sm:col-span-2 lg:col-span-3 space-y-1.5">
                 <Label className={labelCls}>{t('repository.form.description')}</Label>
                 <Textarea rows={3} value={description} onChange={(e) => setDescription(e.target.value)}
                   className={`text-sm resize-none ${inputCls}`} />
@@ -544,7 +558,7 @@ export default function DocumentFormModal({ open, onClose, onSaved, docTypes, on
                   placeholder='["sms","training"]' className={`font-mono text-xs ${inputCls}`} />
               </div>
 
-              <div className="sm:col-span-2 space-y-1.5">
+              <div className="sm:col-span-2 lg:col-span-3 space-y-1.5">
                 <Label className={labelCls}>
                   {isEdit ? t('repository.form.newRevision') : t('repository.columns.fileName')}{' '}
                   {!isEdit && <span className="text-red-500">*</span>}
@@ -572,22 +586,22 @@ export default function DocumentFormModal({ open, onClose, onSaved, docTypes, on
             </div>
           </div>
 
-          <DialogFooter className={`px-6 py-4 border-t gap-3 ${isDark ? 'border-slate-700/60' : 'border-gray-100'}`}>
+          <DialogFooter className={`px-4 sm:px-6 py-4 border-t gap-2 sm:gap-3 shrink-0 flex-col-reverse sm:flex-row ${isDark ? 'border-slate-700/60' : 'border-gray-100'}`}>
             <Button
               variant="outline"
               onClick={onClose}
               disabled={saving}
-              className={isDark
+              className={`w-full sm:w-auto ${isDark
                 ? 'border-slate-600 text-slate-300 hover:bg-slate-700 hover:text-slate-100'
                 : 'border-gray-200 text-gray-700 hover:bg-gray-50'
-              }
+              }`}
             >
               {t('repository.form.cancel')}
             </Button>
             <Button
               onClick={handleSave}
               disabled={saving}
-              className="bg-violet-600 hover:bg-violet-500 text-white"
+              className="w-full sm:w-auto bg-violet-600 hover:bg-violet-500 text-white"
             >
               {saving ? (
                 <><Loader2 className="mr-2 h-4 w-4 animate-spin" />{t('repository.form.saving')}</>

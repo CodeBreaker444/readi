@@ -113,10 +113,10 @@ export function LcuEditModal({ open, procedure, onClose, onSave, saving }: EditM
 
   return (
     <Dialog open={open} onOpenChange={v => !v && onClose()}>
-      <DialogContent className={`max-w-2xl gap-0 p-0 overflow-hidden flex flex-col max-h-[88vh]
+      <DialogContent className={`w-[95vw] sm:w-full !max-w-4xl gap-0 p-0 overflow-hidden flex flex-col max-h-[95vh] sm:max-h-[88vh]
         ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
 
-        <DialogHeader className={`px-6 py-4 border-b space-y-0.5 shrink-0
+        <DialogHeader className={`px-4 sm:px-6 py-4 border-b space-y-0.5 shrink-0
           ${isDark ? 'bg-slate-800 border-slate-700/60' : 'bg-slate-50 border-slate-100'}`}>
           <DialogTitle className={`text-base font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>
             {procedure ? 'Edit Procedure' : 'New Procedure'}
@@ -129,9 +129,9 @@ export function LcuEditModal({ open, procedure, onClose, onSave, saving }: EditM
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="flex flex-col min-h-0 flex-1">
-          <div className="p-6 space-y-5 overflow-y-auto flex-1 min-h-0">
+          <div className="p-4 sm:p-6 space-y-5 overflow-y-auto flex-1 min-h-0">
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="space-y-1.5">
                 <Label className={labelCls}>Code <span className="text-red-500">*</span></Label>
                 <Input required placeholder="e.g. LUC-001"
@@ -151,25 +151,6 @@ export function LcuEditModal({ open, procedure, onClose, onSave, saving }: EditM
                   </SelectContent>
                 </Select>
               </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label className={labelCls}>Name <span className="text-red-500">*</span></Label>
-              <Input required placeholder="Procedure name"
-                value={form.procedure_name}
-                onChange={e => set('procedure_name', e.target.value)}
-                className={`h-9 text-sm ${inputCls}`} />
-            </div>
-
-            <div className="space-y-1.5">
-              <Label className={labelCls}>Description</Label>
-              <Textarea placeholder="Brief description of this procedure" rows={2}
-                value={form.procedure_description}
-                onChange={e => set('procedure_description', e.target.value)}
-                className={`text-sm resize-none ${inputCls}`} />
-            </div>
-
-            <div className="grid grid-cols-3 gap-4">
               <div className="space-y-1.5">
                 <Label className={labelCls}>Version</Label>
                 <Input placeholder="1.0"
@@ -188,6 +169,16 @@ export function LcuEditModal({ open, procedure, onClose, onSave, saving }: EditM
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label className={labelCls}>Name <span className="text-red-500">*</span></Label>
+                <Input required placeholder="Procedure name"
+                  value={form.procedure_name}
+                  onChange={e => set('procedure_name', e.target.value)}
+                  className={`h-9 text-sm ${inputCls}`} />
+              </div>
               <div className="space-y-1.5">
                 <Label className={labelCls}>Sector</Label>
                 <Input placeholder="e.g. SOLAR"
@@ -195,6 +186,14 @@ export function LcuEditModal({ open, procedure, onClose, onSave, saving }: EditM
                   onChange={e => set('procedure_sector', e.target.value.toUpperCase())}
                   className={`h-9 text-sm uppercase ${inputCls}`} />
               </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className={labelCls}>Description</Label>
+              <Textarea placeholder="Brief description of this procedure" rows={2}
+                value={form.procedure_description}
+                onChange={e => set('procedure_description', e.target.value)}
+                className={`text-sm resize-none ${inputCls}`} />
             </div>
 
             <div className="space-y-1.5">
@@ -211,10 +210,10 @@ export function LcuEditModal({ open, procedure, onClose, onSave, saving }: EditM
             </div>
           </div>
 
-          <DialogFooter className={`px-6 py-4 border-t shrink-0
+          <DialogFooter className={`px-4 sm:px-6 py-4 border-t shrink-0 flex-col-reverse sm:flex-row gap-2
             ${isDark ? 'bg-slate-800 border-slate-700/60' : 'bg-slate-50 border-slate-100'}`}>
             <Button type="button" variant="outline" onClick={onClose}
-              className={`h-9 text-sm cursor-pointer
+              className={`h-9 text-sm w-full sm:w-auto cursor-pointer
                 ${isDark
                   ? 'border-slate-600 text-slate-300 hover:bg-slate-700 hover:text-slate-100'
                   : 'border-gray-200 text-gray-700 hover:bg-gray-50'
@@ -222,7 +221,7 @@ export function LcuEditModal({ open, procedure, onClose, onSave, saving }: EditM
               Cancel
             </Button>
             <Button type="submit" disabled={saving}
-              className="h-9 text-sm gap-2 bg-violet-600 hover:bg-violet-500 text-white cursor-pointer">
+              className="h-9 text-sm w-full sm:w-auto gap-2 bg-violet-600 hover:bg-violet-500 text-white cursor-pointer">
               {saving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
               {saving ? 'Saving…' : 'Save Procedure'}
             </Button>

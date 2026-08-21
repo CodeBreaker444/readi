@@ -35,7 +35,7 @@ export default function MissionResultForm({ onSubmit, isDark, initialData, mode 
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 pt-2">
-      <div className="space-y-1.5">
+      <div className="space-y-1.5 sm:w-1/2">
         <Label className={isDark ? 'text-gray-300' : 'text-gray-700'}>{t('missionResult.form.codeLabel')} <span className="text-red-500">*</span></Label>
         <Input required maxLength={50} placeholder={t('missionResult.form.codePlaceholder')} value={formData.code} onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })} className={`uppercase ${inputClass}`} disabled={isSubmitting} />
       </div>

@@ -236,34 +236,36 @@ export default function RepositoryFilesCard({
   return (
     <div className="p-4">
       <Tabs defaultValue="logbook" className="w-full">
+        <div className="overflow-x-auto">
         <TabsList className={isDark ? "bg-slate-950 border border-slate-800" : ""}>
-          <TabsTrigger 
-            value="logbook" 
+          <TabsTrigger
+            value="logbook"
             className={`gap-1.5 ${isDark ? "data-[state=active]:bg-slate-800 data-[state=active]:text-slate-100 text-slate-400" : ""}`}
           >
             <FolderOpen className="h-3.5 w-3.5" />
             {t("planning.files.missionFiles")}
-            <Badge 
-              variant={isDark ? "outline" : "secondary"} 
+            <Badge
+              variant={isDark ? "outline" : "secondary"}
               className={`ml-1 text-[10px] px-1 ${isDark ? "border-slate-700 text-slate-400" : ""}`}
             >
               {logbookFiles.length}
             </Badge>
           </TabsTrigger>
-          <TabsTrigger 
-            value="test" 
+          <TabsTrigger
+            value="test"
             className={`gap-1.5 ${isDark ? "data-[state=active]:bg-slate-800 data-[state=active]:text-slate-100 text-slate-400" : ""}`}
           >
             <FolderOpen className="h-3.5 w-3.5" />
             {t("planning.files.missionTestFiles")}
-            <Badge 
-              variant={isDark ? "outline" : "secondary"} 
+            <Badge
+              variant={isDark ? "outline" : "secondary"}
               className={`ml-1 text-[10px] px-1 ${isDark ? "border-slate-700 text-slate-400" : ""}`}
             >
               {testFiles.length}
             </Badge>
           </TabsTrigger>
         </TabsList>
+        </div>
         <TabsContent value="logbook" className="mt-4">
           <FileTable
             files={logbookFiles}

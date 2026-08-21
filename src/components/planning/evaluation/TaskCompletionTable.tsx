@@ -151,7 +151,7 @@ export function TaskCompletionTable({
     return (
         <>
             <div className="space-y-3">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
                         <ListChecks className={cn('h-4 w-4', isDark ? 'text-slate-400' : 'text-slate-500')} />
                         <h3 className={cn('text-sm font-semibold', isDark ? 'text-slate-200' : 'text-slate-700')}>
@@ -162,7 +162,7 @@ export function TaskCompletionTable({
                         </Badge>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                         {allCompleted && tasks.length > 0 && (
                             <>
                                 <div className="flex items-center gap-1.5 text-emerald-600">

@@ -356,7 +356,7 @@ export default function AssignmentPage() {
         <p className={`text-sm leading-relaxed mb-6 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
           {t('organization.assignments.deleteConfirm', { code: confirmDelete?.assignment_code })}
         </p>
-        <div className="flex gap-3 justify-end">
+        <div className="flex flex-col-reverse sm:flex-row gap-2 sm:gap-3 sm:justify-end">
           <button
             onClick={() => setConfirmDelete(null)}
             className={`px-4 cursor-pointer py-2 rounded-lg border text-sm transition-colors ${isDark

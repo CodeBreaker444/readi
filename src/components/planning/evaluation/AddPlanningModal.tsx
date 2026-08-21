@@ -188,10 +188,10 @@ export function AddPlanningModal({
 
     return (
         <Dialog open={open} onOpenChange={(v) => !v && handleClose()}>
-            <DialogContent className="!max-w-[900px] w-[90vw] max-h-[90vh] flex flex-col overflow-hidden p-0 gap-0">
-                <DialogHeader className="px-6 pt-6 pb-4 shrink-0">
+            <DialogContent className="!max-w-[1100px] w-[95vw] sm:w-[92vw] max-h-[95vh] sm:max-h-[90vh] flex flex-col overflow-hidden p-0 gap-0">
+                <DialogHeader className="px-4 sm:px-6 pt-5 sm:pt-6 pb-4 shrink-0">
                     <div className="flex items-center gap-2">
-                        <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-violet-100">
+                        <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-violet-100 shrink-0">
                             <ClipboardPlus className="w-4 h-4 text-violet-600" />
                         </div>
                         <div>
@@ -205,10 +205,10 @@ export function AddPlanningModal({
                     </div>
                 </DialogHeader>
 
-                <div className="flex-1 overflow-y-auto px-6 py-4">
+                <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4">
                 {loadingDropdowns ? (
                     <div className="space-y-5">
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <Skeleton className="h-3 w-20" />
                                 <Skeleton className="h-9 w-full" />
@@ -219,7 +219,7 @@ export function AddPlanningModal({
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-4 gap-4">
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                             {Array.from({ length: 4 }).map((_, i) => (
                                 <div key={i} className="space-y-2">
                                     <Skeleton className="h-3 w-12" />
@@ -228,7 +228,7 @@ export function AddPlanningModal({
                             ))}
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <Skeleton className="h-3 w-16" />
                                 <Skeleton className="h-9 w-full" />
@@ -244,7 +244,7 @@ export function AddPlanningModal({
                 ) : (
                     <div className="space-y-5 py-2">
 
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div className="space-y-1.5">
                                 <Label htmlFor="luc_procedure" className="text-xs font-medium flex items-center gap-1">
                                     <FileText className="w-3 h-3 text-slate-400" />
@@ -317,7 +317,7 @@ export function AddPlanningModal({
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-3 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                             <div className="space-y-1.5">
                                 <Label className="text-xs font-medium">{t('planning.form.status')}</Label>
                                 <Input
@@ -362,7 +362,7 @@ export function AddPlanningModal({
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div className="space-y-1.5 col-span-1">
                                 <Label htmlFor="desc" className="text-xs font-medium">
                                     {t('planning.form.description')}
@@ -393,17 +393,17 @@ export function AddPlanningModal({
                             </div>
                         </div>
 
-                        <div className="rounded-lg bg-slate-50 border border-slate-200 px-3 py-2.5 flex items-center gap-3">
+                        <div className="rounded-lg bg-slate-50 border border-slate-200 px-3 py-2.5 flex flex-wrap items-center gap-x-3 gap-y-1.5">
                             <div className="text-xs text-slate-500">
                                 <span className="font-medium text-slate-700">{t('planning.evaluation.detailTitle')}:</span>{' '}
                                 <span className="font-mono text-violet-600">EVAL_{evaluationId}</span>
                             </div>
-                            <div className="h-3 w-px bg-slate-300" />
+                            <div className="hidden sm:block h-3 w-px bg-slate-300" />
                             <div className="text-xs text-slate-500">
                                 <span className="font-medium text-slate-700">{t('planning.form.clientId')}:</span>{' '}
                                 <span className="font-mono">{clientId}</span>
                             </div>
-                            <div className="h-3 w-px bg-slate-300" />
+                            <div className="hidden sm:block h-3 w-px bg-slate-300" />
                             <div className="text-xs text-slate-500">
                                 <span className="font-medium text-slate-700">{t('planning.form.result')}:</span>{' '}
                                 <span className="font-mono text-emerald-600">PROGRESS</span>
@@ -413,18 +413,19 @@ export function AddPlanningModal({
                 )}
                 </div>
 
-                <DialogFooter className="shrink-0 px-6 py-4 border-t gap-2">
+                <DialogFooter className="shrink-0 px-4 sm:px-6 py-4 border-t gap-2 flex-col-reverse sm:flex-row">
                     <Button
                         variant="outline"
                         size="sm"
                         onClick={handleClose}
                         disabled={submitting}
+                        className="w-full sm:w-auto"
                     >
                         {t('common.cancel')}
                     </Button>
                     <Button
                         size="sm"
-                        className="bg-violet-600 hover:bg-violet-700 text-white gap-1.5"
+                        className="bg-violet-600 hover:bg-violet-700 text-white gap-1.5 w-full sm:w-auto"
                         onClick={handleSubmit}
                         disabled={submitting || loadingDropdowns}
                     >

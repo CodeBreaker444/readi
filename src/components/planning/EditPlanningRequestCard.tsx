@@ -128,7 +128,7 @@ export default function EditPlanningRequestCard({
   return (
     <div className={`p-4 space-y-4 ${isDark ? "bg-slate-900/50" : "bg-transparent"}`}>
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="space-y-2">
             <Label htmlFor="planning_status" className={labelColor}>{t("planning.form.status")}</Label>
             <Select
@@ -222,7 +222,7 @@ export default function EditPlanningRequestCard({
           </div>
         </div>
 
-        <div className="flex justify-between items-end gap-4">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-4">
           <div className="space-y-2 flex-1">
             <Label className={labelColor}>{t("planning.form.type")}</Label>
             <Input
@@ -233,7 +233,7 @@ export default function EditPlanningRequestCard({
               placeholder={t("planning.form.typePlaceholder")}
             />
           </div>
-          <div className="w-full md:w-1/4">
+          <div className="w-full sm:w-40 md:w-1/4">
             <Button
               type="submit"
               disabled={submitting}
