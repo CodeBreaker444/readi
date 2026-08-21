@@ -611,9 +611,9 @@ export default function RequirementsEvidencesPage() {
       </div>
 
       {reqModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-          <div className={`w-full max-w-lg rounded-xl border shadow-2xl ${isDark ? 'bg-[#0f1320] border-white/8' : 'bg-white border-gray-200'}`}>
-            <div className={`flex items-center justify-between px-6 py-4 border-b ${borderMuted}`}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/50">
+          <div className={`w-[95vw] sm:w-full max-w-3xl max-h-[95vh] sm:max-h-[90vh] flex flex-col rounded-xl border shadow-2xl ${isDark ? 'bg-[#0f1320] border-white/8' : 'bg-white border-gray-200'}`}>
+            <div className={`flex items-center justify-between px-4 sm:px-6 py-4 border-b shrink-0 ${borderMuted}`}>
               <h2 className={`text-sm font-semibold ${textPrimary}`}>
                 {reqForm.requirement_id
                   ? t('compliance.requirementsEvidences.requirementModal.editTitle')
@@ -623,22 +623,22 @@ export default function RequirementsEvidencesPage() {
                 <X size={15} />
               </Button>
             </div>
-            <div className="px-6 py-5 space-y-4 max-h-[70vh] overflow-y-auto">
-              <div className="grid grid-cols-3 gap-3">
+            <div className="px-4 sm:px-6 py-5 space-y-4 flex-1 overflow-y-auto">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 <div>
                   <label className={`block text-[11px] font-semibold uppercase tracking-wider mb-1.5 ${textMuted}`}>
                     {t('compliance.requirementsEvidences.requirementModal.fields.code')} *
                   </label>
                   <Input value={reqForm.requirement_code} onChange={(e) => setReqForm(f => ({ ...f, requirement_code: e.target.value }))} placeholder={t('compliance.requirementsEvidences.requirementModal.fields.codePlaceholder')} className={`h-9 text-xs font-mono ${inputCls}`} />
                 </div>
-                <div className="col-span-2">
+                <div className="sm:col-span-1 lg:col-span-2">
                   <label className={`block text-[11px] font-semibold uppercase tracking-wider mb-1.5 ${textMuted}`}>
                     {t('compliance.requirementsEvidences.requirementModal.fields.title')} *
                   </label>
                   <Input value={reqForm.requirement_title} onChange={(e) => setReqForm(f => ({ ...f, requirement_title: e.target.value }))} placeholder={t('compliance.requirementsEvidences.requirementModal.fields.titlePlaceholder')} className={`h-9 text-xs ${inputCls}`} />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 <div>
                   <label className={`block text-[11px] font-semibold uppercase tracking-wider mb-1.5 ${textMuted}`}>
                     {t('compliance.requirementsEvidences.requirementModal.fields.area')}
@@ -656,8 +656,6 @@ export default function RequirementsEvidencesPage() {
                   </label>
                   <Input value={reqForm.regulatory_body} onChange={(e) => setReqForm(f => ({ ...f, regulatory_body: e.target.value }))} placeholder={t('compliance.requirementsEvidences.requirementModal.fields.sourcePlaceholder')} className={`h-9 text-xs ${inputCls}`} />
                 </div>
-              </div>
-              <div className="grid grid-cols-3 gap-3">
                 <div>
                   <label className={`block text-[11px] font-semibold uppercase tracking-wider mb-1.5 ${textMuted}`}>
                     {t('compliance.requirementsEvidences.requirementModal.fields.status')}
@@ -669,6 +667,8 @@ export default function RequirementsEvidencesPage() {
                     </SelectContent>
                   </Select>
                 </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className={`block text-[11px] font-semibold uppercase tracking-wider mb-1.5 ${textMuted}`}>
                     {t('compliance.requirementsEvidences.requirementModal.fields.criticality')}
@@ -702,11 +702,11 @@ export default function RequirementsEvidencesPage() {
                 <textarea rows={3} value={reqForm.requirement_description} onChange={(e) => setReqForm(f => ({ ...f, requirement_description: e.target.value }))} placeholder={t('compliance.requirementsEvidences.requirementModal.fields.notesPlaceholder')} className={`w-full rounded-md border px-3 py-2 text-xs resize-none focus:outline-none focus:ring-1 focus:ring-violet-500/40 ${inputCls}`} />
               </div>
             </div>
-            <div className={`flex justify-end gap-2 px-6 py-4 border-t ${borderMuted}`}>
-              <Button variant="outline" size="sm" onClick={() => setReqModalOpen(false)} className={`h-8 text-xs ${isDark ? 'border-white/8 hover:bg-white/5 text-gray-300' : ''}`}>
+            <div className={`flex flex-col-reverse sm:flex-row justify-end gap-2 px-4 sm:px-6 py-4 border-t shrink-0 ${borderMuted}`}>
+              <Button variant="outline" size="sm" onClick={() => setReqModalOpen(false)} className={`h-8 text-xs w-full sm:w-auto ${isDark ? 'border-white/8 hover:bg-white/5 text-gray-300' : ''}`}>
                 {t('compliance.requirementsEvidences.requirementModal.cancel')}
               </Button>
-              <Button size="sm" onClick={handleSaveReq} disabled={saving || !reqForm.requirement_code.trim() || !reqForm.requirement_title.trim()} className="h-8 text-xs bg-violet-600 hover:bg-violet-700 text-white">
+              <Button size="sm" onClick={handleSaveReq} disabled={saving || !reqForm.requirement_code.trim() || !reqForm.requirement_title.trim()} className="h-8 text-xs w-full sm:w-auto bg-violet-600 hover:bg-violet-700 text-white">
                 {saving
                   ? t('compliance.requirementsEvidences.requirementModal.saving')
                   : reqForm.requirement_id
@@ -791,19 +791,19 @@ export default function RequirementsEvidencesPage() {
       )}
 
       {eviTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-          <div className={`w-full max-w-xl rounded-xl border shadow-2xl ${isDark ? 'bg-[#0f1320] border-white/8' : 'bg-white border-gray-200'}`}>
-            <div className={`flex items-center justify-between px-6 py-4 border-b ${borderMuted}`}>
-              <div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/50">
+          <div className={`w-[95vw] sm:w-full max-w-2xl max-h-[95vh] sm:max-h-[90vh] flex flex-col rounded-xl border shadow-2xl ${isDark ? 'bg-[#0f1320] border-white/8' : 'bg-white border-gray-200'}`}>
+            <div className={`flex items-center justify-between gap-3 px-4 sm:px-6 py-4 border-b shrink-0 ${borderMuted}`}>
+              <div className="min-w-0">
                 <h2 className={`text-sm font-semibold ${textPrimary}`}>
                   {t('compliance.requirementsEvidences.evidencePanel.title')}
                 </h2>
-                <p className={`text-[11px] mt-0.5 ${textMuted}`}>{eviTarget.requirement_code} — {eviTarget.requirement_title}</p>
+                <p className={`text-[11px] mt-0.5 truncate ${textMuted}`}>{eviTarget.requirement_code} — {eviTarget.requirement_title}</p>
               </div>
-              <Button variant="ghost" size="icon" onClick={() => setEviTarget(null)} className={`h-7 w-7 ${isDark ? 'text-gray-400 hover:bg-white/8' : ''}`}><X size={15} /></Button>
+              <Button variant="ghost" size="icon" onClick={() => setEviTarget(null)} className={`h-7 w-7 shrink-0 ${isDark ? 'text-gray-400 hover:bg-white/8' : ''}`}><X size={15} /></Button>
             </div>
 
-            <div className="px-6 py-4 max-h-72 overflow-y-auto space-y-2">
+            <div className="px-4 sm:px-6 py-4 flex-1 overflow-y-auto space-y-2">
               {eviLoading ? (
                 Array.from({ length: 3 }).map((_, i) => (
                   <div key={i} className={`h-14 rounded-lg animate-pulse ${isDark ? 'bg-white/4' : 'bg-gray-100'}`} />
@@ -843,11 +843,11 @@ export default function RequirementsEvidencesPage() {
               )}
             </div>
 
-            <div className={`px-6 py-4 border-t ${borderMuted} space-y-3`}>
+            <div className={`px-4 sm:px-6 py-4 border-t shrink-0 ${borderMuted} space-y-3`}>
               <p className={`text-[11px] font-semibold uppercase tracking-wider ${textMuted}`}>
                 {t('compliance.requirementsEvidences.evidencePanel.addTitle')}
               </p>
-              <div className="grid grid-cols-4 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
                 <Select value={eviForm.evidence_type} onValueChange={(v) => setEviForm(f => ({ ...f, evidence_type: v as EvidenceType }))}>
                   <SelectTrigger className={`h-8 text-xs ${selectTrigger}`}><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -862,7 +862,7 @@ export default function RequirementsEvidencesPage() {
                   value={eviForm.evidence_description}
                   onChange={(e) => setEviForm(f => ({ ...f, evidence_description: e.target.value }))}
                   placeholder={`${t('compliance.requirementsEvidences.evidencePanel.fields.description')} *`}
-                  className={`col-span-2 h-8 text-xs ${inputCls}`}
+                  className={`sm:col-span-1 lg:col-span-2 h-8 text-xs ${inputCls}`}
                 />
                 <Input
                   value={eviForm.file_path}
@@ -871,7 +871,7 @@ export default function RequirementsEvidencesPage() {
                   className={`h-8 text-xs ${inputCls}`}
                 />
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-col sm:flex-row gap-2">
                 <Input
                   value={eviForm.notes}
                   onChange={(e) => setEviForm(f => ({ ...f, notes: e.target.value }))}
@@ -883,7 +883,7 @@ export default function RequirementsEvidencesPage() {
                     size="sm"
                     onClick={handleAddEvidence}
                     disabled={eviSaving || !eviForm.evidence_description.trim()}
-                    className="h-8 text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
+                    className="h-8 text-xs w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white"
                   >
                     {eviSaving
                       ? t('compliance.requirementsEvidences.evidencePanel.adding')

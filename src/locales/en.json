@@ -2305,6 +2305,7 @@
       "component": "Component",
       "componentOptional": "(optional)",
       "componentNone": "None — attach to a component",
+      "selectSystemFirst": "Select a system first",
       "filterBySystem": "Filter by system",
       "allSystems": "All systems"
     },

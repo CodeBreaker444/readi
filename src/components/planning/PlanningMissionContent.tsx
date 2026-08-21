@@ -259,19 +259,19 @@ export const PlanningMissionContent: FC<PlanningMissionProps> = ({ user }) => {
   ];
 
   return (
-    <div className="w-full px-6 space-y-4">
+    <div className="w-full px-3 sm:px-6 space-y-4">
       <div
-        className={`top-0 py-2 z-10 backdrop-blur-md transition-all -mx-6 mt-0 mb-6 px-6 py-4 ${isDark
+        className={`top-0 py-2 z-10 backdrop-blur-md transition-all -mx-3 sm:-mx-6 mt-0 mb-6 px-3 sm:px-6 py-4 ${isDark
           ? "bg-slate-900/80 border-b border-slate-800"
           : "bg-white/80 border-b border-slate-200 shadow-[0_1px_3px_rgba(0,0,0,0.06)]"
           }`}
       >
         <div className="mx-auto flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-1 h-8 rounded-full bg-violet-600" />
-            <div>
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-1 h-8 rounded-full bg-violet-600 shrink-0" />
+            <div className="min-w-0">
               <h1
-                className={`font-semibold text-base tracking-tight flex items-center gap-2 ${isDark ? "text-white" : "text-slate-900"
+                className={`font-semibold text-base tracking-tight flex flex-wrap items-center gap-x-2 gap-y-0.5 ${isDark ? "text-white" : "text-slate-900"
                   }`}
               >
                 {t("planning.missionPlanning.planningMission")}
@@ -280,7 +280,7 @@ export const PlanningMissionContent: FC<PlanningMissionProps> = ({ user }) => {
                     className={`font-normal text-sm opacity-70 ${isDark ? "text-slate-400" : "text-slate-500"
                       }`}
                   >
-                    &nbsp;— {planningData.planning_code}
+                    — {planningData.planning_code}
                   </span>
                 )}
               </h1>

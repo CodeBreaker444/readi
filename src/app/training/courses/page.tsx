@@ -444,7 +444,7 @@ export default function TrainingCoursesPage() {
             { label: t('training.courses.valid'), value: stats.valid, icon: Award, color: 'text-emerald-400' },
             { label: t('training.courses.expired'), value: stats.expired, icon: ShieldCheck, color: 'text-rose-400' },
           ] as const).map(({ label, value, icon: Icon, color }) => (
-            <div key={label} className={`rounded-lg border p-4 ${cardBg}`}>
+            <div key={label} className={`rounded-md border p-4 ${cardBg}`}>
               <div className="flex items-center justify-between mb-2">
                 <p className={`text-[11px] font-medium uppercase tracking-wider ${textMuted}`}>{label}</p>
                 <Icon size={15} className={color} />
@@ -521,10 +521,10 @@ export default function TrainingCoursesPage() {
 
 
       {modalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60">
-          <div className={`w-full max-w-lg rounded-2xl border shadow-2xl ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60">
+          <div className={`w-[95vw] sm:w-full max-w-3xl max-h-[95vh] sm:max-h-[90vh] flex flex-col rounded-md border shadow-2xl ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
 
-            <div className={`flex items-center justify-between px-6 py-4 border-b ${borderMuted}`}>
+            <div className={`flex items-center justify-between px-4 sm:px-6 py-4 border-b shrink-0 ${borderMuted}`}>
               <h2 className={`text-sm font-semibold ${textPrimary}`}>
                 {form.attendance_id ? t('training.courses.editRecord') : t('training.courses.newRecord')}
               </h2>
@@ -533,7 +533,7 @@ export default function TrainingCoursesPage() {
               </Button>
             </div>
 
-            <div className="px-6 py-5 space-y-4 max-h-[70vh] overflow-y-auto">
+            <div className="px-4 sm:px-6 py-5 space-y-4 flex-1 overflow-y-auto">
 
               {form.attendance_id ? (
                 <div>
@@ -592,7 +592,7 @@ export default function TrainingCoursesPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 <div>
                   <label className={`block text-[11px] font-semibold uppercase tracking-wider mb-1.5 ${textMuted}`}>{t('training.courses.type')}</label>
                   <Select value={form.training_type || 'none'} onValueChange={(v) => setForm((f) => ({ ...f, training_type: v === 'none' ? '' : v }))}>
@@ -614,33 +614,31 @@ export default function TrainingCoursesPage() {
                     className={`h-9 text-xs font-mono ${inputCls}`}
                   />
                 </div>
+                <div>
+                  <label className={`block text-[11px] font-semibold uppercase tracking-wider mb-1.5 ${textMuted}`}>{t('training.courses.certificateType')}</label>
+                  <Select value={form.certificate_type || 'none'} onValueChange={(v) => setForm((f) => ({ ...f, certificate_type: v === 'none' ? '' : v }))}>
+                    <SelectTrigger className={`h-9 text-xs ${selectCls}`}>
+                      <SelectValue placeholder={t('training.courses.none')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">{t('training.courses.none')}</SelectItem>
+                      <SelectItem value="PARTICIPATION">{t('training.courses.certParticipation')}</SelectItem>
+                      <SelectItem value="QUALIFICATION">{t('training.courses.certQualification')}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
-              <div>
-                <label className={`block text-[11px] font-semibold uppercase tracking-wider mb-1.5 ${textMuted}`}>{t('training.courses.certificateType')}</label>
-                <Select value={form.certificate_type || 'none'} onValueChange={(v) => setForm((f) => ({ ...f, certificate_type: v === 'none' ? '' : v }))}>
-                  <SelectTrigger className={`h-9 text-xs ${selectCls}`}>
-                    <SelectValue placeholder={t('training.courses.none')} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">{t('training.courses.none')}</SelectItem>
-                    <SelectItem value="PARTICIPATION">{t('training.courses.certParticipation')}</SelectItem>
-                    <SelectItem value="QUALIFICATION">{t('training.courses.certQualification')}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <label className={`block text-[11px] font-semibold uppercase tracking-wider mb-1.5 ${textMuted}`}>{t('training.courses.sessionDate')}</label>
-                <Input
-                  type="date"
-                  value={form.session_date}
-                  onChange={(e) => setForm((f) => ({ ...f, session_date: e.target.value }))}
-                  className={`h-9 text-xs ${inputCls}`}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                <div>
+                  <label className={`block text-[11px] font-semibold uppercase tracking-wider mb-1.5 ${textMuted}`}>{t('training.courses.sessionDate')}</label>
+                  <Input
+                    type="date"
+                    value={form.session_date}
+                    onChange={(e) => setForm((f) => ({ ...f, session_date: e.target.value }))}
+                    className={`h-9 text-xs ${inputCls}`}
+                  />
+                </div>
                 <div>
                   <label className={`block text-[11px] font-semibold uppercase tracking-wider mb-1.5 ${textMuted}`}>{t('training.courses.completionDate')}</label>
                   <Input
@@ -662,15 +660,15 @@ export default function TrainingCoursesPage() {
               </div>
             </div>
 
-            <div className={`flex justify-end gap-2 px-6 py-4 border-t ${borderMuted}`}>
-              <Button variant="outline" size="sm" onClick={() => setModalOpen(false)} className={`h-8 text-xs ${isDark ? 'border-slate-700 hover:bg-slate-700 text-slate-300' : ''}`}>
+            <div className={`flex flex-col-reverse sm:flex-row justify-end gap-2 px-4 sm:px-6 py-4 border-t shrink-0 ${borderMuted}`}>
+              <Button variant="outline" size="sm" onClick={() => setModalOpen(false)} className={`h-8 text-xs w-full sm:w-auto ${isDark ? 'border-slate-700 hover:bg-slate-700 text-slate-300' : ''}`}>
                 {t('training.courses.cancel')}
               </Button>
               <Button
                 size="sm"
                 onClick={handleSave}
                 disabled={saving || !form.training_name.trim() || (!form.attendance_id && form.user_ids.length === 0)}
-                className="h-8 text-xs bg-violet-600 hover:bg-violet-700 text-white"
+                className="h-8 text-xs w-full sm:w-auto bg-violet-600 hover:bg-violet-700 text-white"
               >
                 {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : null}
                 {saving ? t('training.courses.saving') : form.attendance_id ? t('training.courses.update') : t('training.courses.create')}

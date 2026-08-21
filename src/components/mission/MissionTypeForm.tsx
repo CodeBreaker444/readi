@@ -36,17 +36,19 @@ export default function MissionTypeForm({ onSubmit, isDark, initialData, mode = 
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 pt-2">
-      <div className="space-y-1.5">
-        <Label className={isDark ? 'text-gray-300' : 'text-gray-700'}>{t('missionType.form.nameLabel')} <span className="text-red-500">*</span></Label>
-        <Input placeholder={t('missionType.form.namePlaceholder')} value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} required className={inputClass} disabled={isSubmitting} />
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="space-y-1.5">
+          <Label className={isDark ? 'text-gray-300' : 'text-gray-700'}>{t('missionType.form.nameLabel')} <span className="text-red-500">*</span></Label>
+          <Input placeholder={t('missionType.form.namePlaceholder')} value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} required className={inputClass} disabled={isSubmitting} />
+        </div>
+        <div className="space-y-1.5">
+          <Label className={isDark ? 'text-gray-300' : 'text-gray-700'}>{t('missionType.form.codeLabel')} <span className="text-red-500">*</span></Label>
+          <Input placeholder={t('missionType.form.codePlaceholder')} value={formData.code} onChange={e => setFormData({ ...formData, code: e.target.value.toUpperCase() })} required className={`uppercase ${inputClass}`} disabled={isSubmitting} />
+        </div>
       </div>
       <div className="space-y-1.5">
         <Label className={isDark ? 'text-gray-300' : 'text-gray-700'}>{t('missionType.form.descriptionLabel')} <span className="text-red-500">*</span></Label>
         <Input placeholder={t('missionType.form.descriptionPlaceholder')} value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} required className={inputClass} disabled={isSubmitting} />
-      </div>
-      <div className="space-y-1.5">
-        <Label className={isDark ? 'text-gray-300' : 'text-gray-700'}>{t('missionType.form.codeLabel')} <span className="text-red-500">*</span></Label>
-        <Input placeholder={t('missionType.form.codePlaceholder')} value={formData.code} onChange={e => setFormData({ ...formData, code: e.target.value.toUpperCase() })} required className={`uppercase ${inputClass}`} disabled={isSubmitting} />
       </div>
       <Button type="submit" disabled={isSubmitting} className="w-full bg-violet-600 hover:bg-violet-700 text-white font-semibold cursor-pointer mt-2 gap-2">
         {isSubmitting ? (

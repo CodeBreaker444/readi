@@ -132,11 +132,11 @@ export default function CommunicationSection({
       </Button>
 
       <Dialog open={sendDialogOpen} onOpenChange={setSendDialogOpen}>
-        <DialogContent className="sm:max-w-2xl md:max-w-3xl lg:max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
+        <DialogContent className="w-[95vw] sm:w-full sm:max-w-2xl md:max-w-3xl lg:max-w-4xl max-h-[95vh] sm:max-h-[90vh] flex flex-col overflow-hidden p-0 gap-0">
+          <DialogHeader className="px-4 sm:px-6 pt-5 sm:pt-6 pb-4 shrink-0">
             <DialogTitle>{t("planning.communication.title")}</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
+          <div className="flex-1 overflow-y-auto overflow-x-hidden px-4 sm:px-6 space-y-4">
             <div className="space-y-2">
               <Label>
                 {t("planning.communication.to")}{" "}
@@ -215,15 +215,15 @@ export default function CommunicationSection({
               </Select>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-2 pb-4">
               <Label>{t("planning.communication.uploadFile")}</Label>
               <Input type="file" ref={fileInputRef} />
             </div>
           </div>
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setSendDialogOpen(false)}>{t("planning.form.no")}</Button>
-            <Button onClick={handleSend} disabled={sending} className="bg-violet-500 hover:bg-violet-600">
+          <DialogFooter className="shrink-0 px-4 sm:px-6 py-4 border-t gap-2 flex-col-reverse sm:flex-row">
+            <Button variant="outline" onClick={() => setSendDialogOpen(false)} className="w-full sm:w-auto">{t("planning.form.no")}</Button>
+            <Button onClick={handleSend} disabled={sending} className="bg-violet-500 hover:bg-violet-600 w-full sm:w-auto">
               {sending ? t("planning.communication.sending") : t("planning.communication.send")}
             </Button>
           </DialogFooter>

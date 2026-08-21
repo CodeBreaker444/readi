@@ -35,13 +35,15 @@ export default function MissionCategoryForm({ onSubmit, isDark, initialData, mod
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 pt-2">
-      <div className="space-y-1.5">
-        <Label className={isDark ? 'text-gray-300' : 'text-gray-700'}>{t('missionCategory.form.codeLabel')} <span className="text-red-500">*</span></Label>
-        <Input required maxLength={50} placeholder={t('missionCategory.form.codePlaceholder')} value={formData.code} onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })} className={`uppercase ${inputClass}`} disabled={isSubmitting} />
-      </div>
-      <div className="space-y-1.5">
-        <Label className={isDark ? 'text-gray-300' : 'text-gray-700'}>{t('missionCategory.form.nameLabel')} <span className="text-red-500">*</span></Label>
-        <Input required maxLength={100} placeholder={t('missionCategory.form.namePlaceholder')} value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className={inputClass} disabled={isSubmitting} />
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="space-y-1.5">
+          <Label className={isDark ? 'text-gray-300' : 'text-gray-700'}>{t('missionCategory.form.codeLabel')} <span className="text-red-500">*</span></Label>
+          <Input required maxLength={50} placeholder={t('missionCategory.form.codePlaceholder')} value={formData.code} onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })} className={`uppercase ${inputClass}`} disabled={isSubmitting} />
+        </div>
+        <div className="space-y-1.5">
+          <Label className={isDark ? 'text-gray-300' : 'text-gray-700'}>{t('missionCategory.form.nameLabel')} <span className="text-red-500">*</span></Label>
+          <Input required maxLength={100} placeholder={t('missionCategory.form.namePlaceholder')} value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className={inputClass} disabled={isSubmitting} />
+        </div>
       </div>
       <div className="space-y-1.5">
         <Label className={isDark ? 'text-gray-300' : 'text-gray-700'}>{t('missionCategory.form.descriptionLabel')}</Label>

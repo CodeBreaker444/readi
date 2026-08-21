@@ -68,19 +68,19 @@ export default function MissionPlanningLogbookTable({
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <Input
           placeholder={t("planning.missionPlanning.searchLogbook")}
           value={globalFilter}
           onChange={(e) => setGlobalFilter(e.target.value)}
-          className={`max-w-sm ${
-            isDark 
-              ? "bg-slate-950 border-slate-800 text-white placeholder:text-slate-100" 
+          className={`w-full sm:max-w-sm ${
+            isDark
+              ? "bg-slate-950 border-slate-800 text-white placeholder:text-slate-100"
               : "bg-white"
           }`}
         />
-        <Badge 
-          variant="secondary" 
+        <Badge
+          variant="secondary"
           className={isDark ? "bg-slate-800 text-slate-300 hover:bg-slate-700" : ""}
         >
           {table.getFilteredRowModel().rows.length} {t("planning.missionPlanning.record")}{table.getFilteredRowModel().rows.length !== 1 ? "s" : ""}
@@ -141,7 +141,7 @@ export default function MissionPlanningLogbookTable({
         </Table>
       </div>
       
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
         <ExportButtons
           filename={t("planning.missionPlanning.logbook")}
           headers={['Plan ID', 'Code', 'Description', 'Version', 'Active', 'Planning', 'Tool', 'Tests']}

@@ -172,8 +172,9 @@ export default function CommunicationPage() {
           isDark={isDark}
         />
 
-        <div className={`rounded-xl border mx-3 p-3 transition-all ${isDark ? "bg-[#0c0f1a] border-slate-800 shadow-black/40" : "bg-white border-slate-200 shadow-sm"}`}>
-          <div className="flex items-center justify-between mb-6">
+        <div className={`rounded-xl  mx-3 p-3 transition-all  ${isDark ? "bg-slate-950 text-slate-300" : "bg-slate-50 text-slate-700"
+        }`}>
+          {/* <div className="flex items-center justify-between mb-6">
             <h2 className={`text-xs font-bold uppercase tracking-widest ${isDark ? "text-slate-500" : "text-slate-400"}`}>
               {t('organization.communication.operationalProtocols')}
             </h2>
@@ -182,7 +183,7 @@ export default function CommunicationPage() {
                 {communications.length} {t('organization.communication.nodesOnline')}
               </span>
             )}
-          </div>
+          </div> */}
 
           <CommunicationTable
             data={communications}

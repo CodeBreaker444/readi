@@ -2295,6 +2295,7 @@
       "component": "Komponente",
       "componentOptional": "(optional)",
       "componentNone": "Keine — mit einer Komponente verknüpfen",
+      "selectSystemFirst": "Wählen Sie zuerst ein System aus",
       "filterBySystem": "Nach System filtern",
       "allSystems": "Alle Systeme"
     },
