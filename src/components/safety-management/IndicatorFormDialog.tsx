@@ -139,16 +139,16 @@ export function IndicatorFormDialog({ open, onClose, onSubmit, initial, loading,
 
     return (
         <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-            <DialogContent className={`max-w-2xl transition-colors duration-300 flex flex-col overflow-hidden p-0 gap-0 ${bgClass}`}>
-                <DialogHeader className="px-6 pt-6 pb-4 shrink-0">
+            <DialogContent className={`w-[95vw] sm:w-full !max-w-4xl max-h-[95vh] sm:max-h-[90vh] transition-colors duration-300 flex flex-col overflow-hidden p-0 gap-0 ${bgClass}`}>
+                <DialogHeader className="px-4 sm:px-6 pt-5 sm:pt-6 pb-4 shrink-0">
                     <DialogTitle className="text-lg font-semibold">
                         {isEdit ? t('safety.spiKpi.form.editTitle') : t('safety.spiKpi.form.newTitle')}
                     </DialogTitle>
                 </DialogHeader>
 
                 <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
-                    <div className="flex-1 overflow-y-auto px-6 py-4">
-                    <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+                    <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-5">
 
                         <div className="space-y-1.5">
                             <Label className={`text-[10px] uppercase tracking-widest font-bold ${labelClass}`}>{t('safety.spiKpi.form.code')}</Label>
@@ -161,17 +161,6 @@ export function IndicatorFormDialog({ open, onClose, onSubmit, initial, loading,
                             />
                             {!isEdit && <p className="text-slate-500 text-[10px] italic">{t('safety.spiKpi.form.codeHint')}</p>}
                             {errors.indicator_code && <p className="text-red-500 text-xs font-medium">{errors.indicator_code}</p>}
-                        </div>
-
-                        <div className="space-y-1.5">
-                            <Label className={`text-[10px] uppercase tracking-widest font-bold ${labelClass}`}>{t('safety.spiKpi.form.unit')}</Label>
-                            <Input
-                                value={form.unit}
-                                onChange={(e) => set('unit', e.target.value)}
-                                placeholder={t('safety.spiKpi.form.unitPlaceholder')}
-                                className={`h-10 ${inputClass}`}
-                            />
-                            {errors.unit && <p className="text-red-500 text-xs font-medium">{errors.unit}</p>}
                         </div>
 
                         <div className="space-y-1.5">
@@ -203,7 +192,18 @@ export function IndicatorFormDialog({ open, onClose, onSubmit, initial, loading,
                             </Select>
                         </div>
 
-                        <div className="col-span-2 space-y-1.5">
+                        <div className="space-y-1.5">
+                            <Label className={`text-[10px] uppercase tracking-widest font-bold ${labelClass}`}>{t('safety.spiKpi.form.unit')}</Label>
+                            <Input
+                                value={form.unit}
+                                onChange={(e) => set('unit', e.target.value)}
+                                placeholder={t('safety.spiKpi.form.unitPlaceholder')}
+                                className={`h-10 ${inputClass}`}
+                            />
+                            {errors.unit && <p className="text-red-500 text-xs font-medium">{errors.unit}</p>}
+                        </div>
+
+                        <div className="sm:col-span-2 lg:col-span-4 space-y-1.5">
                             <Label className={`text-[10px] uppercase tracking-widest font-bold ${labelClass}`}>{t('safety.spiKpi.form.indicatorName')}</Label>
                             <Input
                                 value={form.indicator_name}
@@ -256,17 +256,6 @@ export function IndicatorFormDialog({ open, onClose, onSubmit, initial, loading,
                             </Select>
                         </div>
 
-                        <div className="col-span-2 space-y-1.5">
-                            <Label className={`text-[10px] uppercase tracking-widest font-bold ${labelClass}`}>{t('safety.spiKpi.form.description')}</Label>
-                            <Textarea
-                                value={form.indicator_desc}
-                                onChange={(e) => set('indicator_desc', e.target.value)}
-                                rows={3}
-                                placeholder={t('safety.spiKpi.form.descPlaceholder')}
-                                className={`${inputClass} resize-none`}
-                            />
-                        </div>
-
                         <div className="space-y-1.5">
                             <Label className={`text-[10px] uppercase tracking-widest font-bold ${labelClass}`}>{t('safety.spiKpi.form.statusLabel')}</Label>
                             <Select value={form.is_active} onValueChange={(v) => set('is_active', v as '1' | '0')}>
@@ -280,22 +269,33 @@ export function IndicatorFormDialog({ open, onClose, onSubmit, initial, loading,
                             </Select>
                         </div>
 
+                        <div className="sm:col-span-2 lg:col-span-4 space-y-1.5">
+                            <Label className={`text-[10px] uppercase tracking-widest font-bold ${labelClass}`}>{t('safety.spiKpi.form.description')}</Label>
+                            <Textarea
+                                value={form.indicator_desc}
+                                onChange={(e) => set('indicator_desc', e.target.value)}
+                                rows={3}
+                                placeholder={t('safety.spiKpi.form.descPlaceholder')}
+                                className={`${inputClass} resize-none`}
+                            />
+                        </div>
+
                     </div>
 
                     </div>
-                    <DialogFooter className="shrink-0 px-6 py-4 border-t">
+                    <DialogFooter className="shrink-0 px-4 sm:px-6 py-4 border-t flex-col-reverse sm:flex-row gap-2">
                         <Button
                             type="button"
                             variant="ghost"
                             onClick={onClose}
-                            className={`${isDark ? 'text-slate-400 hover:text-white hover:bg-slate-800' : 'text-slate-500 hover:bg-slate-100'}`}
+                            className={`w-full cursor-pointer sm:w-auto ${isDark ? 'text-slate-400 hover:text-white hover:bg-slate-800' : 'text-slate-500 hover:bg-slate-100'}`}
                         >
                             {t('safety.spiKpi.form.cancel')}
                         </Button>
                         <Button
                             type="submit"
                             disabled={loading}
-                            className="bg-blue-600 hover:bg-blue-500 text-white px-8 shadow-lg shadow-blue-500/20"
+                            className="w-full sm:w-auto cursor-pointer bg-violet-600 hover:bg-violet-500 text-white px-8 shadow-blue-500/20"
                         >
                             {loading ? t('safety.spiKpi.form.processing') : (isEdit ? t('safety.spiKpi.form.updateIndicator') : t('safety.spiKpi.form.createIndicator'))}
                         </Button>

@@ -124,7 +124,7 @@ export async function getEvaluationList(ownerId: number): Promise<{ data: Evalua
   const evaluations = await prisma.evaluation.findMany({
     where: { fk_owner_id: ownerId },
     orderBy: { evaluation_name: 'asc' },
-    select: { evaluation_id: true, evaluation_name: true, evaluation_code: true },
+    select: { evaluation_id: true, evaluation_name: true },
   });
 
   const data: EvaluationOption[] = evaluations.map((e) => ({

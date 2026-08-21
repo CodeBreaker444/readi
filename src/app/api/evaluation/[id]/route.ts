@@ -37,7 +37,6 @@ const evaluationUpdateSchema = z.object({
   evaluation_id: z.coerce.number().int().positive(),
   fk_owner_id: z.coerce.number().int().positive(),
   fk_client_id: z.coerce.number().int().positive(),
-  fk_evaluation_code: z.string().optional(),
   evaluation_request_date: z.string().optional(),
   evaluation_year: z.coerce.number().int().min(2000).max(2100).optional(),
   evaluation_desc: z.string().max(500).optional(),

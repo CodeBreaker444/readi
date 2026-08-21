@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/card";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { FC, useCallback, useEffect, useState } from "react";
+import { FC, useCallback, useEffect, useRef, useState } from "react";
 import EditPlanningRequestCard from "./EditPlanningRequestCard";
 import MissionPlanningLogbookAddNew from "./MissionPlanningLogbookAddNew";
 import MissionPlanningLogbookTable from "./MissionPlanningLogbookTable";
@@ -84,6 +84,8 @@ export const PlanningMissionContent: FC<PlanningMissionProps> = ({ user }) => {
 
   const [commRefreshKey, setCommRefreshKey] = useState(0);
 
+  const isInitialLoadRef = useRef(true);
+
   useEffect(() => {
     if (!c_id || !e_id || !p_id) {
       router.replace("/planning/planning-dashboard");
@@ -92,7 +94,7 @@ export const PlanningMissionContent: FC<PlanningMissionProps> = ({ user }) => {
 
   const loadPageData = useCallback(async () => {
     if (!p_id) return;
-    if (initialLoad) setLoading(true);
+    if (isInitialLoadRef.current) setLoading(true);
 
     try {
       const [
@@ -130,9 +132,12 @@ export const PlanningMissionContent: FC<PlanningMissionProps> = ({ user }) => {
       toast.error(t("planning.missionPlanning.loadError"));
     } finally {
       setLoading(false);
-      setInitialLoad(false);
+      if (isInitialLoadRef.current) {
+        isInitialLoadRef.current = false;
+        setInitialLoad(false);
+      }
     }
-  }, [p_id, c_id, initialLoad, t]);
+  }, [p_id, c_id, t]);
 
   useEffect(() => {
     loadPageData();
@@ -254,19 +259,19 @@ export const PlanningMissionContent: FC<PlanningMissionProps> = ({ user }) => {
   ];
 
   return (
-    <div className="w-full px-6 space-y-4">
+    <div className="w-full px-3 sm:px-6 space-y-4">
       <div
-        className={`top-0 py-2 z-10 backdrop-blur-md transition-all -mx-6 mt-0 mb-6 px-6 py-4 ${isDark
+        className={`top-0 py-2 z-10 backdrop-blur-md transition-all -mx-3 sm:-mx-6 mt-0 mb-6 px-3 sm:px-6 py-4 ${isDark
           ? "bg-slate-900/80 border-b border-slate-800"
           : "bg-white/80 border-b border-slate-200 shadow-[0_1px_3px_rgba(0,0,0,0.06)]"
           }`}
       >
         <div className="mx-auto flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-1 h-8 rounded-full bg-violet-600" />
-            <div>
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-1 h-8 rounded-full bg-violet-600 shrink-0" />
+            <div className="min-w-0">
               <h1
-                className={`font-semibold text-base tracking-tight flex items-center gap-2 ${isDark ? "text-white" : "text-slate-900"
+                className={`font-semibold text-base tracking-tight flex flex-wrap items-center gap-x-2 gap-y-0.5 ${isDark ? "text-white" : "text-slate-900"
                   }`}
               >
                 {t("planning.missionPlanning.planningMission")}
@@ -275,7 +280,7 @@ export const PlanningMissionContent: FC<PlanningMissionProps> = ({ user }) => {
                     className={`font-normal text-sm opacity-70 ${isDark ? "text-slate-400" : "text-slate-500"
                       }`}
                   >
-                    &nbsp;— {planningData.planning_code}
+                    — {planningData.planning_code}
                   </span>
                 )}
               </h1>

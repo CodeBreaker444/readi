@@ -118,14 +118,14 @@ export function EditCommunicationModal({
   return (
     <Dialog open={open} onOpenChange={(val) => !val && onClose()}>
       <DialogContent
-        className={`max-w-2xl p-0 overflow-hidden border ${
+        className={`w-[95vw] sm:w-full !max-w-3xl max-h-[95vh] sm:max-h-[90vh] flex flex-col p-0 overflow-hidden border ${
           isDark
             ? "bg-slate-900 border-slate-800 text-slate-100"
             : "bg-white border-slate-200 text-slate-900"
         }`}
       >
         <DialogHeader
-          className={`px-6 py-4 border-b ${
+          className={`px-4 sm:px-6 py-4 border-b shrink-0 ${
             isDark ? "border-slate-800 bg-slate-900/50" : "border-slate-100 bg-slate-50"
           }`}
         >
@@ -144,9 +144,9 @@ export function EditCommunicationModal({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="p-6">
+        <div className="p-4 sm:p-6 flex-1 overflow-y-auto">
           <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="edit_code" className={labelClass}>{t('organization.communication.protocolCode')}</Label>
                 <Input
@@ -220,19 +220,19 @@ export function EditCommunicationModal({
               />
             </div>
 
-            <div className="flex justify-end gap-3 pt-2">
+            <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-3 pt-2">
               <Button
                 type="button"
                 variant="ghost"
                 onClick={onClose}
-                className={`${isDark ? "text-slate-400 hover:text-slate-200" : "text-slate-500"}`}
+                className={`w-full sm:w-auto ${isDark ? "text-slate-400 hover:text-slate-200" : "text-slate-500"}`}
               >
                 {t('organization.common.cancel')}
               </Button>
               <Button
                 type="submit"
                 disabled={isSubmitting}
-                className="min-w-36 bg-blue-600 hover:bg-blue-700 text-white font-bold uppercase tracking-widest h-10"
+                className="w-full sm:w-auto sm:min-w-36 bg-blue-600 hover:bg-blue-700 text-white font-bold uppercase tracking-widest h-10"
               >
                 {isSubmitting ? (
                   <>

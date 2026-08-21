@@ -2,6 +2,10 @@ import { prisma } from '@/lib/prisma';
 import { RepositoryFile } from '@/config/types/evaluation-planning';
 import { getPresignedDownloadUrl } from '@/lib/s3Client';
 import { logEvent } from '@/backend/services/auditLog/audit-log';
+import { Prisma } from '@prisma/client';
+
+export const EVALUATION_FK_MISSING_MESSAGE =
+  'Selected client or procedure could not be found — it may have been removed or deactivated';
 
 interface EvaluationCreateData {
   client_id: number;
@@ -21,29 +25,6 @@ interface EvaluationCreateData {
   }>;
 }
 
-async function generateEvaluationCode(ownerId: number, year: number): Promise<string> {
-  const prefix = `EVA-${year}-`;
-
-  const data = await prisma.evaluation.findFirst({
-    where: { fk_owner_id: ownerId, evaluation_year: year },
-    orderBy: { evaluation_code: 'desc' },
-    select: { evaluation_code: true },
-  });
-
-  let nextNumber = 1;
-
-  if (data?.evaluation_code) {
-    const parts = data.evaluation_code.split('-');
-    const lastSeq = parseInt(parts[parts.length - 1], 10);
-    if (!isNaN(lastSeq)) {
-      nextNumber = lastSeq + 1;
-    }
-  }
-
-  const seq = nextNumber.toString().padStart(4, '0');
-  return `${prefix}${seq}`;
-}
-
 export async function createNewEvaluationRequest(
   ownerId: number,
   userId: number,
@@ -53,8 +34,6 @@ export async function createNewEvaluationRequest(
   userRole?: string
 ) {
   try {
-    const evaluationCode = await generateEvaluationCode(ownerId, data.evaluation_year);
-
     const polygonData = {
       type: 'FeatureCollection' as const,
       features: data.areas.map((area, index) => ({
@@ -75,8 +54,7 @@ export async function createNewEvaluationRequest(
         fk_owner_id: ownerId,
         fk_client_id: data.client_id,
         fk_luc_procedure_id: data.fk_luc_procedure_id || null,
-        evaluation_code: evaluationCode,
-        evaluation_name: `Evaluation ${evaluationCode}`,
+        evaluation_name: `Evaluation ${data.evaluation_year}`,
         evaluation_description: data.evaluation_description,
         evaluation_type: 'General',
         evaluation_status: data.evaluation_status,
@@ -94,29 +72,31 @@ export async function createNewEvaluationRequest(
           sale_manager: data.evaluation_sale_manager ?? '',
         },
       },
-      select: { evaluation_id: true, evaluation_code: true },
+      select: { evaluation_id: true },
     });
 
     logEvent({
       eventType: 'CREATE',
       entityType: 'evaluation',
       entityId: evaluation.evaluation_id,
-      description: `Evaluation ${evaluation.evaluation_code} created`,
+      description: `Evaluation #${evaluation.evaluation_id} created`,
       userId: userId,
       userName: userName,
       userEmail: userEmail,
       userRole: userRole,
       ownerId: ownerId,
-      metadata: { evaluationCode: evaluation.evaluation_code, clientId: data.client_id },
+      metadata: { clientId: data.client_id },
     });
 
     return {
       success: true,
       evaluation_id: evaluation.evaluation_id,
-      evaluation_code: evaluation.evaluation_code,
       message: 'Evaluation created successfully',
     };
   } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2003') {
+      throw new Error(EVALUATION_FK_MISSING_MESSAGE);
+    }
     console.error('createNewEvaluationRequest error:', error);
     throw new Error(
       error instanceof Error ? error.message : 'Failed to create evaluation'

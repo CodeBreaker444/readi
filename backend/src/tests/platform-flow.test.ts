@@ -867,11 +867,26 @@ describeIntegration('Full Platform Integration Flow', () => {
   });
 
   it('Evaluation — creates a new evaluation request', async () => {
+    const clientsBody = await parseJson(await evalPlanningClientsGET());
+    const clientId = clientsBody.data?.[0]?.client_id;
+
+    const proceduresBody = await parseJson(
+      await evaluationLucProceduresGET(makeRequest('/api/evaluation/luc-procedures', { method: 'GET' }))
+    );
+    const lucProcedureId = proceduresBody.data?.[0]?.luc_procedure_id;
+
+    if (!clientId || !lucProcedureId) {
+      console.warn('[Evaluation] Skipping create test — no seed client/LUC procedure available in test DB');
+      return;
+    }
+
     const req  = makeRequest('/api/evaluation/new-req/create', {
       method: 'POST',
       body: {
         data: {
-          evaluation_status:       'DRAFT',
+          client_id:                clientId,
+          fk_luc_procedure_id:      lucProcedureId,
+          evaluation_status:       'NEW',
           evaluation_request_date: '2026-07-01',
           evaluation_year:         2026,
           evaluation_description:  'Flow test evaluation',
@@ -881,8 +896,8 @@ describeIntegration('Full Platform Integration Flow', () => {
     });
     const res  = await evaluationNewReqCreatePOST(req);
     const body = await parseJson(res);
-    expect(res.status).not.toBe(401);
-    createdEvaluationId = body.data?.evaluation_id ?? body.data?.id ?? body.id;
+    expect(res.status).toBe(200);
+    createdEvaluationId = body.evaluation_id ?? body.data?.evaluation_id ?? body.id;
     console.info(`[Evaluation] Created ID=${createdEvaluationId} status=${res.status}`);
   });
 

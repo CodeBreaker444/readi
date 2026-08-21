@@ -91,7 +91,7 @@ export function AddCommunicationForm({ onSuccess, isDark }: AddCommunicationForm
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
       {/* Row 1: Code, Version, Status */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="space-y-1.5">
           <Label htmlFor="code" className={labelClass}>
             {t('organization.communication.protocolCode')} <span className="text-red-500">*</span>
@@ -265,7 +265,7 @@ export function CommunicationModal({
   return (
     <Dialog open={open} onOpenChange={(val) => !val && onClose()}>
       <DialogContent
-        className={`max-w-2xl p-0 gap-0 overflow-hidden rounded-2xl border shadow-2xl ${
+        className={`w-[95vw] sm:w-full !max-w-3xl max-h-[95vh] sm:max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden rounded-2xl border shadow-2xl ${
           isDark
             ? "bg-gray-900 border-gray-700/60 text-gray-100"
             : "bg-white border-gray-200 text-gray-900"
@@ -273,7 +273,7 @@ export function CommunicationModal({
         style={{ backdropFilter: "none" }}
       >
         <DialogHeader
-          className={`px-6 py-4 border-b flex flex-row items-center justify-between space-y-0 ${
+          className={`px-4 sm:px-6 py-4 border-b flex flex-row items-center justify-between space-y-0 shrink-0 ${
             isDark ? "border-gray-700/60 bg-gray-900" : "border-gray-100 bg-gray-50"
           }`}
         >
@@ -286,10 +286,10 @@ export function CommunicationModal({
               {t('organization.communication.addModalTitle')}
             </DialogTitle>
           </div>
-          
+
         </DialogHeader>
 
-        <div className="p-6 overflow-y-auto max-h-[75vh]">{children}</div>
+        <div className="p-4 sm:p-6 flex-1 overflow-y-auto">{children}</div>
       </DialogContent>
     </Dialog>
   );

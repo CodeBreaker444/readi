@@ -1,7 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
-import { canAccessRoute, getApiRoutePermission, Role, roleHasPermission } from './lib/auth/roles'
+import { canAccessRoute, getApiRoutePermission, roleHasPermission } from './lib/auth/roles'
 import { decodeJwtPayload, decodeJwtRole, isJwtExpired } from './lib/utils'
 
 export async function updateSession(request: NextRequest) {
@@ -39,10 +39,6 @@ export async function updateSession(request: NextRequest) {
       }
     }
   )
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
 
   const pathname = request.nextUrl.pathname;
 
@@ -83,6 +79,9 @@ export async function updateSession(request: NextRequest) {
       const dest = role === 'CLIENT' ? '/client/dashboard' : '/dashboard'
       return NextResponse.redirect(new URL(dest, request.url))
     }
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
     if (user) {
       return NextResponse.redirect(new URL('/dashboard', request.url))
     }
@@ -226,125 +225,9 @@ export async function updateSession(request: NextRequest) {
     return response
   }
 
-  if (!user) {
-    if (isPublicRoute) {
-      return response
-    }
-    return NextResponse.redirect(new URL('/auth/login', request.url))
-  }
-
-  try {
-    const {
-      data: { session },
-    } = await supabase.auth.getSession()
-
-    if (!user && session) {
-      const { data: { session: refreshedSession } } = await supabase.auth.refreshSession()
-      if (refreshedSession) {
-        const { data: { user: refreshedUser } } = await supabase.auth.getUser()
-        if (!refreshedUser) {
-          return NextResponse.redirect(new URL('/auth/login', request.url))
-        }
-      }
-    }
-
-    const { data: userData, error: userError } = await supabase
-      .from('users')
-      .select('user_id, user_active, fk_owner_id, user_role')
-      .eq('auth_user_id', user.id)
-      .single()
-
-    if (userError || !userData || userData.user_active !== 'Y') {
-      await supabase.auth.signOut()
-      return NextResponse.redirect(new URL('/auth/login', request.url))
-    }
-
-    if (userData.user_role !== 'SUPERADMIN' && userData.fk_owner_id) {
-      const { data: ownerData } = await supabase
-        .from('owner')
-        .select('owner_active')
-        .eq('owner_id', userData.fk_owner_id)
-        .single()
-
-      if (!ownerData || ownerData.owner_active !== 'Y') {
-        await supabase.auth.signOut()
-        return NextResponse.redirect(new URL('/auth/login', request.url))
-      }
-    }
-
-    const { data: passwordChangedSetting } = await supabase
-      .from('user_settings')
-      .select('setting_value')
-      .eq('fk_user_id', userData.user_id)
-      .eq('setting_key', 'password_changed')
-      .single()
-
-    const needsPasswordChange = !passwordChangedSetting || passwordChangedSetting.setting_value !== 'true'
-
-    if (needsPasswordChange) {
-      if (pathname === '/auth/change-password') {
-        return response
-      }
-      return NextResponse.redirect(new URL('/auth/change-password', request.url))
-    }
-
-    const { data: factors } = await supabase.auth.mfa.listFactors()
-    const hasMFAEnabled = factors && factors.totp && factors.totp.length > 0
-
-    const { data: mfaEnabledSetting } = await supabase
-      .from('user_settings')
-      .select('setting_value')
-      .eq('fk_user_id', userData.user_id)
-      .eq('setting_key', 'mfa_enabled')
-      .single()
-
-    const mfaEnabled = mfaEnabledSetting && mfaEnabledSetting.setting_value === 'true'
-
-    if (hasMFAEnabled && mfaEnabled) {
-      const mfaVerified = request.cookies.get('mfa_verified')?.value === 'true'
-
-      if (!mfaVerified) {
-        if (pathname === '/auth/verify-mfa') {
-          return response
-        }
-        return NextResponse.redirect(new URL('/auth/verify-mfa', request.url))
-      }
-    }
-
-    const { data: mfaSetupShownSetting } = await supabase
-      .from('user_settings')
-      .select('setting_value')
-      .eq('fk_user_id', userData.user_id)
-      .eq('setting_key', 'mfa_setup_shown')
-      .single()
-
-    const mfaSetupShown = mfaSetupShownSetting && mfaSetupShownSetting.setting_value === 'true'
-
-    if (!mfaSetupShown && !hasMFAEnabled) {
-      if (pathname === '/auth/setup-2fa') {
-        return response
-      }
-      return NextResponse.redirect(new URL('/auth/setup-2fa', request.url))
-    }
-
-    if (isPublicRoute || isAuthFlowRoute) {
-      return NextResponse.redirect(new URL('/dashboard', request.url))
-    }
-
-    if (!pathname.startsWith('/api/')) {
-      const role = userData.user_role as Role
-      if (!canAccessRoute(role, pathname)) {
-        return NextResponse.redirect(new URL('/unauthorized', request.url))
-      }
-    }
-
-    return response
-
-  } catch (error) {
-    console.error('Middleware error:', error)
-    await supabase.auth.signOut()
-    return NextResponse.redirect(new URL('/auth/login', request.url))
-  }
+  // Unreachable: every request with a jwtToken returns above, and requests without
+  // one already returned earlier (isPublicRoute ? response : redirect to /auth/login).
+  return response
 }
 
 export async function middleware(request: NextRequest) {

@@ -47,16 +47,6 @@ export async function listOperations(
   const { page, pageSize, status, search, pilot_id, tool_id, client_id, date_start, date_end } = params;
   const skip = (page - 1) * pageSize;
 
-  let planningIds: number[] | undefined;
-  if (client_id) {
-    const plannings = await prisma.planning.findMany({
-      where: { fk_owner_id: ownerId, fk_client_id: client_id },
-      select: { planning_id: true },
-    });
-    planningIds = plannings.map((p) => p.planning_id);
-    if (planningIds.length === 0) return { data: [], total: 0, page, pageSize };
-  }
-
   const where: any = {
     fk_owner_id: ownerId,
     ...(date_start && { scheduled_start: { gte: new Date(date_start) } }),
@@ -64,7 +54,7 @@ export async function listOperations(
     ...(status && { status_name: status }),
     ...(pilot_id && { fk_pilot_user_id: pilot_id }),
     ...(tool_id && { fk_tool_id: tool_id }),
-    ...(planningIds && { fk_planning_id: { in: planningIds } }),
+    ...(client_id && { planning: { fk_client_id: client_id } }),
     ...(search && {
       OR: [
         { mission_code: { contains: search, mode: 'insensitive' } },

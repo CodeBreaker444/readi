@@ -56,11 +56,11 @@ export function AssignmentModal({
 }) {
   return (
     <Dialog open={open} onOpenChange={(val) => !val && onClose()}>
-      <DialogContent className="max-w-2xl p-0 overflow-hidden border-slate-800">
-        <DialogHeader className="px-6 py-4 border-b border-slate-100 dark:border-slate-800">
+      <DialogContent className="w-[95vw] sm:w-full !max-w-3xl max-h-[95vh] sm:max-h-[90vh] flex flex-col p-0 overflow-hidden border-slate-800">
+        <DialogHeader className="px-4 sm:px-6 py-4 border-b border-slate-100 dark:border-slate-800 shrink-0">
           <DialogTitle className="text-lg font-semibold">{title}</DialogTitle>
         </DialogHeader>
-        <div className="p-6 max-h-[80vh] overflow-y-auto">{children}</div>
+        <div className="p-4 sm:p-6 flex-1 overflow-y-auto">{children}</div>
       </DialogContent>
     </Dialog>
   )
@@ -120,7 +120,7 @@ export function AssignmentForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="space-y-2">
           <Label htmlFor="code">{t('organization.common.code')} *</Label>
           <Input
@@ -211,10 +211,10 @@ export function AssignmentForm({
       </div>
 
       <div className="flex justify-end gap-3 pt-2">
-        <Button 
-          type="submit" 
+        <Button
+          type="submit"
           disabled={loading || !!jsonError}
-          className="min-w-[120px] bg-violet-600 hover:bg-violet-500"
+          className="w-full sm:w-auto sm:min-w-[120px] bg-violet-600 hover:bg-violet-500"
         >
           {loading ? (
             <>

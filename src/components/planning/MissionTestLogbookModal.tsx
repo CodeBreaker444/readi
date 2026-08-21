@@ -255,12 +255,12 @@ export default function MissionTestLogbookModal({
     return (
         <>
             <Dialog open={open} onOpenChange={handleClose}>
-                <DialogContent className={`max-w-[95vw] lg:max-w-screen-xl h-[90vh] flex flex-col p-0 overflow-hidden ${isDark ? "bg-slate-900 border-slate-800" : ""}`}>
+                <DialogContent className={`w-[95vw] sm:max-w-[95vw] lg:max-w-screen-xl h-[95vh] sm:h-[90vh] flex flex-col p-0 overflow-hidden ${isDark ? "bg-slate-900 border-slate-800" : ""}`}>
 
-                    <DialogHeader className={`p-6 border-b ${isDark ? "bg-slate-950/50 border-slate-800" : "bg-muted/20"}`}>
-                        <div className="flex justify-between items-center">
+                    <DialogHeader className={`p-4 sm:p-6 border-b shrink-0 ${isDark ? "bg-slate-950/50 border-slate-800" : "bg-muted/20"}`}>
+                        <div className="flex flex-wrap justify-between items-center gap-3">
                             <div>
-                                <DialogTitle className={`text-xl font-bold tracking-tight ${isDark ? "text-slate-100" : ""}`}>
+                                <DialogTitle className={`text-lg sm:text-xl font-bold tracking-tight ${isDark ? "text-slate-100" : ""}`}>
                                     {t("planning.testLogbook.title")}
                                 </DialogTitle>
                                 <DialogDescription className={`text-sm ${isDark ? "text-slate-400" : ""}`}>
@@ -276,7 +276,7 @@ export default function MissionTestLogbookModal({
                         </div>
                     </DialogHeader>
 
-                    <div className="flex-1 overflow-y-auto p-6 space-y-8">
+                    <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-8">
                         {loading ? (
                             <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
                                 {/* Skeleton content omitted for brevity, same logic applies */}
@@ -425,14 +425,14 @@ export default function MissionTestLogbookModal({
                                     </Table>
                                 </div>
 
-                                <div className="flex justify-between items-center pt-4 border-t border-dashed">
+                                <div className="flex flex-col-reverse sm:flex-row sm:justify-between sm:items-center gap-3 pt-4 border-t border-dashed">
                                     <div>
                                         <FeatureGate feature="logbook_planned_mission" require="edit">
                                             <Button
                                                 variant="outline"
                                                 size="sm"
                                                 disabled={updatingStatus}
-                                                className={`transition-all ${activeStatus === "N"
+                                                className={`w-full sm:w-auto transition-all ${activeStatus === "N"
                                                     ? "border-emerald-600/50 text-emerald-600 hover:bg-emerald-600/10"
                                                     : "border-amber-500/50 text-amber-500 hover:bg-amber-500/10"
                                                     }`}
@@ -444,7 +444,7 @@ export default function MissionTestLogbookModal({
                                         </FeatureGate>
                                     </div>
 
-                                    <Button variant="secondary" className="px-8 bg-violet-600 hover:bg-violet-700 text-white" onClick={() => handleClose(false)}>
+                                    <Button variant="secondary" className="w-full sm:w-auto px-8 bg-violet-600 hover:bg-violet-700 text-white" onClick={() => handleClose(false)}>
                                         {t("planning.testLogbook.finishClose")}
                                     </Button>
                                 </div>

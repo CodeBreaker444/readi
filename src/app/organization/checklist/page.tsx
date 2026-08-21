@@ -274,7 +274,7 @@ export default function ChecklistPage() {
         <p className={`text-sm leading-relaxed mb-6 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
           {t('organization.checklist.deleteConfirm', { code: confirmDelete?.checklist_code })}
         </p>
-        <div className="flex gap-3 justify-end">
+        <div className="flex flex-col-reverse sm:flex-row gap-2 sm:gap-3 sm:justify-end">
           <button
             onClick={() => setConfirmDelete(null)}
             className={`px-4 py-2 cursor-pointer rounded-lg border text-sm transition-colors ${isDark ? 'border-slate-700 text-slate-400 hover:bg-slate-800' : 'border-slate-200 text-slate-500 hover:bg-slate-50'}`}

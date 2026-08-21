@@ -965,7 +965,6 @@
     },
     "columns": {
       "yearRef": "Anno Rif.",
-      "evaluationCode": "Codice Valutazione",
       "planCode": "Codice Piano",
       "customer": "Cliente",
       "requestedBy": "Richiesto da",
@@ -2300,6 +2299,7 @@
       "component": "Componente",
       "componentOptional": "(opzionale)",
       "componentNone": "Nessuno — collega a un componente",
+      "selectSystemFirst": "Seleziona prima un sistema",
       "filterBySystem": "Filtra per sistema",
       "allSystems": "Tutti i sistemi"
     },

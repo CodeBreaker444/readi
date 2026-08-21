@@ -112,7 +112,7 @@ export default function MissionTypePage() {
         </div>
       </div>
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-        <DialogContent className={`sm:max-w-lg rounded-xl ${isDark ? 'bg-[#0f1320] border-white/[0.08] text-white shadow-[0_25px_60px_rgba(0,0,0,0.5)]' : 'bg-white border-gray-200 shadow-2xl'}`}>
+        <DialogContent className={`w-[95vw] sm:w-full sm:max-w-2xl rounded-xl ${isDark ? 'bg-[#0f1320] border-white/[0.08] text-white shadow-[0_25px_60px_rgba(0,0,0,0.5)]' : 'bg-white border-gray-200 shadow-2xl'}`}>
           <DialogHeader>
             <DialogTitle className={`text-base font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>{t('missionType.createTitle')}</DialogTitle>
             <DialogDescription className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{t('missionType.createDescription')}</DialogDescription>
@@ -121,7 +121,7 @@ export default function MissionTypePage() {
         </DialogContent>
       </Dialog>
       <Dialog open={isEditDialogOpen} onOpenChange={(open) => { setIsEditDialogOpen(open); if (!open) setEditItem(null); }}>
-        <DialogContent className={`sm:max-w-lg rounded-xl ${isDark ? 'bg-[#0f1320] border-white/[0.08] text-white shadow-[0_25px_60px_rgba(0,0,0,0.5)]' : 'bg-white border-gray-200 shadow-2xl'}`}>
+        <DialogContent className={`w-[95vw] sm:w-full sm:max-w-2xl rounded-xl ${isDark ? 'bg-[#0f1320] border-white/[0.08] text-white shadow-[0_25px_60px_rgba(0,0,0,0.5)]' : 'bg-white border-gray-200 shadow-2xl'}`}>
           <DialogHeader>
             <DialogTitle className={`text-base font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>{t('missionType.editTitle')}</DialogTitle>
             <DialogDescription className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{t('missionType.editDescription')}</DialogDescription>

@@ -16,7 +16,6 @@ export interface MissionTemplateRow {
   planning_name: string | null;
   planning_status: string | null;
   evaluation_id: number | null;
-  evaluation_code: string | null;
   client_name: string | null;
   pilot_fullname: string | null;
   tool_code: string | null;
@@ -71,7 +70,7 @@ export async function getMissionTemplateLogbook(
           planning_name: true,
           planning_status: true,
           client: { select: { client_id: true, client_name: true } },
-          evaluation: { select: { evaluation_id: true, evaluation_code: true } },
+          evaluation: { select: { evaluation_id: true } },
         },
       },
       users: {
@@ -119,7 +118,6 @@ export async function getMissionTemplateLogbook(
       planning_name: planning?.planning_name ?? null,
       planning_status: planning?.planning_status ?? null,
       evaluation_id: planning?.evaluation?.evaluation_id ?? null,
-      evaluation_code: planning?.evaluation?.evaluation_code ?? null,
       client_name: planning?.client?.client_name ?? null,
       pilot_fullname: pilot ? `${pilot.first_name ?? ''} ${pilot.last_name ?? ''}`.trim() : null,
       tool_code: row.fk_tool_id ? (toolMap[row.fk_tool_id] ?? null) : null,
@@ -145,7 +143,7 @@ export async function getMissionTemplateFilterOptions(ownerId: number) {
     prisma.evaluation.findMany({
       where: { fk_owner_id: ownerId },
       orderBy: { evaluation_id: 'desc' },
-      select: { evaluation_id: true, evaluation_code: true, evaluation_active: true },
+      select: { evaluation_id: true, evaluation_active: true },
     }),
     prisma.planning.findMany({
       where: { fk_owner_id: ownerId },

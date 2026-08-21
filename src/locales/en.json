@@ -968,7 +968,6 @@
     },
     "columns": {
       "yearRef": "Year Ref",
-      "evaluationCode": "Evaluation Code",
       "planCode": "Plan Code",
       "customer": "Customer",
       "requestedBy": "Requested By",
@@ -2306,6 +2305,7 @@
       "component": "Component",
       "componentOptional": "(optional)",
       "componentNone": "None — attach to a component",
+      "selectSystemFirst": "Select a system first",
       "filterBySystem": "Filter by system",
       "allSystems": "All systems"
     },

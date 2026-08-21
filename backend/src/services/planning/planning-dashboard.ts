@@ -104,7 +104,7 @@ export async function getPlanningList(ownerId: number) {
       created_by_user_id: true,
       assigned_to_user_id: true,
       client: { select: { client_id: true, client_name: true } },
-      evaluation: { select: { evaluation_id: true, evaluation_code: true, evaluation_metadata: true } },
+      evaluation: { select: { evaluation_id: true, evaluation_metadata: true } },
       users_planning_created_by_user_idTousers: { select: { user_id: true, first_name: true, last_name: true, user_role: true } },
       users_planning_assigned_to_user_idTousers: { select: { user_id: true, first_name: true, last_name: true, user_role: true } },
     },
@@ -221,7 +221,13 @@ export async function getPlanningData(ownerId: number, planningId: number) {
       created_at: true,
       updated_at: true,
       client: { select: { client_id: true, client_name: true } },
-      evaluation: { select: { evaluation_id: true, evaluation_metadata: true } },
+      evaluation: {
+        select: {
+          evaluation_id: true,
+          evaluation_metadata: true,
+          luc_procedure: { select: { procedure_code: true, procedure_version: true, procedure_description: true } },
+        },
+      },
       users_planning_created_by_user_idTousers: { select: { user_id: true, first_name: true, last_name: true, user_role: true } },
       users_planning_assigned_to_user_idTousers: { select: { user_id: true, first_name: true, last_name: true, user_role: true } },
     },
@@ -233,11 +239,12 @@ export async function getPlanningData(ownerId: number, planningId: number) {
   const evaluation = data.evaluation;
   const assignedToUser = data.users_planning_assigned_to_user_idTousers;
 
-  let lucCode = '';
-  let lucVer = '';
-  let lucDesc = '';
+  let lucCode = evaluation?.luc_procedure?.procedure_code ?? '';
+  let lucVer = evaluation?.luc_procedure?.procedure_version ?? '';
+  let lucDesc = evaluation?.luc_procedure?.procedure_description ?? '';
+
   const evalMeta = evaluation?.evaluation_metadata;
-  if (evalMeta) {
+  if (!lucCode && evalMeta) {
     try {
       const meta = typeof evalMeta === 'string' ? JSON.parse(evalMeta) : evalMeta;
       if ((meta as any).procedure_id) {
@@ -385,20 +392,33 @@ export async function getPlanningLogbookList(
   ownerId: number,
   planningId: number
 ): Promise<PlanningLogbookRow[]> {
-  const data = await prisma.planning_logbook.findMany({
-    where: { fk_planning_id: planningId, fk_owner_id: ownerId },
-    orderBy: { mission_planning_id: 'asc' },
-    include: {
-      planning: { select: { planning_description: true } },
-      tool: { select: { tool_code: true, tool_description: true } },
-    },
-  });
+  const [data, testCounts] = await Promise.all([
+    prisma.planning_logbook.findMany({
+      where: { fk_planning_id: planningId, fk_owner_id: ownerId },
+      orderBy: { mission_planning_id: 'asc' },
+      select: {
+        mission_planning_id: true,
+        fk_planning_id: true,
+        fk_evaluation_id: true,
+        fk_client_id: true,
+        fk_tool_id: true,
+        mission_planning_code: true,
+        mission_planning_desc: true,
+        mission_planning_limit_json: true,
+        mission_planning_active: true,
+        mission_planning_ver: true,
+        mission_planning_filename: true,
+        mission_planning_filesize: true,
+        planning: { select: { planning_description: true } },
+        tool: { select: { tool_code: true, tool_description: true } },
+      },
+    }),
+    prisma.planning_test_logbook.count({
+      where: { fk_planning_id: planningId },
+    }),
+  ]);
 
   if (!data || data.length === 0) return [];
-
-  const testCounts = await prisma.planning_test_logbook.count({
-    where: { fk_planning_id: planningId },
-  });
 
   return data.map((row) => ({
     mission_planning_id: row.mission_planning_id,
@@ -587,9 +607,19 @@ export async function getDroneToolList(
     where: {
       fk_owner_id: ownerId,
       ...(active !== 'ALL' && { tool_active: active }),
+      ...(clientId ? { OR: [{ assigned_client_id: clientId }, { assigned_client_id: null }] } : {}),
+      ...(status !== 'ALL' && { tool_status: { status_code: status } }),
     },
     orderBy: { tool_id: 'asc' },
-    include: {
+    select: {
+      tool_id: true,
+      tool_code: true,
+      tool_description: true,
+      tool_name: true,
+      tool_active: true,
+      tool_metadata: true,
+      fk_owner_id: true,
+      fk_model_id: true,
       tool_model: { select: { model_id: true, model_code: true, model_name: true, manufacturer: true } },
       tool_status: { select: { status_code: true, status_name: true } },
     },

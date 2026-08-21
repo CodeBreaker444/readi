@@ -642,13 +642,13 @@ export default function GeneralAuditPlanPage() {
       </div>
 
       {modalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/50">
           <div
-            className={`w-full max-w-lg rounded-md border shadow-2xl ${
+            className={`w-[95vw] sm:w-full max-w-3xl max-h-[95vh] sm:max-h-[90vh] flex flex-col rounded-md border shadow-2xl ${
               isDark ? 'bg-[#0f1320] border-white/8' : 'bg-white border-gray-200'
             }`}
           >
-            <div className={`flex items-center justify-between px-6 py-4 border-b ${borderMuted}`}>
+            <div className={`flex items-center justify-between px-4 sm:px-6 py-4 border-b shrink-0 ${borderMuted}`}>
               <h2 className={`text-sm font-semibold ${textPrimary}`}>
                 {form.requirement_id
                   ? t('compliance.generalAuditPlan.modal.editTitle')
@@ -668,8 +668,8 @@ export default function GeneralAuditPlanPage() {
               </Button>
             </div>
 
-            <div className="px-6 py-5 space-y-4 max-h-[70vh] overflow-y-auto">
-              <div className="grid grid-cols-3 gap-3">
+            <div className="px-4 sm:px-6 py-5 space-y-4 flex-1 overflow-y-auto">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 <div>
                   <label className={`block text-[11px] font-semibold uppercase tracking-wider mb-1.5 ${textMuted}`}>
                     {t('compliance.generalAuditPlan.modal.fields.code')} *
@@ -681,7 +681,7 @@ export default function GeneralAuditPlanPage() {
                     className={`h-9 text-xs font-mono ${inputCls}`}
                   />
                 </div>
-                <div className="col-span-2">
+                <div className="sm:col-span-1 lg:col-span-2">
                   <label className={`block text-[11px] font-semibold uppercase tracking-wider mb-1.5 ${textMuted}`}>
                     {t('compliance.generalAuditPlan.modal.fields.title')} *
                   </label>
@@ -694,7 +694,7 @@ export default function GeneralAuditPlanPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 <div>
                   <label className={`block text-[11px] font-semibold uppercase tracking-wider mb-1.5 ${textMuted}`}>
                     {t('compliance.generalAuditPlan.modal.fields.type')}
@@ -735,9 +735,6 @@ export default function GeneralAuditPlanPage() {
                     className={`h-9 text-xs ${inputCls}`}
                   />
                 </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className={`block text-[11px] font-semibold uppercase tracking-wider mb-1.5 ${textMuted}`}>
                     {t('compliance.generalAuditPlan.modal.fields.status')}
@@ -766,6 +763,9 @@ export default function GeneralAuditPlanPage() {
                     </SelectContent>
                   </Select>
                 </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className={`block text-[11px] font-semibold uppercase tracking-wider mb-1.5 ${textMuted}`}>
                     {t('compliance.generalAuditPlan.modal.fields.criticality')}
@@ -780,18 +780,17 @@ export default function GeneralAuditPlanPage() {
                     className={`h-9 text-xs ${inputCls}`}
                   />
                 </div>
-              </div>
-
-              <div>
-                <label className={`block text-[11px] font-semibold uppercase tracking-wider mb-1.5 ${textMuted}`}>
-                  {t('compliance.generalAuditPlan.modal.fields.nextReviewDate')}
-                </label>
-                <Input
-                  type="date"
-                  value={form.next_review_date}
-                  onChange={(e) => setForm((f) => ({ ...f, next_review_date: e.target.value }))}
-                  className={`h-9 text-xs ${inputCls}`}
-                />
+                <div>
+                  <label className={`block text-[11px] font-semibold uppercase tracking-wider mb-1.5 ${textMuted}`}>
+                    {t('compliance.generalAuditPlan.modal.fields.nextReviewDate')}
+                  </label>
+                  <Input
+                    type="date"
+                    value={form.next_review_date}
+                    onChange={(e) => setForm((f) => ({ ...f, next_review_date: e.target.value }))}
+                    className={`h-9 text-xs ${inputCls}`}
+                  />
+                </div>
               </div>
 
               <div>
@@ -808,12 +807,12 @@ export default function GeneralAuditPlanPage() {
               </div>
             </div>
 
-            <div className={`flex justify-end gap-2 px-6 py-4 border-t ${borderMuted}`}>
+            <div className={`flex flex-col-reverse sm:flex-row justify-end gap-2 px-4 sm:px-6 py-4 border-t shrink-0 ${borderMuted}`}>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setModalOpen(false)}
-                className={`h-8 text-xs ${
+                className={`h-8 text-xs w-full sm:w-auto ${
                   isDark ? 'border-white/8 hover:bg-white/5 text-gray-300' : ''
                 }`}
               >
@@ -823,7 +822,7 @@ export default function GeneralAuditPlanPage() {
                 size="sm"
                 onClick={handleSave}
                 disabled={saving || !form.requirement_code.trim() || !form.requirement_title.trim()}
-                className="h-8 text-xs bg-violet-600 hover:bg-violet-700 text-white"
+                className="h-8 text-xs w-full sm:w-auto bg-violet-600 hover:bg-violet-700 text-white"
               >
                 {saving
                   ? t('compliance.generalAuditPlan.modal.saving')

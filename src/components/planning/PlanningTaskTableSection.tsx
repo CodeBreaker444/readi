@@ -222,7 +222,7 @@ export function PlanningTaskTableSection(props: {
     <>
       <Card className={isDark ? "bg-slate-900 border-slate-800" : "bg-white"}>
         <CardHeader className="space-y-0 pb-3">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
               <div className="flex items-center gap-2">
                 <ListChecks className={`h-4 w-4 ${isDark ? "text-slate-400" : "text-slate-500"}`} />
@@ -238,7 +238,7 @@ export function PlanningTaskTableSection(props: {
               </p>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               {allCompleted && tasks.length > 0 && (
                 <div className="flex items-center gap-1.5 text-emerald-600">
                   <CheckCircle2 className="h-4 w-4" />
@@ -255,9 +255,9 @@ export function PlanningTaskTableSection(props: {
             </div>
           </div>
 
-          <div className="flex items-center justify-between gap-3 flex-wrap pt-3">
-            <div className="flex items-center gap-2">
-              <Filter className="h-4 w-4 text-muted-foreground" />
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <Filter className="h-4 w-4 text-muted-foreground shrink-0" />
               <FilterBtn
                 mode="all"
                 icon={<FaTasks className="h-3.5 w-3.5" />}
@@ -284,7 +284,7 @@ export function PlanningTaskTableSection(props: {
               />
             </div>
 
-            <div className="relative w-56">
+            <div className="relative w-full sm:w-56">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
               <Input
                 className={`pl-8 h-8 text-xs ${isDark ? "bg-slate-950 border-slate-800 text-slate-200" : ""

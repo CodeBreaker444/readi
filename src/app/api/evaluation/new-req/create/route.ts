@@ -1,5 +1,7 @@
-import { createNewEvaluationRequest } from '@/backend/services/planning/evaluation';
+import { createNewEvaluationRequest, EVALUATION_FK_MISSING_MESSAGE } from '@/backend/services/planning/evaluation';
 import { requireFeatureAccess, requirePermission } from '@/lib/auth/api-auth';
+import { apiError, internalError } from '@/lib/api-error';
+import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
 import * as z from 'zod';
 
@@ -35,11 +37,17 @@ export async function POST(request: NextRequest) {
     const { error: featureError } = await requireFeatureAccess('planning_new_evaluation', 'create');
     if (featureError) return featureError;
 
-    const body = await request.json();
+    let body: unknown;
+    try {
+      body = await request.json();
+    } catch {
+      return apiError(E.VL021, 400);
+    }
+
     const ownerId = session!.user.ownerId;
     const userId = session!.user.userId;
 
-    const validation = evaluationSchema.safeParse(body.data);
+    const validation = evaluationSchema.safeParse((body as { data?: unknown })?.data);
 
     if (!validation.success) {
       return NextResponse.json(
@@ -62,10 +70,9 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(result);
   } catch (error) {
-    console.error('API Error:', error);
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Internal server error' },
-      { status: 500 },
-    );
+    if (error instanceof Error && error.message === EVALUATION_FK_MISSING_MESSAGE) {
+      return apiError(E.DB008, 409);
+    }
+    return internalError(E.SV001, error);
   }
 }

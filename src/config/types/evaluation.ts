@@ -6,7 +6,6 @@ export interface Evaluation {
   fk_owner_id: number;
   fk_client_id: number;
   fk_luc_procedure_id: number;
-  fk_evaluation_code?: string;
   evaluation_status: EvaluationStatus;
   evaluation_result: EvaluationResult;
   evaluation_request_date: string;
@@ -58,7 +57,6 @@ export interface UpdateEvaluationInput {
   evaluation_offer?: string;
   evaluation_sale_manager?: string;
   evaluation_folder?: string;
-  fk_evaluation_code?: string;
 }
 
 export interface ApiResponse<T> {
