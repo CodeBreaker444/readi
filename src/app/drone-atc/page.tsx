@@ -219,7 +219,7 @@ export default function DroneATCPage() {
   const handleBoundsChange = useCallback((bounds: MapBounds) => {
     boundsRef.current = bounds;
     if (windTriggerTimerRef.current) clearTimeout(windTriggerTimerRef.current);
-    windTriggerTimerRef.current = setTimeout(() => setWindFetchTrigger(t => t + 1), 500);
+    windTriggerTimerRef.current = setTimeout(() => setWindFetchTrigger(t => t + 1), 250);
   }, []);
 
   useEffect(() => {

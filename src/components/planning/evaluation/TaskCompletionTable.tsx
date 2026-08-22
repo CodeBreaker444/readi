@@ -41,6 +41,7 @@ interface Props {
     clientId: number;
     ownerId: number;
     onAllCompleted?: (completed: boolean) => void;
+    onCommunicationSent?: () => void;
 }
 
 type ModalState =
@@ -55,6 +56,7 @@ export function TaskCompletionTable({
     clientId,
     ownerId,
     onAllCompleted,
+    onCommunicationSent,
 }: Props) {
     const { isDark } = useTheme();
     const [tasks, setTasks] = useState<EvaluationTask[]>([]);
@@ -132,6 +134,7 @@ export function TaskCompletionTable({
             }
         }
         fetchTasks();
+        onCommunicationSent?.();
         closeModal();
     }
 

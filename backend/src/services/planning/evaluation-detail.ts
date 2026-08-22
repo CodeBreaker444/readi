@@ -163,11 +163,9 @@ export async function updateEvaluation(
     metadata: { updateData },
   });
 
-  const updated = await prisma.evaluation.findUnique({
-    where: { evaluation_id },
-  });
+  const updated = await getEvaluationById(fk_owner_id, evaluation_id);
 
-  return { success: true, message: 'Evaluation updated', data: updated as unknown as Evaluation };
+  return { success: true, message: 'Evaluation updated', data: updated };
 }
 
 export async function deleteEvaluation(
