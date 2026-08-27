@@ -12,6 +12,15 @@ export interface OperationLogbookTableMeta {
   onViewDetails: (mission: OperationLogbookItem) => void;
 }
 
+ 
+function parseDMYToTime(dateStr: string, timeStr?: string): number {
+  if (!dateStr) return 0;
+  const [d, m, y] = dateStr.split('/').map(Number);
+  if (!d || !m || !y) return 0;
+  const [hh, mm] = (timeStr || '00:00').split(':').map(Number);
+  return new Date(y, m - 1, d, hh || 0, mm || 0).getTime();
+}
+
 function formatMinutes(mins: number): string {
   if (!mins) return "—";
   const h = Math.floor(mins / 60);
@@ -87,6 +96,9 @@ export const operationLogbookColumns: ColumnDef<OperationLogbookItem>[] = [
         </span>
       </div>
     ),
+    sortingFn: (rowA, rowB) =>
+      parseDMYToTime(rowA.original.date_start, rowA.original.time_start) -
+      parseDMYToTime(rowB.original.date_start, rowB.original.time_start),
     size: 110,
   },
   {

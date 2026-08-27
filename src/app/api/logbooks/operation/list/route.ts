@@ -16,6 +16,7 @@ const schema = z.object({
   mission_plan_id: z.coerce.number().int().optional().default(0),
   date_start: z.string().optional(),
   date_end: z.string().optional(),
+  user_timezone: z.string().optional().default('UTC'),
 });
 
 export async function POST(request: NextRequest) {

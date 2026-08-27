@@ -7,7 +7,7 @@ export function dateConversionUtcToLocal(utcDate: string | Date, timezone: strin
   try {
     const date = new Date(utcDate);
     
-    return date.toLocaleString('en-US', {
+    return date.toLocaleString('en-GB', {
       timeZone: timezone,
       year: 'numeric',
       month: '2-digit',

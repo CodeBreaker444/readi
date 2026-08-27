@@ -170,6 +170,7 @@ export async function getReadiLastNextMissionList(
       take: limit,
       select: {
         pilot_mission_id: true,
+        mission_code: true,
         scheduled_start: true,
         actual_start: true,
         flight_duration: true,
@@ -254,6 +255,7 @@ export async function getReadiLastNextMissionList(
           fk_client_id: planning?.fk_client_id || 0,
           fk_user_id: item.fk_pilot_user_id || 0,
           mission_id: item.pilot_mission_id,
+          mission_code: item.mission_code || `#${item.pilot_mission_id}`,
           date: dateConversionUtcToLocal(displayDate?.toISOString() ?? '', userTimezone),
           pilot_name: item.users ? `${item.users.first_name} ${item.users.last_name}` : '',
           drone_code: item.tool?.tool_code || '',

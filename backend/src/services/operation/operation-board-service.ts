@@ -10,7 +10,7 @@ function dateConversionUtcToLocal(utcDate: string | Date, timezone: string = 'UT
   try {
     const date = new Date(utcDate);
     
-    return date.toLocaleString('en-US', {
+    return date.toLocaleString('en-GB', {
       timeZone: timezone,
       year: 'numeric',
       month: '2-digit',
@@ -31,6 +31,30 @@ const BOARD_STATUS_ID_TO_CODE: Record<number, MissionStatusCode> = {
   2: '05',
   3: '10',
 };
+
+// pilot_mission_status is customizable per owner with globally auto-incrementing
+// IDs, so status_id 2/3 don't reliably mean "in progress"/"completed" outside the
+// owner these were originally seeded for. Resolve the real status_id by matching
+// the owner's own status_code first, falling back to the old hardcoded IDs only
+// when that owner has no matching status defined (keeps prior behavior for them).
+const IN_PROGRESS_STATUS_CODE_ALIASES = ['IN_PROGRESS', 'IN_FLIGHT', 'IN ESECUZIONE'];
+const COMPLETED_STATUS_CODE_ALIASES = ['COMPLETED', 'COMPLETATA'];
+
+async function resolveOwnerStatusId(
+  ownerId: number,
+  codeAliases: string[],
+  fallbackId: number
+): Promise<number> {
+  const match = await prisma.pilot_mission_status.findFirst({
+    where: {
+      fk_owner_id: ownerId,
+      is_active: true,
+      status_code: { in: codeAliases, mode: 'insensitive' },
+    },
+    select: { status_id: true },
+  });
+  return match?.status_id ?? fallbackId;
+}
 
 const MISSION_INCLUDE = {
   users: { select: { first_name: true, last_name: true } },
@@ -288,11 +312,14 @@ export async function updateMissionStatus(
   let updateFields: Record<string, unknown>;
 
   if (payload.workflow_mission_status === '_START') {
-    updateFields = { fk_mission_status_id: 2, status_name: 'IN_PROGRESS', actual_start: new Date() };
+    const statusId = await resolveOwnerStatusId(payload.owner_id, IN_PROGRESS_STATUS_CODE_ALIASES, 2);
+    updateFields = { fk_mission_status_id: statusId, status_name: 'IN_PROGRESS', actual_start: new Date() };
   } else if (payload.workflow_mission_status === '_END') {
-    updateFields = { fk_mission_status_id: 3, status_name: 'COMPLETED', actual_end: new Date() };
+    const statusId = await resolveOwnerStatusId(payload.owner_id, COMPLETED_STATUS_CODE_ALIASES, 3);
+    updateFields = { fk_mission_status_id: statusId, status_name: 'COMPLETED', actual_end: new Date() };
   } else {
-    updateFields = { fk_mission_status_id: 2, status_name: 'IN_PROGRESS', actual_end: null };
+    const statusId = await resolveOwnerStatusId(payload.owner_id, IN_PROGRESS_STATUS_CODE_ALIASES, 2);
+    updateFields = { fk_mission_status_id: statusId, status_name: 'IN_PROGRESS', actual_end: null };
   }
 
   await prisma.pilot_mission.update({
