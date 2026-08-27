@@ -1,0 +1,88 @@
+---
+title: "Cron Jobs"
+description: "All scheduled background jobs (Vercel Cron): endpoints, schedules, and what each one does."
+---
+
+# Cron Jobs
+
+## Overview
+
+Scheduled background jobs are defined in `vercel.json` and run as Vercel Cron Jobs. Each job hits a `GET /api/cron/*` route, which authenticates the request via a shared secret before doing any work.
+
+**Authentication:** every cron route requires an `Authorization: Bearer <CRON_SECRET>` header matching the `CRON_SECRET` environment variable. Requests without a matching header receive `401 Unauthorized`.
+
+**Execution pattern:** all jobs fetch every active owner (`owner_active: 'Y'`) and loop over them, processing/sending notifications per owner independently. A failure for one owner is caught and logged; it does not stop processing of the remaining owners.
+
+---
+
+## Schedule Reference
+
+| Endpoint | Schedule (UTC) | Frequency |
+|---|---|---|
+| `/api/cron/refresh-maintenance-days` | `0 */6 * * *` | Every 6 hours (00:00, 06:00, 12:00, 18:00) |
+| `/api/cron/check-component-expiration` | `0 */6 * * *` | Every 6 hours (00:00, 06:00, 12:00, 18:00) |
+| `/api/cron/check-maintenance-alerts` | `0 */6 * * *` | Every 6 hours (00:00, 06:00, 12:00, 18:00) |
+| `/api/cron/check-insurance-expiration` | `0 */6 * * *` | Every 6 hours (00:00, 06:00, 12:00, 18:00) |
+| `/api/cron/reset-email-counters` | `0 0 * * *` | Daily at 00:00 |
+| `/api/cron/check-training-expiration` | `0 6 * * *` | Daily at 06:00 |
+
+Schedules are defined in `vercel.json` at the project root and are evaluated in UTC by Vercel Cron.
+
+---
+
+## Job Details
+
+### refresh-maintenance-days
+
+- **Path:** `/api/cron/refresh-maintenance-days`
+- **Schedule:** `0 */6 * * *` (every 6 hours)
+- **Purpose:** Recomputes "days remaining" style maintenance countdown fields for every active owner's systems/tools.
+- **Service:** `refreshMaintenanceDaysForOwner` (`backend/src/backend/utils/refresh-maintenance-days.ts`)
+- **Sends email:** No — this is a data-refresh job, not a notification job.
+
+### check-component-expiration
+
+- **Path:** `/api/cron/check-component-expiration`
+- **Schedule:** `0 */6 * * *` (every 6 hours)
+- **Purpose:** Finds active tool components whose `expiration_date` has passed and sends expiration notifications, grouped by owner.
+- **Service:** `sendExpirationNotifications` (`backend/src/services/system/expiration-notification.ts`)
+- **Sends email:** Yes, subject to the module/event enablement checks described in [Email Notification Business Logic](/business-logic/email-notifications).
+
+### check-maintenance-alerts
+
+- **Path:** `/api/cron/check-maintenance-alerts`
+- **Schedule:** `0 */6 * * *` (every 6 hours)
+- **Purpose:** Evaluates maintenance alert triggers (e.g., usage/cycle thresholds) per owner and sends maintenance alert emails.
+- **Service:** `triggerMaintenanceAlertCheck` (`backend/src/services/system/maintenance-notification.ts`)
+- **Sends email:** Yes, subject to the `system_email_enabled` company switch and per-event config.
+
+### check-insurance-expiration
+
+- **Path:** `/api/cron/check-insurance-expiration`
+- **Schedule:** `0 */6 * * *` (every 6 hours)
+- **Purpose:** Finds drone/D-Flight insurance policies nearing or past expiry per owner and sends expiry reminder emails.
+- **Service:** `findExpiringInsurancesForOwner` + `sendInsuranceExpiryNotifications` (`backend/src/services/system/dflight-insurance-notification.ts`)
+- **Sends email:** Yes.
+
+### reset-email-counters
+
+- **Path:** `/api/cron/reset-email-counters`
+- **Schedule:** `0 0 * * *` (daily, midnight)
+- **Purpose:** Resets each owner's `daily_email_count` to 0 and updates `daily_email_count_reset_date` once per day, and clears `email_limit_notification_sent_date` so the limit-reached admin notification can fire again the next day. Skips owners already reset today (idempotent/safe to run more than once).
+- **Sends email:** No — this is the daily-limit counter reset that other jobs/routes depend on (see [Daily Email Limit Logic](/business-logic/email-notifications)).
+
+### check-training-expiration
+
+- **Path:** `/api/cron/check-training-expiration`
+- **Schedule:** `0 6 * * *` (daily, 06:00)
+- **Purpose:** Finds training/course certifications expiring within the configured reminder thresholds (30/14/7/3/1 days) per owner and sends training certification expiring emails.
+- **Service:** `findExpiringCertificationsForOwner` + `sendTrainingCertificationExpiryNotifications` (`backend/src/services/training/training-certification-notification.ts`)
+- **Sends email:** Yes, subject to `training_email_enabled` and the `training_certification_expiring` event config. As of the `trainer_user_id`/course-owner change, the course owner (`training.trainer_user_id`) is also notified in addition to the configured roles/users.
+
+---
+
+## Adding a New Cron Job
+
+1. Add a `GET` route under `src/app/api/cron/<name>/route.ts` that checks the `Authorization: Bearer <CRON_SECRET>` header first, before any other logic.
+2. Register the path and schedule in `vercel.json` under `crons`.
+3. Add a row to the [Schedule Reference](#schedule-reference) table and a corresponding entry in [Job Details](#job-details) above.

@@ -3,6 +3,7 @@ import { sendTrainingCreatedModuleEmail, sendTrainingUpdatedModuleEmail } from '
 import { requireFeatureAccess, requirePermission } from '@/lib/auth/api-auth';
 import { internalError, zodError } from '@/lib/api-error';
 import { E } from '@/lib/error-codes';
+import { prisma } from '@/lib/prisma';
 import { NextRequest, NextResponse } from 'next/server';
 import z from 'zod';
 
@@ -46,6 +47,11 @@ export async function POST(req: NextRequest) {
       if (!parsed.success) {
         return zodError(E.VL001, parsed.error);
       }
+      const existingTraining = await prisma.training.findUnique({
+        where: { training_id: parsed.data.fk_training_id },
+        select: { trainer_user_id: true },
+      });
+
       await updateFlatTraining(
         parsed.data,
         session!.user.ownerId,
@@ -61,6 +67,7 @@ export async function POST(req: NextRequest) {
         certificateType: parsed.data.certificate_type,
         sessionDate: parsed.data.session_date,
         updatedBy: session!.user.fullname,
+        courseOwnerUserId: existingTraining?.trainer_user_id,
       }).catch((err) => console.error('[training/add] sendTrainingUpdatedModuleEmail failed:', err));
 
       return NextResponse.json({ code: 1, message: 'Updated' });
@@ -86,6 +93,7 @@ export async function POST(req: NextRequest) {
       sessionDate: parsed.data.session_date,
       attendeeCount: ids.length,
       createdBy: session!.user.fullname,
+      courseOwnerUserId: session!.user.userId,
     }).catch((err) => console.error('[training/add] sendTrainingCreatedModuleEmail failed:', err));
 
     return NextResponse.json({ code: 1, message: 'Created', ids }, { status: 201 });
