@@ -32,6 +32,7 @@ export interface MissionListItem {
   fk_client_id: number;
   fk_user_id: number;
   mission_id: number;
+  mission_code: string;
   date: string;
   pilot_name: string;
   drone_code: string;

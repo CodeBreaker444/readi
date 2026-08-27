@@ -43,6 +43,7 @@ export default function Profile({ user }: { user: SessionUser }) {
     signature: '',
     role: '',
   });
+  const [departments, setDepartments] = useState<{ department_id: number; department_name: string }[]>([]);
   const [curriculum, setCurriculum] = useState<TrainingCurriculumRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -76,7 +77,7 @@ export default function Profile({ user }: { user: SessionUser }) {
           email: data.user.email || '',
           phone: data.user.phone || '',
           timezone: data.user.user_timezone || 'Europe/Berlin',
-          department: 'Global',
+          department: data.user.department || '',
           client: '',
           profile: '',
           signature: data.user.users_profile?.user_signature || '',
@@ -85,6 +86,7 @@ export default function Profile({ user }: { user: SessionUser }) {
         if (data.user.avatar_url) setCurrentAvatarUrl(data.user.avatar_url);
         if (user.role === 'ADMIN') setEasaCode(user.companyEasaCode ?? '');
       }
+      if (data.departments) setDepartments(data.departments);
 
       if (curriculumRes?.data?.data) setCurriculum(curriculumRes.data.data);
     } catch {
@@ -121,6 +123,7 @@ export default function Profile({ user }: { user: SessionUser }) {
     fd.append('fullname', formData.fullName);
     fd.append('email', formData.email);
     fd.append('phone', formData.phone);
+    fd.append('department', formData.department);
     fd.append('timezone', formData.timezone);
     if (avatar) fd.append('avatar', avatar);
 
@@ -303,8 +306,19 @@ export default function Profile({ user }: { user: SessionUser }) {
 
                   <div className="space-y-1.5">
                     <Label htmlFor="department" className={labelClass}>{t('profile.fields.department')}</Label>
-                    <Input id="department" name="department" value={formData.department} onChange={handleInputChange}
-                      placeholder={t('profile.placeholders.department')} className={inputClass} />
+                    <Select value={formData.department} onValueChange={(val) => handleSelectChange('department', val)}>
+                      <SelectTrigger id="department" className={inputClass}>
+                        <SelectValue placeholder={t('profile.placeholders.department')} />
+                      </SelectTrigger>
+                      <SelectContent className={isDark ? 'bg-slate-800 border-slate-700 text-white' : ''}>
+                        {departments.map((d) => (
+                          <SelectItem key={d.department_id} value={d.department_name}>{d.department_name}</SelectItem>
+                        ))}
+                        {formData.department && !departments.some((d) => d.department_name === formData.department) && (
+                          <SelectItem value={formData.department}>{formData.department}</SelectItem>
+                        )}
+                      </SelectContent>
+                    </Select>
                   </div>
 
                   <div className="space-y-1.5 sm:col-span-2">

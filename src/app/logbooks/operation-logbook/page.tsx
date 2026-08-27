@@ -81,7 +81,10 @@ export default function OperationLogbookPage() {
   const fetchData = useCallback(async(params: Partial<OperationFilterParams>) => {
     setLoading(true);
     try {
-      const res = await axios.post("/api/logbooks/operation/list", params);
+      const res = await axios.post("/api/logbooks/operation/list", {
+        ...params,
+        user_timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      });
       const json = res.data;
       if (json.code === 200) {
         setData(json.data ?? []);

@@ -93,6 +93,10 @@ export async function getOperationLogbookList(
     orderBy: { pilot_mission_id: 'desc' },
   });
 
+  const timezone = params.user_timezone || 'UTC';
+  const dateFmt = (d: Date) => d.toLocaleDateString('en-GB', { timeZone: timezone });
+  const timeFmt = (d: Date) => d.toLocaleTimeString('en-GB', { timeZone: timezone, hour: '2-digit', minute: '2-digit', hour12: false });
+
   const mapped: OperationLogbookItem[] = data.map((row) => {
     const startDT = row.actual_start;
     const endDT = row.actual_end;
@@ -103,10 +107,10 @@ export async function getOperationLogbookList(
       mission_name: row.mission_name ?? '',
       mission_description: row.mission_description ?? '',
       location: row.location ?? '',
-      date_start: startDT ? startDT.toISOString().split('T')[0] : '',
-      date_end: endDT ? endDT.toISOString().split('T')[0] : '',
-      time_start: startDT ? startDT.toTimeString().slice(0, 5) : '',
-      time_end: endDT ? endDT.toTimeString().slice(0, 5) : '',
+      date_start: startDT ? dateFmt(startDT) : '',
+      date_end: endDT ? dateFmt(endDT) : '',
+      time_start: startDT ? timeFmt(startDT) : '',
+      time_end: endDT ? timeFmt(endDT) : '',
       pic_fullname: row.users
         ? `${row.users.first_name ?? ''} ${row.users.last_name ?? ''}`.trim()
         : '',

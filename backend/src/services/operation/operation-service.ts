@@ -4,6 +4,7 @@ import { AttachmentUploadResponse, CreateOperationSchema, ListOperationsQuerySch
 import { prisma } from '@/lib/prisma';
 import { buildS3Url, deleteFileFromS3, getPresignedDownloadUrl, REGION, uploadFileToS3 } from '@/lib/s3Client';
 import { sendMissionCreatedModuleEmail, sendMissionAssignedModuleEmail } from '../settings/module-email-notification-service';
+import { dateConversionUtcToLocal } from '@/backend/utils/date-utils';
 
 // Keys must match the `status_name` values actually sent by callers
 // (the OperationStatus enum: PLANNED | IN_PROGRESS | COMPLETED | CANCELLED | ABORTED).
@@ -373,11 +374,11 @@ export async function createOperation(input: CreateOperationSchema, ownerId: num
     
     const user = await prisma.public_users.findUnique({
       where: { user_id: creatorUserId || input.fk_pilot_user_id || 0 },
-      select: { first_name: true, last_name: true },
+      select: { first_name: true, last_name: true, user_timezone: true },
     });
 
-    const createdBy = user 
-      ? `${user.first_name} ${user.last_name}`.trim() 
+    const createdBy = user
+      ? `${user.first_name} ${user.last_name}`.trim()
       : 'System';
 
     // Use the first mission's scheduled start date for email
@@ -400,10 +401,12 @@ export async function createOperation(input: CreateOperationSchema, ownerId: num
       missionCode: codeToChild,
       missionType: missionType?.type_name || 'Unknown',
       createdBy,
-      scheduledDate: firstMission?.scheduled_start?.toISOString() || input.scheduled_start,
+      scheduledDate: firstMission?.scheduled_start
+        ? dateConversionUtcToLocal(firstMission.scheduled_start, user?.user_timezone || 'UTC')
+        : input.scheduled_start,
       description: input.notes || undefined,
     });
-    
+
     console.log('[createOperation] Mission created email sent successfully');
 
     // Send mission assigned email to pilot
@@ -411,7 +414,7 @@ export async function createOperation(input: CreateOperationSchema, ownerId: num
       try {
         const pilotUser = await prisma.public_users.findUnique({
           where: { user_id: input.fk_pilot_user_id },
-          select: { first_name: true, last_name: true },
+          select: { first_name: true, last_name: true, user_timezone: true },
         });
 
         if (pilotUser) {
@@ -421,7 +424,9 @@ export async function createOperation(input: CreateOperationSchema, ownerId: num
             assignedBy: createdBy,
             assignedTo: `${pilotUser.first_name} ${pilotUser.last_name}`.trim(),
             role: 'Pilot',
-            scheduledDate: firstMission?.scheduled_start?.toISOString() || input.scheduled_start,
+            scheduledDate: firstMission?.scheduled_start
+              ? dateConversionUtcToLocal(firstMission.scheduled_start, pilotUser.user_timezone || 'UTC')
+              : input.scheduled_start,
             description: input.notes || undefined,
           }, [input.fk_pilot_user_id]);
           console.log('[createOperation] Mission assigned email sent to pilot:', pilotUser.first_name, pilotUser.last_name);
@@ -434,6 +439,11 @@ export async function createOperation(input: CreateOperationSchema, ownerId: num
     // Send mission assigned emails to visual observers
     if (visualObservers?.length) {
       const observerIds = visualObservers.map(o => o.user_id);
+      const observerUsers = await prisma.public_users.findMany({
+        where: { user_id: { in: observerIds } },
+        select: { user_id: true, user_timezone: true },
+      });
+      const observerTimezoneMap = new Map(observerUsers.map(o => [o.user_id, o.user_timezone]));
       for (const observer of visualObservers) {
         try {
           await sendMissionAssignedModuleEmail(ownerId, {
@@ -442,7 +452,9 @@ export async function createOperation(input: CreateOperationSchema, ownerId: num
             assignedBy: createdBy,
             assignedTo: observer.name,
             role: 'Observer',
-            scheduledDate: firstMission?.scheduled_start?.toISOString() || input.scheduled_start,
+            scheduledDate: firstMission?.scheduled_start
+              ? dateConversionUtcToLocal(firstMission.scheduled_start, observerTimezoneMap.get(observer.user_id) || 'UTC')
+              : input.scheduled_start,
             description: input.notes || undefined,
           }, [observer.user_id]);
           console.log('[createOperation] Mission assigned email sent to observer:', observer.name);
@@ -557,7 +569,7 @@ export async function updateOperation(id: number, input: UpdateOperationSchema, 
       if (input.fk_pilot_user_id !== undefined && input.fk_pilot_user_id !== current?.fk_pilot_user_id) {
         const pilotUser = await prisma.public_users.findUnique({
           where: { user_id: input.fk_pilot_user_id },
-          select: { first_name: true, last_name: true },
+          select: { first_name: true, last_name: true, user_timezone: true },
         });
 
         if (pilotUser) {
@@ -567,7 +579,9 @@ export async function updateOperation(id: number, input: UpdateOperationSchema, 
             assignedBy,
             assignedTo: `${pilotUser.first_name} ${pilotUser.last_name}`.trim(),
             role: 'Pilot',
-            scheduledDate: current?.scheduled_start?.toISOString(),
+            scheduledDate: current?.scheduled_start
+              ? dateConversionUtcToLocal(current.scheduled_start, pilotUser.user_timezone || 'UTC')
+              : undefined,
             description: current?.mission_name || current?.mission_description || undefined,
           }, [input.fk_pilot_user_id]);
         }
@@ -579,18 +593,25 @@ export async function updateOperation(id: number, input: UpdateOperationSchema, 
       const newObserverIds = new Set(visualObservers?.map((o) => o.user_id) || []);
 
       // Find newly added observers
-      for (const observer of visualObservers || []) {
-        if (!currentObserverIds.has(observer.user_id)) {
-          await sendMissionAssignedModuleEmail(ownerId, {
-            missionCode: current?.mission_code || '',
-            missionType: missionType?.type_name || 'Unknown',
-            assignedBy,
-            assignedTo: observer.name,
-            role: 'Observer',
-            scheduledDate: current?.scheduled_start?.toISOString(),
-            description: current?.mission_name || current?.mission_description || undefined,
-          }, [observer.user_id]);
-        }
+      const newlyAddedObservers = (visualObservers || []).filter((o) => !currentObserverIds.has(o.user_id));
+      const newObserverUsers = await prisma.public_users.findMany({
+        where: { user_id: { in: newlyAddedObservers.map((o) => o.user_id) } },
+        select: { user_id: true, user_timezone: true },
+      });
+      const newObserverTimezoneMap = new Map(newObserverUsers.map(o => [o.user_id, o.user_timezone]));
+
+      for (const observer of newlyAddedObservers) {
+        await sendMissionAssignedModuleEmail(ownerId, {
+          missionCode: current?.mission_code || '',
+          missionType: missionType?.type_name || 'Unknown',
+          assignedBy,
+          assignedTo: observer.name,
+          role: 'Observer',
+          scheduledDate: current?.scheduled_start
+            ? dateConversionUtcToLocal(current.scheduled_start, newObserverTimezoneMap.get(observer.user_id) || 'UTC')
+            : undefined,
+          description: current?.mission_name || current?.mission_description || undefined,
+        }, [observer.user_id]);
       }
     } catch (emailError) {
       console.error('[updateOperation] Failed to send mission assignment email:', emailError);

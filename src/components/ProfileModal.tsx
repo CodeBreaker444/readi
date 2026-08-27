@@ -153,12 +153,13 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
     email: userData?.email || '',
     phone: userData?.phone || '',
     timezone: 'Europe/Berlin',
-    department: 'Global',
+    department: '',
     client: '',
     profile: '',
     type: '',
     signature: '',
   });
+  const [departments, setDepartments] = useState<{ department_id: number; department_name: string }[]>([]);
   const [curriculum, setCurriculum] = useState<TrainingCurriculumRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -193,7 +194,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
           email: data.user.email || '',
           phone: data.user.phone || '',
           timezone: data.user.user_timezone || 'Europe/Berlin',
-          department: 'Global',
+          department: data.user.department || '',
           client: '',
           profile: '',
           type: data.user.user_type || '',
@@ -203,6 +204,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
           setCurrentAvatarUrl(data.user.avatar_url);
         }
       }
+      if (data.departments) setDepartments(data.departments);
 
       if (curriculumRes?.data?.data) {
         setCurriculum(curriculumRes.data.data);
@@ -262,6 +264,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
     formDataToSend.append('fullname', formData.fullName);
     formDataToSend.append('email', formData.email);
     formDataToSend.append('phone', formData.phone);
+    formDataToSend.append('department', formData.department);
     formDataToSend.append('timezone', formData.timezone);
 
     if (avatar) {
@@ -477,13 +480,19 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
 
                   <div className="space-y-1.5">
                     <Label htmlFor="department">{t('profile.fields.department')}</Label>
-                    <Input
-                      id="department"
-                      name="department"
-                      value={formData.department}
-                      onChange={handleInputChange}
-                      placeholder={t('profile.placeholders.department')}
-                    />
+                    <Select value={formData.department} onValueChange={(val) => handleSelectChange('department', val)}>
+                      <SelectTrigger id="department">
+                        <SelectValue placeholder={t('profile.placeholders.department')} />
+                      </SelectTrigger>
+                      <SelectContent className={isDark ? 'bg-slate-800 border-slate-700 text-white' : ''}>
+                        {departments.map((d) => (
+                          <SelectItem key={d.department_id} value={d.department_name}>{d.department_name}</SelectItem>
+                        ))}
+                        {formData.department && !departments.some((d) => d.department_name === formData.department) && (
+                          <SelectItem value={formData.department}>{formData.department}</SelectItem>
+                        )}
+                      </SelectContent>
+                    </Select>
                   </div>
 
                   <div className="space-y-1.5">

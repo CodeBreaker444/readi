@@ -3,7 +3,7 @@
 import '@/lib/i18n/config';
 import { FeatureGate } from '@/components/permissions/FeatureGate';
 import { ColumnDef } from '@tanstack/react-table';
-import { KeyRound, Loader2, Mail, Pencil, RotateCcw, Trash2 } from 'lucide-react';
+import { KeyRound, Loader2, Mail, Pencil, RotateCcw, Trash2, User as UserIcon } from 'lucide-react';
 import {
     Tooltip,
     TooltipContent,
@@ -29,6 +29,7 @@ export interface UserData {
   is_manager: string;
   owner_code?: string;
   owner_name?: string;
+  profile_image?: string;
 }
 
 interface GetUserColumnsOptions {
@@ -57,13 +58,28 @@ export function getUserColumns({
       accessorKey: 'fullname',
       header: () => <span className={headerClass}>{t('common.name')}</span>,
       cell: ({ row }) => {
-        const initial = row.original.fullname?.charAt(0)?.toUpperCase() ?? '?';
+        const profileImage = row.original.profile_image;
         return (
           <div className="flex items-center gap-3">
-            <div className={`shrink-0 h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold ${
-              isDark ? 'bg-violet-900/50 text-violet-300' : 'bg-violet-100 text-violet-600'
+            <div className={`shrink-0 h-8 w-8 rounded-full overflow-hidden flex items-center justify-center ${
+              isDark ? 'bg-gray-800' : 'bg-gray-100'
             }`}>
-              {initial}
+              {profileImage ? (
+                <img
+                  src={profileImage}
+                  alt={row.original.fullname}
+                  className="h-full w-full object-cover"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).style.display = 'none';
+                    (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
+                  }}
+                />
+              ) : null}
+              <UserIcon
+                size={16}
+                strokeWidth={2}
+                className={`${profileImage ? 'hidden' : ''} ${isDark ? 'text-gray-500' : 'text-gray-400'}`}
+              />
             </div>
             <span className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
               {row.original.fullname}

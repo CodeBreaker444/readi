@@ -1,4 +1,5 @@
 
+import { getDepartments } from '@/backend/services/system/department-service';
 import { getProfile, updateProfile } from '@/backend/services/user/user-profile';
 import { internalError } from '@/lib/api-error';
 import { requireAuth } from '@/lib/auth/api-auth';
@@ -13,6 +14,7 @@ const updateProfileSchema = z.object({
     .max(200, 'Full name too long'),
   email: z.string().email('Invalid email address'),
   phone: z.string().max(50, 'Phone number too long').optional().default(''),
+  department: z.string().max(100, 'Department too long').optional().default(''),
   timezone: z
     .string()
     .max(64, 'Timezone too long')
@@ -25,9 +27,12 @@ export async function GET() {
     const { session, error } = await requireAuth();
     if (error) return error;
 
-    const user = await getProfile(session!.user.userId);
+    const [user, departments] = await Promise.all([
+      getProfile(session!.user.userId),
+      getDepartments(session!.user.ownerId),
+    ]);
 
-    return NextResponse.json({ success: true, user });
+    return NextResponse.json({ success: true, user, departments });
   } catch (err: any) {
     return internalError(E.SV001, err);
   }
@@ -44,6 +49,7 @@ export async function POST(req: NextRequest) {
       fullname: formData.get('fullname') as string | null,
       email: formData.get('email') as string | null,
       phone: formData.get('phone') as string | null,
+      department: formData.get('department') as string | null,
       timezone: formData.get('timezone') as string | null,
     };
 
@@ -51,6 +57,7 @@ export async function POST(req: NextRequest) {
       fullname: rawFields.fullname ?? '',
       email: rawFields.email ?? '',
       phone: rawFields.phone ?? '',
+      department: rawFields.department ?? '',
       timezone: rawFields.timezone ?? 'Europe/Berlin',
     });
 

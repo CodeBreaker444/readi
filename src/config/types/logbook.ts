@@ -98,6 +98,7 @@ export interface OperationFilterParams {
   mission_result_id?: number;
   client_id?: number;
   mission_plan_id?: number;
+  user_timezone?: string;
 }
 
 export interface OperationLogbookItem {
