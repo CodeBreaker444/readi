@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import { attachFlytbaseFlightLog } from './flight-log-service';
 import { sendMissionCreatedModuleEmail, sendMissionCompletedModuleEmail } from '../settings/module-email-notification-service';
+import { dateConversionUtcToLocal } from '@/backend/utils/date-utils';
 
 export interface CreateAndAttachMissionParams {
   mission_code: string;
@@ -82,18 +83,20 @@ export async function createAndAttachMission(
     
     const user = await prisma.public_users.findUnique({
       where: { user_id: userId },
-      select: { first_name: true, last_name: true },
+      select: { first_name: true, last_name: true, user_timezone: true },
     });
 
-    const createdBy = user 
-      ? `${user.first_name} ${user.last_name}`.trim() 
+    const createdBy = user
+      ? `${user.first_name} ${user.last_name}`.trim()
       : 'System';
 
     await sendMissionCreatedModuleEmail(ownerId, {
       missionCode: mission.mission_code || '',
       missionType: missionType?.type_name || 'Unknown',
       createdBy,
-      scheduledDate: scheduled_start,
+      scheduledDate: mission.scheduled_start
+        ? dateConversionUtcToLocal(mission.scheduled_start, user?.user_timezone || 'UTC')
+        : undefined,
       description: notes || undefined,
     });
   } catch (emailError) {

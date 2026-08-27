@@ -5,6 +5,7 @@ import { BUCKET, s3 } from '@/lib/s3Client';
 import { PutObjectCommand } from '@aws-sdk/client-s3';
 import JSZip from 'jszip';
 import { sendMissionCreatedModuleEmail, sendMissionAssignedModuleEmail } from '@/backend/services/settings/module-email-notification-service';
+import { dateConversionUtcToLocal } from '@/backend/utils/date-utils';
 
 /** Looks up the registered serial numbers for ALL of a tool's active drone/aircraft components — a tool (system) can have more than one, e.g. a dock with several swappable airframes. */
 async function getDroneSerialNumbersForTool(toolId: number): Promise<string[]> {
@@ -312,7 +313,7 @@ async function processGutmaBuffer(
 
     const user = await prisma.public_users.findUnique({
       where: { user_id: params.userId },
-      select: { first_name: true, last_name: true },
+      select: { first_name: true, last_name: true, user_timezone: true },
     });
 
     const createdBy = user
@@ -324,7 +325,9 @@ async function processGutmaBuffer(
       missionCode: missionCode,
       missionType: missionType?.type_name || 'Unknown',
       createdBy,
-      scheduledDate: scheduledStart?.toISOString(),
+      scheduledDate: scheduledStart
+        ? dateConversionUtcToLocal(scheduledStart, user?.user_timezone || 'UTC')
+        : undefined,
       description: params.notes || undefined,
     });
 
@@ -332,7 +335,7 @@ async function processGutmaBuffer(
     if (params.pilotId) {
       const pilotUser = await prisma.public_users.findUnique({
         where: { user_id: params.pilotId },
-        select: { first_name: true, last_name: true },
+        select: { first_name: true, last_name: true, user_timezone: true },
       });
 
       if (pilotUser) {
@@ -342,7 +345,9 @@ async function processGutmaBuffer(
           assignedBy: createdBy,
           assignedTo: `${pilotUser.first_name} ${pilotUser.last_name}`.trim(),
           role: 'Pilot',
-          scheduledDate: scheduledStart?.toISOString(),
+          scheduledDate: scheduledStart
+            ? dateConversionUtcToLocal(scheduledStart, pilotUser.user_timezone || 'UTC')
+            : undefined,
           description: params.notes || undefined,
         }, [params.pilotId]);
       }
@@ -352,7 +357,7 @@ async function processGutmaBuffer(
     if (params.visualObserverIds && params.visualObserverIds.length > 0) {
       const observerUsers = await prisma.public_users.findMany({
         where: { user_id: { in: params.visualObserverIds } },
-        select: { user_id: true, first_name: true, last_name: true },
+        select: { user_id: true, first_name: true, last_name: true, user_timezone: true },
       });
 
       for (const observer of observerUsers) {
@@ -362,7 +367,9 @@ async function processGutmaBuffer(
           assignedBy: createdBy,
           assignedTo: `${observer.first_name} ${observer.last_name}`.trim(),
           role: 'Observer',
-          scheduledDate: scheduledStart?.toISOString(),
+          scheduledDate: scheduledStart
+            ? dateConversionUtcToLocal(scheduledStart, observer.user_timezone || 'UTC')
+            : undefined,
           description: params.notes || undefined,
         }, [observer.user_id]);
       }
