@@ -2,9 +2,10 @@
 
 import { Skeleton } from '@/components/ui/skeleton';
 import '@/lib/i18n/config';
+import Image from 'next/image';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FiAlertTriangle, FiArrowUp, FiClock, FiCompass, FiCrosshair, FiDroplet, FiNavigation, FiSearch, FiThermometer, FiWifi, FiWind, FiZap } from 'react-icons/fi';
+import { FiAlertTriangle, FiArrowUp, FiChevronDown, FiChevronUp, FiClock, FiCompass, FiCrosshair, FiNavigation, FiSearch, FiThermometer, FiWifi, FiZap } from 'react-icons/fi';
 import { GiDeliveryDrone } from 'react-icons/gi';
 import { MdDock } from 'react-icons/md';
 import { TbSatellite } from 'react-icons/tb';
@@ -65,15 +66,38 @@ function BatteryBar({ pct, isDark }: { pct: number; isDark: boolean }) {
   );
 }
 
-function MetricCell({ icon, value, isDark }: { icon: React.ReactNode; value: string; isDark: boolean }) {
+function MetricCell({ icon, value, isDark, label }: { icon: React.ReactNode; value: string; isDark: boolean; label?: string }) {
   return (
     <div className={`flex flex-col items-center justify-center gap-0.5 py-1.5 px-1 rounded-lg ${
       isDark ? 'bg-slate-800/50' : 'bg-slate-50'
     }`}>
+      {label && (
+        <span className={`text-[7px] font-bold uppercase tracking-wide leading-none mb-0.5 ${isDark ? 'text-slate-600' : 'text-slate-400'}`}>
+          {label}
+        </span>
+      )}
       <span className={`${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{icon}</span>
       <span className={`text-[11px] font-semibold font-mono leading-none ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>
         {value}
       </span>
+    </div>
+  );
+}
+
+function MetricPill({ icon, label, value, isDark }: { icon: React.ReactNode; label: string; value: string; isDark: boolean }) {
+  return (
+    <div className={`flex items-center gap-1.5 py-1.5 px-2 rounded-lg min-w-0 ${
+      isDark ? 'bg-slate-800/50' : 'bg-slate-50'
+    }`}>
+      <span className={`shrink-0 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{icon}</span>
+      <div className="flex flex-col leading-none min-w-0">
+        <span className={`text-[7px] font-bold uppercase tracking-wide ${isDark ? 'text-slate-600' : 'text-slate-400'}`}>
+          {label}
+        </span>
+        <span className={`text-[11px] font-semibold font-mono truncate mt-0.5 ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>
+          {value}
+        </span>
+      </div>
     </div>
   );
 }
@@ -306,130 +330,190 @@ function DroneCard({
   );
 }
 
+function AttachedDroneMini({ drone, isDark }: { drone: TelemetryData; isDark: boolean }) {
+  const online = drone.status === 'online' || !drone.status;
+  const lbl = isDark ? 'text-slate-500' : 'text-slate-400';
+
+  return (
+    <div className={`mt-2 p-2.5 rounded-xl ${isDark ? 'bg-slate-900/50 ring-1 ring-slate-700/40' : 'bg-slate-50 ring-1 ring-slate-200'}`}>
+      <div className="flex items-center gap-2">
+        <div className={`relative w-12 h-12 rounded-lg overflow-hidden shrink-0 ${isDark ? 'bg-violet-500/10' : 'bg-violet-50'}`}>
+          <Image src="/m4td.webp" alt="" fill sizes="48px" className="object-contain p-0.5" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <span className={`text-[11px] font-bold truncate ${isDark ? 'text-slate-100' : 'text-slate-800'}`}>
+              {drone.tool_code ?? drone.name ?? drone.drone_id}
+            </span>
+            <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${online ? 'bg-emerald-400' : 'bg-slate-400'}`} />
+            <span className={`text-[9px] font-bold uppercase tracking-wide shrink-0 ${online ? (isDark ? 'text-emerald-400' : 'text-emerald-600') : lbl}`}>
+              {online ? 'Online' : 'Offline'}
+            </span>
+          </div>
+          {drone.model && <span className={`text-[9px] block truncate mt-0.5 ${lbl}`}>{drone.model}</span>}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-4 gap-1.5 mt-2">
+        <MetricCell label="ALT" icon={<FiArrowUp className="w-2.5 h-2.5" />} value={`${Math.round(drone.altitude)}m`} isDark={isDark} />
+        <MetricCell
+          label="BATT"
+          icon={<FiZap className={`w-2.5 h-2.5 ${drone.battery_percentage > 50 ? 'text-emerald-500' : drone.battery_percentage > 20 ? 'text-amber-500' : 'text-red-500'}`} />}
+          value={`${Math.round(drone.battery_percentage)}%`}
+          isDark={isDark}
+        />
+        <MetricCell label="GPS" icon={<TbSatellite className="w-2.5 h-2.5" />} value={drone.satellites != null ? String(drone.satellites) : '—'} isDark={isDark} />
+        <MetricCell label="RTK" icon={<FiCrosshair className="w-2.5 h-2.5" />} value={drone.rtk_satellites != null ? String(drone.rtk_satellites) : '—'} isDark={isDark} />
+      </div>
+
+      <div className={`mt-2 pt-2 border-t ${isDark ? 'border-slate-700/40' : 'border-slate-200'}`}>
+        <span className={`text-[8px] font-bold uppercase tracking-wide block ${isDark ? 'text-slate-600' : 'text-slate-400'}`}>Lat / Long</span>
+        <span className={`text-[10px] font-mono font-semibold ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
+          {drone.latitude.toFixed(4)}, {drone.longitude.toFixed(4)}
+        </span>
+      </div>
+    </div>
+  );
+}
+
 function DockCard({
-  dock, isDark, showUser, isSelected, onSelect,
+  dock, isDark, showUser, isSelected, onSelect, attachedDrone,
 }: {
   dock: TelemetryData;
   isDark: boolean;
   showUser: boolean;
   isSelected: boolean;
   onSelect: () => void;
+  attachedDrone?: TelemetryData;
 }) {
   const online  = dock.status === 'online' || !dock.status;
   const standby = dock.status === 'standby';
+  const statusColor = online ? (isDark ? 'text-emerald-400' : 'text-emerald-600') : standby ? (isDark ? 'text-amber-400' : 'text-amber-600') : (isDark ? 'text-slate-500' : 'text-slate-400');
+  const statusDot = online ? 'bg-emerald-400' : standby ? 'bg-amber-400' : 'bg-slate-400';
   const ownerLabel = dock.user_details?.fullname || dock.user_details?.email;
   const lbl = isDark ? 'text-slate-500' : 'text-slate-400';
-  const lastSeen = dock.timestamp
-    ? new Date(dock.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    : null;
-  const hasLocation = dock.latitude !== 0 && dock.longitude !== 0;
 
-  const borderColor = isSelected
-    ? 'border-l-cyan-400'
-    : online ? 'border-l-cyan-500' : standby ? 'border-l-amber-400' : 'border-l-slate-500';
+  const [expanded, setExpanded] = useState(false);
 
-  const cardBg = isSelected
+  const cardBg = expanded
     ? isDark
-      ? 'bg-cyan-900/15 border border-l-0 border-cyan-500/30 shadow-sm shadow-cyan-900/20'
-      : 'bg-cyan-50/80 border border-l-0 border-cyan-200 shadow-sm'
-    : isDark
-      ? 'bg-slate-800/30 border border-l-0 border-slate-700/40 hover:bg-slate-800/50 hover:border-slate-600/50'
-      : 'bg-white border border-l-0 border-slate-200 hover:bg-slate-50 hover:border-slate-300';
+      ? 'bg-slate-800/60 ring-2 ring-violet-500/60 shadow-sm shadow-violet-900/20'
+      : 'bg-white ring-2 ring-violet-400 shadow-sm'
+    : isSelected
+      ? isDark
+        ? 'bg-slate-800/60 ring-2 ring-cyan-500/60 shadow-sm shadow-cyan-900/20'
+        : 'bg-white ring-2 ring-cyan-400 shadow-sm'
+      : isDark
+        ? 'bg-slate-800/30 ring-1 ring-slate-700/40 hover:bg-slate-800/50 hover:ring-slate-600/50'
+        : 'bg-white ring-1 ring-slate-200 hover:bg-slate-50 hover:ring-slate-300';
 
   const chargingColor = dock.dock_charging_status === 'Charging'
-    ? 'text-emerald-500' : dock.dock_charging_status === 'Idle' ? 'text-slate-400' : 'text-amber-500';
+    ? 'text-emerald-500' : dock.dock_charging_status === 'Idle' ? 'text-cyan-500' : 'text-amber-500';
+
+  const tempColor = dock.dock_temperature == null
+    ? undefined
+    : dock.dock_temperature < 10 ? 'text-blue-500' : dock.dock_temperature > 40 ? 'text-red-500' : 'text-emerald-500';
+
+  const toggleExpanded = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onSelect();
+    setExpanded(v => !v);
+  };
 
   return (
-    <button
+    <div
+      role="button"
+      tabIndex={0}
       onClick={onSelect}
-      className={`w-full text-left p-3 rounded-xl border-l-[3px] transition-all duration-150 cursor-pointer ${borderColor} ${cardBg}`}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onSelect(); }}
+      className={`w-full text-left px-3.5 rounded-2xl transition-all duration-150 cursor-pointer ${expanded ? 'py-3.5' : 'py-5'} ${cardBg}`}
     >
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex items-center gap-2 min-w-0">
-          <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+      <div className="flex items-center justify-between gap-2.5">
+        <div className="flex items-center gap-3 min-w-0 flex-1">
+          <div className={`relative w-16 h-16 rounded-xl overflow-hidden shrink-0 ring-1 ${
             isSelected
-              ? isDark ? 'bg-cyan-500/15 ring-1 ring-cyan-500/30' : 'bg-cyan-100 ring-1 ring-cyan-200'
-              : isDark ? 'bg-cyan-500/10 ring-1 ring-cyan-500/20' : 'bg-cyan-50 ring-1 ring-cyan-200'
+              ? isDark ? 'bg-cyan-500/15 ring-cyan-500/30' : 'bg-cyan-100 ring-cyan-200'
+              : isDark ? 'bg-cyan-500/10 ring-cyan-500/20' : 'bg-cyan-50 ring-cyan-200'
           }`}>
-            <MdDock className={`w-4 h-4 ${isSelected ? (isDark ? 'text-cyan-300' : 'text-cyan-600') : isDark ? 'text-cyan-400' : 'text-cyan-500'}`} />
+            <Image src="/dji-dock-2.webp" alt="" fill sizes="64px" className="object-contain p-1" />
           </div>
-          <div className="min-w-0">
-            <span className={`text-[12px] font-semibold truncate block leading-tight ${
-              isSelected
-                ? isDark ? 'text-cyan-200' : 'text-cyan-700'
-                : isDark ? 'text-slate-100' : 'text-slate-800'
-            }`}>
-              {dock.tool_code ?? dock.name ?? dock.drone_id}
-            </span>
-            {dock.model && (
-              <span className={`text-[10px] truncate block leading-tight mt-0.5 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
-                {dock.model}
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-1.5 min-w-0">
+              <span className={`text-[14px] font-bold truncate leading-tight ${isDark ? 'text-slate-100' : 'text-slate-800'}`}>
+                {dock.tool_code ?? dock.name ?? dock.drone_id}
               </span>
-            )}
-            {showUser && ownerLabel && (
-              <span className={`text-[9px] truncate block leading-tight mt-0.5 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
-                {ownerLabel}
+              <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${statusDot}`} />
+              <span className={`text-[10px] font-bold shrink-0 ${statusColor}`}>
+                {online ? 'Online' : standby ? 'Standby' : 'Offline'}
+              </span>
+            </div>
+            {(dock.model || (showUser && ownerLabel)) && (
+              <span className={`text-[11px] truncate block leading-tight mt-1 ${lbl}`}>
+                {[dock.model, showUser ? ownerLabel : null].filter(Boolean).join(' · ')}
               </span>
             )}
           </div>
         </div>
-        <div className="flex flex-col items-end gap-1">
-          <StatusBadge status={dock.status} isDark={isDark} />
-          {dock.dock_drone_present != null && (
-            <span className={`inline-flex items-center gap-1 text-[9px] font-bold tracking-wide px-1.5 py-0.5 rounded-full ${
-              dock.dock_drone_present
-                ? isDark ? 'bg-violet-500/10 text-violet-400 ring-1 ring-violet-500/20' : 'bg-violet-50 text-violet-600 ring-1 ring-violet-200'
-                : isDark ? 'bg-slate-700/40 text-slate-400 ring-1 ring-slate-600/30' : 'bg-slate-100 text-slate-400 ring-1 ring-slate-200'
-            }`}>
-              <GiDeliveryDrone className="w-2.5 h-2.5" />
-              {dock.dock_drone_present ? 'Docked' : 'Empty'}
-            </span>
+        <div className="flex items-center gap-1.5 shrink-0">
+          <button
+            type="button"
+            onClick={toggleExpanded}
+            title={expanded ? 'Collapse' : 'Expand'}
+            className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 cursor-pointer ring-1 transition-colors ${
+              isDark ? 'ring-slate-700/60 text-slate-400 hover:bg-slate-700/40 hover:text-slate-200' : 'ring-slate-200 text-slate-400 hover:bg-slate-100 hover:text-slate-600'
+            }`}
+          >
+            {expanded ? <FiChevronUp className="w-3.5 h-3.5" /> : <FiChevronDown className="w-3.5 h-3.5" />}
+          </button>
+        </div>
+      </div>
+
+      {expanded && (
+        <>
+          <div className="flex flex-wrap gap-1.5 mt-3">
+            <MetricPill
+              label="Temp"
+              icon={<FiThermometer className={`w-3 h-3 ${tempColor ?? ''}`} />}
+              value={dock.dock_temperature != null ? `${dock.dock_temperature.toFixed(1)}°C` : '—'}
+              isDark={isDark}
+            />
+            <MetricPill
+              label="Flights"
+              icon={<FiNavigation className="w-3 h-3" />}
+              value={dock.dock_total_flights != null ? String(dock.dock_total_flights) : '—'}
+              isDark={isDark}
+            />
+            <MetricPill
+              label="Power"
+              icon={<FiZap className={`w-3 h-3 ${chargingColor}`} />}
+              value={dock.dock_charging_status ?? '—'}
+              isDark={isDark}
+            />
+            <MetricPill
+              label="GPS"
+              icon={<TbSatellite className="w-3 h-3" />}
+              value={dock.gps_satellites != null ? String(dock.gps_satellites) : '—'}
+              isDark={isDark}
+            />
+            <MetricPill
+              label="RTK"
+              icon={<FiCrosshair className="w-3 h-3" />}
+              value={dock.rtk_satellites != null ? String(dock.rtk_satellites) : '—'}
+              isDark={isDark}
+            />
+          </div>
+
+          {attachedDrone && (
+            <>
+              <span className={`mt-3 block text-[9px] font-bold uppercase tracking-widest ${lbl}`}>
+                Attached Drone
+              </span>
+              <AttachedDroneMini drone={attachedDrone} isDark={isDark} />
+            </>
           )}
-        </div>
-      </div>
-
-      <div className="grid grid-cols-3 gap-1.5 mt-2">
-        <MetricCell
-          icon={<FiThermometer className="w-2.5 h-2.5" />}
-          value={dock.dock_temperature != null ? `${dock.dock_temperature.toFixed(1)}°` : '—'}
-          isDark={isDark}
-        />
-        <MetricCell
-          icon={<FiDroplet className="w-2.5 h-2.5" />}
-          value={dock.dock_humidity != null ? `${dock.dock_humidity}%` : '—'}
-          isDark={isDark}
-        />
-        <MetricCell
-          icon={<FiWind className="w-2.5 h-2.5" />}
-          value={dock.dock_wind_speed != null ? `${dock.dock_wind_speed}m/s` : '—'}
-          isDark={isDark}
-        />
-        <MetricCell
-          icon={<FiZap className={`w-2.5 h-2.5 ${chargingColor}`} />}
-          value={dock.dock_charging_status ?? '—'}
-          isDark={isDark}
-        />
-        <MetricCell
-          icon={<FiWifi className="w-2.5 h-2.5" />}
-          value={dock.dock_power_mode ?? '—'}
-          isDark={isDark}
-        />
-        <MetricCell
-          icon={<FiClock className="w-2.5 h-2.5" />}
-          value={lastSeen ?? '—'}
-          isDark={isDark}
-        />
-      </div>
-
-      {hasLocation && (
-        <div className={`mt-2 flex items-center gap-1 ${lbl}`}>
-          <FiCrosshair className="w-2.5 h-2.5 shrink-0" />
-          <span className="text-[9px] font-mono">
-            {dock.latitude.toFixed(4)}, {dock.longitude.toFixed(4)}
-          </span>
-        </div>
+        </>
       )}
-    </button>
+    </div>
   );
 }
 
@@ -540,7 +624,7 @@ export default function DroneList({
         filteredDrones.length === 0
           ? <EmptyState isDark={isDark} type="drone" />
           : (
-            <div className="flex flex-col">
+            <div className="flex flex-col gap-3">
               {Array.from(groupedDrones.entries()).map(([pilotName, items]) => (
                 <div key={pilotName}>
                   <PilotHeader pilotName={pilotName} isDark={isDark} />
@@ -567,7 +651,7 @@ export default function DroneList({
         dockList.length === 0
           ? <EmptyState isDark={isDark} type="dock" />
           : (
-            <div className="flex flex-col">
+            <div className="flex flex-col gap-3">
               {Array.from(
                 dockList.reduce((map, d) => {
                   const pilot = d.pilot_name ?? 'Unknown';
@@ -586,6 +670,7 @@ export default function DroneList({
                         showUser={isAdmin}
                         isSelected={dock.drone_id === selectedDroneId}
                         onSelect={() => onSelect(dock.drone_id)}
+                        attachedDrone={dock.attached_drone_id ? drones[dock.attached_drone_id] : undefined}
                       />
                     ))}
                   </div>

@@ -39,9 +39,8 @@ export interface Operation {
     flight_mode?: string;
     op_type?: string;
     is_recurrent?: boolean;
-    recurrent_start_date?: string;
+    recurrent_days_of_week?: number[];
     recurrent_end_date?: string;
-    recurrent_time?: string;
     recurring_group_id?: string;
   } | null;
   created_at: string;
@@ -79,9 +78,8 @@ export type CreateOperationSchema = {
   op_type?: string | null;
   mission_group_label?: string | null;
   is_recurrent?: boolean;
-  recurrent_start_date?: string | null;
+  recurrent_days_of_week?: number[] | null;
   recurrent_end_date?: string | null;
-  recurrent_time?: string | null;
 };
 export type UpdateOperationSchema = {
   mission_code?: string;

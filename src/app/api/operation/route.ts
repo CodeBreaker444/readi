@@ -51,9 +51,8 @@ const createOperationSchema = z.object({
   op_type: z.enum(['OPEN', 'PDRA', 'STS-01', 'STS-02']).nullable().optional(),
   mission_group_label: z.string().nullable().optional(),
   is_recurrent: z.boolean().optional(),
-  recurrent_start_date: z.string().nullable().optional(),
+  recurrent_days_of_week: z.array(z.number().int().min(0).max(6)).nullable().optional(),
   recurrent_end_date: z.string().nullable().optional(),
-  recurrent_time: z.string().nullable().optional(),
 });
 
 export async function GET(req: NextRequest) {

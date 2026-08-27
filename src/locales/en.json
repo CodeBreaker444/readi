@@ -1949,9 +1949,10 @@
         "groupLabel": "Group Label",
         "notes": "Notes",
         "recurrent": "Recurrent Mission",
-        "startDate": "Start Date",
+        "startDate": "Start Date/Time",
         "endDate": "End Date",
         "missionTime": "Mission Time",
+        "recurrentDays": "Days of the Week",
         "pilotInCommand": "Pilot in Command",
         "selected": "Selected",
         "optional": "(optional)",
@@ -1969,9 +1970,7 @@
         "missionPlanning": "Mission Planning",
         "lucProcedure": "LUC Procedure",
         "visualObservers": "Visual Observers",
-        "recurrentStartDate": "Recurrent Start Date",
         "recurrentEndDate": "Recurrent End Date",
-        "recurrentTime": "Recurrent Time",
         "duration": "Duration"
       },
       "placeholders": {
@@ -1994,6 +1993,7 @@
       },
       "info": {
         "gutmaAutoExtract": "Altitude, distance and timestamps are extracted automatically from the GUTMA log file. The mission code is auto-generated unless you set one below.",
+        "startDateHint": "Used as the schedule anchor if you mark this mission as recurrent.",
         "clickToUpload": "Click to upload",
         "uploadOrSelectFlight": "Upload a .gutma/.zip file or select a Control Center flight log to auto-fetch.",
         "noPlansForDrone": "No plans for this drone",
@@ -3154,7 +3154,9 @@
         "create": "Create Organization",
         "creating": "Creating...",
         "verifying": "Verifying...",
+        "deleteTitle": "Delete Organization",
         "deleteConfirm": "Are you sure you want to delete this organization?",
+        "delete": "Delete",
         "table": {
           "name": "Name",
           "orgId": "Org ID",

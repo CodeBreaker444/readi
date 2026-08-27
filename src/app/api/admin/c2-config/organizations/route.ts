@@ -18,14 +18,14 @@ const createSchema = z.object({
 });
 
 const updateSchema = z.object({
-  id: z.number().int().positive(),
+  id: z.coerce.number().int().positive(),
   name: z.string().min(1, 'Name is required').max(255, 'Name too long').optional(),
   orgId: z.string().min(4, 'Org ID too short').max(255, 'Org ID too long').optional(),
   apiToken: z.string().min(8, 'Token too short').max(2048, 'Token too long').optional(),
 });
 
 const deleteSchema = z.object({
-  id: z.number().int().positive(),
+  id: z.coerce.number().int().positive(),
 });
 
 export async function GET() {
@@ -64,6 +64,7 @@ export async function POST(req: NextRequest) {
       parsed.data.orgId,
       parsed.data.apiToken,
       session!.user.ownerId,
+      session!.user.userId,
     );
 
     logEvent({
@@ -79,6 +80,9 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true, organization });
   } catch (err: any) {
+    if (err?.message?.includes('already exists')) {
+      return NextResponse.json({ success: false, message: err.message }, { status: 409 });
+    }
     if (err?.message?.includes('Invalid') || err?.message?.includes('verify')) {
       return NextResponse.json({ success: false, message: err.message }, { status: 422 });
     }
@@ -115,6 +119,9 @@ export async function PUT(req: NextRequest) {
 
     return NextResponse.json({ success: true, organization });
   } catch (err: any) {
+    if (err?.message?.includes('already exists')) {
+      return NextResponse.json({ success: false, message: err.message }, { status: 409 });
+    }
     if (err?.message?.includes('Invalid') || err?.message?.includes('verify')) {
       return NextResponse.json({ success: false, message: err.message }, { status: 422 });
     }

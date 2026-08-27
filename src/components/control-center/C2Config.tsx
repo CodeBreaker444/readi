@@ -75,6 +75,7 @@ export default function C2Config() {
       toast.success(t('flytbase.c2Config.organizations.toasts.created'));
       setOrgDialogOpen(false);
       fetchOrganizations();
+      fetchUsers();
     } catch (err: any) {
       toast.error(err?.response?.data?.message || t('flytbase.c2Config.organizations.toasts.createFailed'));
       throw err;

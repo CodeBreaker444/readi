@@ -1942,9 +1942,10 @@
         "groupLabel": "Gruppenbezeichnung",
         "notes": "Notizen",
         "recurrent": "Wiederkehrende Mission",
-        "startDate": "Startdatum",
+        "startDate": "Startdatum/-zeit",
         "endDate": "Enddatum",
         "missionTime": "Missionszeit",
+        "recurrentDays": "Wochentage",
         "pilotInCommand": "Verantwortlicher Pilot",
         "selected": "Ausgewählt",
         "optional": "(optional)",
@@ -1962,9 +1963,7 @@
         "missionPlanning": "Missionsplanung",
         "lucProcedure": "LUC-Verfahren",
         "visualObservers": "Visuelle Beobachter",
-        "recurrentStartDate": "Wiederkehrendes Startdatum",
         "recurrentEndDate": "Wiederkehrendes Enddatum",
-        "recurrentTime": "Wiederkehrende Uhrzeit",
         "duration": "Dauer"
       },
       "placeholders": {
@@ -1987,6 +1986,7 @@
       },
       "info": {
         "gutmaAutoExtract": "Höhe, Distanz und Zeitstempel werden automatisch aus der GUTMA-Protokolldatei extrahiert. Der Missionscode wird automatisch generiert, sofern Sie unten keinen eigenen festlegen.",
+        "startDateHint": "Wird als Ankerdatum verwendet, wenn Sie diese Mission als wiederkehrend markieren.",
         "clickToUpload": "Zum Hochladen klicken",
         "uploadOrSelectFlight": "Laden Sie eine .gutma/.zip Datei hoch oder wählen Sie einen Control Center Flugprotokoll zum automatischen Abruf.",
         "noPlansForDrone": "Keine Pläne für diese Drohne",
@@ -3145,6 +3145,7 @@
         "verifying": "Überprüfen...",
         "deleteTitle": "Organisation löschen",
         "deleteConfirm": "Möchten Sie diese Organisation wirklich löschen?",
+        "delete": "Löschen",
         "table": {
           "name": "Name",
           "orgId": "Org-ID",

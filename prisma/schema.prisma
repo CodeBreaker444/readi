@@ -1261,13 +1261,14 @@ model flytbase_mission_status {
 model flytbase_organizations {
   id                   Int                    @id @default(autoincrement())
   name                 String                 @db.VarChar(255)
-  org_id               String                 @unique @db.VarChar(255)
+  org_id               String                 @db.VarChar(255)
   api_token            String
   created_at           DateTime?              @default(now()) @db.Timestamptz(6)
   updated_at           DateTime?              @default(now()) @db.Timestamptz(6)
   fk_owner_id          Int
   user_flytbase_access user_flytbase_access[]
 
+  @@unique([org_id, fk_owner_id])
   @@index([org_id])
   @@index([org_id], map: "idx_flytbase_organizations_org_id")
   @@schema("public")
