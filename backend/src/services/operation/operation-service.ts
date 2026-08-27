@@ -27,16 +27,20 @@ function generateRecurringGroupId(): string {
   return `RG-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
 }
 
-function getDatesInRange(startDate: string, endDate: string): Date[] {
+function getRecurringDates(anchor: Date, endDate: string, daysOfWeek: number[]): Date[] {
   const dates: Date[] = [];
-  const current = new Date(startDate);
+  const current = new Date(anchor);
+  current.setHours(0, 0, 0, 0);
   const end = new Date(endDate);
-  
+  end.setHours(23, 59, 59, 999);
+
   while (current <= end) {
-    dates.push(new Date(current));
+    if (daysOfWeek.includes(current.getDay())) {
+      dates.push(new Date(current));
+    }
     current.setDate(current.getDate() + 1);
   }
-  
+
   return dates;
 }
 
@@ -240,9 +244,17 @@ export async function createOperation(input: CreateOperationSchema, ownerId: num
   }
 
   const isRecurrent = (input as any).is_recurrent === true;
-  const recurrentStartDate = (input as any).recurrent_start_date;
+  const recurrentDays: number[] = Array.isArray((input as any).recurrent_days_of_week)
+    ? (input as any).recurrent_days_of_week
+    : [];
   const recurrentEndDate = (input as any).recurrent_end_date;
-  const recurrentTime = (input as any).recurrent_time;
+  // The mission's own start date/time is the anchor for the recurring series —
+  // there is no separate "recurrent start date" field.
+  const anchorStart = input.scheduled_start ? new Date(input.scheduled_start) : null;
+
+  if (isRecurrent && (!anchorStart || !recurrentEndDate || !recurrentDays.length)) {
+    throw new Error('Recurrent mission requires a start date, days of the week, and an end date');
+  }
 
   const missionMetadata: Record<string, unknown> = {};
   if (visualObservers?.length) missionMetadata.visual_observers = visualObservers;
@@ -250,18 +262,14 @@ export async function createOperation(input: CreateOperationSchema, ownerId: num
   if ((input as any).op_type) missionMetadata.op_type = (input as any).op_type;
   if (isRecurrent) {
     missionMetadata.is_recurrent = true;
-    if (recurrentStartDate) missionMetadata.recurrent_start_date = recurrentStartDate;
-    if (recurrentEndDate) missionMetadata.recurrent_end_date = recurrentEndDate;
-    if (recurrentTime) missionMetadata.recurrent_time = recurrentTime;
+    missionMetadata.recurrent_days_of_week = recurrentDays;
+    missionMetadata.recurrent_end_date = recurrentEndDate;
   }
 
   // Determine the dates to create missions for
-  let datesToProcess: Date[] = [];
-  if (isRecurrent && recurrentStartDate && recurrentEndDate && recurrentTime) {
-    datesToProcess = getDatesInRange(recurrentStartDate, recurrentEndDate);
-  } else {
-    datesToProcess = [new Date()]; // Single mission for non-recurrent
-  }
+  const datesToProcess: Date[] = isRecurrent && anchorStart
+    ? getRecurringDates(anchorStart, recurrentEndDate, recurrentDays)
+    : [new Date()]; // Single mission for non-recurrent
 
   const recurringGroupId = isRecurrent ? generateRecurringGroupId() : null;
   const insertedIds: number[] = [];
@@ -297,21 +305,19 @@ export async function createOperation(input: CreateOperationSchema, ownerId: num
       throw new Error(`An operation with code ${missionCode} already exists.`);
     }
 
-    // Calculate scheduled start time based on recurrent time or planning planned_date
+    // Calculate scheduled start time based on the mission's own start time or planning planned_date
     let scheduledStart: Date | null = null;
-    if (isRecurrent && recurrentTime) {
-      const [hours, minutes] = recurrentTime.split(':').map(Number);
+    if (isRecurrent && anchorStart) {
       scheduledStart = new Date(currentDate);
-      scheduledStart.setHours(hours, minutes, 0, 0);
+      scheduledStart.setHours(anchorStart.getHours(), anchorStart.getMinutes(), 0, 0);
     } else if (input.scheduled_start) {
       scheduledStart = new Date(input.scheduled_start);
     } else if (planningPlannedDate) {
       // Use the planned_date from planning if no scheduled_start provided
-      // For recurrent missions, combine planning date with recurrent time
-      if (isRecurrent && recurrentTime) {
-        const [hours, minutes] = recurrentTime.split(':').map(Number);
+      // For recurrent missions, combine planning date with the mission's start time
+      if (isRecurrent && anchorStart) {
         scheduledStart = new Date(currentDate);
-        scheduledStart.setHours(hours, minutes, 0, 0);
+        scheduledStart.setHours(anchorStart.getHours(), anchorStart.getMinutes(), 0, 0);
       } else {
         scheduledStart = planningPlannedDate;
       }

@@ -28,47 +28,39 @@ interface Props {
     isDark: boolean
     isRecurrent?: boolean
     onRecurrentToggle?: (checked: boolean) => void
-    recurrentStartDate?: string
-    onRecurrentStartDateChange?: (value: string) => void
+    recurrentDays?: number[]
+    onRecurrentDaysChange?: (days: number[]) => void
     recurrentEndDate?: string
     onRecurrentEndDateChange?: (value: string) => void
-    recurrentTime?: string
-    onRecurrentTimeChange?: (value: string) => void
     onRecurrentDateErrorChange?: (error: string) => void
 }
+
+const WEEKDAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
 export function OperationStepScheduler({
     form, onChange, isEdit, statusName, generatingId, onRefreshMissionId,
     loadingConflicts, conflictChecked, conflicts, timezone,
     types, categories, lucProcedures, loadingOptions, isDark,
     isRecurrent = false, onRecurrentToggle,
-    recurrentStartDate = '', onRecurrentStartDateChange,
+    recurrentDays = [], onRecurrentDaysChange,
     recurrentEndDate = '', onRecurrentEndDateChange,
-    recurrentTime = '', onRecurrentTimeChange,
     onRecurrentDateErrorChange,
 }: Props) {
     const { t } = useTranslation()
     const [recurrentDateError, setRecurrentDateError] = useState('')
 
-    const handleRecurrentStartDateChange = (value: string) => {
-        onRecurrentStartDateChange?.(value)
-        if (value && recurrentEndDate && new Date(recurrentEndDate) < new Date(value)) {
-            const error = t('operations.importOperation.errors.endDateBeforeStart')
-            setRecurrentDateError(error)
-            onRecurrentDateErrorChange?.(error)
-        } else if (!value && isRecurrent) {
-            const error = t('operations.importOperation.errors.datesRequired')
-            setRecurrentDateError(error)
-            onRecurrentDateErrorChange?.(error)
-        } else {
-            setRecurrentDateError('')
-            onRecurrentDateErrorChange?.('')
-        }
+    const toggleRecurrentDay = (day: number) => {
+        const next = recurrentDays.includes(day)
+            ? recurrentDays.filter(d => d !== day)
+            : [...recurrentDays, day]
+        onRecurrentDaysChange?.(next)
     }
+
+    const startDateOnly = form.scheduledStart ? form.scheduledStart.slice(0, 10) : ''
 
     const handleRecurrentEndDateChange = (value: string) => {
         onRecurrentEndDateChange?.(value)
-        if (value && recurrentStartDate && new Date(value) < new Date(recurrentStartDate)) {
+        if (value && startDateOnly && new Date(value) < new Date(startDateOnly)) {
             const error = t('operations.importOperation.errors.endDateBeforeStart')
             setRecurrentDateError(error)
             onRecurrentDateErrorChange?.(error)
@@ -113,17 +105,15 @@ export function OperationStepScheduler({
                 </div>
             </div>
 
-            {!isRecurrent && (
-                <div className="max-w-xs">
-                    <Label className={labelCls(isDark)}>{t('operations.newOperation.scheduler.startDateTime')} <span className="text-red-500">*</span></Label>
-                    <Input
-                        type="datetime-local"
-                        value={form.scheduledStart}
-                        onChange={e => onChange('scheduledStart', e.target.value)}
-                        className={inputCls(isDark)}
-                    />
-                </div>
-            )}
+            <div className="max-w-xs">
+                <Label className={labelCls(isDark)}>{t('operations.newOperation.scheduler.startDateTime')} <span className="text-red-500">*</span></Label>
+                <Input
+                    type="datetime-local"
+                    value={form.scheduledStart}
+                    onChange={e => onChange('scheduledStart', e.target.value)}
+                    className={inputCls(isDark)}
+                />
+            </div>
 
             {!isEdit && (
                 <div className={cn('rounded-lg border p-3 space-y-3', isDark ? 'border-slate-600 bg-slate-700/30' : 'border-slate-200 bg-slate-50/60')}>
@@ -140,18 +130,32 @@ export function OperationStepScheduler({
                         </Label>
                     </div>
                     {isRecurrent && (
-                        <div className="grid grid-cols-3 gap-3">
+                        <div className="space-y-3">
                             <div>
-                                <Label className={cn(labelCls(isDark), 'text-xs')}>{t('operations.importOperation.fields.recurrentStartDate')}</Label>
-                                <Input type="date" value={recurrentStartDate} onChange={e => handleRecurrentStartDateChange(e.target.value)} className={inputCls(isDark)} />
+                                <Label className={cn(labelCls(isDark), 'text-xs')}>{t('operations.importOperation.fields.recurrentDays')}</Label>
+                                <div className="flex gap-2 mt-1.5 flex-wrap">
+                                    {WEEKDAY_LABELS.map((day, idx) => (
+                                        <button
+                                            key={day}
+                                            type="button"
+                                            onClick={() => toggleRecurrentDay(idx)}
+                                            className={cn(
+                                                'px-3 cursor-pointer py-1.5 rounded-md text-xs font-semibold transition-all',
+                                                recurrentDays.includes(idx)
+                                                    ? 'bg-violet-600 text-white shadow-sm'
+                                                    : isDark
+                                                        ? 'bg-slate-600 text-slate-300 hover:bg-slate-500'
+                                                        : 'bg-white text-slate-600 border border-slate-300 hover:bg-slate-100'
+                                            )}
+                                        >
+                                            {day}
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
-                            <div>
+                            <div className="max-w-xs">
                                 <Label className={cn(labelCls(isDark), 'text-xs')}>{t('operations.importOperation.fields.recurrentEndDate')}</Label>
                                 <Input type="date" value={recurrentEndDate} onChange={e => handleRecurrentEndDateChange(e.target.value)} className={cn(inputCls(isDark), recurrentDateError ? 'border-red-500' : '')} />
-                            </div>
-                            <div>
-                                <Label className={cn(labelCls(isDark), 'text-xs')}>{t('operations.importOperation.fields.recurrentTime')}</Label>
-                                <Input type="time" value={recurrentTime} onChange={e => onRecurrentTimeChange?.(e.target.value)} className={inputCls(isDark)} />
                             </div>
                         </div>
                     )}

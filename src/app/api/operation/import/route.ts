@@ -117,9 +117,9 @@ export async function POST(req: NextRequest) {
       missionCode: String(formData.get('mission_code') ?? '').trim() || undefined,
       userTimezone: session!.user.timezone || undefined,
       isRecurrent: String(formData.get('is_recurrent')) === 'true',
-      recurrentStartDate: String(formData.get('recurrent_start_date') ?? ''),
+      missionStartDate: String(formData.get('mission_start_date') ?? ''),
       recurrentEndDate: String(formData.get('recurrent_end_date') ?? ''),
-      recurrentTime: String(formData.get('recurrent_time') ?? ''),
+      recurrentDaysOfWeek: formData.getAll('recurrent_days_of_week').map((d) => Number(d)).filter((d) => !isNaN(d)),
     };
 
     const result = await importMissionFromLog(file, params, flytbaseFlightId || null);

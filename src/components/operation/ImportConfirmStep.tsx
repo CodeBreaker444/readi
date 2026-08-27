@@ -33,11 +33,13 @@ interface ImportConfirmStepProps {
     location: string;
     groupLabel: string;
     pilotLabel: string;
+    missionStartDate: string;
     isRecurrent: boolean;
-    recurrentStartDate: string;
+    recurrentDays: number[];
     recurrentEndDate: string;
-    recurrentTime: string;
 }
+
+const WEEKDAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 export function ImportConfirmStep({
     t, ns,
@@ -45,7 +47,7 @@ export function ImportConfirmStep({
     categoryId, categories, typeId, types, opType, flightMode,
     selectedPlan, selectedMissionPlanning,
     lucProcedureId, lucProcedures, location, groupLabel, pilotLabel,
-    isRecurrent, recurrentStartDate, recurrentEndDate, recurrentTime,
+    missionStartDate, isRecurrent, recurrentDays, recurrentEndDate,
 }: ImportConfirmStepProps) {
     return (
         <div className="space-y-4">
@@ -113,16 +115,18 @@ export function ImportConfirmStep({
                 {isRecurrent && (
                     <>
                         <div>
-                            <Label className="mb-1.5 block">{t(ns + '.fields.recurrentStartDate')}</Label>
-                            <p className="text-sm font-medium">{recurrentStartDate || '—'}</p>
+                            <Label className="mb-1.5 block">{t(ns + '.fields.startDate')}</Label>
+                            <p className="text-sm font-medium">{missionStartDate ? new Date(missionStartDate).toLocaleString() : '—'}</p>
+                        </div>
+                        <div>
+                            <Label className="mb-1.5 block">{t(ns + '.fields.recurrentDays')}</Label>
+                            <p className="text-sm font-medium">
+                                {recurrentDays.length ? recurrentDays.slice().sort().map(d => WEEKDAY_LABELS[d]).join(', ') : '—'}
+                            </p>
                         </div>
                         <div>
                             <Label className="mb-1.5 block">{t(ns + '.fields.recurrentEndDate')}</Label>
                             <p className="text-sm font-medium">{recurrentEndDate || '—'}</p>
-                        </div>
-                        <div>
-                            <Label className="mb-1.5 block">{t(ns + '.fields.recurrentTime')}</Label>
-                            <p className="text-sm font-medium">{recurrentTime || '—'}</p>
                         </div>
                     </>
                 )}

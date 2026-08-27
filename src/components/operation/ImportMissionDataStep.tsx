@@ -77,16 +77,19 @@ interface ImportMissionDataStepProps {
     notes: string;
     setNotes: (v: string) => void;
 
+    missionStartDate: string;
+    setMissionStartDate: (v: string) => void;
+
     isRecurrent: boolean;
     handleRecurrentToggle: (checked: boolean) => void;
-    recurrentStartDate: string;
-    handleRecurrentStartDateChange: (value: string) => void;
+    recurrentDays: number[];
+    setRecurrentDays: (days: number[]) => void;
     recurrentEndDate: string;
     handleRecurrentEndDateChange: (value: string) => void;
-    recurrentTime: string;
-    setRecurrentTime: (v: string) => void;
     recurrentDateError: string;
 }
+
+const WEEKDAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 export function ImportMissionDataStep({
     t, ns,
@@ -101,12 +104,17 @@ export function ImportMissionDataStep({
     missionPlanningId, setMissionPlanningId, loadingMissionPlannings, missionPlannings,
     lucProcedureId, setLucProcedureId, lucProcedures,
     location, setLocation, groupLabel, setGroupLabel, notes, setNotes,
+    missionStartDate, setMissionStartDate,
     isRecurrent, handleRecurrentToggle,
-    recurrentStartDate, handleRecurrentStartDateChange,
+    recurrentDays, setRecurrentDays,
     recurrentEndDate, handleRecurrentEndDateChange,
-    recurrentTime, setRecurrentTime,
     recurrentDateError,
 }: ImportMissionDataStepProps) {
+    const toggleRecurrentDay = (day: number) => {
+        setRecurrentDays(
+            recurrentDays.includes(day) ? recurrentDays.filter((d) => d !== day) : [...recurrentDays, day]
+        );
+    };
     return (
         <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
@@ -311,6 +319,11 @@ export function ImportMissionDataStep({
                     <Label className="mb-1.5 block">{t(ns + '.fields.notes')}</Label>
                     <Input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={t(ns + '.placeholders.notes')} />
                 </div>
+                <div>
+                    <Label className="mb-1.5 block">{t(ns + '.fields.startDate')}</Label>
+                    <Input type="datetime-local" value={missionStartDate} onChange={(e) => setMissionStartDate(e.target.value)} />
+                    <p className="mt-1 text-[11px] text-muted-foreground">{t(ns + '.info.startDateHint')}</p>
+                </div>
             </div>
             {logSerialNumber && (
                 <div className="flex items-center gap-2 text-xs text-muted-foreground bg-slate-50 dark:bg-slate-900 p-2 rounded">
@@ -320,23 +333,6 @@ export function ImportMissionDataStep({
             )}
 
             <div className="rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-900/20 p-3 space-y-3">
-                <div className="grid grid-cols-3 gap-4">
-                    <div>
-                        <Label className="mb-1.5 block">{t(ns + '.fields.recurrentStartDate')}</Label>
-                        <Input type="date" value={recurrentStartDate} onChange={(e) => handleRecurrentStartDateChange(e.target.value)} disabled={!isRecurrent} />
-                    </div>
-                    <div>
-                        <Label className="mb-1.5 block">{t(ns + '.fields.recurrentEndDate')}</Label>
-                        <Input type="date" value={recurrentEndDate} onChange={(e) => handleRecurrentEndDateChange(e.target.value)} disabled={!isRecurrent} className={recurrentDateError ? 'border-red-500' : ''} />
-                    </div>
-                    <div>
-                        <Label className="mb-1.5 block">{t(ns + '.fields.recurrentTime')}</Label>
-                        <Input type="time" value={recurrentTime} onChange={(e) => setRecurrentTime(e.target.value)} disabled={!isRecurrent} />
-                    </div>
-                </div>
-                {recurrentDateError && (
-                    <p className="text-red-500 text-xs">{recurrentDateError}</p>
-                )}
                 <div className="flex items-center gap-2">
                     <input
                         type="checkbox"
@@ -347,6 +343,37 @@ export function ImportMissionDataStep({
                     />
                     <Label htmlFor="isRecurrent" className="text-sm cursor-pointer">{t(ns + '.fields.recurrent')}</Label>
                 </div>
+                {isRecurrent && (
+                    <div className="space-y-3">
+                        <div>
+                            <Label className="mb-1.5 block text-xs">{t(ns + '.fields.recurrentDays')}</Label>
+                            <div className="flex gap-2 flex-wrap">
+                                {WEEKDAY_LABELS.map((day, idx) => (
+                                    <button
+                                        key={day}
+                                        type="button"
+                                        onClick={() => toggleRecurrentDay(idx)}
+                                        className={cn(
+                                            'px-3 cursor-pointer py-1.5 rounded-md text-xs font-semibold transition-all',
+                                            recurrentDays.includes(idx)
+                                                ? 'bg-violet-600 text-white shadow-sm'
+                                                : 'bg-white text-slate-600 border border-slate-300 hover:bg-slate-100 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600'
+                                        )}
+                                    >
+                                        {day}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                        <div className="max-w-xs">
+                            <Label className="mb-1.5 block text-xs">{t(ns + '.fields.recurrentEndDate')}</Label>
+                            <Input type="date" value={recurrentEndDate} onChange={(e) => handleRecurrentEndDateChange(e.target.value)} className={recurrentDateError ? 'border-red-500' : ''} />
+                        </div>
+                    </div>
+                )}
+                {recurrentDateError && (
+                    <p className="text-red-500 text-xs">{recurrentDateError}</p>
+                )}
             </div>
         </div>
     );

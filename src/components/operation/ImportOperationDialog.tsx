@@ -16,6 +16,7 @@ import { ImportConfirmStep } from './ImportConfirmStep';
 import { ImportLogFileStep } from './ImportLogFileStep';
 import { ImportMissionDataStep } from './ImportMissionDataStep';
 import { ImportPilotStep } from './ImportPilotStep';
+import { isoToLocalInput } from './OperationModalHelpers';
 import { ImportStepIndicator } from './ImportStepIndicator';
 import { MissionPlanningOption, OpType, PlanningOption } from './OperationModalTypes';
 import { PilotQualificationsSheet } from './PilotQualificationsSheet';
@@ -110,10 +111,10 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
     const [notes,       setNotes]       = useState('');
     const [pilotId,     setPilotId]     = useState('');
     const [visualObserverIds, setVisualObserverIds] = useState<string[]>([]);
+    const [missionStartDate, setMissionStartDate] = useState('');
     const [isRecurrent, setIsRecurrent] = useState(false);
-    const [recurrentStartDate, setRecurrentStartDate] = useState('');
+    const [recurrentDays, setRecurrentDays] = useState<number[]>([]);
     const [recurrentEndDate, setRecurrentEndDate] = useState('');
-    const [recurrentTime, setRecurrentTime] = useState('');
     const [recurrentDateError, setRecurrentDateError] = useState('');
     const [generatingId, setGeneratingId] = useState(false);
     const [existingMissionCodes, setExistingMissionCodes] = useState<Set<string>>(new Set());
@@ -130,20 +131,9 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
 
     const handleRecurrentEndDateChange = (value: string) => {
         setRecurrentEndDate(value);
-        // Validate that end date is not before start date
-        if (value && recurrentStartDate && new Date(value) < new Date(recurrentStartDate)) {
-            setRecurrentDateError(t('operations.importOperation.errors.endDateBeforeStart'));
-        } else if (!value && isRecurrent) {
-            setRecurrentDateError(t('operations.importOperation.errors.datesRequired'));
-        } else {
-            setRecurrentDateError('');
-        }
-    };
-
-    const handleRecurrentStartDateChange = (value: string) => {
-        setRecurrentStartDate(value);
-        // Validate that end date is not before start date
-        if (value && recurrentEndDate && new Date(recurrentEndDate) < new Date(value)) {
+        // Validate that end date is not before the mission's start date
+        const startDateOnly = missionStartDate ? missionStartDate.slice(0, 10) : '';
+        if (value && startDateOnly && new Date(value) < new Date(startDateOnly)) {
             setRecurrentDateError(t('operations.importOperation.errors.endDateBeforeStart'));
         } else if (!value && isRecurrent) {
             setRecurrentDateError(t('operations.importOperation.errors.datesRequired'));
@@ -161,7 +151,7 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
 
     const validateRecurrentDates = () => {
         if (!isRecurrent) return true;
-        if (!recurrentStartDate || !recurrentEndDate) return false;
+        if (!missionStartDate || !recurrentEndDate || recurrentDays.length === 0) return false;
         if (recurrentDateError) return false;
         return true;
     };
@@ -352,7 +342,8 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
         setLogSerialNumber(null); setLoadingSerialNumber(false);
         setDrones([]); setPlannings([]); setMissionPlannings([]); setCategories([]); setTypes([]); setPilots([]); setLucProcedures([]);
         setLoadingClients(false); setLoadingDrones(false); setLoadingMissionOptions(false); setLoadingPlannings(false); setLoadingMissionPlannings(false); setLoadingPilots(false);
-        setIsRecurrent(false); setRecurrentStartDate(''); setRecurrentEndDate(''); setRecurrentTime(''); setRecurrentDateError('');
+        setMissionStartDate('');
+        setIsRecurrent(false); setRecurrentDays([]); setRecurrentEndDate(''); setRecurrentDateError('');
     }
 
     const fetchFlytbaseFlights = useCallback(async (page = 1) => {
@@ -418,6 +409,17 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
         }
     }, [selectedFlightId, logFile, platform, organizationId]);
 
+    useEffect(() => {
+        if (platform === 'FLYTBASE' && selectedFlightId) {
+            const flight = flights.find((f) => f.flight_id === selectedFlightId);
+            if (flight?.start_time) {
+                setMissionStartDate(isoToLocalInput(new Date(flight.start_time).toISOString()));
+                return;
+            }
+        }
+        setMissionStartDate('');
+    }, [selectedFlightId, platform, flights]);
+
     const handleSubmit = async (e?: React.FormEvent) => {
         if (e) e.preventDefault();
 
@@ -476,9 +478,9 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
             formData.append('is_recurrent', String(isRecurrent));
 
             if (isRecurrent) {
-                formData.append('recurrent_start_date', recurrentStartDate);
+                formData.append('mission_start_date', missionStartDate);
                 formData.append('recurrent_end_date', recurrentEndDate);
-                formData.append('recurrent_time', recurrentTime);
+                recurrentDays.forEach((day) => formData.append('recurrent_days_of_week', String(day)));
             }
 
 
@@ -612,14 +614,14 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                                 setGroupLabel={setGroupLabel}
                                 notes={notes}
                                 setNotes={setNotes}
+                                missionStartDate={missionStartDate}
+                                setMissionStartDate={setMissionStartDate}
                                 isRecurrent={isRecurrent}
                                 handleRecurrentToggle={handleRecurrentToggle}
-                                recurrentStartDate={recurrentStartDate}
-                                handleRecurrentStartDateChange={handleRecurrentStartDateChange}
+                                recurrentDays={recurrentDays}
+                                setRecurrentDays={setRecurrentDays}
                                 recurrentEndDate={recurrentEndDate}
                                 handleRecurrentEndDateChange={handleRecurrentEndDateChange}
-                                recurrentTime={recurrentTime}
-                                setRecurrentTime={setRecurrentTime}
                                 recurrentDateError={recurrentDateError}
                             />
                         )}
@@ -661,10 +663,10 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                                 location={location}
                                 groupLabel={groupLabel}
                                 pilotLabel={pilotLabel}
+                                missionStartDate={missionStartDate}
                                 isRecurrent={isRecurrent}
-                                recurrentStartDate={recurrentStartDate}
+                                recurrentDays={recurrentDays}
                                 recurrentEndDate={recurrentEndDate}
-                                recurrentTime={recurrentTime}
                             />
                         )}
                     </div>

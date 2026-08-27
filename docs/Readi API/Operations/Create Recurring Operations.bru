@@ -16,7 +16,7 @@ headers {
 
 body:json {
   {
-    "is_recurring": true,
+    "is_recurrent": true,
     "mission_name": "Daily Patrol",
     "mission_code": "PATROL-REC",
     "mission_description": "Daily perimeter patrol",
@@ -25,8 +25,8 @@ body:json {
     "fk_tool_id": 2,
     "location": "Perimeter Zone",
     "notes": "Automated daily patrol",
-    "days_of_week": [1, 2, 3, 4, 5],
-    "recur_until": "2026-05-15",
+    "recurrent_days_of_week": [1, 2, 3, 4, 5],
+    "recurrent_end_date": "2026-05-15",
     "mission_group_label": "April Patrols"
   }
 }
@@ -41,11 +41,11 @@ docs {
   **Auth:** Session cookie (`readi_auth_token`). Requires `view_operations` permission.
 
   **Body fields:**
-  - `is_recurring: true` (required) — flag to create recurring series
+  - `is_recurrent: true` (required) — flag to create recurring series
   - `mission_name`, `mission_code`, `location`, `notes` — shared across all occurrences
-  - `scheduled_start` — first occurrence start time
-  - `days_of_week` — array of day numbers (0=Sun, 1=Mon … 6=Sat)
-  - `recur_until` — YYYY-MM-DD end date for the series
+  - `scheduled_start` (required) — the mission's own start date/time; also the anchor for the recurring series (its date is the first candidate occurrence, its time-of-day is reused for every occurrence)
+  - `recurrent_days_of_week` — array of day numbers (0=Sun, 1=Mon … 6=Sat) to repeat on
+  - `recurrent_end_date` — YYYY-MM-DD end date for the series (inclusive)
   - `mission_group_label` — label to group the recurring series
   - `fk_pilot_user_id`, `fk_tool_id` — pilot and drone assignment
 
