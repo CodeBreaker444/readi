@@ -102,6 +102,7 @@ export function MissionDetailModal({ mission, onClose }: MissionDetailModalProps
               label="Drone System"
               value={mission.vehicle_code ? <SystemCell code={mission.vehicle_code} name={mission.vehicle_desc} size="sm" /> : null}
             />
+            <Field label="Battery Serial Number" value={mission.battery_serial_number} mono />
             <Field
               label="Mission Plan"
               value={

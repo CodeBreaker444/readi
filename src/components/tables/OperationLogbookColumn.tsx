@@ -260,6 +260,21 @@ export const operationLogbookColumns: ColumnDef<OperationLogbookItem>[] = [
     size: 100,
   },
   {
+    accessorKey: "battery_serial_number",
+    header: "Battery SN",
+    cell: ({ row }) => {
+      const sn = row.getValue("battery_serial_number") as string;
+      return sn ? (
+        <span className="font-mono text-[11px] text-slate-600 dark:text-slate-300">
+          {sn}
+        </span>
+      ) : (
+        <span className="text-slate-300 dark:text-slate-600">—</span>
+      );
+    },
+    size: 140,
+  },
+  {
     accessorKey: "mission_notes",
     header: "Notes",
     cell: ({ row }) => {

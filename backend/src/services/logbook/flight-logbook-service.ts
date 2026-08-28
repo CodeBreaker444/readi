@@ -95,6 +95,22 @@ export async function getOperationLogbookList(
     orderBy: { pilot_mission_id: 'desc' },
   });
 
+  const missionIds = data.map((row) => row.pilot_mission_id);
+  const batterySerialsByMission = new Map<number, string[]>();
+  if (missionIds.length > 0) {
+    const batteryLogs = await prisma.mission_maintenance_log.findMany({
+      where: { fk_mission_id: { in: missionIds }, tool_component: { component_type: 'BATTERY' } },
+      select: { fk_mission_id: true, tool_component: { select: { serial_number: true } } },
+    });
+    for (const log of batteryLogs) {
+      const sn = log.tool_component.serial_number;
+      if (!sn) continue;
+      const arr = batterySerialsByMission.get(log.fk_mission_id) ?? [];
+      if (!arr.includes(sn)) arr.push(sn);
+      batterySerialsByMission.set(log.fk_mission_id, arr);
+    }
+  }
+
   const timezone = params.user_timezone || 'UTC';
   const dateFmt = (d: Date) => d.toLocaleDateString('en-GB', { timeZone: timezone });
   const timeFmt = (d: Date) => d.toLocaleTimeString('en-GB', { timeZone: timezone, hour: '2-digit', minute: '2-digit', hour12: false });
@@ -134,6 +150,7 @@ export async function getOperationLogbookList(
       mission_planning_desc: row.planning?.planning_logbook?.[0]?.mission_planning_desc ?? '',
       flown_time: row.flight_duration ?? 0,
       flown_meter: Number(row.distance_flown ?? 0),
+      battery_serial_number: (batterySerialsByMission.get(row.pilot_mission_id) ?? []).join(', '),
       mission_notes: row.notes ?? '',
     };
   });

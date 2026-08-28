@@ -125,6 +125,7 @@ export interface OperationLogbookItem {
   mission_planning_desc: string;
   flown_time: number;
   flown_meter: number;
+  battery_serial_number: string;
   mission_notes: string;
 }
 
