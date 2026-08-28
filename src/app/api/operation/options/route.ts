@@ -1,4 +1,4 @@
-import { getClientOptions, getLucProcedureOptions, getMissionCategoryOptions, getMissionTypeOptions, getPilotOptions, getPlanningOptions, getToolOptions } from '@/backend/services/operation/operation-service';
+import { getClientOptions, getLucProcedureOptions, getMissionCategoryOptions, getMissionGroupLabelOptions, getMissionTypeOptions, getPilotOptions, getPlanningOptions, getToolOptions } from '@/backend/services/operation/operation-service';
 import { requirePermission } from '@/lib/auth/api-auth';
 import { internalError } from '@/lib/api-error';
 import { E } from '@/lib/error-codes';
@@ -12,7 +12,7 @@ export async function GET() {
     const ownerId = session!.user.ownerId
 
     try {
-        const [pilots, tools, types, categories, plannings, lucProcedures, clients] = await Promise.all([
+        const [pilots, tools, types, categories, plannings, lucProcedures, clients, groupLabels] = await Promise.all([
             getPilotOptions(ownerId),
             getToolOptions(ownerId),
             getMissionTypeOptions(ownerId),
@@ -20,6 +20,7 @@ export async function GET() {
             getPlanningOptions(ownerId),
             getLucProcedureOptions(ownerId),
             getClientOptions(ownerId),
+            getMissionGroupLabelOptions(ownerId),
         ]);
 
         return NextResponse.json({
@@ -30,6 +31,7 @@ export async function GET() {
             plannings,
             lucProcedures,
             clients,
+            groupLabels,
         });
     } catch (err) {
         return internalError(E.SV001, err);

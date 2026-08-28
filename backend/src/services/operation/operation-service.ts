@@ -49,7 +49,7 @@ export async function listOperations(
   params: ListOperationsQuerySchema,
   ownerId: number
 ): Promise<OperationsListResponse> {
-  const { page, pageSize, status, search, pilot_id, tool_id, client_id, date_start, date_end } = params;
+  const { page, pageSize, status, search, pilot_id, tool_id, client_id, date_start, date_end, group_label } = params;
   const skip = (page - 1) * pageSize;
 
   const where: any = {
@@ -60,6 +60,7 @@ export async function listOperations(
     ...(pilot_id && { fk_pilot_user_id: pilot_id }),
     ...(tool_id && { fk_tool_id: tool_id }),
     ...(client_id && { planning: { fk_client_id: client_id } }),
+    ...(group_label && { mission_group_label: group_label }),
     ...(search && {
       OR: [
         { mission_code: { contains: search, mode: 'insensitive' } },
@@ -929,6 +930,19 @@ export async function getMissionCategoryOptions(ownerId: number) {
     orderBy: { category_name: 'asc' },
     select: { category_id: true, category_name: true },
   });
+}
+
+export async function getMissionGroupLabelOptions(ownerId: number) {
+  const rows = await prisma.pilot_mission.findMany({
+    where: { fk_owner_id: ownerId, mission_group_label: { not: null } },
+    select: { mission_group_label: true },
+    distinct: ['mission_group_label'],
+  });
+
+  return rows
+    .map((r) => r.mission_group_label)
+    .filter((label): label is string => !!label && label.trim().length > 0)
+    .sort((a, b) => a.localeCompare(b));
 }
 
 export async function getClientOptions(ownerId: number) {

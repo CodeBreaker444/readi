@@ -57,6 +57,7 @@ export interface ListOperationsQuerySchema {
   client_id?: number;
   date_start?: string;
   date_end?: string;
+  group_label?: string;
 }
 export type CreateOperationSchema = {
   mission_code: string;

@@ -37,6 +37,8 @@ export async function getOperationLogbookList(
     where.fk_mission_result_type_id = params.mission_result_id;
   if (params.client_id && params.client_id !== 0)
     where.fk_client_id = params.client_id;
+  if (params.mission_group_label)
+    where.mission_group_label = params.mission_group_label;
   if (params.date_start)
     where.actual_start = { ...(where.actual_start ?? {}), gte: new Date(params.date_start) };
   if (params.date_end)
@@ -150,7 +152,7 @@ export async function getOperationLogbookFilters(owner_id: number) {
     .map((r) => r.fk_pilot_user_id)
     .filter((id): id is number => id !== null);
 
-  const [pilots, clients, drones, missionTypes, missionCategories, missionResults, missionStatuses, missionPlans] =
+  const [pilots, clients, drones, missionTypes, missionCategories, missionResults, missionStatuses, missionPlans, missionGroupLabelRows] =
     await Promise.all([
       prisma.public_users.findMany({
         where:  { user_id: { in: pilotUserIds }, user_active: 'Y' },
@@ -184,6 +186,11 @@ export async function getOperationLogbookFilters(owner_id: number) {
       prisma.planning_logbook.findMany({
         where:  { fk_owner_id: owner_id, mission_planning_active: 'Y' },
         select: { mission_planning_id: true, mission_planning_code: true, mission_planning_desc: true },
+      }),
+      prisma.pilot_mission.findMany({
+        where: { fk_owner_id: owner_id, mission_group_label: { not: null } },
+        select: { mission_group_label: true },
+        distinct: ['mission_group_label'],
       }),
     ]);
 
@@ -231,6 +238,11 @@ export async function getOperationLogbookFilters(owner_id: number) {
     mission_planning_desc: p.mission_planning_desc ?? '',
   }));
 
+  const missionGroupLabelOptions: string[] = missionGroupLabelRows
+    .map((r) => r.mission_group_label)
+    .filter((label): label is string => !!label && label.trim().length > 0)
+    .sort((a, b) => a.localeCompare(b));
+
   return {
     code: 200,
     pilots: { data: pilotOptions },
@@ -241,5 +253,6 @@ export async function getOperationLogbookFilters(owner_id: number) {
     missionResults: { data: resultOptions },
     missionStatuses: { data: statusOptions },
     missionPlans: { data: planOptions },
+    missionGroupLabels: { data: missionGroupLabelOptions },
   };
 }

@@ -98,6 +98,7 @@ export interface OperationFilterParams {
   mission_result_id?: number;
   client_id?: number;
   mission_plan_id?: number;
+  mission_group_label?: string;
   user_timezone?: string;
 }
 
@@ -145,6 +146,7 @@ export interface OperationFilterResponse {
   missionResults: { data: MissionResultOption[] };
   missionStatuses: { data: MissionStatusOption[] };
   missionPlans: { data: MissionPlanOption[] };
+  missionGroupLabels: { data: string[] };
 }
 
 // Battery Logbook

@@ -1181,6 +1181,7 @@
         "status": "Stato",
         "result": "Risultato",
         "missionPlan": "Piano Missione",
+        "missionGroup": "Gruppo Missione",
         "all": "Tutti",
         "search": "Cerca",
         "reset": "Reimposta"
@@ -1497,6 +1498,7 @@
         "allPilots": "Tutti i piloti",
         "allDrones": "Tutti i droni",
         "allClients": "Tutti i clienti",
+        "allGroups": "Tutti i gruppi di missione",
         "reset": "Reimposta"
       },
       "status": {
@@ -2416,6 +2418,7 @@
         "status": "Stato",
         "result": "Risultato",
         "missionPlan": "Piano Missione",
+        "missionGroup": "Gruppo Missione",
         "all": "Tutti",
         "search": "Cerca",
         "reset": "Reimposta"
