@@ -175,11 +175,13 @@ export function OperationDetailSheet({
                         {statusLabel}
                       </Badge>
                     )}
-                    {operation.mission_group_label && (
+                    {(operation.mission_group_label || operation.is_recurrent) && (
                       <Badge variant="secondary" className="px-1.5 py-0 text-[10px] font-normal">
-                        <Tag className="mr-0.5 h-2.5 w-2.5" />
+                        {operation.mission_group_label && <Tag className="mr-0.5 h-2.5 w-2.5" />}
                         {operation.mission_group_label}
-                        {operation.is_recurrent && <FaArrowsRotate className="ml-1 h-2.5 w-2.5" />}
+                        {operation.is_recurrent && (
+                          <FaArrowsRotate className={cn('h-2.5 w-2.5', operation.mission_group_label && 'ml-1')} />
+                        )}
                       </Badge>
                     )}
                   </div>
