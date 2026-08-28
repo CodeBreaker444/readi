@@ -73,11 +73,13 @@ export function MissionDetailModal({ mission, onClose }: MissionDetailModalProps
             <span className={`inline-flex items-center rounded-md border px-2 py-0.5 text-[10px] font-bold tracking-tight ${statusColor}`}>
               {mission.mission_status_desc || '—'}
             </span>
-            {mission.mission_group_label && (
+            {(mission.mission_group_label || mission.is_recurrent) && (
               <Badge variant="secondary" className="px-1.5 py-0 text-[10px] font-normal">
-                <Tag className="mr-0.5 h-2.5 w-2.5" />
+                {mission.mission_group_label && <Tag className="mr-0.5 h-2.5 w-2.5" />}
                 {mission.mission_group_label}
-                {mission.is_recurrent && <FaArrowsRotate className="ml-1 h-2.5 w-2.5" />}
+                {mission.is_recurrent && (
+                  <FaArrowsRotate className={`h-2.5 w-2.5 ${mission.mission_group_label ? 'ml-1' : ''}`} />
+                )}
               </Badge>
             )}
           </div>

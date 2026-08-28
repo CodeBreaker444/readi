@@ -183,23 +183,24 @@ export const getOperationColumns = (t: TFunction, isDark = false, timezone = 'Eu
   {
     accessorKey: 'mission_code',
     header: t('operations.table.detail.missionId'),
+    size: 170,
     cell: ({ getValue, row, table }) => {
       const meta = table.options.meta as any;
       const groupLabel = (row.original as Operation).mission_group_label;
       const isRecurrent = (row.original as Operation).is_recurrent;
       return (
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5 whitespace-nowrap">
           <button
-            className="font-mono text-xs text-violet-600 hover:underline cursor-pointer"
+            className="font-mono text-xs text-violet-600 hover:underline cursor-pointer shrink-0"
             onClick={(e) => { e.stopPropagation(); meta.onViewDetails(row.original); }}
           >
             {getValue<string>()}
           </button>
-          {groupLabel && (
-            <Badge variant="secondary" className="px-1.5 py-0 text-[10px] font-normal shrink-0">
-              <Tag className="mr-0.5 h-2.5 w-2.5" />
+          {(groupLabel || isRecurrent) && (
+            <Badge variant="secondary" className="px-1.5 py-0 text-[10px] font-normal shrink-0 whitespace-nowrap">
+              {groupLabel && <Tag className="mr-0.5 h-2.5 w-2.5" />}
               {groupLabel}
-              {isRecurrent && <FaArrowsRotate className="ml-1 h-2.5 w-2.5" />}
+              {isRecurrent && <FaArrowsRotate className={cn('h-2.5 w-2.5', groupLabel && 'ml-1')} />}
             </Badge>
           )}
         </div>

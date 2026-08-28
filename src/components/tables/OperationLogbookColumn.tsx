@@ -60,10 +60,11 @@ export const operationLogbookColumns: ColumnDef<OperationLogbookItem>[] = [
       const meta = table.options.meta as OperationLogbookTableMeta;
       const code = row.original.mission_code || String(row.original.mission_id).padStart(4, "0");
       const groupLabel = row.original.mission_group_label;
+      const isRecurrent = row.original.is_recurrent;
       return (
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5 whitespace-nowrap">
           <button
-            className="font-mono text-xs text-violet-600 hover:underline cursor-pointer dark:text-violet-400"
+            className="font-mono text-xs text-violet-600 hover:underline cursor-pointer dark:text-violet-400 shrink-0"
             onClick={(e) => {
               e.stopPropagation();
               meta.onViewDetails(row.original);
@@ -71,17 +72,17 @@ export const operationLogbookColumns: ColumnDef<OperationLogbookItem>[] = [
           >
             {code}
           </button>
-          {groupLabel && (
-            <Badge variant="secondary" className="px-1.5 py-0 text-[10px] font-normal shrink-0">
-              <Tag className="mr-0.5 h-2.5 w-2.5" />
+          {(groupLabel || isRecurrent) && (
+            <Badge variant="secondary" className="px-1.5 py-0 text-[10px] font-normal shrink-0 whitespace-nowrap">
+              {groupLabel && <Tag className="mr-0.5 h-2.5 w-2.5" />}
               {groupLabel}
-              {row.original.is_recurrent && <FaArrowsRotate className="ml-1 h-2.5 w-2.5" />}
+              {isRecurrent && <FaArrowsRotate className={`h-2.5 w-2.5 ${groupLabel ? 'ml-1' : ''}`} />}
             </Badge>
           )}
         </div>
       );
     },
-    size: 90,
+    size: 170,
   },
   {
     id: "date_start",

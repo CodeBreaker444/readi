@@ -25,7 +25,7 @@ import { OperationLogbookTableMeta, operationLogbookColumns } from "../tables/Op
 import { TablePagination } from "../tables/Pagination";
 import { MissionDetailModal } from "./MissionDetailModal";
 
-const SKELETON_COL_WIDTHS = [90, 110, 110, 150, 140, 120, 120, 140, 110, 150, 100, 140, 180];
+const SKELETON_COL_WIDTHS = [170, 110, 110, 150, 140, 120, 120, 140, 110, 150, 100, 140, 180];
 const SKELETON_ROWS = 10;
 const SORT_STORAGE_KEY = "operationLogbook.sorting";
 
