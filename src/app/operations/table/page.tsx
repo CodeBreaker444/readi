@@ -71,6 +71,7 @@ export interface Operation {
   flight_mode?: string | null;
   op_type?: string | null;
   mission_group_label?: string | null;
+  is_recurrent?: boolean | null;
   created_at: string;
   updated_at: string;
 }

@@ -69,6 +69,9 @@ export async function getOperationLogbookList(
       flight_duration: true,
       distance_flown: true,
       notes: true,
+      mission_group_label: true,
+      recurring_group_id: true,
+      mission_metadata: true,
       users: { select: { user_id: true, first_name: true, last_name: true } },
       tool: { select: { tool_id: true, tool_code: true, tool_name: true, tool_status: { select: { status_code: true } } } },
       pilot_mission_type: { select: { mission_type_id: true, type_name: true } },
@@ -152,6 +155,10 @@ export async function getOperationLogbookList(
       flown_meter: Number(row.distance_flown ?? 0),
       battery_serial_number: (batterySerialsByMission.get(row.pilot_mission_id) ?? []).join(', '),
       mission_notes: row.notes ?? '',
+      mission_group_label: row.mission_group_label ?? '',
+      is_recurrent: !!row.recurring_group_id
+        || !!(row.mission_metadata as any)?.is_recurrent
+        || !!(row.mission_metadata as any)?.recurring_group_id,
     };
   });
 

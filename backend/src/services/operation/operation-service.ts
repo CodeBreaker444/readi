@@ -102,6 +102,7 @@ export async function listOperations(
         luc_completed_at: true,
         mission_metadata: true,
         mission_group_label: true,
+        recurring_group_id: true,
         fk_owner_id: true,
         status_name: true,
         created_at: true,
@@ -133,6 +134,9 @@ export async function listOperations(
     visual_observer_ids: (row.mission_metadata as any)?.visual_observers ?? null,
     flight_mode: (row.mission_metadata as any)?.flight_mode ?? null,
     op_type: (row.mission_metadata as any)?.op_type ?? null,
+    is_recurrent: !!row.recurring_group_id
+      || !!(row.mission_metadata as any)?.is_recurrent
+      || !!(row.mission_metadata as any)?.recurring_group_id,
   })) as unknown as Operation[];
 
   const toolIds = [...new Set(operations.filter((op) => op.fk_tool_id).map((op) => op.fk_tool_id as number))];

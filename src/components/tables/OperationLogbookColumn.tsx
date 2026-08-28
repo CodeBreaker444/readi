@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { SystemCell } from "@/components/tables/SystemCell";
 import { OperationLogbookItem } from "@/config/types/logbook";
 import { ColumnDef } from "@tanstack/react-table";
-import { ArrowUpDown, Clock, Map } from "lucide-react";
+import { ArrowUpDown, Clock, Map, Tag } from "lucide-react";
+import { FaArrowsRotate } from "react-icons/fa6";
 
 
 export interface OperationLogbookTableMeta {
@@ -58,16 +59,26 @@ export const operationLogbookColumns: ColumnDef<OperationLogbookItem>[] = [
     cell: ({ row, table }) => {
       const meta = table.options.meta as OperationLogbookTableMeta;
       const code = row.original.mission_code || String(row.original.mission_id).padStart(4, "0");
+      const groupLabel = row.original.mission_group_label;
       return (
-        <button
-          className="font-mono text-xs text-violet-600 hover:underline cursor-pointer dark:text-violet-400"
-          onClick={(e) => {
-            e.stopPropagation();
-            meta.onViewDetails(row.original);
-          }}
-        >
-          {code}
-        </button>
+        <div className="flex items-center gap-1.5">
+          <button
+            className="font-mono text-xs text-violet-600 hover:underline cursor-pointer dark:text-violet-400"
+            onClick={(e) => {
+              e.stopPropagation();
+              meta.onViewDetails(row.original);
+            }}
+          >
+            {code}
+          </button>
+          {groupLabel && (
+            <Badge variant="secondary" className="px-1.5 py-0 text-[10px] font-normal shrink-0">
+              <Tag className="mr-0.5 h-2.5 w-2.5" />
+              {groupLabel}
+              {row.original.is_recurrent && <FaArrowsRotate className="ml-1 h-2.5 w-2.5" />}
+            </Badge>
+          )}
+        </div>
       );
     },
     size: 90,

@@ -127,6 +127,8 @@ export interface OperationLogbookItem {
   flown_meter: number;
   battery_serial_number: string;
   mission_notes: string;
+  mission_group_label: string;
+  is_recurrent: boolean;
 }
 
 export interface OperationLogbookListResponse {
