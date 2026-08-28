@@ -180,15 +180,16 @@ export default function DroneATCPage() {
   }, []);
 
   useEffect(() => {
-    const ids = Object.keys(drones);
-    if (ids.length > 0 && !hasAutoSelected.current) {
-      setSelectedDroneId(ids[0]);
+    const droneIds = Object.keys(drones);
+    const dockIds = Object.keys(docks);
+    if (!hasAutoSelected.current && (droneIds.length > 0 || dockIds.length > 0)) {
+      setSelectedDroneId(droneIds[0] ?? dockIds[0]);
       hasAutoSelected.current = true;
     }
-    if (selectedDroneId && !drones[selectedDroneId] && ids.length > 0) {
-      setSelectedDroneId(ids[0]);
+    if (selectedDroneId && !drones[selectedDroneId] && !docks[selectedDroneId] && (droneIds.length > 0 || dockIds.length > 0)) {
+      setSelectedDroneId(droneIds[0] ?? dockIds[0]);
     }
-  }, [drones, selectedDroneId]);
+  }, [drones, docks, selectedDroneId]);
 
   const fetchFlights = useCallback(async () => {
     const bounds = boundsRef.current ?? ITALY_BOUNDS;
@@ -219,7 +220,7 @@ export default function DroneATCPage() {
   const handleBoundsChange = useCallback((bounds: MapBounds) => {
     boundsRef.current = bounds;
     if (windTriggerTimerRef.current) clearTimeout(windTriggerTimerRef.current);
-    windTriggerTimerRef.current = setTimeout(() => setWindFetchTrigger(t => t + 1), 500);
+    windTriggerTimerRef.current = setTimeout(() => setWindFetchTrigger(t => t + 1), 250);
   }, []);
 
   useEffect(() => {
@@ -338,7 +339,7 @@ export default function DroneATCPage() {
       )}
 
       <div className="flex flex-1 gap-2 p-2 overflow-hidden">
-        <aside className={`hidden md:flex w-64 shrink-0 flex-col overflow-hidden ${panelClass}`}>
+        <aside className={`hidden md:flex w-80 shrink-0 flex-col overflow-hidden ${panelClass}`}>
           <div className={`px-3 py-2 border-b shrink-0 ${isDark ? 'border-slate-700/50' : 'border-slate-200'}`}>
             <div className="flex items-center justify-between">
               <span className={`text-[10px] font-bold uppercase tracking-widest ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>

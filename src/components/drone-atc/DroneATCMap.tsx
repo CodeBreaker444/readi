@@ -19,8 +19,8 @@ interface DroneATCMapProps {
   onBoundsChange?: (bounds: { latMin: number; lonMin: number; latMax: number; lonMax: number }) => void;
 }
 
-const TILE_LIGHT = 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
-const TILE_DARK = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+const TILE_LIGHT = 'https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}';
+const TILE_DARK = 'https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}';
 
 const ITALY_BOUNDS = { south: 36.0, west: 6.5, north: 47.5, east: 18.5 } as const;
 const ITALY_CENTER: [number, number] = [41.9, 12.5];
@@ -428,7 +428,7 @@ export default function DroneATCMap({
     dronePane.style.zIndex = '615';
 
     const tile = L.tileLayer(isDark ? TILE_DARK : TILE_LIGHT, {
-      attribution: '© OpenStreetMap contributors', maxZoom: 18,
+      attribution: 'Tiles © Esri', maxZoom: 16,
     }).addTo(map);
 
     const airspaceLayer = L.layerGroup().addTo(map);

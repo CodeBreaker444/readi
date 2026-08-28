@@ -125,14 +125,13 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
     const [visualObserverIds, setVisualObserverIds] = useState<string[]>([])
 
     const [isRecurrent, setIsRecurrent] = useState(false)
-    const [recurrentStartDate, setRecurrentStartDate] = useState('')
+    const [recurrentDays, setRecurrentDays] = useState<number[]>([])
     const [recurrentEndDate, setRecurrentEndDate] = useState('')
-    const [recurrentTime, setRecurrentTime] = useState('')
     const [recurrentDateError, setRecurrentDateError] = useState('')
 
     const validateRecurrentDates = () => {
         if (!isRecurrent) return true
-        if (!recurrentStartDate || !recurrentEndDate) {
+        if (!schedulerForm.scheduledStart || !recurrentEndDate || recurrentDays.length === 0) {
             setRecurrentDateError(t('operations.importOperation.errors.datesRequired'))
             return false
         }
@@ -406,7 +405,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
         setErps([]); setResultOptions([])
         setFlightWaypoints([]); setLoadingWaypoints(false)
         setErpGroupId(''); setErpGroups([]); setLoadingErpGroups(false)
-        setIsRecurrent(false); setRecurrentStartDate(''); setRecurrentEndDate(''); setRecurrentTime(''); setRecurrentDateError('')
+        setIsRecurrent(false); setRecurrentDays([]); setRecurrentEndDate(''); setRecurrentDateError('')
         setSchedulerForm({
             missionCode: '', scheduledStart: '', scheduledEnd: '',
             missionName: '', location: '', notes: '', distanceFlown: '',
@@ -446,11 +445,8 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
         if (step === 3) {
             if (!schedulerForm.missionCode.trim() || !schedulerForm.lucId) return false
             if (!schedulerForm.typeId || !schedulerForm.categoryId) return false
-            if (isRecurrent) {
-                if (!validateRecurrentDates()) return false
-            } else if (!schedulerForm.scheduledStart) {
-                return false
-            }
+            if (!schedulerForm.scheduledStart) return false
+            if (isRecurrent && !validateRecurrentDates()) return false
             return true
         }
         if (step === 4) {
@@ -527,9 +523,8 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                 ...(visualObserverIds.length > 0 && { visual_observer_ids: visualObserverIds.map(Number) }),
                 ...(isRecurrent && {
                     is_recurrent: true,
-                    recurrent_start_date: recurrentStartDate || undefined,
+                    recurrent_days_of_week: recurrentDays,
                     recurrent_end_date: recurrentEndDate || undefined,
-                    recurrent_time: recurrentTime || undefined,
                 }),
             }
             const res = await axios.post('/api/operation', payload)
@@ -749,12 +744,10 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                             isDark={isDark}
                             isRecurrent={isRecurrent}
                             onRecurrentToggle={handleRecurrentToggle}
-                            recurrentStartDate={recurrentStartDate}
-                            onRecurrentStartDateChange={setRecurrentStartDate}
+                            recurrentDays={recurrentDays}
+                            onRecurrentDaysChange={setRecurrentDays}
                             recurrentEndDate={recurrentEndDate}
                             onRecurrentEndDateChange={setRecurrentEndDate}
-                            recurrentTime={recurrentTime}
-                            onRecurrentTimeChange={setRecurrentTime}
                             onRecurrentDateErrorChange={setRecurrentDateError}
                         />
                     )}
@@ -848,7 +841,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                             <Button
                                 size="sm"
                                 onClick={handleSubmit}
-                                disabled={isSubmitting || !pilotId || !schedulerForm.missionCode.trim() || !schedulerForm.lucId || !schedulerForm.typeId || !schedulerForm.categoryId || (!isRecurrent && !schedulerForm.scheduledStart)}
+                                disabled={isSubmitting || !pilotId || !schedulerForm.missionCode.trim() || !schedulerForm.lucId || !schedulerForm.typeId || !schedulerForm.categoryId || !schedulerForm.scheduledStart}
                                 className="gap-2 cursor-pointer bg-violet-600 hover:bg-violet-700 text-white min-w-40"
                             >
                                 {isSubmitting

@@ -37,6 +37,8 @@ export async function getOperationLogbookList(
     where.fk_mission_result_type_id = params.mission_result_id;
   if (params.client_id && params.client_id !== 0)
     where.fk_client_id = params.client_id;
+  if (params.mission_group_label)
+    where.mission_group_label = params.mission_group_label;
   if (params.date_start)
     where.actual_start = { ...(where.actual_start ?? {}), gte: new Date(params.date_start) };
   if (params.date_end)
@@ -67,6 +69,9 @@ export async function getOperationLogbookList(
       flight_duration: true,
       distance_flown: true,
       notes: true,
+      mission_group_label: true,
+      recurring_group_id: true,
+      mission_metadata: true,
       users: { select: { user_id: true, first_name: true, last_name: true } },
       tool: { select: { tool_id: true, tool_code: true, tool_name: true, tool_status: { select: { status_code: true } } } },
       pilot_mission_type: { select: { mission_type_id: true, type_name: true } },
@@ -93,6 +98,26 @@ export async function getOperationLogbookList(
     orderBy: { pilot_mission_id: 'desc' },
   });
 
+  const missionIds = data.map((row) => row.pilot_mission_id);
+  const batterySerialsByMission = new Map<number, string[]>();
+  if (missionIds.length > 0) {
+    const batteryLogs = await prisma.mission_maintenance_log.findMany({
+      where: { fk_mission_id: { in: missionIds }, tool_component: { component_type: 'BATTERY' } },
+      select: { fk_mission_id: true, tool_component: { select: { serial_number: true } } },
+    });
+    for (const log of batteryLogs) {
+      const sn = log.tool_component.serial_number;
+      if (!sn) continue;
+      const arr = batterySerialsByMission.get(log.fk_mission_id) ?? [];
+      if (!arr.includes(sn)) arr.push(sn);
+      batterySerialsByMission.set(log.fk_mission_id, arr);
+    }
+  }
+
+  const timezone = params.user_timezone || 'UTC';
+  const dateFmt = (d: Date) => d.toLocaleDateString('en-GB', { timeZone: timezone });
+  const timeFmt = (d: Date) => d.toLocaleTimeString('en-GB', { timeZone: timezone, hour: '2-digit', minute: '2-digit', hour12: false });
+
   const mapped: OperationLogbookItem[] = data.map((row) => {
     const startDT = row.actual_start;
     const endDT = row.actual_end;
@@ -103,10 +128,10 @@ export async function getOperationLogbookList(
       mission_name: row.mission_name ?? '',
       mission_description: row.mission_description ?? '',
       location: row.location ?? '',
-      date_start: startDT ? startDT.toISOString().split('T')[0] : '',
-      date_end: endDT ? endDT.toISOString().split('T')[0] : '',
-      time_start: startDT ? startDT.toTimeString().slice(0, 5) : '',
-      time_end: endDT ? endDT.toTimeString().slice(0, 5) : '',
+      date_start: startDT ? dateFmt(startDT) : '',
+      date_end: endDT ? dateFmt(endDT) : '',
+      time_start: startDT ? timeFmt(startDT) : '',
+      time_end: endDT ? timeFmt(endDT) : '',
       pic_fullname: row.users
         ? `${row.users.first_name ?? ''} ${row.users.last_name ?? ''}`.trim()
         : '',
@@ -128,7 +153,12 @@ export async function getOperationLogbookList(
       mission_planning_desc: row.planning?.planning_logbook?.[0]?.mission_planning_desc ?? '',
       flown_time: row.flight_duration ?? 0,
       flown_meter: Number(row.distance_flown ?? 0),
+      battery_serial_number: (batterySerialsByMission.get(row.pilot_mission_id) ?? []).join(', '),
       mission_notes: row.notes ?? '',
+      mission_group_label: row.mission_group_label ?? '',
+      is_recurrent: !!row.recurring_group_id
+        || !!(row.mission_metadata as any)?.is_recurrent
+        || !!(row.mission_metadata as any)?.recurring_group_id,
     };
   });
 
@@ -146,7 +176,7 @@ export async function getOperationLogbookFilters(owner_id: number) {
     .map((r) => r.fk_pilot_user_id)
     .filter((id): id is number => id !== null);
 
-  const [pilots, clients, drones, missionTypes, missionCategories, missionResults, missionStatuses, missionPlans] =
+  const [pilots, clients, drones, missionTypes, missionCategories, missionResults, missionStatuses, missionPlans, missionGroupLabelRows] =
     await Promise.all([
       prisma.public_users.findMany({
         where:  { user_id: { in: pilotUserIds }, user_active: 'Y' },
@@ -180,6 +210,11 @@ export async function getOperationLogbookFilters(owner_id: number) {
       prisma.planning_logbook.findMany({
         where:  { fk_owner_id: owner_id, mission_planning_active: 'Y' },
         select: { mission_planning_id: true, mission_planning_code: true, mission_planning_desc: true },
+      }),
+      prisma.pilot_mission.findMany({
+        where: { fk_owner_id: owner_id, mission_group_label: { not: null } },
+        select: { mission_group_label: true },
+        distinct: ['mission_group_label'],
       }),
     ]);
 
@@ -227,6 +262,11 @@ export async function getOperationLogbookFilters(owner_id: number) {
     mission_planning_desc: p.mission_planning_desc ?? '',
   }));
 
+  const missionGroupLabelOptions: string[] = missionGroupLabelRows
+    .map((r) => r.mission_group_label)
+    .filter((label): label is string => !!label && label.trim().length > 0)
+    .sort((a, b) => a.localeCompare(b));
+
   return {
     code: 200,
     pilots: { data: pilotOptions },
@@ -237,5 +277,6 @@ export async function getOperationLogbookFilters(owner_id: number) {
     missionResults: { data: resultOptions },
     missionStatuses: { data: statusOptions },
     missionPlans: { data: planOptions },
+    missionGroupLabels: { data: missionGroupLabelOptions },
   };
 }

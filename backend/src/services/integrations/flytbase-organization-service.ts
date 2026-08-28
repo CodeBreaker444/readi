@@ -1,6 +1,7 @@
 'use server';
 
 import { prisma } from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
 import { verifyFlytbaseTokenAndGetUser } from './flytbase-service';
 
 export interface FlytbaseOrganization {
@@ -28,6 +29,7 @@ export async function createFlytbaseOrganization(
   orgId: string,
   apiToken: string,
   companyId: number,
+  creatorUserId?: number,
 ): Promise<FlytbaseOrganization> {
   if (!companyId || companyId <= 0) {
     throw new Error('Invalid company ID: must be a positive number');
@@ -35,14 +37,35 @@ export async function createFlytbaseOrganization(
 
   await verifyFlytbaseTokenAndGetUser(apiToken, orgId);
 
-  const organization = await prisma.flytbase_organizations.create({
-    data: {
-      name: name.trim(),
-      org_id: orgId.trim(),
-      api_token: apiToken.trim(),
-      fk_owner_id: companyId,
-    },
-  });
+  let organization;
+  try {
+    organization = await prisma.flytbase_organizations.create({
+      data: {
+        name: name.trim(),
+        org_id: orgId.trim(),
+        api_token: apiToken.trim(),
+        fk_owner_id: companyId,
+      },
+    });
+  } catch (e) {
+    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
+      throw new Error('An organization with this FlytBase Organization ID already exists.');
+    }
+    throw e;
+  }
+
+  // Grant the creating admin access immediately, otherwise the new organization
+  // stays invisible (recent flights, FlytRelay sync) until someone grants access
+  // separately via the Permissions screen.
+  if (creatorUserId) {
+    await prisma.user_flytbase_access.create({
+      data: {
+        user_id: creatorUserId,
+        organization_id: organization.id,
+        fk_owner_id: companyId,
+      },
+    });
+  }
 
   return organization;
 }
@@ -87,10 +110,17 @@ export async function updateFlytbaseOrganization(
     updateData.api_token = apiToken.trim();
   }
 
-  return prisma.flytbase_organizations.update({
-    where: { id },
-    data: updateData,
-  });
+  try {
+    return await prisma.flytbase_organizations.update({
+      where: { id },
+      data: updateData,
+    });
+  } catch (e) {
+    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
+      throw new Error('An organization with this FlytBase Organization ID already exists.');
+    }
+    throw e;
+  }
 }
 
 /**

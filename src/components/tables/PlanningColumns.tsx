@@ -3,7 +3,7 @@
 import { Planning } from "@/config/types/evaluation-planning";
 import { type ColumnDef } from "@tanstack/react-table";
 import { TFunction } from "i18next";
-import { Eye, ExternalLink, Trash2 } from "lucide-react";
+import { FileText, ExternalLink, FolderOpen, Trash2 } from "lucide-react";
 import PlanningStatusBadge from "../planning/StatusBadge";
 
 interface ColumnOptions {
@@ -94,23 +94,23 @@ export function getPlanningColumns({
         <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
           <button
             onClick={() => onViewDetails(row.original)}
-            className="inline-flex cursor-pointer items-center justify-center p-1.5 rounded-md bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+            className="inline-flex cursor-pointer items-center justify-center p-1.5 rounded-md border border-blue-200 bg-white text-blue-600 hover:bg-blue-50 transition-colors dark:border-blue-500/30 dark:bg-transparent dark:text-blue-400 dark:hover:bg-blue-500/10"
             title={t("common.viewDetails")}
           >
-            <Eye className="w-4 h-4" />
+            <FileText className="w-4 h-4" />
           </button>
           <button
             onClick={() => onOpen(row.original)}
-            className="inline-flex cursor-pointer items-center justify-center p-1.5 rounded-md bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+            className="inline-flex cursor-pointer items-center justify-center p-1.5 rounded-md border border-violet-200 bg-white text-violet-600 hover:bg-violet-50 transition-colors dark:border-violet-500/30 dark:bg-transparent dark:text-violet-400 dark:hover:bg-violet-500/10"
             title={t("planning.columns.open")}
           >
-            <ExternalLink className="w-4 h-4" />
+            <FolderOpen className="w-4 h-4" />
           </button>
           {row.original.planning_status === "NEW" && canDelete && (
             <button
               onClick={() => onDelete(row.original)}
               disabled={deleting}
-              className="inline-flex cursor-pointer items-center justify-center p-1.5 rounded-md bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors disabled:opacity-40 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+              className="inline-flex cursor-pointer items-center justify-center p-1.5 rounded-md border border-red-200 bg-white text-red-600 hover:bg-red-50 transition-colors disabled:opacity-40 dark:border-red-500/30 dark:bg-transparent dark:text-red-400 dark:hover:bg-red-500/10"
               title={t("common.delete")}
             >
               <Trash2 className="w-4 h-4" />

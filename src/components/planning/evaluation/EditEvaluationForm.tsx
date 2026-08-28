@@ -85,8 +85,12 @@ export function EditEvaluationForm({ evaluation, onUpdated }: Props) {
         evaluation_year: Number(form.evaluation_year),
       });
       toast.success(t('planning.evaluation.updated'));
-      const merged = { ...evaluation, ...form, evaluation_year: Number(form.evaluation_year) };
-      onUpdated?.({ ...merged, ...response.data?.data });
+      const updated: Evaluation = response.data?.data ?? {
+        ...evaluation,
+        ...form,
+        evaluation_year: Number(form.evaluation_year),
+      };
+      onUpdated?.(updated);
     } catch {
       toast.error(t('planning.evaluation.updateFailed'));
     } finally {

@@ -1181,6 +1181,7 @@
         "status": "Stato",
         "result": "Risultato",
         "missionPlan": "Piano Missione",
+        "missionGroup": "Gruppo Missione",
         "all": "Tutti",
         "search": "Cerca",
         "reset": "Reimposta"
@@ -1497,6 +1498,7 @@
         "allPilots": "Tutti i piloti",
         "allDrones": "Tutti i droni",
         "allClients": "Tutti i clienti",
+        "allGroups": "Tutti i gruppi di missione",
         "reset": "Reimposta"
       },
       "status": {
@@ -1944,9 +1946,10 @@
         "groupLabel": "Etichetta Gruppo",
         "notes": "Note",
         "recurrent": "Missione Ricorrente",
-        "startDate": "Data Inizio",
+        "startDate": "Data/Ora Inizio",
         "endDate": "Data Fine",
         "missionTime": "Ora Missione",
+        "recurrentDays": "Giorni della Settimana",
         "pilotInCommand": "Pilota Responsabile",
         "selected": "Selezionato",
         "optional": "(opzionale)",
@@ -1964,9 +1967,7 @@
         "missionPlanning": "Pianificazione Missione",
         "lucProcedure": "Procedura LUC",
         "visualObservers": "Osservatori Visivi",
-        "recurrentStartDate": "Data Inizio Ricorrente",
         "recurrentEndDate": "Data Fine Ricorrente",
-        "recurrentTime": "Ora Ricorrente",
         "duration": "Durata"
       },
       "placeholders": {
@@ -1989,6 +1990,7 @@
       },
       "info": {
         "gutmaAutoExtract": "Altitudine, distanza e timestamp vengono estratti automaticamente dal file di log GUTMA. Il codice missione viene generato automaticamente a meno che non ne imposti uno qui sotto.",
+        "startDateHint": "Usata come ancora della pianificazione se contrassegni questa missione come ricorrente.",
         "clickToUpload": "Clicca per caricare",
         "uploadOrSelectFlight": "Carica un file .gutma/.zip o seleziona un volo Control Center per recuperare automaticamente.",
         "noPlansForDrone": "Nessun piano per questo drone",
@@ -2416,6 +2418,7 @@
         "status": "Stato",
         "result": "Risultato",
         "missionPlan": "Piano Missione",
+        "missionGroup": "Gruppo Missione",
         "all": "Tutti",
         "search": "Cerca",
         "reset": "Reimposta"
@@ -3151,6 +3154,7 @@
         "verifying": "Verifica...",
         "deleteTitle": "Elimina Organizzazione",
         "deleteConfirm": "Sei sicuro di voler eliminare questa organizzazione?",
+        "delete": "Elimina",
         "table": {
           "name": "Nome",
           "orgId": "ID Org",

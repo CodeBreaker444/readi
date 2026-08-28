@@ -181,7 +181,7 @@ export default function DashboardClient({ ownerId, userProfileCode, userId, init
   if (loading) return <DashboardSkeleton isDark={isDark} />;
 
   const missions: MissionData[] = (data?.readi_mission_scheduler_executed || []).map((m: any) => ({
-    id: `#${m.mission_id}`,
+    id: m.mission_code || `#${m.mission_id}`,
     name: m.pilot_name?.trim() || t('dashboard.pilot.notAssigned'),
     date: m.date,
     statusCode: m.mission_status_code || '',
@@ -189,7 +189,7 @@ export default function DashboardClient({ ownerId, userProfileCode, userId, init
   }));
 
   const nextMissions: MissionData[] = (data?.readi_mission_scheduler_planned || []).map((m: any) => ({
-    id: `#${m.mission_id}`,
+    id: m.mission_code || `#${m.mission_id}`,
     name: m.pilot_name?.trim() || t('dashboard.pilot.notAssigned'),
     date: m.date,
     statusCode: m.mission_status_code || '',
@@ -317,15 +317,24 @@ export default function DashboardClient({ ownerId, userProfileCode, userId, init
                   </TableCell>
                 </TableRow>
               ) : (
-                table.getRowModel().rows.map(row => (
-                  <TableRow key={row.id} className={cn('border-b transition-colors', isDark ? 'border-slate-700/40 hover:bg-slate-700/30' : 'border-gray-50 hover:bg-gray-50/80')}>
-                    {row.getVisibleCells().map(cell => (
-                      <TableCell key={cell.id} className={cn('py-3 px-3 text-xs', isDark ? 'text-slate-300' : 'text-gray-700')}>
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))
+                <>
+                  {table.getRowModel().rows.map(row => (
+                    <TableRow key={row.id} className={cn('border-b transition-colors', isDark ? 'border-slate-700/40 hover:bg-slate-700/30' : 'border-gray-50 hover:bg-gray-50/80')}>
+                      {row.getVisibleCells().map(cell => (
+                        <TableCell key={cell.id} className={cn('py-3 px-3 text-xs', isDark ? 'text-slate-300' : 'text-gray-700')}>
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))}
+                  {/* Pad the last page with blank rows so the pagination bar doesn't
+                      jump up when a page has fewer than pageSize rows. */}
+                  {Array.from({ length: table.getState().pagination.pageSize - table.getRowModel().rows.length }).map((_, i) => (
+                    <TableRow key={`filler-${i}`} className="border-b border-transparent">
+                      <TableCell colSpan={columns.length} className="py-3 px-3 text-xs">&nbsp;</TableCell>
+                    </TableRow>
+                  ))}
+                </>
               )}
             </TableBody>
           </Table>

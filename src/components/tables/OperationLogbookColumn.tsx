@@ -5,11 +5,21 @@ import { Button } from "@/components/ui/button";
 import { SystemCell } from "@/components/tables/SystemCell";
 import { OperationLogbookItem } from "@/config/types/logbook";
 import { ColumnDef } from "@tanstack/react-table";
-import { ArrowUpDown, Clock, Map } from "lucide-react";
+import { ArrowUpDown, Clock, Map, Tag } from "lucide-react";
+import { FaArrowsRotate } from "react-icons/fa6";
 
 
 export interface OperationLogbookTableMeta {
   onViewDetails: (mission: OperationLogbookItem) => void;
+}
+
+ 
+function parseDMYToTime(dateStr: string, timeStr?: string): number {
+  if (!dateStr) return 0;
+  const [d, m, y] = dateStr.split('/').map(Number);
+  if (!d || !m || !y) return 0;
+  const [hh, mm] = (timeStr || '00:00').split(':').map(Number);
+  return new Date(y, m - 1, d, hh || 0, mm || 0).getTime();
 }
 
 function formatMinutes(mins: number): string {
@@ -49,19 +59,30 @@ export const operationLogbookColumns: ColumnDef<OperationLogbookItem>[] = [
     cell: ({ row, table }) => {
       const meta = table.options.meta as OperationLogbookTableMeta;
       const code = row.original.mission_code || String(row.original.mission_id).padStart(4, "0");
+      const groupLabel = row.original.mission_group_label;
+      const isRecurrent = row.original.is_recurrent;
       return (
-        <button
-          className="font-mono text-xs text-violet-600 hover:underline cursor-pointer dark:text-violet-400"
-          onClick={(e) => {
-            e.stopPropagation();
-            meta.onViewDetails(row.original);
-          }}
-        >
-          {code}
-        </button>
+        <div className="flex items-center gap-1.5 whitespace-nowrap">
+          <button
+            className="font-mono text-xs text-violet-600 hover:underline cursor-pointer dark:text-violet-400 shrink-0"
+            onClick={(e) => {
+              e.stopPropagation();
+              meta.onViewDetails(row.original);
+            }}
+          >
+            {code}
+          </button>
+          {(groupLabel || isRecurrent) && (
+            <Badge variant="secondary" className="px-1.5 py-0 text-[10px] font-normal shrink-0 whitespace-nowrap">
+              {groupLabel && <Tag className="mr-0.5 h-2.5 w-2.5" />}
+              {groupLabel}
+              {isRecurrent && <FaArrowsRotate className={`h-2.5 w-2.5 ${groupLabel ? 'ml-1' : ''}`} />}
+            </Badge>
+          )}
+        </div>
       );
     },
-    size: 90,
+    size: 170,
   },
   {
     id: "date_start",
@@ -87,6 +108,9 @@ export const operationLogbookColumns: ColumnDef<OperationLogbookItem>[] = [
         </span>
       </div>
     ),
+    sortingFn: (rowA, rowB) =>
+      parseDMYToTime(rowA.original.date_start, rowA.original.time_start) -
+      parseDMYToTime(rowB.original.date_start, rowB.original.time_start),
     size: 110,
   },
   {
@@ -246,6 +270,21 @@ export const operationLogbookColumns: ColumnDef<OperationLogbookItem>[] = [
       </div>
     ),
     size: 100,
+  },
+  {
+    accessorKey: "battery_serial_number",
+    header: "Battery SN",
+    cell: ({ row }) => {
+      const sn = row.getValue("battery_serial_number") as string;
+      return sn ? (
+        <span className="font-mono text-[11px] text-slate-600 dark:text-slate-300">
+          {sn}
+        </span>
+      ) : (
+        <span className="text-slate-300 dark:text-slate-600">—</span>
+      );
+    },
+    size: 140,
   },
   {
     accessorKey: "mission_notes",

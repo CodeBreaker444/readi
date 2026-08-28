@@ -5,6 +5,7 @@ import { BUCKET, s3 } from '@/lib/s3Client';
 import { PutObjectCommand } from '@aws-sdk/client-s3';
 import JSZip from 'jszip';
 import { sendMissionCreatedModuleEmail, sendMissionAssignedModuleEmail } from '@/backend/services/settings/module-email-notification-service';
+import { dateConversionUtcToLocal } from '@/backend/utils/date-utils';
 
 /** Looks up the registered serial numbers for ALL of a tool's active drone/aircraft components — a tool (system) can have more than one, e.g. a dock with several swappable airframes. */
 async function getDroneSerialNumbersForTool(toolId: number): Promise<string[]> {
@@ -49,9 +50,9 @@ export interface ImportMissionParams {
   opType?: string | null;
   userTimezone?: string;
   isRecurrent?: boolean;
-  recurrentStartDate?: string;
+  missionStartDate?: string;
+  recurrentDaysOfWeek?: number[];
   recurrentEndDate?: string;
-  recurrentTime?: string;
 }
 
 export interface ImportMissionResult {
@@ -113,16 +114,22 @@ function generateRecurringGroupId(): string {
   return `RG-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
 }
 
-function getDatesInRange(startDate: string, endDate: string): Date[] {
+// Walks forward from `anchor` (the mission's own start date) through `endDate`,
+// keeping only the days whose weekday (0=Sun..6=Sat) is in `daysOfWeek`.
+function getRecurringDates(anchor: Date, endDate: string, daysOfWeek: number[]): Date[] {
   const dates: Date[] = [];
-  const current = new Date(startDate);
+  const current = new Date(anchor);
+  current.setHours(0, 0, 0, 0);
   const end = new Date(endDate);
-  
+  end.setHours(23, 59, 59, 999);
+
   while (current <= end) {
-    dates.push(new Date(current));
+    if (daysOfWeek.includes(current.getDay())) {
+      dates.push(new Date(current));
+    }
     current.setDate(current.getDate() + 1);
   }
-  
+
   return dates;
 }
 
@@ -134,7 +141,8 @@ async function processGutmaBuffer(
   sourceFlightId: string | null,
   missionCodeOverride?: string,
   recurringGroupId?: string,
-  dateIndex?: number
+  dateIndex?: number,
+  targetDate?: Date
 ): Promise<{ missionId: number; operation: any } | { error: string; duplicate?: boolean }> {
   let parsed: any;
   try {
@@ -179,9 +187,9 @@ async function processGutmaBuffer(
     return { duplicate: true, error: `Duplicate mission_code "${missionCode}" — skipped` };
   }
 
-  // Single imports represent flights that already happened, so set to COMPLETED
-  // Recurrent missions are future scheduled missions, so set to PLANNED
-  const statusName = recurringGroupId ? 'PLANNED' : 'COMPLETED';
+  // Imported missions — recurring or not — are generated from a flight log
+  // that already happened, so they're always COMPLETED, never scheduled.
+  const statusName = 'COMPLETED';
 
   const notesArr = [
     params.notes || null,
@@ -210,14 +218,12 @@ async function processGutmaBuffer(
   let actualStart: Date | null = null;
   let actualEnd: Date | null = null;
   
-  // For recurrent missions, use the specified date and time
-  if (recurringGroupId && params.recurrentStartDate && params.recurrentTime) {
-    const [hours, minutes] = params.recurrentTime.split(':').map(Number);
-    const scheduledDate = new Date(params.recurrentStartDate);
-    if (dateIndex !== undefined) {
-      scheduledDate.setDate(scheduledDate.getDate() + dateIndex);
-    }
-    scheduledDate.setHours(hours, minutes, 0, 0);
+  // For recurrent missions, each occurrence keeps the mission's own start
+  // time-of-day but lands on the matching day-of-week date.
+  if (recurringGroupId && params.missionStartDate && targetDate) {
+    const anchor = new Date(params.missionStartDate);
+    const scheduledDate = new Date(targetDate);
+    scheduledDate.setHours(anchor.getHours(), anchor.getMinutes(), 0, 0);
     scheduledStart = scheduledDate;
     actualStart = scheduledDate;
     // Set actual end to 1 hour after start for recurrent missions
@@ -248,6 +254,10 @@ async function processGutmaBuffer(
   const missionMetadataFields: Record<string, unknown> = {};
   if (params.missionPlanningId && params.flightMode) missionMetadataFields.flight_mode = params.flightMode;
   if (params.opType) missionMetadataFields.op_type = params.opType;
+  if (recurringGroupId) {
+    missionMetadataFields.is_recurrent = true;
+    if (params.recurrentDaysOfWeek?.length) missionMetadataFields.recurrent_days_of_week = params.recurrentDaysOfWeek;
+  }
 
   const inserted = await prisma.pilot_mission.create({
     data: {
@@ -303,7 +313,7 @@ async function processGutmaBuffer(
 
     const user = await prisma.public_users.findUnique({
       where: { user_id: params.userId },
-      select: { first_name: true, last_name: true },
+      select: { first_name: true, last_name: true, user_timezone: true },
     });
 
     const createdBy = user
@@ -315,7 +325,9 @@ async function processGutmaBuffer(
       missionCode: missionCode,
       missionType: missionType?.type_name || 'Unknown',
       createdBy,
-      scheduledDate: scheduledStart?.toISOString(),
+      scheduledDate: scheduledStart
+        ? dateConversionUtcToLocal(scheduledStart, user?.user_timezone || 'UTC')
+        : undefined,
       description: params.notes || undefined,
     });
 
@@ -323,7 +335,7 @@ async function processGutmaBuffer(
     if (params.pilotId) {
       const pilotUser = await prisma.public_users.findUnique({
         where: { user_id: params.pilotId },
-        select: { first_name: true, last_name: true },
+        select: { first_name: true, last_name: true, user_timezone: true },
       });
 
       if (pilotUser) {
@@ -333,7 +345,9 @@ async function processGutmaBuffer(
           assignedBy: createdBy,
           assignedTo: `${pilotUser.first_name} ${pilotUser.last_name}`.trim(),
           role: 'Pilot',
-          scheduledDate: scheduledStart?.toISOString(),
+          scheduledDate: scheduledStart
+            ? dateConversionUtcToLocal(scheduledStart, pilotUser.user_timezone || 'UTC')
+            : undefined,
           description: params.notes || undefined,
         }, [params.pilotId]);
       }
@@ -343,7 +357,7 @@ async function processGutmaBuffer(
     if (params.visualObserverIds && params.visualObserverIds.length > 0) {
       const observerUsers = await prisma.public_users.findMany({
         where: { user_id: { in: params.visualObserverIds } },
-        select: { user_id: true, first_name: true, last_name: true },
+        select: { user_id: true, first_name: true, last_name: true, user_timezone: true },
       });
 
       for (const observer of observerUsers) {
@@ -353,7 +367,9 @@ async function processGutmaBuffer(
           assignedBy: createdBy,
           assignedTo: `${observer.first_name} ${observer.last_name}`.trim(),
           role: 'Observer',
-          scheduledDate: scheduledStart?.toISOString(),
+          scheduledDate: scheduledStart
+            ? dateConversionUtcToLocal(scheduledStart, observer.user_timezone || 'UTC')
+            : undefined,
           description: params.notes || undefined,
         }, [observer.user_id]);
       }
@@ -441,17 +457,17 @@ export async function importMissionFromLog(
   const missionCode = params.missionCode?.trim() || undefined;
   const recurringGroupId = params.isRecurrent ? generateRecurringGroupId() : undefined;
 
-  if (params.isRecurrent && (!params.recurrentStartDate || !params.recurrentEndDate || !params.recurrentTime)) {
-    throw new Error('Recurrent mission requires start date, end date, and mission time');
+  if (params.isRecurrent && (!params.missionStartDate || !params.recurrentEndDate || !params.recurrentDaysOfWeek?.length)) {
+    throw new Error('Recurrent mission requires a start date, days of the week, and an end date');
   }
 
-  const datesToProcess = params.isRecurrent && params.recurrentStartDate && params.recurrentEndDate
-    ? getDatesInRange(params.recurrentStartDate, params.recurrentEndDate)
+  const datesToProcess: (Date | null)[] = params.isRecurrent && params.missionStartDate && params.recurrentEndDate && params.recurrentDaysOfWeek
+    ? getRecurringDates(new Date(params.missionStartDate), params.recurrentEndDate, params.recurrentDaysOfWeek)
     : [null];
 
   if (ext === 'gutma') {
     for (let dateIndex = 0; dateIndex < datesToProcess.length; dateIndex++) {
-      const res = await processGutmaBuffer(buffer, file.name, params, flytbaseFlightId, missionCode, recurringGroupId, dateIndex);
+      const res = await processGutmaBuffer(buffer, file.name, params, flytbaseFlightId, missionCode, recurringGroupId, dateIndex, datesToProcess[dateIndex] ?? undefined);
       if ('error' in res) {
         if (res.duplicate) duplicates.push(res.error);
         else errors.push(res.error);
@@ -482,7 +498,7 @@ export async function importMissionFromLog(
         const entryCode = missionCode
           ? (datesToProcess.length > 1 ? `${missionCode}-${dateIndex + 1}` : missionCode)
           : undefined;
-        const res = await processGutmaBuffer(buf, entryName, params, null, entryCode, recurringGroupId, dateIndex);
+        const res = await processGutmaBuffer(buf, entryName, params, null, entryCode, recurringGroupId, dateIndex, datesToProcess[dateIndex] ?? undefined);
         if ('error' in res) {
           if (res.duplicate) duplicates.push(res.error);
           else errors.push(res.error);

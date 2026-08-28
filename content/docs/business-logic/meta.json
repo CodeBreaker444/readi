@@ -12,6 +12,7 @@
     "maintenance-module",
     "operations-module",
     "email-notifications",
+    "cron-jobs",
     "evaluation-planning-module",
     "integration-services",
     "parameter-reference"

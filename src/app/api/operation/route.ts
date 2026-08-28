@@ -25,6 +25,7 @@ const listOperationsQuerySchema = z.object({
   client_id: z.coerce.number().int().positive().optional(),
   date_start: z.string().optional(),
   date_end: z.string().optional(),
+  group_label: z.string().optional(),
 });
 const createOperationSchema = z.object({
   mission_name: z.string().nullable().optional(),
@@ -51,9 +52,8 @@ const createOperationSchema = z.object({
   op_type: z.enum(['OPEN', 'PDRA', 'STS-01', 'STS-02']).nullable().optional(),
   mission_group_label: z.string().nullable().optional(),
   is_recurrent: z.boolean().optional(),
-  recurrent_start_date: z.string().nullable().optional(),
+  recurrent_days_of_week: z.array(z.number().int().min(0).max(6)).nullable().optional(),
   recurrent_end_date: z.string().nullable().optional(),
-  recurrent_time: z.string().nullable().optional(),
 });
 
 export async function GET(req: NextRequest) {
@@ -74,6 +74,7 @@ export async function GET(req: NextRequest) {
       client_id: searchParams.get('client_id') ?? undefined,
       date_start: searchParams.get('date_start') ?? undefined,
       date_end: searchParams.get('date_end') ?? undefined,
+      group_label: searchParams.get('group_label') ?? undefined,
     });
 
     const result = await listOperations(query as ListOperationsQuerySchema, ownerId);

@@ -59,6 +59,7 @@ export const EvaluationDetailContent: FC<Props> = ({ ownerId }) => {
 
     const [commModalOpen, setCommModalOpen] = useState(false);
     const [commModalTask, setCommModalTask] = useState<EvaluationTask | null>(null);
+    const [commRefreshKey, setCommRefreshKey] = useState(0);
 
     const [flightRequests, setFlightRequests] = useState<any[]>([]);
     const [frLoading, setFrLoading] = useState(false);
@@ -122,6 +123,7 @@ export const EvaluationDetailContent: FC<Props> = ({ ownerId }) => {
 
     function handleCommSent() {
         setTaskTableKey((k) => k + 1);
+        setCommRefreshKey((k) => k + 1);
     }
 
     if (isLoading) return <EvaluationDetailSkeleton isDark={isDark} />;
@@ -243,11 +245,16 @@ export const EvaluationDetailContent: FC<Props> = ({ ownerId }) => {
                                 clientId={clientId}
                                 ownerId={ownerId}
                                 onAllCompleted={() => {}}
+                                onCommunicationSent={handleCommSent}
                             />
                         </CardContent>
                     </Card>
 
-                    <EvaluationCommunicationTable evaluationId={evaluationId} clientId={clientId} />
+                    <EvaluationCommunicationTable
+                        evaluationId={evaluationId}
+                        clientId={clientId}
+                        refreshKey={commRefreshKey}
+                    />
 
                     <Card className={card}>
                         <CardHeader className="pb-3">

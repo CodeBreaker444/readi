@@ -48,6 +48,10 @@ export function PilotQualificationsSheet({ open, onOpenChange, pilotId, pilotNam
     }, [open, pilotId])
 
     const today = new Date().toISOString().slice(0, 10)
+    const activeQualifications = qualifications.filter(q => {
+        const isExpired = q.expiry_date != null && q.expiry_date < today
+        return q.status !== 'Inactive' && !isExpired
+    })
 
     const cellMuted = isDark ? 'text-slate-400' : 'text-slate-500'
     const cellText = isDark ? 'text-slate-200' : 'text-slate-800'
@@ -70,43 +74,33 @@ export function PilotQualificationsSheet({ open, onOpenChange, pilotId, pilotNam
                                 <Skeleton className="h-10 w-full rounded-md" />
                                 <Skeleton className="h-10 w-full rounded-md" />
                             </div>
-                        ) : qualifications.length === 0 ? (
+                        ) : activeQualifications.length === 0 ? (
                             <p className={cn('text-xs', cellMuted)}>{t('operations.newOperation.pilotQualifications.noQualifications')}</p>
                         ) : (
                             <div className={cn('rounded-md border divide-y', borderClass)}>
-                                {qualifications.map(q => {
-                                    const isExpired = q.expiry_date != null && q.expiry_date < today
-                                    const effectiveStatus = q.status === 'Inactive' ? 'Inactive' : isExpired ? 'Expired' : 'Active'
-                                    return (
-                                        <div key={q.qualification_id} className="flex items-center justify-between gap-3 px-3 py-2">
-                                            <div className="min-w-0">
-                                                <p className={cn('text-sm font-medium truncate', cellText)}>{q.qualification_name}</p>
-                                                <div className={cn('flex items-center gap-2 mt-0.5 text-xs', cellMuted)}>
-                                                    <Badge
-                                                        variant="outline"
-                                                        className={q.qualification_type === 'Certification'
-                                                            ? (isDark ? 'border-violet-700 text-violet-300' : 'border-violet-300 text-violet-700')
-                                                            : (isDark ? 'border-blue-700 text-blue-300' : 'border-blue-300 text-blue-700')}
-                                                    >
-                                                        {q.qualification_type}
-                                                    </Badge>
-                                                    {q.expiry_date && (
-                                                        <span>{t('operations.newOperation.pilotQualifications.expiry')}: {formatDateInTz(q.expiry_date, timezone)}</span>
-                                                    )}
-                                                </div>
-                                            </div>
-                                            {effectiveStatus === 'Active' ? (
-                                                <Badge className={isDark ? 'bg-emerald-900/40 text-emerald-300 hover:bg-emerald-900/40' : 'bg-emerald-100 text-emerald-700 hover:bg-emerald-100'}>
-                                                    {t('operations.newOperation.pilotQualifications.statusActive')}
+                                {activeQualifications.map(q => (
+                                    <div key={q.qualification_id} className="flex items-center justify-between gap-3 px-3 py-2">
+                                        <div className="min-w-0">
+                                            <p className={cn('text-sm font-medium truncate', cellText)}>{q.qualification_name}</p>
+                                            <div className={cn('flex items-center gap-2 mt-0.5 text-xs', cellMuted)}>
+                                                <Badge
+                                                    variant="outline"
+                                                    className={q.qualification_type === 'Certification'
+                                                        ? (isDark ? 'border-violet-700 text-violet-300' : 'border-violet-300 text-violet-700')
+                                                        : (isDark ? 'border-blue-700 text-blue-300' : 'border-blue-300 text-blue-700')}
+                                                >
+                                                    {q.qualification_type}
                                                 </Badge>
-                                            ) : effectiveStatus === 'Expired' ? (
-                                                <Badge variant="destructive">{t('operations.newOperation.pilotQualifications.statusExpired')}</Badge>
-                                            ) : (
-                                                <Badge variant="secondary">{t('operations.newOperation.pilotQualifications.statusInactive')}</Badge>
-                                            )}
+                                                {q.expiry_date && (
+                                                    <span>{t('operations.newOperation.pilotQualifications.expiry')}: {formatDateInTz(q.expiry_date, timezone)}</span>
+                                                )}
+                                            </div>
                                         </div>
-                                    )
-                                })}
+                                        <Badge className={isDark ? 'bg-emerald-900/40 text-emerald-300 hover:bg-emerald-900/40' : 'bg-emerald-100 text-emerald-700 hover:bg-emerald-100'}>
+                                            {t('operations.newOperation.pilotQualifications.statusActive')}
+                                        </Badge>
+                                    </div>
+                                ))}
                             </div>
                         )}
                     </div>

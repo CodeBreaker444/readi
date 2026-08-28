@@ -98,6 +98,8 @@ export interface OperationFilterParams {
   mission_result_id?: number;
   client_id?: number;
   mission_plan_id?: number;
+  mission_group_label?: string;
+  user_timezone?: string;
 }
 
 export interface OperationLogbookItem {
@@ -123,7 +125,10 @@ export interface OperationLogbookItem {
   mission_planning_desc: string;
   flown_time: number;
   flown_meter: number;
+  battery_serial_number: string;
   mission_notes: string;
+  mission_group_label: string;
+  is_recurrent: boolean;
 }
 
 export interface OperationLogbookListResponse {
@@ -144,6 +149,7 @@ export interface OperationFilterResponse {
   missionResults: { data: MissionResultOption[] };
   missionStatuses: { data: MissionStatusOption[] };
   missionPlans: { data: MissionPlanOption[] };
+  missionGroupLabels: { data: string[] };
 }
 
 // Battery Logbook

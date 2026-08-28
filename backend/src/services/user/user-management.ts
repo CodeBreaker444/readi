@@ -1,9 +1,24 @@
 import { env } from '@/backend/config/env';
 import { supabase } from '@/backend/database/database';
 import { prisma } from '@/lib/prisma';
+import { getPresignedDownloadUrl } from '@/lib/s3Client';
 import { Prisma } from '@prisma/client';
 import bcrypt from 'bcrypt';
 import { sendAdminPasswordChangedEmail, sendUserActivationEmail } from '../../../../lib/resend/mail';
+
+async function resolveAvatarUrl(profilePicture: string | null | undefined): Promise<string | null> {
+  if (!profilePicture) return null;
+
+  if (profilePicture.startsWith('avatars/') || profilePicture.startsWith('profiles/')) {
+    try {
+      return await getPresignedDownloadUrl(profilePicture, 3600);
+    } catch {
+      return null;
+    }
+  }
+
+  return profilePicture;
+}
 
 export interface UserCreateData {
   username: string;
@@ -79,29 +94,32 @@ export async function getUserListByOwner(ownerId: number, userProfileId: number,
       },
     });
 
-    const formattedData = users.map((user) => ({
-      user_id: user.user_id,
-      username: user.username,
-      fullname: `${user.first_name ?? ''} ${user.last_name ?? ''}`.trim() || user.username,
-      email: user.email,
-      phone: user.phone || '',
-      user_role: user.user_role || 'Unknown',
-      department: user.department || null,
-      user_unique_code: user.user_unique_code || '',
-      fk_user_profile_id: user.fk_user_profile_id || getRoleIdFromCode(user.user_role ?? '') || 0,
-      active: user.user_active === 'Y' ? 1 : 0,
-      is_pending: user.user_active !== 'Y' && !user.auth_user_id && user.key_ !== null,
-      is_viewer: user.is_viewer,
-      is_manager: user.is_manager,
-      fk_client_id: user.fk_client_id ?? null,
-      fk_territorial_unit: user.fk_territorial_unit,
-      terr_unit_code: user.owner_territorial_unit_users_fk_territorial_unitToowner_territorial_unit?.unit_code || '',
-      terr_unit_desc: user.owner_territorial_unit_users_fk_territorial_unitToowner_territorial_unit?.unit_name || '',
-      owner_code: user.owner?.owner_code || '',
-      owner_name: user.owner?.owner_name || '',
-      profile_image: user.users_profile?.profile_picture || '',
-      user_image: user.users_profile?.profile_picture || '',
-      user_signature: user.users_profile?.user_signature || '',
+    const formattedData = await Promise.all(users.map(async (user) => {
+      const avatarUrl = await resolveAvatarUrl(user.users_profile?.profile_picture);
+      return {
+        user_id: user.user_id,
+        username: user.username,
+        fullname: `${user.first_name ?? ''} ${user.last_name ?? ''}`.trim() || user.username,
+        email: user.email,
+        phone: user.phone || '',
+        user_role: user.user_role || 'Unknown',
+        department: user.department || null,
+        user_unique_code: user.user_unique_code || '',
+        fk_user_profile_id: user.fk_user_profile_id || getRoleIdFromCode(user.user_role ?? '') || 0,
+        active: user.user_active === 'Y' ? 1 : 0,
+        is_pending: user.user_active !== 'Y' && !user.auth_user_id && user.key_ !== null,
+        is_viewer: user.is_viewer,
+        is_manager: user.is_manager,
+        fk_client_id: user.fk_client_id ?? null,
+        fk_territorial_unit: user.fk_territorial_unit,
+        terr_unit_code: user.owner_territorial_unit_users_fk_territorial_unitToowner_territorial_unit?.unit_code || '',
+        terr_unit_desc: user.owner_territorial_unit_users_fk_territorial_unitToowner_territorial_unit?.unit_name || '',
+        owner_code: user.owner?.owner_code || '',
+        owner_name: user.owner?.owner_name || '',
+        profile_image: avatarUrl || '',
+        user_image: user.users_profile?.profile_picture || '',
+        user_signature: user.users_profile?.user_signature || '',
+      };
     }));
 
     return { success: true, data: formattedData, count: formattedData.length };

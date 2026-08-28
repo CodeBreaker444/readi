@@ -426,6 +426,7 @@ export async function addFlatTraining(
           training_type: training_type ?? null,
           certificate_type: certificate_type ?? null,
           training_active: 'Y',
+          trainer_user_id: actingUserId ?? null,
         },
         select: { training_id: true },
       });

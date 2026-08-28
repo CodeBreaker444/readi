@@ -11,6 +11,7 @@ export interface ProfileData {
   fullName: string;
   email: string;
   phone: string;
+  department: string;
   user_timezone: string;
   user_type: string;
   avatar_url: string | null;
@@ -30,6 +31,7 @@ export interface UpdateProfileParams {
   fullname: string;
   email: string;
   phone: string;
+  department: string;
   timezone: string;
 }
 
@@ -42,6 +44,7 @@ export async function getProfile(userId: number): Promise<ProfileData> {
       last_name: true,
       email: true,
       phone: true,
+      department: true,
       user_timezone: true,
       user_type: true,
       users_profile: {
@@ -82,6 +85,7 @@ export async function getProfile(userId: number): Promise<ProfileData> {
     fullName,
     email: user.email ?? '',
     phone: user.phone ?? '',
+    department: user.department ?? '',
     user_timezone: user.user_timezone ?? 'IST',
     user_type: user.user_type ?? '',
     avatar_url: avatarUrl,
@@ -120,6 +124,7 @@ export async function updateProfile(
         last_name: lastName,
         email: params.email,
         phone: params.phone,
+        department: params.department,
         user_timezone: params.timezone,
       },
     });

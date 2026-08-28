@@ -33,6 +33,7 @@ interface FiltersState {
   missionResults: MissionResultOption[];
   missionStatuses: MissionStatusOption[];
   missionPlans: MissionPlanOption[];
+  missionGroupLabels: string[];
 }
 
 export default function OperationLogbookPage() {
@@ -48,6 +49,7 @@ export default function OperationLogbookPage() {
     missionResults: [],
     missionStatuses: [],
     missionPlans: [],
+    missionGroupLabels: [],
   });
   const [loading, setLoading] = useState(false);
   const [filtersLoading, setFiltersLoading] = useState(false);
@@ -68,6 +70,7 @@ export default function OperationLogbookPage() {
           missionResults: json.missionResults?.data ?? [],
           missionStatuses: json.missionStatuses?.data ?? [],
           missionPlans: json.missionPlans?.data ?? [],
+          missionGroupLabels: json.missionGroupLabels?.data ?? [],
         });
       }
     } catch (e: any) {
@@ -81,7 +84,10 @@ export default function OperationLogbookPage() {
   const fetchData = useCallback(async(params: Partial<OperationFilterParams>) => {
     setLoading(true);
     try {
-      const res = await axios.post("/api/logbooks/operation/list", params);
+      const res = await axios.post("/api/logbooks/operation/list", {
+        ...params,
+        user_timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      });
       const json = res.data;
       if (json.code === 200) {
         setData(json.data ?? []);
@@ -194,6 +200,7 @@ export default function OperationLogbookPage() {
             missionResults={filters.missionResults}
             missionStatuses={filters.missionStatuses}
             missionPlans={filters.missionPlans}
+            missionGroupLabels={filters.missionGroupLabels}
             loading={loading}
             onSearch={(params) => fetchData(params)}
             isDark={isDark}

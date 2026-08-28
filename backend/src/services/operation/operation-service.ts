@@ -4,6 +4,7 @@ import { AttachmentUploadResponse, CreateOperationSchema, ListOperationsQuerySch
 import { prisma } from '@/lib/prisma';
 import { buildS3Url, deleteFileFromS3, getPresignedDownloadUrl, REGION, uploadFileToS3 } from '@/lib/s3Client';
 import { sendMissionCreatedModuleEmail, sendMissionAssignedModuleEmail } from '../settings/module-email-notification-service';
+import { dateConversionUtcToLocal } from '@/backend/utils/date-utils';
 
 // Keys must match the `status_name` values actually sent by callers
 // (the OperationStatus enum: PLANNED | IN_PROGRESS | COMPLETED | CANCELLED | ABORTED).
@@ -27,16 +28,20 @@ function generateRecurringGroupId(): string {
   return `RG-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
 }
 
-function getDatesInRange(startDate: string, endDate: string): Date[] {
+function getRecurringDates(anchor: Date, endDate: string, daysOfWeek: number[]): Date[] {
   const dates: Date[] = [];
-  const current = new Date(startDate);
+  const current = new Date(anchor);
+  current.setHours(0, 0, 0, 0);
   const end = new Date(endDate);
-  
+  end.setHours(23, 59, 59, 999);
+
   while (current <= end) {
-    dates.push(new Date(current));
+    if (daysOfWeek.includes(current.getDay())) {
+      dates.push(new Date(current));
+    }
     current.setDate(current.getDate() + 1);
   }
-  
+
   return dates;
 }
 
@@ -44,7 +49,7 @@ export async function listOperations(
   params: ListOperationsQuerySchema,
   ownerId: number
 ): Promise<OperationsListResponse> {
-  const { page, pageSize, status, search, pilot_id, tool_id, client_id, date_start, date_end } = params;
+  const { page, pageSize, status, search, pilot_id, tool_id, client_id, date_start, date_end, group_label } = params;
   const skip = (page - 1) * pageSize;
 
   const where: any = {
@@ -55,6 +60,7 @@ export async function listOperations(
     ...(pilot_id && { fk_pilot_user_id: pilot_id }),
     ...(tool_id && { fk_tool_id: tool_id }),
     ...(client_id && { planning: { fk_client_id: client_id } }),
+    ...(group_label && { mission_group_label: group_label }),
     ...(search && {
       OR: [
         { mission_code: { contains: search, mode: 'insensitive' } },
@@ -96,6 +102,7 @@ export async function listOperations(
         luc_completed_at: true,
         mission_metadata: true,
         mission_group_label: true,
+        recurring_group_id: true,
         fk_owner_id: true,
         status_name: true,
         created_at: true,
@@ -127,6 +134,9 @@ export async function listOperations(
     visual_observer_ids: (row.mission_metadata as any)?.visual_observers ?? null,
     flight_mode: (row.mission_metadata as any)?.flight_mode ?? null,
     op_type: (row.mission_metadata as any)?.op_type ?? null,
+    is_recurrent: !!row.recurring_group_id
+      || !!(row.mission_metadata as any)?.is_recurrent
+      || !!(row.mission_metadata as any)?.recurring_group_id,
   })) as unknown as Operation[];
 
   const toolIds = [...new Set(operations.filter((op) => op.fk_tool_id).map((op) => op.fk_tool_id as number))];
@@ -240,9 +250,17 @@ export async function createOperation(input: CreateOperationSchema, ownerId: num
   }
 
   const isRecurrent = (input as any).is_recurrent === true;
-  const recurrentStartDate = (input as any).recurrent_start_date;
+  const recurrentDays: number[] = Array.isArray((input as any).recurrent_days_of_week)
+    ? (input as any).recurrent_days_of_week
+    : [];
   const recurrentEndDate = (input as any).recurrent_end_date;
-  const recurrentTime = (input as any).recurrent_time;
+  // The mission's own start date/time is the anchor for the recurring series —
+  // there is no separate "recurrent start date" field.
+  const anchorStart = input.scheduled_start ? new Date(input.scheduled_start) : null;
+
+  if (isRecurrent && (!anchorStart || !recurrentEndDate || !recurrentDays.length)) {
+    throw new Error('Recurrent mission requires a start date, days of the week, and an end date');
+  }
 
   const missionMetadata: Record<string, unknown> = {};
   if (visualObservers?.length) missionMetadata.visual_observers = visualObservers;
@@ -250,18 +268,14 @@ export async function createOperation(input: CreateOperationSchema, ownerId: num
   if ((input as any).op_type) missionMetadata.op_type = (input as any).op_type;
   if (isRecurrent) {
     missionMetadata.is_recurrent = true;
-    if (recurrentStartDate) missionMetadata.recurrent_start_date = recurrentStartDate;
-    if (recurrentEndDate) missionMetadata.recurrent_end_date = recurrentEndDate;
-    if (recurrentTime) missionMetadata.recurrent_time = recurrentTime;
+    missionMetadata.recurrent_days_of_week = recurrentDays;
+    missionMetadata.recurrent_end_date = recurrentEndDate;
   }
 
   // Determine the dates to create missions for
-  let datesToProcess: Date[] = [];
-  if (isRecurrent && recurrentStartDate && recurrentEndDate && recurrentTime) {
-    datesToProcess = getDatesInRange(recurrentStartDate, recurrentEndDate);
-  } else {
-    datesToProcess = [new Date()]; // Single mission for non-recurrent
-  }
+  const datesToProcess: Date[] = isRecurrent && anchorStart
+    ? getRecurringDates(anchorStart, recurrentEndDate, recurrentDays)
+    : [new Date()]; // Single mission for non-recurrent
 
   const recurringGroupId = isRecurrent ? generateRecurringGroupId() : null;
   const insertedIds: number[] = [];
@@ -297,21 +311,19 @@ export async function createOperation(input: CreateOperationSchema, ownerId: num
       throw new Error(`An operation with code ${missionCode} already exists.`);
     }
 
-    // Calculate scheduled start time based on recurrent time or planning planned_date
+    // Calculate scheduled start time based on the mission's own start time or planning planned_date
     let scheduledStart: Date | null = null;
-    if (isRecurrent && recurrentTime) {
-      const [hours, minutes] = recurrentTime.split(':').map(Number);
+    if (isRecurrent && anchorStart) {
       scheduledStart = new Date(currentDate);
-      scheduledStart.setHours(hours, minutes, 0, 0);
+      scheduledStart.setHours(anchorStart.getHours(), anchorStart.getMinutes(), 0, 0);
     } else if (input.scheduled_start) {
       scheduledStart = new Date(input.scheduled_start);
     } else if (planningPlannedDate) {
       // Use the planned_date from planning if no scheduled_start provided
-      // For recurrent missions, combine planning date with recurrent time
-      if (isRecurrent && recurrentTime) {
-        const [hours, minutes] = recurrentTime.split(':').map(Number);
+      // For recurrent missions, combine planning date with the mission's start time
+      if (isRecurrent && anchorStart) {
         scheduledStart = new Date(currentDate);
-        scheduledStart.setHours(hours, minutes, 0, 0);
+        scheduledStart.setHours(anchorStart.getHours(), anchorStart.getMinutes(), 0, 0);
       } else {
         scheduledStart = planningPlannedDate;
       }
@@ -367,11 +379,11 @@ export async function createOperation(input: CreateOperationSchema, ownerId: num
     
     const user = await prisma.public_users.findUnique({
       where: { user_id: creatorUserId || input.fk_pilot_user_id || 0 },
-      select: { first_name: true, last_name: true },
+      select: { first_name: true, last_name: true, user_timezone: true },
     });
 
-    const createdBy = user 
-      ? `${user.first_name} ${user.last_name}`.trim() 
+    const createdBy = user
+      ? `${user.first_name} ${user.last_name}`.trim()
       : 'System';
 
     // Use the first mission's scheduled start date for email
@@ -394,10 +406,12 @@ export async function createOperation(input: CreateOperationSchema, ownerId: num
       missionCode: codeToChild,
       missionType: missionType?.type_name || 'Unknown',
       createdBy,
-      scheduledDate: firstMission?.scheduled_start?.toISOString() || input.scheduled_start,
+      scheduledDate: firstMission?.scheduled_start
+        ? dateConversionUtcToLocal(firstMission.scheduled_start, user?.user_timezone || 'UTC')
+        : input.scheduled_start,
       description: input.notes || undefined,
     });
-    
+
     console.log('[createOperation] Mission created email sent successfully');
 
     // Send mission assigned email to pilot
@@ -405,7 +419,7 @@ export async function createOperation(input: CreateOperationSchema, ownerId: num
       try {
         const pilotUser = await prisma.public_users.findUnique({
           where: { user_id: input.fk_pilot_user_id },
-          select: { first_name: true, last_name: true },
+          select: { first_name: true, last_name: true, user_timezone: true },
         });
 
         if (pilotUser) {
@@ -415,7 +429,9 @@ export async function createOperation(input: CreateOperationSchema, ownerId: num
             assignedBy: createdBy,
             assignedTo: `${pilotUser.first_name} ${pilotUser.last_name}`.trim(),
             role: 'Pilot',
-            scheduledDate: firstMission?.scheduled_start?.toISOString() || input.scheduled_start,
+            scheduledDate: firstMission?.scheduled_start
+              ? dateConversionUtcToLocal(firstMission.scheduled_start, pilotUser.user_timezone || 'UTC')
+              : input.scheduled_start,
             description: input.notes || undefined,
           }, [input.fk_pilot_user_id]);
           console.log('[createOperation] Mission assigned email sent to pilot:', pilotUser.first_name, pilotUser.last_name);
@@ -428,6 +444,11 @@ export async function createOperation(input: CreateOperationSchema, ownerId: num
     // Send mission assigned emails to visual observers
     if (visualObservers?.length) {
       const observerIds = visualObservers.map(o => o.user_id);
+      const observerUsers = await prisma.public_users.findMany({
+        where: { user_id: { in: observerIds } },
+        select: { user_id: true, user_timezone: true },
+      });
+      const observerTimezoneMap = new Map(observerUsers.map(o => [o.user_id, o.user_timezone]));
       for (const observer of visualObservers) {
         try {
           await sendMissionAssignedModuleEmail(ownerId, {
@@ -436,7 +457,9 @@ export async function createOperation(input: CreateOperationSchema, ownerId: num
             assignedBy: createdBy,
             assignedTo: observer.name,
             role: 'Observer',
-            scheduledDate: firstMission?.scheduled_start?.toISOString() || input.scheduled_start,
+            scheduledDate: firstMission?.scheduled_start
+              ? dateConversionUtcToLocal(firstMission.scheduled_start, observerTimezoneMap.get(observer.user_id) || 'UTC')
+              : input.scheduled_start,
             description: input.notes || undefined,
           }, [observer.user_id]);
           console.log('[createOperation] Mission assigned email sent to observer:', observer.name);
@@ -551,7 +574,7 @@ export async function updateOperation(id: number, input: UpdateOperationSchema, 
       if (input.fk_pilot_user_id !== undefined && input.fk_pilot_user_id !== current?.fk_pilot_user_id) {
         const pilotUser = await prisma.public_users.findUnique({
           where: { user_id: input.fk_pilot_user_id },
-          select: { first_name: true, last_name: true },
+          select: { first_name: true, last_name: true, user_timezone: true },
         });
 
         if (pilotUser) {
@@ -561,7 +584,9 @@ export async function updateOperation(id: number, input: UpdateOperationSchema, 
             assignedBy,
             assignedTo: `${pilotUser.first_name} ${pilotUser.last_name}`.trim(),
             role: 'Pilot',
-            scheduledDate: current?.scheduled_start?.toISOString(),
+            scheduledDate: current?.scheduled_start
+              ? dateConversionUtcToLocal(current.scheduled_start, pilotUser.user_timezone || 'UTC')
+              : undefined,
             description: current?.mission_name || current?.mission_description || undefined,
           }, [input.fk_pilot_user_id]);
         }
@@ -573,18 +598,25 @@ export async function updateOperation(id: number, input: UpdateOperationSchema, 
       const newObserverIds = new Set(visualObservers?.map((o) => o.user_id) || []);
 
       // Find newly added observers
-      for (const observer of visualObservers || []) {
-        if (!currentObserverIds.has(observer.user_id)) {
-          await sendMissionAssignedModuleEmail(ownerId, {
-            missionCode: current?.mission_code || '',
-            missionType: missionType?.type_name || 'Unknown',
-            assignedBy,
-            assignedTo: observer.name,
-            role: 'Observer',
-            scheduledDate: current?.scheduled_start?.toISOString(),
-            description: current?.mission_name || current?.mission_description || undefined,
-          }, [observer.user_id]);
-        }
+      const newlyAddedObservers = (visualObservers || []).filter((o) => !currentObserverIds.has(o.user_id));
+      const newObserverUsers = await prisma.public_users.findMany({
+        where: { user_id: { in: newlyAddedObservers.map((o) => o.user_id) } },
+        select: { user_id: true, user_timezone: true },
+      });
+      const newObserverTimezoneMap = new Map(newObserverUsers.map(o => [o.user_id, o.user_timezone]));
+
+      for (const observer of newlyAddedObservers) {
+        await sendMissionAssignedModuleEmail(ownerId, {
+          missionCode: current?.mission_code || '',
+          missionType: missionType?.type_name || 'Unknown',
+          assignedBy,
+          assignedTo: observer.name,
+          role: 'Observer',
+          scheduledDate: current?.scheduled_start
+            ? dateConversionUtcToLocal(current.scheduled_start, newObserverTimezoneMap.get(observer.user_id) || 'UTC')
+            : undefined,
+          description: current?.mission_name || current?.mission_description || undefined,
+        }, [observer.user_id]);
       }
     } catch (emailError) {
       console.error('[updateOperation] Failed to send mission assignment email:', emailError);
@@ -902,6 +934,19 @@ export async function getMissionCategoryOptions(ownerId: number) {
     orderBy: { category_name: 'asc' },
     select: { category_id: true, category_name: true },
   });
+}
+
+export async function getMissionGroupLabelOptions(ownerId: number) {
+  const rows = await prisma.pilot_mission.findMany({
+    where: { fk_owner_id: ownerId, mission_group_label: { not: null } },
+    select: { mission_group_label: true },
+    distinct: ['mission_group_label'],
+  });
+
+  return rows
+    .map((r) => r.mission_group_label)
+    .filter((label): label is string => !!label && label.trim().length > 0)
+    .sort((a, b) => a.localeCompare(b));
 }
 
 export async function getClientOptions(ownerId: number) {

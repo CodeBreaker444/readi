@@ -1,10 +1,10 @@
 'use client';
 
 import { cn } from '@/lib/utils';
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 
 interface PinInputProps {
-  value: string[];    
+  value: string[];
   onChange: (value: string[]) => void;
   disabled?: boolean;
   error?: boolean;
@@ -13,6 +13,14 @@ interface PinInputProps {
 
 export function PinInput({ value, onChange, disabled, error, isDark }: PinInputProps) {
   const inputRefs = useRef<Array<HTMLInputElement | null>>(Array(6).fill(null));
+
+  const isEmpty = value.every(d => d === '');
+
+  useEffect(() => {
+    if (isEmpty && !disabled) {
+      inputRefs.current[0]?.focus();
+    }
+  }, [isEmpty, disabled]);
 
   const handleChange = (index: number, char: string) => {
     const digit = char.replace(/\D/g, '').slice(-1);
