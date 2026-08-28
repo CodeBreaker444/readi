@@ -71,6 +71,7 @@ export interface Operation {
   flight_mode?: string | null;
   op_type?: string | null;
   mission_group_label?: string | null;
+  is_recurrent?: boolean | null;
   created_at: string;
   updated_at: string;
 }
@@ -81,6 +82,7 @@ interface FilterState {
   pilotFilter: string;
   droneFilter: string;
   clientFilter: string;
+  groupLabelFilter: string;
   dateStart: string;
   dateEnd: string;
 }
@@ -91,6 +93,7 @@ const DEFAULT_FILTERS: FilterState = {
   pilotFilter: 'ALL',
   droneFilter: 'ALL',
   clientFilter: 'ALL',
+  groupLabelFilter: 'ALL',
   dateStart: '',
   dateEnd: '',
 };
@@ -123,6 +126,7 @@ export default function OperationsPage() {
   >([]);
   const [tools, setTools] = useState<{ tool_id: number; tool_name: string; tool_code: string }[]>([]);
   const [clients, setClients] = useState<{ client_id: number; client_name: string }[]>([]);
+  const [groupLabels, setGroupLabels] = useState<string[]>([]);
   const [optionsLoaded, setOptionsLoaded] = useState(false);
 
   useEffect(() => {
@@ -135,6 +139,7 @@ export default function OperationsPage() {
         if (filters.pilotFilter !== 'ALL') params.set('pilot_id', filters.pilotFilter);
         if (filters.droneFilter !== 'ALL') params.set('tool_id', filters.droneFilter);
         if (filters.clientFilter !== 'ALL') params.set('client_id', filters.clientFilter);
+        if (filters.groupLabelFilter !== 'ALL') params.set('group_label', filters.groupLabelFilter);
         if (filters.dateStart) params.set('date_start', filters.dateStart);
         if (filters.dateEnd) params.set('date_end', filters.dateEnd);
 
@@ -149,6 +154,7 @@ export default function OperationsPage() {
           setPilots(optRes.data.pilots ?? []);
           setTools(optRes.data.tools ?? []);
           setClients(optRes.data.clients ?? []);
+          setGroupLabels(optRes.data.groupLabels ?? []);
           setOptionsLoaded(true);
         }
       } catch (e) {
@@ -388,6 +394,7 @@ const table = useReactTable({
           pilots={pilots}
           tools={tools}
           clients={clients}
+          groupLabels={groupLabels}
           operationsCount={operations.length}
           onFilterChange={setFilters}
           onReset={() => setFilters(DEFAULT_FILTERS)}

@@ -27,6 +27,7 @@ import {
     Trash2,
     XCircle
 } from 'lucide-react';
+import { FaArrowsRotate } from 'react-icons/fa6';
 
 function formatDuration(minutes: number | null | undefined): string {
   if (!minutes) return '—';
@@ -185,6 +186,7 @@ export const getOperationColumns = (t: TFunction, isDark = false, timezone = 'Eu
     cell: ({ getValue, row, table }) => {
       const meta = table.options.meta as any;
       const groupLabel = (row.original as Operation).mission_group_label;
+      const isRecurrent = (row.original as Operation).is_recurrent;
       return (
         <div className="flex items-center gap-1.5">
           <button
@@ -197,6 +199,7 @@ export const getOperationColumns = (t: TFunction, isDark = false, timezone = 'Eu
             <Badge variant="secondary" className="px-1.5 py-0 text-[10px] font-normal shrink-0">
               <Tag className="mr-0.5 h-2.5 w-2.5" />
               {groupLabel}
+              {isRecurrent && <FaArrowsRotate className="ml-1 h-2.5 w-2.5" />}
             </Badge>
           )}
         </div>

@@ -34,12 +34,14 @@ interface OperationFilterPanelProps {
   missionResults: MissionResultOption[];
   missionStatuses: MissionStatusOption[];
   missionPlans: MissionPlanOption[];
+  missionGroupLabels: string[];
   loading: boolean;
   isDark: boolean;
   onSearch: (params: Partial<OperationFilterParams>) => void;
 }
 
 const NONE = "0";
+const NONE_LABEL = "__ALL__";
 
 export function OperationFilterPanel({
   pilots,
@@ -50,6 +52,7 @@ export function OperationFilterPanel({
   missionResults,
   missionStatuses,
   missionPlans,
+  missionGroupLabels,
   loading,
   isDark,
   onSearch,
@@ -63,6 +66,7 @@ export function OperationFilterPanel({
   const [resultId, setResultId] = useState(NONE);
   const [statusId, setStatusId] = useState(NONE);
   const [planId, setPlanId] = useState(NONE);
+  const [groupLabel, setGroupLabel] = useState(NONE_LABEL);
   const [dateStart, setDateStart] = useState("");
   const [dateEnd, setDateEnd] = useState("");
 
@@ -76,6 +80,7 @@ export function OperationFilterPanel({
       mission_result_id: parseInt(resultId) || 0,
       mission_status_id: parseInt(statusId) || 0,
       mission_plan_id: parseInt(planId) || 0,
+      mission_group_label: groupLabel !== NONE_LABEL ? groupLabel : undefined,
       date_start: dateStart || undefined,
       date_end: dateEnd || undefined,
     });
@@ -90,6 +95,7 @@ export function OperationFilterPanel({
     setResultId(NONE);
     setStatusId(NONE);
     setPlanId(NONE);
+    setGroupLabel(NONE_LABEL);
     setDateStart("");
     setDateEnd("");
     onSearch({});
@@ -184,6 +190,9 @@ export function OperationFilterPanel({
         <FilterSelect label={t('logbooks.operationLogbook.filter.missionPlan')} allLabel={t('logbooks.operationLogbook.filter.all')} value={planId} onChange={setPlanId} isDark={isDark}
           options={missionPlans.map((p) => ({ value: String(p.mission_planning_id), label: `${p.mission_planning_code} — ${p.mission_planning_desc}` }))}
         />
+        <FilterSelect label={t('logbooks.operationLogbook.filter.missionGroup')} allLabel={t('logbooks.operationLogbook.filter.all')} value={groupLabel} onChange={setGroupLabel} isDark={isDark} noneValue={NONE_LABEL}
+          options={missionGroupLabels.map((label) => ({ value: label, label }))}
+        />
       </div>
 
       {/* Actions */}
@@ -232,6 +241,7 @@ function FilterSelect({
   onChange,
   options,
   isDark,
+  noneValue = "0",
 }: {
   label: string;
   allLabel: string;
@@ -239,6 +249,7 @@ function FilterSelect({
   onChange: (v: string) => void;
   options: { value: string; label: string }[];
   isDark: boolean;
+  noneValue?: string;
 }) {
   return (
     <div className="space-y-1.5">
@@ -267,7 +278,7 @@ function FilterSelect({
           }`}
         >
           <SelectItem
-            value="0"
+            value={noneValue}
             className={`text-xs ${isDark ? "text-slate-400" : "text-slate-400"}`}
           >
             {allLabel}

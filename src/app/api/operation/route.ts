@@ -25,6 +25,7 @@ const listOperationsQuerySchema = z.object({
   client_id: z.coerce.number().int().positive().optional(),
   date_start: z.string().optional(),
   date_end: z.string().optional(),
+  group_label: z.string().optional(),
 });
 const createOperationSchema = z.object({
   mission_name: z.string().nullable().optional(),
@@ -73,6 +74,7 @@ export async function GET(req: NextRequest) {
       client_id: searchParams.get('client_id') ?? undefined,
       date_start: searchParams.get('date_start') ?? undefined,
       date_end: searchParams.get('date_end') ?? undefined,
+      group_label: searchParams.get('group_label') ?? undefined,
     });
 
     const result = await listOperations(query as ListOperationsQuerySchema, ownerId);

@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
 
     const attendance = await prisma.training_attendance.findUnique({
       where: { attendance_id: parsed.data.attendance_id },
-      select: { training: { select: { training_name: true, training_type: true } } },
+      select: { training: { select: { training_name: true, training_type: true, trainer_user_id: true } } },
     });
 
     await deleteFlatTraining(
@@ -43,6 +43,7 @@ export async function POST(req: NextRequest) {
         trainingName: attendance.training.training_name,
         trainingType: attendance.training.training_type,
         deletedBy: session!.user.fullname,
+        courseOwnerUserId: attendance.training.trainer_user_id,
       }).catch((err) => console.error('[training/delete] sendTrainingDeletedModuleEmail failed:', err));
     }
 

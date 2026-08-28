@@ -19,6 +19,7 @@ interface FilterState {
   pilotFilter: string;
   droneFilter: string;
   clientFilter: string;
+  groupLabelFilter: string;
   dateStart: string;
   dateEnd: string;
 }
@@ -47,6 +48,7 @@ interface OperationsFiltersProps {
   pilots: Pilot[];
   tools: Tool[];
   clients: Client[];
+  groupLabels: string[];
   operationsCount: number;
   onFilterChange: (filters: FilterState) => void;
   onReset: () => void;
@@ -59,6 +61,7 @@ export function OperationsFilters({
   pilots,
   tools,
   clients,
+  groupLabels,
   operationsCount,
   onFilterChange,
   onReset,
@@ -146,6 +149,23 @@ export function OperationsFilters({
               {clients.map((c) => (
                 <SelectItem key={c.client_id} value={c.client_id.toString()}>
                   {c.client_name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select
+            value={filters.groupLabelFilter}
+            onValueChange={(v) => onFilterChange({ ...filters, groupLabelFilter: v })}
+          >
+            <SelectTrigger className="w-44 cursor-pointer">
+              <SelectValue placeholder={t('operations.table.filters.allGroups')} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">{t('operations.table.filters.allGroups')}</SelectItem>
+              {groupLabels.map((label) => (
+                <SelectItem key={label} value={label}>
+                  {label}
                 </SelectItem>
               ))}
             </SelectContent>

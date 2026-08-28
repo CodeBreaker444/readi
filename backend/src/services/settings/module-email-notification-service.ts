@@ -90,6 +90,8 @@ export interface TrainingEmailData {
   userName?: string | null;
   expiryDate?: string;
   daysRemaining?: number;
+  /** user_id of the training/course owner (training.trainer_user_id) — also notified when set */
+  courseOwnerUserId?: number | null;
 }
 
 /**
@@ -837,6 +839,7 @@ export async function sendCalendarEventUpdatedModuleEmail(
 async function sendTrainingModuleEmail(
   ownerId: number,
   eventType: string,
+  courseOwnerUserId: number | null | undefined,
   emailFn: (emails: string[], ...args: any[]) => Promise<void>,
   ...emailArgs: any[]
 ): Promise<void> {
@@ -847,6 +850,19 @@ async function sendTrainingModuleEmail(
   }
 
   const emails = await getRecipientEmails(ownerId, 'training', eventType);
+
+  // Course owner (training.trainer_user_id) is always notified for enabled
+  // training events, independent of the configured roles/user list.
+  if (courseOwnerUserId) {
+    const ownerUser = await prisma.public_users.findUnique({
+      where: { user_id: courseOwnerUserId },
+      select: { email: true, user_active: true },
+    });
+    if (ownerUser?.email && ownerUser.user_active === 'Y' && !emails.includes(ownerUser.email)) {
+      emails.push(ownerUser.email);
+    }
+  }
+
   if (emails.length === 0) {
     console.log('[sendTrainingModuleEmail] No recipient emails found, skipping email send');
     return;
@@ -910,6 +926,7 @@ export async function sendTrainingCreatedModuleEmail(
   await sendTrainingModuleEmail(
     ownerId,
     'training_created',
+    data.courseOwnerUserId,
     sendTrainingCreatedEmailTemplate,
     data.trainingName,
     data.trainingType,
@@ -930,6 +947,7 @@ export async function sendTrainingUpdatedModuleEmail(
   await sendTrainingModuleEmail(
     ownerId,
     'training_updated',
+    data.courseOwnerUserId,
     sendTrainingUpdatedEmailTemplate,
     data.trainingName,
     data.trainingType,
@@ -949,6 +967,7 @@ export async function sendTrainingDeletedModuleEmail(
   await sendTrainingModuleEmail(
     ownerId,
     'training_deleted',
+    data.courseOwnerUserId,
     sendTrainingDeletedEmailTemplate,
     data.trainingName,
     data.trainingType,
@@ -966,6 +985,7 @@ export async function sendTrainingCertificationExpiringModuleEmail(
   await sendTrainingModuleEmail(
     ownerId,
     'training_certification_expiring',
+    data.courseOwnerUserId,
     sendTrainingCertificationExpiringEmailTemplate,
     data.trainingName,
     data.expiryDate || '',

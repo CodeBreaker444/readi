@@ -37,6 +37,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { FaArrowsRotate } from 'react-icons/fa6';
 
 const STATUS_BADGE: Record<string, { className: string }> = {
   PLANNED: { className: 'bg-blue-50 text-blue-700 border-blue-200' },
@@ -178,6 +179,7 @@ export function OperationDetailSheet({
                       <Badge variant="secondary" className="px-1.5 py-0 text-[10px] font-normal">
                         <Tag className="mr-0.5 h-2.5 w-2.5" />
                         {operation.mission_group_label}
+                        {operation.is_recurrent && <FaArrowsRotate className="ml-1 h-2.5 w-2.5" />}
                       </Badge>
                     )}
                   </div>

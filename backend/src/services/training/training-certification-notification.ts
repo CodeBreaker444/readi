@@ -8,6 +8,7 @@ export interface ExpiringCertificationItem {
   user_name: string | null;
   expiry_date: string;
   days_remaining: number;
+  course_owner_user_id: number | null;
 }
 
 export async function findExpiringCertificationsForOwner(ownerId: number): Promise<ExpiringCertificationItem[]> {
@@ -22,7 +23,7 @@ export async function findExpiringCertificationsForOwner(ownerId: number): Promi
     select: {
       attendance_id: true,
       certification_expiry: true,
-      training: { select: { training_name: true } },
+      training: { select: { training_name: true, trainer_user_id: true } },
       users: { select: { first_name: true, last_name: true } },
     },
   });
@@ -41,6 +42,7 @@ export async function findExpiringCertificationsForOwner(ownerId: number): Promi
         : null,
       expiry_date: row.certification_expiry.toISOString().slice(0, 10),
       days_remaining: daysRemaining,
+      course_owner_user_id: row.training.trainer_user_id,
     });
   }
   return result;
@@ -56,6 +58,7 @@ export async function sendTrainingCertificationExpiryNotifications(
       userName: item.user_name,
       expiryDate: item.expiry_date,
       daysRemaining: item.days_remaining,
+      courseOwnerUserId: item.course_owner_user_id,
     });
   }
 }

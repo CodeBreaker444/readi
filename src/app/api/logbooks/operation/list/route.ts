@@ -14,6 +14,7 @@ const schema = z.object({
   mission_result_id: z.coerce.number().int().optional().default(0),
   client_id: z.coerce.number().int().optional().default(0),
   mission_plan_id: z.coerce.number().int().optional().default(0),
+  mission_group_label: z.string().optional(),
   date_start: z.string().optional(),
   date_end: z.string().optional(),
   user_timezone: z.string().optional().default('UTC'),
