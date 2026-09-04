@@ -46,6 +46,16 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // Vercel Cron endpoints authenticated via Bearer CRON_SECRET  
+  if (pathname.startsWith('/api/cron/')) {
+    const cronSecret = process.env.CRON_SECRET;
+    const authHeader = request.headers.get('authorization');
+    if (cronSecret && authHeader === `Bearer ${cronSecret}`) {
+      return NextResponse.next();
+    }
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   // External API endpoints authenticated via X-API-KEY — skip cookie auth entirely
   const API_KEY_ROUTES = ['/api/missions'];
   if (API_KEY_ROUTES.some((r) => pathname === r || pathname.startsWith(r + '/'))) {
