@@ -39,6 +39,7 @@ interface ComponentInfo {
   limit_day: number;
   maintenance_cycle_type: string;
   last_maintenance_date: string | null;
+  activation_date: string | null;
   status: "OK" | "ALERT" | "DUE";
   trigger: string[];
   battery_cycle_ratio: number;
@@ -120,8 +121,6 @@ function CycleProgressBar({
   status: "OK" | "ALERT" | "DUE";
   isDark: boolean;
   isHours?: boolean;
-  // "manual" = user must enter a value (Flights/Hours); "auto" = computed
-  // automatically with no input (Days, tracked from elapsed calendar time).
   mode?: "auto" | "manual";
   modeLabel?: string;
 }) {
@@ -419,7 +418,7 @@ export function MaintenanceCycleModal({
       >
         <DialogHeader
           className={cn(
-            "relative overflow-hidden px-6 pb-5 pt-6",
+            "relative overflow-hidden px-6 pb-5 pt-6 shrink-0",
             isDark ? "bg-slate-900/60" : "bg-slate-50 border-b border-slate-200"
           )}
         >
@@ -556,11 +555,17 @@ export function MaintenanceCycleModal({
                       </Badge>
                     </div>
 
-                    <div className="mb-3">
+                    <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1">
                       <span className={cn("text-[10px]", isDark ? "text-slate-600" : "text-slate-400")}>
                         {t("planning.missionTemplate.lastUpdate")}:{" "}
                         <span className={cn("font-medium", isDark ? "text-slate-400" : "text-slate-500")}>
                           {formatLastMaintenance(comp.last_maintenance_date)}
+                        </span>
+                      </span>
+                      <span className={cn("text-[10px]", isDark ? "text-slate-600" : "text-slate-400")}>
+                        {t("operations.missionComplete.maintenance.activationDate")}{" "}
+                        <span className={cn("font-medium", isDark ? "text-slate-400" : "text-slate-500")}>
+                          {comp.activation_date ? formatDateInTz(comp.activation_date, timezone) : "—"}
                         </span>
                       </span>
                     </div>

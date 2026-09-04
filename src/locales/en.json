@@ -1691,6 +1691,7 @@
         "noComponents": "No components configured for this system.",
         "system": "System",
         "lastUpdated": "Last updated:",
+        "activationDate": "Activation date:",
         "addUsage": "Add Usage",
         "flights": "Flights",
         "hours": "Hours",

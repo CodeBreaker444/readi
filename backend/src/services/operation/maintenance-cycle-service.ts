@@ -23,6 +23,7 @@ interface ComponentMaintenanceInfo {
   limit_day: number;
   maintenance_cycle_type: string;
   last_maintenance_date: string | null;
+  activation_date: string | null;
   status: 'OK' | 'ALERT' | 'DUE';
   trigger: string[];
   battery_cycle_ratio: number;
@@ -163,6 +164,7 @@ export async function getComponentsForMaintenanceCycle(
       limit_day: limitDay,
       maintenance_cycle_type: cycleType,
       last_maintenance_date: comp.last_maintenance_date?.toISOString() ?? null,
+      activation_date: comp.installation_date?.toISOString() ?? null,
       status,
       trigger,
       battery_cycle_ratio: batteryCycleRatio,
@@ -295,6 +297,7 @@ export async function updateComponentMaintenanceCycle(
           component_name: true,
           serial_number: true,
           current_usage_hours: true,
+          installation_date: true,
           component_metadata: true,
           maintenance_cycle: true,
           maintenance_cycle_hour: true,
@@ -392,6 +395,7 @@ export async function updateComponentMaintenanceCycle(
         limit_day: limitDay,
         maintenance_cycle_type: cycleType,
         last_maintenance_date: comp.last_maintenance_date?.toISOString() ?? null,
+        activation_date: comp.installation_date?.toISOString() ?? null,
         status,
         trigger,
         battery_cycle_ratio: batteryCycleRatio,
