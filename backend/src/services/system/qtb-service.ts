@@ -15,6 +15,7 @@ export interface QtbMissionRow {
   notes: string | null;
   pilot_name: string | null;
   weather_temperature: number | null;
+  battery_serial_number: string | null;
 }
 
 export interface QtbPage {
@@ -96,7 +97,7 @@ export async function generateQtbReportData(
     };
   }
 
-  const [pastAgg, missions] = await Promise.all([
+  const [pastAgg, missions, batteryComponent] = await Promise.all([
     prisma.pilot_mission.aggregate({
       where: { fk_tool_id: toolId, status_name: 'COMPLETED', actual_start: { lt: startUtc } },
       _sum: { flight_duration: true },
@@ -118,10 +119,33 @@ export async function generateQtbReportData(
       },
       orderBy: { actual_start: 'asc' },
     }),
+    // Fallback for flights with no logged mission_maintenance_log battery entry —
+    // most systems only ever have one battery component attached, so use it.
+    prisma.tool_component.findFirst({
+      where: { fk_tool_id: toolId, component_type: 'BATTERY' },
+      select: { serial_number: true },
+    }),
   ]);
 
   const pastFlightMinutes = pastAgg._sum.flight_duration ?? 0;
   const pastFlightCount = pastAgg._count;
+
+  const missionIds = missions.map((m) => m.pilot_mission_id);
+  const batteryLogs = missionIds.length
+    ? await prisma.mission_maintenance_log.findMany({
+        where: { fk_mission_id: { in: missionIds }, tool_component: { component_type: 'BATTERY' } },
+        select: { fk_mission_id: true, tool_component: { select: { serial_number: true } } },
+      })
+    : [];
+
+  const batterySerialsByMission = new Map<number, string[]>();
+  batteryLogs.forEach((log) => {
+    const sn = log.tool_component.serial_number;
+    if (!sn) return;
+    const existing = batterySerialsByMission.get(log.fk_mission_id) ?? [];
+    if (!existing.includes(sn)) existing.push(sn);
+    batterySerialsByMission.set(log.fk_mission_id, existing);
+  });
 
   const pages: QtbPage[] = [];
   let runningMinutes = pastFlightMinutes;
@@ -151,6 +175,7 @@ export async function generateQtbReportData(
         notes: m.notes,
         pilot_name: m.users ? [m.users.first_name, m.users.last_name].filter(Boolean).join(' ') || null : null,
         weather_temperature: m.weather_temperature != null ? Number(m.weather_temperature) : null,
+        battery_serial_number: (batterySerialsByMission.get(m.pilot_mission_id) ?? []).join(', ') || batteryComponent?.serial_number || null,
       })),
     });
 

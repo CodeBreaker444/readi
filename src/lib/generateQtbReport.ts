@@ -13,6 +13,7 @@ export interface QtbMissionRow {
   notes: string | null;
   pilot_name: string | null;
   weather_temperature: number | null;
+  battery_serial_number: string | null;
 }
 
 export interface QtbPage {
@@ -154,14 +155,15 @@ export async function generateQtbReportPdf(report: QtbReportData, timezone: stri
     const flightRows: any[][] = [];
     for (let i = 0; i < 10; i++) {
       const m = page.missions[i];
+      const batteries = m?.battery_serial_number ? m.battery_serial_number.split(', ') : [];
       flightRows.push([
         { content: String(i + 1), rowSpan: 2, styles: { halign: 'center', valign: 'middle' } },
-        { content: m ? formatMinutesSpaced(m.flight_duration) : BLANK_TIME, rowSpan: 2, styles: { halign: 'center', valign: 'middle' } },
-        { content: '' },
-        { content: m ? buildNoteText(m, timezone) : '', rowSpan: 2, styles: { halign: 'left', fontSize: 7 } },
+        { content: m ? formatMinutesSpaced(m.flight_duration) : BLANK_TIME, colSpan: 2, rowSpan: 2, styles: { halign: 'center', valign: 'middle' } },
+        { content: batteries[0] ?? '', styles: { halign: 'center', fontSize: 7 } },
+        { content: m ? buildNoteText(m, timezone) : '', colSpan: 9, rowSpan: 2, styles: { halign: 'left', fontSize: 7 } },
       ]);
       flightRows.push([
-        { content: '' },
+        { content: batteries[1] ?? '' },
       ]);
     }
 
