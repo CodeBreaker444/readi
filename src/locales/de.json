@@ -4091,7 +4091,26 @@
           "relations": "Beziehungen",
           "delete": "Löschen",
           "log": "Log",
-          "flights": "Flüge"
+          "flights": "Flüge",
+          "qtbReport": "QTB-Bericht"
+        }
+      },
+      "qtbReportModal": {
+        "title": "QTB-Bericht erstellen",
+        "timezoneHint": "Daten verwenden Ihre lokale Zeitzone ({{timezone}}).",
+        "errors": {
+          "rangeInvalid": "Das Enddatum muss am oder nach dem Startdatum liegen.",
+          "tooManyRecords": "Dieser Zeitraum enthält zu viele Flüge. Bitte grenzen Sie den Zeitraum ein und versuchen Sie es erneut.",
+          "generic": "Der Bericht konnte nicht erstellt werden. Bitte versuchen Sie es erneut."
+        },
+        "toasts": {
+          "success": "QTB-Bericht erfolgreich heruntergeladen",
+          "error": "QTB-Bericht konnte nicht erstellt werden"
+        },
+        "buttons": {
+          "cancel": "Abbrechen",
+          "generate": "PDF erstellen",
+          "generating": "Wird erstellt..."
         }
       },
       "statusBadge": {

@@ -10,7 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useTheme } from '@/components/useTheme';
 import { getComponentExpiryInfo } from '@/lib/system/component-expiry';
 import { getCoreRowModel, getPaginationRowModel, useReactTable } from '@tanstack/react-table';
-import { ChevronRight, GitBranch } from 'lucide-react';
+import { ChevronRight, FileText, GitBranch } from 'lucide-react';
 import { Fragment } from 'react';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -65,6 +65,7 @@ interface SystemComponentsTableProps {
   onLogComponent: (row: ComponentRow) => void;
   onFlightLogsComponent: (row: ComponentRow) => void;
   onOpenRelations: (toolId: number, toolCode: string) => void;
+  onGenerateQtbReport: (tool: DroneToolData) => void;
 }
 
 function StatusPill({ status }: { status?: string | null }) {
@@ -95,6 +96,7 @@ export default function SystemComponentsTable({
   onLogComponent,
   onFlightLogsComponent,
   onOpenRelations,
+  onGenerateQtbReport,
 }: SystemComponentsTableProps) {
   const { isDark } = useTheme();
   const { t } = useTranslation();
@@ -277,6 +279,14 @@ export default function SystemComponentsTable({
                             <Button size="sm" variant="outline" onClick={() => onViewFiles(system)}>{t('systems.components.systemsTable.buttons.files')}</Button>
                             <Button size="sm" variant="outline" onClick={() => onOpenRelations(system.tool_id, system.tool_code)} className="gap-1">
                               <GitBranch size={13} /> {t('systems.components.systemsTable.buttons.relations')}
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => onGenerateQtbReport(system)}
+                              className="gap-1 text-violet-600 border-violet-200 hover:bg-violet-50 hover:text-violet-700"
+                            >
+                              <FileText size={13} /> {t('systems.components.systemsTable.buttons.qtbReport')}
                             </Button>
                             <FeatureGate feature="systems_manage" require="delete">
                               <Button size="sm" variant="destructive" onClick={() => onDeleteSystem(system.tool_id)}>{t('systems.components.systemsTable.buttons.delete')}</Button>
