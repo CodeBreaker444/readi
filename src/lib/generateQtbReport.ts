@@ -12,6 +12,7 @@ export interface QtbMissionRow {
   location: string | null;
   notes: string | null;
   pilot_name: string | null;
+  weather_temperature: number | null;
 }
 
 export interface QtbPage {
@@ -46,177 +47,216 @@ function triggerDownload(blob: Blob, name: string) {
   URL.revokeObjectURL(url);
 }
 
-function formatMinutes(minutes: number): string {
-  const h = Math.floor(minutes / 60);
-  const m = minutes % 60;
-  return `h ${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-}
+const BLANK_TIME = 'h ____: ____';
 
-async function fetchLogoBase64(): Promise<string | null> {
-  try {
-    const res = await fetch('/logo-sm.png');
-    const blob = await res.blob();
-    return await new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result as string);
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
-  } catch {
-    return null;
-  }
-}
-
-const QTB_SUBTITLE: Record<string, string> = {
-  en: 'Technical Logbook',
-  de: 'Technisches Bordbuch',
-  it: 'Quaderno Tecnico di Bordo',
+const QTB_TITLE: Record<string, string> = {
+  en: 'TECHNICAL LOGBOOK',
+  de: 'TECHNISCHES BORDBUCH',
+  it: 'QUADERNO TECNICO DI BORDO',
 };
 
-function resolveQtbSubtitle(language: string | null | undefined): string {
-  const lang = (language ?? 'en').split('-')[0].toLowerCase();
-  return QTB_SUBTITLE[lang] ?? QTB_SUBTITLE.en;
+function resolveQtbTitle(language: string | null | undefined): string {
+  const lang = (language ?? 'it').split('-')[0].toLowerCase();
+  return QTB_TITLE[lang] ?? QTB_TITLE.it;
 }
 
+function pad2(n: number): string {
+  return String(n).padStart(2, '0');
+}
+
+function formatMinutesSpaced(minutes: number | null): string {
+  if (minutes == null) return BLANK_TIME;
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return `h ${pad2(h)}: ${pad2(m)}`;
+}
+
+function formatTimeSpaced(iso: string | null, timezone: string): string {
+  if (!iso) return BLANK_TIME;
+  return `h ${formatTimeInTz(iso, timezone).replace(':', ': ')}`;
+}
+
+interface PageMeta {
+  site: string | null;
+  dateLabel: string | null;
+  earliestStart: string | null;
+  latestEnd: string | null;
+  rpName: string | null;
+  avgTemp: number | null;
+}
+
+function computePageMeta(missions: QtbMissionRow[], timezone: string): PageMeta {
+  const site = missions.find((m) => m.location)?.location ?? null;
+
+  const starts = missions.map((m) => m.actual_start).filter((v): v is string => !!v);
+  const ends = missions.map((m) => m.actual_end).filter((v): v is string => !!v);
+  const earliestStart = starts.length
+    ? starts.reduce((a, b) => (new Date(a) < new Date(b) ? a : b))
+    : null;
+  const latestEnd = ends.length
+    ? ends.reduce((a, b) => (new Date(a) > new Date(b) ? a : b))
+    : null;
+
+  let dateLabel: string | null = null;
+  if (starts.length) {
+    const firstDate = formatDateInTz(starts[0], timezone);
+    const lastDate = formatDateInTz(starts[starts.length - 1], timezone);
+    dateLabel = firstDate === lastDate ? firstDate : `${firstDate} - ${lastDate}`;
+  }
+
+  const pilotNames = Array.from(new Set(missions.map((m) => m.pilot_name).filter((v): v is string => !!v)));
+  const rpName = pilotNames.length === 1 ? pilotNames[0] : null;
+
+  const temps = missions.map((m) => m.weather_temperature).filter((v): v is number => v != null);
+  const avgTemp = temps.length ? Math.round((temps.reduce((a, b) => a + b, 0) / temps.length) * 10) / 10 : null;
+
+  return { site, dateLabel, earliestStart, latestEnd, rpName, avgTemp };
+}
+
+function buildNoteText(m: QtbMissionRow, timezone: string): string {
+  const parts: string[] = [];
+  if (m.actual_start && m.actual_end) {
+    parts.push(`${formatTimeInTz(m.actual_start, timezone)}-${formatTimeInTz(m.actual_end, timezone)}`);
+  }
+  if (m.notes) parts.push(m.notes);
+  return parts.join('  ·  ');
+}
+
+// Column widths (mm) taken 1:1 from the official QTB template's 13-column
+// table grid (TS-UFM-MOD-11), converted from twips so every merged field
+// keeps the same proportions as the source document.
+const COL_WIDTHS = [27.65, 21.42, 6.15, 24.69, 2.65, 4.96, 20.07, 4.99, 20.37, 2.13, 2.31, 7.64, 24.76];
+
 export async function generateQtbReportPdf(report: QtbReportData, timezone: string, language?: string): Promise<void> {
-  const [{ default: jsPDF }, { default: autoTable }, logoBase64] = await Promise.all([
+  const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([
     import('jspdf'),
     import('jspdf-autotable'),
-    fetchLogoBase64(),
   ]);
 
-  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', compress: true });
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4', compress: true });
   const pageW = doc.internal.pageSize.width;
   const pageH = doc.internal.pageSize.height;
-  const marginL = 12;
-  const marginR = 12;
-  const contentW = pageW - marginL - marginR;
+  const marginL = 20;
+  const marginR = 20;
 
-  const purple: [number, number, number] = [109, 40, 217];
-  const slate800: [number, number, number] = [30, 41, 59];
-  const slate500: [number, number, number] = [100, 116, 139];
-  const slate300: [number, number, number] = [203, 213, 225];
-  const white: [number, number, number] = [255, 255, 255];
-  const bgLight: [number, number, number] = [248, 250, 252];
-
+  const title = resolveQtbTitle(language);
   const droneSerial = report.drone?.serial_number || report.drone?.uas_serial_number || null;
-  const droneLabel = droneSerial ? `S/N ${droneSerial}` : 'S/N —';
-  const subtitle = resolveQtbSubtitle(language);
-  const logoSize = 12;
-  const textStartX = logoBase64 ? marginL + logoSize + 4 : marginL;
+  const modelLine = `${report.tool.model_name ?? '<UAS Model>'}   S/N   ${droneSerial ?? '_______________________'}`;
+
+  const columnStyles: Record<number, { cellWidth: number }> = {};
+  COL_WIDTHS.forEach((w, i) => { columnStyles[i] = { cellWidth: w }; });
 
   report.pages.forEach((page, pageIdx) => {
     if (pageIdx > 0) doc.addPage();
 
-    let y = 14;
+    const meta = computePageMeta(page.missions, timezone);
 
-    // ── Header bar ──────────────────────────────────────────────────────────
-    doc.setFillColor(...purple);
-    doc.rect(0, 0, pageW, 24, 'F');
-
-    if (logoBase64) {
-      doc.addImage(logoBase64, 'PNG', marginL, 6, logoSize, logoSize);
+    const flightRows: any[][] = [];
+    for (let i = 0; i < 10; i++) {
+      const m = page.missions[i];
+      flightRows.push([
+        { content: String(i + 1), rowSpan: 2, styles: { halign: 'center', valign: 'middle' } },
+        { content: m ? formatMinutesSpaced(m.flight_duration) : BLANK_TIME, rowSpan: 2, styles: { halign: 'center', valign: 'middle' } },
+        { content: '' },
+        { content: m ? buildNoteText(m, timezone) : '', rowSpan: 2, styles: { halign: 'left', fontSize: 7 } },
+      ]);
+      flightRows.push([
+        { content: '' },
+      ]);
     }
 
-    doc.setFontSize(13);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(...white);
-    doc.text(`QTB — ${subtitle}`, textStartX, 10);
-
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(200, 190, 255);
-    doc.text(
-      `${report.tool.tool_code ?? '—'}${report.tool.model_name ? ` · ${report.tool.model_name}` : ''} · ${droneLabel}`,
-      textStartX,
-      16,
-    );
-    doc.text(
-      `Range ${formatDateInTz(report.range.startDate, timezone)} – ${formatDateInTz(report.range.endDate, timezone)} · Generated ${new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}`,
-      textStartX,
-      21,
-    );
-
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(...white);
-    doc.text(`pag. ${String(page.pageNumber).padStart(2, '0')}`, pageW - marginR, 12, { align: 'right' });
-
-    y = 32;
-
-    // ── Summary bar ────────────────────────────────────────────────────────
-    doc.setFillColor(...bgLight);
-    doc.setDrawColor(...slate300);
-    doc.setLineWidth(0.2);
-    doc.roundedRect(marginL, y, contentW, 16, 2, 2, 'FD');
-
-    const summaryCols = [
-      { label: 'Past Flights', value: `${page.pastFlightCount} · ${formatMinutes(page.pastFlightMinutes)}` },
-      { label: 'Today Flights', value: `${page.todayFlightCount} · ${formatMinutes(page.todayFlightMinutes)}` },
-      { label: 'Total Flights', value: `${page.totalFlightCount} · ${formatMinutes(page.totalFlightMinutes)}` },
+    const body: any[][] = [
+      // Row 0: logo (blank box) | title | form code
+      [
+        { content: '', rowSpan: 2, colSpan: 2 },
+        { content: title, rowSpan: 2, colSpan: 9, styles: { halign: 'center', valign: 'middle', fontStyle: 'bold', fontSize: 12 } },
+        { content: 'TS-UFM-MOD-11', colSpan: 2, styles: { halign: 'center', fontSize: 6.5 } },
+      ],
+      // Row 1: (logo/title continue) | page number
+      [
+        { content: `pag. ${String(page.pageNumber).padStart(2, '0')} di 50`, colSpan: 2, styles: { halign: 'center', fontSize: 6.5 } },
+      ],
+      // Row 2: spacer
+      [{ content: '', colSpan: 13, styles: { minCellHeight: 1 } }],
+      // Row 3: Site | Date | UAS Model/S-N
+      [
+        { content: `Site: ${meta.site ?? ''}`, colSpan: 2 },
+        { content: `Date: ${meta.dateLabel ?? ''}`, colSpan: 3 },
+        { content: modelLine, colSpan: 8, rowSpan: 2, styles: { valign: 'middle' } },
+      ],
+      // Row 4: Operational Authorisation (not tracked — kept blank as in template)
+      [
+        { content: 'Operational Authorisation N: ________________', colSpan: 5 },
+      ],
+      // Row 5: RP / Wind / Temp / Dew Point
+      [
+        { content: `RP: ${meta.rpName ?? ''}\nSignature:  ________________________`, colSpan: 5, rowSpan: 2, styles: { valign: 'middle' } },
+        { content: 'Wind [kt]:', colSpan: 2 },
+        { content: `Temp [°C]: ${meta.avgTemp ?? ''}`, colSpan: 3 },
+        { content: 'Dew Point [°C]:', colSpan: 3 },
+      ],
+      // Row 6: (RP continue) / Satellites / Kp / Visibility
+      [
+        { content: 'Satellites:', colSpan: 2 },
+        { content: 'Kp:', colSpan: 3 },
+        { content: 'Visibility [m]:', colSpan: 3 },
+      ],
+      // Row 7: VO / Mission Start Time
+      [
+        { content: 'VO:\nSignature:  ________________________', colSpan: 5, rowSpan: 2, styles: { valign: 'middle' } },
+        { content: 'Mission Start Time:', colSpan: 4 },
+        { content: formatTimeSpaced(meta.earliestStart, timezone), colSpan: 4 },
+      ],
+      // Row 8: (VO continue) / Mission End Time
+      [
+        { content: 'Mission End Time:', colSpan: 4 },
+        { content: formatTimeSpaced(meta.latestEnd, timezone), colSpan: 4 },
+      ],
+      // Row 9: flight table header
+      [
+        { content: 'Today Flights', styles: { halign: 'center', fontStyle: 'bold', fontSize: 7 } },
+        { content: 'Flight Duration', colSpan: 2, styles: { halign: 'center', fontStyle: 'bold', fontSize: 7 } },
+        { content: 'Batteries S/N', styles: { halign: 'center', fontStyle: 'bold', fontSize: 7 } },
+        { content: 'Notes (type of mission, defects, observations, etc.)', colSpan: 9, styles: { halign: 'center', fontStyle: 'bold', fontSize: 7 } },
+      ],
+      // Rows 10-29: 10 flight entries (2 physical rows each)
+      ...flightRows,
+      // Row 30: summary
+      [
+        { content: 'Today Flight Time:', styles: { fontStyle: 'bold', fontSize: 7 } },
+        { content: formatMinutesSpaced(page.todayFlightMinutes), colSpan: 2, styles: { halign: 'center' } },
+        { content: 'Past Flight Time:', colSpan: 3, styles: { fontStyle: 'bold', fontSize: 7 } },
+        { content: formatMinutesSpaced(page.pastFlightMinutes), colSpan: 2, styles: { halign: 'center' } },
+        { content: 'Total Flight Time:', colSpan: 4, styles: { fontStyle: 'bold', fontSize: 7 } },
+        { content: formatMinutesSpaced(page.totalFlightMinutes), styles: { halign: 'center' } },
+      ],
+      // Row 31: general observations
+      [{ content: 'General observations:', colSpan: 13, styles: { minCellHeight: 16, valign: 'top' } }],
     ];
-    const colW = contentW / summaryCols.length;
-    summaryCols.forEach((col, i) => {
-      const x = marginL + i * colW + 6;
-      doc.setFontSize(7);
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(...slate500);
-      doc.text(col.label.toUpperCase(), x, y + 6);
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(...slate800);
-      doc.text(col.value, x, y + 12);
-    });
-
-    y += 22;
-
-    // ── Flight rows table ─────────────────────────────────────────────────
-    const rows = page.missions.map((m, idx) => [
-      String(idx + 1),
-      m.mission_code ?? `#${m.pilot_mission_id}`,
-      formatDateInTz(m.actual_start, timezone),
-      m.actual_start ? formatTimeInTz(m.actual_start, timezone) : '—',
-      m.actual_end ? formatTimeInTz(m.actual_end, timezone) : '—',
-      m.flight_duration != null ? formatMinutes(m.flight_duration) : '—',
-      m.distance_flown != null ? `${m.distance_flown.toLocaleString()} m` : '—',
-      m.pilot_name ?? '—',
-      m.location ?? '—',
-      m.notes ?? '—',
-    ]);
 
     autoTable(doc, {
-      startY: y,
-      head: [['#', 'Mission', 'Date', 'Takeoff', 'Landing', 'Duration', 'Distance', 'Pilot', 'Location', 'Notes']],
-      body: rows,
-      styles: { fontSize: 7.5, cellPadding: { top: 2, right: 3, bottom: 2, left: 3 }, overflow: 'linebreak' },
-      headStyles: { fillColor: purple, textColor: 255, fontStyle: 'bold', fontSize: 7.5 },
-      bodyStyles: { textColor: slate800 },
-      alternateRowStyles: { fillColor: bgLight },
-      columnStyles: {
-        0: { cellWidth: 8 },
-        1: { cellWidth: 24 },
-        2: { cellWidth: 22 },
-        3: { cellWidth: 16 },
-        4: { cellWidth: 16 },
-        5: { cellWidth: 16 },
-        6: { cellWidth: 18 },
-        7: { cellWidth: 26 },
-        8: { cellWidth: 26 },
+      startY: 15,
+      body,
+      theme: 'grid',
+      styles: {
+        font: 'helvetica',
+        fontSize: 8,
+        textColor: [0, 0, 0],
+        lineColor: [0, 0, 0],
+        lineWidth: 0.15,
+        cellPadding: 1.4,
+        valign: 'middle',
+        overflow: 'linebreak',
       },
-      margin: { left: marginL, right: marginR, bottom: 16 },
-      tableLineColor: slate300,
-      tableLineWidth: 0.1,
+      columnStyles,
+      margin: { left: marginL, right: marginR, top: 15, bottom: 16 },
     });
 
-    // ── Footer ───────────────────────────────────────────────────────────
-    doc.setDrawColor(...slate300);
-    doc.setLineWidth(0.3);
-    doc.line(marginL, pageH - 10, pageW - marginR, pageH - 10);
+    // ── Footer — the only ReAdi branding on the page ──────────────────────
     doc.setFontSize(7);
     doc.setFont('helvetica', 'normal');
-    doc.setTextColor(...slate500);
-    doc.text('Generated by Readi Platform', marginL, pageH - 5);
-    doc.text(`Page ${page.pageNumber} of ${report.pages.length}`, pageW - marginR, pageH - 5, { align: 'right' });
+    doc.setTextColor(0, 0, 0);
+    doc.text('Generated by ReAdi', pageW / 2, pageH - 8, { align: 'center' });
   });
 
   const blob = doc.output('blob');

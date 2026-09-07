@@ -14,6 +14,7 @@ export interface QtbMissionRow {
   location: string | null;
   notes: string | null;
   pilot_name: string | null;
+  weather_temperature: number | null;
 }
 
 export interface QtbPage {
@@ -112,6 +113,7 @@ export async function generateQtbReportData(
         distance_flown: true,
         location: true,
         notes: true,
+        weather_temperature: true,
         users: { select: { first_name: true, last_name: true } },
       },
       orderBy: { actual_start: 'asc' },
@@ -148,6 +150,7 @@ export async function generateQtbReportData(
         location: m.location,
         notes: m.notes,
         pilot_name: m.users ? [m.users.first_name, m.users.last_name].filter(Boolean).join(' ') || null : null,
+        weather_temperature: m.weather_temperature != null ? Number(m.weather_temperature) : null,
       })),
     });
 
