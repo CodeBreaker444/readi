@@ -17,3 +17,28 @@ export function assertMissionEditable(statusName: string | null | undefined): vo
     throw new MissionLockedError();
   }
 }
+
+export const DFLIGHT_ACCEPTED_STATUS = 'ACCEPTED';
+
+export class DFlightNotAuthorizedError extends Error {
+  code = 'DFLIGHT_NOT_AUTHORIZED';
+  constructor() {
+    super('This mission has not been authorized by D-Flight yet — it cannot be started until authorization is accepted.');
+  }
+}
+
+/**
+ * Blocks starting a mission that has an active D-Flight authorization request
+ * until D-Flight has accepted it. A mission with no dflight_mission_id (D-Flight
+ * not enabled, or the authorization request was never created/failed) is left
+ * untouched — no gate applies.
+ */
+export function assertDFlightAuthorized(
+  dflightMissionId: string | null | undefined,
+  flightAuthorisationStatus: string | null | undefined,
+): void {
+  if (!dflightMissionId) return;
+  if (flightAuthorisationStatus !== DFLIGHT_ACCEPTED_STATUS) {
+    throw new DFlightNotAuthorizedError();
+  }
+}

@@ -1,6 +1,7 @@
 import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { getToolName, getUserName } from '@/backend/services/shared/entity-names';
 import { notifyDccMissionCreation } from '@/backend/services/mission/dcc-callback-service';
+import { authorizeMissionWithDFlight } from '@/backend/services/integrations/dflight-mission-authorization-service';
 import { notifyPilotAssignment } from '@/backend/services/notification/notification-service';
 import { createOperation, deleteOperation, listOperations } from '@/backend/services/operation/operation-service';
 import { assertToolNotInMaintenance, assertToolNotNonOperational } from '@/backend/services/system/maintenance-ticket';
@@ -154,6 +155,18 @@ export async function POST(req: NextRequest) {
 
     if (dcc.outcome === 'http_error' || dcc.outcome === 'network_error') {
       console.warn('[POST /api/operation] DCC notification failed (non-fatal):', dcc.message);
+    }
+
+    // D-Flight authorization + flytrelay watch registration — no-op unless the
+    // owner has D-Flight enabled; never blocks mission creation on failure.
+    for (const op of allOperations) {
+      const { create, watch } = await authorizeMissionWithDFlight(op.pilot_mission_id, ownerId);
+      if (create.outcome === 'error') {
+        console.warn('[POST /api/operation] D-Flight authorization failed (non-fatal):', create.message);
+      }
+      if (watch?.outcome === 'error') {
+        console.warn('[POST /api/operation] flytrelay watch registration failed (non-fatal):', watch.message);
+      }
     }
 
     // Send pilot assignment notifications for all created missions

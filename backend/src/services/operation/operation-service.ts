@@ -1,5 +1,5 @@
 import { seedLucProcedureProgressFromSteps } from '@/backend/services/operation/luc-procedure-progress';
-import { assertMissionEditable } from '@/backend/services/operation/mission-lock';
+import { assertMissionEditable, assertDFlightAuthorized } from '@/backend/services/operation/mission-lock';
 import { AttachmentUploadResponse, CreateOperationSchema, ListOperationsQuerySchema, Operation, OperationAttachment, OperationsListResponse, UpdateOperationSchema } from '@/config/types/operation';
 import { prisma } from '@/lib/prisma';
 import { buildS3Url, deleteFileFromS3, getPresignedDownloadUrl, REGION, uploadFileToS3 } from '@/lib/s3Client';
@@ -105,6 +105,8 @@ export async function listOperations(
         recurring_group_id: true,
         fk_owner_id: true,
         status_name: true,
+        dflight_mission_id: true,
+        dflight_flight_authorisation_status: true,
         created_at: true,
         updated_at: true,
         users: { select: { first_name: true, last_name: true } },
@@ -368,7 +370,7 @@ export async function createOperation(input: CreateOperationSchema, ownerId: num
 
   // Send mission created email notification (for the first mission only)
   try {
-    console.log('[createOperation] Attempting to send mission created email for ownerId:', ownerId, 'missionCode:', codeToChild);
+    // console.log('[createOperation] Attempting to send mission created email for ownerId:', ownerId, 'missionCode:', codeToChild);
     
     const missionType = input.fk_mission_type_id 
       ? await prisma.pilot_mission_type.findUnique({
@@ -392,16 +394,6 @@ export async function createOperation(input: CreateOperationSchema, ownerId: num
       select: { scheduled_start: true },
     });
 
-    console.log('[createOperation] Email data:', {
-      missionCode: codeToChild,
-      missionType: missionType?.type_name || 'Unknown',
-      createdBy,
-      scheduledDate: firstMission?.scheduled_start,
-      description: input.notes || undefined,
-      isRecurrent,
-      totalMissions: insertedIds.length,
-    });
-
     await sendMissionCreatedModuleEmail(ownerId, {
       missionCode: codeToChild,
       missionType: missionType?.type_name || 'Unknown',
@@ -412,7 +404,6 @@ export async function createOperation(input: CreateOperationSchema, ownerId: num
       description: input.notes || undefined,
     });
 
-    console.log('[createOperation] Mission created email sent successfully');
 
     // Send mission assigned email to pilot
     if (input.fk_pilot_user_id) {
@@ -434,7 +425,7 @@ export async function createOperation(input: CreateOperationSchema, ownerId: num
               : input.scheduled_start,
             description: input.notes || undefined,
           }, [input.fk_pilot_user_id]);
-          console.log('[createOperation] Mission assigned email sent to pilot:', pilotUser.first_name, pilotUser.last_name);
+          // console.log('[createOperation] Mission assigned email sent to pilot:', pilotUser.first_name, pilotUser.last_name);
         }
       } catch (pilotEmailError) {
         console.error('[createOperation] Failed to send mission assigned email to pilot:', pilotEmailError);
@@ -462,7 +453,7 @@ export async function createOperation(input: CreateOperationSchema, ownerId: num
               : input.scheduled_start,
             description: input.notes || undefined,
           }, [observer.user_id]);
-          console.log('[createOperation] Mission assigned email sent to observer:', observer.name);
+          // console.log('[createOperation] Mission assigned email sent to observer:', observer.name);
         } catch (observerEmailError) {
           console.error('[createOperation] Failed to send mission assigned email to observer:', observer.name, observerEmailError);
         }
@@ -491,9 +482,15 @@ export async function updateOperation(id: number, input: UpdateOperationSchema, 
       mission_name: true,
       mission_description: true,
       fk_owner_id: true,
+      dflight_mission_id: true,
+      dflight_flight_authorisation_status: true,
     },
   });
   assertMissionEditable(current?.status_name);
+
+  if ((input as any).status_name === 'IN_PROGRESS' && current?.status_name !== 'IN_PROGRESS') {
+    assertDFlightAuthorized(current?.dflight_mission_id, current?.dflight_flight_authorisation_status);
+  }
 
   const updatePayload: Record<string, unknown> = {};
   if (input.mission_code !== undefined) updatePayload.mission_code = input.mission_code;

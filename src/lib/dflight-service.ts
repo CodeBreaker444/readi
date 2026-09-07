@@ -157,13 +157,38 @@ function getAgent(pfxContent: string, pfxPassword: string, baseUrl: string): Age
   return _agent;
 }
 
+// D-Flight's gateway rejects POST/PUT/DELETE calls with a "CSRF protection
+// policy exception (CSRF-01)" — confirmed to not be a cookie-based CSRF
+// token (no Set-Cookie on login/userinfo/create), so trying the other common
+// WAF-level CSRF check: requiring Origin/Referer, which a plain server-to-
+// server fetch never sends unless told to. Only needed on mutating verbs.
+function writeRequestHeaders(safeBaseUrl: string): Record<string, string> {
+  const origin = new URL(safeBaseUrl).origin;
+  return {
+    Origin: origin,
+    Referer: `${origin}/`,
+    'X-Requested-With': 'XMLHttpRequest',
+  };
+}
+
+interface DFetchResponse {
+  ok: boolean;
+  status: number;
+  statusText: string;
+  headers: Record<string, string>;
+  setCookies: string[];
+  text: () => Promise<string>;
+  json: () => Promise<unknown>;
+  arrayBuffer: () => Promise<ArrayBuffer>;
+}
+
 async function dFetch(
   url: string,
   init: Parameters<typeof undiciFetch>[1],
   pfxContent?: string,
   pfxPassword?: string,
   baseUrl?: string,
-): Promise<Awaited<ReturnType<typeof undiciFetch>>> {
+): Promise<DFetchResponse> {
   // Use native HTTPS fetch by default for better PFX certificate support
   const httpsAgent = pfxContent && pfxPassword ? getHttpsAgent(pfxContent, pfxPassword) : undefined;
   const response = await fetch(url, {
@@ -181,6 +206,13 @@ async function dFetch(
     status: response.status,
     statusText: response.statusText,
     headers: Object.fromEntries(response.headers.entries()),
+    // Object.fromEntries(...entries()) silently drops/merges repeated
+    // Set-Cookie headers per the Fetch spec — getSetCookie() (Node 18.14+)
+    // is the only reliable way to read them, needed to check for a CSRF
+    // cookie (e.g. XSRF-TOKEN) D-Flight might expect echoed back on writes.
+    setCookies: typeof (response.headers as any).getSetCookie === 'function'
+      ? (response.headers as any).getSetCookie()
+      : [],
     text: async () => buffer.toString('utf-8'),
     json: async () => JSON.parse(buffer.toString('utf-8')),
     arrayBuffer: async () => buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength),
@@ -214,6 +246,9 @@ export async function getDFlightToken(
   }, pfxContent, pfxPassword, baseUrl);
 
   console.log(`D-Flight token status: ${res.status}`);
+  if (res.setCookies?.length) {
+    console.log('D-Flight token response Set-Cookie:', res.setCookies);
+  }
   if (!res.ok) {
     const text = await res.text();
     throw new Error(`D-Flight token request failed (${res.status}): ${text}`);
@@ -523,6 +558,9 @@ export async function getDFlightUserInfo(
     safeBaseUrl,
   );
 
+  if (res.setCookies?.length) {
+    console.log('D-Flight userinfo response Set-Cookie:', res.setCookies);
+  }
   if (!res.ok) {
     throw new Error(`D-Flight userinfo request failed (${res.status})`);
   }
@@ -617,6 +655,154 @@ console.log('user management:',records)
         : [],
     };
   });
+}
+
+export interface DFlightMissionTrajectoryElement {
+  trj_element_type: string;
+  trj_element: string;
+  h_buffer: number;
+  v_buffer: number;
+  min_operative_height: number;
+  max_operative_height: number;
+  entry_date_time: string;
+  exit_date_time: string;
+  buffer_entry_date_time: string;
+  buffer_exit_date_time: string;
+}
+
+export interface DFlightCreateMissionInput {
+  mission_name: string;
+  description?: string;
+  drone_id: string;
+  mission_type: string;
+  flight_condition_type: string;
+  operator_id: string;
+  easa_operator_id: string;
+  start_date_time: string;
+  end_date_time: string;
+  mission_duration: number;
+  max_height: number;
+  max_speed: number;
+  block_condition?: boolean;
+  geo_data: {
+    mission_reference_frame: string;
+    trajectory_data: DFlightMissionTrajectoryElement[];
+  } | null;
+  operational_scanario: string;
+  uas_operational_category: string;
+  notam_code?: string;
+  is_automatic_clearance?: boolean;
+  uspace_id: string;
+}
+
+export interface DFlightMissionResult {
+  mission_id: string;
+  tech_version: string;
+  mission_status?: string;
+  flight_authorisation_status?: string;
+}
+
+export async function createDFlightMission(
+  baseUrl:     string,
+  accessToken: string,
+  input:       DFlightCreateMissionInput,
+  pfxContent?:  string,
+  pfxPassword?: string,
+): Promise<DFlightMissionResult> {
+  const safeBaseUrl = baseUrl.startsWith('http') ? baseUrl : `https://${baseUrl}`;
+
+  const res = await dFetch(
+    `${safeBaseUrl}/mission-management/mission`,
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        ...writeRequestHeaders(safeBaseUrl),
+      },
+      body: JSON.stringify({ mission_id: -1, mission_status: 'SAVED', ...input }),
+    },
+    pfxContent,
+    pfxPassword,
+    safeBaseUrl,
+  );
+
+  console.log(`D-Flight create mission status: ${res.status}`);
+  if (res.setCookies?.length) {
+    console.log('D-Flight create mission response Set-Cookie:', res.setCookies);
+  }
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`D-Flight create mission request failed (${res.status}): ${text}`);
+  }
+
+  return res.json() as Promise<DFlightMissionResult>;
+}
+
+export async function getDFlightMission(
+  baseUrl:     string,
+  accessToken: string,
+  missionId:   string,
+  pfxContent?:  string,
+  pfxPassword?: string,
+): Promise<DFlightMissionResult> {
+  const safeBaseUrl = baseUrl.startsWith('http') ? baseUrl : `https://${baseUrl}`;
+
+  const res = await dFetch(
+    `${safeBaseUrl}/mission-management/mission/${encodeURIComponent(missionId)}`,
+    {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        Accept: 'application/json',
+      },
+    },
+    pfxContent,
+    pfxPassword,
+    safeBaseUrl,
+  );
+
+  console.log(`D-Flight read mission status: ${res.status}`);
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`D-Flight read mission request failed (${res.status}): ${text}`);
+  }
+
+  return res.json() as Promise<DFlightMissionResult>;
+}
+
+export async function withdrawDFlightMission(
+  baseUrl:     string,
+  accessToken: string,
+  missionId:   string,
+  techVersion: string,
+  pfxContent?:  string,
+  pfxPassword?: string,
+): Promise<void> {
+  const safeBaseUrl = baseUrl.startsWith('http') ? baseUrl : `https://${baseUrl}`;
+
+  const res = await dFetch(
+    `${safeBaseUrl}/mission-management/mission/${encodeURIComponent(missionId)}`,
+    {
+      method: 'DELETE',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+        ...writeRequestHeaders(safeBaseUrl),
+      },
+      body: JSON.stringify({ techVersion }),
+    },
+    pfxContent,
+    pfxPassword,
+    safeBaseUrl,
+  );
+
+  console.log(`D-Flight withdraw mission status: ${res.status}`);
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`D-Flight withdraw mission request failed (${res.status}): ${text}`);
+  }
 }
 
 export async function getDFlightDeclarationPdf(

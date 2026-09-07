@@ -2,6 +2,19 @@ import 'server-only';
 import { prisma } from '@/lib/prisma';
 import { encryptToken, decryptToken } from '@/backend/utils/token-encryption';
 
+// The account password used to be stored in plaintext. Existing rows won't
+// match encryptToken's `<iv>:<authTag>:<ciphertext>` shape, so fall back to
+// the raw value for those instead of throwing — they get encrypted on next save.
+function safeDecrypt(value: string): string {
+  const looksEncrypted = /^[0-9a-f]+:[0-9a-f]+:[0-9a-f]+$/i.test(value);
+  if (!looksEncrypted) return value;
+  try {
+    return decryptToken(value);
+  } catch {
+    return value;
+  }
+}
+
 export interface DFlightIntegration {
   id: number;
   fk_owner_id: number;
@@ -27,7 +40,7 @@ export async function getDFlightIntegration(ownerId: number): Promise<DFlightInt
     fk_owner_id: row.fk_owner_id,
     base_url: row.base_url,
     username: row.username,
-    password: row.password,
+    password: row.password ? safeDecrypt(row.password) : null,
     client_id: row.client_id,
     easa_operator_code: row.easa_operator_code ?? null,
     pfx_content: row.pfx_content ?? null,
@@ -55,7 +68,7 @@ export async function upsertDFlightIntegration(
     fk_owner_id: ownerId,
     base_url: data.base_url,
     username: data.username,
-    password: data.password || '', // Use empty string instead of null since password is required in schema
+    password: data.password ? encryptToken(data.password) : '', // Use empty string instead of null since password is required in schema
     client_id: data.client_id,
     easa_operator_code: data.easa_operator_code ?? null,
     pfx_content: data.pfx_content ?? null,
@@ -74,7 +87,7 @@ export async function upsertDFlightIntegration(
 
   // Only include password in update if it's being changed (not empty or __KEEP__)
   if (data.password && data.password !== '__KEEP__') {
-    updateData.password = data.password;
+    updateData.password = encryptToken(data.password);
   }
 
   await prisma.$transaction([

@@ -43,6 +43,8 @@ export interface Operation {
     recurrent_end_date?: string;
     recurring_group_id?: string;
   } | null;
+  dflight_mission_id?: string | null;
+  dflight_flight_authorisation_status?: string | null;
   created_at: string;
   updated_at: string;
 }

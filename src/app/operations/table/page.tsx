@@ -72,6 +72,8 @@ export interface Operation {
   op_type?: string | null;
   mission_group_label?: string | null;
   is_recurrent?: boolean | null;
+  dflight_mission_id?: string | null;
+  dflight_flight_authorisation_status?: string | null;
   created_at: string;
   updated_at: string;
 }

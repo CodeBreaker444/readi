@@ -83,6 +83,25 @@ const STATUS_CONFIG: Record<string, { label: string; light: string; dark: string
   },
 };
 
+const DFLIGHT_STATUS_CONFIG: Record<string, { label: string; light: string; dark: string }> = {
+  ACCEPTED: { label: 'D-Flight: Accepted', light: 'bg-emerald-100 text-emerald-700 border-emerald-300', dark: 'bg-emerald-900/50 text-emerald-300 border-emerald-600' },
+  REJECTED: { label: 'D-Flight: Rejected', light: 'bg-red-100 text-red-700 border-red-300', dark: 'bg-red-900/50 text-red-300 border-red-600' },
+  WITHDRAWN: { label: 'D-Flight: Withdrawn', light: 'bg-red-100 text-red-700 border-red-300', dark: 'bg-red-900/50 text-red-300 border-red-600' },
+};
+
+function DFlightBadge({ dflightMissionId, authorisationStatus, isDark }: { dflightMissionId?: string | null; authorisationStatus?: string | null; isDark: boolean }) {
+  if (!dflightMissionId) return null;
+  const cfg = authorisationStatus ? DFLIGHT_STATUS_CONFIG[authorisationStatus.toUpperCase()] : undefined;
+  const label = cfg?.label ?? 'D-Flight: Pending';
+  const classes = cfg ? (isDark ? cfg.dark : cfg.light)
+    : (isDark ? 'bg-amber-900/50 text-amber-300 border-amber-600' : 'bg-amber-100 text-amber-700 border-amber-300');
+  return (
+    <span className={cn('inline-flex items-center rounded-md border px-2 py-0.5 text-[11px] font-medium', classes)}>
+      {label}
+    </span>
+  );
+}
+
 function StatusBadge({ status, t, isDark }: { status?: string | null; t: TFunction; isDark: boolean }) {
   if (!status) return <span className="text-muted-foreground text-xs">—</span>;
   const key = status.toUpperCase();
@@ -264,7 +283,16 @@ export const getOperationColumns = (t: TFunction, isDark = false, timezone = 'Eu
   {
     accessorKey: 'status_name',
     header: t('planning.form.status'),
-    cell: ({ getValue }) => <StatusBadge status={getValue<string>()} t={t} isDark={isDark} />,
+    cell: ({ getValue, row }) => (
+      <div className="flex flex-col items-start gap-1">
+        <StatusBadge status={getValue<string>()} t={t} isDark={isDark} />
+        <DFlightBadge
+          dflightMissionId={row.original.dflight_mission_id}
+          authorisationStatus={row.original.dflight_flight_authorisation_status}
+          isDark={isDark}
+        />
+      </div>
+    ),
   },
   {
     id: 'procedure',
