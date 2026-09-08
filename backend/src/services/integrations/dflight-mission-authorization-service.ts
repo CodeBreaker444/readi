@@ -120,7 +120,7 @@ export async function createAndSubmitMissionAuthorization(
         mission_type: 'OPEN',
         flight_condition_type: 'VLOS',
         operator_id: userInfo.operatorRegistrationNumber ?? '',
-        easa_operator_id: integration.easa_operator_code ?? '',
+        easa_operator_id: userInfo.easaOperatorId ?? integration.easa_operator_code ?? '',
         start_date_time: startDateTime,
         end_date_time: endDateTime,
         mission_duration: durationMinutes,
@@ -157,7 +157,6 @@ export async function createAndSubmitMissionAuthorization(
 /**
  * Registers a polling watch with flytrelay for a mission that was just
  * created on D-Flight. flytrelay's receiving endpoint doesn't exist yet
- * (pending Rounak) — this call is non-fatal and simply logs until it does.
  */
 export async function registerFlytrelayWatch(
   pilotMissionId: number,

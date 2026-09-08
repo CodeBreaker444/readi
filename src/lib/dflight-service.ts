@@ -534,6 +534,7 @@ export async function getDFlightManufacturer(
 
 export interface DFlightUserInfo {
   operatorRegistrationNumber: string | null;
+  easaOperatorId: string | null;
 }
 
 export async function getDFlightUserInfo(
@@ -565,10 +566,11 @@ export async function getDFlightUserInfo(
     throw new Error(`D-Flight userinfo request failed (${res.status})`);
   }
   const json = (await res.json()) as Record<string, unknown>;
-  console.log('userinfo dflight:',json)
+  console.log('userinfo dflight:', JSON.stringify(json, null, 2));
   const userData = json['userData'] as Record<string, unknown> | undefined;
   return {
     operatorRegistrationNumber: (userData?.['OperatorRegistrationNumber'] as string | undefined) ?? null,
+    easaOperatorId: (userData?.['OperatorIdentifier'] as string | undefined) ?? null,
   };
 }
 
@@ -734,6 +736,7 @@ export async function createDFlightMission(
   }
   if (!res.ok) {
     const text = await res.text();
+    console.error('D-Flight create mission response headers:', res.headers);
     throw new Error(`D-Flight create mission request failed (${res.status}): ${text}`);
   }
 
