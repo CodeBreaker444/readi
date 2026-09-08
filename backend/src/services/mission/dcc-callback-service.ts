@@ -75,29 +75,32 @@ async function getOwnerIdForMission(missionId: number): Promise<number | null> {
 }
 
 /**
- * Returns the dcc_drone_id of a DRONE component attached to any tool assigned
- * to this planning mission. A planning can have several pilot_mission rows
- * (e.g. reassigned across tools over time), so all of their tools are
- * checked rather than just the first one. Returns null if no tool is
- * assigned or none of them have a DRONE component with dcc_drone_id set.
+ * Returns the dcc_drone_id of the DRONE component on the tool currently
+ * assigned to this planning mission. A planning can have several
+ * pilot_mission rows built up over time (reassigned across tools), so the
+ * tool is taken from the most recently created one rather than any
+ * historical assignment. If that tool has more than one active DRONE
+ * component, the most recently installed one is used. Returns null if no
+ * tool is assigned or it has no DRONE component with dcc_drone_id set.
  */
 async function getDccDroneIdForPlanning(planningId: number): Promise<string | null> {
   try {
-    const missions = await prisma.pilot_mission.findMany({
+    const latestMission = await prisma.pilot_mission.findFirst({
       where: { fk_planning_id: planningId, fk_tool_id: { not: null } },
+      orderBy: { created_at: 'desc' },
       select: { fk_tool_id: true },
     });
 
-    const toolIds = [...new Set(missions.map((m) => m.fk_tool_id as number))];
-    if (toolIds.length === 0) return null;
+    if (!latestMission?.fk_tool_id) return null;
 
     const component = await prisma.tool_component.findFirst({
       where: {
-        fk_tool_id: { in: toolIds },
+        fk_tool_id: latestMission.fk_tool_id,
         component_type: 'DRONE',
         component_active: 'Y',
         dcc_drone_id: { not: null },
       },
+      orderBy: [{ installation_date: 'desc' }, { created_at: 'desc' }],
       select: { dcc_drone_id: true },
     });
 
@@ -120,9 +123,17 @@ async function dccPost(ownerId: number, path: string, body?: unknown): Promise<D
 
   const url = `${base.replace(/\/$/, '')}${path}`;
   try {
+    console.log('dcc body :',body)
+    const authUser = process.env.DCC_AUTH_USERNAME ?? 'dcc';
+    const authPass = process.env.DCC_AUTH_PASSWORD ?? 'dcc';
+    const basicAuth = Buffer.from(`${authUser}:${authPass}`).toString('base64');
+
     const res = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Basic ${basicAuth}`,
+      },
       body: body !== undefined ? JSON.stringify(body) : undefined,
       signal: AbortSignal.timeout(10_000),
     });
