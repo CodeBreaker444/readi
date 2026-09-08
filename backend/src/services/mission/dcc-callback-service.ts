@@ -75,23 +75,25 @@ async function getOwnerIdForMission(missionId: number): Promise<number | null> {
 }
 
 /**
- * Returns the component_id (as string) of the DRONE component attached to the
- * tool assigned to this planning mission. Returns null if no tool is assigned
- * or no DRONE component is attached.
+ * Returns the dcc_drone_id of a DRONE component attached to any tool assigned
+ * to this planning mission. A planning can have several pilot_mission rows
+ * (e.g. reassigned across tools over time), so all of their tools are
+ * checked rather than just the first one. Returns null if no tool is
+ * assigned or none of them have a DRONE component with dcc_drone_id set.
  */
 async function getDccDroneIdForPlanning(planningId: number): Promise<string | null> {
   try {
-    const mission = await prisma.pilot_mission.findFirst({
+    const missions = await prisma.pilot_mission.findMany({
       where: { fk_planning_id: planningId, fk_tool_id: { not: null } },
       select: { fk_tool_id: true },
     });
 
-    const toolId = mission?.fk_tool_id;
-    if (!toolId) return null;
+    const toolIds = [...new Set(missions.map((m) => m.fk_tool_id as number))];
+    if (toolIds.length === 0) return null;
 
     const component = await prisma.tool_component.findFirst({
       where: {
-        fk_tool_id: toolId,
+        fk_tool_id: { in: toolIds },
         component_type: 'DRONE',
         component_active: 'Y',
         dcc_drone_id: { not: null },
