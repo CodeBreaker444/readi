@@ -1686,6 +1686,7 @@
         "noComponents": "Nessun componente configurato per questo sistema.",
         "system": "Sistema",
         "lastUpdated": "Ultimo aggiornamento:",
+        "activationDate": "Data di attivazione:",
         "addUsage": "Aggiungi utilizzo",
         "flights": "Voli",
         "hours": "Ore",
@@ -4172,7 +4173,26 @@
           "relations": "Relazioni",
           "delete": "Elimina",
           "log": "Log",
-          "flights": "Voli"
+          "flights": "Voli",
+          "qtbReport": "Report QTB"
+        }
+      },
+      "qtbReportModal": {
+        "title": "Genera Report QTB",
+        "timezoneHint": "Le date usano il tuo fuso orario locale ({{timezone}}).",
+        "errors": {
+          "rangeInvalid": "La data di fine deve essere uguale o successiva alla data di inizio.",
+          "tooManyRecords": "Questo intervallo di date contiene troppi voli. Restringi l'intervallo di date e riprova.",
+          "generic": "Impossibile generare il report. Riprova."
+        },
+        "toasts": {
+          "success": "Report QTB scaricato con successo",
+          "error": "Impossibile generare il report QTB"
+        },
+        "buttons": {
+          "cancel": "Annulla",
+          "generate": "Genera PDF",
+          "generating": "Generazione in corso..."
         }
       },
       "statusBadge": {
