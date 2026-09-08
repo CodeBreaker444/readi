@@ -254,6 +254,47 @@ export async function isMissionRequestedByDcc(missionId: number): Promise<boolea
 
 /**
  * POST /dcc/missions/{missionId}/execution
+ * Direct variant for callers that already have the owner and external
+ * mission id at hand (e.g. the flight-requests page setting dcc_status to
+ * IN_PROGRESS), skipping the pilot_mission → planning lookup.
+ */
+export async function notifyDccExecutionForRequest(
+  ownerId: number,
+  externalMissionId: string,
+): Promise<DccCallbackResult> {
+  const path = `/dcc/missions/${externalMissionId}/execution`;
+  try {
+    return await dccPost(ownerId, path);
+  } catch (err: any) {
+    console.error('[DCC] notifyDccExecutionForRequest error:', err?.message ?? err);
+    return { path, outcome: 'network_error', message: err?.message ?? String(err) };
+  }
+}
+
+/**
+ * POST /dcc/missions/{missionId}/termination
+ * Direct variant for callers that already have the owner and external
+ * mission id at hand (e.g. the flight-requests page setting dcc_status to
+ * COMPLETED), skipping the pilot_mission → planning lookup.
+ * result: 1 = success, 0 = failure
+ */
+export async function notifyDccTerminationForRequest(
+  ownerId: number,
+  externalMissionId: string,
+  result: 1 | 0 = 1,
+  note?: string,
+): Promise<DccCallbackResult> {
+  const path = `/dcc/missions/${externalMissionId}/termination`;
+  try {
+    return await dccPost(ownerId, path, { result, note: note ?? '' });
+  } catch (err: any) {
+    console.error('[DCC] notifyDccTerminationForRequest error:', err?.message ?? err);
+    return { path, outcome: 'network_error', message: err?.message ?? String(err) };
+  }
+}
+
+/**
+ * POST /dcc/missions/{missionId}/execution
  * Called when a mission moves to IN_PROGRESS (_START).
  */
 export async function notifyDccExecution(missionId: number): Promise<DccCallbackResult> {
