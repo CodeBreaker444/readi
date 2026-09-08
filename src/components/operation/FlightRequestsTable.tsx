@@ -141,8 +141,11 @@ export default function FlightRequestsTable() {
   async function handleUpdateStatus(request_id: number, status: string) {
     setUpdatingStatus({ id: request_id, status });
     try {
-      await axios.patch(`/api/planning/flight-requests/${request_id}`, { dcc_status: status });
-      toast.success(`Status updated to ${status}`);
+      const { data } = await axios.patch<{ code: number; dcc?: DccCallbackResult }>(
+        `/api/planning/flight-requests/${request_id}`,
+        { dcc_status: status },
+      );
+      toastAfterDccAction(`Status updated to ${status}`, data.dcc);
       setRequests((prev) =>
         prev.map((r) => r.request_id === request_id ? { ...r, dcc_status: status } : r),
       );
