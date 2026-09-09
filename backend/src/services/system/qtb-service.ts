@@ -4,6 +4,12 @@ import { prisma } from '@/lib/prisma';
 const MAX_MISSIONS = 5000;
 const PAGE_SIZE = 10;
 
+function hhmmToMinutes(hhmm: number): number {
+  const h = Math.floor(hhmm);
+  const m = Math.round((hhmm - h) * 100);
+  return h * 60 + m;
+}
+
 export interface QtbMissionRow {
   pilot_mission_id: number;
   mission_code: string | null;
@@ -119,8 +125,8 @@ export async function generateQtbReportData(
     };
   }
 
-  const [pastAgg, missions, batteryComponent] = await Promise.all([
-    prisma.pilot_mission.aggregate({
+  const [pastMissions, missions, batteryComponent] = await Promise.all([
+    prisma.pilot_mission.findMany({
       where: {
         fk_tool_id: droneComponent.fk_tool_id,
         status_name: 'COMPLETED',
@@ -134,8 +140,7 @@ export async function generateQtbReportData(
           },
         },
       },
-      _sum: { flight_duration: true },
-      _count: true,
+      select: { pilot_mission_id: true, flight_duration: true },
     }),
     prisma.pilot_mission.findMany({
       where: windowWhere,
@@ -161,16 +166,27 @@ export async function generateQtbReportData(
     }),
   ]);
 
-  const pastFlightMinutes = pastAgg._sum.flight_duration ?? 0;
-  const pastFlightCount = pastAgg._count;
-
   const missionIds = missions.map((m) => m.pilot_mission_id);
-  const batteryLogs = missionIds.length
-    ? await prisma.mission_maintenance_log.findMany({
-        where: { fk_mission_id: { in: missionIds }, tool_component: { component_type: 'BATTERY' } },
-        select: { fk_mission_id: true, tool_component: { select: { serial_number: true } } },
-      })
-    : [];
+  const pastMissionIds = pastMissions.map((m) => m.pilot_mission_id);
+
+  const [batteryLogs, droneHourLogs] = await Promise.all([
+    missionIds.length
+      ? prisma.mission_maintenance_log.findMany({
+          where: { fk_mission_id: { in: missionIds }, tool_component: { component_type: 'BATTERY' } },
+          select: { fk_mission_id: true, tool_component: { select: { serial_number: true } } },
+        })
+      : Promise.resolve([]),
+    // The mission's own flight_duration is a general post-flight figure — the
+    // hours actually credited to this specific drone (what its maintenance
+    // cycle advanced by) are logged per-mission against the component itself,
+    // so prefer that wherever it was recorded.
+    (missionIds.length || pastMissionIds.length)
+      ? prisma.mission_maintenance_log.findMany({
+          where: { fk_mission_id: { in: [...missionIds, ...pastMissionIds] }, fk_component_id: droneComponentId },
+          select: { fk_mission_id: true, add_hours: true },
+        })
+      : Promise.resolve([]),
+  ]);
 
   const batterySerialsByMission = new Map<number, string[]>();
   batteryLogs.forEach((log) => {
@@ -181,13 +197,27 @@ export async function generateQtbReportData(
     batterySerialsByMission.set(log.fk_mission_id, existing);
   });
 
+  const droneMinutesByMission = new Map<number, number>();
+  droneHourLogs.forEach((log) => {
+    droneMinutesByMission.set(log.fk_mission_id, hhmmToMinutes(Number(log.add_hours)));
+  });
+
+  const resolveDuration = (missionId: number, fallbackMinutes: number | null): number =>
+    droneMinutesByMission.get(missionId) ?? (fallbackMinutes ?? 0);
+
+  const pastFlightMinutes = pastMissions.reduce(
+    (acc, m) => acc + resolveDuration(m.pilot_mission_id, m.flight_duration),
+    0,
+  );
+  const pastFlightCount = pastMissions.length;
+
   const pages: QtbPage[] = [];
   let runningMinutes = pastFlightMinutes;
   let runningCount = pastFlightCount;
 
   for (let i = 0; i < missions.length; i += PAGE_SIZE) {
     const chunk = missions.slice(i, i + PAGE_SIZE);
-    const todayFlightMinutes = chunk.reduce((acc, m) => acc + (m.flight_duration ?? 0), 0);
+    const todayFlightMinutes = chunk.reduce((acc, m) => acc + resolveDuration(m.pilot_mission_id, m.flight_duration), 0);
     const todayFlightCount = chunk.length;
 
     pages.push({
@@ -203,7 +233,7 @@ export async function generateQtbReportData(
         mission_code: m.mission_code,
         actual_start: m.actual_start?.toISOString() ?? null,
         actual_end: m.actual_end?.toISOString() ?? null,
-        flight_duration: m.flight_duration,
+        flight_duration: resolveDuration(m.pilot_mission_id, m.flight_duration),
         distance_flown: m.distance_flown != null ? Number(m.distance_flown) : null,
         location: m.location,
         notes: m.notes,
