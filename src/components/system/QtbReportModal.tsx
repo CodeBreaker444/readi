@@ -17,18 +17,18 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
-interface QtbReportTool {
-  tool_id: number;
-  tool_code: string;
+interface QtbReportDrone {
+  component_id: number;
+  label: string;
 }
 
 interface Props {
   open: boolean;
-  tool: QtbReportTool | null;
+  drone: QtbReportDrone | null;
   onClose: () => void;
 }
 
-export function QtbReportModal({ open, tool, onClose }: Props) {
+export function QtbReportModal({ open, drone, onClose }: Props) {
   const { isDark } = useTheme();
   const { t, i18n } = useTranslation();
   const { timezone } = useTimezone();
@@ -47,7 +47,7 @@ export function QtbReportModal({ open, tool, onClose }: Props) {
   }, [open, timezone]);
 
   const handleGenerate = async () => {
-    if (!tool || !startDate || !endDate) return;
+    if (!drone || !startDate || !endDate) return;
     if (endDate < startDate) {
       setError(t('systems.components.qtbReportModal.errors.rangeInvalid'));
       return;
@@ -57,7 +57,7 @@ export function QtbReportModal({ open, tool, onClose }: Props) {
     setError(null);
     try {
       const params = new URLSearchParams({ startDate, endDate, timezone });
-      const res = await fetch(`/api/system/${tool.tool_id}/qtb-report?${params.toString()}`);
+      const res = await fetch(`/api/system/component/${drone.component_id}/qtb-report?${params.toString()}`);
       const body = await res.json();
 
       if (body.code === 1 && body.data) {
@@ -89,7 +89,7 @@ export function QtbReportModal({ open, tool, onClose }: Props) {
 
         <div className="space-y-4 py-1">
           <p className={`text-sm ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
-            {tool?.tool_code}
+            {drone?.label}
           </p>
 
           <DateRangePicker

@@ -29,7 +29,7 @@ export interface QtbPage {
 
 export interface QtbReportData {
   tool: { tool_id: number; tool_code: string | null; tool_desc: string | null; model_name: string | null };
-  drone: { serial_number: string | null; uas_serial_number: string | null; gcs_serial_number: string | null; component_name: string | null } | null;
+  drone: { component_id: number; component_code: string | null; serial_number: string | null; uas_serial_number: string | null; gcs_serial_number: string | null; component_name: string | null } | null;
   range: { startDate: string; endDate: string; timezone: string };
   pastFlightMinutes: number;
   pastFlightCount: number;
@@ -262,6 +262,7 @@ export async function generateQtbReportPdf(report: QtbReportData, timezone: stri
   });
 
   const blob = doc.output('blob');
-  const fileSafeCode = (report.tool.tool_code ?? `system-${report.tool.tool_id}`).replace(/[^a-zA-Z0-9-_]/g, '_');
+  const droneCode = report.drone?.component_code || droneSerial || report.drone?.component_name || (report.drone ? `drone-${report.drone.component_id}` : `system-${report.tool.tool_id}`);
+  const fileSafeCode = droneCode.replace(/[^a-zA-Z0-9-_]/g, '_');
   triggerDownload(blob, `QTB_${fileSafeCode}_${report.range.startDate}_to_${report.range.endDate}.pdf`);
 }

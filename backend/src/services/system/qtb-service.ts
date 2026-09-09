@@ -31,7 +31,7 @@ export interface QtbPage {
 
 export interface QtbReportData {
   tool: { tool_id: number; tool_code: string | null; tool_desc: string | null; model_name: string | null };
-  drone: { serial_number: string | null; uas_serial_number: string | null; gcs_serial_number: string | null; component_name: string | null } | null;
+  drone: { component_id: number; component_code: string | null; serial_number: string | null; uas_serial_number: string | null; gcs_serial_number: string | null; component_name: string | null } | null;
   range: { startDate: string; endDate: string; timezone: string };
   pastFlightMinutes: number;
   pastFlightCount: number;
@@ -47,28 +47,37 @@ export interface QtbReportResult {
 }
 
 export async function generateQtbReportData(
-  toolId: number,
+  droneComponentId: number,
   ownerId: number,
   startDate: string,
   endDate: string,
   timezone: string,
 ): Promise<QtbReportResult> {
-  const tool = await prisma.tool.findFirst({
-    where: { tool_id: toolId, fk_owner_id: ownerId },
+  const droneComponent = await prisma.tool_component.findFirst({
+    where: { component_id: droneComponentId, component_type: 'DRONE' },
     select: {
-      tool_id: true,
-      tool_code: true,
-      tool_description: true,
-      tool_model: { select: { model_name: true, manufacturer: true } },
-      tool_component: {
-        where: { component_type: 'DRONE' },
-        select: { serial_number: true, uas_serial_number: true, gcs_serial_number: true, component_name: true },
-        take: 1,
+      component_id: true,
+      component_code: true,
+      serial_number: true,
+      uas_serial_number: true,
+      gcs_serial_number: true,
+      component_name: true,
+      fk_tool_id: true,
+      tool: {
+        select: {
+          tool_id: true,
+          fk_owner_id: true,
+          tool_code: true,
+          tool_description: true,
+          tool_model: { select: { model_name: true, manufacturer: true } },
+        },
       },
     },
   });
 
-  if (!tool) return { code: 0, message: 'System not found or access denied' };
+  if (!droneComponent || droneComponent.tool.fk_owner_id !== ownerId) {
+    return { code: 0, message: 'Drone not found or access denied' };
+  }
 
   const startUtc = localDayBoundaryToUtc(startDate, timezone, false);
   const endUtc = localDayBoundaryToUtc(endDate, timezone, true);
@@ -77,16 +86,29 @@ export async function generateQtbReportData(
     return { code: 0, message: 'End date must be on or after start date' };
   }
 
+  // Missions are logged against the system (fk_tool_id), not a specific drone
+  // component, so start from the drone's parent system. A system's drone can
+  // be swapped over time though, so exclude any mission whose maintenance log
+  // shows a *different* drone component was actually used — a mission with no
+  // drone maintenance log entry at all is assumed to belong to this drone.
   const windowWhere = {
-    fk_tool_id: toolId,
+    fk_tool_id: droneComponent.fk_tool_id,
     status_name: 'COMPLETED',
     actual_start: { gte: startUtc, lte: endUtc },
+    NOT: {
+      mission_maintenance_log: {
+        some: {
+          fk_component_id: { not: droneComponentId },
+          tool_component: { component_type: 'DRONE' },
+        },
+      },
+    },
   } as const;
 
   const totalCount = await prisma.pilot_mission.count({ where: windowWhere });
 
   if (totalCount === 0) {
-    return { code: 0, message: 'No completed flights found in the selected date range' };
+    return { code: 0, message: 'No completed flights found for this drone in the selected date range' };
   }
 
   if (totalCount > MAX_MISSIONS) {
@@ -99,7 +121,19 @@ export async function generateQtbReportData(
 
   const [pastAgg, missions, batteryComponent] = await Promise.all([
     prisma.pilot_mission.aggregate({
-      where: { fk_tool_id: toolId, status_name: 'COMPLETED', actual_start: { lt: startUtc } },
+      where: {
+        fk_tool_id: droneComponent.fk_tool_id,
+        status_name: 'COMPLETED',
+        actual_start: { lt: startUtc },
+        NOT: {
+          mission_maintenance_log: {
+            some: {
+              fk_component_id: { not: droneComponentId },
+              tool_component: { component_type: 'DRONE' },
+            },
+          },
+        },
+      },
       _sum: { flight_duration: true },
       _count: true,
     }),
@@ -122,7 +156,7 @@ export async function generateQtbReportData(
     // Fallback for flights with no logged mission_maintenance_log battery entry —
     // most systems only ever have one battery component attached, so use it.
     prisma.tool_component.findFirst({
-      where: { fk_tool_id: toolId, component_type: 'BATTERY' },
+      where: { fk_tool_id: droneComponent.fk_tool_id, component_type: 'BATTERY' },
       select: { serial_number: true },
     }),
   ]);
@@ -183,27 +217,25 @@ export async function generateQtbReportData(
     runningCount += todayFlightCount;
   }
 
-  const droneComponent = tool.tool_component[0];
-
   return {
     code: 1,
     data: {
       tool: {
-        tool_id: tool.tool_id,
-        tool_code: tool.tool_code,
-        tool_desc: tool.tool_description,
-        model_name: tool.tool_model
-          ? [tool.tool_model.manufacturer, tool.tool_model.model_name].filter(Boolean).join(' ')
+        tool_id: droneComponent.tool.tool_id,
+        tool_code: droneComponent.tool.tool_code,
+        tool_desc: droneComponent.tool.tool_description,
+        model_name: droneComponent.tool.tool_model
+          ? [droneComponent.tool.tool_model.manufacturer, droneComponent.tool.tool_model.model_name].filter(Boolean).join(' ')
           : null,
       },
-      drone: droneComponent
-        ? {
-            serial_number: droneComponent.serial_number,
-            uas_serial_number: droneComponent.uas_serial_number,
-            gcs_serial_number: droneComponent.gcs_serial_number,
-            component_name: droneComponent.component_name,
-          }
-        : null,
+      drone: {
+        component_id: droneComponent.component_id,
+        component_code: droneComponent.component_code,
+        serial_number: droneComponent.serial_number,
+        uas_serial_number: droneComponent.uas_serial_number,
+        gcs_serial_number: droneComponent.gcs_serial_number,
+        component_name: droneComponent.component_name,
+      },
       range: { startDate, endDate, timezone },
       pastFlightMinutes,
       pastFlightCount,
