@@ -2,7 +2,7 @@
 
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Loader2, X } from 'lucide-react';
+import { ChevronDown, ChevronRight, Loader2, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 interface Planning {
@@ -14,14 +14,26 @@ interface Planning {
   has_valid_drone: boolean;
 }
 
+export interface AssignablePlan {
+  pilot_mission_id: number;
+  mission_code: string | null;
+  tool_name: string | null;
+  dcc_drone_id: string | null;
+}
+
 interface FlightRequestsPlanModalProps {
   isDark: boolean;
   planModal: { request_id: number; mission_id: string } | null;
   plannings: Planning[];
   evalLoading: boolean;
   selectedEvalId: string;
+  selectedPlanId: string;
+  expandedPlanningId: number | null;
+  plansByPlanning: Record<number, AssignablePlan[] | undefined>;
+  plansLoadingId: number | null;
   submitting: boolean;
   onSelectPlanning: (planningId: string) => void;
+  onSelectPlan: (planningId: string, pilotMissionId: string) => void;
   onConfirm: () => void;
   onClose: () => void;
 }
@@ -32,14 +44,23 @@ export function FlightRequestsPlanModal({
   plannings,
   evalLoading,
   selectedEvalId,
+  selectedPlanId,
+  expandedPlanningId,
+  plansByPlanning,
+  plansLoadingId,
   submitting,
   onSelectPlanning,
+  onSelectPlan,
   onConfirm,
   onClose,
 }: FlightRequestsPlanModalProps) {
   const { t } = useTranslation();
 
   if (!planModal) return null;
+
+  const expandedPlans = expandedPlanningId != null ? plansByPlanning[expandedPlanningId] : undefined;
+  const requiresPlanChoice = !!expandedPlans && expandedPlans.length > 1;
+  const confirmDisabled = !selectedEvalId || (requiresPlanChoice && !selectedPlanId) || submitting;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
@@ -60,48 +81,103 @@ export function FlightRequestsPlanModal({
           ) : plannings.length === 0 ? (
             <p className={`text-xs py-3 text-center ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>{t('planning.flightRequests.noPlannings')}</p>
           ) : (
-            <div className={`rounded-lg border overflow-hidden divide-y max-h-56 overflow-y-auto ${isDark ? 'border-slate-700 divide-slate-700' : 'border-gray-200 divide-gray-100'}`}>
+            <div className={`rounded-lg border overflow-hidden divide-y max-h-72 overflow-y-auto ${isDark ? 'border-slate-700 divide-slate-700' : 'border-gray-200 divide-gray-100'}`}>
               {plannings.map((planning) => {
                 const isSelected = selectedEvalId === String(planning.planning_id);
+                const isExpanded = expandedPlanningId === planning.planning_id;
                 const disabled = !planning.has_valid_drone;
+                const plans = plansByPlanning[planning.planning_id];
+                const plansLoading = plansLoadingId === planning.planning_id;
 
                 return (
-                  <button
-                    key={planning.planning_id}
-                    disabled={disabled}
-                    onClick={() => !disabled && onSelectPlanning(String(planning.planning_id))}
-                    title={disabled ? t('planning.flightRequests.noDroneId') : undefined}
-                    className={`w-full cursor-pointer text-left px-4 py-2.5 flex items-center gap-3 transition-colors text-xs
-                      ${disabled
-                        ? isDark ? 'opacity-40 cursor-not-allowed text-slate-500' : 'opacity-40 cursor-not-allowed text-gray-400'
-                        : isSelected
-                          ? isDark ? 'bg-violet-600/20 text-violet-300' : 'bg-violet-50 text-violet-700'
-                          : isDark ? 'hover:bg-slate-800 text-slate-300' : 'hover:bg-gray-50 text-gray-700'
-                      }`}
-                  >
-                    <span className={`w-2 h-2 rounded-full shrink-0 ${isSelected ? 'bg-violet-500' : disabled ? isDark ? 'bg-slate-700' : 'bg-gray-200' : isDark ? 'bg-slate-600' : 'bg-gray-300'}`} />
-                    <span className="flex-1 min-w-0">
-                      <span className="font-mono font-semibold mr-2">PLN-{planning.planning_id}</span>
-                      <span className="font-medium">{planning.client_name}</span>
-                      {planning.planning_desc && <span className={`ml-1 truncate ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>- {planning.planning_desc}</span>}
-                    </span>
-                    {disabled ? (
-                      <span className={`ml-auto shrink-0 text-[10px] px-1.5 py-0.5 rounded-full ${isDark ? 'bg-slate-800 text-slate-600' : 'bg-gray-100 text-gray-400'}`}>
-                        {t('planning.flightRequests.noDroneId')}
+                  <div key={planning.planning_id}>
+                    <button
+                      disabled={disabled}
+                      onClick={() => !disabled && onSelectPlanning(String(planning.planning_id))}
+                      title={disabled ? t('planning.flightRequests.noDroneId') : undefined}
+                      className={`w-full cursor-pointer text-left px-4 py-2.5 flex items-center gap-3 transition-colors text-xs
+                        ${disabled
+                          ? isDark ? 'opacity-40 cursor-not-allowed text-slate-500' : 'opacity-40 cursor-not-allowed text-gray-400'
+                          : isSelected
+                            ? isDark ? 'bg-violet-600/20 text-violet-300' : 'bg-violet-50 text-violet-700'
+                            : isDark ? 'hover:bg-slate-800 text-slate-300' : 'hover:bg-gray-50 text-gray-700'
+                        }`}
+                    >
+                      {disabled ? (
+                        <span className={`w-2 h-2 rounded-full shrink-0 ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`} />
+                      ) : isExpanded ? (
+                        <ChevronDown className="h-3.5 w-3.5 shrink-0" />
+                      ) : (
+                        <ChevronRight className="h-3.5 w-3.5 shrink-0" />
+                      )}
+                      <span className="flex-1 min-w-0">
+                        <span className="font-mono font-semibold mr-2">PLN-{planning.planning_id}</span>
+                        <span className="font-medium">{planning.client_name}</span>
+                        {planning.planning_desc && <span className={`ml-1 truncate ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>- {planning.planning_desc}</span>}
                       </span>
-                    ) : (
-                      <span className={`ml-auto shrink-0 text-[10px] px-1.5 py-0.5 rounded-full ${isDark ? 'bg-slate-700 text-slate-400' : 'bg-gray-100 text-gray-500'}`}>
-                        {planning.planning_status}
-                      </span>
+                      {disabled ? (
+                        <span className={`ml-auto shrink-0 text-[10px] px-1.5 py-0.5 rounded-full ${isDark ? 'bg-slate-800 text-slate-600' : 'bg-gray-100 text-gray-400'}`}>
+                          {t('planning.flightRequests.noDroneId')}
+                        </span>
+                      ) : (
+                        <span className={`ml-auto shrink-0 text-[10px] px-1.5 py-0.5 rounded-full ${isDark ? 'bg-slate-700 text-slate-400' : 'bg-gray-100 text-gray-500'}`}>
+                          {planning.planning_status}
+                        </span>
+                      )}
+                    </button>
+
+                    {isExpanded && (
+                      <div className={`pl-8 pr-3 py-2 space-y-1 ${isDark ? 'bg-slate-900/60' : 'bg-gray-50/60'}`}>
+                        <p className={`text-[10px] font-medium uppercase tracking-wide ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
+                          {t('planning.flightRequests.selectPlan')}
+                        </p>
+                        {plansLoading ? (
+                          <div className="space-y-1.5 py-1">{[1, 2].map((i) => <Skeleton key={i} className="h-7 w-full rounded-md" />)}</div>
+                        ) : !plans || plans.length === 0 ? (
+                          <p className={`text-[11px] py-1.5 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>{t('planning.flightRequests.noPlans')}</p>
+                        ) : (
+                          plans.map((plan) => {
+                            const planDisabled = !plan.dcc_drone_id;
+                            const planSelected = selectedPlanId === String(plan.pilot_mission_id);
+                            return (
+                              <button
+                                key={plan.pilot_mission_id}
+                                disabled={planDisabled}
+                                onClick={() => !planDisabled && onSelectPlan(String(planning.planning_id), String(plan.pilot_mission_id))}
+                                title={planDisabled ? t('planning.flightRequests.noDroneId') : undefined}
+                                className={`w-full cursor-pointer text-left px-2.5 py-1.5 rounded-md flex items-center gap-2 text-[11px] transition-colors
+                                  ${planDisabled
+                                    ? isDark ? 'opacity-40 cursor-not-allowed text-slate-500' : 'opacity-40 cursor-not-allowed text-gray-400'
+                                    : planSelected
+                                      ? isDark ? 'bg-violet-600/20 text-violet-300' : 'bg-violet-100 text-violet-700'
+                                      : isDark ? 'hover:bg-slate-800 text-slate-300' : 'hover:bg-white text-gray-600'
+                                  }`}
+                              >
+                                <span className="font-mono font-semibold shrink-0"> </span>
+                                {plan.tool_name && <span className="truncate">{plan.tool_name}</span>}
+                                {planDisabled ? (
+                                  <span className={`ml-auto shrink-0 text-[10px] px-1.5 py-0.5 rounded-full ${isDark ? 'bg-slate-800 text-slate-600' : 'bg-gray-100 text-gray-400'}`}>
+                                    {t('planning.flightRequests.noDroneId')}
+                                  </span>
+                                ) : (
+                                  <span className={`ml-auto shrink-0 font-mono text-[10px] px-1.5 py-0.5 rounded-full ${isDark ? 'bg-slate-700 text-slate-400' : 'bg-gray-100 text-gray-500'}`}>
+                                    {plan.dcc_drone_id}
+                                  </span>
+                                )}
+                              </button>
+                            );
+                          })
+                        )}
+                      </div>
                     )}
-                  </button>
+                  </div>
                 );
               })}
             </div>
           )}
         </div>
         <div className="flex gap-2 pt-1">
-          <Button size="sm" onClick={onConfirm} disabled={!selectedEvalId || submitting} className="flex-1 h-8 text-xs bg-violet-600 hover:bg-violet-500 text-white">
+          <Button size="sm" onClick={onConfirm} disabled={confirmDisabled} className="flex-1 h-8 text-xs bg-violet-600 hover:bg-violet-500 text-white">
             {submitting && <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />}
             {t('common.confirm')}
           </Button>

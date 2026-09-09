@@ -75,27 +75,60 @@ async function getOwnerIdForMission(missionId: number): Promise<number | null> {
 }
 
 /**
- * Returns the dcc_drone_id of the DRONE component on the tool currently
- * assigned to this planning mission. A planning can have several
- * pilot_mission rows built up over time (reassigned across tools), so the
- * tool is taken from the most recently created one rather than any
- * historical assignment. If that tool has more than one active DRONE
- * component, the most recently installed one is used. Returns null if no
- * tool is assigned or it has no DRONE component with dcc_drone_id set.
+ * Returns the dcc_drone_id of a DRONE component attached to any system
+ * (tool) assigned to this planning. A planning can have several systems
+ * attached via separate pilot_mission rows, and only one of them may have
+ * dcc_drone_id set on its DRONE component, so all are checked rather than
+ * just the most recent one. If several qualifying components are found
+ * (e.g. a tool with more than one active DRONE component), the most
+ * recently installed one is used. Returns null if no tool is assigned or
+ * none of them have a DRONE component with dcc_drone_id set.
  */
 async function getDccDroneIdForPlanning(planningId: number): Promise<string | null> {
   try {
-    const latestMission = await prisma.pilot_mission.findFirst({
+    const missions = await prisma.pilot_mission.findMany({
       where: { fk_planning_id: planningId, fk_tool_id: { not: null } },
-      orderBy: { created_at: 'desc' },
       select: { fk_tool_id: true },
     });
 
-    if (!latestMission?.fk_tool_id) return null;
+    const toolIds = [...new Set(missions.map((m) => m.fk_tool_id as number))];
+    if (toolIds.length === 0) return null;
 
     const component = await prisma.tool_component.findFirst({
       where: {
-        fk_tool_id: latestMission.fk_tool_id,
+        fk_tool_id: { in: toolIds },
+        component_type: 'DRONE',
+        component_active: 'Y',
+        dcc_drone_id: { not: null },
+      },
+      orderBy: [{ installation_date: 'desc' }, { created_at: 'desc' }],
+      select: { dcc_drone_id: true },
+    });
+
+    return component?.dcc_drone_id ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Returns the dcc_drone_id for one specific pilot_mission ("plan"), by
+ * looking at just that plan's assigned tool. Used when the caller (e.g. the
+ * flight-requests page) already knows exactly which plan the user picked,
+ * avoiding the ambiguity in getDccDroneIdForPlanning when a planning has
+ * several plans on different drones.
+ */
+async function getDccDroneIdForPilotMission(pilotMissionId: number): Promise<string | null> {
+  try {
+    const mission = await prisma.pilot_mission.findUnique({
+      where: { pilot_mission_id: pilotMissionId },
+      select: { fk_tool_id: true },
+    });
+    if (!mission?.fk_tool_id) return null;
+
+    const component = await prisma.tool_component.findFirst({
+      where: {
+        fk_tool_id: mission.fk_tool_id,
         component_type: 'DRONE',
         component_active: 'Y',
         dcc_drone_id: { not: null },
@@ -182,6 +215,7 @@ export async function notifyDccAcceptance(
   ownerId: number,
   planningId: number,
   externalMissionId?: string,
+  pilotMissionId?: number,
 ): Promise<DccCallbackResult> {
   try {
     const missionId = externalMissionId ?? await getExternalMissionIdForPlanning(planningId);
@@ -195,7 +229,9 @@ export async function notifyDccAcceptance(
       };
     }
 
-    const droneId = await getDccDroneIdForPlanning(planningId);
+    const droneId = pilotMissionId
+      ? await getDccDroneIdForPilotMission(pilotMissionId)
+      : await getDccDroneIdForPlanning(planningId);
     if (!droneId) {
       console.warn(
         `[DCC] acceptance: no DRONE component with dcc_drone_id found for planning ${planningId}. ` +

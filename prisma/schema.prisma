@@ -1183,30 +1183,33 @@ model evaluation_file {
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model flight_requests {
-  request_id          Int           @id @default(autoincrement())
+  request_id          Int            @id @default(autoincrement())
   fk_owner_id         Int
   fk_api_key_id       Int?
-  external_mission_id String        @db.VarChar(100)
-  mission_type        String?       @db.VarChar(50)
-  target              String?       @db.VarChar(255)
+  external_mission_id String         @db.VarChar(100)
+  mission_type        String?        @db.VarChar(50)
+  target              String?        @db.VarChar(255)
   localization        Json?
   waypoint            Json?
-  start_datetime      DateTime?     @db.Timestamp(6)
-  priority            String?       @db.VarChar(20)
+  start_datetime      DateTime?      @db.Timestamp(6)
+  priority            String?        @db.VarChar(20)
   notes               String?
-  operator            String?       @db.VarChar(100)
-  dcc_status          String        @default("NEW") @db.VarChar(20)
+  operator            String?        @db.VarChar(100)
+  dcc_status          String         @default("NEW") @db.VarChar(20)
   fk_planning_id      Int?
   assigned_by_user_id Int?
-  assigned_at         DateTime?     @db.Timestamp(6)
-  created_at          DateTime      @default(now()) @db.Timestamp(6)
-  updated_at          DateTime      @default(now()) @db.Timestamp(6)
-  users               public_users? @relation(fields: [assigned_by_user_id], references: [user_id], onUpdate: NoAction)
-  api_keys            api_keys?     @relation(fields: [fk_api_key_id], references: [api_key_id], onDelete: NoAction, onUpdate: NoAction)
-  owner               owner         @relation(fields: [fk_owner_id], references: [owner_id], onDelete: NoAction, onUpdate: NoAction)
+  assigned_at         DateTime?      @db.Timestamp(6)
+  created_at          DateTime       @default(now()) @db.Timestamp(6)
+  updated_at          DateTime       @default(now()) @db.Timestamp(6)
+  fk_pilot_mission_id Int?
+  users               public_users?  @relation(fields: [assigned_by_user_id], references: [user_id], onUpdate: NoAction)
+  api_keys            api_keys?      @relation(fields: [fk_api_key_id], references: [api_key_id], onDelete: NoAction, onUpdate: NoAction)
+  owner               owner          @relation(fields: [fk_owner_id], references: [owner_id], onDelete: NoAction, onUpdate: NoAction)
+  pilot_mission       pilot_mission? @relation(fields: [fk_pilot_mission_id], references: [pilot_mission_id], onDelete: NoAction, onUpdate: NoAction)
 
   @@index([fk_owner_id], map: "idx_flight_requests_owner")
   @@index([dcc_status], map: "idx_flight_requests_status")
+  @@index([fk_pilot_mission_id], map: "idx_flight_requests_pilot_mission")
   @@schema("public")
 }
 
@@ -1827,62 +1830,69 @@ model pilot_declaration {
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model pilot_mission {
-  pilot_mission_id          Int                        @id @default(autoincrement())
-  fk_planning_id            Int?
-  fk_pilot_user_id          Int?
-  fk_tool_id                Int?
-  fk_mission_type_id        Int?
-  fk_mission_category_id    Int?
-  fk_mission_status_id      Int?
-  mission_code              String?                    @unique @db.VarChar(50)
-  mission_name              String?                    @db.VarChar(255)
-  mission_description       String?
-  scheduled_start           DateTime?                  @db.Timestamp(6)
-  actual_start              DateTime?                  @db.Timestamp(6)
-  actual_end                DateTime?                  @db.Timestamp(6)
-  flight_duration           Int?
-  location                  String?
-  notes                     String?
-  created_at                DateTime?                  @default(now()) @db.Timestamp(6)
-  updated_at                DateTime?                  @default(now()) @db.Timestamp(6)
-  fk_owner_id               Int
-  status_name               String?                    @db.VarChar(100)
-  distance_flown            Decimal?                   @db.Decimal(10, 2)
-  recurring_group_id        String?
-  mission_date_until        DateTime?                  @db.Date
-  mission_group_label       String?
-  fk_luc_procedure_id       Int?
-  luc_procedure_progress    Json?
-  luc_completed_at          DateTime?                  @db.Timestamp(6)
-  fk_mission_result_type_id Int?
-  battery_charge_start      Decimal?                   @db.Decimal(5, 2)
-  battery_charge_end        Decimal?                   @db.Decimal(5, 2)
-  incident_flag             Boolean?                   @default(false)
-  rth_unplanned             Boolean?                   @default(false)
-  link_loss                 Boolean?                   @default(false)
-  deviation_flag            Boolean?                   @default(false)
-  weather_temperature       Decimal?                   @db.Decimal(6, 2)
-  fk_client_id              Int?
-  mission_metadata          Json?                      @default("{}")
-  fk_erp_group_id           Int?
-  fk_mission_planning_id    Int?
-  controlroom_drone         controlroom_drone[]
-  mission_maintenance_log   mission_maintenance_log[]
-  operation_attachment      operation_attachment[]
-  planning_logbook          planning_logbook?          @relation(fields: [fk_mission_planning_id], references: [mission_planning_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_pilot_mission_mission_planning")
-  client                    client?                    @relation(fields: [fk_client_id], references: [client_id], onDelete: NoAction, onUpdate: NoAction)
-  erp_location_group        erp_location_group?        @relation(fields: [fk_erp_group_id], references: [group_id], onDelete: NoAction, onUpdate: NoAction)
-  luc_procedure             luc_procedure?             @relation(fields: [fk_luc_procedure_id], references: [procedure_id], onUpdate: NoAction)
-  pilot_mission_category    pilot_mission_category?    @relation(fields: [fk_mission_category_id], references: [category_id], onDelete: NoAction, onUpdate: NoAction)
-  pilot_mission_result_type pilot_mission_result_type? @relation(fields: [fk_mission_result_type_id], references: [result_type_id], onDelete: NoAction, onUpdate: NoAction)
-  pilot_mission_status      pilot_mission_status?      @relation(fields: [fk_mission_status_id], references: [status_id], onDelete: NoAction, onUpdate: NoAction)
-  pilot_mission_type        pilot_mission_type?        @relation(fields: [fk_mission_type_id], references: [mission_type_id], onDelete: NoAction, onUpdate: NoAction)
-  owner                     owner                      @relation(fields: [fk_owner_id], references: [owner_id], onDelete: NoAction, onUpdate: NoAction)
-  users                     public_users?              @relation(fields: [fk_pilot_user_id], references: [user_id], onUpdate: NoAction)
-  planning                  planning?                  @relation(fields: [fk_planning_id], references: [planning_id], onDelete: NoAction, onUpdate: NoAction)
-  tool                      tool?                      @relation(fields: [fk_tool_id], references: [tool_id], onUpdate: NoAction)
-  pilot_mission_result      pilot_mission_result[]
-  safety_report             safety_report[]
+  pilot_mission_id                    Int                        @id @default(autoincrement())
+  fk_planning_id                      Int?
+  fk_pilot_user_id                    Int?
+  fk_tool_id                          Int?
+  fk_mission_type_id                  Int?
+  fk_mission_category_id              Int?
+  fk_mission_status_id                Int?
+  mission_code                        String?                    @unique @db.VarChar(50)
+  mission_name                        String?                    @db.VarChar(255)
+  mission_description                 String?
+  scheduled_start                     DateTime?                  @db.Timestamp(6)
+  actual_start                        DateTime?                  @db.Timestamp(6)
+  actual_end                          DateTime?                  @db.Timestamp(6)
+  flight_duration                     Int?
+  location                            String?
+  notes                               String?
+  created_at                          DateTime?                  @default(now()) @db.Timestamp(6)
+  updated_at                          DateTime?                  @default(now()) @db.Timestamp(6)
+  fk_owner_id                         Int
+  status_name                         String?                    @db.VarChar(100)
+  distance_flown                      Decimal?                   @db.Decimal(10, 2)
+  recurring_group_id                  String?
+  mission_date_until                  DateTime?                  @db.Date
+  mission_group_label                 String?
+  fk_luc_procedure_id                 Int?
+  luc_procedure_progress              Json?
+  luc_completed_at                    DateTime?                  @db.Timestamp(6)
+  fk_mission_result_type_id           Int?
+  battery_charge_start                Decimal?                   @db.Decimal(5, 2)
+  battery_charge_end                  Decimal?                   @db.Decimal(5, 2)
+  incident_flag                       Boolean?                   @default(false)
+  rth_unplanned                       Boolean?                   @default(false)
+  link_loss                           Boolean?                   @default(false)
+  deviation_flag                      Boolean?                   @default(false)
+  weather_temperature                 Decimal?                   @db.Decimal(6, 2)
+  fk_client_id                        Int?
+  mission_metadata                    Json?                      @default("{}")
+  fk_erp_group_id                     Int?
+  fk_mission_planning_id              Int?
+  dflight_mission_id                  String?                    @db.VarChar(100)
+  dflight_tech_version                String?                    @db.VarChar(50)
+  dflight_mission_status              String?                    @db.VarChar(50)
+  dflight_flight_authorisation_status String?                    @db.VarChar(50)
+  dflight_watch_active                Boolean?                   @default(false)
+  dflight_last_status_at              DateTime?                  @db.Timestamp(6)
+  controlroom_drone                   controlroom_drone[]
+  flight_requests                     flight_requests[]
+  mission_maintenance_log             mission_maintenance_log[]
+  operation_attachment                operation_attachment[]
+  planning_logbook                    planning_logbook?          @relation(fields: [fk_mission_planning_id], references: [mission_planning_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_pilot_mission_mission_planning")
+  client                              client?                    @relation(fields: [fk_client_id], references: [client_id], onDelete: NoAction, onUpdate: NoAction)
+  erp_location_group                  erp_location_group?        @relation(fields: [fk_erp_group_id], references: [group_id], onDelete: NoAction, onUpdate: NoAction)
+  luc_procedure                       luc_procedure?             @relation(fields: [fk_luc_procedure_id], references: [procedure_id], onUpdate: NoAction)
+  pilot_mission_category              pilot_mission_category?    @relation(fields: [fk_mission_category_id], references: [category_id], onDelete: NoAction, onUpdate: NoAction)
+  pilot_mission_result_type           pilot_mission_result_type? @relation(fields: [fk_mission_result_type_id], references: [result_type_id], onDelete: NoAction, onUpdate: NoAction)
+  pilot_mission_status                pilot_mission_status?      @relation(fields: [fk_mission_status_id], references: [status_id], onDelete: NoAction, onUpdate: NoAction)
+  pilot_mission_type                  pilot_mission_type?        @relation(fields: [fk_mission_type_id], references: [mission_type_id], onDelete: NoAction, onUpdate: NoAction)
+  owner                               owner                      @relation(fields: [fk_owner_id], references: [owner_id], onDelete: NoAction, onUpdate: NoAction)
+  users                               public_users?              @relation(fields: [fk_pilot_user_id], references: [user_id], onUpdate: NoAction)
+  planning                            planning?                  @relation(fields: [fk_planning_id], references: [planning_id], onDelete: NoAction, onUpdate: NoAction)
+  tool                                tool?                      @relation(fields: [fk_tool_id], references: [tool_id], onUpdate: NoAction)
+  pilot_mission_result                pilot_mission_result[]
+  safety_report                       safety_report[]
 
   @@index([actual_start], map: "idx_pilot_mission_actual_start")
   @@index([scheduled_start], map: "idx_pilot_mission_date")
@@ -1899,6 +1909,7 @@ model pilot_mission {
   @@index([status_name], map: "idx_pilot_mission_status_name")
   @@index([fk_tool_id], map: "idx_pilot_mission_tool")
   @@index([actual_start], map: "idx_pilot_mission_year", where: raw("(actual_start >= '2020-01-01 00:00:00'::timestamp without time zone)"))
+  @@index([dflight_mission_id], map: "idx_pilot_mission_dflight_mission_id")
   @@schema("public")
 }
 
