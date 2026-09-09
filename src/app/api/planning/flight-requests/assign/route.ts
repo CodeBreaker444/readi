@@ -8,8 +8,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
 const Schema = z.object({
-  request_id:  z.number().int().positive(),
-  planning_id: z.number().int().positive().optional(),
+  request_id:       z.number().int().positive(),
+  planning_id:      z.number().int().positive().optional(),
+  pilot_mission_id: z.number().int().positive().optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -31,11 +32,17 @@ export async function POST(req: NextRequest) {
       session!.user.ownerId,
       session!.user.userId,
       parsed.data.planning_id,
+      parsed.data.pilot_mission_id,
     );
 
     let dcc: DccCallbackResult | undefined;
     if (parsed.data.planning_id) {
-      dcc = await notifyDccAcceptance(session!.user.ownerId, parsed.data.planning_id);
+      dcc = await notifyDccAcceptance(
+        session!.user.ownerId,
+        parsed.data.planning_id,
+        undefined,
+        parsed.data.pilot_mission_id,
+      );
     }
 
     return NextResponse.json({ code: 1, message: 'Flight request updated', ...(dcc ? { dcc } : {}) });
