@@ -4,7 +4,7 @@ import { useAuthorization } from '@/components/authorization/AuthorizationProvid
 import { FlightRequestDetailModal } from '@/components/operation/flight-requests/FlightRequestDetailModal';
 import { FlightRequestsHeader } from '@/components/operation/flight-requests/FlightRequestsHeader';
 import { FlightRequestsLogModal } from '@/components/operation/flight-requests/FlightRequestsLogModal';
-import { FlightRequestsPlanModal } from '@/components/operation/flight-requests/FlightRequestsPlanModal';
+import { AssignablePlan, FlightRequestsPlanModal } from '@/components/operation/flight-requests/FlightRequestsPlanModal';
 import { FlightRequestsStats } from '@/components/operation/flight-requests/FlightRequestsStats';
 import { FlightRequest, createFlightRequestColumns } from '@/components/tables/flightRequestsColumns';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -62,6 +62,10 @@ export default function FlightRequestsTable() {
   const [plannings, setPlannings] = useState<Planning[]>([]);
   const [evalLoading, setEvalLoading] = useState(false);
   const [selectedEvalId, setSelectedEvalId] = useState('');
+  const [selectedPlanId, setSelectedPlanId] = useState('');
+  const [expandedPlanningId, setExpandedPlanningId] = useState<number | null>(null);
+  const [plansByPlanning, setPlansByPlanning] = useState<Record<number, AssignablePlan[] | undefined>>({});
+  const [plansLoadingId, setPlansLoadingId] = useState<number | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const statusOptions = ['ALL', 'NEW', 'ACKNOWLEDGED', 'ASSIGNED', 'IN_PROGRESS', 'COMPLETED', 'ISSUE', 'REJECTED'];
 
@@ -141,8 +145,11 @@ export default function FlightRequestsTable() {
   async function handleUpdateStatus(request_id: number, status: string) {
     setUpdatingStatus({ id: request_id, status });
     try {
-      await axios.patch(`/api/planning/flight-requests/${request_id}`, { dcc_status: status });
-      toast.success(`Status updated to ${status}`);
+      const { data } = await axios.patch<{ code: number; dcc?: DccCallbackResult }>(
+        `/api/planning/flight-requests/${request_id}`,
+        { dcc_status: status },
+      );
+      toastAfterDccAction(`Status updated to ${status}`, data.dcc);
       setRequests((prev) =>
         prev.map((r) => r.request_id === request_id ? { ...r, dcc_status: status } : r),
       );
@@ -225,6 +232,9 @@ export default function FlightRequestsTable() {
   async function openPlanModal(request_id: number, mission_id: string) {
     setPlanModal({ request_id, mission_id });
     setSelectedEvalId('');
+    setSelectedPlanId('');
+    setExpandedPlanningId(null);
+    setPlansByPlanning({});
     setEvalLoading(true);
     try {
       const { data } = await axios.get('/api/planning/flight-requests/assignable-plannings');
@@ -236,6 +246,36 @@ export default function FlightRequestsTable() {
     }
   }
 
+  async function handleSelectPlanning(planningId: string) {
+    setSelectedEvalId(planningId);
+    setSelectedPlanId('');
+    const pId = Number(planningId);
+    setExpandedPlanningId(pId);
+
+    const cached = plansByPlanning[pId];
+    if (cached) {
+      if (cached.length === 1) setSelectedPlanId(String(cached[0].pilot_mission_id));
+      return;
+    }
+
+    setPlansLoadingId(pId);
+    try {
+      const { data } = await axios.get(`/api/planning/flight-requests/assignable-plannings/${pId}/plans`);
+      const items: AssignablePlan[] = data.items ?? [];
+      setPlansByPlanning((prev) => ({ ...prev, [pId]: items }));
+      if (items.length === 1) setSelectedPlanId(String(items[0].pilot_mission_id));
+    } catch {
+      toast.error(t('planning.flightRequests.loadPlansError'));
+    } finally {
+      setPlansLoadingId(null);
+    }
+  }
+
+  function handleSelectPlan(planningId: string, pilotMissionId: string) {
+    setSelectedEvalId(planningId);
+    setSelectedPlanId(pilotMissionId);
+  }
+
   async function handleMoveToPlan() {
     if (!planModal || !selectedEvalId) return;
     setSubmitting(true);
@@ -245,6 +285,7 @@ export default function FlightRequestsTable() {
         {
           request_id: planModal.request_id,
           planning_id: Number(selectedEvalId),
+          ...(selectedPlanId ? { pilot_mission_id: Number(selectedPlanId) } : {}),
         },
       );
       toastAfterDccAction(t('planning.flightRequests.linkSuccess'), data.dcc);
@@ -394,8 +435,13 @@ export default function FlightRequestsTable() {
         plannings={plannings}
         evalLoading={evalLoading}
         selectedEvalId={selectedEvalId}
+        selectedPlanId={selectedPlanId}
+        expandedPlanningId={expandedPlanningId}
+        plansByPlanning={plansByPlanning}
+        plansLoadingId={plansLoadingId}
         submitting={submitting}
-        onSelectPlanning={setSelectedEvalId}
+        onSelectPlanning={handleSelectPlanning}
+        onSelectPlan={handleSelectPlan}
         onConfirm={handleMoveToPlan}
         onClose={() => setPlanModal(null)}
       />

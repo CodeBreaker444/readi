@@ -1183,30 +1183,33 @@ model evaluation_file {
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model flight_requests {
-  request_id          Int           @id @default(autoincrement())
+  request_id          Int            @id @default(autoincrement())
   fk_owner_id         Int
   fk_api_key_id       Int?
-  external_mission_id String        @db.VarChar(100)
-  mission_type        String?       @db.VarChar(50)
-  target              String?       @db.VarChar(255)
+  external_mission_id String         @db.VarChar(100)
+  mission_type        String?        @db.VarChar(50)
+  target              String?        @db.VarChar(255)
   localization        Json?
   waypoint            Json?
-  start_datetime      DateTime?     @db.Timestamp(6)
-  priority            String?       @db.VarChar(20)
+  start_datetime      DateTime?      @db.Timestamp(6)
+  priority            String?        @db.VarChar(20)
   notes               String?
-  operator            String?       @db.VarChar(100)
-  dcc_status          String        @default("NEW") @db.VarChar(20)
+  operator            String?        @db.VarChar(100)
+  dcc_status          String         @default("NEW") @db.VarChar(20)
   fk_planning_id      Int?
   assigned_by_user_id Int?
-  assigned_at         DateTime?     @db.Timestamp(6)
-  created_at          DateTime      @default(now()) @db.Timestamp(6)
-  updated_at          DateTime      @default(now()) @db.Timestamp(6)
-  users               public_users? @relation(fields: [assigned_by_user_id], references: [user_id], onUpdate: NoAction)
-  api_keys            api_keys?     @relation(fields: [fk_api_key_id], references: [api_key_id], onDelete: NoAction, onUpdate: NoAction)
-  owner               owner         @relation(fields: [fk_owner_id], references: [owner_id], onDelete: NoAction, onUpdate: NoAction)
+  assigned_at         DateTime?      @db.Timestamp(6)
+  created_at          DateTime       @default(now()) @db.Timestamp(6)
+  updated_at          DateTime       @default(now()) @db.Timestamp(6)
+  fk_pilot_mission_id Int?
+  users               public_users?  @relation(fields: [assigned_by_user_id], references: [user_id], onUpdate: NoAction)
+  api_keys            api_keys?      @relation(fields: [fk_api_key_id], references: [api_key_id], onDelete: NoAction, onUpdate: NoAction)
+  owner               owner          @relation(fields: [fk_owner_id], references: [owner_id], onDelete: NoAction, onUpdate: NoAction)
+  pilot_mission       pilot_mission? @relation(fields: [fk_pilot_mission_id], references: [pilot_mission_id], onDelete: NoAction, onUpdate: NoAction)
 
   @@index([fk_owner_id], map: "idx_flight_requests_owner")
   @@index([dcc_status], map: "idx_flight_requests_status")
+  @@index([fk_pilot_mission_id], map: "idx_flight_requests_pilot_mission")
   @@schema("public")
 }
 
@@ -1873,6 +1876,7 @@ model pilot_mission {
   dflight_watch_active                Boolean?                   @default(false)
   dflight_last_status_at              DateTime?                  @db.Timestamp(6)
   controlroom_drone                   controlroom_drone[]
+  flight_requests                     flight_requests[]
   mission_maintenance_log             mission_maintenance_log[]
   operation_attachment                operation_attachment[]
   planning_logbook                    planning_logbook?          @relation(fields: [fk_mission_planning_id], references: [mission_planning_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_pilot_mission_mission_planning")
@@ -1906,6 +1910,7 @@ model pilot_mission {
   @@index([dflight_mission_id], map: "idx_pilot_mission_dflight_mission_id")
   @@index([fk_tool_id], map: "idx_pilot_mission_tool")
   @@index([actual_start], map: "idx_pilot_mission_year", where: raw("(actual_start >= '2020-01-01 00:00:00'::timestamp without time zone)"))
+  @@index([dflight_mission_id], map: "idx_pilot_mission_dflight_mission_id")
   @@schema("public")
 }
 
@@ -2525,7 +2530,7 @@ model tool_component {
   current_maintenance_days    Decimal?                  @default(0) @db.Decimal
   current_maintenance_flights Decimal?                  @default(0) @db.Decimal
   last_maintenance_date       DateTime?                 @db.Timestamp(6)
-  dcc_drone_id                String?                   @db.Uuid
+  dcc_drone_id                String?                   @db.VarChar(255)
   drone_registration_code     String?
   drc_synced_at               DateTime?                 @db.Timestamptz(6)
   expiration_date             DateTime?                 @db.Date

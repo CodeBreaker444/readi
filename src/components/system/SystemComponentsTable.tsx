@@ -65,7 +65,7 @@ interface SystemComponentsTableProps {
   onLogComponent: (row: ComponentRow) => void;
   onFlightLogsComponent: (row: ComponentRow) => void;
   onOpenRelations: (toolId: number, toolCode: string) => void;
-  onGenerateQtbReport: (tool: DroneToolData) => void;
+  onGenerateQtbReport: (component: ComponentRow) => void;
 }
 
 function StatusPill({ status }: { status?: string | null }) {
@@ -280,14 +280,6 @@ export default function SystemComponentsTable({
                             <Button size="sm" variant="outline" onClick={() => onOpenRelations(system.tool_id, system.tool_code)} className="gap-1">
                               <GitBranch size={13} /> {t('systems.components.systemsTable.buttons.relations')}
                             </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => onGenerateQtbReport(system)}
-                              className="gap-1 text-violet-600 border-violet-200 hover:bg-violet-50 hover:text-violet-700"
-                            >
-                              <FileText size={13} /> {t('systems.components.systemsTable.buttons.qtbReport')}
-                            </Button>
                             <FeatureGate feature="systems_manage" require="delete">
                               <Button size="sm" variant="destructive" onClick={() => onDeleteSystem(system.tool_id)}>{t('systems.components.systemsTable.buttons.delete')}</Button>
                             </FeatureGate>
@@ -350,6 +342,16 @@ export default function SystemComponentsTable({
                                   >
                                     {t('systems.components.systemsTable.buttons.flights')}
                                   </Button>
+                                  {comp.component_type === 'DRONE' && (
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => onGenerateQtbReport(comp)}
+                                      className="gap-1 text-violet-600 border-violet-200 hover:bg-violet-50 hover:text-violet-700"
+                                    >
+                                      <FileText size={13} /> {t('systems.components.systemsTable.buttons.qtbReport')}
+                                    </Button>
+                                  )}
                                   <FeatureGate feature="systems_manage" require="delete">
                                     <Button
                                       size="sm"

@@ -126,12 +126,14 @@ export async function assignFlightRequest(
   owner_id: number,
   assigned_by_user_id: number,
   planning_id?: number,
+  pilot_mission_id?: number,
 ): Promise<void> {
   await prisma.flight_requests.updateMany({
     where: { request_id, fk_owner_id: owner_id },
     data: {
       dcc_status:          planning_id ? 'ASSIGNED' : 'ACKNOWLEDGED',
       fk_planning_id:      planning_id ?? null,
+      fk_pilot_mission_id: planning_id ? (pilot_mission_id ?? null) : null,
       assigned_by_user_id,
       assigned_at:         new Date(),
       updated_at:          new Date(),
@@ -323,6 +325,59 @@ export async function listAssignablePlannings(owner_id: number): Promise<Assigna
     planning_status: p.planning_status ?? '',
     client_name:     p.client?.client_name ?? '',
     has_valid_drone: validPlanningIds.has(p.planning_id),
+  }));
+}
+
+export interface AssignablePlan {
+  pilot_mission_id: number;
+  mission_code: string | null;
+  tool_name: string | null;
+  dcc_drone_id: string | null;
+}
+
+/**
+ * Lists the individual pilot_mission "plans" under a planning, each with the
+ * dcc_drone_id resolved from its own tool — so the caller can let the user
+ * pick a specific plan instead of relying on a planning-wide "latest" guess.
+ */
+export async function listPlansForPlanning(planning_id: number, owner_id: number): Promise<AssignablePlan[]> {
+  const missions = await prisma.pilot_mission.findMany({
+    where: { fk_planning_id: planning_id, fk_owner_id: owner_id, fk_tool_id: { not: null } },
+    select: {
+      pilot_mission_id: true,
+      mission_code: true,
+      fk_tool_id: true,
+      tool: { select: { tool_name: true } },
+    },
+    orderBy: { pilot_mission_id: 'asc' },
+  });
+
+  const toolIds = [...new Set(missions.map((m) => m.fk_tool_id as number))];
+
+  const droneIdByToolId = new Map<number, string>();
+  if (toolIds.length > 0) {
+    const components = await prisma.tool_component.findMany({
+      where: {
+        fk_tool_id: { in: toolIds },
+        component_type: 'DRONE',
+        component_active: 'Y',
+        dcc_drone_id: { not: null },
+      },
+      orderBy: [{ installation_date: 'desc' }, { created_at: 'desc' }],
+      select: { fk_tool_id: true, dcc_drone_id: true },
+    });
+    for (const c of components) {
+      if (!droneIdByToolId.has(c.fk_tool_id) && c.dcc_drone_id) {
+        droneIdByToolId.set(c.fk_tool_id, c.dcc_drone_id);
+      }
+    }
+  }
+
+  return missions.map((m) => ({
+    pilot_mission_id: m.pilot_mission_id,
+    mission_code:      m.mission_code,
+    tool_name:         m.tool?.tool_name ?? null,
+    dcc_drone_id:      droneIdByToolId.get(m.fk_tool_id as number) ?? null,
   }));
 }
 

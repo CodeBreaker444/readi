@@ -13,9 +13,9 @@ export async function GET(
     if (error) return error;
 
     const { id } = await params;
-    const toolId = Number(id);
-    if (!toolId) {
-      return NextResponse.json({ code: 0, message: 'Invalid system id' }, { status: 400 });
+    const componentId = Number(id);
+    if (!componentId) {
+      return NextResponse.json({ code: 0, message: 'Invalid component id' }, { status: 400 });
     }
 
     const { searchParams } = new URL(req.url);
@@ -27,7 +27,7 @@ export async function GET(
       return NextResponse.json({ code: 0, message: 'startDate and endDate are required' }, { status: 400 });
     }
 
-    const result = await generateQtbReportData(toolId, session!.user.ownerId, startDate, endDate, timezone);
+    const result = await generateQtbReportData(componentId, session!.user.ownerId, startDate, endDate, timezone);
     return NextResponse.json(result);
   } catch (err) {
     return internalError(E.SV001, err);

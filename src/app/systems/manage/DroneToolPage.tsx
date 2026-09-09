@@ -97,7 +97,7 @@ export default function DroneToolPage({ dFlightEnabled }: DroneToolPageProps) {
     const [relationsToolCode, setRelationsToolCode] = useState<string>('');
 
     const [showQtbReport, setShowQtbReport] = useState(false);
-    const [qtbReportTool, setQtbReportTool] = useState<DroneToolData | null>(null);
+    const [qtbReportDrone, setQtbReportDrone] = useState<any | null>(null);
 
     const [filesModal, setFilesModal] = useState<{
         open: boolean;
@@ -212,8 +212,8 @@ export default function DroneToolPage({ dFlightEnabled }: DroneToolPageProps) {
         setFilesModal({ open: true, toolCode: tool.tool_code, files: tool.files ?? [], toolId: tool.tool_id ?? null });
     };
 
-    const handleGenerateQtbReport = (tool: DroneToolData) => {
-        setQtbReportTool(tool);
+    const handleGenerateQtbReport = (component: any) => {
+        setQtbReportDrone(component);
         setShowQtbReport(true);
     };
 
@@ -642,8 +642,13 @@ export default function DroneToolPage({ dFlightEnabled }: DroneToolPageProps) {
 
             <QtbReportModal
                 open={showQtbReport}
-                tool={qtbReportTool ? { tool_id: qtbReportTool.tool_id, tool_code: qtbReportTool.tool_code } : null}
-                onClose={() => { setShowQtbReport(false); setQtbReportTool(null); }}
+                drone={qtbReportDrone
+                    ? {
+                        component_id: qtbReportDrone.tool_component_id,
+                        label: qtbReportDrone.component_code || qtbReportDrone.component_sn || qtbReportDrone.component_name || `#${qtbReportDrone.tool_component_id}`,
+                    }
+                    : null}
+                onClose={() => { setShowQtbReport(false); setQtbReportDrone(null); }}
             />
 
             <ComponentRelationsModal
