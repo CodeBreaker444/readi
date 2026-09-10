@@ -2,6 +2,7 @@
 
 import { FlightRequest } from '@/components/tables/flightRequestsColumns';
 import { Button } from '@/components/ui/button';
+import { LEAFLET_TILE_DARK, LEAFLET_TILE_LIGHT } from '@/lib/leaflet-tiles';
 import { format } from 'date-fns';
 import { CheckCircle2, FileUp, Loader2, MapPin, Send, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
@@ -66,9 +67,7 @@ function WaypointMap({ waypoint, isDark }: { waypoint: any; isDark: boolean }) {
       mapRef.current = map;
 
       L.tileLayer(
-        isDark
-          ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-          : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+        isDark ? LEAFLET_TILE_DARK : LEAFLET_TILE_LIGHT,
         { maxZoom: 19 },
       ).addTo(map);
 

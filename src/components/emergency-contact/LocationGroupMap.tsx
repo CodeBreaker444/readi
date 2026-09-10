@@ -1,15 +1,13 @@
 'use client'
 
 import { LocationGroupLocation } from '@/config/types/erp'
+import { LEAFLET_TILE_ATTRIBUTION, LEAFLET_TILE_DARK, LEAFLET_TILE_LIGHT } from '@/lib/leaflet-tiles'
 import { cn } from '@/lib/utils'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { MapPin, ZoomIn, ZoomOut } from 'lucide-react'
 import { useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
-
-const TILE_LIGHT = 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'
-const TILE_DARK  = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
 
 function makePinIcon(index: number) {
   return L.divIcon({
@@ -42,8 +40,8 @@ export function LocationGroupMap({ locations, isDark, height = 320 }: Props) {
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return
     const map = L.map(containerRef.current, { center: [20, 0], zoom: 2, zoomControl: false })
-    tileRef.current = L.tileLayer(isDark ? TILE_DARK : TILE_LIGHT, {
-      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    tileRef.current = L.tileLayer(isDark ? LEAFLET_TILE_DARK : LEAFLET_TILE_LIGHT, {
+      attribution: LEAFLET_TILE_ATTRIBUTION,
     }).addTo(map)
     mapRef.current = map
     return () => {
@@ -58,8 +56,8 @@ export function LocationGroupMap({ locations, isDark, height = 320 }: Props) {
   useEffect(() => {
     if (!mapRef.current || !tileRef.current) return
     tileRef.current.remove()
-    tileRef.current = L.tileLayer(isDark ? TILE_DARK : TILE_LIGHT, {
-      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    tileRef.current = L.tileLayer(isDark ? LEAFLET_TILE_DARK : LEAFLET_TILE_LIGHT, {
+      attribution: LEAFLET_TILE_ATTRIBUTION,
     }).addTo(mapRef.current)
   }, [isDark])
 

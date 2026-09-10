@@ -112,23 +112,23 @@ async function getDccDroneIdForPlanning(planningId: number): Promise<string | nu
 }
 
 /**
- * Returns the dcc_drone_id for one specific pilot_mission ("plan"), by
- * looking at just that plan's assigned tool. Used when the caller (e.g. the
- * flight-requests page) already knows exactly which plan the user picked,
- * avoiding the ambiguity in getDccDroneIdForPlanning when a planning has
- * several plans on different drones.
+ * Returns the dcc_drone_id for one specific Mission Planning Logbook entry
+ * ("plan"), by looking at just that entry's assigned tool. Used when the
+ * caller (e.g. the flight-requests page) already knows exactly which plan
+ * the user picked, avoiding the ambiguity in getDccDroneIdForPlanning when a
+ * planning has several mission plans on different systems.
  */
-async function getDccDroneIdForPilotMission(pilotMissionId: number): Promise<string | null> {
+async function getDccDroneIdForMissionPlanning(missionPlanningId: number): Promise<string | null> {
   try {
-    const mission = await prisma.pilot_mission.findUnique({
-      where: { pilot_mission_id: pilotMissionId },
+    const plan = await prisma.planning_logbook.findUnique({
+      where: { mission_planning_id: missionPlanningId },
       select: { fk_tool_id: true },
     });
-    if (!mission?.fk_tool_id) return null;
+    if (!plan?.fk_tool_id) return null;
 
     const component = await prisma.tool_component.findFirst({
       where: {
-        fk_tool_id: mission.fk_tool_id,
+        fk_tool_id: plan.fk_tool_id,
         component_type: 'DRONE',
         component_active: 'Y',
         dcc_drone_id: { not: null },
@@ -215,7 +215,7 @@ export async function notifyDccAcceptance(
   ownerId: number,
   planningId: number,
   externalMissionId?: string,
-  pilotMissionId?: number,
+  missionPlanningId?: number,
 ): Promise<DccCallbackResult> {
   try {
     const missionId = externalMissionId ?? await getExternalMissionIdForPlanning(planningId);
@@ -229,8 +229,8 @@ export async function notifyDccAcceptance(
       };
     }
 
-    const droneId = pilotMissionId
-      ? await getDccDroneIdForPilotMission(pilotMissionId)
+    const droneId = missionPlanningId
+      ? await getDccDroneIdForMissionPlanning(missionPlanningId)
       : await getDccDroneIdForPlanning(planningId);
     if (!droneId) {
       console.warn(

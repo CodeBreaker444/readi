@@ -1,5 +1,6 @@
 'use client';
 
+import { LEAFLET_TILE_ATTRIBUTION, LEAFLET_TILE_DARK, LEAFLET_TILE_LIGHT } from '@/lib/leaflet-tiles';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Loader2, LocateFixed, Search, X } from 'lucide-react';
@@ -32,8 +33,6 @@ const PIN_ICON = L.divIcon({
   iconAnchor: [12, 36],
 });
 
-const TILE_LIGHT = 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
-const TILE_DARK = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
 const DEFAULT_CENTER: [number, number] = [41.9, 12.5];
 const DEFAULT_ZOOM = 4;
 
@@ -97,8 +96,8 @@ export default function LocationPickerInner({ lat, lng, onChange, isDark = false
     const zoom = hasCoords ? 13 : DEFAULT_ZOOM;
 
     const map = L.map(containerRef.current, { center, zoom, zoomControl: true });
-    const tile = L.tileLayer(isDark ? TILE_DARK : TILE_LIGHT, {
-      attribution: '© OpenStreetMap contributors',
+    const tile = L.tileLayer(isDark ? LEAFLET_TILE_DARK : LEAFLET_TILE_LIGHT, {
+      attribution: LEAFLET_TILE_ATTRIBUTION,
     }).addTo(map);
     tileRef.current = tile;
 
@@ -121,8 +120,8 @@ export default function LocationPickerInner({ lat, lng, onChange, isDark = false
   useEffect(() => {
     if (!mapRef.current || !tileRef.current) return;
     tileRef.current.remove();
-    const tile = L.tileLayer(isDark ? TILE_DARK : TILE_LIGHT, {
-      attribution: '© OpenStreetMap contributors',
+    const tile = L.tileLayer(isDark ? LEAFLET_TILE_DARK : LEAFLET_TILE_LIGHT, {
+      attribution: LEAFLET_TILE_ATTRIBUTION,
     }).addTo(mapRef.current);
     tileRef.current = tile;
   }, [isDark]);
