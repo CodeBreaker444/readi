@@ -1,6 +1,13 @@
 'use client';
 
-import { LEAFLET_TILE_ATTRIBUTION, LEAFLET_TILE_DARK, LEAFLET_TILE_LIGHT } from '@/lib/leaflet-tiles';
+import {
+  LEAFLET_TILE_ATTRIBUTION,
+  LEAFLET_TILE_BASE_MAX_NATIVE_ZOOM,
+  LEAFLET_TILE_DARK,
+  LEAFLET_TILE_DARK_LABELS,
+  LEAFLET_TILE_LIGHT,
+  LEAFLET_TILE_LIGHT_LABELS,
+} from '@/lib/leaflet-tiles';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Loader2, LocateFixed, Search, X } from 'lucide-react';
@@ -45,6 +52,7 @@ export default function LocationPickerInner({ lat, lng, onChange, isDark = false
   const mapRef = useRef<L.Map | null>(null);
   const markerRef = useRef<L.Marker | null>(null);
   const tileRef = useRef<L.TileLayer | null>(null);
+  const labelsRef = useRef<L.TileLayer | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const justSelectedRef = useRef(false);
   const blockMapClickRef = useRef(false);
@@ -98,8 +106,13 @@ export default function LocationPickerInner({ lat, lng, onChange, isDark = false
     const map = L.map(containerRef.current, { center, zoom, zoomControl: true });
     const tile = L.tileLayer(isDark ? LEAFLET_TILE_DARK : LEAFLET_TILE_LIGHT, {
       attribution: LEAFLET_TILE_ATTRIBUTION,
+      maxNativeZoom: LEAFLET_TILE_BASE_MAX_NATIVE_ZOOM,
     }).addTo(map);
     tileRef.current = tile;
+    const labels = L.tileLayer(isDark ? LEAFLET_TILE_DARK_LABELS : LEAFLET_TILE_LIGHT_LABELS, {
+      maxNativeZoom: LEAFLET_TILE_BASE_MAX_NATIVE_ZOOM,
+    }).addTo(map);
+    labelsRef.current = labels;
 
     if (hasCoords) {
       placeOrMoveMarker(map, Number(lat), Number(lng));
@@ -118,12 +131,18 @@ export default function LocationPickerInner({ lat, lng, onChange, isDark = false
   }, []);
 
   useEffect(() => {
-    if (!mapRef.current || !tileRef.current) return;
+    if (!mapRef.current || !tileRef.current || !labelsRef.current) return;
     tileRef.current.remove();
+    labelsRef.current.remove();
     const tile = L.tileLayer(isDark ? LEAFLET_TILE_DARK : LEAFLET_TILE_LIGHT, {
       attribution: LEAFLET_TILE_ATTRIBUTION,
+      maxNativeZoom: LEAFLET_TILE_BASE_MAX_NATIVE_ZOOM,
     }).addTo(mapRef.current);
     tileRef.current = tile;
+    const labels = L.tileLayer(isDark ? LEAFLET_TILE_DARK_LABELS : LEAFLET_TILE_LIGHT_LABELS, {
+      maxNativeZoom: LEAFLET_TILE_BASE_MAX_NATIVE_ZOOM,
+    }).addTo(mapRef.current);
+    labelsRef.current = labels;
   }, [isDark]);
 
   useEffect(() => {

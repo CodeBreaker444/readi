@@ -1,7 +1,7 @@
 'use client';
 
 import type { AircraftState } from '@/app/api/drone-atc/flights/route';
-import { LEAFLET_TILE_ATTRIBUTION, LEAFLET_TILE_DARK, LEAFLET_TILE_LIGHT, LEAFLET_TILE_MAX_ZOOM } from '@/lib/leaflet-tiles';
+import { LEAFLET_TILE_ATTRIBUTION, LEAFLET_TILE_BASE_MAX_NATIVE_ZOOM, LEAFLET_TILE_DARK, LEAFLET_TILE_DARK_LABELS, LEAFLET_TILE_LIGHT, LEAFLET_TILE_LIGHT_LABELS, LEAFLET_TILE_MAX_ZOOM } from '@/lib/leaflet-tiles';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -237,6 +237,7 @@ export default function DroneATCMap({
   const mapRef = useRef<L.Map | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const tileLayerRef = useRef<L.TileLayer | null>(null);
+  const labelsLayerRef = useRef<L.TileLayer | null>(null);
   const droneLayerRef = useRef<L.LayerGroup | null>(null);
   const dockLayerRef = useRef<L.LayerGroup | null>(null);
   const flightLayerRef = useRef<L.LayerGroup | null>(null);
@@ -426,7 +427,10 @@ export default function DroneATCMap({
     dronePane.style.zIndex = '615';
 
     const tile = L.tileLayer(isDark ? LEAFLET_TILE_DARK : LEAFLET_TILE_LIGHT, {
-      attribution: LEAFLET_TILE_ATTRIBUTION, maxZoom: LEAFLET_TILE_MAX_ZOOM,
+      attribution: LEAFLET_TILE_ATTRIBUTION, maxZoom: LEAFLET_TILE_MAX_ZOOM, maxNativeZoom: LEAFLET_TILE_BASE_MAX_NATIVE_ZOOM,
+    }).addTo(map);
+    const labelsTile = L.tileLayer(isDark ? LEAFLET_TILE_DARK_LABELS : LEAFLET_TILE_LIGHT_LABELS, {
+      maxZoom: LEAFLET_TILE_MAX_ZOOM, maxNativeZoom: LEAFLET_TILE_BASE_MAX_NATIVE_ZOOM,
     }).addTo(map);
 
     const airspaceLayer = L.layerGroup().addTo(map);
@@ -436,6 +440,7 @@ export default function DroneATCMap({
 
     mapRef.current = map;
     tileLayerRef.current = tile;
+    labelsLayerRef.current = labelsTile;
     droneLayerRef.current = droneLayer;
     dockLayerRef.current = dockLayer;
     flightLayerRef.current = flightLayer;
@@ -466,6 +471,7 @@ export default function DroneATCMap({
       if (precipCanvasRef.current) { precipCanvasRef.current.remove(); precipCanvasRef.current = null; }
       map.remove();
       mapRef.current = null;
+      labelsLayerRef.current = null;
       droneLayerRef.current = null;
       dockLayerRef.current = null;
       flightLayerRef.current = null;
@@ -479,6 +485,7 @@ export default function DroneATCMap({
   // Theme tile swap
   useEffect(() => {
     tileLayerRef.current?.setUrl(isDark ? LEAFLET_TILE_DARK : LEAFLET_TILE_LIGHT);
+    labelsLayerRef.current?.setUrl(isDark ? LEAFLET_TILE_DARK_LABELS : LEAFLET_TILE_LIGHT_LABELS);
   }, [isDark]);
 
   // Weather tile layers (OWM)

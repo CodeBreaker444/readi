@@ -1,6 +1,6 @@
 'use client';
 
-import { LEAFLET_TILE_ATTRIBUTION, LEAFLET_TILE_LIGHT, LEAFLET_TILE_SATELLITE, LEAFLET_TILE_SATELLITE_ATTRIBUTION } from '@/lib/leaflet-tiles';
+import { LEAFLET_TILE_ATTRIBUTION, LEAFLET_TILE_BASE_MAX_NATIVE_ZOOM, LEAFLET_TILE_LIGHT, LEAFLET_TILE_LIGHT_LABELS, LEAFLET_TILE_SATELLITE, LEAFLET_TILE_SATELLITE_ATTRIBUTION } from '@/lib/leaflet-tiles';
 import { MapPin } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -100,10 +100,15 @@ export function EvaluationMapPanel({ evaluationId, polygonData }: Props) {
         });
         mapInstanceRef.current = map;
 
-        const osm = L.tileLayer(
+        const osmBase = L.tileLayer(
           LEAFLET_TILE_LIGHT,
-          { maxZoom: 19, attribution: LEAFLET_TILE_ATTRIBUTION },
-        ).addTo(map);
+          { maxZoom: 19, maxNativeZoom: LEAFLET_TILE_BASE_MAX_NATIVE_ZOOM, attribution: LEAFLET_TILE_ATTRIBUTION },
+        );
+        const osmLabels = L.tileLayer(
+          LEAFLET_TILE_LIGHT_LABELS,
+          { maxZoom: 19, maxNativeZoom: LEAFLET_TILE_BASE_MAX_NATIVE_ZOOM },
+        );
+        const osm = L.layerGroup([osmBase, osmLabels]).addTo(map);
 
         const esriSat = L.tileLayer(
           LEAFLET_TILE_SATELLITE,

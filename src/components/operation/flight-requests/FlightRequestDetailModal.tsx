@@ -2,7 +2,7 @@
 
 import { FlightRequest } from '@/components/tables/flightRequestsColumns';
 import { Button } from '@/components/ui/button';
-import { LEAFLET_TILE_DARK, LEAFLET_TILE_LIGHT } from '@/lib/leaflet-tiles';
+import { LEAFLET_TILE_BASE_MAX_NATIVE_ZOOM, LEAFLET_TILE_DARK, LEAFLET_TILE_DARK_LABELS, LEAFLET_TILE_LIGHT, LEAFLET_TILE_LIGHT_LABELS } from '@/lib/leaflet-tiles';
 import { format } from 'date-fns';
 import { CheckCircle2, FileUp, Loader2, MapPin, Send, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
@@ -68,7 +68,11 @@ function WaypointMap({ waypoint, isDark }: { waypoint: any; isDark: boolean }) {
 
       L.tileLayer(
         isDark ? LEAFLET_TILE_DARK : LEAFLET_TILE_LIGHT,
-        { maxZoom: 19 },
+        { maxZoom: 19, maxNativeZoom: LEAFLET_TILE_BASE_MAX_NATIVE_ZOOM },
+      ).addTo(map);
+      L.tileLayer(
+        isDark ? LEAFLET_TILE_DARK_LABELS : LEAFLET_TILE_LIGHT_LABELS,
+        { maxZoom: 19, maxNativeZoom: LEAFLET_TILE_BASE_MAX_NATIVE_ZOOM },
       ).addTo(map);
 
       const icon = L.divIcon({
