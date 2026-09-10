@@ -4,6 +4,12 @@ import { prisma } from '@/lib/prisma';
 const MAX_MISSIONS = 5000;
 const PAGE_SIZE = 10;
 
+function hhmmToMinutes(hhmm: number): number {
+  const h = Math.floor(hhmm);
+  const m = Math.round((hhmm - h) * 100);
+  return h * 60 + m;
+}
+
 export interface QtbMissionRow {
   pilot_mission_id: number;
   mission_code: string | null;
@@ -31,7 +37,7 @@ export interface QtbPage {
 
 export interface QtbReportData {
   tool: { tool_id: number; tool_code: string | null; tool_desc: string | null; model_name: string | null };
-  drone: { serial_number: string | null; uas_serial_number: string | null; gcs_serial_number: string | null; component_name: string | null } | null;
+  drone: { component_id: number; component_code: string | null; serial_number: string | null; uas_serial_number: string | null; gcs_serial_number: string | null; component_name: string | null } | null;
   range: { startDate: string; endDate: string; timezone: string };
   pastFlightMinutes: number;
   pastFlightCount: number;
@@ -47,28 +53,37 @@ export interface QtbReportResult {
 }
 
 export async function generateQtbReportData(
-  toolId: number,
+  droneComponentId: number,
   ownerId: number,
   startDate: string,
   endDate: string,
   timezone: string,
 ): Promise<QtbReportResult> {
-  const tool = await prisma.tool.findFirst({
-    where: { tool_id: toolId, fk_owner_id: ownerId },
+  const droneComponent = await prisma.tool_component.findFirst({
+    where: { component_id: droneComponentId, component_type: 'DRONE' },
     select: {
-      tool_id: true,
-      tool_code: true,
-      tool_description: true,
-      tool_model: { select: { model_name: true, manufacturer: true } },
-      tool_component: {
-        where: { component_type: 'DRONE' },
-        select: { serial_number: true, uas_serial_number: true, gcs_serial_number: true, component_name: true },
-        take: 1,
+      component_id: true,
+      component_code: true,
+      serial_number: true,
+      uas_serial_number: true,
+      gcs_serial_number: true,
+      component_name: true,
+      fk_tool_id: true,
+      tool: {
+        select: {
+          tool_id: true,
+          fk_owner_id: true,
+          tool_code: true,
+          tool_description: true,
+          tool_model: { select: { model_name: true, manufacturer: true } },
+        },
       },
     },
   });
 
-  if (!tool) return { code: 0, message: 'System not found or access denied' };
+  if (!droneComponent || droneComponent.tool.fk_owner_id !== ownerId) {
+    return { code: 0, message: 'Drone not found or access denied' };
+  }
 
   const startUtc = localDayBoundaryToUtc(startDate, timezone, false);
   const endUtc = localDayBoundaryToUtc(endDate, timezone, true);
@@ -77,16 +92,29 @@ export async function generateQtbReportData(
     return { code: 0, message: 'End date must be on or after start date' };
   }
 
+  // Missions are logged against the system (fk_tool_id), not a specific drone
+  // component, so start from the drone's parent system. A system's drone can
+  // be swapped over time though, so exclude any mission whose maintenance log
+  // shows a *different* drone component was actually used — a mission with no
+  // drone maintenance log entry at all is assumed to belong to this drone.
   const windowWhere = {
-    fk_tool_id: toolId,
+    fk_tool_id: droneComponent.fk_tool_id,
     status_name: 'COMPLETED',
     actual_start: { gte: startUtc, lte: endUtc },
+    NOT: {
+      mission_maintenance_log: {
+        some: {
+          fk_component_id: { not: droneComponentId },
+          tool_component: { component_type: 'DRONE' },
+        },
+      },
+    },
   } as const;
 
   const totalCount = await prisma.pilot_mission.count({ where: windowWhere });
 
   if (totalCount === 0) {
-    return { code: 0, message: 'No completed flights found in the selected date range' };
+    return { code: 0, message: 'No completed flights found for this drone in the selected date range' };
   }
 
   if (totalCount > MAX_MISSIONS) {
@@ -97,11 +125,22 @@ export async function generateQtbReportData(
     };
   }
 
-  const [pastAgg, missions, batteryComponent] = await Promise.all([
-    prisma.pilot_mission.aggregate({
-      where: { fk_tool_id: toolId, status_name: 'COMPLETED', actual_start: { lt: startUtc } },
-      _sum: { flight_duration: true },
-      _count: true,
+  const [pastMissions, missions, batteryComponent] = await Promise.all([
+    prisma.pilot_mission.findMany({
+      where: {
+        fk_tool_id: droneComponent.fk_tool_id,
+        status_name: 'COMPLETED',
+        actual_start: { lt: startUtc },
+        NOT: {
+          mission_maintenance_log: {
+            some: {
+              fk_component_id: { not: droneComponentId },
+              tool_component: { component_type: 'DRONE' },
+            },
+          },
+        },
+      },
+      select: { pilot_mission_id: true, flight_duration: true },
     }),
     prisma.pilot_mission.findMany({
       where: windowWhere,
@@ -122,21 +161,32 @@ export async function generateQtbReportData(
     // Fallback for flights with no logged mission_maintenance_log battery entry —
     // most systems only ever have one battery component attached, so use it.
     prisma.tool_component.findFirst({
-      where: { fk_tool_id: toolId, component_type: 'BATTERY' },
+      where: { fk_tool_id: droneComponent.fk_tool_id, component_type: 'BATTERY' },
       select: { serial_number: true },
     }),
   ]);
 
-  const pastFlightMinutes = pastAgg._sum.flight_duration ?? 0;
-  const pastFlightCount = pastAgg._count;
-
   const missionIds = missions.map((m) => m.pilot_mission_id);
-  const batteryLogs = missionIds.length
-    ? await prisma.mission_maintenance_log.findMany({
-        where: { fk_mission_id: { in: missionIds }, tool_component: { component_type: 'BATTERY' } },
-        select: { fk_mission_id: true, tool_component: { select: { serial_number: true } } },
-      })
-    : [];
+  const pastMissionIds = pastMissions.map((m) => m.pilot_mission_id);
+
+  const [batteryLogs, droneHourLogs] = await Promise.all([
+    missionIds.length
+      ? prisma.mission_maintenance_log.findMany({
+          where: { fk_mission_id: { in: missionIds }, tool_component: { component_type: 'BATTERY' } },
+          select: { fk_mission_id: true, tool_component: { select: { serial_number: true } } },
+        })
+      : Promise.resolve([]),
+    // The mission's own flight_duration is a general post-flight figure — the
+    // hours actually credited to this specific drone (what its maintenance
+    // cycle advanced by) are logged per-mission against the component itself,
+    // so prefer that wherever it was recorded.
+    (missionIds.length || pastMissionIds.length)
+      ? prisma.mission_maintenance_log.findMany({
+          where: { fk_mission_id: { in: [...missionIds, ...pastMissionIds] }, fk_component_id: droneComponentId },
+          select: { fk_mission_id: true, add_hours: true },
+        })
+      : Promise.resolve([]),
+  ]);
 
   const batterySerialsByMission = new Map<number, string[]>();
   batteryLogs.forEach((log) => {
@@ -147,13 +197,27 @@ export async function generateQtbReportData(
     batterySerialsByMission.set(log.fk_mission_id, existing);
   });
 
+  const droneMinutesByMission = new Map<number, number>();
+  droneHourLogs.forEach((log) => {
+    droneMinutesByMission.set(log.fk_mission_id, hhmmToMinutes(Number(log.add_hours)));
+  });
+
+  const resolveDuration = (missionId: number, fallbackMinutes: number | null): number =>
+    droneMinutesByMission.get(missionId) ?? (fallbackMinutes ?? 0);
+
+  const pastFlightMinutes = pastMissions.reduce(
+    (acc, m) => acc + resolveDuration(m.pilot_mission_id, m.flight_duration),
+    0,
+  );
+  const pastFlightCount = pastMissions.length;
+
   const pages: QtbPage[] = [];
   let runningMinutes = pastFlightMinutes;
   let runningCount = pastFlightCount;
 
   for (let i = 0; i < missions.length; i += PAGE_SIZE) {
     const chunk = missions.slice(i, i + PAGE_SIZE);
-    const todayFlightMinutes = chunk.reduce((acc, m) => acc + (m.flight_duration ?? 0), 0);
+    const todayFlightMinutes = chunk.reduce((acc, m) => acc + resolveDuration(m.pilot_mission_id, m.flight_duration), 0);
     const todayFlightCount = chunk.length;
 
     pages.push({
@@ -169,7 +233,7 @@ export async function generateQtbReportData(
         mission_code: m.mission_code,
         actual_start: m.actual_start?.toISOString() ?? null,
         actual_end: m.actual_end?.toISOString() ?? null,
-        flight_duration: m.flight_duration,
+        flight_duration: resolveDuration(m.pilot_mission_id, m.flight_duration),
         distance_flown: m.distance_flown != null ? Number(m.distance_flown) : null,
         location: m.location,
         notes: m.notes,
@@ -183,27 +247,25 @@ export async function generateQtbReportData(
     runningCount += todayFlightCount;
   }
 
-  const droneComponent = tool.tool_component[0];
-
   return {
     code: 1,
     data: {
       tool: {
-        tool_id: tool.tool_id,
-        tool_code: tool.tool_code,
-        tool_desc: tool.tool_description,
-        model_name: tool.tool_model
-          ? [tool.tool_model.manufacturer, tool.tool_model.model_name].filter(Boolean).join(' ')
+        tool_id: droneComponent.tool.tool_id,
+        tool_code: droneComponent.tool.tool_code,
+        tool_desc: droneComponent.tool.tool_description,
+        model_name: droneComponent.tool.tool_model
+          ? [droneComponent.tool.tool_model.manufacturer, droneComponent.tool.tool_model.model_name].filter(Boolean).join(' ')
           : null,
       },
-      drone: droneComponent
-        ? {
-            serial_number: droneComponent.serial_number,
-            uas_serial_number: droneComponent.uas_serial_number,
-            gcs_serial_number: droneComponent.gcs_serial_number,
-            component_name: droneComponent.component_name,
-          }
-        : null,
+      drone: {
+        component_id: droneComponent.component_id,
+        component_code: droneComponent.component_code,
+        serial_number: droneComponent.serial_number,
+        uas_serial_number: droneComponent.uas_serial_number,
+        gcs_serial_number: droneComponent.gcs_serial_number,
+        component_name: droneComponent.component_name,
+      },
       range: { startDate, endDate, timezone },
       pastFlightMinutes,
       pastFlightCount,

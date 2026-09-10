@@ -4464,7 +4464,7 @@
           "description": "Description",
           "c2Platform": "C2 Platform",
           "gcs": "GCS",
-          "dccDroneId": "DCC Drone ID (UUID)",
+          "dccDroneId": "DCC Drone ID",
           "droneRegCode": "Drone Registration Code",
           "status": "Status *",
           "activationDate": "Activation Date",
