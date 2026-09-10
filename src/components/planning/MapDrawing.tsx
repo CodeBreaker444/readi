@@ -1,4 +1,5 @@
 'use client';
+import { LEAFLET_TILE_ATTRIBUTION, LEAFLET_TILE_DARK, LEAFLET_TILE_LIGHT, LEAFLET_TILE_MAX_ZOOM } from '@/lib/leaflet-tiles';
 import React, { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
 
 interface DrawnArea {
@@ -66,9 +67,9 @@ const MapDrawing = forwardRef<MapDrawingHandle, MapDrawingProps>(({ onAreasChang
 
     const map = L.map('mapDrawing').setView([45.4642, 9.19], 6);
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap contributors',
-      maxZoom: 19,
+    L.tileLayer(isDark ? LEAFLET_TILE_DARK : LEAFLET_TILE_LIGHT, {
+      attribution: LEAFLET_TILE_ATTRIBUTION,
+      maxZoom: LEAFLET_TILE_MAX_ZOOM,
     }).addTo(map);
 
     const drawnItems = new L.FeatureGroup();

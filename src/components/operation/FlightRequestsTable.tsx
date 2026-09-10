@@ -254,7 +254,7 @@ export default function FlightRequestsTable() {
 
     const cached = plansByPlanning[pId];
     if (cached) {
-      if (cached.length === 1) setSelectedPlanId(String(cached[0].pilot_mission_id));
+      if (cached.length === 1) setSelectedPlanId(String(cached[0].mission_planning_id));
       return;
     }
 
@@ -263,7 +263,7 @@ export default function FlightRequestsTable() {
       const { data } = await axios.get(`/api/planning/flight-requests/assignable-plannings/${pId}/plans`);
       const items: AssignablePlan[] = data.items ?? [];
       setPlansByPlanning((prev) => ({ ...prev, [pId]: items }));
-      if (items.length === 1) setSelectedPlanId(String(items[0].pilot_mission_id));
+      if (items.length === 1) setSelectedPlanId(String(items[0].mission_planning_id));
     } catch {
       toast.error(t('planning.flightRequests.loadPlansError'));
     } finally {
@@ -271,9 +271,9 @@ export default function FlightRequestsTable() {
     }
   }
 
-  function handleSelectPlan(planningId: string, pilotMissionId: string) {
+  function handleSelectPlan(planningId: string, missionPlanningId: string) {
     setSelectedEvalId(planningId);
-    setSelectedPlanId(pilotMissionId);
+    setSelectedPlanId(missionPlanningId);
   }
 
   async function handleMoveToPlan() {
@@ -285,7 +285,7 @@ export default function FlightRequestsTable() {
         {
           request_id: planModal.request_id,
           planning_id: Number(selectedEvalId),
-          ...(selectedPlanId ? { pilot_mission_id: Number(selectedPlanId) } : {}),
+          ...(selectedPlanId ? { mission_planning_id: Number(selectedPlanId) } : {}),
         },
       );
       toastAfterDccAction(t('planning.flightRequests.linkSuccess'), data.dcc);

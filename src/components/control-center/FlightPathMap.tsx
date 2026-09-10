@@ -1,5 +1,6 @@
 'use client';
 
+import { LEAFLET_TILE_DARK, LEAFLET_TILE_LIGHT } from '@/lib/leaflet-tiles';
 import { useEffect, useRef } from 'react';
 
 export interface FlightWaypoint {
@@ -87,11 +88,8 @@ export function FlightPathMap({ waypoints, height = '380px', isDark = true }: Pr
       });
       mapRef.current = map;
 
-      // Dark tile layer
       L.tileLayer(
-        isDark
-          ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-          : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+        isDark ? LEAFLET_TILE_DARK : LEAFLET_TILE_LIGHT,
         { maxZoom: 19 },
       ).addTo(map);
 

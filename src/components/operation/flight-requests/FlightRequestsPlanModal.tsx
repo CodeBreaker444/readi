@@ -15,8 +15,8 @@ interface Planning {
 }
 
 export interface AssignablePlan {
-  pilot_mission_id: number;
-  mission_code: string | null;
+  mission_planning_id: number;
+  mission_planning_code: string | null;
   tool_name: string | null;
   dcc_drone_id: string | null;
 }
@@ -33,7 +33,7 @@ interface FlightRequestsPlanModalProps {
   plansLoadingId: number | null;
   submitting: boolean;
   onSelectPlanning: (planningId: string) => void;
-  onSelectPlan: (planningId: string, pilotMissionId: string) => void;
+  onSelectPlan: (planningId: string, missionPlanningId: string) => void;
   onConfirm: () => void;
   onClose: () => void;
 }
@@ -138,12 +138,12 @@ export function FlightRequestsPlanModal({
                         ) : (
                           plans.map((plan) => {
                             const planDisabled = !plan.dcc_drone_id;
-                            const planSelected = selectedPlanId === String(plan.pilot_mission_id);
+                            const planSelected = selectedPlanId === String(plan.mission_planning_id);
                             return (
                               <button
-                                key={plan.pilot_mission_id}
+                                key={plan.mission_planning_id}
                                 disabled={planDisabled}
-                                onClick={() => !planDisabled && onSelectPlan(String(planning.planning_id), String(plan.pilot_mission_id))}
+                                onClick={() => !planDisabled && onSelectPlan(String(planning.planning_id), String(plan.mission_planning_id))}
                                 title={planDisabled ? t('planning.flightRequests.noDroneId') : undefined}
                                 className={`w-full cursor-pointer text-left px-2.5 py-1.5 rounded-md flex items-center gap-2 text-[11px] transition-colors
                                   ${planDisabled

@@ -1,6 +1,7 @@
 'use client';
 
 import type { AircraftState } from '@/app/api/drone-atc/flights/route';
+import { LEAFLET_TILE_ATTRIBUTION, LEAFLET_TILE_DARK, LEAFLET_TILE_LIGHT, LEAFLET_TILE_MAX_ZOOM } from '@/lib/leaflet-tiles';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -18,9 +19,6 @@ interface DroneATCMapProps {
   owmApiKey: string;
   onBoundsChange?: (bounds: { latMin: number; lonMin: number; latMax: number; lonMax: number }) => void;
 }
-
-const TILE_LIGHT = 'https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}';
-const TILE_DARK = 'https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}';
 
 const ITALY_BOUNDS = { south: 36.0, west: 6.5, north: 47.5, east: 18.5 } as const;
 const ITALY_CENTER: [number, number] = [41.9, 12.5];
@@ -427,8 +425,8 @@ export default function DroneATCMap({
     const dronePane = map.createPane('dronePane');
     dronePane.style.zIndex = '615';
 
-    const tile = L.tileLayer(isDark ? TILE_DARK : TILE_LIGHT, {
-      attribution: 'Tiles © Esri', maxZoom: 16,
+    const tile = L.tileLayer(isDark ? LEAFLET_TILE_DARK : LEAFLET_TILE_LIGHT, {
+      attribution: LEAFLET_TILE_ATTRIBUTION, maxZoom: LEAFLET_TILE_MAX_ZOOM,
     }).addTo(map);
 
     const airspaceLayer = L.layerGroup().addTo(map);
@@ -480,7 +478,7 @@ export default function DroneATCMap({
 
   // Theme tile swap
   useEffect(() => {
-    tileLayerRef.current?.setUrl(isDark ? TILE_DARK : TILE_LIGHT);
+    tileLayerRef.current?.setUrl(isDark ? LEAFLET_TILE_DARK : LEAFLET_TILE_LIGHT);
   }, [isDark]);
 
   // Weather tile layers (OWM)
