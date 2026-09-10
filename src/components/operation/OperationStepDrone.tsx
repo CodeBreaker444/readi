@@ -44,7 +44,7 @@ export function OperationStepDrone({
     loadingOptions, isDark, erpGroups, erpGroupId, onErpGroupChange, loadingErpGroups, logSerialNumber,
 }: Props) {
     const { t } = useTranslation()
-    const DRONES_PAGE_SIZE = 8
+    const DRONES_PAGE_SIZE = 10
     const [dronePage, setDronePage] = useState(0)
     const droneTotalPages = Math.max(1, Math.ceil(drones.length / DRONES_PAGE_SIZE))
     const pagedDrones = drones.slice(dronePage * DRONES_PAGE_SIZE, dronePage * DRONES_PAGE_SIZE + DRONES_PAGE_SIZE)
@@ -130,7 +130,7 @@ export function OperationStepDrone({
                                         : t('operations.newOperation.drone.selectDrone')
                         } />
                     </SelectTrigger>
-                    <SelectContent className={scCls(isDark)} position="popper" align="start" sideOffset={4}>
+                    <SelectContent className={scCls(isDark)}>
                         {pagedDrones.map(d => {
                             const snMismatch = !!logSerialNumber && !serialInList(d.drone_serial_numbers, logSerialNumber)
                             return (

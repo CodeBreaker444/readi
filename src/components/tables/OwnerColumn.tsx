@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { ColumnDef } from '@tanstack/react-table';
-import { Loader2, Mail } from 'lucide-react';
+import { Building2, Loader2, Mail } from 'lucide-react';
 
 export interface OwnerData {
   owner_id: number;
@@ -30,6 +30,8 @@ export interface OwnerData {
   registration_number: string | null;
   license_number: string | null;
   license_expiry: string | null;
+  owner_logo?: string | null;
+  owner_logo_url?: string | null;
   created_at: string;
   admin_user?: {
     user_id: number;
@@ -58,6 +60,21 @@ export const ownerColumns = ({ onOpen, onDelete, onActivate, onResendVerificatio
   {
     header: 'Name',
     accessorKey: 'owner_name',
+    cell: ({ row }) => {
+      const { owner_logo_url, owner_name } = row.original;
+      return (
+        <div className="flex items-center gap-2">
+          <div className="w-6 h-6 shrink-0 rounded-md bg-violet-50 flex items-center justify-center overflow-hidden">
+            {owner_logo_url ? (
+              <img src={owner_logo_url} alt="" className="w-full h-full object-contain" />
+            ) : (
+              <Building2 size={13} className="text-violet-600" />
+            )}
+          </div>
+          <span>{owner_name}</span>
+        </div>
+      );
+    },
   },
   {
     header: 'Email',

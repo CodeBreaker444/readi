@@ -1,5 +1,6 @@
 import { localDayBoundaryToUtc } from '@/lib/utils';
 import { prisma } from '@/lib/prisma';
+import { getOwnerLogoDataUrl } from '../company/owner-service';
 
 const MAX_MISSIONS = 5000;
 const PAGE_SIZE = 10;
@@ -43,6 +44,7 @@ export interface QtbReportData {
   pastFlightCount: number;
   totalCount: number;
   pages: QtbPage[];
+  companyLogoDataUrl: string | null;
 }
 
 export interface QtbReportResult {
@@ -211,6 +213,8 @@ export async function generateQtbReportData(
   );
   const pastFlightCount = pastMissions.length;
 
+  const companyLogoDataUrl = await getOwnerLogoDataUrl(ownerId);
+
   const pages: QtbPage[] = [];
   let runningMinutes = pastFlightMinutes;
   let runningCount = pastFlightCount;
@@ -271,6 +275,7 @@ export async function generateQtbReportData(
       pastFlightCount,
       totalCount,
       pages,
+      companyLogoDataUrl,
     },
   };
 }

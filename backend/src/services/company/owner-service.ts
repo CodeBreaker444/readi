@@ -1,5 +1,7 @@
 import { env } from '@/backend/config/env';
 import { prisma } from '@/lib/prisma';
+import { BUCKET, deleteFileFromS3, getFileBufferFromS3, getPresignedDownloadUrl, s3 } from '@/lib/s3Client';
+import { PutObjectCommand } from '@aws-sdk/client-s3';
 import bcrypt from 'bcrypt';
 import { sendAdminPasswordChangedEmail, sendUserActivationEmail } from '../../../../lib/resend/mail';
 import { generateActivationToken, generateUniqueCode } from '../user/user-management';
@@ -23,6 +25,8 @@ export interface OwnerData {
     training_email_enabled: boolean;
     easa_operator_code: string | null;
     daily_email_limit: number | null;
+    owner_logo: string | null;
+    owner_logo_url?: string | null;
     created_at: string;
 }
 
@@ -140,11 +144,22 @@ export async function getOwners(): Promise<OwnerWithAdmin[]> {
         },
     });
 
-    return owners.map((owner) => {
+    return Promise.all(owners.map(async (owner) => {
         const { user_owner, ...ownerData } = owner;
         const adminRel = user_owner[0];
+
+        let owner_logo_url: string | null = null;
+        if (ownerData.owner_logo?.startsWith('logos/')) {
+            try {
+                owner_logo_url = await getPresignedDownloadUrl(ownerData.owner_logo, 3600);
+            } catch {
+                owner_logo_url = null;
+            }
+        }
+
         return {
             ...ownerData,
+            owner_logo_url,
             created_at: ownerData.created_at?.toISOString() ?? '',
             admin_user: adminRel?.users
                 ? {
@@ -158,7 +173,7 @@ export async function getOwners(): Promise<OwnerWithAdmin[]> {
                   }
                 : null,
         } as unknown as OwnerWithAdmin;
-    });
+    }));
 }
 
 export async function getOwnerById(id: string): Promise<OwnerWithAdmin | null> {
@@ -192,8 +207,18 @@ export async function getOwnerById(id: string): Promise<OwnerWithAdmin | null> {
     const { user_owner, ...ownerData } = owner;
     const adminRel = user_owner[0];
 
+    let owner_logo_url: string | null = null;
+    if (ownerData.owner_logo?.startsWith('logos/')) {
+        try {
+            owner_logo_url = await getPresignedDownloadUrl(ownerData.owner_logo, 3600);
+        } catch {
+            owner_logo_url = null;
+        }
+    }
+
     return {
         ...ownerData,
+        owner_logo_url,
         created_at: ownerData.created_at?.toISOString() ?? '',
         admin_user: adminRel?.users
             ? {
@@ -333,6 +358,90 @@ export async function updateCompanyEasaCode(ownerId: number, easaCode: string | 
         where: { owner_id: ownerId },
         data: { easa_operator_code: easaCode ?? null },
     });
+}
+
+function buildOwnerLogoS3Key(ownerId: number, originalName: string): string {
+    const ext = originalName.split('.').pop() ?? 'png';
+    return `logos/${ownerId}/${Date.now()}.${ext}`;
+}
+
+export async function uploadOwnerLogo(ownerId: number, file: File): Promise<{ logoUrl: string | null }> {
+    const current = await prisma.owner.findUnique({
+        where: { owner_id: ownerId },
+        select: { owner_logo: true },
+    });
+
+    if (current?.owner_logo?.startsWith('logos/')) {
+        try {
+            await deleteFileFromS3(current.owner_logo);
+        } catch {
+            // Non-fatal: old file may already be gone
+        }
+    }
+
+    const s3Key = buildOwnerLogoS3Key(ownerId, file.name);
+    const buffer = Buffer.from(await file.arrayBuffer());
+
+    await s3.send(
+        new PutObjectCommand({
+            Bucket: BUCKET,
+            Key: s3Key,
+            Body: buffer,
+            ContentType: file.type || 'image/png',
+            ServerSideEncryption: 'AES256',
+        }),
+    );
+
+    await prisma.owner.update({
+        where: { owner_id: ownerId },
+        data: { owner_logo: s3Key },
+    });
+
+    let logoUrl: string | null = null;
+    try {
+        logoUrl = await getPresignedDownloadUrl(s3Key, 3600);
+    } catch {
+        logoUrl = null;
+    }
+
+    return { logoUrl };
+}
+
+export async function deleteOwnerLogo(ownerId: number): Promise<void> {
+    const current = await prisma.owner.findUnique({
+        where: { owner_id: ownerId },
+        select: { owner_logo: true },
+    });
+
+    if (current?.owner_logo?.startsWith('logos/')) {
+        try {
+            await deleteFileFromS3(current.owner_logo);
+        } catch {
+            // Non-fatal: file may already be gone
+        }
+    }
+
+    await prisma.owner.update({
+        where: { owner_id: ownerId },
+        data: { owner_logo: null },
+    });
+}
+
+/** Base64 data URL for embedding the company logo directly into a generated PDF (e.g. the QTB report). */
+export async function getOwnerLogoDataUrl(ownerId: number): Promise<string | null> {
+    const owner = await prisma.owner.findUnique({
+        where: { owner_id: ownerId },
+        select: { owner_logo: true },
+    });
+
+    if (!owner?.owner_logo?.startsWith('logos/')) return null;
+
+    try {
+        const { buffer, contentType } = await getFileBufferFromS3(owner.owner_logo);
+        return `data:${contentType ?? 'image/png'};base64,${buffer.toString('base64')}`;
+    } catch {
+        return null;
+    }
 }
 
 export async function deleteOwner(id: string, deletedByUserId: number) {
