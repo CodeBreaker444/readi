@@ -11,6 +11,8 @@
     "submit": "Absenden",
     "back": "Zurück",
     "next": "Weiter",
+    "previous": "Zurück",
+    "pageIndicator": "Seite {{current}} von {{total}}",
     "yes": "Ja",
     "no": "Nein",
     "active": "Aktiv",
@@ -1005,6 +1007,9 @@
       "selectPlanning": "Planungsmission auswählen",
       "noPlannings": "Keine Planungsmissionen gefunden.",
       "noDroneId": "Keine Drohne mit DCC-ID",
+      "selectPlan": "Einen Plan auswählen",
+      "noPlans": "Keine Pläne für diese Planung gefunden.",
+      "loadPlansError": "Pläne konnten nicht geladen werden",
       "flightSource": "Control Center",
       "manual": "manuell",
       "loadError": "Fluganfragen konnten nicht geladen werden",
@@ -1113,6 +1118,7 @@
       "deleteFailed": "Löschen fehlgeschlagen. Die Liste wurde wiederhergestellt.",
       "addSuccess": "Mission erfolgreich hinzugefügt",
       "addFailed": "Mission konnte nicht hinzugefügt werden.",
+      "selectSystemRequired": "Bitte wählen Sie ein System aus, bevor Sie einen Missionsplanungseintrag hinzufügen.",
       "updated": "Planung aktualisiert",
       "searchLogbook": "Logbuch durchsuchen...",
       "refresh": "Aktualisieren",
@@ -1684,6 +1690,7 @@
         "noComponents": "Keine Komponenten für dieses System konfiguriert.",
         "system": "System",
         "lastUpdated": "Zuletzt aktualisiert:",
+        "activationDate": "Aktivierungsdatum:",
         "addUsage": "Nutzung hinzufügen",
         "flights": "Flüge",
         "hours": "Stunden",
@@ -2092,6 +2099,9 @@
         "noSystemsForClient": "Der ausgewählte Kunde hat keine Systeme.",
         "allInMaintenance": "Alle Drohnen befinden sich in der Wartung",
         "selectDrone": "Drohne auswählen…",
+        "pagePrevious": "Zurück",
+        "pageNext": "Weiter",
+        "pageIndicator": "Seite {{current}} von {{total}}",
         "allInMaintenanceWarning": "Alle diesem Kunden zugewiesenen Drohnen befinden sich derzeit in der Wartung.",
         "maintenanceTag": "WARTUNG",
         "maintenanceDueTag": "WARTUNG FÄLLIG",
@@ -2344,6 +2354,7 @@
       "deleteFailed": "Löschen fehlgeschlagen. Die Liste wurde wiederhergestellt.",
       "addSuccess": "Mission erfolgreich hinzugefügt",
       "addFailed": "Mission konnte nicht hinzugefügt werden.",
+      "selectSystemRequired": "Bitte wählen Sie ein System aus, bevor Sie einen Missionsplanungseintrag hinzufügen.",
       "updated": "Planung aktualisiert",
       "searchLogbook": "Logbuch durchsuchen...",
       "refresh": "Aktualisieren",
@@ -4090,7 +4101,26 @@
           "relations": "Beziehungen",
           "delete": "Löschen",
           "log": "Log",
-          "flights": "Flüge"
+          "flights": "Flüge",
+          "qtbReport": "QTB-Bericht"
+        }
+      },
+      "qtbReportModal": {
+        "title": "QTB-Bericht erstellen",
+        "timezoneHint": "Daten verwenden Ihre lokale Zeitzone ({{timezone}}).",
+        "errors": {
+          "rangeInvalid": "Das Enddatum muss am oder nach dem Startdatum liegen.",
+          "tooManyRecords": "Dieser Zeitraum enthält zu viele Flüge. Bitte grenzen Sie den Zeitraum ein und versuchen Sie es erneut.",
+          "generic": "Der Bericht konnte nicht erstellt werden. Bitte versuchen Sie es erneut."
+        },
+        "toasts": {
+          "success": "QTB-Bericht erfolgreich heruntergeladen",
+          "error": "QTB-Bericht konnte nicht erstellt werden"
+        },
+        "buttons": {
+          "cancel": "Abbrechen",
+          "generate": "PDF erstellen",
+          "generating": "Wird erstellt..."
         }
       },
       "statusBadge": {
@@ -4351,7 +4381,7 @@
           "description": "Beschreibung",
           "c2Platform": "C2-Plattform",
           "gcs": "GCS",
-          "dccDroneId": "DCC-Drohnen-ID (UUID)",
+          "dccDroneId": "DCC-Drohnen-ID",
           "droneRegCode": "Drohnen-Registrierungscode",
           "status": "Status *",
           "activationDate": "Aktivierungsdatum",

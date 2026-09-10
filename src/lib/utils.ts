@@ -106,6 +106,44 @@ export function nowAsLocalInput(tz: string | null | undefined, offsetHours = 0):
   }).format(d).slice(0, 16).replace(' ', 'T');
 }
 
+/**
+ * Converts a calendar date (as picked in the user's local timezone) to the UTC
+ * instant of that date's midnight (or 23:59:59.999) boundary, so a DB range
+ * filter on UTC-naive timestamps lines up with the user's local day.
+ *
+ * @param dateStr    'YYYY-MM-DD' as selected in the UI.
+ * @param tz         IANA timezone id or legacy abbreviation.
+ * @param endOfDay   false = 00:00:00.000 boundary, true = 23:59:59.999 boundary.
+ */
+export function localDayBoundaryToUtc(dateStr: string, tz: string | null | undefined, endOfDay: boolean): Date {
+  const resolved = resolveIanaTimezone(tz);
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const h = endOfDay ? 23 : 0;
+  const min = endOfDay ? 59 : 0;
+  const s = endOfDay ? 59 : 0;
+  const ms = endOfDay ? 999 : 0;
+
+  // First guess: treat the desired wall-clock time as if it were already UTC.
+  const guess = new Date(Date.UTC(y, m - 1, d, h, min, s, ms));
+
+  // See what wall-clock time that instant actually renders as in `resolved`,
+  // then shift the guess by the difference to land on the correct UTC instant.
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat('en-US', {
+      timeZone: resolved,
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', second: '2-digit',
+      hourCycle: 'h23',
+    }).formatToParts(guess).map((p) => [p.type, p.value]),
+  );
+  const renderedAsUtc = Date.UTC(
+    Number(parts.year), Number(parts.month) - 1, Number(parts.day),
+    Number(parts.hour), Number(parts.minute), Number(parts.second), ms,
+  );
+  const offsetMs = renderedAsUtc - guess.getTime();
+  return new Date(guess.getTime() - offsetMs);
+}
+
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }

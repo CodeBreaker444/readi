@@ -5,8 +5,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { LocationGroup } from '@/config/types/erp'
 import { serialInList } from '@/lib/serial-number'
 import { cn } from '@/lib/utils'
-import { AlertTriangle, Shield } from 'lucide-react'
-import { useEffect } from 'react'
+import { AlertTriangle, ChevronLeft, ChevronRight, Shield } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { inputCls, labelCls, scCls, SectionTitle, siCls } from './OperationModalHelpers'
 import { Drone, FlightMode, MissionPlanningOption, OpType, PlanningOption } from './OperationModalTypes'
@@ -44,6 +44,15 @@ export function OperationStepDrone({
     loadingOptions, isDark, erpGroups, erpGroupId, onErpGroupChange, loadingErpGroups, logSerialNumber,
 }: Props) {
     const { t } = useTranslation()
+    const DRONES_PAGE_SIZE = 8
+    const [dronePage, setDronePage] = useState(0)
+    const droneTotalPages = Math.max(1, Math.ceil(drones.length / DRONES_PAGE_SIZE))
+    const pagedDrones = drones.slice(dronePage * DRONES_PAGE_SIZE, dronePage * DRONES_PAGE_SIZE + DRONES_PAGE_SIZE)
+
+    useEffect(() => {
+        setDronePage(0)
+    }, [drones])
+
     const allInMaintenance = drones.length > 0 && drones.every(d => d.in_maintenance)
     const anyMaintenanceDue = drones.some(d => d.maintenance_due && !d.in_maintenance)
     const allNonOperational = drones.length > 0 && drones.every(d => d.is_non_operational || d.is_dismissed)
@@ -121,8 +130,8 @@ export function OperationStepDrone({
                                         : t('operations.newOperation.drone.selectDrone')
                         } />
                     </SelectTrigger>
-                    <SelectContent className={scCls(isDark)}>
-                        {drones.map(d => {
+                    <SelectContent className={scCls(isDark)} position="popper" align="start" sideOffset={4}>
+                        {pagedDrones.map(d => {
                             const snMismatch = !!logSerialNumber && !serialInList(d.drone_serial_numbers, logSerialNumber)
                             return (
                             <SelectItem
@@ -162,6 +171,41 @@ export function OperationStepDrone({
                             </SelectItem>
                             )
                         })}
+                        {drones.length > DRONES_PAGE_SIZE && (
+                            <div
+                                className={cn(
+                                    'flex items-center justify-between gap-2 mt-1 pt-1.5 px-1 border-t text-xs',
+                                    isDark ? 'border-slate-700 text-slate-400' : 'border-slate-200 text-slate-500'
+                                )}
+                                onPointerDown={e => e.stopPropagation()}
+                            >
+                                <button
+                                    type="button"
+                                    disabled={dronePage === 0}
+                                    onClick={e => { e.preventDefault(); e.stopPropagation(); setDronePage(p => Math.max(0, p - 1)) }}
+                                    className={cn(
+                                        'flex items-center gap-1 rounded px-1.5 py-1 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed',
+                                        isDark ? 'hover:bg-slate-700' : 'hover:bg-slate-100'
+                                    )}
+                                >
+                                    <ChevronLeft className="h-3.5 w-3.5" />
+                                    {t('operations.newOperation.drone.pagePrevious')}
+                                </button>
+                                <span>{t('operations.newOperation.drone.pageIndicator', { current: dronePage + 1, total: droneTotalPages })}</span>
+                                <button
+                                    type="button"
+                                    disabled={dronePage >= droneTotalPages - 1}
+                                    onClick={e => { e.preventDefault(); e.stopPropagation(); setDronePage(p => Math.min(droneTotalPages - 1, p + 1)) }}
+                                    className={cn(
+                                        'flex items-center gap-1 rounded px-1.5 py-1 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed',
+                                        isDark ? 'hover:bg-slate-700' : 'hover:bg-slate-100'
+                                    )}
+                                >
+                                    {t('operations.newOperation.drone.pageNext')}
+                                    <ChevronRight className="h-3.5 w-3.5" />
+                                </button>
+                            </div>
+                        )}
                     </SelectContent>
                 </Select>
                 {selectedIsNonOp && !selectedIsDismissed && (

@@ -11,6 +11,8 @@
     "submit": "Submit",
     "back": "Back",
     "next": "Next",
+    "previous": "Previous",
+    "pageIndicator": "Page {{current}} of {{total}}",
     "yes": "Yes",
     "no": "No",
     "active": "Active",
@@ -1008,6 +1010,9 @@
       "selectPlanning": "Select a planning mission",
       "noPlannings": "No planning missions found.",
       "noDroneId": "No Drone with DCC ID",
+      "selectPlan": "Select a plan",
+      "noPlans": "No plans found for this planning.",
+      "loadPlansError": "Failed to load plans",
       "flightSource": "Control Center",
       "manual": "manual",
       "loadError": "Failed to load flight requests",
@@ -1116,6 +1121,7 @@
       "deleteFailed": "Deletion failed. List was restored.",
       "addSuccess": "Mission added successfully",
       "addFailed": "Mission addition failed.",
+      "selectSystemRequired": "Please select a system before adding a mission planning entry.",
       "updated": "Planning updated",
       "searchLogbook": "Search logbook...",
       "refresh": "Refresh",
@@ -1691,6 +1697,7 @@
         "noComponents": "No components configured for this system.",
         "system": "System",
         "lastUpdated": "Last updated:",
+        "activationDate": "Activation date:",
         "addUsage": "Add Usage",
         "flights": "Flights",
         "hours": "Hours",
@@ -2101,6 +2108,9 @@
         "noSystemsForClient": "The selected client doesn't have any systems.",
         "allInMaintenance": "All drones are in maintenance",
         "selectDrone": "Select drone…",
+        "pagePrevious": "Previous",
+        "pageNext": "Next",
+        "pageIndicator": "Page {{current}} of {{total}}",
         "allInMaintenanceWarning": "All drones assigned to this client are currently under maintenance.",
         "maintenanceTag": "MAINTENANCE",
         "maintenanceDueTag": "MAINTENANCE DUE",
@@ -2354,6 +2364,7 @@
       "deleteFailed": "Deletion failed. List was restored.",
       "addSuccess": "Mission added successfully",
       "addFailed": "Mission addition failed.",
+      "selectSystemRequired": "Please select a system before adding a mission planning entry.",
       "updated": "Planning updated",
       "searchLogbook": "Search logbook...",
       "refresh": "Refresh",
@@ -4177,7 +4188,26 @@
           "relations": "Relations",
           "delete": "Delete",
           "log": "Log",
-          "flights": "Flights"
+          "flights": "Flights",
+          "qtbReport": "QTB Report"
+        }
+      },
+      "qtbReportModal": {
+        "title": "Generate QTB Report",
+        "timezoneHint": "Dates use your local timezone ({{timezone}}).",
+        "errors": {
+          "rangeInvalid": "End date must be on or after the start date.",
+          "tooManyRecords": "This date range contains too many flights. Please narrow the date range and try again.",
+          "generic": "Could not generate the report. Please try again."
+        },
+        "toasts": {
+          "success": "QTB report downloaded successfully",
+          "error": "Failed to generate QTB report"
+        },
+        "buttons": {
+          "cancel": "Cancel",
+          "generate": "Generate PDF",
+          "generating": "Generating..."
         }
       },
       "statusBadge": {
@@ -4439,7 +4469,7 @@
           "description": "Description",
           "c2Platform": "C2 Platform",
           "gcs": "GCS",
-          "dccDroneId": "DCC Drone ID (UUID)",
+          "dccDroneId": "DCC Drone ID",
           "droneRegCode": "Drone Registration Code",
           "status": "Status *",
           "activationDate": "Activation Date",

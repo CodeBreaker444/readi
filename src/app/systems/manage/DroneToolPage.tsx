@@ -14,6 +14,7 @@ import EditModelModal from '@/components/system/EditModelModal';
 import EditSystemModal from '@/components/system/EditSystemModal';
 import { FilesDownloadModal, SystemFile } from '@/components/system/FilesDownloadModal';
 import { FeatureGate } from '@/components/permissions/FeatureGate';
+import { QtbReportModal } from '@/components/system/QtbReportModal';
 import SystemComponentsTable from '@/components/system/SystemComponentsTable';
 import ViewComponentModal from '@/components/system/ViewComponentModal';
 import ViewToolModal from '@/components/system/ViewToolModal';
@@ -94,6 +95,9 @@ export default function DroneToolPage({ dFlightEnabled }: DroneToolPageProps) {
     const [showRelations, setShowRelations] = useState(false);
     const [relationsToolId, setRelationsToolId] = useState<number | null>(null);
     const [relationsToolCode, setRelationsToolCode] = useState<string>('');
+
+    const [showQtbReport, setShowQtbReport] = useState(false);
+    const [qtbReportDrone, setQtbReportDrone] = useState<any | null>(null);
 
     const [filesModal, setFilesModal] = useState<{
         open: boolean;
@@ -206,6 +210,11 @@ export default function DroneToolPage({ dFlightEnabled }: DroneToolPageProps) {
 
     const handleViewFiles = (tool: DroneToolData) => {
         setFilesModal({ open: true, toolCode: tool.tool_code, files: tool.files ?? [], toolId: tool.tool_id ?? null });
+    };
+
+    const handleGenerateQtbReport = (component: any) => {
+        setQtbReportDrone(component);
+        setShowQtbReport(true);
     };
 
     const handleEditModelDirect = (modelId: number) => {
@@ -531,6 +540,7 @@ export default function DroneToolPage({ dFlightEnabled }: DroneToolPageProps) {
                                     setRelationsToolCode(toolCode);
                                     setShowRelations(true);
                                 }}
+                                onGenerateQtbReport={handleGenerateQtbReport}
                             />
                         )}
                         {activeTab === 'model' && (
@@ -629,6 +639,17 @@ export default function DroneToolPage({ dFlightEnabled }: DroneToolPageProps) {
             <FilesDownloadModal open={filesModal.open} toolCode={filesModal.toolCode} files={filesModal.files}
                 toolId={filesModal.toolId ?? undefined}
                 onClose={() => setFilesModal({ open: false, toolCode: '', files: [], toolId: null })} />
+
+            <QtbReportModal
+                open={showQtbReport}
+                drone={qtbReportDrone
+                    ? {
+                        component_id: qtbReportDrone.tool_component_id,
+                        label: qtbReportDrone.component_code || qtbReportDrone.component_sn || qtbReportDrone.component_name || `#${qtbReportDrone.tool_component_id}`,
+                    }
+                    : null}
+                onClose={() => { setShowQtbReport(false); setQtbReportDrone(null); }}
+            />
 
             <ComponentRelationsModal
                 open={showRelations}

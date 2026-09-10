@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { cn } from '@/lib/utils'
 import { Loader2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { inputCls, labelCls, scCls, siCls, SectionTitle } from './OperationModalHelpers'
+import { inputCls, labelCls, scCls, siCls, SectionTitle, SelectPaginationFooter, usePagedItems } from './OperationModalHelpers'
 import { Client } from './OperationModalTypes'
 
 interface Props {
@@ -19,6 +19,7 @@ interface Props {
 export function OperationStepClient({ clients, clientId, onClientChange, loadingClients, isDark }: Props) {
     const { t } = useTranslation()
     const selectedClient = clients.find(c => String(c.client_id) === clientId)
+    const { page, setPage, totalPages, paged: pagedClients, showPagination } = usePagedItems(clients)
 
     return (
         <div className="space-y-4">
@@ -34,12 +35,23 @@ export function OperationStepClient({ clients, clientId, onClientChange, loading
                         <SelectTrigger className={inputCls(isDark)}>
                             <SelectValue placeholder={t('operations.newOperation.client.placeholder')} />
                         </SelectTrigger>
-                        <SelectContent className={scCls(isDark)}>
-                            {clients.map(c => (
+                        <SelectContent className={scCls(isDark)} position="popper" align="start" sideOffset={4}>
+                            {pagedClients.map(c => (
                                 <SelectItem key={c.client_id} value={String(c.client_id)} className={siCls(isDark)}>
                                     [{c.client_code}] {c.client_name}
                                 </SelectItem>
                             ))}
+                            {showPagination && (
+                                <SelectPaginationFooter
+                                    page={page}
+                                    totalPages={totalPages}
+                                    onPageChange={setPage}
+                                    previousLabel={t('common.previous')}
+                                    nextLabel={t('common.next')}
+                                    indicatorLabel={t('common.pageIndicator', { current: page + 1, total: totalPages })}
+                                    isDark={isDark}
+                                />
+                            )}
                         </SelectContent>
                     </Select>
                 </div>
