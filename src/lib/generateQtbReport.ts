@@ -1,5 +1,6 @@
 'use client';
 
+import { trimImagePadding } from '@/lib/image-trim';
 import { formatDateInTz, formatTimeInTz } from '@/lib/utils';
 
 export interface QtbMissionRow {
@@ -149,6 +150,11 @@ export async function generateQtbReportPdf(report: QtbReportData, timezone: stri
   const marginL = 20;
   const marginR = 20;
 
+  const trimmedLogo = report.companyLogoDataUrl
+    ? await trimImagePadding(report.companyLogoDataUrl).catch(() => null)
+    : null;
+  const logoDataUrl = trimmedLogo?.dataUrl ?? report.companyLogoDataUrl ?? null;
+
   const title = resolveQtbTitle(language);
   const droneSerial = report.drone?.serial_number || report.drone?.uas_serial_number || null;
   const modelLine = `${report.tool.model_name ?? '<UAS Model>'}   S/N   ${droneSerial ?? '_______________________'}`;
@@ -262,16 +268,16 @@ export async function generateQtbReportPdf(report: QtbReportData, timezone: stri
       columnStyles,
       margin: { left: marginL, right: marginR, top: 15, bottom: 16 },
       didDrawCell: (data) => {
-        if (!report.companyLogoDataUrl) return;
+        if (!logoDataUrl) return;
         if (data.row.index !== 0 || data.column.index !== 0) return;
         try {
           const pad = 1;
           const boxW = data.cell.width - pad * 2;
           const boxH = data.cell.height - pad * 2;
 
-          // Scale the logo to fit inside the box without distorting its aspect ratio
-          // (the reserved cell is a fixed w:h that rarely matches the logo's own ratio).
-          const { width: imgW, height: imgH } = doc.getImageProperties(report.companyLogoDataUrl);
+          // Scale the (padding-trimmed) logo to fit inside the box without distorting its
+          // aspect ratio (the reserved cell is a fixed w:h that rarely matches the logo's own ratio).
+          const { width: imgW, height: imgH } = doc.getImageProperties(logoDataUrl);
           const scale = Math.min(boxW / imgW, boxH / imgH);
           const drawW = imgW * scale;
           const drawH = imgH * scale;
@@ -279,8 +285,8 @@ export async function generateQtbReportPdf(report: QtbReportData, timezone: stri
           const y = data.cell.y + pad + (boxH - drawH) / 2;
 
           doc.addImage(
-            report.companyLogoDataUrl,
-            detectImageFormat(report.companyLogoDataUrl),
+            logoDataUrl,
+            detectImageFormat(logoDataUrl),
             x,
             y,
             drawW,

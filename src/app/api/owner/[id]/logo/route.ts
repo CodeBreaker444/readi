@@ -3,10 +3,9 @@ import { deleteOwnerLogo, uploadOwnerLogo } from '@/backend/services/company/own
 import { forbidden, internalError, unauthorized } from '@/lib/api-error';
 import { getUserSession } from '@/lib/auth/server-session';
 import { E } from '@/lib/error-codes';
+import { getImageDimensions } from '@/lib/image-dimensions';
+import { LOGO_ALLOWED_TYPES, LOGO_MAX_SIZE, LOGO_MIN_DIMENSION } from '@/lib/logo-constraints';
 import { NextRequest, NextResponse } from 'next/server';
-
-const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
-const MAX_SIZE = 5 * 1024 * 1024;
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
@@ -23,11 +22,22 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         if (!logoEntry || !(logoEntry instanceof File) || logoEntry.size === 0) {
             return NextResponse.json({ code: 0, message: 'Logo file is required' }, { status: 400 });
         }
-        if (logoEntry.size > MAX_SIZE) {
+        if (logoEntry.size > LOGO_MAX_SIZE) {
             return NextResponse.json({ code: 0, message: 'Logo file must be under 5MB' }, { status: 400 });
         }
-        if (!ALLOWED_TYPES.includes(logoEntry.type)) {
+        if (!LOGO_ALLOWED_TYPES.includes(logoEntry.type)) {
             return NextResponse.json({ code: 0, message: 'Logo must be JPEG, PNG, or WebP' }, { status: 400 });
+        }
+
+        // Defense-in-depth behind the client-side crop tool's own check — callers hitting
+        // this endpoint directly (scripts, API clients) don't go through that UI.
+        const buffer = Buffer.from(await logoEntry.arrayBuffer());
+        const dimensions = getImageDimensions(buffer);
+        if (dimensions && (dimensions.width < LOGO_MIN_DIMENSION || dimensions.height < LOGO_MIN_DIMENSION)) {
+            return NextResponse.json({
+                code: 0,
+                message: `Logo is too small (${dimensions.width}x${dimensions.height}px). Minimum ${LOGO_MIN_DIMENSION}x${LOGO_MIN_DIMENSION}px required.`,
+            }, { status: 400 });
         }
 
         const { logoUrl } = await uploadOwnerLogo(ownerId, logoEntry);

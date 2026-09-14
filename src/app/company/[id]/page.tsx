@@ -1,6 +1,7 @@
 'use client';
 
 import DeleteOwnerDialog from '@/components/company/DeleteOwnerDialog';
+import LogoCropDialog from '@/components/company/LogoCropDialog';
 import { OwnerData } from '@/components/tables/OwnerColumn';
 import {
     Breadcrumb,
@@ -19,6 +20,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useTheme } from '@/components/useTheme';
+import { validateLogoFile } from '@/lib/logo-constraints';
 import axios from 'axios';
 import {
     ArrowLeft,
@@ -42,9 +44,6 @@ import {
 import { useParams, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
-
-const LOGO_ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
-const LOGO_MAX_SIZE = 5 * 1024 * 1024;
 
 interface OwnerMetrics {
     total_users: number;
@@ -171,6 +170,7 @@ export default function CompanyDetailPage() {
     const [emailError, setEmailError] = useState('');
 
     const [logoUploading, setLogoUploading] = useState(false);
+    const [cropSource, setCropSource] = useState<File | null>(null);
     const logoInputRef = useRef<HTMLInputElement>(null);
 
     const populateForms = useCallback((o: OwnerData) => {
@@ -238,8 +238,15 @@ export default function CompanyDetailPage() {
         e.target.value = '';
         if (!file || !owner) return;
 
-        if (file.size > LOGO_MAX_SIZE) { toast.error('Logo file must be under 5MB'); return; }
-        if (!LOGO_ALLOWED_TYPES.includes(file.type)) { toast.error('Logo must be JPEG, PNG, or WebP'); return; }
+        const error = await validateLogoFile(file);
+        if (error) { toast.error(error); return; }
+
+        setCropSource(file);
+    };
+
+    const handleLogoCropped = async (file: File) => {
+        setCropSource(null);
+        if (!owner) return;
 
         setLogoUploading(true);
         try {
@@ -511,8 +518,14 @@ export default function CompanyDetailPage() {
                                             className="hidden"
                                         />
                                     </div>
-                                    <p className="text-xs text-muted-foreground">JPEG, PNG, or WebP — up to 5MB.</p>
+                                    <p className="text-xs text-muted-foreground">JPEG, PNG, or WebP — up to 5MB, at least 128x128px.</p>
                                 </div>
+                                <LogoCropDialog
+                                    open={!!cropSource}
+                                    file={cropSource}
+                                    onCancel={() => setCropSource(null)}
+                                    onCropped={handleLogoCropped}
+                                />
                             </div>
                             <Separator />
                             <div>

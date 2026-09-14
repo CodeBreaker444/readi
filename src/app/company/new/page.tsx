@@ -9,19 +9,18 @@ import {
     BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
 import { Button } from '@/components/ui/button';
+import LogoCropDialog from '@/components/company/LogoCropDialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
 import { useTheme } from '@/components/useTheme';
+import { validateLogoFile } from '@/lib/logo-constraints';
 import { ArrowLeft, Building2, Camera, House, Loader2, UserCog, CheckCircle2, AlertCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useRef, useState } from 'react';
 import { toast } from 'sonner';
-
-const LOGO_ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
-const LOGO_MAX_SIZE = 5 * 1024 * 1024;
 
 const initialForm = {
     owner_code: '',
@@ -132,16 +131,22 @@ export default function NewCompanyPage() {
 
     const [logoFile, setLogoFile] = useState<File | null>(null);
     const [logoPreview, setLogoPreview] = useState<string | null>(null);
+    const [cropSource, setCropSource] = useState<File | null>(null);
     const logoInputRef = useRef<HTMLInputElement>(null);
 
-    const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleLogoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         e.target.value = '';
         if (!file) return;
 
-        if (file.size > LOGO_MAX_SIZE) { toast.error('Logo file must be under 5MB'); return; }
-        if (!LOGO_ALLOWED_TYPES.includes(file.type)) { toast.error('Logo must be JPEG, PNG, or WebP'); return; }
+        const error = await validateLogoFile(file);
+        if (error) { toast.error(error); return; }
 
+        setCropSource(file);
+    };
+
+    const handleLogoCropped = (file: File) => {
+        setCropSource(null);
         setLogoFile(file);
         setLogoPreview(URL.createObjectURL(file));
     };
@@ -360,9 +365,16 @@ export default function NewCompanyPage() {
                             </div>
                             <div>
                                 <p className={`text-sm font-medium ${isDark ? 'text-white' : 'text-slate-900'}`}>Company Logo</p>
-                                <p className="text-xs text-muted-foreground mt-0.5">JPEG, PNG, or WebP — up to 5MB. Optional, can be added later.</p>
+                                <p className="text-xs text-muted-foreground mt-0.5">JPEG, PNG, or WebP — up to 5MB, at least 128x128px. Optional, can be added later.</p>
                             </div>
                         </div>
+
+                        <LogoCropDialog
+                            open={!!cropSource}
+                            file={cropSource}
+                            onCancel={() => setCropSource(null)}
+                            onCropped={handleLogoCropped}
+                        />
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                             <div className="space-y-1.5">
