@@ -17,6 +17,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 const VIEWPORT_WIDTH = 320;
 const MIN_ZOOM = 1;
 const MAX_ZOOM = 4;
+const DEFAULT_ZOOM = 1.15;
 
 type AspectPreset = 'square' | 'wide' | 'original';
 
@@ -27,7 +28,7 @@ interface CropState {
     panY: number;
 }
 
-const INITIAL_STATE: CropState = { rotation: 0, zoom: 1, panX: 0, panY: 0 };
+const INITIAL_STATE: CropState = { rotation: 0, zoom: DEFAULT_ZOOM, panX: 0, panY: 0 };
 
 function aspectRatioFor(preset: AspectPreset, rotation: number, naturalW: number, naturalH: number): number {
     if (preset === 'square') return 1;
@@ -137,12 +138,12 @@ export default function LogoCropDialog({ open, file, onCancel, onCropped }: Logo
     }, [img, vw, vh]);
 
     const rotateBy = (deg: number) => {
-        updateState((prev) => ({ ...prev, rotation: prev.rotation + deg, zoom: 1, panX: 0, panY: 0 }));
+        updateState((prev) => ({ ...prev, rotation: prev.rotation + deg, zoom: DEFAULT_ZOOM, panX: 0, panY: 0 }));
     };
 
     const handlePresetChange = (next: AspectPreset) => {
         setPreset(next);
-        updateState((prev) => ({ ...prev, zoom: 1, panX: 0, panY: 0 }));
+        updateState((prev) => ({ ...prev, zoom: DEFAULT_ZOOM, panX: 0, panY: 0 }));
     };
 
     const handleReset = () => {
@@ -286,7 +287,9 @@ export default function LogoCropDialog({ open, file, onCancel, onCropped }: Logo
                             </Button>
                         </div>
                         <p className="text-xs text-muted-foreground text-center">
-                            Drag to reposition. &ldquo;Fit to content&rdquo; trims empty padding around the mark automatically.
+                            Drag the image to reposition it — e.g. if the logo mark sits in a corner, drag it toward the
+                            center of the frame. Zoom in for more room to move. &ldquo;Fit to content&rdquo; does this
+                            automatically by trimming empty padding around the mark.
                         </p>
                     </div>
                 )}
