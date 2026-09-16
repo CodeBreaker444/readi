@@ -102,6 +102,7 @@ export async function createAndSubmitMissionAuthorization(
     const userInfo = await getDFlightUserInfo(
       integration.base_url,
       tokenResponse.access_token,
+      integration.client_id,
       integration.pfx_content ?? undefined,
       integration.pfx_password ?? undefined,
     );
@@ -132,6 +133,7 @@ export async function createAndSubmitMissionAuthorization(
         is_automatic_clearance: true,
         uspace_id: '',
       },
+      integration.client_id,
       integration.pfx_content ?? undefined,
       integration.pfx_password ?? undefined,
     );

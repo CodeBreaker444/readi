@@ -1,35 +1,8 @@
 import 'server-only';
 import { Agent, fetch as undiciFetch } from 'undici';
 import { createHash } from 'crypto';
-import https from 'https';
 
 const CONNECT_TIMEOUT_MS = 10_000;
-
-// Create a native HTTPS agent for fallback
-let _httpsAgent: https.Agent | null = null;
-let _httpsPfxContent: string | null = null;
-let _httpsPfxPassword: string | null = null;
-
-function getHttpsAgent(pfxContent: string, pfxPassword: string): https.Agent | undefined {
-  if (!pfxContent || !pfxPassword) {
-    return undefined;
-  }
-  if (!_httpsAgent || _httpsPfxContent !== pfxContent || _httpsPfxPassword !== pfxPassword) {
-    const pfx = Buffer.from(pfxContent, 'base64');
-    _httpsAgent = new https.Agent({
-      pfx,
-      passphrase: pfxPassword,
-      rejectUnauthorized: false,
-      keepAlive: true,
-      minVersion: 'TLSv1.2',
-      maxVersion: 'TLSv1.3',
-      ciphers: 'ALL',
-    });
-    _httpsPfxContent = pfxContent;
-    _httpsPfxPassword = pfxPassword;
-  }
-  return _httpsAgent;
-}
 
 export interface DFlightConfig {
   base_url: string;
@@ -117,18 +90,6 @@ function createUndiciAgent(pfxContent: string, pfxPassword: string, baseUrl: str
   const url = new URL(safeBaseUrl);
   const hostname = url.hostname;
 
-
-  try {
-    const httpsAgent = new https.Agent({
-      pfx,
-      passphrase: pfxPassword,
-      rejectUnauthorized: false,
-    });
-    console.log('D-Flight: HTTPS Agent created successfully');
-  } catch (err: any) {
-    console.error('D-Flight: Failed to create HTTPS Agent:', err.message);
-  }
-
   return new Agent({
     connect: {
       pfx,
@@ -157,11 +118,14 @@ function getAgent(pfxContent: string, pfxPassword: string, baseUrl: string): Age
   return _agent;
 }
 
-// D-Flight's gateway rejects POST/PUT/DELETE calls with a "CSRF protection
-// policy exception (CSRF-01)" — confirmed to not be a cookie-based CSRF
-// token (no Set-Cookie on login/userinfo/create), so trying the other common
-// WAF-level CSRF check: requiring Origin/Referer, which a plain server-to-
-// server fetch never sends unless told to. Only needed on mutating verbs.
+ 
+function dflightUrl(safeBaseUrl: string, clientId: string, path: string): string {
+  const isPreEnv = new URL(safeBaseUrl).hostname === 'pre.d-flight.it';
+  const alreadyHasClientSegment = safeBaseUrl.replace(/\/+$/, '').endsWith(`/${clientId}`);
+  return isPreEnv && !alreadyHasClientSegment ? `${safeBaseUrl}/${clientId}/${path}` : `${safeBaseUrl}/${path}`;
+}
+
+ 
 function writeRequestHeaders(safeBaseUrl: string): Record<string, string> {
   const origin = new URL(safeBaseUrl).origin;
   return {
@@ -189,12 +153,26 @@ async function dFetch(
   pfxPassword?: string,
   baseUrl?: string,
 ): Promise<DFetchResponse> {
-  // Use native HTTPS fetch by default for better PFX certificate support
-  const httpsAgent = pfxContent && pfxPassword ? getHttpsAgent(pfxContent, pfxPassword) : undefined;
-  const response = await fetch(url, {
+  // D-Flight's pre-production gateway requires mTLS — the tenant's own
+  // certificate/password uploaded via D-Flight settings, never an env fallback.
+  const isPreEnv = new URL(url).hostname === 'pre.d-flight.it';
+  if (isPreEnv && (!pfxContent || !pfxPassword)) {
+    throw new Error(
+      'D-Flight certificate is required for the pre-production environment. ' +
+      'Upload the certificate and its password from the D-Flight settings page.'
+    );
+  }
+
+  // Node's global fetch() (WHATWG-spec, undici-backed) has no `agent` option —
+  // only `dispatcher`, and only undici's own Agent satisfies that interface.
+  // A plain node:https.Agent passed as `agent` is silently ignored, so the
+  // client certificate never reaches the TLS handshake. Route through
+  // undici's fetch with an explicit dispatcher to actually present it.
+  const dispatcher = pfxContent && pfxPassword ? getAgent(pfxContent, pfxPassword, baseUrl ?? url) : undefined;
+  const response = await undiciFetch(url, {
     ...init,
-    ...(httpsAgent ? { agent: httpsAgent as any } : {}),
-  } as RequestInit);
+    ...(dispatcher ? { dispatcher } : {}),
+  } as Parameters<typeof undiciFetch>[1]);
 
   // Convert native fetch response to undici-compatible format.
   // Read raw bytes once and derive text/json from them — decoding straight to
@@ -227,23 +205,25 @@ export async function getDFlightToken(
   pfxContent?: string,
   pfxPassword?: string,
 ): Promise<DFlightTokenResponse> {
-  const body = new URLSearchParams({
-    grant_type: 'password',
-    client_id:  config.client_id,
-    username:   config.username,
-    ...(config.password ? { password: config.password } : {}),
-    scope:      'openid email profile user-data personal-data pilot-license dflight-identification',
-  });
-
   const baseUrl = config.base_url.startsWith('http') ? config.base_url : `https://${config.base_url}`;
-  const url = `${baseUrl}/iam/token`;
+  const isPreEnv = new URL(baseUrl).hostname === 'pre.d-flight.it';
 
-
+  const url = dflightUrl(baseUrl, config.client_id, 'iam/token');
+  console.log('url:', url);
   const res = await dFetch(url, {
-    method:  'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body:    body.toString(),
-  }, pfxContent, pfxPassword, baseUrl);
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      ...(isPreEnv ? { 'User-Agent': 'PostmanRuntime/7.36.0', Accept: '*/*', ...writeRequestHeaders(baseUrl) } : {}),
+    },
+    body: new URLSearchParams({
+      grant_type: 'password',
+      client_id: config.client_id,
+      username: config.username,
+      ...(config.password ? { password: config.password } : {}),
+      scope: 'openid email profile user-data personal-data pilot-license dflight-identification',
+    }).toString(),
+  },  pfxContent, pfxPassword, baseUrl);
 
   console.log(`D-Flight token status: ${res.status}`);
   if (res.setCookies?.length) {
@@ -271,7 +251,7 @@ export async function refreshDFlightToken(
 
   // Ensure base_url has https:// prefix
   const baseUrl = config.base_url.startsWith('http') ? config.base_url : `https://${config.base_url}`;
-  const url = `${baseUrl}/iam/token/refresh`;
+  const url = dflightUrl(baseUrl, config.client_id, 'iam/token/refresh');
 
   console.log(`D-Flight token refresh URL: ${url}`);
 
@@ -320,6 +300,7 @@ export async function getDFlightDrones(
   baseUrl:     string,
   accessToken: string,
   owner:       string,
+  clientId:    string,
   pfxContent?:  string,
   pfxPassword?: string,
   pageSize = 100,
@@ -338,7 +319,7 @@ export async function getDFlightDrones(
     });
 
     const res = await dFetch(
-      `${safeBaseUrl}/drone-management/v2/api/drones?${params.toString()}`,
+      dflightUrl(safeBaseUrl, clientId, `drone-management/v2/api/drones?${params.toString()}`),
       {
         method:  'GET',
         headers: {
@@ -379,6 +360,7 @@ export async function getDFlightDroneById(
   accessToken: string,
   owner:       string,
   droneId:     string,
+  clientId:    string,
   pfxContent:  string,
   pfxPassword: string,
 ): Promise<DFlightDroneResult | null> {
@@ -390,7 +372,7 @@ export async function getDFlightDroneById(
   });
 
   const res = await dFetch(
-    `${safeBaseUrl}/drone-management/v2/api/drones?${params.toString()}`,
+    dflightUrl(safeBaseUrl, clientId, `drone-management/v2/api/drones?${params.toString()}`),
     {
       method:  'GET',
       headers: {
@@ -421,13 +403,14 @@ export async function getDFlightUasClass(
   baseUrl:     string,
   accessToken: string,
   classId:     string,
+  clientId:    string,
   pfxContent?:  string,
   pfxPassword?: string,
 ): Promise<DFlightUasClassResult | null> {
   const safeBaseUrl = baseUrl.startsWith('http') ? baseUrl : `https://${baseUrl}`;
 
   const res = await dFetch(
-    `${safeBaseUrl}/drone-management/v2/api/uas-class/${encodeURIComponent(classId)}`,
+    dflightUrl(safeBaseUrl, clientId, `drone-management/v2/api/uas-class/${encodeURIComponent(classId)}`),
     {
       method:  'GET',
       headers: {
@@ -454,13 +437,14 @@ export async function getDFlightModel(
   baseUrl:     string,
   accessToken: string,
   modelId:     string,
+  clientId:    string,
   pfxContent?:  string,
   pfxPassword?: string,
 ): Promise<DFlightModelResult | null> {
   const safeBaseUrl = baseUrl.startsWith('http') ? baseUrl : `https://${baseUrl}`;
 
   const res = await dFetch(
-    `${safeBaseUrl}/drone-management/v2/api/models/search?id=${encodeURIComponent(modelId)}`,
+    dflightUrl(safeBaseUrl, clientId, `drone-management/v2/api/models/search?id=${encodeURIComponent(modelId)}`),
     {
       method:  'GET',
       headers: {
@@ -503,13 +487,14 @@ export async function getDFlightManufacturer(
   baseUrl:        string,
   accessToken:    string,
   manufacturerId: string,
+  clientId:       string,
   pfxContent?:     string,
   pfxPassword?:    string,
 ): Promise<DFlightManufacturerResult | null> {
   const safeBaseUrl = baseUrl.startsWith('http') ? baseUrl : `https://${baseUrl}`;
 
   const res = await dFetch(
-    `${safeBaseUrl}/drone-management/v2/api/manufacturer/${encodeURIComponent(manufacturerId)}`,
+    dflightUrl(safeBaseUrl, clientId, `drone-management/v2/api/manufacturer/${encodeURIComponent(manufacturerId)}`),
     {
       method:  'GET',
       headers: {
@@ -540,13 +525,14 @@ export interface DFlightUserInfo {
 export async function getDFlightUserInfo(
   baseUrl:     string,
   accessToken: string,
+  clientId:    string,
   pfxContent?:  string,
   pfxPassword?: string,
 ): Promise<DFlightUserInfo> {
   const safeBaseUrl = baseUrl.startsWith('http') ? baseUrl : `https://${baseUrl}`;
 
   const res = await dFetch(
-    `${safeBaseUrl}/iam/userinfo`,
+    dflightUrl(safeBaseUrl, clientId, 'iam/userinfo'),
     {
       method:  'GET',
       headers: {
@@ -600,6 +586,7 @@ export async function getDFlightDroneDeclarations(
   accessToken:               string,
   operatorRegistrationNumber: string,
   droneId:                   string,
+  clientId:                  string,
   pfxContent?:                string,
   pfxPassword?:               string,
 ): Promise<DFlightDroneDeclaration[]> {
@@ -609,12 +596,13 @@ export async function getDFlightDroneDeclarations(
   });
 
   const safeBaseUrl = baseUrl.startsWith('http') ? baseUrl : `https://${baseUrl}`;
+  const url = dflightUrl(safeBaseUrl, clientId, `user-management/users/dronedeclarations/operators/${encodeURIComponent(operatorRegistrationNumber)}?${params.toString()}`);
 
   console.log(`Fetching drone declarations for operator: ${operatorRegistrationNumber}, drone: ${droneId}`);
-  console.log(`URL: ${safeBaseUrl}/user-management/users/dronedeclarations/operators/${encodeURIComponent(operatorRegistrationNumber)}?${params.toString()}`);
+  console.log(`URL: ${url}`);
 
   const res = await dFetch(
-    `${safeBaseUrl}/user-management/users/dronedeclarations/operators/${encodeURIComponent(operatorRegistrationNumber)}?${params.toString()}`,
+    url,
     {
       method:  'GET',
       headers: {
@@ -708,13 +696,14 @@ export async function createDFlightMission(
   baseUrl:     string,
   accessToken: string,
   input:       DFlightCreateMissionInput,
+  clientId:    string,
   pfxContent?:  string,
   pfxPassword?: string,
 ): Promise<DFlightMissionResult> {
   const safeBaseUrl = baseUrl.startsWith('http') ? baseUrl : `https://${baseUrl}`;
 
   const res = await dFetch(
-    `${safeBaseUrl}/mission-management/mission`,
+    dflightUrl(safeBaseUrl, clientId, 'mission-management/mission'),
     {
       method: 'POST',
       headers: {
@@ -747,13 +736,14 @@ export async function getDFlightMission(
   baseUrl:     string,
   accessToken: string,
   missionId:   string,
+  clientId:    string,
   pfxContent?:  string,
   pfxPassword?: string,
 ): Promise<DFlightMissionResult> {
   const safeBaseUrl = baseUrl.startsWith('http') ? baseUrl : `https://${baseUrl}`;
 
   const res = await dFetch(
-    `${safeBaseUrl}/mission-management/mission/${encodeURIComponent(missionId)}`,
+    dflightUrl(safeBaseUrl, clientId, `mission-management/mission/${encodeURIComponent(missionId)}`),
     {
       method: 'GET',
       headers: {
@@ -780,13 +770,14 @@ export async function withdrawDFlightMission(
   accessToken: string,
   missionId:   string,
   techVersion: string,
+  clientId:    string,
   pfxContent?:  string,
   pfxPassword?: string,
 ): Promise<void> {
   const safeBaseUrl = baseUrl.startsWith('http') ? baseUrl : `https://${baseUrl}`;
 
   const res = await dFetch(
-    `${safeBaseUrl}/mission-management/mission/${encodeURIComponent(missionId)}`,
+    dflightUrl(safeBaseUrl, clientId, `mission-management/mission/${encodeURIComponent(missionId)}`),
     {
       method: 'DELETE',
       headers: {
@@ -812,13 +803,14 @@ export async function getDFlightDeclarationPdf(
   baseUrl:       string,
   accessToken:   string,
   declarationId: string,
+  clientId:      string,
   pfxContent?:    string,
   pfxPassword?:   string,
 ): Promise<Uint8Array> {
   const safeBaseUrl = baseUrl.startsWith('http') ? baseUrl : `https://${baseUrl}`;
 
   const res = await dFetch(
-    `${safeBaseUrl}/user-management/users/dronedeclarations/${encodeURIComponent(declarationId)}/pdf`,
+    dflightUrl(safeBaseUrl, clientId, `user-management/users/dronedeclarations/${encodeURIComponent(declarationId)}/pdf`),
     {
       method:  'GET',
       headers: {

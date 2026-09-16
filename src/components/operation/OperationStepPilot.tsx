@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils'
 import { BadgeCheck } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { inputCls, labelCls, scCls, siCls, ReviewRow, SectionTitle } from './OperationModalHelpers'
+import { inputCls, labelCls, scCls, siCls, ReviewRow, SectionTitle, SelectPaginationFooter, usePagedItems } from './OperationModalHelpers'
 import { FlightMode, GenericOption, LucOption, OpType, PilotOption } from './OperationModalTypes'
 import { PilotQualificationsSheet } from './PilotQualificationsSheet'
 
@@ -47,6 +47,7 @@ interface Props {
 export function OperationStepPilot({ pilots, pilotId, onPilotChange, visualObserverIds = [], onVisualObserverChange, loadingOptions = false, summary, isDark }: Props) {
     const { t } = useTranslation()
     const [qualTarget, setQualTarget] = useState<{ id: number; name: string } | null>(null)
+    const pilotsPaging = usePagedItems(pilots)
 
     const toggleObserver = (id: string) => {
         if (!onVisualObserverChange) return
@@ -70,12 +71,23 @@ export function OperationStepPilot({ pilots, pilotId, onPilotChange, visualObser
                     <div className="flex items-center gap-1.5">
                         <Select value={pilotId} onValueChange={id => { onPilotChange(id); onVisualObserverChange?.(visualObserverIds.filter(v => v !== id)) }}>
                             <SelectTrigger className={cn(inputCls(isDark), 'flex-1')}><SelectValue placeholder={t('operations.newOperation.pilot.selectPilot')} /></SelectTrigger>
-                            <SelectContent className={scCls(isDark)}>
-                                {pilots.map(p => (
+                            <SelectContent className={scCls(isDark)} position="popper" align="start" sideOffset={4}>
+                                {pilotsPaging.paged.map(p => (
                                     <SelectItem key={p.user_id} value={String(p.user_id)} className={siCls(isDark)}>
                                         {p.first_name} {p.last_name}
                                     </SelectItem>
                                 ))}
+                                {pilotsPaging.showPagination && (
+                                    <SelectPaginationFooter
+                                        page={pilotsPaging.page}
+                                        totalPages={pilotsPaging.totalPages}
+                                        onPageChange={pilotsPaging.setPage}
+                                        previousLabel={t('common.previous')}
+                                        nextLabel={t('common.next')}
+                                        indicatorLabel={t('common.pageIndicator', { current: pilotsPaging.page + 1, total: pilotsPaging.totalPages })}
+                                        isDark={isDark}
+                                    />
+                                )}
                             </SelectContent>
                         </Select>
                         <Tooltip>

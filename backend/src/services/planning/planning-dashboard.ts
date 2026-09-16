@@ -545,6 +545,11 @@ export async function deleteMissionPlanningLogbook(
     });
   }
 
+  await prisma.pilot_mission.updateMany({
+    where: { fk_mission_planning_id: missionPlanningId, fk_owner_id: ownerId },
+    data: { fk_mission_planning_id: null },
+  });
+
   await prisma.planning_logbook.deleteMany({
     where: { mission_planning_id: missionPlanningId, fk_owner_id: ownerId },
   });

@@ -28,6 +28,7 @@ export interface SessionUser {
   flytrelayAccess: boolean;
   companyEasaCode: string | null;
   ownerName?: string | null;
+  ownerLogoUrl?: string | null;
   hasFlytbaseOrganizations: boolean;
   isViewer: boolean;
   isManager: boolean;
@@ -52,13 +53,32 @@ async function resolveAvatarUrl(
     profilePicture.startsWith('profiles/')
   ) {
     try {
-      return await getPresignedDownloadUrl(profilePicture, 3600);  
+      return await getPresignedDownloadUrl(profilePicture, 3600);
     } catch {
       return null;
     }
   }
 
   return profilePicture;
+}
+
+/**
+ * Generate a presigned URL for the company logo if it's an S3 key.
+ */
+async function resolveOwnerLogoUrl(
+  ownerLogo: string | null | undefined,
+): Promise<string | null> {
+  if (!ownerLogo) return null;
+
+  if (ownerLogo.startsWith('logos/')) {
+    try {
+      return await getPresignedDownloadUrl(ownerLogo, 3600);
+    } catch {
+      return null;
+    }
+  }
+
+  return ownerLogo;
 }
 
 export const getUserSession = cache(async (): Promise<Session | null> => {
@@ -125,6 +145,7 @@ export const getUserSession = cache(async (): Promise<Session | null> => {
     let flytrelayAccess = false;
     let companyEasaCode: string | null = null;
     let ownerName: string | null = null;
+    let ownerLogoUrl: string | null = null;
     let hasFlytbaseOrganizations = false;
 
     const isNonSuperAdminWithOwner = userData.user_role !== 'SUPERADMIN' && !!userData.fk_owner_id;
@@ -134,7 +155,7 @@ export const getUserSession = cache(async (): Promise<Session | null> => {
       isNonSuperAdminWithOwner
         ? prisma.owner.findUnique({
             where: { owner_id: userData.fk_owner_id! },
-            select: { drone_atc_enabled: true, d_flight_enabled: true, flytrelay_enabled: true, training_email_enabled: true, easa_operator_code: true, owner_name: true },
+            select: { drone_atc_enabled: true, d_flight_enabled: true, flytrelay_enabled: true, training_email_enabled: true, easa_operator_code: true, owner_name: true, owner_logo: true },
           })
         : Promise.resolve(null),
       isNonSuperAdminWithOwner
@@ -151,6 +172,7 @@ export const getUserSession = cache(async (): Promise<Session | null> => {
       flytrelayAccess = (ownerData?.flytrelay_enabled ?? false) && (userData.flytrelay_access ?? false);
       companyEasaCode = ownerData?.easa_operator_code ?? null;
       ownerName = ownerData?.owner_name ?? null;
+      ownerLogoUrl = await resolveOwnerLogoUrl(ownerData?.owner_logo);
       hasFlytbaseOrganizations = userOrgs.length > 0;
     } else if (userData.user_role === 'SUPERADMIN') {
       droneAtcEnabled = true;
@@ -181,6 +203,7 @@ export const getUserSession = cache(async (): Promise<Session | null> => {
       flytrelayAccess,
       companyEasaCode,
       ownerName,
+      ownerLogoUrl,
       hasFlytbaseOrganizations,
       isViewer: userData.is_viewer === 'N',
       isManager: userData.is_manager === 'Y',

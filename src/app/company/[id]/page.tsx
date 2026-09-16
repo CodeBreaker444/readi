@@ -1,6 +1,7 @@
 'use client';
 
 import DeleteOwnerDialog from '@/components/company/DeleteOwnerDialog';
+import LogoCropDialog from '@/components/company/LogoCropDialog';
 import { OwnerData } from '@/components/tables/OwnerColumn';
 import {
     Breadcrumb,
@@ -19,11 +20,13 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useTheme } from '@/components/useTheme';
+import { validateLogoFile } from '@/lib/logo-constraints';
 import axios from 'axios';
 import {
     ArrowLeft,
     BarChart3,
     Building2,
+    Camera,
     Edit,
     Eye,
     EyeOff,
@@ -39,7 +42,7 @@ import {
     Zap,
 } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 interface OwnerMetrics {
@@ -166,6 +169,10 @@ export default function CompanyDetailPage() {
     const [emailSaving, setEmailSaving] = useState(false);
     const [emailError, setEmailError] = useState('');
 
+    const [logoUploading, setLogoUploading] = useState(false);
+    const [cropSource, setCropSource] = useState<File | null>(null);
+    const logoInputRef = useRef<HTMLInputElement>(null);
+
     const populateForms = useCallback((o: OwnerData) => {
         setGeneralForm({
             owner_name: toStr(o.owner_name), owner_legal_name: toStr(o.owner_legal_name),
@@ -224,6 +231,41 @@ export default function CompanyDetailPage() {
             } else { toast.error(res.data.message || 'Update failed'); }
         } catch { toast.error('Network error'); }
         finally { setSaving(false); }
+    };
+
+    const handleLogoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        e.target.value = '';
+        if (!file || !owner) return;
+
+        const error = await validateLogoFile(file);
+        if (error) { toast.error(error); return; }
+
+        setCropSource(file);
+    };
+
+    const handleLogoCropped = async (file: File) => {
+        setCropSource(null);
+        if (!owner) return;
+
+        setLogoUploading(true);
+        try {
+            const fd = new FormData();
+            fd.append('logo', file);
+            const res = await axios.post(`/api/owner/${id}/logo`, fd, {
+                headers: { 'Content-Type': 'multipart/form-data' },
+            });
+            if (res.data.code === 1) {
+                setOwner((prev) => (prev ? { ...prev, owner_logo_url: res.data.logoUrl } : prev));
+                toast.success('Logo updated');
+            } else {
+                toast.error(res.data.message || 'Failed to upload logo');
+            }
+        } catch {
+            toast.error('Network error');
+        } finally {
+            setLogoUploading(false);
+        }
     };
 
     const handlePasswordReset = async () => {
@@ -362,8 +404,12 @@ export default function CompanyDetailPage() {
                 <div className="mx-auto max-w-[1800px]">
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                         <div className="flex items-start gap-3 min-w-0">
-                            <div className={`w-9 h-9 shrink-0 rounded-lg flex items-center justify-center ${isDark ? 'bg-slate-800' : 'bg-violet-50'}`}>
-                                <Building2 size={18} className={isDark ? 'text-slate-300' : 'text-violet-600'} />
+                            <div className={`w-9 h-9 shrink-0 rounded-lg flex items-center justify-center overflow-hidden ${isDark ? 'bg-slate-800' : 'bg-violet-50'}`}>
+                                {owner.owner_logo_url ? (
+                                    <img src={owner.owner_logo_url} alt="Company logo" className="w-full h-full object-contain" />
+                                ) : (
+                                    <Building2 size={18} className={isDark ? 'text-slate-300' : 'text-violet-600'} />
+                                )}
                             </div>
                             <div className="min-w-0">
                                 <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
@@ -436,6 +482,50 @@ export default function CompanyDetailPage() {
                                 {!generalEditing
                                     ? <Button size="sm" variant="outline" className="gap-1.5 text-xs h-8 self-start sm:self-auto" onClick={() => setGeneralEditing(true)}><Edit size={13} /> Edit</Button>
                                     : <EditActions onCancel={cancelGeneral} />}
+                            </div>
+                            <Separator />
+                            <div>
+                                <p className={`text-xs font-semibold uppercase tracking-wide mb-4 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Company Logo</p>
+                                <div className="flex items-center gap-4">
+                                    <div className="relative shrink-0">
+                                        <button
+                                            type="button"
+                                            onClick={() => logoInputRef.current?.click()}
+                                            disabled={logoUploading}
+                                            title="Change company logo"
+                                            className={`w-16 h-16 rounded-lg flex items-center justify-center overflow-hidden ${isDark ? 'bg-slate-800' : 'bg-violet-50'}`}
+                                        >
+                                            {owner.owner_logo_url ? (
+                                                <img src={owner.owner_logo_url} alt="Company logo" className="w-full h-full object-contain" />
+                                            ) : (
+                                                <Building2 size={24} className={isDark ? 'text-slate-300' : 'text-violet-600'} />
+                                            )}
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => logoInputRef.current?.click()}
+                                            disabled={logoUploading}
+                                            title="Change company logo"
+                                            className={`absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-violet-600 text-white flex items-center justify-center ring-2 ${isDark ? 'ring-slate-900' : 'ring-white'}`}
+                                        >
+                                            {logoUploading ? <Loader2 size={13} className="animate-spin" /> : <Camera size={13} />}
+                                        </button>
+                                        <input
+                                            ref={logoInputRef}
+                                            type="file"
+                                            onChange={handleLogoChange}
+                                            accept="image/jpeg,image/png,image/webp"
+                                            className="hidden"
+                                        />
+                                    </div>
+                                    <p className="text-xs text-muted-foreground">JPEG, PNG, or WebP — up to 5MB, at least 128x128px.</p>
+                                </div>
+                                <LogoCropDialog
+                                    open={!!cropSource}
+                                    file={cropSource}
+                                    onCancel={() => setCropSource(null)}
+                                    onCropped={handleLogoCropped}
+                                />
                             </div>
                             <Separator />
                             <div>

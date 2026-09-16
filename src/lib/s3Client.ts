@@ -116,3 +116,12 @@ export async function uploadFileToS3(
 export async function deleteFileFromS3(key: string): Promise<void> {
   await getS3().send(new DeleteObjectCommand({ Bucket: BUCKET, Key: key }));
 }
+
+
+export async function getFileBufferFromS3(
+  key: string,
+): Promise<{ buffer: Buffer; contentType?: string }> {
+  const res = await getS3().send(new GetObjectCommand({ Bucket: BUCKET, Key: key }));
+  const buffer = Buffer.from(await res.Body!.transformToByteArray());
+  return { buffer, contentType: res.ContentType };
+}

@@ -8,9 +8,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
 const Schema = z.object({
-  request_id:       z.number().int().positive(),
-  planning_id:      z.number().int().positive().optional(),
-  pilot_mission_id: z.number().int().positive().optional(),
+  request_id:          z.number().int().positive(),
+  planning_id:         z.number().int().positive().optional(),
+  mission_planning_id: z.number().int().positive().optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -32,7 +32,6 @@ export async function POST(req: NextRequest) {
       session!.user.ownerId,
       session!.user.userId,
       parsed.data.planning_id,
-      parsed.data.pilot_mission_id,
     );
 
     let dcc: DccCallbackResult | undefined;
@@ -41,7 +40,7 @@ export async function POST(req: NextRequest) {
         session!.user.ownerId,
         parsed.data.planning_id,
         undefined,
-        parsed.data.pilot_mission_id,
+        parsed.data.mission_planning_id,
       );
     }
 

@@ -12,7 +12,8 @@ interface AirspaceZone {
   upperFt: number;
 }
 
-export const ITALY_BOUNDS = { latMin: 35.5, lonMin: 6.5, latMax: 47.1, lonMax: 18.6 } as const;
+export const COVERAGE_BOUNDS = { latMin: 35.5, lonMin: -9.5, latMax: 47.5, lonMax: 18.6 } as const;
+const OPENAIP_COUNTRIES = ['IT', 'ES'] as const;
 
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 
@@ -93,8 +94,8 @@ function mapOpenAIPItem(item: Record<string, unknown>): AirspaceZone | null {
 
     if (radiusM > MAX_RADIUS_M) return null;
 
-    if (lat < ITALY_BOUNDS.latMin || lat > ITALY_BOUNDS.latMax ||
-        lon < ITALY_BOUNDS.lonMin || lon > ITALY_BOUNDS.lonMax) return null;
+    if (lat < COVERAGE_BOUNDS.latMin || lat > COVERAGE_BOUNDS.latMax ||
+        lon < COVERAGE_BOUNDS.lonMin || lon > COVERAGE_BOUNDS.lonMax) return null;
 
     const lower = item.lowerLimit as { value?: number; unit?: number } | undefined;
     const upper = item.upperLimit as { value?: number; unit?: number } | undefined;
@@ -136,53 +137,55 @@ export async function fetchFromOpenAIP(): Promise<AirspaceZone[] | null> {
   }
 
   const zones: AirspaceZone[] = [];
-  let page = 1;
 
   try {
-    while (true) {
-      const url = `${baseUrl}/airspaces?country=IT&page=${page}&limit=100`;
-      // console.log('[openAIP] fetching page', page, url);
+    for (const country of OPENAIP_COUNTRIES) {
+      let page = 1;
+      while (true) {
+        const url = `${baseUrl}/airspaces?country=${country}&page=${page}&limit=100`;
+        // console.log('[openAIP] fetching page', page, url);
 
-      const res = await fetch(url, {
-        headers: { 'x-openaip-api-key': apiKey, Accept: 'application/json' },
-        signal: AbortSignal.timeout(15_000),
-      });
+        const res = await fetch(url, {
+          headers: { 'x-openaip-api-key': apiKey, Accept: 'application/json' },
+          signal: AbortSignal.timeout(15_000),
+        });
 
-      // console.log('[openAIP] page', page, 'status:', res.status);
+        // console.log('[openAIP] page', page, 'status:', res.status);
 
-      if (!res.ok) {
-        const text = await res.text();
-        // console.error('[openAIP] error body:', text.slice(0, 300));
-        break;
+        if (!res.ok) {
+          const text = await res.text();
+          // console.error('[openAIP] error body:', text.slice(0, 300));
+          break;
+        }
+
+        const raw = await res.text();
+        // console.log('[openAIP] raw body sample:', raw.slice(0, 400));
+
+        let body: Record<string, unknown>;
+        try {
+          body = JSON.parse(raw);
+        } catch {
+          console.error('[openAIP] failed to parse JSON');
+          break;
+        }
+
+        const items: Record<string, unknown>[] =
+          (body.items as Record<string, unknown>[] | undefined) ??
+          (body.data  as Record<string, unknown>[] | undefined) ??
+          (Array.isArray(body) ? (body as Record<string, unknown>[]) : []);
+
+        // console.log('[openAIP] page', page, 'items received:', items.length);
+
+        let parsed = 0;
+        for (const item of items) {
+          const z = mapOpenAIPItem(item);
+          if (z) { zones.push(z); parsed++; }
+        }
+        // console.log('[openAIP] page', page, 'zones parsed:', parsed, '/', items.length);
+
+        if (items.length < 100) break;
+        page++;
       }
-
-      const raw = await res.text();
-      // console.log('[openAIP] raw body sample:', raw.slice(0, 400));
-
-      let body: Record<string, unknown>;
-      try {
-        body = JSON.parse(raw);
-      } catch {
-        console.error('[openAIP] failed to parse JSON');
-        break;
-      }
-
-      const items: Record<string, unknown>[] =
-        (body.items as Record<string, unknown>[] | undefined) ??
-        (body.data  as Record<string, unknown>[] | undefined) ??
-        (Array.isArray(body) ? (body as Record<string, unknown>[]) : []);
-
-      // console.log('[openAIP] page', page, 'items received:', items.length);
-
-      let parsed = 0;
-      for (const item of items) {
-        const z = mapOpenAIPItem(item);
-        if (z) { zones.push(z); parsed++; }
-      }
-      // console.log('[openAIP] page', page, 'zones parsed:', parsed, '/', items.length);
-
-      if (items.length < 100) break;
-      page++;
     }
   } catch (err) {
     console.error('[openAIP] fetch threw:', err);
