@@ -487,12 +487,13 @@ export async function updateOperation(id: number, input: UpdateOperationSchema, 
       fk_owner_id: true,
       dflight_mission_id: true,
       dflight_flight_authorisation_status: true,
+      dflight_mission_status: true,
     },
   });
   assertMissionEditable(current?.status_name);
 
   if ((input as any).status_name === 'IN_PROGRESS' && current?.status_name !== 'IN_PROGRESS') {
-    assertDFlightAuthorized(current?.dflight_mission_id, current?.dflight_flight_authorisation_status);
+    assertDFlightAuthorized(current?.dflight_mission_id, current?.dflight_flight_authorisation_status, current?.dflight_mission_status);
   }
 
   const updatePayload: Record<string, unknown> = {};
