@@ -341,7 +341,7 @@ export async function registerFlytrelayWatch(
       ? mission.scheduled_start.toISOString()
       : undefined;
 
-    const durationMinutes = mission.flight_duration ?? 60;
+    const durationMinutes = mission.flight_duration ?? 120;
     const missionEndDateTime = mission.scheduled_start
       ? new Date(mission.scheduled_start.getTime() + durationMinutes * 60_000).toISOString()
       : undefined;
