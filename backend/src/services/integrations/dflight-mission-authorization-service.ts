@@ -337,7 +337,11 @@ export async function registerFlytrelayWatch(
       return { outcome: 'skipped', message: 'No D-Flight credentials configured for this organization' };
     }
 
-    const durationMinutes = mission.flight_duration ?? 15;
+    const missionStartDateTime = mission.scheduled_start
+      ? mission.scheduled_start.toISOString()
+      : undefined;
+
+    const durationMinutes = mission.flight_duration ?? 60;
     const missionEndDateTime = mission.scheduled_start
       ? new Date(mission.scheduled_start.getTime() + durationMinutes * 60_000).toISOString()
       : undefined;
@@ -362,6 +366,7 @@ export async function registerFlytrelayWatch(
         mission_id: mission.dflight_mission_id,
         tech_version: mission.dflight_tech_version,
         pollIntervalSeconds: 30,
+        missionStartDateTime,
         missionEndDateTime,
       }),
       signal: AbortSignal.timeout(10_000),
