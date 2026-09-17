@@ -44,7 +44,7 @@ export function OperationStepDrone({
     loadingOptions, isDark, erpGroups, erpGroupId, onErpGroupChange, loadingErpGroups, logSerialNumber,
 }: Props) {
     const { t } = useTranslation()
-    const DRONES_PAGE_SIZE = 8
+    const DRONES_PAGE_SIZE = 10
     const [dronePage, setDronePage] = useState(0)
     const droneTotalPages = Math.max(1, Math.ceil(drones.length / DRONES_PAGE_SIZE))
     const pagedDrones = drones.slice(dronePage * DRONES_PAGE_SIZE, dronePage * DRONES_PAGE_SIZE + DRONES_PAGE_SIZE)
@@ -171,6 +171,9 @@ export function OperationStepDrone({
                             </SelectItem>
                             )
                         })}
+                        {drones.length > DRONES_PAGE_SIZE && Array.from({ length: DRONES_PAGE_SIZE - pagedDrones.length }).map((_, i) => (
+                            <div key={`filler-${i}`} className="py-1.5 pr-8 pl-2 text-sm invisible" aria-hidden="true">&nbsp;</div>
+                        ))}
                         {drones.length > DRONES_PAGE_SIZE && (
                             <div
                                 className={cn(

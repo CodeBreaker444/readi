@@ -1,7 +1,7 @@
 "use client";
 
 import type { ToolsResponse } from "@/config/types/types";
-import { LEAFLET_TILE_ATTRIBUTION, LEAFLET_TILE_LIGHT, LEAFLET_TILE_SATELLITE, LEAFLET_TILE_SATELLITE_ATTRIBUTION } from "@/lib/leaflet-tiles";
+import { LEAFLET_TILE_ATTRIBUTION, LEAFLET_TILE_BASE_MAX_NATIVE_ZOOM, LEAFLET_TILE_LIGHT, LEAFLET_TILE_LIGHT_LABELS, LEAFLET_TILE_SATELLITE, LEAFLET_TILE_SATELLITE_ATTRIBUTION } from "@/lib/leaflet-tiles";
 import { colorByStatus, isDock, isValidCoord } from "@/lib/mapUtils";
 import L from "leaflet";
 import "leaflet.markercluster";
@@ -185,10 +185,16 @@ const DroneMap = forwardRef<DroneMapHandle, DroneMapProps>(function DroneMap(
 
     const map = L.map(containerRef.current, { zoomControl: true }).setView(center, zoom);
 
-    const osm = L.tileLayer(LEAFLET_TILE_LIGHT, {
+    const osmBase = L.tileLayer(LEAFLET_TILE_LIGHT, {
       maxZoom: 20,
+      maxNativeZoom: LEAFLET_TILE_BASE_MAX_NATIVE_ZOOM,
       attribution: LEAFLET_TILE_ATTRIBUTION,
     });
+    const osmLabels = L.tileLayer(LEAFLET_TILE_LIGHT_LABELS, {
+      maxZoom: 20,
+      maxNativeZoom: LEAFLET_TILE_BASE_MAX_NATIVE_ZOOM,
+    });
+    const osm = L.layerGroup([osmBase, osmLabels]);
     const sat = L.tileLayer(
       LEAFLET_TILE_SATELLITE,
       { maxZoom: 20, attribution: LEAFLET_TILE_SATELLITE_ATTRIBUTION }

@@ -6,7 +6,6 @@ import LayerControlPanel, { type LayerVisibility } from '@/components/drone-atc/
 import LiveFeedPanel from '@/components/drone-atc/LiveFeedPanel';
 import { useDroneATCSocket } from '@/components/drone-atc/useDroneATCSocket';
 import VideoStreamPlayer from '@/components/drone-atc/VideoStreamPlayer';
-import WindGridOverlay, { type MapBounds } from '@/components/drone-atc/WindGridOverlay';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useTheme } from '@/components/useTheme';
 import '@/lib/i18n/config';
@@ -24,6 +23,10 @@ const DroneATCMap = dynamic(() => import('@/components/drone-atc/DroneATCMap'), 
   loading: () => <Skeleton className="w-full h-full rounded-2xl bg-slate-400" />,
 });
 
+interface MapBounds {
+  latMin: number; lonMin: number; latMax: number; lonMax: number;
+}
+
 interface StreamingResponse {
   hasCredentials: boolean;
   statusMessage?: string;
@@ -39,7 +42,7 @@ interface StreamingResponse {
 
 const FLIGHT_REFRESH_MS = 12000;
 const OWM_API_KEY = process.env.NEXT_PUBLIC_OWM_API_KEY ?? '';
-const ITALY_BOUNDS = { latMin: 36.0, lonMin: 6.5, latMax: 47.5, lonMax: 18.5 } as const;
+const COVERAGE_BOUNDS = { latMin: 35.5, lonMin: -9.5, latMax: 47.5, lonMax: 18.6 } as const;
 
 
 function StatusBadge({ status, count, isDark }: { status: string; count: number; isDark: boolean }) {
@@ -91,8 +94,6 @@ export default function DroneATCPage() {
   const [streamingData, setStreamingData] = useState<StreamingResponse | null>(null);
   const [streamingLoading, setStreamingLoading] = useState(false);
   const boundsRef = useRef<MapBounds | null>(null);
-  const [windFetchTrigger, setWindFetchTrigger] = useState(0);
-  const windTriggerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (!isFullscreen) return;
@@ -192,11 +193,11 @@ export default function DroneATCPage() {
   }, [drones, docks, selectedDroneId]);
 
   const fetchFlights = useCallback(async () => {
-    const bounds = boundsRef.current ?? ITALY_BOUNDS;
-    const latMin = Math.max(bounds.latMin, ITALY_BOUNDS.latMin);
-    const lonMin = Math.max(bounds.lonMin, ITALY_BOUNDS.lonMin);
-    const latMax = Math.min(bounds.latMax, ITALY_BOUNDS.latMax);
-    const lonMax = Math.min(bounds.lonMax, ITALY_BOUNDS.lonMax);
+    const bounds = boundsRef.current ?? COVERAGE_BOUNDS;
+    const latMin = Math.max(bounds.latMin, COVERAGE_BOUNDS.latMin);
+    const lonMin = Math.max(bounds.lonMin, COVERAGE_BOUNDS.lonMin);
+    const latMax = Math.min(bounds.latMax, COVERAGE_BOUNDS.latMax);
+    const lonMax = Math.min(bounds.lonMax, COVERAGE_BOUNDS.lonMax);
     try {
       const res = await fetch(`/api/drone-atc/flights?latMin=${latMin}&lonMin=${lonMin}&latMax=${latMax}&lonMax=${lonMax}`);
       if (res.ok) {
@@ -215,17 +216,9 @@ export default function DroneATCPage() {
     return () => { if (flightTimerRef.current) clearInterval(flightTimerRef.current); };
   }, [layers.flights, fetchFlights]);
 
-  const getBounds = useCallback((): MapBounds | null => boundsRef.current, []);
-
   const handleBoundsChange = useCallback((bounds: MapBounds) => {
     boundsRef.current = bounds;
-    if (windTriggerTimerRef.current) clearTimeout(windTriggerTimerRef.current);
-    windTriggerTimerRef.current = setTimeout(() => setWindFetchTrigger(t => t + 1), 250);
   }, []);
-
-  useEffect(() => {
-    if (layers.wind) setWindFetchTrigger(t => t + 1);
-  }, [layers.wind]);
 
   useEffect(() => {
     setShowVideoPanel(false);
@@ -381,9 +374,6 @@ export default function DroneATCPage() {
               owmApiKey={OWM_API_KEY}
               onBoundsChange={handleBoundsChange}
             />
-            {layers.wind && (
-              <WindGridOverlay getBounds={getBounds} fetchTrigger={windFetchTrigger} />
-            )}
           </div>
 
           <LayerControlPanel

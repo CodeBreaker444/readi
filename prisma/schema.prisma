@@ -1010,6 +1010,7 @@ model deleted_user {
   @@schema("public")
 }
 
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model department_config {
   department_id   Int      @id @default(autoincrement())
   department_name String   @db.VarChar(100)
@@ -1208,8 +1209,8 @@ model flight_requests {
   pilot_mission       pilot_mission? @relation(fields: [fk_pilot_mission_id], references: [pilot_mission_id], onDelete: NoAction, onUpdate: NoAction)
 
   @@index([fk_owner_id], map: "idx_flight_requests_owner")
-  @@index([dcc_status], map: "idx_flight_requests_status")
   @@index([fk_pilot_mission_id], map: "idx_flight_requests_pilot_mission")
+  @@index([dcc_status], map: "idx_flight_requests_status")
   @@schema("public")
 }
 
@@ -1896,6 +1897,7 @@ model pilot_mission {
 
   @@index([actual_start], map: "idx_pilot_mission_actual_start")
   @@index([scheduled_start], map: "idx_pilot_mission_date")
+  @@index([dflight_mission_id], map: "idx_pilot_mission_dflight_mission_id")
   @@index([fk_mission_planning_id], map: "idx_pilot_mission_fk_mission_planning_id")
   @@index([fk_pilot_user_id], map: "idx_pilot_mission_fk_pilot_user_id")
   @@index([fk_planning_id], map: "idx_pilot_mission_fk_planning_id")
@@ -1909,7 +1911,6 @@ model pilot_mission {
   @@index([status_name], map: "idx_pilot_mission_status_name")
   @@index([fk_tool_id], map: "idx_pilot_mission_tool")
   @@index([actual_start], map: "idx_pilot_mission_year", where: raw("(actual_start >= '2020-01-01 00:00:00'::timestamp without time zone)"))
-  @@index([dflight_mission_id], map: "idx_pilot_mission_dflight_mission_id")
   @@schema("public")
 }
 

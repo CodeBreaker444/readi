@@ -152,16 +152,22 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData, loading 
 
   return (
     <>
-      <div className={`hidden md:flex fixed top-0 left-1/2 -translate-x-1/2 h-[69px] items-center pointer-events-none select-none z-10 max-w-[calc(100vw-20rem)] lg:max-w-none overflow-hidden px-2`}>
+      <div className={`hidden md:flex fixed top-0 left-1/2 -translate-x-1/2 h-[69px] items-center gap-2 pointer-events-none select-none z-10 max-w-[calc(100vw-20rem)] lg:max-w-none overflow-hidden px-2`}>
         {loading ? (
           <Skeleton className={`h-5 w-24 md:w-36 rounded ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`} />
         ) : userData?.ownerName ? (
-          <span
-            className={`text-base md:text-xl tracking-wider uppercase font-bold truncate ${isDark ? 'text-slate-300' : 'text-slate-600'}`}
-            style={{ fontFamily: 'var(--font-bebas-neue)' }}
-          >
-            {userData.ownerName}
-          </span>
+          <>
+            {userData.ownerLogoUrl && (
+              <img
+                src={userData.ownerLogoUrl}
+                alt=""
+                className="h-6 w-6 md:h-7 md:w-7 shrink-0 rounded-sm object-contain"
+              />
+            )}
+            <span className={`text-sm md:text-base font-semibold tracking-tight truncate ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>
+              {userData.ownerName}
+            </span>
+          </>
         ) : null}
       </div>
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { LEAFLET_TILE_DARK, LEAFLET_TILE_LIGHT } from '@/lib/leaflet-tiles';
+import { LEAFLET_TILE_BASE_MAX_NATIVE_ZOOM, LEAFLET_TILE_DARK, LEAFLET_TILE_DARK_LABELS, LEAFLET_TILE_LIGHT, LEAFLET_TILE_LIGHT_LABELS } from '@/lib/leaflet-tiles';
 import { useEffect, useRef } from 'react';
 
 export interface FlightWaypoint {
@@ -90,7 +90,11 @@ export function FlightPathMap({ waypoints, height = '380px', isDark = true }: Pr
 
       L.tileLayer(
         isDark ? LEAFLET_TILE_DARK : LEAFLET_TILE_LIGHT,
-        { maxZoom: 19 },
+        { maxZoom: 19, maxNativeZoom: LEAFLET_TILE_BASE_MAX_NATIVE_ZOOM },
+      ).addTo(map);
+      L.tileLayer(
+        isDark ? LEAFLET_TILE_DARK_LABELS : LEAFLET_TILE_LIGHT_LABELS,
+        { maxZoom: 19, maxNativeZoom: LEAFLET_TILE_BASE_MAX_NATIVE_ZOOM },
       ).addTo(map);
 
       // Flight path polyline

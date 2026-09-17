@@ -10,8 +10,8 @@ import { cn } from '@/lib/utils'
 import { BadgeCheck } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { inputCls, labelCls, scCls, siCls, ReviewRow, SectionTitle, SelectPaginationFooter, usePagedItems } from './OperationModalHelpers'
-import { FlightMode, GenericOption, LucOption, OpType, PilotOption } from './OperationModalTypes'
+import { inputCls, labelCls, scCls, siCls, ReviewRow, SectionTitle, SelectPaginationFooter, SELECT_PAGE_SIZE, usePagedItems } from './OperationModalHelpers'
+import { FlightMode, GenericOption, LucOption, OpType, PilotOption, UspaceOption } from './OperationModalTypes'
 import { PilotQualificationsSheet } from './PilotQualificationsSheet'
 
 interface SummaryData {
@@ -31,6 +31,7 @@ interface SummaryData {
     lucLabel?: string
     pilotName?: string
     location: string
+    uspaceLabel?: string
 }
 
 interface Props {
@@ -40,11 +41,17 @@ interface Props {
     visualObserverIds?: string[]
     onVisualObserverChange?: (ids: string[]) => void
     loadingOptions?: boolean
+    uspaces?: UspaceOption[]
+    uspaceId?: string
+    onUspaceChange?: (id: string) => void
+    loadingUspaces?: boolean
+    dFlightEnabled?: boolean
+    uspaceError?: string
     summary: SummaryData
     isDark: boolean
 }
 
-export function OperationStepPilot({ pilots, pilotId, onPilotChange, visualObserverIds = [], onVisualObserverChange, loadingOptions = false, summary, isDark }: Props) {
+export function OperationStepPilot({ pilots, pilotId, onPilotChange, visualObserverIds = [], onVisualObserverChange, loadingOptions = false, uspaces = [], uspaceId = '', onUspaceChange, loadingUspaces = false, dFlightEnabled = false, uspaceError = '', summary, isDark }: Props) {
     const { t } = useTranslation()
     const [qualTarget, setQualTarget] = useState<{ id: number; name: string } | null>(null)
     const pilotsPaging = usePagedItems(pilots)
@@ -76,6 +83,9 @@ export function OperationStepPilot({ pilots, pilotId, onPilotChange, visualObser
                                     <SelectItem key={p.user_id} value={String(p.user_id)} className={siCls(isDark)}>
                                         {p.first_name} {p.last_name}
                                     </SelectItem>
+                                ))}
+                                {pilotsPaging.showPagination && Array.from({ length: SELECT_PAGE_SIZE - pilotsPaging.paged.length }).map((_, i) => (
+                                    <div key={`filler-${i}`} className="py-1.5 pr-8 pl-2 text-sm invisible" aria-hidden="true">&nbsp;</div>
                                 ))}
                                 {pilotsPaging.showPagination && (
                                     <SelectPaginationFooter
@@ -189,6 +199,37 @@ export function OperationStepPilot({ pilots, pilotId, onPilotChange, visualObser
                 )}
             </div>
 
+            {dFlightEnabled && (
+                <div className="max-w-xs">
+                    <Label className={labelCls(isDark)}>
+                        {t('operations.newOperation.pilot.uspaceLabel')} <span className="text-red-500">*</span>
+                    </Label>
+                    {loadingUspaces ? (
+                        <Skeleton className="h-9 w-full rounded-md" />
+                    ) : (
+                        <Select value={uspaceId} onValueChange={id => onUspaceChange?.(id)} disabled={uspaces.length === 0}>
+                            <SelectTrigger className={inputCls(isDark)}>
+                                <SelectValue placeholder={uspaces.length === 0
+                                    ? t('operations.newOperation.pilot.noUspaces')
+                                    : t('operations.newOperation.pilot.selectUspace')} />
+                            </SelectTrigger>
+                            <SelectContent className={scCls(isDark)} position="popper" align="start" sideOffset={4}>
+                                {uspaces.map(u => (
+                                    <SelectItem key={u.id} value={u.id} className={siCls(isDark)}>
+                                        {u.id +'-'+ u.name}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    )}
+                    {!loadingUspaces && uspaces.length === 0 && (
+                        <p className="mt-1.5 text-xs text-red-500">
+                            {uspaceError || t('operations.newOperation.pilot.noUspaces')}
+                        </p>
+                    )}
+                </div>
+            )}
+
             <div className={cn('rounded-lg border p-4 space-y-2 text-sm', isDark ? 'border-slate-600 bg-slate-700/30' : 'border-border bg-muted/20')}>
                 <p className={cn('text-xs font-semibold uppercase tracking-wide pb-2 border-b', isDark ? 'text-slate-400 border-slate-600' : 'text-muted-foreground')}>
                     {t('operations.newOperation.pilot.summaryTitle')}
@@ -206,6 +247,7 @@ export function OperationStepPilot({ pilots, pilotId, onPilotChange, visualObser
                 <ReviewRow label={t('operations.newOperation.pilot.summaryProcedure')} value={summary.lucLabel} isDark={isDark} />
                 {pilotId && <ReviewRow label={t('operations.newOperation.pilot.summaryPilot')} value={summary.pilotName} isDark={isDark} />}
                 {summary.location && <ReviewRow label={t('operations.newOperation.pilot.summaryLocation')} value={summary.location} isDark={isDark} />}
+                {summary.uspaceLabel && <ReviewRow label={t('operations.newOperation.pilot.summaryUspace')} value={summary.uspaceLabel} isDark={isDark} />}
             </div>
 
             <PilotQualificationsSheet

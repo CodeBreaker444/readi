@@ -2,7 +2,7 @@ import { Mission, MissionBoardData, MissionStatusCode, UpdateMissionStatusPayloa
 import { prisma } from '@/lib/prisma';
 import { autoAbortStaleMissions } from './auto-abort-service';
 import { getToolMaintenanceStatusBatch } from './maintenance-cycle-service';
-import { assertMissionEditable } from './mission-lock';
+import { assertMissionEditable, assertDFlightAuthorized } from './mission-lock';
 import { sendMissionStartedModuleEmail, sendMissionCompletedModuleEmail } from '../settings/module-email-notification-service';
 
 // Local timezone conversion function
@@ -119,6 +119,17 @@ export async function getMissionBoard(
   const todayStart = new Date(today.toISOString().split('T')[0] + 'T00:00:00.000Z');
   const todayEnd = new Date(today.toISOString().split('T')[0] + 'T23:59:59.999Z');
 
+  // PDRA missions need D-Flight to accept the flight authorization before
+  // they're actionable — keep them off the "Scheduled" column (and out of
+  // the pilot's daily view) until then, so nobody preps for a flight that
+  // isn't cleared yet. Only applies when the owner actually has D-Flight
+  // enabled; otherwise PDRA missions would never authorize and never show.
+  const owner = await prisma.owner.findUnique({
+    where: { owner_id: ownerId },
+    select: { d_flight_enabled: true },
+  });
+  const dflightGateActive = !!owner?.d_flight_enabled;
+
   const [scheduledData, inProgressData, doneData] = await Promise.all([
     prisma.pilot_mission.findMany({
       where: {
@@ -130,9 +141,19 @@ export async function getMissionBoard(
           }
         },
         ...(pilotFilter && { fk_pilot_user_id: pilotFilter }),
-        OR: [
-          { scheduled_start: null },
-          { scheduled_start: { gte: todayStart, lte: todayEnd } },
+        AND: [
+          {
+            OR: [
+              { scheduled_start: null },
+              { scheduled_start: { gte: todayStart, lte: todayEnd } },
+            ],
+          },
+          ...(dflightGateActive ? [{
+            OR: [
+              { NOT: { mission_metadata: { path: ['op_type'], equals: 'PDRA' } } },
+              { dflight_flight_authorisation_status: 'ACCEPTED' },
+            ],
+          }] : []),
         ],
       },
       orderBy: { scheduled_start: { sort: 'desc', nulls: 'first' } },
@@ -249,7 +270,9 @@ function transformMissionRow(row: MissionRow | null): Mission | null {
 
     return {
       mission_id: row.pilot_mission_id,
+      mission_code: row.mission_code ?? null,
       mission_name: row.mission_name ?? null,
+      op_type: (row.mission_metadata as any)?.op_type ?? null,
       planned_at: scheduledStart,
       official_start: actualStart,
       official_end: actualEnd,
@@ -305,13 +328,14 @@ export async function updateMissionStatus(
 ): Promise<{ code: number; message: string; check_daily_declaration?: string }> {
   const current = await prisma.pilot_mission.findUnique({
     where: { pilot_mission_id: payload.mission_id },
-    select: { status_name: true },
+    select: { status_name: true, dflight_mission_id: true, dflight_flight_authorisation_status: true },
   });
   assertMissionEditable(current?.status_name);
 
   let updateFields: Record<string, unknown>;
 
   if (payload.workflow_mission_status === '_START') {
+    assertDFlightAuthorized(current?.dflight_mission_id, current?.dflight_flight_authorisation_status);
     const statusId = await resolveOwnerStatusId(payload.owner_id, IN_PROGRESS_STATUS_CODE_ALIASES, 2);
     updateFields = { fk_mission_status_id: statusId, status_name: 'IN_PROGRESS', actual_start: new Date() };
   } else if (payload.workflow_mission_status === '_END') {

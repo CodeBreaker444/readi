@@ -56,7 +56,7 @@ async function syncStsDeclarations(componentId: number, ownerId: number) {
     }
     const tokenResponse = await getDFlightToken(tokenConfig, config.pfx_content ?? undefined, config.pfx_password ?? undefined);
 
-    const userInfo = await getDFlightUserInfo(config.base_url, tokenResponse.access_token, config.pfx_content ?? undefined, config.pfx_password ?? undefined);
+    const userInfo = await getDFlightUserInfo(config.base_url, tokenResponse.access_token, config.client_id, config.pfx_content ?? undefined, config.pfx_password ?? undefined);
     if (!userInfo.operatorRegistrationNumber) return;
 
     const declarations = await getDFlightDroneDeclarations(
@@ -64,6 +64,7 @@ async function syncStsDeclarations(componentId: number, ownerId: number) {
       tokenResponse.access_token,
       userInfo.operatorRegistrationNumber,
       component.drone_registration_code,
+      config.client_id,
       config.pfx_content ?? undefined,
       config.pfx_password ?? undefined,
     );

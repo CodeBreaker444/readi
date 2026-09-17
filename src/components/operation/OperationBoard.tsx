@@ -450,6 +450,16 @@ function MissionDetailSheet({ mission, isDark, onClose, onOpenLuc, onUpdateMaint
                                 <span className="font-mono text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
                                     #{mission.mission_id}
                                 </span>
+                                {mission.mission_code && (
+                                    <span className="font-mono text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
+                                        {mission.mission_code}
+                                    </span>
+                                )}
+                                {mission.op_type && (
+                                    <Badge variant="outline" className={cn("text-xs", isDark ? "bg-fuchsia-500/10 text-fuchsia-400 border-fuchsia-500/30" : "bg-fuchsia-50 text-fuchsia-700 border-fuchsia-200")}>
+                                        {mission.op_type}
+                                    </Badge>
+                                )}
                                 <Badge variant="outline" className={cn("text-xs", isDark ? statusCfg.darkCls : statusCfg.cls)}>
                                     {statusCfg.label}
                                 </Badge>

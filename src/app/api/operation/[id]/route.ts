@@ -41,6 +41,7 @@ const updateOperationSchema = z.object({
   flight_mode: z.enum(['RC', 'DOCK']).nullable().optional(),
   op_type: z.enum(['OPEN', 'PDRA', 'STS-01', 'STS-02']).nullable().optional(),
   mission_group_label: z.string().nullable().optional(),
+  uspace_id: z.string().nullable().optional(),
 });
 
 interface Params {
@@ -121,6 +122,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
     if (msg === 'OPERATION_NOT_FOUND') return notFound(E.NF004);
     const pgCode: string | undefined = err?.code;
     if (pgCode === 'MISSION_LOCKED') return apiError(E.BL003, 422);
+    if (pgCode === 'DFLIGHT_NOT_AUTHORIZED') return NextResponse.json({ code: 0, error: msg, errorCode: pgCode }, { status: 422 });
     if (pgCode === '23505') return apiError({ code: 'DB005', category: 'Database', message: 'Mission code is already in use by another operation', detail: 'Unique constraint violation on pilot_mission.mission_code during UPDATE.' }, 409);
     if (pgCode === '23503') return dbError(E.DB003, err);
     return internalError(E.SV001, err);

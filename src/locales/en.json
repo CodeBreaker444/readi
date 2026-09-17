@@ -1472,7 +1472,8 @@
     "actions": {
       "view": "View Details",
       "edit": "Edit Mission",
-      "delete": "Delete Mission"
+      "delete": "Delete Mission",
+      "submitDFlightAuth": "Submit for D-Flight authorization"
     },
     "declaration": {
       "title": "Daily Pilot Declaration",
@@ -1584,7 +1585,10 @@
         "autofillWarning": "No eligible missions. Autofill requires Completed missions with a pilot assigned.",
         "autofillSuccess": "Autofilled {{count}} mission(s)",
         "autofillSkipped": "{{count}} skipped (not Completed or no pilot).",
-        "autofillError": "Failed to autofill tasks"
+        "autofillError": "Failed to autofill tasks",
+        "dflightAuthSuccess": "D-Flight authorization submitted for {{missionCode}}",
+        "dflightAuthSkipped": "D-Flight authorization was skipped for this mission",
+        "dflightAuthError": "D-Flight authorization failed for {{missionCode}}"
       },
       "procedureBadge": {
         "noLuc": "No LUC",
@@ -2195,12 +2199,16 @@
         "summaryProcedure": "Procedure",
         "summaryPilot": "Pilot",
         "summaryLocation": "Location",
+        "summaryUspace": "U-space",
         "visualObserversLabel": "Visual Observers",
         "visualObserversOptional": "(optional)",
         "visualObserversDisabled": "Select a pilot first to add visual observers",
         "primaryPilotNote": "PIC — already assigned",
         "noPilots": "No pilots available",
-        "viewQualifications": "Qualifications"
+        "viewQualifications": "Qualifications",
+        "uspaceLabel": "U-space",
+        "selectUspace": "Select u-space…",
+        "noUspaces": "No u-spaces available — check your D-Flight configuration"
       },
       "pilotQualifications": {
         "title": "Pilot Qualifications",
@@ -2232,6 +2240,7 @@
         "createSuccess": "Operation created successfully",
         "createRecurrentSuccess": "{{count}} recurrent missions created successfully",
         "createError": "Failed to create operation",
+        "dflightAuthError": "D-Flight authorization failed for {{missionCode}}",
         "postFlightSuccess": "Post-flight data saved successfully",
         "postFlightError": "Failed to save post-flight data"
       },

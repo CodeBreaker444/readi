@@ -1,5 +1,6 @@
 'use client';
 
+import { trimImagePadding } from '@/lib/image-trim';
 import { formatDateInTz, formatTimeInTz } from '@/lib/utils';
 
 export interface QtbMissionRow {
@@ -35,6 +36,15 @@ export interface QtbReportData {
   pastFlightCount: number;
   totalCount: number;
   pages: QtbPage[];
+  companyLogoDataUrl?: string | null;
+}
+
+function detectImageFormat(dataUrl: string): string {
+  const match = /^data:image\/(\w+);base64,/.exec(dataUrl);
+  const ext = (match?.[1] ?? 'png').toLowerCase();
+  if (ext === 'jpg' || ext === 'jpeg') return 'JPEG';
+  if (ext === 'webp') return 'WEBP';
+  return 'PNG';
 }
 
 function triggerDownload(blob: Blob, name: string) {
@@ -140,6 +150,11 @@ export async function generateQtbReportPdf(report: QtbReportData, timezone: stri
   const marginL = 20;
   const marginR = 20;
 
+  const trimmedLogo = report.companyLogoDataUrl
+    ? await trimImagePadding(report.companyLogoDataUrl).catch(() => null)
+    : null;
+  const logoDataUrl = trimmedLogo?.dataUrl ?? report.companyLogoDataUrl ?? null;
+
   const title = resolveQtbTitle(language);
   const droneSerial = report.drone?.serial_number || report.drone?.uas_serial_number || null;
   const modelLine = `${report.tool.model_name ?? '<UAS Model>'}   S/N   ${droneSerial ?? '_______________________'}`;
@@ -170,7 +185,7 @@ export async function generateQtbReportPdf(report: QtbReportData, timezone: stri
     const body: any[][] = [
       // Row 0: logo (blank box) | title | form code
       [
-        { content: '', rowSpan: 2, colSpan: 2 },
+        { content: '', rowSpan: 2, colSpan: 2, styles: { minCellHeight: 18 } },
         { content: title, rowSpan: 2, colSpan: 9, styles: { halign: 'center', valign: 'middle', fontStyle: 'bold', fontSize: 12 } },
         { content: 'TS-UFM-MOD-11', colSpan: 2, styles: { halign: 'center', fontSize: 6.5 } },
       ],
@@ -252,6 +267,35 @@ export async function generateQtbReportPdf(report: QtbReportData, timezone: stri
       },
       columnStyles,
       margin: { left: marginL, right: marginR, top: 15, bottom: 16 },
+      didDrawCell: (data) => {
+        if (!logoDataUrl) return;
+        if (data.row.index !== 0 || data.column.index !== 0) return;
+        try {
+          const pad = 1;
+          const boxW = data.cell.width - pad * 2;
+          const boxH = data.cell.height - pad * 2;
+
+          // Scale the (padding-trimmed) logo to fit inside the box without distorting its
+          // aspect ratio (the reserved cell is a fixed w:h that rarely matches the logo's own ratio).
+          const { width: imgW, height: imgH } = doc.getImageProperties(logoDataUrl);
+          const scale = Math.min(boxW / imgW, boxH / imgH);
+          const drawW = imgW * scale;
+          const drawH = imgH * scale;
+          const x = data.cell.x + pad + (boxW - drawW) / 2;
+          const y = data.cell.y + pad + (boxH - drawH) / 2;
+
+          doc.addImage(
+            logoDataUrl,
+            detectImageFormat(logoDataUrl),
+            x,
+            y,
+            drawW,
+            drawH,
+          );
+        } catch {
+          // Malformed/unsupported image — skip rather than fail the whole report
+        }
+      },
     });
 
     // ── Footer — the only ReAdi branding on the page ──────────────────────

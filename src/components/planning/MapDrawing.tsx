@@ -1,5 +1,5 @@
 'use client';
-import { LEAFLET_TILE_ATTRIBUTION, LEAFLET_TILE_DARK, LEAFLET_TILE_LIGHT, LEAFLET_TILE_MAX_ZOOM } from '@/lib/leaflet-tiles';
+import { LEAFLET_TILE_ATTRIBUTION, LEAFLET_TILE_BASE_MAX_NATIVE_ZOOM, LEAFLET_TILE_DARK, LEAFLET_TILE_DARK_LABELS, LEAFLET_TILE_LIGHT, LEAFLET_TILE_LIGHT_LABELS, LEAFLET_TILE_MAX_ZOOM } from '@/lib/leaflet-tiles';
 import React, { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
 
 interface DrawnArea {
@@ -70,6 +70,12 @@ const MapDrawing = forwardRef<MapDrawingHandle, MapDrawingProps>(({ onAreasChang
     L.tileLayer(isDark ? LEAFLET_TILE_DARK : LEAFLET_TILE_LIGHT, {
       attribution: LEAFLET_TILE_ATTRIBUTION,
       maxZoom: LEAFLET_TILE_MAX_ZOOM,
+      maxNativeZoom: LEAFLET_TILE_BASE_MAX_NATIVE_ZOOM,
+    }).addTo(map);
+
+    L.tileLayer(isDark ? LEAFLET_TILE_DARK_LABELS : LEAFLET_TILE_LIGHT_LABELS, {
+      maxZoom: LEAFLET_TILE_MAX_ZOOM,
+      maxNativeZoom: LEAFLET_TILE_BASE_MAX_NATIVE_ZOOM,
     }).addTo(map);
 
     const drawnItems = new L.FeatureGroup();

@@ -1,5 +1,5 @@
 import { env } from '@/backend/config/env';
-import { fetchFromOpenAIP, filterByBounds, ITALY_BOUNDS } from '@/lib/airspace-classification';
+import { COVERAGE_BOUNDS, fetchFromOpenAIP, filterByBounds } from '@/lib/airspace-classification';
 import { requireAuth } from '@/lib/auth/api-auth';
 import { unstable_cache } from 'next/cache';
 import { NextRequest, NextResponse } from 'next/server';
@@ -16,15 +16,15 @@ export async function GET(req: NextRequest) {
   if (error) return error;
 
   const { searchParams } = new URL(req.url);
-  const south = parseFloat(searchParams.get('south') || String(ITALY_BOUNDS.latMin));
-  const west  = parseFloat(searchParams.get('west')  || String(ITALY_BOUNDS.lonMin));
-  const north = parseFloat(searchParams.get('north') || String(ITALY_BOUNDS.latMax));
-  const east  = parseFloat(searchParams.get('east')  || String(ITALY_BOUNDS.lonMax));
+  const south = parseFloat(searchParams.get('south') || String(COVERAGE_BOUNDS.latMin));
+  const west  = parseFloat(searchParams.get('west')  || String(COVERAGE_BOUNDS.lonMin));
+  const north = parseFloat(searchParams.get('north') || String(COVERAGE_BOUNDS.latMax));
+  const east  = parseFloat(searchParams.get('east')  || String(COVERAGE_BOUNDS.lonMax));
 
-  const qS = Math.max(south, ITALY_BOUNDS.latMin);
-  const qW = Math.max(west,  ITALY_BOUNDS.lonMin);
-  const qN = Math.min(north, ITALY_BOUNDS.latMax);
-  const qE = Math.min(east,  ITALY_BOUNDS.lonMax);
+  const qS = Math.max(south, COVERAGE_BOUNDS.latMin);
+  const qW = Math.max(west,  COVERAGE_BOUNDS.lonMin);
+  const qN = Math.min(north, COVERAGE_BOUNDS.latMax);
+  const qE = Math.min(east,  COVERAGE_BOUNDS.lonMax);
 
   if (qS >= qN || qW >= qE) {
     return NextResponse.json({ airspace: [], timestamp: new Date().toISOString() }, {

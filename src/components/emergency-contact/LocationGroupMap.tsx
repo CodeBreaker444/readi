@@ -1,7 +1,14 @@
 'use client'
 
 import { LocationGroupLocation } from '@/config/types/erp'
-import { LEAFLET_TILE_ATTRIBUTION, LEAFLET_TILE_DARK, LEAFLET_TILE_LIGHT } from '@/lib/leaflet-tiles'
+import {
+  LEAFLET_TILE_ATTRIBUTION,
+  LEAFLET_TILE_BASE_MAX_NATIVE_ZOOM,
+  LEAFLET_TILE_DARK,
+  LEAFLET_TILE_DARK_LABELS,
+  LEAFLET_TILE_LIGHT,
+  LEAFLET_TILE_LIGHT_LABELS,
+} from '@/lib/leaflet-tiles'
 import { cn } from '@/lib/utils'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
@@ -35,6 +42,7 @@ export function LocationGroupMap({ locations, isDark, height = 320 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef       = useRef<L.Map | null>(null)
   const tileRef      = useRef<L.TileLayer | null>(null)
+  const labelsRef    = useRef<L.TileLayer | null>(null)
   const markersRef   = useRef<L.Marker[]>([])
 
   useEffect(() => {
@@ -42,22 +50,32 @@ export function LocationGroupMap({ locations, isDark, height = 320 }: Props) {
     const map = L.map(containerRef.current, { center: [20, 0], zoom: 2, zoomControl: false })
     tileRef.current = L.tileLayer(isDark ? LEAFLET_TILE_DARK : LEAFLET_TILE_LIGHT, {
       attribution: LEAFLET_TILE_ATTRIBUTION,
+      maxNativeZoom: LEAFLET_TILE_BASE_MAX_NATIVE_ZOOM,
+    }).addTo(map)
+    labelsRef.current = L.tileLayer(isDark ? LEAFLET_TILE_DARK_LABELS : LEAFLET_TILE_LIGHT_LABELS, {
+      maxNativeZoom: LEAFLET_TILE_BASE_MAX_NATIVE_ZOOM,
     }).addTo(map)
     mapRef.current = map
     return () => {
       map.remove()
       mapRef.current = null
       tileRef.current = null
+      labelsRef.current = null
       markersRef.current = []
     }
-  }, []) 
+  }, [])
 
   // Swap tile layer on theme change
   useEffect(() => {
-    if (!mapRef.current || !tileRef.current) return
+    if (!mapRef.current || !tileRef.current || !labelsRef.current) return
     tileRef.current.remove()
+    labelsRef.current.remove()
     tileRef.current = L.tileLayer(isDark ? LEAFLET_TILE_DARK : LEAFLET_TILE_LIGHT, {
       attribution: LEAFLET_TILE_ATTRIBUTION,
+      maxNativeZoom: LEAFLET_TILE_BASE_MAX_NATIVE_ZOOM,
+    }).addTo(mapRef.current)
+    labelsRef.current = L.tileLayer(isDark ? LEAFLET_TILE_DARK_LABELS : LEAFLET_TILE_LIGHT_LABELS, {
+      maxNativeZoom: LEAFLET_TILE_BASE_MAX_NATIVE_ZOOM,
     }).addTo(mapRef.current)
   }, [isDark])
 

@@ -18,6 +18,7 @@ import { getOperationColumns, OperationTableMeta } from '@/components/tables/Ope
 import { useTimezone } from '@/components/TimezoneProvider';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { useTheme } from '@/components/useTheme';
+import { formatDFlightErrorReason } from '@/lib/dflight-toast';
 import { generateMissionReport } from '@/lib/generateMissionReport';
 import {
   getCoreRowModel,
@@ -72,6 +73,9 @@ export interface Operation {
   op_type?: string | null;
   mission_group_label?: string | null;
   is_recurrent?: boolean | null;
+  uspace_id?: string | null;
+  dflight_mission_id?: string | null;
+  dflight_flight_authorisation_status?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -113,6 +117,7 @@ export default function OperationsPage() {
   const [deleteTarget, setDeleteTarget] = useState<Operation | null>(null);
   const [attachTarget, setAttachTarget] = useState<Operation | null>(null);
   const [detailTarget, setDetailTarget] = useState<Operation | null>(null);
+  const [submittingDFlightAuthId, setSubmittingDFlightAuthId] = useState<number | null>(null);
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [batchDeleting, setBatchDeleting] = useState(false);
   const [batchUpdating, setBatchUpdating] = useState(false);
@@ -128,6 +133,13 @@ export default function OperationsPage() {
   const [clients, setClients] = useState<{ client_id: number; client_name: string }[]>([]);
   const [groupLabels, setGroupLabels] = useState<string[]>([]);
   const [optionsLoaded, setOptionsLoaded] = useState(false);
+  const [dFlightEnabled, setDFlightEnabled] = useState(false);
+
+  useEffect(() => {
+    axios.get('/api/operation/dflight/status')
+      .then((res) => setDFlightEnabled(!!res.data.enabled))
+      .catch(() => setDFlightEnabled(false));
+  }, []);
 
   useEffect(() => {
     const fetchOperations = async () => {
@@ -183,8 +195,39 @@ const tableMeta = useMemo<OperationTableMeta>(
         toast.error('Failed to generate report.', { id: toastId });
       }
     },
+    onSubmitDFlightAuth: async (op) => {
+      setSubmittingDFlightAuthId(op.pilot_mission_id);
+      try {
+        const res = await axios.post(`/api/operation/${op.pilot_mission_id}/dflight/authorize`);
+        const { create, operation } = res.data;
+        if (operation) {
+          setOperations((prev) =>
+            prev.map((o) => (o.pilot_mission_id === op.pilot_mission_id ? { ...o, ...operation } : o))
+          );
+        }
+        if (create?.outcome === 'success') {
+          toast.success(t('operations.table.toast.dflightAuthSuccess', { missionCode: op.mission_code }));
+        } else if (create?.outcome === 'skipped') {
+          toast.warning(create.message ?? t('operations.table.toast.dflightAuthSkipped'));
+        } else {
+          toast.error(t('operations.table.toast.dflightAuthError', { missionCode: op.mission_code }), {
+            description: formatDFlightErrorReason(create?.message ?? ''),
+            duration: 10000,
+          });
+        }
+      } catch (e: any) {
+        toast.error(t('operations.table.toast.dflightAuthError', { missionCode: op.mission_code }), {
+          description: e.response?.data?.error ?? e.message,
+          duration: 10000,
+        });
+      } finally {
+        setSubmittingDFlightAuthId(null);
+      }
+    },
+    submittingDFlightAuthId,
+    dFlightEnabled,
   }),
-  [timezone]
+  [timezone, t, submittingDFlightAuthId, dFlightEnabled]
 );
 
 const table = useReactTable({
