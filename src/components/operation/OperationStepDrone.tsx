@@ -130,7 +130,7 @@ export function OperationStepDrone({
                                         : t('operations.newOperation.drone.selectDrone')
                         } />
                     </SelectTrigger>
-                    <SelectContent className={scCls(isDark)}>
+                    <SelectContent className={scCls(isDark)} position="popper" align="start" sideOffset={4}>
                         {pagedDrones.map(d => {
                             const snMismatch = !!logSerialNumber && !serialInList(d.drone_serial_numbers, logSerialNumber)
                             return (
@@ -171,6 +171,9 @@ export function OperationStepDrone({
                             </SelectItem>
                             )
                         })}
+                        {drones.length > DRONES_PAGE_SIZE && Array.from({ length: DRONES_PAGE_SIZE - pagedDrones.length }).map((_, i) => (
+                            <div key={`filler-${i}`} className="py-1.5 pr-8 pl-2 text-sm invisible" aria-hidden="true">&nbsp;</div>
+                        ))}
                         {drones.length > DRONES_PAGE_SIZE && (
                             <div
                                 className={cn(

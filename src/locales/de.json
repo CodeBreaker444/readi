@@ -1469,7 +1469,8 @@
     "actions": {
       "view": "Details anzeigen",
       "edit": "Mission bearbeiten",
-      "delete": "Mission löschen"
+      "delete": "Mission löschen",
+      "submitDFlightAuth": "Für D-Flight-Autorisierung einreichen"
     },
     "declaration": {
       "title": "Tägliche Pilotenerklärung",
@@ -1580,7 +1581,10 @@
         "autofillWarning": "Keine geeigneten Missionen. Autofüllen erfordert abgeschlossene Missionen mit zugewiesenem Piloten.",
         "autofillSuccess": "{{count}} Mission(en) automatisch ausgefüllt",
         "autofillSkipped": "{{count}} übersprungen (nicht abgeschlossen oder kein Pilot).",
-        "autofillError": "Aufgaben konnten nicht automatisch ausgefüllt werden"
+        "autofillError": "Aufgaben konnten nicht automatisch ausgefüllt werden",
+        "dflightAuthSuccess": "D-Flight-Autorisierung für {{missionCode}} eingereicht",
+        "dflightAuthSkipped": "D-Flight-Autorisierung wurde für diese Mission übersprungen",
+        "dflightAuthError": "D-Flight-Autorisierung für {{missionCode}} fehlgeschlagen"
       },
       "procedureBadge": {
         "noLuc": "Kein LUC",
@@ -2186,12 +2190,16 @@
         "summaryProcedure": "Verfahren",
         "summaryPilot": "Pilot",
         "summaryLocation": "Standort",
+        "summaryUspace": "U-Space",
         "visualObserversLabel": "Sichtbeobachter",
         "visualObserversOptional": "(optional)",
         "visualObserversDisabled": "Zuerst einen Piloten auswählen",
         "primaryPilotNote": "PIC — bereits zugewiesen",
         "noPilots": "Keine Piloten verfügbar",
-        "viewQualifications": "Qualifikationen"
+        "viewQualifications": "Qualifikationen",
+        "uspaceLabel": "U-Space",
+        "selectUspace": "U-Space auswählen…",
+        "noUspaces": "Kein U-Space verfügbar — D-Flight-Konfiguration prüfen"
       },
       "pilotQualifications": {
         "title": "Pilotenqualifikationen",
@@ -2222,6 +2230,7 @@
         "updateError": "Vorgang konnte nicht aktualisiert werden",
         "createSuccess": "Vorgang erfolgreich erstellt",
         "createError": "Vorgang konnte nicht erstellt werden",
+        "dflightAuthError": "D-Flight-Autorisierung für {{missionCode}} fehlgeschlagen",
         "postFlightSuccess": "Nach-Flug-Daten erfolgreich gespeichert",
         "postFlightError": "Nach-Flug-Daten konnten nicht gespeichert werden"
       },

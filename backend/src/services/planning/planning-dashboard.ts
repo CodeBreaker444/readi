@@ -4,6 +4,7 @@ import { DroneTool, FileType, MissionTemplate, PilotUser, PlanningLogbookRow, Pl
 import { ProcedureSteps } from '@/config/types/lcuProcedures';
 import { deleteFileFromS3, getPresignedDownloadUrl } from '@/lib/s3Client';
 import { logEvent } from '@/backend/services/auditLog/audit-log';
+import { polygonToWaypoints } from '@/backend/utils/planning-waypoints';
 
 export type UpdatePlanning = {
   planning_id: number;
@@ -471,6 +472,13 @@ export async function addMissionPlanningLogbook(params: {
   mission_planning_s3_key: string;
   mission_planning_s3_url: string;
 }, userName?: string, userEmail?: string, userRole?: string) {
+
+  const evaluation = await prisma.evaluation.findUnique({
+    where: { evaluation_id: params.fk_evaluation_id },
+    select: { evaluation_metadata: true },
+  });
+  const waypoints = polygonToWaypoints((evaluation?.evaluation_metadata as any)?.polygon);
+
   const data = await prisma.planning_logbook.create({
     data: {
       fk_planning_id: params.fk_planning_id,
@@ -489,6 +497,7 @@ export async function addMissionPlanningLogbook(params: {
       mission_planning_folder: params.mission_planning_folder,
       mission_planning_s3_key: params.mission_planning_s3_key,
       mission_planning_s3_url: params.mission_planning_s3_url,
+      waypoints: (waypoints ?? undefined) as any,
     },
     select: { mission_planning_id: true },
   });

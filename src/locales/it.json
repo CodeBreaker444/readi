@@ -1471,7 +1471,8 @@
     "actions": {
       "view": "Visualizza dettagli",
       "edit": "Modifica missione",
-      "delete": "Elimina missione"
+      "delete": "Elimina missione",
+      "submitDFlightAuth": "Invia per autorizzazione D-Flight"
     },
     "declaration": {
       "title": "Dichiarazione Giornaliera Pilota",
@@ -1582,7 +1583,10 @@
         "autofillWarning": "Nessuna missione idonea. La compilazione automatica richiede missioni completate con un pilota assegnato.",
         "autofillSuccess": "{{count}} missione/i compilata/e automaticamente",
         "autofillSkipped": "{{count}} saltato/i (non completato/i o senza pilota).",
-        "autofillError": "Compilazione automatica delle attività fallita"
+        "autofillError": "Compilazione automatica delle attività fallita",
+        "dflightAuthSuccess": "Autorizzazione D-Flight inviata per {{missionCode}}",
+        "dflightAuthSkipped": "L'autorizzazione D-Flight è stata saltata per questa missione",
+        "dflightAuthError": "Autorizzazione D-Flight non riuscita per {{missionCode}}"
       },
       "procedureBadge": {
         "noLuc": "Nessun LUC",
@@ -2190,12 +2194,16 @@
         "summaryProcedure": "Procedura",
         "summaryPilot": "Pilota",
         "summaryLocation": "Posizione",
+        "summaryUspace": "U-space",
         "visualObserversLabel": "Osservatori Visivi",
         "visualObserversOptional": "(opzionale)",
         "visualObserversDisabled": "Seleziona prima un pilota",
         "primaryPilotNote": "PIC — già assegnato",
         "noPilots": "Nessun pilota disponibile",
-        "viewQualifications": "Qualifiche"
+        "viewQualifications": "Qualifiche",
+        "uspaceLabel": "U-space",
+        "selectUspace": "Seleziona u-space…",
+        "noUspaces": "Nessun u-space disponibile — verifica la configurazione D-Flight"
       },
       "pilotQualifications": {
         "title": "Qualifiche del Pilota",
@@ -2226,6 +2234,7 @@
         "updateError": "Impossibile aggiornare l'operazione",
         "createSuccess": "Operazione creata con successo",
         "createError": "Impossibile creare l'operazione",
+        "dflightAuthError": "Autorizzazione D-Flight non riuscita per {{missionCode}}",
         "postFlightSuccess": "Dati post-volo salvati con successo",
         "postFlightError": "Impossibile salvare i dati post-volo"
       },

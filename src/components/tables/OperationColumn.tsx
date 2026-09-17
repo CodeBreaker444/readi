@@ -42,6 +42,8 @@ export interface OperationTableMeta {
   onDelete: (op: Operation) => void;
   onViewDetails: (op: Operation) => void;
   onDownloadReport: (op: Operation) => void;
+  onSubmitDFlightAuth: (op: Operation) => void;
+  submittingDFlightAuthId?: number | null;
 }
 
 const STATUS_CONFIG: Record<string, { label: string; light: string; dark: string; icon: React.ReactNode }> = {
@@ -307,6 +309,11 @@ export const getOperationColumns = (t: TFunction, isDark = false, timezone = 'Eu
       const op = row.original;
       const isCompleted = op.status_name === 'COMPLETED';
       const isAborted = op.status_name === 'ABORTED';
+      const isCancelled = op.status_name === 'CANCELLED';
+      const needsDFlightAuth = op.op_type === 'PDRA'
+        && !isAborted && !isCancelled
+        && op.dflight_flight_authorisation_status !== 'ACCEPTED';
+      const submittingAuth = meta.submittingDFlightAuthId === op.pilot_mission_id;
       return (
         <div className="flex items-center gap-1">
           <Tooltip>
@@ -317,6 +324,24 @@ export const getOperationColumns = (t: TFunction, isDark = false, timezone = 'Eu
             </TooltipTrigger>
             <TooltipContent>{t('operations.actions.view')}</TooltipContent>
           </Tooltip>
+          {needsDFlightAuth && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-12 w-12"
+                  disabled={submittingAuth}
+                  onClick={(e) => { e.stopPropagation(); meta.onSubmitDFlightAuth(op); }}
+                >
+                  {submittingAuth
+                    ? <Loader2 className="h-4 w-4 animate-spin" />
+                    : <img src="/dflight_logo.png" alt="" className="h-7 w-7 object-contain" />}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>{t('operations.actions.submitDFlightAuth')}</TooltipContent>
+            </Tooltip>
+          )}
           <FeatureGate feature="operation_mission_table" require="edit">
             <Tooltip>
               <TooltipTrigger asChild>

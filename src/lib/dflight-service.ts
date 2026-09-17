@@ -517,6 +517,66 @@ export async function getDFlightManufacturer(
   return { id: manufacturerId, name: name ?? null };
 }
 
+export interface DFlightUspaceResult {
+  id: string;
+  name: string | null;
+}
+
+export async function getDFlightUspaceList(
+  baseUrl:       string,
+  accessToken:   string,
+  ussIdentifier: string,
+  clientId:      string,
+  pfxContent?:    string,
+  pfxPassword?:   string,
+): Promise<DFlightUspaceResult[]> {
+  const safeBaseUrl = baseUrl.startsWith('http') ? baseUrl : `https://${baseUrl}`;
+
+  const params = new URLSearchParams({ ussIdentifier });
+
+  const res = await dFetch(
+    dflightUrl(safeBaseUrl, clientId, `geo-awareness/uss/api/retrieve-uspace-list?${params.toString()}`),
+    {
+      method:  'GET',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        Accept:        'application/json',
+      },
+    },
+    pfxContent,
+    pfxPassword,
+    safeBaseUrl,
+  );
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`D-Flight uspace list request failed (${res.status}): ${text}`);
+  }
+
+  const json = (await res.json()) as unknown;
+
+  const records = Array.isArray(json)
+    ? json
+    : Array.isArray((json as any)?.UsaList)
+      ? (json as any).UsaList
+      : Array.isArray((json as any)?.data)
+        ? (json as any).data
+        : [];
+
+  return records
+    .map((record: unknown) => {
+      const r = record as Record<string, unknown>;
+      const u = (r['uspace_data'] ?? r) as Record<string, unknown>;
+      const id = (u['identifier'] ?? u['id'] ?? u['uspaceId'] ?? u['uspace_id'] ?? u['code']) as string | number | undefined;
+      const name = (u['name'] ?? u['uspaceName'] ?? u['uspace_name'] ?? u['message'] ?? u['description']) as string | undefined;
+      return {
+        id: id != null ? String(id) : '',
+        name: name ?? null,
+      };
+    })
+    .filter((u: DFlightUspaceResult) => u.id !== '');
+}
+
 export interface DFlightUserInfo {
   operatorRegistrationNumber: string | null;
   easaOperatorId: string | null;
@@ -552,7 +612,7 @@ export async function getDFlightUserInfo(
     throw new Error(`D-Flight userinfo request failed (${res.status})`);
   }
   const json = (await res.json()) as Record<string, unknown>;
-  console.log('userinfo dflight:', JSON.stringify(json, null, 2));
+  // console.log('userinfo dflight:', JSON.stringify(json, null, 2));
   const userData = json['userData'] as Record<string, unknown> | undefined;
   return {
     operatorRegistrationNumber: (userData?.['OperatorRegistrationNumber'] as string | undefined) ?? null,

@@ -43,6 +43,7 @@ const createOperationSchema = z.object({
   fk_tool_id: z.number().int().positive().nullable().optional(),
   fk_client_id: z.number().int().positive().nullable().optional(),
   fk_planning_id: z.number().int().positive().nullable().optional(),
+  fk_mission_planning_id: z.number().int().positive().nullable().optional(),
   fk_mission_type_id: z.number().int().positive().nullable().optional(),
   fk_mission_category_id: z.number().int().positive().nullable().optional(),
   fk_luc_procedure_id: z.number().int().positive(),
@@ -55,6 +56,7 @@ const createOperationSchema = z.object({
   is_recurrent: z.boolean().optional(),
   recurrent_days_of_week: z.array(z.number().int().min(0).max(6)).nullable().optional(),
   recurrent_end_date: z.string().nullable().optional(),
+  uspace_id: z.string().nullable().optional(),
 });
 
 export async function GET(req: NextRequest) {
@@ -159,10 +161,17 @@ export async function POST(req: NextRequest) {
 
     // D-Flight authorization + flytrelay watch registration — no-op unless the
     // owner has D-Flight enabled; never blocks mission creation on failure.
+    // Only PDRA missions actually attempt authorization (OPEN/STS-01/STS-02
+    // have no trajectory data to submit and are skipped non-fatally further
+    // down the chain), so only surface failures to the pilot for PDRA.
+    const dflightErrors: Array<{ missionCode: string; message: string }> = [];
     for (const op of allOperations) {
       const { create, watch } = await authorizeMissionWithDFlight(op.pilot_mission_id, ownerId);
       if (create.outcome === 'error') {
         console.warn('[POST /api/operation] D-Flight authorization failed (non-fatal):', create.message);
+        if (validated.op_type === 'PDRA') {
+          dflightErrors.push({ missionCode: op.mission_code, message: create.message });
+        }
       }
       if (watch?.outcome === 'error') {
         console.warn('[POST /api/operation] flytrelay watch registration failed (non-fatal):', watch.message);
@@ -203,11 +212,12 @@ export async function POST(req: NextRequest) {
       ownerId,
     });
     
-    return NextResponse.json({ 
-      success: true, 
-      ...operation, 
+    return NextResponse.json({
+      success: true,
+      ...operation,
       dcc,
       created_missions: allOperations.length > 1 ? allOperations : undefined,
+      dflight_errors: dflightErrors.length > 0 ? dflightErrors : undefined,
     }, { status: 201 });
   } catch (err) {
     if (err instanceof ZodError) {

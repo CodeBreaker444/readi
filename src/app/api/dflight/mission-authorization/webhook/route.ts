@@ -5,7 +5,10 @@ import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
-const ALERT_WORTHY_STATUSES = ['WITHDRAWN', 'REJECTED', 'CONFLICTED'];
+// Defensive set — D-Flight/flytrelay's exact abort vocabulary isn't
+// documented, so match on any of the common variants rather than one string.
+const ABORT_STATUSES = ['ABORT', 'ABORTED', 'ABORTING'];
+const ALERT_WORTHY_STATUSES = ['WITHDRAWN', 'REJECTED', 'CONFLICTED', ...ABORT_STATUSES];
 
 const WebhookSchema = z.object({
   readiMissionId: z.number().int().positive(),
@@ -66,18 +69,32 @@ export async function POST(req: NextRequest) {
       },
     });
 
+    const missionStatusUpper = d.mission_status.toUpperCase();
+    const authStatusUpper = d.flight_authorisation_status?.toUpperCase();
+    const isAbort = ABORT_STATUSES.includes(missionStatusUpper) || (authStatusUpper ? ABORT_STATUSES.includes(authStatusUpper) : false);
+    const isAlertWorthy = ALERT_WORTHY_STATUSES.includes(missionStatusUpper) || (authStatusUpper ? ALERT_WORTHY_STATUSES.includes(authStatusUpper) : false);
     const missionInFlight = !!mission.actual_start && !mission.actual_end;
-    const isAlertWorthy =
-      ALERT_WORTHY_STATUSES.includes(d.mission_status) ||
-      (d.flight_authorisation_status ? ALERT_WORTHY_STATUSES.includes(d.flight_authorisation_status) : false);
 
-    if (missionInFlight && isAlertWorthy && mission.fk_pilot_user_id) {
+    // An abort is always worth a notification — landing instructions if
+    // already airborne, a hold instruction otherwise. Other D-Flight status
+    // changes (withdrawn/rejected/conflicted) only matter once a mission is
+    // actually in the air.
+    if ((isAbort || (isAlertWorthy && missionInFlight)) && mission.fk_pilot_user_id) {
+      const title = isAbort
+        ? (missionInFlight ? 'D-Flight has aborted this mission — land immediately' : 'D-Flight has aborted this mission')
+        : 'D-Flight has withdrawn this mission\'s authorization';
+      const message = isAbort
+        ? (missionInFlight
+            ? `Mission ${mission.mission_code ?? d.readiMissionId} was aborted by D-Flight while in flight. Land as soon as safely possible.`
+            : `Mission ${mission.mission_code ?? d.readiMissionId} was aborted by D-Flight. Do not take off.`)
+        : `Mission ${mission.mission_code ?? d.readiMissionId} was withdrawn by D-Flight and must be stopped immediately.`;
+
       await prisma.notification.create({
         data: {
           fk_user_id: mission.fk_pilot_user_id,
           notification_type: 'dflight_authorization',
-          notification_title: 'D-Flight has withdrawn this mission\'s authorization',
-          notification_message: `Mission ${mission.mission_code ?? d.readiMissionId} was withdrawn by D-Flight and must be stopped immediately.`,
+          notification_title: title,
+          notification_message: message,
           notification_data: {
             mission_id: d.readiMissionId,
             dflight_mission_status: d.mission_status,

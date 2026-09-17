@@ -41,6 +41,7 @@ const updateOperationSchema = z.object({
   flight_mode: z.enum(['RC', 'DOCK']).nullable().optional(),
   op_type: z.enum(['OPEN', 'PDRA', 'STS-01', 'STS-02']).nullable().optional(),
   mission_group_label: z.string().nullable().optional(),
+  uspace_id: z.string().nullable().optional(),
 });
 
 interface Params {
