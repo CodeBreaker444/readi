@@ -20,6 +20,8 @@ export function assertMissionEditable(statusName: string | null | undefined): vo
 
 export const DFLIGHT_ACCEPTED_STATUS = 'ACCEPTED';
 
+export const DFLIGHT_ABORT_STATUSES = ['ABORT', 'ABORTED', 'ABORTING'];
+
 export class DFlightNotAuthorizedError extends Error {
   code = 'DFLIGHT_NOT_AUTHORIZED';
   constructor() {
@@ -27,17 +29,32 @@ export class DFlightNotAuthorizedError extends Error {
   }
 }
 
+export class DFlightAbortedError extends Error {
+  code = 'DFLIGHT_ABORTED';
+  constructor() {
+    super('D-Flight has aborted this mission — it cannot be started until a new authorization is accepted.');
+  }
+}
+
 /**
  * Blocks starting a mission that has an active D-Flight authorization request
- * until D-Flight has accepted it. A mission with no dflight_mission_id (D-Flight
+ * until D-Flight has accepted it, and blocks it again if D-Flight later
+ * aborts the mission out from under an existing acceptance — flight_authorisation_status
+ * alone doesn't always change when that happens, since D-Flight/flytrelay reports
+ * an abort via mission_status (the mission's own lifecycle field), not necessarily
+ * by re-deciding the authorization. A mission with no dflight_mission_id (D-Flight
  * not enabled, or the authorization request was never created/failed) is left
  * untouched — no gate applies.
  */
 export function assertDFlightAuthorized(
   dflightMissionId: string | null | undefined,
   flightAuthorisationStatus: string | null | undefined,
+  missionStatus?: string | null | undefined,
 ): void {
   if (!dflightMissionId) return;
+  if (missionStatus && DFLIGHT_ABORT_STATUSES.includes(missionStatus.toUpperCase())) {
+    throw new DFlightAbortedError();
+  }
   if (flightAuthorisationStatus !== DFLIGHT_ACCEPTED_STATUS) {
     throw new DFlightNotAuthorizedError();
   }

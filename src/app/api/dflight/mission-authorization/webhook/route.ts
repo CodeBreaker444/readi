@@ -2,13 +2,11 @@ import { prisma } from '@/lib/prisma';
 import { internalError, zodError } from '@/lib/api-error';
 import { verifyFlytrelayJwt } from '@/lib/drone-atc-jwt';
 import { E } from '@/lib/error-codes';
+import { DFLIGHT_ABORT_STATUSES } from '@/backend/services/operation/mission-lock';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
-// Defensive set — D-Flight/flytrelay's exact abort vocabulary isn't
-// documented, so match on any of the common variants rather than one string.
-const ABORT_STATUSES = ['ABORT', 'ABORTED', 'ABORTING'];
-const ALERT_WORTHY_STATUSES = ['WITHDRAWN', 'REJECTED', 'CONFLICTED', ...ABORT_STATUSES];
+const ALERT_WORTHY_STATUSES = ['WITHDRAWN', 'REJECTED', 'CONFLICTED', ...DFLIGHT_ABORT_STATUSES];
 
 const WebhookSchema = z.object({
   readiMissionId: z.number().int().positive(),
@@ -52,9 +50,6 @@ export async function POST(req: NextRequest) {
     if (mission.dflight_mission_id !== d.mission_id) {
       return NextResponse.json({ error: 'mission_id does not match this mission\'s D-Flight authorization' }, { status: 409 });
     }
-    // The JWT's userId claim carries the owner id readi signed the watch
-    // registration with (see registerFlytrelayWatch) — cross-check it against
-    // the mission's actual owner so this webhook can't write into another tenant.
     if (String(mission.fk_owner_id) !== payload.userId) {
       return NextResponse.json({ error: 'Owner mismatch' }, { status: 403 });
     }
@@ -71,11 +66,11 @@ export async function POST(req: NextRequest) {
 
     const missionStatusUpper = d.mission_status.toUpperCase();
     const authStatusUpper = d.flight_authorisation_status?.toUpperCase();
-    const isAbort = ABORT_STATUSES.includes(missionStatusUpper) || (authStatusUpper ? ABORT_STATUSES.includes(authStatusUpper) : false);
+    const isAbort = DFLIGHT_ABORT_STATUSES.includes(missionStatusUpper) || (authStatusUpper ? DFLIGHT_ABORT_STATUSES.includes(authStatusUpper) : false);
     const isAlertWorthy = ALERT_WORTHY_STATUSES.includes(missionStatusUpper) || (authStatusUpper ? ALERT_WORTHY_STATUSES.includes(authStatusUpper) : false);
     const missionInFlight = !!mission.actual_start && !mission.actual_end;
 
-    // An abort is always worth a notification — landing instructions if
+    // Abort notification — landing instructions if
     // already airborne, a hold instruction otherwise. Other D-Flight status
     // changes (withdrawn/rejected/conflicted) only matter once a mission is
     // actually in the air.

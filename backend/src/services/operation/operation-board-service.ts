@@ -328,14 +328,14 @@ export async function updateMissionStatus(
 ): Promise<{ code: number; message: string; check_daily_declaration?: string }> {
   const current = await prisma.pilot_mission.findUnique({
     where: { pilot_mission_id: payload.mission_id },
-    select: { status_name: true, dflight_mission_id: true, dflight_flight_authorisation_status: true },
+    select: { status_name: true, dflight_mission_id: true, dflight_flight_authorisation_status: true, dflight_mission_status: true },
   });
   assertMissionEditable(current?.status_name);
 
   let updateFields: Record<string, unknown>;
 
   if (payload.workflow_mission_status === '_START') {
-    assertDFlightAuthorized(current?.dflight_mission_id, current?.dflight_flight_authorisation_status);
+    assertDFlightAuthorized(current?.dflight_mission_id, current?.dflight_flight_authorisation_status, current?.dflight_mission_status);
     const statusId = await resolveOwnerStatusId(payload.owner_id, IN_PROGRESS_STATUS_CODE_ALIASES, 2);
     updateFields = { fk_mission_status_id: statusId, status_name: 'IN_PROGRESS', actual_start: new Date() };
   } else if (payload.workflow_mission_status === '_END') {
