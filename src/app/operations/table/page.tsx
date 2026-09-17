@@ -133,6 +133,13 @@ export default function OperationsPage() {
   const [clients, setClients] = useState<{ client_id: number; client_name: string }[]>([]);
   const [groupLabels, setGroupLabels] = useState<string[]>([]);
   const [optionsLoaded, setOptionsLoaded] = useState(false);
+  const [dFlightEnabled, setDFlightEnabled] = useState(false);
+
+  useEffect(() => {
+    axios.get('/api/operation/dflight/status')
+      .then((res) => setDFlightEnabled(!!res.data.enabled))
+      .catch(() => setDFlightEnabled(false));
+  }, []);
 
   useEffect(() => {
     const fetchOperations = async () => {
@@ -218,8 +225,9 @@ const tableMeta = useMemo<OperationTableMeta>(
       }
     },
     submittingDFlightAuthId,
+    dFlightEnabled,
   }),
-  [timezone, t, submittingDFlightAuthId]
+  [timezone, t, submittingDFlightAuthId, dFlightEnabled]
 );
 
 const table = useReactTable({

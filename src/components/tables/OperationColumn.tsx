@@ -44,6 +44,7 @@ export interface OperationTableMeta {
   onDownloadReport: (op: Operation) => void;
   onSubmitDFlightAuth: (op: Operation) => void;
   submittingDFlightAuthId?: number | null;
+  dFlightEnabled?: boolean;
 }
 
 const STATUS_CONFIG: Record<string, { label: string; light: string; dark: string; icon: React.ReactNode }> = {
@@ -310,7 +311,8 @@ export const getOperationColumns = (t: TFunction, isDark = false, timezone = 'Eu
       const isCompleted = op.status_name === 'COMPLETED';
       const isAborted = op.status_name === 'ABORTED';
       const isCancelled = op.status_name === 'CANCELLED';
-      const needsDFlightAuth = op.op_type === 'PDRA'
+      const needsDFlightAuth = !!meta.dFlightEnabled
+        && op.op_type === 'PDRA'
         && !isAborted && !isCancelled
         && op.dflight_flight_authorisation_status !== 'ACCEPTED';
       const submittingAuth = meta.submittingDFlightAuthId === op.pilot_mission_id;
