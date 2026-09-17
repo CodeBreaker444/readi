@@ -153,8 +153,7 @@ export async function listDFlightUspaces(ownerId: number): Promise<DFlightUspace
   });
 
   if (!owner?.d_flight_enabled) return { enabled: false, uspaces: [] };
-  if(!env.DFLIGHT_USS_IDENTIFIER)    return { enabled: true, uspaces: [], error: 'No USS Identifier present in env' };
- 
+
   try {
     const integration = await getDFlightIntegration(ownerId);
     if (!integration) {
@@ -170,7 +169,7 @@ export async function listDFlightUspaces(ownerId: number): Promise<DFlightUspace
     const uspaces = await getDFlightUspaceList(
       integration.base_url,
       tokenResponse.access_token,
-      env.DFLIGHT_USS_IDENTIFIER,
+      'expouss',
       integration.client_id,
       integration.pfx_content ?? undefined,
       integration.pfx_password ?? undefined,

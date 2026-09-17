@@ -330,15 +330,15 @@ export const getOperationColumns = (t: TFunction, isDark = false, timezone = 'Eu
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
-                  variant="ghost"
+                  variant="outline"
                   size="icon"
-                  className="h-12 w-12"
+                  className="h-8 w-10 rounded-md border"
                   disabled={submittingAuth}
                   onClick={(e) => { e.stopPropagation(); meta.onSubmitDFlightAuth(op); }}
                 >
                   {submittingAuth
                     ? <Loader2 className="h-4 w-4 animate-spin" />
-                    : <img src="/dflight_logo.png" alt="" className="h-7 w-7 object-contain" />}
+                    : <img src="/dflight_logo.png" alt="D-Flight" className="h-8 w-8 object-contain" />}
                 </Button>
               </TooltipTrigger>
               <TooltipContent>{t('operations.actions.submitDFlightAuth')}</TooltipContent>
