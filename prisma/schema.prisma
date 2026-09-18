@@ -1876,6 +1876,7 @@ model pilot_mission {
   dflight_flight_authorisation_status String?                    @db.VarChar(50)
   dflight_watch_active                Boolean?                   @default(false)
   dflight_last_status_at              DateTime?                  @db.Timestamp(6)
+  dflight_trajectory_data             Json?
   controlroom_drone                   controlroom_drone[]
   flight_requests                     flight_requests[]
   mission_maintenance_log             mission_maintenance_log[]

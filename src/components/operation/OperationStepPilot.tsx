@@ -13,6 +13,12 @@ import { useTranslation } from 'react-i18next'
 import { inputCls, labelCls, scCls, siCls, ReviewRow, SectionTitle, SelectPaginationFooter, SELECT_PAGE_SIZE, usePagedItems } from './OperationModalHelpers'
 import { FlightMode, GenericOption, LucOption, OpType, PilotOption, UspaceOption } from './OperationModalTypes'
 import { PilotQualificationsSheet } from './PilotQualificationsSheet'
+import dynamic from 'next/dynamic'
+import type { DFlightCircle } from './DFlightCircleMap'
+
+const DFlightCircleMap = dynamic(() => import('./DFlightCircleMap'), { ssr: false })
+
+const CIRCLE_OP_TYPES: OpType[] = ['OPEN', 'STS-01', 'STS-02']
 
 interface SummaryData {
     clientName?: string
@@ -47,11 +53,15 @@ interface Props {
     loadingUspaces?: boolean
     dFlightEnabled?: boolean
     uspaceError?: string
+    circle?: DFlightCircle | null
+    onCircleChange?: (circle: DFlightCircle | null) => void
+    circleMaxRadiusM?: number
+    circleFocusCenter?: { lat: number; lng: number } | null
     summary: SummaryData
     isDark: boolean
 }
 
-export function OperationStepPilot({ pilots, pilotId, onPilotChange, visualObserverIds = [], onVisualObserverChange, loadingOptions = false, uspaces = [], uspaceId = '', onUspaceChange, loadingUspaces = false, dFlightEnabled = false, uspaceError = '', summary, isDark }: Props) {
+export function OperationStepPilot({ pilots, pilotId, onPilotChange, visualObserverIds = [], onVisualObserverChange, loadingOptions = false, uspaces = [], uspaceId = '', onUspaceChange, loadingUspaces = false, dFlightEnabled = false, uspaceError = '', circle = null, onCircleChange, circleMaxRadiusM = 250, circleFocusCenter = null, summary, isDark }: Props) {
     const { t } = useTranslation()
     const [qualTarget, setQualTarget] = useState<{ id: number; name: string } | null>(null)
     const pilotsPaging = usePagedItems(pilots)
@@ -230,6 +240,25 @@ export function OperationStepPilot({ pilots, pilotId, onPilotChange, visualObser
                 </div>
             )}
 
+            {dFlightEnabled && uspaceId && CIRCLE_OP_TYPES.includes(summary.opType) && (
+                <div className="space-y-2">
+                    <Label className={labelCls(isDark)}>
+                        {t('operations.newOperation.pilot.circleLabel', { uspace: uspaces.find(u => u.id === uspaceId)?.name ?? uspaceId })}
+                        <span className="text-red-500"> *</span>
+                    </Label>
+                    <DFlightCircleMap
+                        value={circle}
+                        onChange={c => onCircleChange?.(c)}
+                        maxRadiusM={circleMaxRadiusM}
+                        isDark={isDark}
+                        focusCenter={circleFocusCenter}
+                    />
+                    {!circle && (
+                        <p className={cn('text-xs', isDark ? 'text-slate-400' : 'text-slate-500')}>{t('operations.newOperation.pilot.circleRequired')}</p>
+                    )}
+                </div>
+            )}
+
             <div className={cn('rounded-lg border p-4 space-y-2 text-sm', isDark ? 'border-slate-600 bg-slate-700/30' : 'border-border bg-muted/20')}>
                 <p className={cn('text-xs font-semibold uppercase tracking-wide pb-2 border-b', isDark ? 'text-slate-400 border-slate-600' : 'text-muted-foreground')}>
                     {t('operations.newOperation.pilot.summaryTitle')}
@@ -248,6 +277,7 @@ export function OperationStepPilot({ pilots, pilotId, onPilotChange, visualObser
                 {pilotId && <ReviewRow label={t('operations.newOperation.pilot.summaryPilot')} value={summary.pilotName} isDark={isDark} />}
                 {summary.location && <ReviewRow label={t('operations.newOperation.pilot.summaryLocation')} value={summary.location} isDark={isDark} />}
                 {summary.uspaceLabel && <ReviewRow label={t('operations.newOperation.pilot.summaryUspace')} value={summary.uspaceLabel} isDark={isDark} />}
+                {circle && <ReviewRow label={t('operations.newOperation.pilot.summaryCircle')} value={`r=${Math.round(circle.radiusM)}m`} isDark={isDark} />}
             </div>
 
             <PilotQualificationsSheet

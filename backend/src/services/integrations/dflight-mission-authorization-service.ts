@@ -15,6 +15,10 @@ import {
 import { signReadiControlJwt } from '@/lib/drone-atc-jwt';
 import { toUtm33N } from '@/backend/utils/utm-projection';
 import { parseWaypoints, type PlanningWaypoint } from '@/backend/utils/planning-waypoints';
+import { DFLIGHT_CIRCLE_MAX_RADIUS_M, type DFlightTrajectoryCircle } from '@/config/types/operation';
+
+// Op types that submit a drawn geofence circle instead of a waypoint trajectory.
+const CIRCLE_OP_TYPES = ['OPEN', 'STS-01', 'STS-02'];
 
 export interface DFlightAuthorizationResult {
   outcome: 'success' | 'skipped' | 'error';
@@ -70,22 +74,70 @@ function buildTrajectoryData(
 }
 
 /**
- * Sources flight-path data from the mission's selected mission plan
- * (planning_logbook.waypoints), falling back to any other mission plan under
- * the same evaluation if that one hasn't been drawn yet. Only applies to PDRA
- * missions created with a planning + mission plan selected — other missions
- * have no waypoint source and are left null (caller treats null as "skip").
+ * OPEN/STS-01/STS-02 missions have no mission plan/waypoints — instead the
+ * pilot draws a single geofence circle on a map. It's submitted as a
+ * near-zero-length LINESTRING at the circle's center buffered by its radius
+ * (h_buffer) — see the LINE_OFFSET_M comment below for why POINT doesn't work.
+ */
+function buildCircleTrajectoryData(
+  center: { lat: number; lng: number },
+  radiusM: number,
+  startDateTime: string,
+  endDateTime: string,
+): DFlightCreateMissionInput['geo_data'] | null {
+  if (radiusM > DFLIGHT_CIRCLE_MAX_RADIUS_M) return null;
+
+  const { x, y } = toUtm33N(center.lat, center.lng);
+
+  const V_BUFFER = 10;
+  const MIN_OPERATIVE_HEIGHT = 0;
+  const MAX_OPERATIVE_HEIGHT = 120;
+
+  const LINE_OFFSET_M = 1;
+
+  const trajectory_data: DFlightMissionTrajectoryElement[] = [{
+    trj_element_type: 'LINESTRING',
+    trj_element: `LINESTRING(${x} ${y}, ${x + LINE_OFFSET_M} ${y})`,
+    h_buffer: Math.round(radiusM),
+    v_buffer: V_BUFFER,
+    min_operative_height: MIN_OPERATIVE_HEIGHT,
+    max_operative_height: MAX_OPERATIVE_HEIGHT,
+    entry_date_time: startDateTime,
+    exit_date_time: endDateTime,
+    buffer_entry_date_time: startDateTime,
+    buffer_exit_date_time: endDateTime,
+  }];
+
+  return { mission_reference_frame: '32633', trajectory_data };
+}
+
+/**
+ * OPEN/STS-01/STS-02 missions source geo_data from a drawn geofence circle
+ * (see buildCircleTrajectoryData). PDRA missions instead source flight-path
+ * data from the mission's selected mission plan (planning_logbook.waypoints),
+ * falling back to any other mission plan under the same evaluation if that
+ * one hasn't been drawn yet. Any other case has no geo_data source and is
+ * left null (caller treats null as "skip").
  */
 async function buildTrajectoryFromMission(
   mission: {
     fk_planning_id: number | null;
     fk_mission_planning_id: number | null;
     mission_metadata: Prisma.JsonValue;
+    dflight_trajectory_data: Prisma.JsonValue;
   },
   startDateTime: string,
   endDateTime: string,
 ): Promise<DFlightCreateMissionInput['geo_data'] | null> {
   const opType = (mission.mission_metadata as any)?.op_type;
+
+  if (CIRCLE_OP_TYPES.includes(opType)) {
+    const trajectory = mission.dflight_trajectory_data as DFlightTrajectoryCircle | null;
+    if (!trajectory || trajectory.type !== 'circle') return null;
+    const { lat, lng } = trajectory.center;
+    return buildCircleTrajectoryData({ lat, lng }, trajectory.radius_m, startDateTime, endDateTime);
+  }
+
   if (opType !== 'PDRA' || !mission.fk_planning_id || !mission.fk_mission_planning_id) {
     return null;
   }
@@ -217,6 +269,7 @@ export async function createAndSubmitMissionAuthorization(
         fk_planning_id: true,
         fk_mission_planning_id: true,
         mission_metadata: true,
+        dflight_trajectory_data: true,
       },
     });
     if (!mission) return { outcome: 'error', message: 'Mission not found' };
@@ -233,9 +286,11 @@ export async function createAndSubmitMissionAuthorization(
       };
     }
 
-    const startDateTime = mission.scheduled_start.toISOString();
+    const START_SAFETY_MARGIN_MS = 60_000;
+    const effectiveStartMs = Math.max(mission.scheduled_start.getTime(), Date.now() + START_SAFETY_MARGIN_MS);
+    const startDateTime = new Date(effectiveStartMs).toISOString();
     const durationMinutes = mission.flight_duration ?? 15;
-    const endDateTime = new Date(mission.scheduled_start.getTime() + durationMinutes * 60_000).toISOString();
+    const endDateTime = new Date(effectiveStartMs + durationMinutes * 60_000).toISOString();
 
     // geo_data is mandatory on D-Flight's side (errorCode 107000 otherwise) —
     // see buildTrajectoryFromMission's doc comment for how it's sourced.
@@ -261,7 +316,7 @@ export async function createAndSubmitMissionAuthorization(
       integration.pfx_password ?? undefined,
     );
 
-// console.log('geo data:',geoData)
+console.log('geo data:',geoData)
 
     const uspaceId = (mission.mission_metadata as any)?.uspace_id;
 
@@ -337,7 +392,11 @@ export async function registerFlytrelayWatch(
       return { outcome: 'skipped', message: 'No D-Flight credentials configured for this organization' };
     }
 
-    const durationMinutes = mission.flight_duration ?? 15;
+    const missionStartDateTime = mission.scheduled_start
+      ? mission.scheduled_start.toISOString()
+      : undefined;
+
+    const durationMinutes = mission.flight_duration ?? 120;
     const missionEndDateTime = mission.scheduled_start
       ? new Date(mission.scheduled_start.getTime() + durationMinutes * 60_000).toISOString()
       : undefined;
@@ -362,6 +421,7 @@ export async function registerFlytrelayWatch(
         mission_id: mission.dflight_mission_id,
         tech_version: mission.dflight_tech_version,
         pollIntervalSeconds: 30,
+        missionStartDateTime,
         missionEndDateTime,
       }),
       signal: AbortSignal.timeout(10_000),

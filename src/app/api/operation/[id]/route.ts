@@ -3,7 +3,7 @@ import { notifyDccAcceptance } from '@/backend/services/mission/dcc-callback-ser
 import { notifyPilotAssignment } from '@/backend/services/notification/notification-service';
 import { deleteOperation, getOperation, updateOperation } from '@/backend/services/operation/operation-service';
 import { revertMissionMaintenance } from '@/backend/services/operation/maintenance-cycle-service';
-import { UpdateOperationSchema } from '@/config/types/operation';
+import { DFLIGHT_CIRCLE_MAX_RADIUS_M, UpdateOperationSchema } from '@/config/types/operation';
 import { apiError, dbError, internalError, notFound, zodError } from '@/lib/api-error';
 import { requireFeatureAccess, requirePermission } from '@/lib/auth/api-auth';
 import { getUserSession } from '@/lib/auth/server-session';
@@ -42,6 +42,11 @@ const updateOperationSchema = z.object({
   op_type: z.enum(['OPEN', 'PDRA', 'STS-01', 'STS-02']).nullable().optional(),
   mission_group_label: z.string().nullable().optional(),
   uspace_id: z.string().nullable().optional(),
+  dflight_trajectory_data: z.object({
+    type: z.literal('circle'),
+    center: z.object({ lat: z.number(), lng: z.number() }),
+    radius_m: z.number(),
+  }).nullable().optional(),
 });
 
 interface Params {
@@ -81,6 +86,15 @@ export async function PUT(req: NextRequest, { params }: Params) {
     if (!parsed.success) return zodError(E.VL011, parsed.error);
 
     const validated = parsed.data as UpdateOperationSchema;
+
+    if (['OPEN', 'STS-01', 'STS-02'].includes(validated.op_type ?? '') && validated.dflight_trajectory_data
+      && validated.dflight_trajectory_data.radius_m > DFLIGHT_CIRCLE_MAX_RADIUS_M) {
+      return NextResponse.json(
+        { error: `dflight_trajectory_data.radius_m exceeds the ${DFLIGHT_CIRCLE_MAX_RADIUS_M}m limit for this mission type` },
+        { status: 400 },
+      );
+    }
+
     const currentSession = session || await getUserSession();
     const updated = await updateOperation(id, validated, currentSession?.user.userId);
 

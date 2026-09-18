@@ -2195,6 +2195,7 @@
         "summaryPilot": "Pilota",
         "summaryLocation": "Posizione",
         "summaryUspace": "U-space",
+        "summaryCircle": "Geofence",
         "visualObserversLabel": "Osservatori Visivi",
         "visualObserversOptional": "(opzionale)",
         "visualObserversDisabled": "Seleziona prima un pilota",
@@ -2203,7 +2204,9 @@
         "viewQualifications": "Qualifiche",
         "uspaceLabel": "U-space",
         "selectUspace": "Seleziona u-space…",
-        "noUspaces": "Nessun u-space disponibile — verifica la configurazione D-Flight"
+        "noUspaces": "Nessun u-space disponibile — verifica la configurazione D-Flight",
+        "circleLabel": "Disegna l'area di volo per {{uspace}}",
+        "circleRequired": "Disegna un cerchio sulla mappa per impostare l'area di volo della missione"
       },
       "pilotQualifications": {
         "title": "Qualifiche del Pilota",

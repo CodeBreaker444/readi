@@ -2191,6 +2191,7 @@
         "summaryPilot": "Pilot",
         "summaryLocation": "Standort",
         "summaryUspace": "U-Space",
+        "summaryCircle": "Geofence",
         "visualObserversLabel": "Sichtbeobachter",
         "visualObserversOptional": "(optional)",
         "visualObserversDisabled": "Zuerst einen Piloten auswählen",
@@ -2199,7 +2200,9 @@
         "viewQualifications": "Qualifikationen",
         "uspaceLabel": "U-Space",
         "selectUspace": "U-Space auswählen…",
-        "noUspaces": "Kein U-Space verfügbar — D-Flight-Konfiguration prüfen"
+        "noUspaces": "Kein U-Space verfügbar — D-Flight-Konfiguration prüfen",
+        "circleLabel": "Flugbereich für {{uspace}} zeichnen",
+        "circleRequired": "Zeichnen Sie einen Kreis auf der Karte, um den Flugbereich der Mission festzulegen"
       },
       "pilotQualifications": {
         "title": "Pilotenqualifikationen",
