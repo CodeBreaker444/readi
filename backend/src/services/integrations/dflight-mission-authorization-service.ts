@@ -316,8 +316,6 @@ export async function createAndSubmitMissionAuthorization(
       integration.pfx_password ?? undefined,
     );
 
-console.log('geo data:',geoData)
-
     const uspaceId = (mission.mission_metadata as any)?.uspace_id;
 
     const result = await createDFlightMission(

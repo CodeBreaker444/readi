@@ -235,11 +235,25 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
 
     useEffect(() => {
         if (!uspaceId) { setUspaceFocus(null); return }
-        const name = uspaces.find(u => u.id === uspaceId)?.name
-        if (!name) { setUspaceFocus(null); return }
+        const selected = uspaces.find(u => u.id === uspaceId)
+        if (!selected) { setUspaceFocus(null); return }
 
+        // Prefer the U-space's actual registered boundary (what D-Flight validates
+        // a drawn circle against) over a free-text guess of its name — a town-name
+        // geocode can land far from the real zone and make an in-bounds-looking
+        // circle still get rejected as "outside U-space constraint".
+        if (selected.boundary && selected.boundary.length > 0) {
+            const points = selected.boundary.flat()
+            setUspaceFocus({
+                lat: points.reduce((s, p) => s + p.lat, 0) / points.length,
+                lng: points.reduce((s, p) => s + p.lng, 0) / points.length,
+            })
+            return
+        }
+
+        if (!selected.name) { setUspaceFocus(null); return }
         let cancelled = false
-        axios.get('/api/operation/dflight/geocode-uspace', { params: { name } })
+        axios.get('/api/operation/dflight/geocode-uspace', { params: { name: selected.name } })
             .then(res => { if (!cancelled) setUspaceFocus(res.data.location ?? null) })
             .catch(() => { if (!cancelled) setUspaceFocus(null) })
         return () => { cancelled = true }
@@ -494,7 +508,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
         if (step === 4) {
             if (!pilotId) return false
             if (uspaceRequired && !uspaceId) return false
-            if (circleRequired && (!circle || circle.radiusM > DFLIGHT_CIRCLE_MAX_RADIUS_M)) return false
+            if (circleRequired && (!circle || circle.radiusM > circleMaxRadiusM)) return false
             return true
         }
         return true
@@ -502,6 +516,13 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
 
     const uspaceRequired = dFlightEnabled && ['PDRA', 'OPEN', 'STS-01', 'STS-02'].includes(opType)
     const circleRequired = dFlightEnabled && ['OPEN', 'STS-01', 'STS-02'].includes(opType)
+    // D-Flight rejects h_buffer beyond the selected U-space's own registered
+    // protection_buffers_horizontal constraint, independent of geometry — cap
+    // the drawable/submittable radius to whichever limit is tighter.
+    const circleMaxRadiusM = Math.min(
+        DFLIGHT_CIRCLE_MAX_RADIUS_M,
+        uspaces.find(u => u.id === uspaceId)?.maxHBufferM ?? DFLIGHT_CIRCLE_MAX_RADIUS_M,
+    )
 
     const clientPlannings = plannings
         .filter(p => String(p.fk_client_id) === clientId)
@@ -834,8 +855,9 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                             uspaceError={uspaceError}
                             circle={circle}
                             onCircleChange={setCircle}
-                            circleMaxRadiusM={DFLIGHT_CIRCLE_MAX_RADIUS_M}
+                            circleMaxRadiusM={circleMaxRadiusM}
                             circleFocusCenter={uspaceFocus}
+                            uspaceBoundary={uspaces.find(u => u.id === uspaceId)?.boundary ?? null}
                             isDark={isDark}
                             summary={{
                                 clientName: selectedClient?.client_name,
@@ -918,7 +940,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                             <Button
                                 size="sm"
                                 onClick={handleSubmit}
-                                disabled={isSubmitting || !pilotId || !schedulerForm.missionCode.trim() || !schedulerForm.lucId || !schedulerForm.typeId || !schedulerForm.categoryId || !schedulerForm.scheduledStart || (uspaceRequired && !uspaceId) || (circleRequired && (!circle || circle.radiusM > DFLIGHT_CIRCLE_MAX_RADIUS_M))}
+                                disabled={isSubmitting || !pilotId || !schedulerForm.missionCode.trim() || !schedulerForm.lucId || !schedulerForm.typeId || !schedulerForm.categoryId || !schedulerForm.scheduledStart || (uspaceRequired && !uspaceId) || (circleRequired && (!circle || circle.radiusM > circleMaxRadiusM))}
                                 className="gap-2 cursor-pointer bg-violet-600 hover:bg-violet-700 text-white min-w-40"
                             >
                                 {isSubmitting

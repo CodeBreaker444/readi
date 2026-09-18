@@ -57,11 +57,12 @@ interface Props {
     onCircleChange?: (circle: DFlightCircle | null) => void
     circleMaxRadiusM?: number
     circleFocusCenter?: { lat: number; lng: number } | null
+    uspaceBoundary?: { lat: number; lng: number }[][] | null
     summary: SummaryData
     isDark: boolean
 }
 
-export function OperationStepPilot({ pilots, pilotId, onPilotChange, visualObserverIds = [], onVisualObserverChange, loadingOptions = false, uspaces = [], uspaceId = '', onUspaceChange, loadingUspaces = false, dFlightEnabled = false, uspaceError = '', circle = null, onCircleChange, circleMaxRadiusM = 250, circleFocusCenter = null, summary, isDark }: Props) {
+export function OperationStepPilot({ pilots, pilotId, onPilotChange, visualObserverIds = [], onVisualObserverChange, loadingOptions = false, uspaces = [], uspaceId = '', onUspaceChange, loadingUspaces = false, dFlightEnabled = false, uspaceError = '', circle = null, onCircleChange, circleMaxRadiusM = 250, circleFocusCenter = null, uspaceBoundary = null, summary, isDark }: Props) {
     const { t } = useTranslation()
     const [qualTarget, setQualTarget] = useState<{ id: number; name: string } | null>(null)
     const pilotsPaging = usePagedItems(pilots)
@@ -252,6 +253,7 @@ export function OperationStepPilot({ pilots, pilotId, onPilotChange, visualObser
                         maxRadiusM={circleMaxRadiusM}
                         isDark={isDark}
                         focusCenter={circleFocusCenter}
+                        boundary={uspaceBoundary}
                     />
                     {!circle && (
                         <p className={cn('text-xs', isDark ? 'text-slate-400' : 'text-slate-500')}>{t('operations.newOperation.pilot.circleRequired')}</p>

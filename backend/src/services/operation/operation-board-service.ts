@@ -119,11 +119,12 @@ export async function getMissionBoard(
   const todayStart = new Date(today.toISOString().split('T')[0] + 'T00:00:00.000Z');
   const todayEnd = new Date(today.toISOString().split('T')[0] + 'T23:59:59.999Z');
 
-  // PDRA missions need D-Flight to accept the flight authorization before
-  // they're actionable — keep them off the "Scheduled" column (and out of
-  // the pilot's daily view) until then, so nobody preps for a flight that
-  // isn't cleared yet. Only applies when the owner actually has D-Flight
-  // enabled; otherwise PDRA missions would never authorize and never show.
+  // When the owner has D-Flight enabled, a mission only belongs on the
+  // "Scheduled" column once D-Flight has accepted its flight authorization —
+  // otherwise nobody preps for a flight that isn't cleared yet. Missions
+  // that haven't been accepted (including ones that never went through
+  // D-Flight at all) are held off the board until they are. Owners without
+  // D-Flight enabled are unaffected.
   const owner = await prisma.owner.findUnique({
     where: { owner_id: ownerId },
     select: { d_flight_enabled: true },
@@ -148,12 +149,7 @@ export async function getMissionBoard(
               { scheduled_start: { gte: todayStart, lte: todayEnd } },
             ],
           },
-          ...(dflightGateActive ? [{
-            OR: [
-              { NOT: { mission_metadata: { path: ['op_type'], equals: 'PDRA' } } },
-              { dflight_flight_authorisation_status: 'ACCEPTED' },
-            ],
-          }] : []),
+          ...(dflightGateActive ? [{ dflight_flight_authorisation_status: 'ACCEPTED' }] : []),
         ],
       },
       orderBy: { scheduled_start: { sort: 'desc', nulls: 'first' } },

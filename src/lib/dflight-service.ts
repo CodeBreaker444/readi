@@ -520,6 +520,17 @@ export async function getDFlightManufacturer(
 export interface DFlightUspaceResult {
   id: string;
   name: string | null;
+  /** Outer ring(s) of the U-space's registered horizontal projection — the area D-Flight actually validates a submitted geofence/trajectory against. Null when the record carried no usable geometry. */
+  boundary: { lat: number; lng: number }[][] | null;
+  /**
+   * The U-space's registered `protection_buffers_horizontal` constraint (meters) —
+   * D-Flight's "h_buffer(::int) is outside U-space constraint" (HORIZONTAL_BUFFER_CHECK_KO,
+   * errorCode 100172) rejects any submitted h_buffer larger than this, independent of
+   * where the geofence sits geographically. Null when the record didn't carry one, in
+   * which case callers should fall back to a conservative default rather than assume
+   * the app's flat DFLIGHT_CIRCLE_MAX_RADIUS_M is always accepted.
+   */
+  maxHBufferM: number | null;
 }
 
 export async function getDFlightUspaceList(
@@ -563,13 +574,40 @@ export async function getDFlightUspaceList(
         ? (json as any).data
         : [];
 
-  // TEMP DIAGNOSTIC: D-Flight rejects our submitted h_buffer as "outside
-  // U-Space constraint" (errorCode 100172) — checking whether the raw
-  // uspace record carries a max-buffer/radius field we're currently
-  // discarding by only extracting id/name below. Remove once resolved.
-  if (records[0]) {
-    console.log('[dflight-service] raw uspace record sample:', JSON.stringify(records[0], null, 2));
-  }
+  // D-Flight rejects a submitted geofence/trajectory as "h_buffer is outside
+  // of U-space constraint" (errorCode 100172) when it falls outside the
+  // selected U-space's registered horizontal projection. Each geometry entry
+  // carries that projection as GeoJSON (coordinates as [lng, lat]) — extract
+  // it so the map can show the real zone and validate against it, instead of
+  // guessing a center from the U-space's display name.
+  const extractBoundary = (u: Record<string, unknown>): { lat: number; lng: number }[][] | null => {
+    const geometry = u['geometry'];
+    if (!Array.isArray(geometry)) return null;
+    const rings: { lat: number; lng: number }[][] = [];
+    for (const entry of geometry) {
+      const coords = (entry as any)?.horizontalProjection?.coordinates;
+      if (!Array.isArray(coords)) continue;
+      for (const ring of coords) {
+        if (!Array.isArray(ring)) continue;
+        const points = ring
+          .filter((p: unknown): p is [number, number] => Array.isArray(p) && p.length >= 2)
+          .map(([lng, lat]: [number, number]) => ({ lat, lng }));
+        if (points.length >= 3) rings.push(points);
+      }
+    }
+    return rings.length > 0 ? rings : null;
+  };
+
+  const extractMaxHBufferM = (u: Record<string, unknown>): number | null => {
+    const attrs = (u['extendedProperties'] as any)
+      ?.uspace_non_spatial_data
+      ?.uspace_non_spatial_details_data
+      ?.uspace_constraints
+      ?.attributes_data;
+    const raw = attrs?.['protection_buffers_horizontal'];
+    const n = typeof raw === 'string' || typeof raw === 'number' ? Number(raw) : NaN;
+    return Number.isFinite(n) && n > 0 ? n : null;
+  };
 
   return records
     .map((record: unknown) => {
@@ -580,6 +618,8 @@ export async function getDFlightUspaceList(
       return {
         id: id != null ? String(id) : '',
         name: name ?? null,
+        boundary: extractBoundary(u),
+        maxHBufferM: extractMaxHBufferM(u),
       };
     })
     .filter((u: DFlightUspaceResult) => u.id !== '');
