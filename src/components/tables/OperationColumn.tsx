@@ -313,7 +313,8 @@ export const getOperationColumns = (t: TFunction, isDark = false, timezone = 'Eu
       const isCancelled = op.status_name === 'CANCELLED';
       const needsDFlightAuth = !!meta.dFlightEnabled
         && !isAborted && !isCancelled
-        && op.dflight_flight_authorisation_status !== 'ACCEPTED';
+        && op.dflight_flight_authorisation_status !== 'ACCEPTED'
+        && !(isCompleted && !!op.dflight_flight_authorisation_status);
       const submittingAuth = meta.submittingDFlightAuthId === op.pilot_mission_id;
       return (
         <div className="flex items-center gap-1">
