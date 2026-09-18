@@ -248,6 +248,10 @@ export interface Mission {
   fk_luc_procedure_id: number | null;
   luc_procedure_progress: Record<string, Record<string, string>> | null;
   luc_completed_at: string | null;
+  dflight_mission_id?: string | null;
+  dflight_mission_status?: string | null;
+  dflight_flight_authorisation_status?: string | null;
+  dflight_flight_clearance_status?: string | null;
 }
 
 export interface MissionBoardData {
