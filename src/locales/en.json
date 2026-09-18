@@ -2200,6 +2200,7 @@
         "summaryPilot": "Pilot",
         "summaryLocation": "Location",
         "summaryUspace": "U-space",
+        "summaryCircle": "Geofence",
         "visualObserversLabel": "Visual Observers",
         "visualObserversOptional": "(optional)",
         "visualObserversDisabled": "Select a pilot first to add visual observers",
@@ -2208,7 +2209,9 @@
         "viewQualifications": "Qualifications",
         "uspaceLabel": "U-space",
         "selectUspace": "Select u-space…",
-        "noUspaces": "No u-spaces available — check your D-Flight configuration"
+        "noUspaces": "No u-spaces available — check your D-Flight configuration",
+        "circleLabel": "Draw the flight area for {{uspace}}",
+        "circleRequired": "Draw a circle on the map to set the mission's flight area"
       },
       "pilotQualifications": {
         "title": "Pilot Qualifications",

@@ -107,6 +107,7 @@ export async function listOperations(
         status_name: true,
         dflight_mission_id: true,
         dflight_flight_authorisation_status: true,
+        dflight_trajectory_data: true,
         created_at: true,
         updated_at: true,
         users: { select: { first_name: true, last_name: true } },
@@ -357,6 +358,7 @@ export async function createOperation(input: CreateOperationSchema, ownerId: num
       mission_group_label: (input as any).mission_group_label || null,
       luc_procedure_progress: luc_procedure_progress as any,
       luc_completed_at: null,
+      dflight_trajectory_data: (input as any).dflight_trajectory_data ?? null,
       ...(Object.keys(missionMetadata).length && { mission_metadata: { ...missionMetadata, recurring_group_id: recurringGroupId } }),
     };
 
@@ -518,6 +520,7 @@ export async function updateOperation(id: number, input: UpdateOperationSchema, 
   if (input.distance_flown !== undefined) updatePayload.distance_flown = input.distance_flown;
   if ((input as any).fk_erp_group_id !== undefined) updatePayload.fk_erp_group_id = (input as any).fk_erp_group_id;
   if ((input as any).mission_group_label !== undefined) updatePayload.mission_group_label = (input as any).mission_group_label;
+  if ((input as any).dflight_trajectory_data !== undefined) updatePayload.dflight_trajectory_data = (input as any).dflight_trajectory_data;
 
   // Handle visual observers assignment
   const rawObserverIds: number[] | null = (input as any).visual_observer_ids ?? null;
@@ -535,7 +538,8 @@ export async function updateOperation(id: number, input: UpdateOperationSchema, 
     }
   }
 
-  if (visualObservers?.length || (input as any).flight_mode !== undefined || (input as any).op_type !== undefined || (input as any).uspace_id !== undefined) {
+  if (visualObservers?.length || (input as any).flight_mode !== undefined || (input as any).op_type !== undefined
+    || (input as any).uspace_id !== undefined) {
     const currentMetadata = current?.mission_metadata as any ?? {};
     updatePayload.mission_metadata = {
       ...currentMetadata,

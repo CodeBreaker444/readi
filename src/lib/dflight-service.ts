@@ -563,6 +563,14 @@ export async function getDFlightUspaceList(
         ? (json as any).data
         : [];
 
+  // TEMP DIAGNOSTIC: D-Flight rejects our submitted h_buffer as "outside
+  // U-Space constraint" (errorCode 100172) — checking whether the raw
+  // uspace record carries a max-buffer/radius field we're currently
+  // discarding by only extracting id/name below. Remove once resolved.
+  if (records[0]) {
+    console.log('[dflight-service] raw uspace record sample:', JSON.stringify(records[0], null, 2));
+  }
+
   return records
     .map((record: unknown) => {
       const r = record as Record<string, unknown>;

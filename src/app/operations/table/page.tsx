@@ -1,6 +1,7 @@
 'use client';
 
 import { useAuthorization } from '@/components/authorization/AuthorizationProvider';
+import type { DFlightTrajectoryCircle } from '@/config/types/operation';
 import GeneralCommunicationDialog from '@/components/operation/GeneralCommunicationDialog';
 import ImportOperationDialog from '@/components/operation/ImportOperationDialog';
 import { NewOperationModal } from '@/components/operation/NewOperationModal';
@@ -76,6 +77,7 @@ export interface Operation {
   uspace_id?: string | null;
   dflight_mission_id?: string | null;
   dflight_flight_authorisation_status?: string | null;
+  dflight_trajectory_data?: DFlightTrajectoryCircle | null;
   created_at: string;
   updated_at: string;
 }

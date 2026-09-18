@@ -5,7 +5,7 @@ import { authorizeMissionWithDFlight } from '@/backend/services/integrations/dfl
 import { notifyPilotAssignment } from '@/backend/services/notification/notification-service';
 import { createOperation, deleteOperation, listOperations } from '@/backend/services/operation/operation-service';
 import { assertToolNotInMaintenance, assertToolNotNonOperational } from '@/backend/services/system/maintenance-ticket';
-import { CreateOperationSchema, ListOperationsQuerySchema } from '@/config/types/operation';
+import { CreateOperationSchema, DFLIGHT_CIRCLE_MAX_RADIUS_M, ListOperationsQuerySchema } from '@/config/types/operation';
 import { internalError } from '@/lib/api-error';
 import { requirePermission } from '@/lib/auth/api-auth';
 import { getUserSession } from '@/lib/auth/server-session';
@@ -57,6 +57,11 @@ const createOperationSchema = z.object({
   recurrent_days_of_week: z.array(z.number().int().min(0).max(6)).nullable().optional(),
   recurrent_end_date: z.string().nullable().optional(),
   uspace_id: z.string().nullable().optional(),
+  dflight_trajectory_data: z.object({
+    type: z.literal('circle'),
+    center: z.object({ lat: z.number(), lng: z.number() }),
+    radius_m: z.number(),
+  }).nullable().optional(),
 });
 
 export async function GET(req: NextRequest) {
@@ -102,6 +107,14 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
 
     const validated = createOperationSchema.parse(body) as CreateOperationSchema;
+
+    if (['OPEN', 'STS-01', 'STS-02'].includes(validated.op_type ?? '') && validated.dflight_trajectory_data
+      && validated.dflight_trajectory_data.radius_m > DFLIGHT_CIRCLE_MAX_RADIUS_M) {
+      return NextResponse.json(
+        { error: `dflight_trajectory_data.radius_m exceeds the ${DFLIGHT_CIRCLE_MAX_RADIUS_M}m limit for this mission type` },
+        { status: 400 },
+      );
+    }
 
     if (validated.fk_tool_id) {
       try {
@@ -159,17 +172,12 @@ export async function POST(req: NextRequest) {
       console.warn('[POST /api/operation] DCC notification failed (non-fatal):', dcc.message);
     }
 
-    // D-Flight authorization + flytrelay watch registration — no-op unless the
-    // owner has D-Flight enabled; never blocks mission creation on failure.
-    // Only PDRA missions actually attempt authorization (OPEN/STS-01/STS-02
-    // have no trajectory data to submit and are skipped non-fatally further
-    // down the chain), so only surface failures to the pilot for PDRA.
     const dflightErrors: Array<{ missionCode: string; message: string }> = [];
     for (const op of allOperations) {
       const { create, watch } = await authorizeMissionWithDFlight(op.pilot_mission_id, ownerId);
       if (create.outcome === 'error') {
         console.warn('[POST /api/operation] D-Flight authorization failed (non-fatal):', create.message);
-        if (validated.op_type === 'PDRA') {
+        if (validated.op_type && ['PDRA', 'OPEN', 'STS-01', 'STS-02'].includes(validated.op_type)) {
           dflightErrors.push({ missionCode: op.mission_code, message: create.message });
         }
       }
