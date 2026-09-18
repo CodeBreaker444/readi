@@ -51,10 +51,12 @@ export interface Operation {
     recurrent_end_date?: string;
     recurring_group_id?: string;
     uspace_id?: string;
+    is_imported?: boolean;
   } | null;
   dflight_mission_id?: string | null;
   dflight_flight_authorisation_status?: string | null;
   dflight_trajectory_data?: DFlightTrajectoryCircle | null;
+  is_imported?: boolean;
   created_at: string;
   updated_at: string;
 }

@@ -312,6 +312,7 @@ export const getOperationColumns = (t: TFunction, isDark = false, timezone = 'Eu
       const isAborted = op.status_name === 'ABORTED';
       const isCancelled = op.status_name === 'CANCELLED';
       const needsDFlightAuth = !!meta.dFlightEnabled
+        && !op.is_imported
         && !isAborted && !isCancelled
         && op.dflight_flight_authorisation_status !== 'ACCEPTED'
         && !(isCompleted && !!op.dflight_flight_authorisation_status);

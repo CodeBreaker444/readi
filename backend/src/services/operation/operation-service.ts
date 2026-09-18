@@ -141,6 +141,7 @@ export async function listOperations(
     is_recurrent: !!row.recurring_group_id
       || !!(row.mission_metadata as any)?.is_recurrent
       || !!(row.mission_metadata as any)?.recurring_group_id,
+    is_imported: !!(row.mission_metadata as any)?.is_imported,
   })) as unknown as Operation[];
 
   const toolIds = [...new Set(operations.filter((op) => op.fk_tool_id).map((op) => op.fk_tool_id as number))];
@@ -202,6 +203,7 @@ export async function getOperation(id: number): Promise<Operation | null> {
     flight_mode: (data.mission_metadata as any)?.flight_mode ?? null,
     op_type: (data.mission_metadata as any)?.op_type ?? null,
     uspace_id: (data.mission_metadata as any)?.uspace_id ?? null,
+    is_imported: !!(data.mission_metadata as any)?.is_imported,
   } as unknown as Operation;
 }
 
