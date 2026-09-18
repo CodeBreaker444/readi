@@ -102,7 +102,7 @@ export async function isModuleEventEmailEnabled(
   moduleName: string,
   eventType: string
 ): Promise<boolean> {
-  console.log('[isModuleEventEmailEnabled] Checking email enabled for ownerId:', ownerId, 'moduleName:', moduleName, 'eventType:', eventType);
+  // console.log('[isModuleEventEmailEnabled] Checking email enabled for ownerId:', ownerId, 'moduleName:', moduleName, 'eventType:', eventType);
   
   // Check the appropriate company-level email flag based on module
   const owner = await prisma.owner.findUnique({
@@ -120,12 +120,12 @@ export async function isModuleEventEmailEnabled(
     return false;
   }
 
-  console.log('[isModuleEventEmailEnabled] Owner settings:', {
-    email_notifications_enabled: owner.email_notifications_enabled,
-    operation_email_enabled: owner.operation_email_enabled,
-    system_email_enabled: owner.system_email_enabled,
-    training_email_enabled: owner.training_email_enabled,
-  });
+  // console.log('[isModuleEventEmailEnabled] Owner settings:', {
+  //   email_notifications_enabled: owner.email_notifications_enabled,
+  //   operation_email_enabled: owner.operation_email_enabled,
+  //   system_email_enabled: owner.system_email_enabled,
+  //   training_email_enabled: owner.training_email_enabled,
+  // });
 
   let moduleEmailEnabled = false;
   if (moduleName === 'operations') {
@@ -139,7 +139,7 @@ export async function isModuleEventEmailEnabled(
     moduleEmailEnabled = owner.email_notifications_enabled === true;
   }
 
-  console.log('[isModuleEventEmailEnabled] Module email enabled for', moduleName, ':', moduleEmailEnabled);
+  // console.log('[isModuleEventEmailEnabled] Module email enabled for', moduleName, ':', moduleEmailEnabled);
 
   if (!moduleEmailEnabled) {
     console.log('[isModuleEventEmailEnabled] Module email is disabled, returning false');
@@ -157,9 +157,9 @@ export async function isModuleEventEmailEnabled(
     select: { is_enabled: true },
   });
 
-  console.log('[isModuleEventEmailEnabled] Event config:', config);
+  // console.log('[isModuleEventEmailEnabled] Event config:', config);
   const result = config?.is_enabled === true;
-  console.log('[isModuleEventEmailEnabled] Final result:', result);
+  // console.log('[isModuleEventEmailEnabled] Final result:', result);
   return result;
 }
 
@@ -256,7 +256,7 @@ async function getRecipientEmails(
   moduleName: string,
   eventType: string
 ): Promise<string[]> {
-  console.log('[getRecipientEmails] Getting recipient emails for ownerId:', ownerId, 'moduleName:', moduleName, 'eventType:', eventType);
+  // console.log('[getRecipientEmails] Getting recipient emails for ownerId:', ownerId, 'moduleName:', moduleName, 'eventType:', eventType);
   
   const config = await getModuleEmailConfig(ownerId, moduleName, eventType);
   
@@ -272,7 +272,7 @@ async function getRecipientEmails(
 
   // Add users from specified roles
   if (config.notification_roles.length > 0) {
-    console.log('[getRecipientEmails] Looking for users with roles:', config.notification_roles);
+    // console.log('[getRecipientEmails] Looking for users with roles:', config.notification_roles);
     const roleUsers = await prisma.public_users.findMany({
       where: {
         fk_owner_id: ownerId,
@@ -282,7 +282,7 @@ async function getRecipientEmails(
       select: { user_id: true, email: true },
     });
 
-    console.log('[getRecipientEmails] Found role users:', roleUsers.length);
+    // console.log('[getRecipientEmails] Found role users:', roleUsers.length);
 
     for (const user of roleUsers) {
       if (user.email) {
@@ -294,7 +294,7 @@ async function getRecipientEmails(
 
   // Add specific user IDs
   if (config.notification_user_ids.length > 0) {
-    console.log('[getRecipientEmails] Looking for specific user IDs:', config.notification_user_ids);
+    // console.log('[getRecipientEmails] Looking for specific user IDs:', config.notification_user_ids);
     const specificUsers = await prisma.public_users.findMany({
       where: {
         user_id: { in: config.notification_user_ids },
@@ -303,7 +303,7 @@ async function getRecipientEmails(
       select: { user_id: true, email: true },
     });
 
-    console.log('[getRecipientEmails] Found specific users:', specificUsers.length);
+    // console.log('[getRecipientEmails] Found specific users:', specificUsers.length);
 
     for (const user of specificUsers) {
       if (user.email && !userIds.has(user.user_id)) {
@@ -313,7 +313,7 @@ async function getRecipientEmails(
     }
   }
 
-  console.log('[getRecipientEmails] Final recipient emails:', emails);
+  // console.log('[getRecipientEmails] Final recipient emails:', emails);
   return emails;
 }
 
@@ -328,14 +328,14 @@ async function sendMaintenanceModuleEmail(
 ): Promise<void> {
   
   const isEnabled = await isModuleEventEmailEnabled(ownerId, 'maintenance', eventType);
-  console.log('isEnabled:',isEnabled)
+  // console.log('isEnabled:',isEnabled)
   if (!isEnabled) {
     console.log('[sendMaintenanceModuleEmail] Email is not enabled, skipping email send');
     return;
   }
 
   const emails = await getRecipientEmails(ownerId, 'maintenance', eventType);
-  console.log('emails:',emails)
+  // console.log('emails:',emails)
   if (emails.length === 0) {
     console.log('[sendMaintenanceModuleEmail] No recipient emails found, skipping email send');
     return;
@@ -344,9 +344,9 @@ async function sendMaintenanceModuleEmail(
   // Check daily email limit
   const limitReached = await isDailyEmailLimitReached(ownerId);
   if (limitReached) {
-    console.log('[sendMaintenanceModuleEmail] Daily email limit reached for owner:', ownerId);
+    // console.log('[sendMaintenanceModuleEmail] Daily email limit reached for owner:', ownerId);
     const stats = await getDailyEmailStats(ownerId);
-    console.log('[sendMaintenanceModuleEmail] Email stats:', stats);
+    // console.log('[sendMaintenanceModuleEmail] Email stats:', stats);
     
     // Notify admins if limit is reached and notification hasn't been sent today
     if (stats && await shouldNotifyEmailLimitReached(ownerId)) {
@@ -372,7 +372,7 @@ async function sendMaintenanceModuleEmail(
 
   // Increment email counter
   const newCount = await incrementDailyEmailCount(ownerId);
-  console.log('[sendMaintenanceModuleEmail] Email sent, new daily count:', newCount);
+  // console.log('[sendMaintenanceModuleEmail] Email sent, new daily count:', newCount);
 
   // Check if we just reached the limit
   const stats = await getDailyEmailStats(ownerId);
@@ -520,7 +520,7 @@ export async function sendTicketAssignedEmail(
         data.ticketPriority
       );
       await incrementDailyEmailCount(ownerId);
-      console.log('[sendTicketAssignedEmail] Email sent successfully to assigned user');
+      // console.log('[sendTicketAssignedEmail] Email sent successfully to assigned user');
     } catch (error) {
       console.error('[sendTicketAssignedEmail] Failed to send email:', error);
     }
@@ -636,12 +636,12 @@ async function sendOperationsModuleEmail(
 
   // Increment email counter
   const newCount = await incrementDailyEmailCount(ownerId);
-  console.log('[sendOperationsModuleEmail] Email sent, new daily count:', newCount);
+  // console.log('[sendOperationsModuleEmail] Email sent, new daily count:', newCount);
 
   // Check if we just reached the limit
   const stats = await getDailyEmailStats(ownerId);
   if (stats && stats.remaining === 0) {
-    console.log('[sendOperationsModuleEmail] Daily email limit just reached for owner:', ownerId);
+    // console.log('[sendOperationsModuleEmail] Daily email limit just reached for owner:', ownerId);
     
     // Get owner details for notification
     const owner = await prisma.owner.findUnique({
@@ -727,7 +727,7 @@ export async function sendMissionAssignedModuleEmail(
         data.description
       );
       await incrementDailyEmailCount(ownerId);
-      console.log('[sendMissionAssignedModuleEmail] Email sent successfully to', emails.length, 'recipients');
+      // console.log('[sendMissionAssignedModuleEmail] Email sent successfully to', emails.length, 'recipients');
     } catch (error) {
       console.error('[sendMissionAssignedModuleEmail] Failed to send email:', error);
     }

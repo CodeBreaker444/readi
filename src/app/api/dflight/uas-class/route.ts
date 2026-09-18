@@ -35,7 +35,7 @@ export async function GET(req: NextRequest) {
       client_id: config.client_id,
     }, config.pfx_content ?? undefined, config.pfx_password ?? undefined);
  
-    const result = await getDFlightUasClass(config.base_url, token.access_token, classId, config.pfx_content ?? undefined, config.pfx_password ?? undefined);
+    const result = await getDFlightUasClass(config.base_url, token.access_token, classId, config.client_id, config.pfx_content ?? undefined, config.pfx_password ?? undefined);
     return NextResponse.json({ code: 1, data: result });
   } catch (err: any) {
     return internalError(E.SV001, err);

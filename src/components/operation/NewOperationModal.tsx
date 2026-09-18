@@ -6,7 +6,9 @@ import type { FlightWaypoint } from '@/components/control-center/FlightPathMap'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { EmergencyResponsePlan } from '@/config/types/erp'
+import { DFLIGHT_CIRCLE_MAX_RADIUS_M } from '@/config/types/operation'
 import { toastWithDcc } from '@/lib/dcc-toast'
+import { formatDFlightErrorReason } from '@/lib/dflight-toast'
 import { serialInList } from '@/lib/serial-number'
 import { cn } from '@/lib/utils'
 import axios from 'axios'
@@ -40,8 +42,10 @@ import {
     PilotOption,
     PlanningOption,
     SchedulerFormData,
-    STEPS
+    STEPS,
+    UspaceOption
 } from './OperationModalTypes'
+import type { DFlightCircle } from './DFlightCircleMap'
 import { OperationStepClient } from './OperationStepClient'
 import { OperationStepDrone } from './OperationStepDrone'
 import { OperationStepPilot } from './OperationStepPilot'
@@ -124,6 +128,14 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
     const [pilotId, setPilotId] = useState('')
     const [visualObserverIds, setVisualObserverIds] = useState<string[]>([])
 
+    const [uspaces, setUspaces] = useState<UspaceOption[]>([])
+    const [uspaceId, setUspaceId] = useState('')
+    const [loadingUspaces, setLoadingUspaces] = useState(false)
+    const [dFlightEnabled, setDFlightEnabled] = useState(false)
+    const [uspaceError, setUspaceError] = useState('')
+    const [circle, setCircle] = useState<DFlightCircle | null>(null)
+    const [uspaceFocus, setUspaceFocus] = useState<{ lat: number; lng: number } | null>(null)
+
     const [isRecurrent, setIsRecurrent] = useState(false)
     const [recurrentDays, setRecurrentDays] = useState<number[]>([])
     const [recurrentEndDate, setRecurrentEndDate] = useState('')
@@ -182,6 +194,16 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
             .catch(() => {})
             .finally(() => setLoadingErpGroups(false))
 
+        setLoadingUspaces(true)
+        axios.get('/api/operation/dflight/uspace-list')
+            .then(res => {
+                setDFlightEnabled(!!res.data.enabled)
+                setUspaces(res.data.uspaces ?? [])
+                setUspaceError(res.data.error ?? '')
+            })
+            .catch(() => { setDFlightEnabled(false); setUspaces([]); setUspaceError('') })
+            .finally(() => setLoadingUspaces(false))
+
         setLoadingOptions(true)
         axios.get('/api/operation/options')
             .then(res => {
@@ -212,6 +234,18 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
     }, [open])
 
     useEffect(() => {
+        if (!uspaceId) { setUspaceFocus(null); return }
+        const name = uspaces.find(u => u.id === uspaceId)?.name
+        if (!name) { setUspaceFocus(null); return }
+
+        let cancelled = false
+        axios.get('/api/operation/dflight/geocode-uspace', { params: { name } })
+            .then(res => { if (!cancelled) setUspaceFocus(res.data.location ?? null) })
+            .catch(() => { if (!cancelled) setUspaceFocus(null) })
+        return () => { cancelled = true }
+    }, [uspaceId, uspaces])
+
+    useEffect(() => {
         if (!open || !editOperation) return
         // Prevent the clientId change from resetting droneId/planId on initial load
         if (editOperation.fk_client_id) skipDroneReset.current = true
@@ -223,6 +257,12 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
         setOpType((editOperation.op_type as OpType) || (editOperation.fk_planning_id ? 'PDRA' : 'OPEN'))
         setFlightMode(editOperation.flight_mode === 'DOCK' ? 'DOCK' : 'RC')
         setErpGroupId(editOperation.fk_erp_group_id?.toString() ?? '')
+        setUspaceId(editOperation.uspace_id ?? '')
+        setCircle(
+            editOperation.dflight_trajectory_data?.type === 'circle'
+                ? { lat: editOperation.dflight_trajectory_data.center.lat, lng: editOperation.dflight_trajectory_data.center.lng, radiusM: editOperation.dflight_trajectory_data.radius_m }
+                : null
+        )
         setSchedulerForm({
             missionCode: editOperation.mission_code ?? '',
             scheduledStart: editOperation.scheduled_start?.slice(0, 16) ?? '',
@@ -405,6 +445,8 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
         setErps([]); setResultOptions([])
         setFlightWaypoints([]); setLoadingWaypoints(false)
         setErpGroupId(''); setErpGroups([]); setLoadingErpGroups(false)
+        setUspaceId(''); setUspaces([]); setLoadingUspaces(false); setDFlightEnabled(false); setUspaceError('')
+        setCircle(null); setUspaceFocus(null)
         setIsRecurrent(false); setRecurrentDays([]); setRecurrentEndDate(''); setRecurrentDateError('')
         setSchedulerForm({
             missionCode: '', scheduledStart: '', scheduledEnd: '',
@@ -451,10 +493,15 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
         }
         if (step === 4) {
             if (!pilotId) return false
+            if (uspaceRequired && !uspaceId) return false
+            if (circleRequired && (!circle || circle.radiusM > DFLIGHT_CIRCLE_MAX_RADIUS_M)) return false
             return true
         }
         return true
     }
+
+    const uspaceRequired = dFlightEnabled && ['PDRA', 'OPEN', 'STS-01', 'STS-02'].includes(opType)
+    const circleRequired = dFlightEnabled && ['OPEN', 'STS-01', 'STS-02'].includes(opType)
 
     const clientPlannings = plannings
         .filter(p => String(p.fk_client_id) === clientId)
@@ -489,6 +536,10 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                     flight_mode: opType === 'PDRA' ? flightMode : null,
                     op_type: opType,
                     mission_group_label: schedulerForm.groupLabel.trim() || null,
+                    uspace_id: uspaceId || null,
+                    dflight_trajectory_data: circleRequired && circle
+                        ? { type: 'circle' as const, center: { lat: circle.lat, lng: circle.lng }, radius_m: circle.radiusM }
+                        : null,
                 }
                 const res = await axios.put(`/api/operation/${editOperation.pilot_mission_id}`, payload)
                 toast.success(t('operations.newOperation.toast.updateSuccess'))
@@ -517,6 +568,10 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                 flight_mode: opType === 'PDRA' ? flightMode : null,
                 op_type: opType,
                 mission_group_label: schedulerForm.groupLabel.trim() || undefined,
+                uspace_id: uspaceId || undefined,
+                dflight_trajectory_data: circleRequired && circle
+                    ? { type: 'circle' as const, center: { lat: circle.lat, lng: circle.lng }, radius_m: circle.radiusM }
+                    : undefined,
                 // A mission created to attach an already-flown log is inherently
                 // completed, not scheduled for the future.
                 status_name: createPrefill ? 'COMPLETED' : 'PLANNED',
@@ -536,7 +591,18 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
             } else {
                 toast.success(t('operations.newOperation.toast.createSuccess'))
             }
-            
+
+            // Mission creation itself succeeded — D-Flight authorization is a
+            // separate, non-fatal step, so surface its failure alongside the
+            // success toast rather than blocking on it.
+            const dflightErrors: Array<{ missionCode: string; message: string }> = res.data.dflight_errors ?? []
+            dflightErrors.forEach(e => {
+                toast.error(t('operations.newOperation.toast.dflightAuthError', { missionCode: e.missionCode }), {
+                    description: formatDFlightErrorReason(e.message),
+                    duration: 10000,
+                })
+            })
+
             onSaved?.(res.data)
             onSuccess(); onClose()
         } catch (err: any) {
@@ -760,6 +826,16 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                             visualObserverIds={visualObserverIds}
                             onVisualObserverChange={setVisualObserverIds}
                             loadingOptions={loadingOptions}
+                            uspaces={uspaces}
+                            uspaceId={uspaceId}
+                            onUspaceChange={setUspaceId}
+                            loadingUspaces={loadingUspaces}
+                            dFlightEnabled={uspaceRequired}
+                            uspaceError={uspaceError}
+                            circle={circle}
+                            onCircleChange={setCircle}
+                            circleMaxRadiusM={DFLIGHT_CIRCLE_MAX_RADIUS_M}
+                            circleFocusCenter={uspaceFocus}
                             isDark={isDark}
                             summary={{
                                 clientName: selectedClient?.client_name,
@@ -778,6 +854,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                                 lucLabel: selectedLuc?.label,
                                 pilotName: selectedPilot ? `${selectedPilot.first_name} ${selectedPilot.last_name}` : undefined,
                                 location: schedulerForm.location,
+                                uspaceLabel: uspaces.find(u => u.id === uspaceId)?.name ?? (uspaceId || undefined),
                             }}
                         />
                     )}
@@ -841,7 +918,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                             <Button
                                 size="sm"
                                 onClick={handleSubmit}
-                                disabled={isSubmitting || !pilotId || !schedulerForm.missionCode.trim() || !schedulerForm.lucId || !schedulerForm.typeId || !schedulerForm.categoryId || !schedulerForm.scheduledStart}
+                                disabled={isSubmitting || !pilotId || !schedulerForm.missionCode.trim() || !schedulerForm.lucId || !schedulerForm.typeId || !schedulerForm.categoryId || !schedulerForm.scheduledStart || (uspaceRequired && !uspaceId) || (circleRequired && (!circle || circle.radiusM > DFLIGHT_CIRCLE_MAX_RADIUS_M))}
                                 className="gap-2 cursor-pointer bg-violet-600 hover:bg-violet-700 text-white min-w-40"
                             >
                                 {isSubmitting

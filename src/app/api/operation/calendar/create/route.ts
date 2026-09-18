@@ -1,4 +1,5 @@
 import { notifyDccMissionCreation } from '@/backend/services/mission/dcc-callback-service'
+import { authorizeMissionWithDFlight } from '@/backend/services/integrations/dflight-mission-authorization-service'
 import { notifyPilotAssignment } from '@/backend/services/notification/notification-service'
 import { createOperationCalendarEntry, deleteOperationCalendarEntry } from '@/backend/services/operation/operation-calendar-service'
 import { internalError } from '@/lib/api-error'
@@ -28,6 +29,18 @@ export async function POST(req: NextRequest) {
       notes: body.notes ?? undefined,
       operator: session!.user.email ?? undefined,
     })
+
+    // D-Flight authorization + flytrelay watch registration — no-op unless the
+    // owner has D-Flight enabled; never blocks mission creation on failure.
+    for (const m of result.missions) {
+      const { create, watch } = await authorizeMissionWithDFlight(m.pilotMissionId, session!.user.ownerId)
+      if (create.outcome === 'error') {
+        console.warn('[POST /api/operation/calendar/create] D-Flight authorization failed (non-fatal):', create.message)
+      }
+      if (watch?.outcome === 'error') {
+        console.warn('[POST /api/operation/calendar/create] flytrelay watch registration failed (non-fatal):', watch.message)
+      }
+    }
 
     if (body.fk_pilot_user_id) {
       await notifyPilotAssignment(

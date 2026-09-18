@@ -90,14 +90,14 @@ export async function POST(req: NextRequest) {
         ownerId: session!.user.ownerId,
       });
 
-      if (parsed.data.workflow_mission_status === '_START' || parsed.data.workflow_mission_status === '_END') {
-        const requestedByDcc = await isMissionRequestedByDcc(parsed.data.mission_id);
-        if (requestedByDcc) {
-          dcc = parsed.data.workflow_mission_status === '_START'
-            ? await notifyDccExecution(parsed.data.mission_id)
-            : await notifyDccTermination(parsed.data.mission_id, 1);
-        }
-      }
+      // if (parsed.data.workflow_mission_status === '_START' || parsed.data.workflow_mission_status === '_END') {
+      //   const requestedByDcc = await isMissionRequestedByDcc(parsed.data.mission_id);
+      //   if (requestedByDcc) {
+      //     dcc = parsed.data.workflow_mission_status === '_START'
+      //       ? await notifyDccExecution(parsed.data.mission_id)
+      //       : await notifyDccTermination(parsed.data.mission_id, 1);
+      //   }
+      // }
     }
 
     return NextResponse.json(
@@ -106,6 +106,9 @@ export async function POST(req: NextRequest) {
     );
   } catch (err: any) {
     if (err?.code === 'MISSION_LOCKED') return apiError(E.BL003, 422);
+    if (err?.code === 'DFLIGHT_NOT_AUTHORIZED' || err?.code === 'DFLIGHT_ABORTED') {
+      return NextResponse.json({ code: 0, message: err.message, errorCode: err.code }, { status: 422 });
+    }
     return internalError(E.SV001, err);
   }
 }

@@ -9,15 +9,17 @@ import {
     BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
 import { Button } from '@/components/ui/button';
+import LogoCropDialog from '@/components/company/LogoCropDialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
 import { useTheme } from '@/components/useTheme';
-import { ArrowLeft, Building2, House, Loader2, UserCog, CheckCircle2, AlertCircle } from 'lucide-react';
+import { validateLogoFile } from '@/lib/logo-constraints';
+import { ArrowLeft, Building2, Camera, House, Loader2, UserCog, CheckCircle2, AlertCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 const initialForm = {
@@ -127,6 +129,28 @@ export default function NewCompanyPage() {
     const [uniqueErrors, setUniqueErrors] = useState<Partial<Record<keyof Form, string>>>({});
     const [checking, setChecking] = useState<Partial<Record<keyof Form, boolean>>>({});
 
+    const [logoFile, setLogoFile] = useState<File | null>(null);
+    const [logoPreview, setLogoPreview] = useState<string | null>(null);
+    const [cropSource, setCropSource] = useState<File | null>(null);
+    const logoInputRef = useRef<HTMLInputElement>(null);
+
+    const handleLogoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        e.target.value = '';
+        if (!file) return;
+
+        const error = await validateLogoFile(file);
+        if (error) { toast.error(error); return; }
+
+        setCropSource(file);
+    };
+
+    const handleLogoCropped = (file: File) => {
+        setCropSource(null);
+        setLogoFile(file);
+        setLogoPreview(URL.createObjectURL(file));
+    };
+
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.name === 'admin_username' ? e.target.value.toLowerCase() : e.target.value;
         const key = e.target.name as keyof Form;
@@ -204,6 +228,15 @@ export default function NewCompanyPage() {
             const data = await res.json();
 
             if (data.code === 1) {
+                if (logoFile) {
+                    try {
+                        const fd = new FormData();
+                        fd.append('logo', logoFile);
+                        await fetch(`/api/owner/${data.data.owner_id}/logo`, { method: 'POST', body: fd });
+                    } catch {
+                        toast.error('Company created, but logo upload failed. You can add it from the company page.');
+                    }
+                }
                 toast.success('Company and admin user created successfully');
                 router.push(`/company/${data.data.owner_id}`);
             } else {
@@ -302,6 +335,47 @@ export default function NewCompanyPage() {
                         icon={Building2}
                         isDark={isDark}
                     >
+                        <div className="flex items-center gap-4 mb-5">
+                            <div className="relative shrink-0">
+                                <button
+                                    type="button"
+                                    onClick={() => logoInputRef.current?.click()}
+                                    className={`w-16 h-16 rounded-lg flex items-center justify-center overflow-hidden ${isDark ? 'bg-slate-800' : 'bg-violet-50'}`}
+                                >
+                                    {logoPreview ? (
+                                        <img src={logoPreview} alt="Company logo preview" className="w-full h-full object-contain" />
+                                    ) : (
+                                        <Building2 size={24} className={isDark ? 'text-slate-300' : 'text-violet-600'} />
+                                    )}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => logoInputRef.current?.click()}
+                                    className={`absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-violet-600 text-white flex items-center justify-center ring-2 ${isDark ? 'ring-slate-900' : 'ring-white'}`}
+                                >
+                                    <Camera size={13} />
+                                </button>
+                                <input
+                                    ref={logoInputRef}
+                                    type="file"
+                                    onChange={handleLogoChange}
+                                    accept="image/jpeg,image/png,image/webp"
+                                    className="hidden"
+                                />
+                            </div>
+                            <div>
+                                <p className={`text-sm font-medium ${isDark ? 'text-white' : 'text-slate-900'}`}>Company Logo</p>
+                                <p className="text-xs text-muted-foreground mt-0.5">JPEG, PNG, or WebP — up to 5MB, at least 128x128px. Optional, can be added later.</p>
+                            </div>
+                        </div>
+
+                        <LogoCropDialog
+                            open={!!cropSource}
+                            file={cropSource}
+                            onCancel={() => setCropSource(null)}
+                            onCropped={handleLogoCropped}
+                        />
+
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                             <div className="space-y-1.5">
                                 <Label htmlFor="owner_code" className="text-xs font-medium text-muted-foreground">

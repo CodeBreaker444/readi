@@ -156,6 +156,28 @@ export function MissionCard({ mission, draggable, onDragStart, onViewDetails, on
 
         <div className="flex items-start justify-between gap-2">
           <div className="flex flex-wrap items-center gap-1.5">
+            {mission.mission_code && (
+              <Badge
+                variant="outline"
+                className={isDark
+                  ? "border-slate-600 bg-slate-800/80 px-1.5 py-0 font-mono text-[10px] text-slate-300"
+                  : "border-slate-300 bg-slate-50 px-1.5 py-0 font-mono text-[10px] text-slate-600"
+                }
+              >
+                {mission.mission_code}
+              </Badge>
+            )}
+            {mission.op_type && (
+              <Badge
+                variant="outline"
+                className={isDark
+                  ? "border-fuchsia-500/30 bg-fuchsia-500/10 px-1.5 py-0 text-[10px] text-fuchsia-400"
+                  : "border-fuchsia-200 bg-fuchsia-50 px-1.5 py-0 text-[10px] text-fuchsia-700"
+                }
+              >
+                {mission.op_type}
+              </Badge>
+            )}
             <Badge
               variant="outline"
               className={isDark

@@ -183,11 +183,13 @@ console.log('ws url:',wsUrl,'topic:',topic,'token present:',!!token);
       });
 
       socket.on('disconnect', () => {
+        credsRef.current = null;
         setStatus('error');
         scheduleRetry();
       });
 
       socket.on('connect_error', (err) => {
+        credsRef.current = null;
         setStatus('error');
         setErrorMessage(err.message);
         socket.disconnect();

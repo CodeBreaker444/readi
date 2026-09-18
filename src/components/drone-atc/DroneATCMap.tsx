@@ -1,8 +1,10 @@
 'use client';
 
 import type { AircraftState } from '@/app/api/drone-atc/flights/route';
+import { LEAFLET_TILE_ATTRIBUTION, LEAFLET_TILE_BASE_MAX_NATIVE_ZOOM, LEAFLET_TILE_DARK, LEAFLET_TILE_DARK_LABELS, LEAFLET_TILE_LIGHT, LEAFLET_TILE_LIGHT_LABELS, LEAFLET_TILE_MAX_ZOOM } from '@/lib/leaflet-tiles';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import 'leaflet-velocity/dist/leaflet-velocity.css';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { LayerVisibility } from './LayerControlPanel';
 import type { DroneMap, TelemetryData } from './useDroneATCSocket';
@@ -19,12 +21,13 @@ interface DroneATCMapProps {
   onBoundsChange?: (bounds: { latMin: number; lonMin: number; latMax: number; lonMax: number }) => void;
 }
 
-const TILE_LIGHT = 'https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}';
-const TILE_DARK = 'https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}';
-
-const ITALY_BOUNDS = { south: 36.0, west: 6.5, north: 47.5, east: 18.5 } as const;
-const ITALY_CENTER: [number, number] = [41.9, 12.5];
-const ITALY_ZOOM = 6;
+const COVERAGE_BOUNDS = { south: 35.5, west: -9.5, north: 47.5, east: 18.6 } as const;
+const COVERAGE_CENTER: [number, number] = [40.5, 5.0];
+const COVERAGE_ZOOM = 5;
+// Wind data isn't limited to the Spain/Italy coverage box like airspace and
+// flight data are — it should follow the viewport the same way the OWM
+// weather tiles do, only guarded against the Mercator projection's pole singularity.
+const WIND_LAT_LIMIT = 85;
 
 const OWM_LAYERS: Record<string, string> = {
   wind: 'wind', temp: 'temp', clouds: 'clouds', precip: 'precipitation', pressure: 'pressure',
@@ -239,10 +242,14 @@ export default function DroneATCMap({
   const mapRef = useRef<L.Map | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const tileLayerRef = useRef<L.TileLayer | null>(null);
+  const labelsLayerRef = useRef<L.TileLayer | null>(null);
   const droneLayerRef = useRef<L.LayerGroup | null>(null);
   const dockLayerRef = useRef<L.LayerGroup | null>(null);
   const flightLayerRef = useRef<L.LayerGroup | null>(null);
   const airspaceLayerRef = useRef<L.LayerGroup | null>(null);
+  const windLayerRef = useRef<L.VelocityLayer | null>(null);
+  const windPluginLoadedRef = useRef(false);
+  const windFetchAbortRef = useRef<AbortController | null>(null);
   const weatherRefs = useRef<Partial<Record<WeatherLayerKey, L.TileLayer>>>({});
   const droneMarkersRef = useRef<Record<string, L.Marker>>({});
   const dockMarkersRef = useRef<Record<string, L.Marker>>({});
@@ -395,10 +402,10 @@ export default function DroneATCMap({
     airspaceFetchAbortRef.current?.abort();
     const ctrl = new AbortController();
     airspaceFetchAbortRef.current = ctrl;
-    const s = Math.max(padded.getSouth(), ITALY_BOUNDS.south);
-    const w = Math.max(padded.getWest(), ITALY_BOUNDS.west);
-    const n = Math.min(padded.getNorth(), ITALY_BOUNDS.north);
-    const e = Math.min(padded.getEast(), ITALY_BOUNDS.east);
+    const s = Math.max(padded.getSouth(), COVERAGE_BOUNDS.south);
+    const w = Math.max(padded.getWest(), COVERAGE_BOUNDS.west);
+    const n = Math.min(padded.getNorth(), COVERAGE_BOUNDS.north);
+    const e = Math.min(padded.getEast(), COVERAGE_BOUNDS.east);
     fetchAirspaceForRegion(s, w, n, e, ctrl.signal)
       .then(zones => {
         if (ctrl.signal.aborted) return;
@@ -411,15 +418,48 @@ export default function DroneATCMap({
       .catch(() => {});
   }, []);
 
+  const fetchWindGrid = useCallback((s: number, w: number, n: number, e: number, signal: AbortSignal) => {
+    const params = new URLSearchParams({
+      south: s.toFixed(4), west: w.toFixed(4), north: n.toFixed(4), east: e.toFixed(4),
+    });
+    return fetch(`/api/drone-atc/wind-grid?${params}`, { signal })
+      .then(res => (res.ok ? res.json() : null))
+      .catch(() => null);
+  }, []);
+
+  // Unlike airspace zones (static, fine to reuse if the old fetch already
+  // covers the view), the wind grid is a fixed 10x10 resolution — reusing a
+  // wide fetch after zooming in would keep the field coarse, so this always
+  // re-fetches for the current viewport instead of skipping when "covered".
+  const doFetchWind = useCallback(() => {
+    const map = mapRef.current;
+    const layer = windLayerRef.current;
+    if (!map || !layer) return;
+    const padded = map.getBounds().pad(0.2);
+    const s = Math.max(padded.getSouth(), -WIND_LAT_LIMIT);
+    const w = padded.getWest();
+    const n = Math.min(padded.getNorth(), WIND_LAT_LIMIT);
+    const e = padded.getEast();
+
+    windFetchAbortRef.current?.abort();
+    const ctrl = new AbortController();
+    windFetchAbortRef.current = ctrl;
+
+    fetchWindGrid(s, w, n, e, ctrl.signal).then(data => {
+      if (ctrl.signal.aborted || !data) return;
+      windLayerRef.current?.setData(data);
+    });
+  }, [fetchWindGrid]);
+
   // Init map
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
 
     const map = L.map(containerRef.current, {
-      center: ITALY_CENTER,
-      zoom: ITALY_ZOOM,
+      center: COVERAGE_CENTER,
+      zoom: COVERAGE_ZOOM,
       zoomControl: true,
-      maxBounds: [[ITALY_BOUNDS.south - 1, ITALY_BOUNDS.west - 1], [ITALY_BOUNDS.north + 1, ITALY_BOUNDS.east + 1]],
+      maxBounds: [[COVERAGE_BOUNDS.south - 1, COVERAGE_BOUNDS.west - 1], [COVERAGE_BOUNDS.north + 1, COVERAGE_BOUNDS.east + 1]],
       maxBoundsViscosity: 0.85,
     });
 
@@ -427,8 +467,11 @@ export default function DroneATCMap({
     const dronePane = map.createPane('dronePane');
     dronePane.style.zIndex = '615';
 
-    const tile = L.tileLayer(isDark ? TILE_DARK : TILE_LIGHT, {
-      attribution: 'Tiles © Esri', maxZoom: 16,
+    const tile = L.tileLayer(isDark ? LEAFLET_TILE_DARK : LEAFLET_TILE_LIGHT, {
+      attribution: LEAFLET_TILE_ATTRIBUTION, maxZoom: LEAFLET_TILE_MAX_ZOOM, maxNativeZoom: LEAFLET_TILE_BASE_MAX_NATIVE_ZOOM,
+    }).addTo(map);
+    const labelsTile = L.tileLayer(isDark ? LEAFLET_TILE_DARK_LABELS : LEAFLET_TILE_LIGHT_LABELS, {
+      maxZoom: LEAFLET_TILE_MAX_ZOOM, maxNativeZoom: LEAFLET_TILE_BASE_MAX_NATIVE_ZOOM,
     }).addTo(map);
 
     const airspaceLayer = L.layerGroup().addTo(map);
@@ -438,6 +481,7 @@ export default function DroneATCMap({
 
     mapRef.current = map;
     tileLayerRef.current = tile;
+    labelsLayerRef.current = labelsTile;
     droneLayerRef.current = droneLayer;
     dockLayerRef.current = dockLayer;
     flightLayerRef.current = flightLayer;
@@ -460,18 +504,24 @@ export default function DroneATCMap({
     map.on('zoomend', doFetchAirspace);
     doFetchAirspace();
 
+    map.on('moveend', doFetchWind);
+    map.on('zoomend', doFetchWind);
+
     return () => {
       observer.disconnect();
       cancelAnimationFrame(cloudAnimRef.current);
       cancelAnimationFrame(precipAnimRef.current);
       if (cloudCanvasRef.current)  { cloudCanvasRef.current.remove();  cloudCanvasRef.current  = null; }
       if (precipCanvasRef.current) { precipCanvasRef.current.remove(); precipCanvasRef.current = null; }
+      windFetchAbortRef.current?.abort();
       map.remove();
       mapRef.current = null;
+      labelsLayerRef.current = null;
       droneLayerRef.current = null;
       dockLayerRef.current = null;
       flightLayerRef.current = null;
       airspaceLayerRef.current = null;
+      windLayerRef.current = null;
       droneMarkersRef.current = {};
       dockMarkersRef.current = {};
       flightMarkersRef.current = {};
@@ -480,7 +530,8 @@ export default function DroneATCMap({
 
   // Theme tile swap
   useEffect(() => {
-    tileLayerRef.current?.setUrl(isDark ? TILE_DARK : TILE_LIGHT);
+    tileLayerRef.current?.setUrl(isDark ? LEAFLET_TILE_DARK : LEAFLET_TILE_LIGHT);
+    labelsLayerRef.current?.setUrl(isDark ? LEAFLET_TILE_DARK_LABELS : LEAFLET_TILE_LIGHT_LABELS);
   }, [isDark]);
 
   // Weather tile layers (OWM)
@@ -488,7 +539,7 @@ export default function DroneATCMap({
     const map = mapRef.current;
     if (!map) return;
     WEATHER_KEYS.forEach((key) => {
-      if (key === 'wind') return; // handled by particle canvas, not OWM tile
+      if (key === 'wind') return; // handled by the leaflet-velocity layer below, not an OWM tile
       const visible = layers[key];
       const existing = weatherRefs.current[key];
       if (visible && owmApiKey) {
@@ -504,6 +555,66 @@ export default function DroneATCMap({
       }
     });
   }, [layers.wind, layers.temp, layers.clouds, layers.precip, layers.pressure, owmApiKey]);
+
+  // Animated wind particle layer (leaflet-velocity), driven by a gridded
+  // U/V field fetched for the current viewport.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    if (!layers.wind) {
+      if (windLayerRef.current) {
+        map.removeLayer(windLayerRef.current);
+        windLayerRef.current = null;
+      }
+      return;
+    }
+
+    if (windLayerRef.current) {
+      doFetchWind();
+      return;
+    }
+
+    let cancelled = false;
+    (async () => {
+      if (!windPluginLoadedRef.current) {
+        // leaflet-velocity's UMD bundle expects a global `L`, not a module import.
+        (window as unknown as { L: typeof L }).L = L;
+        await import('leaflet-velocity');
+        windPluginLoadedRef.current = true;
+      }
+      if (cancelled || !mapRef.current || windLayerRef.current) return;
+
+      const bounds = mapRef.current.getBounds().pad(0.2);
+      const s = Math.max(bounds.getSouth(), -WIND_LAT_LIMIT);
+      const w = bounds.getWest();
+      const n = Math.min(bounds.getNorth(), WIND_LAT_LIMIT);
+      const e = bounds.getEast();
+
+      const ctrl = new AbortController();
+      windFetchAbortRef.current = ctrl;
+      const data = await fetchWindGrid(s, w, n, e, ctrl.signal);
+      if (cancelled || !mapRef.current || !data) return;
+
+      windLayerRef.current = L.velocityLayer({
+        displayValues: true,
+        displayOptions: {
+          velocityType: 'Wind',
+          position: 'bottomleft',
+          emptyString: 'No wind data',
+          angleConvention: 'bearingCW',
+          speedUnit: 'ms',
+        },
+        data,
+        minVelocity: 0,
+        maxVelocity: 15,
+        opacity: 0.92,
+      });
+      windLayerRef.current.addTo(mapRef.current);
+    })();
+
+    return () => { cancelled = true; };
+  }, [layers.wind, doFetchWind, fetchWindGrid]);
 
   // Cloud drift animation
   useEffect(() => {

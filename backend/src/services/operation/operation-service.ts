@@ -1,5 +1,5 @@
 import { seedLucProcedureProgressFromSteps } from '@/backend/services/operation/luc-procedure-progress';
-import { assertMissionEditable } from '@/backend/services/operation/mission-lock';
+import { assertMissionEditable, assertDFlightAuthorized } from '@/backend/services/operation/mission-lock';
 import { AttachmentUploadResponse, CreateOperationSchema, ListOperationsQuerySchema, Operation, OperationAttachment, OperationsListResponse, UpdateOperationSchema } from '@/config/types/operation';
 import { prisma } from '@/lib/prisma';
 import { buildS3Url, deleteFileFromS3, getPresignedDownloadUrl, REGION, uploadFileToS3 } from '@/lib/s3Client';
@@ -105,6 +105,9 @@ export async function listOperations(
         recurring_group_id: true,
         fk_owner_id: true,
         status_name: true,
+        dflight_mission_id: true,
+        dflight_flight_authorisation_status: true,
+        dflight_trajectory_data: true,
         created_at: true,
         updated_at: true,
         users: { select: { first_name: true, last_name: true } },
@@ -134,6 +137,7 @@ export async function listOperations(
     visual_observer_ids: (row.mission_metadata as any)?.visual_observers ?? null,
     flight_mode: (row.mission_metadata as any)?.flight_mode ?? null,
     op_type: (row.mission_metadata as any)?.op_type ?? null,
+    uspace_id: (row.mission_metadata as any)?.uspace_id ?? null,
     is_recurrent: !!row.recurring_group_id
       || !!(row.mission_metadata as any)?.is_recurrent
       || !!(row.mission_metadata as any)?.recurring_group_id,
@@ -197,6 +201,7 @@ export async function getOperation(id: number): Promise<Operation | null> {
     visual_observer_ids: (data.mission_metadata as any)?.visual_observers ?? null,
     flight_mode: (data.mission_metadata as any)?.flight_mode ?? null,
     op_type: (data.mission_metadata as any)?.op_type ?? null,
+    uspace_id: (data.mission_metadata as any)?.uspace_id ?? null,
   } as unknown as Operation;
 }
 
@@ -266,6 +271,7 @@ export async function createOperation(input: CreateOperationSchema, ownerId: num
   if (visualObservers?.length) missionMetadata.visual_observers = visualObservers;
   if ((input as any).flight_mode) missionMetadata.flight_mode = (input as any).flight_mode;
   if ((input as any).op_type) missionMetadata.op_type = (input as any).op_type;
+  if ((input as any).uspace_id) missionMetadata.uspace_id = (input as any).uspace_id;
   if (isRecurrent) {
     missionMetadata.is_recurrent = true;
     missionMetadata.recurrent_days_of_week = recurrentDays;
@@ -352,6 +358,7 @@ export async function createOperation(input: CreateOperationSchema, ownerId: num
       mission_group_label: (input as any).mission_group_label || null,
       luc_procedure_progress: luc_procedure_progress as any,
       luc_completed_at: null,
+      dflight_trajectory_data: (input as any).dflight_trajectory_data ?? null,
       ...(Object.keys(missionMetadata).length && { mission_metadata: { ...missionMetadata, recurring_group_id: recurringGroupId } }),
     };
 
@@ -368,7 +375,7 @@ export async function createOperation(input: CreateOperationSchema, ownerId: num
 
   // Send mission created email notification (for the first mission only)
   try {
-    console.log('[createOperation] Attempting to send mission created email for ownerId:', ownerId, 'missionCode:', codeToChild);
+    // console.log('[createOperation] Attempting to send mission created email for ownerId:', ownerId, 'missionCode:', codeToChild);
     
     const missionType = input.fk_mission_type_id 
       ? await prisma.pilot_mission_type.findUnique({
@@ -392,16 +399,6 @@ export async function createOperation(input: CreateOperationSchema, ownerId: num
       select: { scheduled_start: true },
     });
 
-    console.log('[createOperation] Email data:', {
-      missionCode: codeToChild,
-      missionType: missionType?.type_name || 'Unknown',
-      createdBy,
-      scheduledDate: firstMission?.scheduled_start,
-      description: input.notes || undefined,
-      isRecurrent,
-      totalMissions: insertedIds.length,
-    });
-
     await sendMissionCreatedModuleEmail(ownerId, {
       missionCode: codeToChild,
       missionType: missionType?.type_name || 'Unknown',
@@ -412,7 +409,6 @@ export async function createOperation(input: CreateOperationSchema, ownerId: num
       description: input.notes || undefined,
     });
 
-    console.log('[createOperation] Mission created email sent successfully');
 
     // Send mission assigned email to pilot
     if (input.fk_pilot_user_id) {
@@ -434,7 +430,7 @@ export async function createOperation(input: CreateOperationSchema, ownerId: num
               : input.scheduled_start,
             description: input.notes || undefined,
           }, [input.fk_pilot_user_id]);
-          console.log('[createOperation] Mission assigned email sent to pilot:', pilotUser.first_name, pilotUser.last_name);
+          // console.log('[createOperation] Mission assigned email sent to pilot:', pilotUser.first_name, pilotUser.last_name);
         }
       } catch (pilotEmailError) {
         console.error('[createOperation] Failed to send mission assigned email to pilot:', pilotEmailError);
@@ -462,7 +458,7 @@ export async function createOperation(input: CreateOperationSchema, ownerId: num
               : input.scheduled_start,
             description: input.notes || undefined,
           }, [observer.user_id]);
-          console.log('[createOperation] Mission assigned email sent to observer:', observer.name);
+          // console.log('[createOperation] Mission assigned email sent to observer:', observer.name);
         } catch (observerEmailError) {
           console.error('[createOperation] Failed to send mission assigned email to observer:', observer.name, observerEmailError);
         }
@@ -491,9 +487,16 @@ export async function updateOperation(id: number, input: UpdateOperationSchema, 
       mission_name: true,
       mission_description: true,
       fk_owner_id: true,
+      dflight_mission_id: true,
+      dflight_flight_authorisation_status: true,
+      dflight_mission_status: true,
     },
   });
   assertMissionEditable(current?.status_name);
+
+  if ((input as any).status_name === 'IN_PROGRESS' && current?.status_name !== 'IN_PROGRESS') {
+    assertDFlightAuthorized(current?.dflight_mission_id, current?.dflight_flight_authorisation_status, current?.dflight_mission_status);
+  }
 
   const updatePayload: Record<string, unknown> = {};
   if (input.mission_code !== undefined) updatePayload.mission_code = input.mission_code;
@@ -517,6 +520,7 @@ export async function updateOperation(id: number, input: UpdateOperationSchema, 
   if (input.distance_flown !== undefined) updatePayload.distance_flown = input.distance_flown;
   if ((input as any).fk_erp_group_id !== undefined) updatePayload.fk_erp_group_id = (input as any).fk_erp_group_id;
   if ((input as any).mission_group_label !== undefined) updatePayload.mission_group_label = (input as any).mission_group_label;
+  if ((input as any).dflight_trajectory_data !== undefined) updatePayload.dflight_trajectory_data = (input as any).dflight_trajectory_data;
 
   // Handle visual observers assignment
   const rawObserverIds: number[] | null = (input as any).visual_observer_ids ?? null;
@@ -534,13 +538,15 @@ export async function updateOperation(id: number, input: UpdateOperationSchema, 
     }
   }
 
-  if (visualObservers?.length || (input as any).flight_mode !== undefined || (input as any).op_type !== undefined) {
+  if (visualObservers?.length || (input as any).flight_mode !== undefined || (input as any).op_type !== undefined
+    || (input as any).uspace_id !== undefined) {
     const currentMetadata = current?.mission_metadata as any ?? {};
     updatePayload.mission_metadata = {
       ...currentMetadata,
       ...(visualObservers?.length && { visual_observers: visualObservers }),
       ...((input as any).flight_mode !== undefined && { flight_mode: (input as any).flight_mode }),
       ...((input as any).op_type !== undefined && { op_type: (input as any).op_type }),
+      ...((input as any).uspace_id !== undefined && { uspace_id: (input as any).uspace_id }),
     };
   }
 

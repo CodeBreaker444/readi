@@ -11,6 +11,8 @@
     "submit": "Invia",
     "back": "Indietro",
     "next": "Avanti",
+    "previous": "Precedente",
+    "pageIndicator": "Pagina {{current}} di {{total}}",
     "yes": "Sì",
     "no": "No",
     "active": "Attivo",
@@ -1005,6 +1007,9 @@
       "selectPlanning": "Seleziona una missione di pianificazione",
       "noPlannings": "Nessuna missione di pianificazione trovata.",
       "noDroneId": "Nessun Drone con ID DCC",
+      "selectPlan": "Seleziona un piano",
+      "noPlans": "Nessun piano trovato per questa pianificazione.",
+      "loadPlansError": "Impossibile caricare i piani",
       "flightSource": "Control Center",
       "manual": "manuale",
       "loadError": "Errore nel caricamento delle richieste di volo",
@@ -1113,6 +1118,7 @@
       "deleteFailed": "Eliminazione fallita. L'elenco è stato ripristinato.",
       "addSuccess": "Missione aggiunta con successo",
       "addFailed": "Aggiunta missione fallita.",
+      "selectSystemRequired": "Seleziona un sistema prima di aggiungere una voce di pianificazione missione.",
       "updated": "Pianificazione aggiornata",
       "searchLogbook": "Cerca nel registro...",
       "refresh": "Aggiorna",
@@ -1465,7 +1471,8 @@
     "actions": {
       "view": "Visualizza dettagli",
       "edit": "Modifica missione",
-      "delete": "Elimina missione"
+      "delete": "Elimina missione",
+      "submitDFlightAuth": "Invia per autorizzazione D-Flight"
     },
     "declaration": {
       "title": "Dichiarazione Giornaliera Pilota",
@@ -1576,7 +1583,10 @@
         "autofillWarning": "Nessuna missione idonea. La compilazione automatica richiede missioni completate con un pilota assegnato.",
         "autofillSuccess": "{{count}} missione/i compilata/e automaticamente",
         "autofillSkipped": "{{count}} saltato/i (non completato/i o senza pilota).",
-        "autofillError": "Compilazione automatica delle attività fallita"
+        "autofillError": "Compilazione automatica delle attività fallita",
+        "dflightAuthSuccess": "Autorizzazione D-Flight inviata per {{missionCode}}",
+        "dflightAuthSkipped": "L'autorizzazione D-Flight è stata saltata per questa missione",
+        "dflightAuthError": "Autorizzazione D-Flight non riuscita per {{missionCode}}"
       },
       "procedureBadge": {
         "noLuc": "Nessun LUC",
@@ -1686,6 +1696,7 @@
         "noComponents": "Nessun componente configurato per questo sistema.",
         "system": "Sistema",
         "lastUpdated": "Ultimo aggiornamento:",
+        "activationDate": "Data di attivazione:",
         "addUsage": "Aggiungi utilizzo",
         "flights": "Voli",
         "hours": "Ore",
@@ -2096,6 +2107,9 @@
         "noSystemsForClient": "Il cliente selezionato non ha alcun sistema.",
         "allInMaintenance": "Tutti i droni sono in manutenzione",
         "selectDrone": "Seleziona drone…",
+        "pagePrevious": "Precedente",
+        "pageNext": "Successiva",
+        "pageIndicator": "Pagina {{current}} di {{total}}",
         "allInMaintenanceWarning": "Tutti i droni assegnati a questo cliente sono attualmente in manutenzione.",
         "maintenanceTag": "MANUTENZIONE",
         "maintenanceDueTag": "MANUTENZIONE SCADUTA",
@@ -2180,12 +2194,19 @@
         "summaryProcedure": "Procedura",
         "summaryPilot": "Pilota",
         "summaryLocation": "Posizione",
+        "summaryUspace": "U-space",
+        "summaryCircle": "Geofence",
         "visualObserversLabel": "Osservatori Visivi",
         "visualObserversOptional": "(opzionale)",
         "visualObserversDisabled": "Seleziona prima un pilota",
         "primaryPilotNote": "PIC — già assegnato",
         "noPilots": "Nessun pilota disponibile",
-        "viewQualifications": "Qualifiche"
+        "viewQualifications": "Qualifiche",
+        "uspaceLabel": "U-space",
+        "selectUspace": "Seleziona u-space…",
+        "noUspaces": "Nessun u-space disponibile — verifica la configurazione D-Flight",
+        "circleLabel": "Disegna l'area di volo per {{uspace}}",
+        "circleRequired": "Disegna un cerchio sulla mappa per impostare l'area di volo della missione"
       },
       "pilotQualifications": {
         "title": "Qualifiche del Pilota",
@@ -2216,6 +2237,7 @@
         "updateError": "Impossibile aggiornare l'operazione",
         "createSuccess": "Operazione creata con successo",
         "createError": "Impossibile creare l'operazione",
+        "dflightAuthError": "Autorizzazione D-Flight non riuscita per {{missionCode}}",
         "postFlightSuccess": "Dati post-volo salvati con successo",
         "postFlightError": "Impossibile salvare i dati post-volo"
       },
@@ -2348,6 +2370,7 @@
       "deleteFailed": "Eliminazione fallita. L'elenco è stato ripristinato.",
       "addSuccess": "Missione aggiunta con successo",
       "addFailed": "Aggiunta missione fallita.",
+      "selectSystemRequired": "Seleziona un sistema prima di aggiungere una voce di pianificazione missione.",
       "updated": "Pianificazione aggiornata",
       "searchLogbook": "Cerca nel registro...",
       "refresh": "Aggiorna",
@@ -4172,7 +4195,26 @@
           "relations": "Relazioni",
           "delete": "Elimina",
           "log": "Log",
-          "flights": "Voli"
+          "flights": "Voli",
+          "qtbReport": "Report QTB"
+        }
+      },
+      "qtbReportModal": {
+        "title": "Genera Report QTB",
+        "timezoneHint": "Le date usano il tuo fuso orario locale ({{timezone}}).",
+        "errors": {
+          "rangeInvalid": "La data di fine deve essere uguale o successiva alla data di inizio.",
+          "tooManyRecords": "Questo intervallo di date contiene troppi voli. Restringi l'intervallo di date e riprova.",
+          "generic": "Impossibile generare il report. Riprova."
+        },
+        "toasts": {
+          "success": "Report QTB scaricato con successo",
+          "error": "Impossibile generare il report QTB"
+        },
+        "buttons": {
+          "cancel": "Annulla",
+          "generate": "Genera PDF",
+          "generating": "Generazione in corso..."
         }
       },
       "statusBadge": {
@@ -4434,7 +4476,7 @@
           "description": "Descrizione",
           "c2Platform": "Piattaforma C2",
           "gcs": "GCS",
-          "dccDroneId": "ID Drone DCC (UUID)",
+          "dccDroneId": "ID Drone DCC",
           "droneRegCode": "Codice Registrazione Drone",
           "status": "Stato *",
           "activationDate": "Data di attivazione",

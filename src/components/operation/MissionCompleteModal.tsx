@@ -38,6 +38,7 @@ interface ComponentInfo {
   limit_day: number;
   maintenance_cycle_type: string;
   last_maintenance_date: string | null;
+  activation_date: string | null;
   status: "OK" | "ALERT" | "DUE";
   trigger: string[];
   battery_cycle_ratio: number;

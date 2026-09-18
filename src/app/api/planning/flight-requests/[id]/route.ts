@@ -1,4 +1,6 @@
-import { deleteFlightRequest, updateFlightRequestStatus, verifyFlightRequestOwnership } from '@/backend/services/mission/flight-request-service';
+import { getFlightRequestById, updateFlightRequestStatus, deleteFlightRequest, verifyFlightRequestOwnership } from '@/backend/services/mission/flight-request-service';
+import { notifyDccDenial, notifyDccExecutionForRequest, notifyDccTerminationForRequest } from '@/backend/services/mission/dcc-callback-service';
+import type { DccCallbackResult } from '@/types/dcc-callback';
 import { apiError, internalError, zodError } from '@/lib/api-error';
 import { requireFeatureAccess, requirePermission } from '@/lib/auth/api-auth';
 import { E } from '@/lib/error-codes';
@@ -25,12 +27,24 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
     const parsed = PatchSchema.safeParse(body);
     if (!parsed.success) return zodError(E.VL001, parsed.error);
 
-    const exists = await verifyFlightRequestOwnership(id, session!.user.ownerId);
-    if (!exists) return apiError(E.NF021, 404);
+    const ownerId = session!.user.ownerId;
+    const fr = await getFlightRequestById(id, ownerId);
+    if (!fr) return apiError(E.NF021, 404);
 
-    await updateFlightRequestStatus(id, session!.user.ownerId, parsed.data.dcc_status);
+    await updateFlightRequestStatus(id, ownerId, parsed.data.dcc_status);
 
-    return NextResponse.json({ code: 1, message: 'Flight request status updated' });
+    let dcc: DccCallbackResult | undefined;
+    if (fr.external_mission_id) {
+      if (parsed.data.dcc_status === 'IN_PROGRESS') {
+        dcc = await notifyDccExecutionForRequest(ownerId, fr.external_mission_id);
+      } else if (parsed.data.dcc_status === 'COMPLETED') {
+        dcc = await notifyDccTerminationForRequest(ownerId, fr.external_mission_id, 1);
+      } else if (parsed.data.dcc_status === 'ISSUE') {
+        dcc = await notifyDccDenial(ownerId, fr.external_mission_id);
+      }
+    }
+
+    return NextResponse.json({ code: 1, message: 'Flight request status updated', dcc });
   } catch (err) {
     return internalError(E.SV001, err);
   }

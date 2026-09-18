@@ -47,6 +47,12 @@ const STATUS_BADGE: Record<string, { className: string }> = {
   ABORTED: { className: 'bg-red-50 text-red-700 border-red-200' },
 };
 
+const DFLIGHT_BADGE: Record<string, { className: string; label: string }> = {
+  ACCEPTED: { className: 'bg-emerald-50 text-emerald-700 border-emerald-200', label: 'D-Flight: Accepted' },
+  REJECTED: { className: 'bg-red-50 text-red-700 border-red-200', label: 'D-Flight: Rejected' },
+  WITHDRAWN: { className: 'bg-red-50 text-red-700 border-red-200', label: 'D-Flight: Withdrawn' },
+};
+
 
 function DetailRow({
   icon,
@@ -173,6 +179,21 @@ export function OperationDetailSheet({
                         className={cn('text-xs', STATUS_BADGE[operation.status_name].className)}
                       >
                         {statusLabel}
+                      </Badge>
+                    )}
+                    {operation.dflight_mission_id && (
+                      <Badge
+                        variant="outline"
+                        className={cn(
+                          'text-xs',
+                          operation.dflight_flight_authorisation_status && DFLIGHT_BADGE[operation.dflight_flight_authorisation_status]
+                            ? DFLIGHT_BADGE[operation.dflight_flight_authorisation_status].className
+                            : 'bg-amber-50 text-amber-700 border-amber-200',
+                        )}
+                      >
+                        {operation.dflight_flight_authorisation_status && DFLIGHT_BADGE[operation.dflight_flight_authorisation_status]
+                          ? DFLIGHT_BADGE[operation.dflight_flight_authorisation_status].label
+                          : 'D-Flight: Pending'}
                       </Badge>
                     )}
                     {(operation.mission_group_label || operation.is_recurrent) && (

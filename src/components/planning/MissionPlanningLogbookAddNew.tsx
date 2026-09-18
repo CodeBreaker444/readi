@@ -14,6 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { DroneTool } from "@/config/types/evaluation-planning";
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 
 interface MissionPlanningLogbookAddNewProps {
   isDark: boolean;
@@ -60,6 +61,12 @@ export default function MissionPlanningLogbookAddNew({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!form.mission_planning_tool || form.mission_planning_tool === "0") {
+      toast.error(t("planning.missionPlanning.selectSystemRequired"));
+      return;
+    }
+
     setSubmitting(true);
     try {
       const formData = new FormData();

@@ -72,7 +72,7 @@ export async function GET() {
         client_id: config.client_id,
       }, config.pfx_content ?? undefined, config.pfx_password ?? undefined);
 
-      dFlightDrones = await getDFlightDrones(config.base_url, token.access_token, config.username, config.pfx_content ?? undefined, config.pfx_password ?? undefined);
+      dFlightDrones = await getDFlightDrones(config.base_url, token.access_token, config.username, config.client_id, config.pfx_content ?? undefined, config.pfx_password ?? undefined);
     } catch (e: any) {
       connectionError = `Failed to connect to D-Flight: ${e?.message ?? 'Unknown error'}`;
     }

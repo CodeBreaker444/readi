@@ -77,7 +77,7 @@ export async function POST(req: NextRequest) {
     const accessToken = tokenResponse.access_token;
 
     // Get operator registration number
-    const userInfo = await getDFlightUserInfo(config.base_url, accessToken, config.pfx_content ?? undefined, config.pfx_password ?? undefined);
+    const userInfo = await getDFlightUserInfo(config.base_url, accessToken, config.client_id, config.pfx_content ?? undefined, config.pfx_password ?? undefined);
     if (!userInfo.operatorRegistrationNumber) {
       return NextResponse.json({
         code: 0,
@@ -91,6 +91,7 @@ export async function POST(req: NextRequest) {
       accessToken,
       userInfo.operatorRegistrationNumber,
       component.drone_registration_code,
+      config.client_id,
       config.pfx_content ?? undefined,
       config.pfx_password ?? undefined,
     );

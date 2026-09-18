@@ -13,6 +13,7 @@ import {
 import { cn } from '@/lib/utils';
 import { AlertCircle, CheckCircle2, Fingerprint, Loader2, RefreshCw } from 'lucide-react';
 import { MissionPlanningOption, OpType, PlanningOption } from './OperationModalTypes';
+import { SelectPaginationFooter, usePagedItems } from './OperationModalHelpers';
 
 interface DroneSystem {
     tool_id: number; tool_code: string; tool_name: string;
@@ -115,6 +116,12 @@ export function ImportMissionDataStep({
             recurrentDays.includes(day) ? recurrentDays.filter((d) => d !== day) : [...recurrentDays, day]
         );
     };
+
+    const dronesPaging = usePagedItems(drones);
+    const categoriesPaging = usePagedItems(categories);
+    const typesPaging = usePagedItems(types);
+    const lucProceduresPaging = usePagedItems(lucProcedures);
+
     return (
         <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
@@ -124,8 +131,8 @@ export function ImportMissionDataStep({
                         <SelectTrigger>
                             {loadingDrones || loadingSerialNumber ? <Loader2 className="h-4 w-4 animate-spin" /> : vehicleId ? <SelectValue /> : <SelectValue placeholder={t(ns + '.placeholders.selectDot')} />}
                         </SelectTrigger>
-                        <SelectContent>
-                            {drones.map((d) => (
+                        <SelectContent position="popper" align="start" sideOffset={4}>
+                            {dronesPaging.paged.map((d) => (
                                     <SelectItem
                                         key={d.tool_id}
                                         value={String(d.tool_id)}
@@ -139,6 +146,16 @@ export function ImportMissionDataStep({
                                         {d.is_dismissed && ' (Dismissed)'}
                                     </SelectItem>
                             ))}
+                            {dronesPaging.showPagination && (
+                                <SelectPaginationFooter
+                                    page={dronesPaging.page}
+                                    totalPages={dronesPaging.totalPages}
+                                    onPageChange={dronesPaging.setPage}
+                                    previousLabel={t('common.previous')}
+                                    nextLabel={t('common.next')}
+                                    indicatorLabel={t('common.pageIndicator', { current: dronesPaging.page + 1, total: dronesPaging.totalPages })}
+                                />
+                            )}
                         </SelectContent>
                     </Select>
                     <p className="mt-1.5 text-[11px] text-muted-foreground">
@@ -194,8 +211,18 @@ export function ImportMissionDataStep({
                         <SelectTrigger>
                             {loadingMissionOptions ? <Loader2 className="h-4 w-4 animate-spin" /> : categoryId ? <SelectValue /> : <SelectValue placeholder={t(ns + '.placeholders.selectDot')} />}
                         </SelectTrigger>
-                        <SelectContent>
-                            {categories.map((c) => <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>)}
+                        <SelectContent position="popper" align="start" sideOffset={4}>
+                            {categoriesPaging.paged.map((c) => <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>)}
+                            {categoriesPaging.showPagination && (
+                                <SelectPaginationFooter
+                                    page={categoriesPaging.page}
+                                    totalPages={categoriesPaging.totalPages}
+                                    onPageChange={categoriesPaging.setPage}
+                                    previousLabel={t('common.previous')}
+                                    nextLabel={t('common.next')}
+                                    indicatorLabel={t('common.pageIndicator', { current: categoriesPaging.page + 1, total: categoriesPaging.totalPages })}
+                                />
+                            )}
                         </SelectContent>
                     </Select>
                 </div>
@@ -205,8 +232,18 @@ export function ImportMissionDataStep({
                         <SelectTrigger>
                             {loadingMissionOptions ? <Loader2 className="h-4 w-4 animate-spin" /> : typeId ? <SelectValue /> : <SelectValue placeholder={t(ns + '.placeholders.selectDot')} />}
                         </SelectTrigger>
-                        <SelectContent>
-                            {types.map((ty) => <SelectItem key={ty.id} value={String(ty.id)}>{ty.name}</SelectItem>)}
+                        <SelectContent position="popper" align="start" sideOffset={4}>
+                            {typesPaging.paged.map((ty) => <SelectItem key={ty.id} value={String(ty.id)}>{ty.name}</SelectItem>)}
+                            {typesPaging.showPagination && (
+                                <SelectPaginationFooter
+                                    page={typesPaging.page}
+                                    totalPages={typesPaging.totalPages}
+                                    onPageChange={typesPaging.setPage}
+                                    previousLabel={t('common.previous')}
+                                    nextLabel={t('common.next')}
+                                    indicatorLabel={t('common.pageIndicator', { current: typesPaging.page + 1, total: typesPaging.totalPages })}
+                                />
+                            )}
                         </SelectContent>
                     </Select>
                 </div>
@@ -302,8 +339,18 @@ export function ImportMissionDataStep({
                         <SelectTrigger>
                             {loadingMissionOptions ? <Loader2 className="h-4 w-4 animate-spin" /> : lucProcedureId ? <SelectValue /> : <SelectValue placeholder={t(ns + '.placeholders.selectDot')} />}
                         </SelectTrigger>
-                        <SelectContent>
-                            {lucProcedures.map((p) => <SelectItem key={p.id} value={String(p.id)}>{p.name}</SelectItem>)}
+                        <SelectContent position="popper" align="start" sideOffset={4}>
+                            {lucProceduresPaging.paged.map((p) => <SelectItem key={p.id} value={String(p.id)}>{p.name}</SelectItem>)}
+                            {lucProceduresPaging.showPagination && (
+                                <SelectPaginationFooter
+                                    page={lucProceduresPaging.page}
+                                    totalPages={lucProceduresPaging.totalPages}
+                                    onPageChange={lucProceduresPaging.setPage}
+                                    previousLabel={t('common.previous')}
+                                    nextLabel={t('common.next')}
+                                    indicatorLabel={t('common.pageIndicator', { current: lucProceduresPaging.page + 1, total: lucProceduresPaging.totalPages })}
+                                />
+                            )}
                         </SelectContent>
                     </Select>
                 </div>

@@ -75,27 +75,65 @@ async function getOwnerIdForMission(missionId: number): Promise<number | null> {
 }
 
 /**
- * Returns the component_id (as string) of the DRONE component attached to the
- * tool assigned to this planning mission. Returns null if no tool is assigned
- * or no DRONE component is attached.
+ * Returns the dcc_drone_id of a DRONE component attached to any system
+ * (tool) assigned to this planning. A planning can have several systems
+ * attached via separate pilot_mission rows, and only one of them may have
+ * dcc_drone_id set on its DRONE component, so all are checked rather than
+ * just the most recent one. If several qualifying components are found
+ * (e.g. a tool with more than one active DRONE component), the most
+ * recently installed one is used. Returns null if no tool is assigned or
+ * none of them have a DRONE component with dcc_drone_id set.
  */
 async function getDccDroneIdForPlanning(planningId: number): Promise<string | null> {
   try {
-    const mission = await prisma.pilot_mission.findFirst({
+    const missions = await prisma.pilot_mission.findMany({
       where: { fk_planning_id: planningId, fk_tool_id: { not: null } },
       select: { fk_tool_id: true },
     });
 
-    const toolId = mission?.fk_tool_id;
-    if (!toolId) return null;
+    const toolIds = [...new Set(missions.map((m) => m.fk_tool_id as number))];
+    if (toolIds.length === 0) return null;
 
     const component = await prisma.tool_component.findFirst({
       where: {
-        fk_tool_id: toolId,
+        fk_tool_id: { in: toolIds },
         component_type: 'DRONE',
         component_active: 'Y',
         dcc_drone_id: { not: null },
       },
+      orderBy: [{ installation_date: 'desc' }, { created_at: 'desc' }],
+      select: { dcc_drone_id: true },
+    });
+
+    return component?.dcc_drone_id ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Returns the dcc_drone_id for one specific Mission Planning Logbook entry
+ * ("plan"), by looking at just that entry's assigned tool. Used when the
+ * caller (e.g. the flight-requests page) already knows exactly which plan
+ * the user picked, avoiding the ambiguity in getDccDroneIdForPlanning when a
+ * planning has several mission plans on different systems.
+ */
+async function getDccDroneIdForMissionPlanning(missionPlanningId: number): Promise<string | null> {
+  try {
+    const plan = await prisma.planning_logbook.findUnique({
+      where: { mission_planning_id: missionPlanningId },
+      select: { fk_tool_id: true },
+    });
+    if (!plan?.fk_tool_id) return null;
+
+    const component = await prisma.tool_component.findFirst({
+      where: {
+        fk_tool_id: plan.fk_tool_id,
+        component_type: 'DRONE',
+        component_active: 'Y',
+        dcc_drone_id: { not: null },
+      },
+      orderBy: [{ installation_date: 'desc' }, { created_at: 'desc' }],
       select: { dcc_drone_id: true },
     });
 
@@ -118,9 +156,17 @@ async function dccPost(ownerId: number, path: string, body?: unknown): Promise<D
 
   const url = `${base.replace(/\/$/, '')}${path}`;
   try {
+    console.log('dcc body :',body)
+    const authUser = process.env.DCC_AUTH_USERNAME ?? 'dcc';
+    const authPass = process.env.DCC_AUTH_PASSWORD ?? 'dcc';
+    const basicAuth = Buffer.from(`${authUser}:${authPass}`).toString('base64');
+
     const res = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Basic ${basicAuth}`,
+      },
       body: body !== undefined ? JSON.stringify(body) : undefined,
       signal: AbortSignal.timeout(10_000),
     });
@@ -169,6 +215,7 @@ export async function notifyDccAcceptance(
   ownerId: number,
   planningId: number,
   externalMissionId?: string,
+  missionPlanningId?: number,
 ): Promise<DccCallbackResult> {
   try {
     const missionId = externalMissionId ?? await getExternalMissionIdForPlanning(planningId);
@@ -182,7 +229,9 @@ export async function notifyDccAcceptance(
       };
     }
 
-    const droneId = await getDccDroneIdForPlanning(planningId);
+    const droneId = missionPlanningId
+      ? await getDccDroneIdForMissionPlanning(missionPlanningId)
+      : await getDccDroneIdForPlanning(planningId);
     if (!droneId) {
       console.warn(
         `[DCC] acceptance: no DRONE component with dcc_drone_id found for planning ${planningId}. ` +
@@ -237,6 +286,47 @@ export async function notifyDccDenial(
 export async function isMissionRequestedByDcc(missionId: number): Promise<boolean> {
   const externalId = await getExternalMissionIdFromFlightRequest(missionId);
   return externalId != null;
+}
+
+/**
+ * POST /dcc/missions/{missionId}/execution
+ * Direct variant for callers that already have the owner and external
+ * mission id at hand (e.g. the flight-requests page setting dcc_status to
+ * IN_PROGRESS), skipping the pilot_mission → planning lookup.
+ */
+export async function notifyDccExecutionForRequest(
+  ownerId: number,
+  externalMissionId: string,
+): Promise<DccCallbackResult> {
+  const path = `/dcc/missions/${externalMissionId}/execution`;
+  try {
+    return await dccPost(ownerId, path);
+  } catch (err: any) {
+    console.error('[DCC] notifyDccExecutionForRequest error:', err?.message ?? err);
+    return { path, outcome: 'network_error', message: err?.message ?? String(err) };
+  }
+}
+
+/**
+ * POST /dcc/missions/{missionId}/termination
+ * Direct variant for callers that already have the owner and external
+ * mission id at hand (e.g. the flight-requests page setting dcc_status to
+ * COMPLETED), skipping the pilot_mission → planning lookup.
+ * result: 1 = success, 0 = failure
+ */
+export async function notifyDccTerminationForRequest(
+  ownerId: number,
+  externalMissionId: string,
+  result: 1 | 0 = 1,
+  note?: string,
+): Promise<DccCallbackResult> {
+  const path = `/dcc/missions/${externalMissionId}/termination`;
+  try {
+    return await dccPost(ownerId, path, { result, note: note ?? '' });
+  } catch (err: any) {
+    console.error('[DCC] notifyDccTerminationForRequest error:', err?.message ?? err);
+    return { path, outcome: 'network_error', message: err?.message ?? String(err) };
+  }
 }
 
 /**

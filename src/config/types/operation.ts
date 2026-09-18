@@ -1,5 +1,13 @@
 export type OperationStatus = 'PLANNED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'ABORTED';
 
+export const DFLIGHT_CIRCLE_MAX_RADIUS_M = 250;
+
+export interface DFlightTrajectoryCircle {
+  type: 'circle';
+  center: { lat: number; lng: number };
+  radius_m: number;
+}
+
 export interface Operation {
   pilot_mission_id: number;
   mission_code: string;
@@ -42,7 +50,11 @@ export interface Operation {
     recurrent_days_of_week?: number[];
     recurrent_end_date?: string;
     recurring_group_id?: string;
+    uspace_id?: string;
   } | null;
+  dflight_mission_id?: string | null;
+  dflight_flight_authorisation_status?: string | null;
+  dflight_trajectory_data?: DFlightTrajectoryCircle | null;
   created_at: string;
   updated_at: string;
 }
@@ -72,6 +84,7 @@ export type CreateOperationSchema = {
   fk_tool_id?: number | null;
   fk_client_id?: number | null;
   fk_planning_id?: number | null;
+  fk_mission_planning_id?: number | null;
   fk_mission_type_id?: number | null;
   fk_mission_category_id?: number | null;
   fk_luc_procedure_id: number;
@@ -81,6 +94,8 @@ export type CreateOperationSchema = {
   is_recurrent?: boolean;
   recurrent_days_of_week?: number[] | null;
   recurrent_end_date?: string | null;
+  uspace_id?: string | null;
+  dflight_trajectory_data?: DFlightTrajectoryCircle | null;
 };
 export type UpdateOperationSchema = {
   mission_code?: string;
@@ -102,6 +117,8 @@ export type UpdateOperationSchema = {
   flight_mode?: string | null;
   op_type?: string | null;
   mission_group_label?: string | null;
+  uspace_id?: string | null;
+  dflight_trajectory_data?: DFlightTrajectoryCircle | null;
 };
 export interface OperationAttachment {
   attachment_id: number;
@@ -181,6 +198,8 @@ export interface MissionPlanningLimit {
 
 export interface Mission {
   mission_id: number;
+  mission_code: string | null;
+  op_type: string | null;
   fk_owner_id: number;
   fk_vehicle_id: number;
   fk_pic_id: number;

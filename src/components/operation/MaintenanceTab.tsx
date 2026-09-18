@@ -29,6 +29,7 @@ interface ComponentInfo {
   limit_day: number;
   maintenance_cycle_type: string;
   last_maintenance_date: string | null;
+  activation_date: string | null;
   status: "OK" | "ALERT" | "DUE";
   trigger: string[];
   battery_cycle_ratio: number;
@@ -309,11 +310,17 @@ export function MaintenanceTab({
                 </Badge>
               </div>
 
-              <div className="mb-3">
+              <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1">
                 <span className={cn("text-[10px]", isDark ? "text-slate-600" : "text-slate-400")}>
                   {t("operations.missionComplete.maintenance.lastUpdated")}{" "}
                   <span className={cn("font-medium", isDark ? "text-slate-400" : "text-slate-500")}>
                     {formatLastMaintenance(comp.last_maintenance_date, t, timezone)}
+                  </span>
+                </span>
+                <span className={cn("text-[10px]", isDark ? "text-slate-600" : "text-slate-400")}>
+                  {t("operations.missionComplete.maintenance.activationDate")}{" "}
+                  <span className={cn("font-medium", isDark ? "text-slate-400" : "text-slate-500")}>
+                    {comp.activation_date ? formatDateInTz(comp.activation_date, timezone) : "—"}
                   </span>
                 </span>
               </div>

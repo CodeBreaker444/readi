@@ -53,6 +53,7 @@ export async function POST(req: NextRequest) {
       config.base_url,
       accessToken,
       declarationId,
+      config.client_id,
       config.pfx_content ?? undefined,
       config.pfx_password ?? undefined,
     );

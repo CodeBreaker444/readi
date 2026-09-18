@@ -42,6 +42,9 @@ export interface OperationTableMeta {
   onDelete: (op: Operation) => void;
   onViewDetails: (op: Operation) => void;
   onDownloadReport: (op: Operation) => void;
+  onSubmitDFlightAuth: (op: Operation) => void;
+  submittingDFlightAuthId?: number | null;
+  dFlightEnabled?: boolean;
 }
 
 const STATUS_CONFIG: Record<string, { label: string; light: string; dark: string; icon: React.ReactNode }> = {
@@ -82,6 +85,25 @@ const STATUS_CONFIG: Record<string, { label: string; light: string; dark: string
     icon: <XCircle className="h-3 w-3" />,
   },
 };
+
+const DFLIGHT_STATUS_CONFIG: Record<string, { label: string; light: string; dark: string }> = {
+  ACCEPTED: { label: 'D-Flight: Accepted', light: 'bg-emerald-100 text-emerald-700 border-emerald-300', dark: 'bg-emerald-900/50 text-emerald-300 border-emerald-600' },
+  REJECTED: { label: 'D-Flight: Rejected', light: 'bg-red-100 text-red-700 border-red-300', dark: 'bg-red-900/50 text-red-300 border-red-600' },
+  WITHDRAWN: { label: 'D-Flight: Withdrawn', light: 'bg-red-100 text-red-700 border-red-300', dark: 'bg-red-900/50 text-red-300 border-red-600' },
+};
+
+function DFlightBadge({ dflightMissionId, authorisationStatus, isDark }: { dflightMissionId?: string | null; authorisationStatus?: string | null; isDark: boolean }) {
+  if (!dflightMissionId) return null;
+  const cfg = authorisationStatus ? DFLIGHT_STATUS_CONFIG[authorisationStatus.toUpperCase()] : undefined;
+  const label = cfg?.label ?? 'D-Flight: Pending';
+  const classes = cfg ? (isDark ? cfg.dark : cfg.light)
+    : (isDark ? 'bg-amber-900/50 text-amber-300 border-amber-600' : 'bg-amber-100 text-amber-700 border-amber-300');
+  return (
+    <span className={cn('inline-flex items-center rounded-md border px-2 py-0.5 text-[11px] font-medium', classes)}>
+      {label}
+    </span>
+  );
+}
 
 function StatusBadge({ status, t, isDark }: { status?: string | null; t: TFunction; isDark: boolean }) {
   if (!status) return <span className="text-muted-foreground text-xs">—</span>;
@@ -264,7 +286,16 @@ export const getOperationColumns = (t: TFunction, isDark = false, timezone = 'Eu
   {
     accessorKey: 'status_name',
     header: t('planning.form.status'),
-    cell: ({ getValue }) => <StatusBadge status={getValue<string>()} t={t} isDark={isDark} />,
+    cell: ({ getValue, row }) => (
+      <div className="flex flex-col items-start gap-1">
+        <StatusBadge status={getValue<string>()} t={t} isDark={isDark} />
+        <DFlightBadge
+          dflightMissionId={row.original.dflight_mission_id}
+          authorisationStatus={row.original.dflight_flight_authorisation_status}
+          isDark={isDark}
+        />
+      </div>
+    ),
   },
   {
     id: 'procedure',
@@ -279,6 +310,11 @@ export const getOperationColumns = (t: TFunction, isDark = false, timezone = 'Eu
       const op = row.original;
       const isCompleted = op.status_name === 'COMPLETED';
       const isAborted = op.status_name === 'ABORTED';
+      const isCancelled = op.status_name === 'CANCELLED';
+      const needsDFlightAuth = !!meta.dFlightEnabled
+        && !isAborted && !isCancelled
+        && op.dflight_flight_authorisation_status !== 'ACCEPTED';
+      const submittingAuth = meta.submittingDFlightAuthId === op.pilot_mission_id;
       return (
         <div className="flex items-center gap-1">
           <Tooltip>
@@ -289,6 +325,24 @@ export const getOperationColumns = (t: TFunction, isDark = false, timezone = 'Eu
             </TooltipTrigger>
             <TooltipContent>{t('operations.actions.view')}</TooltipContent>
           </Tooltip>
+          {needsDFlightAuth && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-10 rounded-md border"
+                  disabled={submittingAuth}
+                  onClick={(e) => { e.stopPropagation(); meta.onSubmitDFlightAuth(op); }}
+                >
+                  {submittingAuth
+                    ? <Loader2 className="h-4 w-4 animate-spin" />
+                    : <img src="/dflight_logo.png" alt="D-Flight" className="h-8 w-8 object-contain" />}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>{t('operations.actions.submitDFlightAuth')}</TooltipContent>
+            </Tooltip>
+          )}
           <FeatureGate feature="operation_mission_table" require="edit">
             <Tooltip>
               <TooltipTrigger asChild>

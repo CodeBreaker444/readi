@@ -7,7 +7,7 @@ import { cn, formatDateTimeInTz } from '@/lib/utils'
 import { AlertTriangle, CheckCircle2, Loader2, RefreshCw } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { inputCls, labelCls, scCls, SectionTitle, siCls } from './OperationModalHelpers'
+import { inputCls, labelCls, scCls, SectionTitle, SelectPaginationFooter, siCls, usePagedItems } from './OperationModalHelpers'
 import { ConflictEvent, GenericOption, LucOption, SchedulerFormData } from './OperationModalTypes'
 
 interface Props {
@@ -48,6 +48,9 @@ export function OperationStepScheduler({
 }: Props) {
     const { t } = useTranslation()
     const [recurrentDateError, setRecurrentDateError] = useState('')
+    const typesPaging = usePagedItems(types)
+    const categoriesPaging = usePagedItems(categories)
+    const lucProceduresPaging = usePagedItems(lucProcedures)
 
     const toggleRecurrentDay = (day: number) => {
         const next = recurrentDays.includes(day)
@@ -199,8 +202,19 @@ export function OperationStepScheduler({
                         <SelectTrigger className={inputCls(isDark)}>
                             <SelectValue placeholder={t('operations.newOperation.scheduler.selectType')} />
                         </SelectTrigger>
-                        <SelectContent className={scCls(isDark)}>
-                            {types.map(type => <SelectItem key={type.id} value={String(type.id)} className={siCls(isDark)}>{type.label}</SelectItem>)}
+                        <SelectContent className={scCls(isDark)} position="popper" align="start" sideOffset={4}>
+                            {typesPaging.paged.map(type => <SelectItem key={type.id} value={String(type.id)} className={siCls(isDark)}>{type.label}</SelectItem>)}
+                            {typesPaging.showPagination && (
+                                <SelectPaginationFooter
+                                    page={typesPaging.page}
+                                    totalPages={typesPaging.totalPages}
+                                    onPageChange={typesPaging.setPage}
+                                    previousLabel={t('common.previous')}
+                                    nextLabel={t('common.next')}
+                                    indicatorLabel={t('common.pageIndicator', { current: typesPaging.page + 1, total: typesPaging.totalPages })}
+                                    isDark={isDark}
+                                />
+                            )}
                         </SelectContent>
                     </Select>
                 </div>
@@ -210,8 +224,19 @@ export function OperationStepScheduler({
                         <SelectTrigger className={inputCls(isDark)}>
                             <SelectValue placeholder={t('operations.newOperation.scheduler.selectCategory')} />
                         </SelectTrigger>
-                        <SelectContent className={scCls(isDark)}>
-                            {categories.map(c => <SelectItem key={c.id} value={String(c.id)} className={siCls(isDark)}>{c.label}</SelectItem>)}
+                        <SelectContent className={scCls(isDark)} position="popper" align="start" sideOffset={4}>
+                            {categoriesPaging.paged.map(c => <SelectItem key={c.id} value={String(c.id)} className={siCls(isDark)}>{c.label}</SelectItem>)}
+                            {categoriesPaging.showPagination && (
+                                <SelectPaginationFooter
+                                    page={categoriesPaging.page}
+                                    totalPages={categoriesPaging.totalPages}
+                                    onPageChange={categoriesPaging.setPage}
+                                    previousLabel={t('common.previous')}
+                                    nextLabel={t('common.next')}
+                                    indicatorLabel={t('common.pageIndicator', { current: categoriesPaging.page + 1, total: categoriesPaging.totalPages })}
+                                    isDark={isDark}
+                                />
+                            )}
                         </SelectContent>
                     </Select>
                 </div>
@@ -225,8 +250,19 @@ export function OperationStepScheduler({
                         <SelectTrigger className={inputCls(isDark)}>
                             <SelectValue placeholder={lucProcedures.length === 0 ? t('operations.newOperation.scheduler.procedureNone') : t('operations.newOperation.scheduler.selectProcedure')} />
                         </SelectTrigger>
-                        <SelectContent className={scCls(isDark)}>
-                            {lucProcedures.map(p => <SelectItem key={p.id} value={String(p.id)} className={siCls(isDark)}>{p.label}</SelectItem>)}
+                        <SelectContent className={scCls(isDark)} position="popper" align="start" sideOffset={4}>
+                            {lucProceduresPaging.paged.map(p => <SelectItem key={p.id} value={String(p.id)} className={siCls(isDark)}>{p.label}</SelectItem>)}
+                            {lucProceduresPaging.showPagination && (
+                                <SelectPaginationFooter
+                                    page={lucProceduresPaging.page}
+                                    totalPages={lucProceduresPaging.totalPages}
+                                    onPageChange={lucProceduresPaging.setPage}
+                                    previousLabel={t('common.previous')}
+                                    nextLabel={t('common.next')}
+                                    indicatorLabel={t('common.pageIndicator', { current: lucProceduresPaging.page + 1, total: lucProceduresPaging.totalPages })}
+                                    isDark={isDark}
+                                />
+                            )}
                         </SelectContent>
                     </Select>
                 </div>
