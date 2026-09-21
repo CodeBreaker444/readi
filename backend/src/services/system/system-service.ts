@@ -177,10 +177,17 @@ export async function getSystemList(
           tool_longitude: (item.tool_metadata as any)?.longitude,
           tool_status: (() => {
             const stored = (item.tool_metadata as any)?.status as string | undefined;
-            if (stored) return stored;
+            // A manually stored "OPERATIONAL" override must never mask a
+            // genuinely detected problem — open tickets and expired/exceeded
+            // components are recomputed live by every other module (Operation
+            // Board, Operations table, Drone ATC), so honoring a stale manual
+            // override here would show this drone as fine while those screens
+            // correctly flag it. A manual MAINTENANCE/NOT_OPERATIONAL override
+            // (deliberately grounding a drone) still always wins.
+            if (stored && stored !== 'OPERATIONAL') return stored;
             if (toolsNonOperational.has(item.tool_id)) return 'NOT_OPERATIONAL';
             if (toolsInMaintenance.has(item.tool_id)) return 'MAINTENANCE';
-            return 'OPERATIONAL';
+            return stored ?? 'OPERATIONAL';
           })(),
           tot_mission: missionData[item.tool_id]?.count || 0,
           tot_flown_time: missionData[item.tool_id]?.time || 0,
