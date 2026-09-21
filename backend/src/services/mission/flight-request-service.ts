@@ -78,36 +78,52 @@ function mapFlightRequest(row: {
   };
 }
 
-export async function flightRequestExists(
-  external_mission_id: string,
-  owner_id: number,
-): Promise<boolean> {
-  const row = await prisma.flight_requests.findFirst({
-    where: { external_mission_id, fk_owner_id: owner_id },
-    select: { request_id: true },
+/**
+ * Creates a flight request, or — if DCC has already sent this missionId
+ * before (e.g. it timed out waiting for a response and retried) — updates
+ * the descriptive fields DCC controls on the existing row instead of
+ * rejecting it as a duplicate. dcc_status and the planning assignment are
+ * owned by ReADI's own workflow once a request has been picked up, so a
+ * retry never resets or overwrites those.
+ */
+export async function upsertFlightRequestByExternalId(
+  input: CreateFlightRequestInput,
+): Promise<{ request_id: number; created: boolean; dcc_status: string }> {
+  const existing = await prisma.flight_requests.findFirst({
+    where: { external_mission_id: input.external_mission_id, fk_owner_id: input.owner_id },
+    select: { request_id: true, dcc_status: true },
   });
-  return !!row;
-}
 
-export async function createFlightRequest(input: CreateFlightRequestInput): Promise<{ request_id: number }> {
+  const sharedData = {
+    mission_type:        input.mission_type ?? null,
+    target:              input.target ?? null,
+    localization:        input.localization ? (input.localization as unknown as Prisma.InputJsonValue) : Prisma.JsonNull,
+    waypoint:            input.waypoint ? (input.waypoint as unknown as Prisma.InputJsonValue) : Prisma.JsonNull,
+    start_datetime:      input.start_datetime ? new Date(input.start_datetime) : null,
+    priority:            input.priority ?? null,
+    notes:               input.notes ?? null,
+    operator:            input.operator ?? null,
+  };
+
+  if (existing) {
+    await prisma.flight_requests.update({
+      where: { request_id: existing.request_id },
+      data: { ...sharedData, fk_api_key_id: input.api_key_id, updated_at: new Date() },
+    });
+    return { request_id: existing.request_id, created: false, dcc_status: existing.dcc_status };
+  }
+
   const row = await prisma.flight_requests.create({
     data: {
       fk_owner_id:         input.owner_id,
       fk_api_key_id:       input.api_key_id,
       external_mission_id: input.external_mission_id,
-      mission_type:        input.mission_type ?? null,
-      target:              input.target ?? null,
-      localization:        input.localization ? (input.localization as unknown as Prisma.InputJsonValue) : Prisma.JsonNull,
-      waypoint:            input.waypoint ? (input.waypoint as unknown as Prisma.InputJsonValue) : Prisma.JsonNull,
-      start_datetime:      input.start_datetime ? new Date(input.start_datetime) : null,
-      priority:            input.priority ?? null,
-      notes:               input.notes ?? null,
-      operator:            input.operator ?? null,
+      ...sharedData,
       dcc_status:          'NEW',
     },
     select: { request_id: true },
   });
-  return { request_id: row.request_id };
+  return { request_id: row.request_id, created: true, dcc_status: 'NEW' };
 }
 
 export async function listFlightRequests(owner_id: number, status?: string): Promise<FlightRequest[]> {
