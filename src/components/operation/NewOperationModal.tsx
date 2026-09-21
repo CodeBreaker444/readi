@@ -962,7 +962,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                             <Button
                                 size="sm"
                                 onClick={handleSubmitPostFlight}
-                                disabled={submittingPostFlight || loadingPostFlight}
+                                disabled={submittingPostFlight || loadingPostFlight || !!(postFlight.actual_start && postFlight.actual_end && postFlight.actual_end < postFlight.actual_start)}
                                 className="gap-2 bg-violet-600 hover:bg-violet-700 text-white"
                             >
                                 {submittingPostFlight

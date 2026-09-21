@@ -51,7 +51,13 @@ const postFlightSchema = z.object({
   weather_temperature: z.number().nullable().optional(),
   notes: z.string().nullable().optional(),
   fk_mission_result_type_id: z.number().int().positive().nullable().optional(),
-});
+}).refine(
+  (data) => {
+    if (!data.actual_start || !data.actual_end) return true;
+    return new Date(data.actual_end).getTime() >= new Date(data.actual_start).getTime();
+  },
+  { message: 'actual_end must not be before actual_start', path: ['actual_end'] }
+);
 
 export async function POST(req: NextRequest) {
   const { error } = await requirePermission("view_operations");

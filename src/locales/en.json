@@ -1767,7 +1767,8 @@
           "notes": "Post-flight notes, observations, incidents…"
         },
         "validation": {
-          "incidentFlagged": "One or more incident flags are active — review before saving"
+          "incidentFlagged": "One or more incident flags are active — review before saving",
+          "endBeforeStart": "End time cannot be before start time"
         }
       },
       "footer": {

@@ -1762,7 +1762,8 @@
           "notes": "Note post-volo, osservazioni, incidenti…"
         },
         "validation": {
-          "incidentFlagged": "Uno o più flag di incidente sono attivi — verificare prima di salvare"
+          "incidentFlagged": "Uno o più flag di incidente sono attivi — verificare prima di salvare",
+          "endBeforeStart": "L'ora di fine non può essere precedente all'ora di inizio"
         }
       },
       "footer": {

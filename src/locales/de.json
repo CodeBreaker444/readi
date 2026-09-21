@@ -1760,7 +1760,8 @@
           "notes": "Nachflugnotizen, Beobachtungen, Vorfälle…"
         },
         "validation": {
-          "incidentFlagged": "Ein oder mehrere Vorfallflaggen sind aktiv — vor dem Speichern prüfen"
+          "incidentFlagged": "Ein oder mehrere Vorfallflaggen sind aktiv — vor dem Speichern prüfen",
+          "endBeforeStart": "Endzeit darf nicht vor der Startzeit liegen"
         }
       },
       "footer": {
