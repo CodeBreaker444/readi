@@ -400,7 +400,6 @@ async function sendMaintenanceModuleEmail(
 /**
  * Send maintenance alert email
  */
-/*
 export async function sendMaintenanceAlertEmail(
   ownerId: number,
   data: MaintenanceEmailData
@@ -415,12 +414,10 @@ export async function sendMaintenanceAlertEmail(
     data.triggers || []
   );
 }
-*/
 
 /**
  * Send maintenance due email
  */
-/*
 export async function sendMaintenanceDueEmail(
   ownerId: number,
   data: MaintenanceEmailData
@@ -434,7 +431,6 @@ export async function sendMaintenanceDueEmail(
     data.triggers || []
   );
 }
-*/
 
 /**
  * Send ticket created email
