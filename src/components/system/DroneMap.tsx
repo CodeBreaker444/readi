@@ -278,7 +278,7 @@ const DroneMap = forwardRef<DroneMapHandle, DroneMapProps>(function DroneMap(
     cluster.addLayers(markers);
 
     if (markers.length > 0) {
-      const bounds = cluster.getBounds();
+      const bounds = L.latLngBounds(markers.map((m) => m.getLatLng()));
       // bounds.extend([controlCenter.lat, controlCenter.lon]);
       map.fitBounds(bounds.pad(0.15));
     } else {
