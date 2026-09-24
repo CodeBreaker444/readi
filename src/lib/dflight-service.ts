@@ -4,6 +4,31 @@ import { createHash } from 'crypto';
 
 const CONNECT_TIMEOUT_MS = 10_000;
 
+/**
+ * D-Flight failure responses aren't always the JSON API error they claim to
+ * be — a misconfigured/blocked request can get back the PreProduction
+ * portal's HTML login/error page instead. Dumping that raw body into an
+ * Error message makes it unreadable wherever it surfaces (logs, and
+ * eventually the UI via listDFlightUspaces' `error` field), so this extracts
+ * a short, human-readable reason instead. The full raw body is still logged
+ * server-side by each call site before this runs.
+ */
+function describeDFlightError(status: number, body: string): string {
+  const trimmed = body.trim();
+  if (!trimmed) return `HTTP ${status}`;
+  if (trimmed.startsWith('<')) {
+    return `HTTP ${status} (D-Flight returned an HTML error page instead of a valid response — the request may be blocked, misconfigured, or unauthorized)`;
+  }
+  try {
+    const parsed = JSON.parse(trimmed) as Record<string, unknown>;
+    const message = parsed?.error_description ?? parsed?.message ?? parsed?.error;
+    if (typeof message === 'string' && message.trim()) return `HTTP ${status}: ${message}`;
+  } catch {
+    // Not JSON either — fall through to a truncated raw snippet below.
+  }
+  return `HTTP ${status}: ${trimmed.slice(0, 300)}`;
+}
+
 export interface DFlightConfig {
   base_url: string;
   username: string;
@@ -231,7 +256,8 @@ export async function getDFlightToken(
   }
   if (!res.ok) {
     const text = await res.text();
-    throw new Error(`D-Flight token request failed (${res.status}): ${text}`);
+    console.error('D-Flight token request failed:', text);
+    throw new Error(`D-Flight token request failed: ${describeDFlightError(res.status, text)}`);
   }
 
   return res.json() as Promise<DFlightTokenResponse>;
@@ -264,7 +290,8 @@ export async function refreshDFlightToken(
   console.log(`D-Flight token refresh status: ${res.status}`);
   if (!res.ok) {
     const text = await res.text();
-    throw new Error(`D-Flight token refresh request failed (${res.status}): ${text}`);
+    console.error('D-Flight token refresh request failed:', text);
+    throw new Error(`D-Flight token refresh request failed: ${describeDFlightError(res.status, text)}`);
   }
 
   return res.json() as Promise<DFlightTokenResponse>;
@@ -335,7 +362,8 @@ export async function getDFlightDrones(
     console.log(`D-Flight drones status (page ${pageNumber}): ${res.status}`);
     if (!res.ok) {
       const text = await res.text();
-      throw new Error(`D-Flight drones request failed (${res.status}): ${text}`);
+      console.error('D-Flight drones request failed:', text);
+      throw new Error(`D-Flight drones request failed: ${describeDFlightError(res.status, text)}`);
     }
 
     const json = (await res.json()) as DFlightDronePageResult;
@@ -388,7 +416,8 @@ export async function getDFlightDroneById(
   console.log(`D-Flight drone by ID status: ${res.status}`);
   if (!res.ok) {
     const text = await res.text();
-    throw new Error(`D-Flight drone by ID request failed (${res.status}): ${text}`);
+    console.error('D-Flight drone by ID request failed:', text);
+    throw new Error(`D-Flight drone by ID request failed: ${describeDFlightError(res.status, text)}`);
   }
 
   const json = (await res.json()) as DFlightDronePageResult;
@@ -561,7 +590,8 @@ export async function getDFlightUspaceList(
 
   if (!res.ok) {
     const text = await res.text();
-    throw new Error(`D-Flight uspace list request failed (${res.status}): ${text}`);
+    console.error('D-Flight uspace list request failed:', text);
+    throw new Error(`D-Flight uspace list request failed: ${describeDFlightError(res.status, text)}`);
   }
 
   const json = (await res.json()) as unknown;
@@ -726,7 +756,7 @@ export async function getDFlightDroneDeclarations(
   if (!res.ok) {
     const errorText = await res.text();
     console.error('D-Flight drone declarations error:', errorText);
-    throw new Error(`D-Flight drone declarations request failed (${res.status}): ${errorText}`);
+    throw new Error(`D-Flight drone declarations request failed: ${describeDFlightError(res.status, errorText)}`);
   }
 
   const json = await res.json() as unknown;
@@ -833,8 +863,9 @@ export async function createDFlightMission(
   }
   if (!res.ok) {
     const text = await res.text();
+    console.error('D-Flight create mission request failed:', text);
     console.error('D-Flight create mission response headers:', res.headers);
-    throw new Error(`D-Flight create mission request failed (${res.status}): ${text}`);
+    throw new Error(`D-Flight create mission request failed: ${describeDFlightError(res.status, text)}`);
   }
 
   return res.json() as Promise<DFlightMissionResult>;
@@ -867,7 +898,8 @@ export async function getDFlightMission(
   console.log(`D-Flight read mission status: ${res.status}`);
   if (!res.ok) {
     const text = await res.text();
-    throw new Error(`D-Flight read mission request failed (${res.status}): ${text}`);
+    console.error('D-Flight read mission request failed:', text);
+    throw new Error(`D-Flight read mission request failed: ${describeDFlightError(res.status, text)}`);
   }
 
   return res.json() as Promise<DFlightMissionResult>;
@@ -903,7 +935,8 @@ export async function withdrawDFlightMission(
   console.log(`D-Flight withdraw mission status: ${res.status}`);
   if (!res.ok) {
     const text = await res.text();
-    throw new Error(`D-Flight withdraw mission request failed (${res.status}): ${text}`);
+    console.error('D-Flight withdraw mission request failed:', text);
+    throw new Error(`D-Flight withdraw mission request failed: ${describeDFlightError(res.status, text)}`);
   }
 }
 
