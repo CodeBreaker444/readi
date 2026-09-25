@@ -1762,7 +1762,8 @@
           "notes": "Note post-volo, osservazioni, incidenti…"
         },
         "validation": {
-          "incidentFlagged": "Uno o più flag di incidente sono attivi — verificare prima di salvare"
+          "incidentFlagged": "Uno o più flag di incidente sono attivi — verificare prima di salvare",
+          "endBeforeStart": "L'ora di fine non può essere precedente all'ora di inizio"
         }
       },
       "footer": {
@@ -4003,6 +4004,9 @@
           "note": "Nota",
           "selectDrone": "Seleziona drone…",
           "selectDroneFirst": "Seleziona prima un drone…",
+          "searchSystems": "Cerca sistemi…",
+          "noSystemsFound": "Nessun sistema trovato",
+          "noComponentsFound": "Nessun componente trovato per questo sistema",
           "selectTechnician": "Seleziona tecnico…",
           "notePlaceholder": "Descrivi il problema…",
           "createTicket": "Crea Ticket",

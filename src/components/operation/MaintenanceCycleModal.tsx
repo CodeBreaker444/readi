@@ -399,7 +399,10 @@ export function MaintenanceCycleModal({
         toast.error(t("operations.board.toast.statusUpdateFailed"));
       }
     } catch (e: any) {
-      toast.error(t("operations.board.toast.statusUpdateFailed"));
+      const message = axios.isAxiosError(e)
+        ? (e.response?.data as { message?: string } | undefined)?.message
+        : undefined;
+      toast.error(message || t("operations.board.toast.statusUpdateFailed"));
     } finally {
       setSubmitting(false);
     }

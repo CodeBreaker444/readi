@@ -345,11 +345,11 @@ export async function updateComponentMaintenanceCycle(
 
       const updatePayload: Record<string, any> = {
         current_usage_hours: newLifetimeHours,
-        component_metadata: JSON.stringify({
+        component_metadata: {
           ...meta,
           last_mission_id: missionId,
           last_maintenance_update: now.toISOString(),
-        }),
+        },
       };
 
       if (upd.add_hours > 0) updatePayload.current_maintenance_hours = newHours;

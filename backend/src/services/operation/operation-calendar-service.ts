@@ -81,11 +81,19 @@ export const getOperationCalendarEvents = async (
 
   const calendarEvents: OperationCalendarEvent[] = operations.map((op) => {
     const isNonOp = !!op.fk_tool_id && nonOpSet.has(op.fk_tool_id as number);
+    const start = op.scheduled_start!;
+    // op.scheduled_end is really the actual_end column, which gets
+    // overwritten with the pilot's logged post-flight end time — that can
+    // land before scheduled_start (late/incorrect post-flight logging, or a
+    // mission rescheduled after it was flown). Fall back rather than show a
+    // reversed/invisible event on the calendar.
+    const hasValidEnd = op.scheduled_end && new Date(op.scheduled_end).getTime() > new Date(start).getTime();
+    const end = hasValidEnd ? op.scheduled_end! : deriveEnd(start);
     return {
       id: String(op.pilot_mission_id),
       title: buildOperationTitle(op),
-      start: op.scheduled_start!,
-      end: op.scheduled_end ?? deriveEnd(op.scheduled_start!),
+      start,
+      end,
       color: STATUS_COLORS[op.status_name ?? 'Scheduled'] ?? STATUS_COLORS['Scheduled'],
       status: (op.status_name as OperationCalenderStatus) ?? null,
       operation: { ...op, tool_status: isNonOp ? 'NOT_OPERATIONAL' : null },

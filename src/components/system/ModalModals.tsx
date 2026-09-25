@@ -4,6 +4,7 @@ import LocationPicker from '@/components/system/LocationPicker';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from 'react-i18next';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
 import type {
@@ -15,10 +16,12 @@ import type {
   UserOption,
 } from '@/config/types/maintenance';
 import { cn } from '@/lib/utils';
-import { AlertTriangle, CheckCircle2, Loader2 } from 'lucide-react';
-import { useRef } from 'react';
+import { AlertTriangle, CheckCircle2, ChevronLeft, ChevronRight, Loader2, Search } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import type { NewTicketForm, ReportForm } from './useMaintenance';
+
+const DRONES_PER_PAGE = 8;
 
 
 export const inputCls =
@@ -163,6 +166,35 @@ export function NewTicketModal({
   form, onFormChange, onDroneChange, onTicketTypeChange, onSubmit, isDark, loading,
 }: NewTicketProps) {
   const { t } = useTranslation();
+  const [dronePage, setDronePage] = useState(0);
+  const [droneSearch, setDroneSearch] = useState('');
+
+  useEffect(() => {
+    setDronePage(0);
+    setDroneSearch('');
+  }, [drones]);
+
+  const filteredDrones = droneSearch
+    ? drones.filter((d) => {
+        const q = droneSearch.toLowerCase();
+        return d.tool_code?.toLowerCase().includes(q) || d.tool_desc?.toLowerCase().includes(q);
+      })
+    : drones;
+  const totalDronePages = Math.max(1, Math.ceil(filteredDrones.length / DRONES_PER_PAGE));
+  const pagedDrones = filteredDrones.slice(dronePage * DRONES_PER_PAGE, dronePage * DRONES_PER_PAGE + DRONES_PER_PAGE);
+  const selectedDrone = drones.find((d) => d.tool_id === form.fk_tool_id);
+
+  const selectTriggerCls = isDark ? 'bg-slate-700 border-slate-600 text-slate-200' : '';
+  const selectContentCls = isDark ? 'bg-slate-800 border-slate-700 text-slate-200' : '';
+
+  const toggleComponent = (componentId: number) => {
+    onFormChange({
+      components: form.components.includes(componentId)
+        ? form.components.filter((id) => id !== componentId)
+        : [...form.components, componentId],
+    });
+  };
+
   return (
     <Modal title={t('systems.maintenanceLogbook.modals.newTicket.title')} open={open} onClose={onClose} isDark={isDark}>
       {loading ? (
@@ -170,48 +202,109 @@ export function NewTicketModal({
       ) : (
         <>
           <Field label={t('systems.maintenanceLogbook.modals.newTicket.drone')}>
-            <select
-              className={inputCls}
-              value={form.fk_tool_id}
-              onChange={(e) => onDroneChange(Number(e.target.value))}
+            <Select
+              value={form.fk_tool_id ? String(form.fk_tool_id) : ''}
+              onValueChange={(v) => onDroneChange(Number(v))}
             >
-              <option value={0}>{t('systems.maintenanceLogbook.modals.newTicket.selectDrone')}</option>
-              {drones.map((d) => (
-                <option
-                  key={d.tool_id}
-                  value={d.tool_id}
-                  disabled={d.tool_status === 'DISMISSED'}
-                  style={d.tool_status === 'DISMISSED' ? { color: '#94a3b8' } : undefined}
-                >
-                  {d.tool_code} — {d.tool_desc} [{d.tool_status}]
-                </option>
-              ))}
-            </select>
+              <SelectTrigger className={`w-full truncate ${selectTriggerCls}`}>
+                <SelectValue placeholder={t('systems.maintenanceLogbook.modals.newTicket.selectDrone')}>
+                  {selectedDrone ? (
+                    <span className="block w-full truncate text-left">{selectedDrone.tool_code} — {selectedDrone.tool_desc}</span>
+                  ) : null}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent
+                position="popper"
+                align="start"
+                sideOffset={4}
+                className={`z-50 w-(--radix-select-trigger-width) max-h-80 overflow-hidden p-0 ${selectContentCls}`}
+              >
+                <div className={`p-2 pb-1 border-b ${isDark ? 'border-slate-700' : ''}`}>
+                  <div className="relative">
+                    <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                    <input
+                      className={`w-full h-7 rounded-sm border pl-7 pr-2 text-xs outline-none focus:ring-1 focus:ring-indigo-500/30 ${isDark ? 'bg-slate-700 border-slate-600 text-slate-200 placeholder:text-slate-500' : 'bg-background'}`}
+                      placeholder={t('systems.maintenanceLogbook.modals.newTicket.searchSystems')}
+                      value={droneSearch}
+                      onChange={(e) => { setDroneSearch(e.target.value); setDronePage(0); }}
+                      onKeyDown={(e) => e.stopPropagation()}
+                    />
+                  </div>
+                </div>
+                <div className="overflow-y-auto max-h-60">
+                  {pagedDrones.length === 0 ? (
+                    <div className={`px-3 py-4 text-xs text-center ${isDark ? 'text-slate-500' : 'text-muted-foreground'}`}>
+                      {t('systems.maintenanceLogbook.modals.newTicket.noSystemsFound')}
+                    </div>
+                  ) : (
+                    pagedDrones.map((d) => (
+                      <SelectItem key={d.tool_id} value={String(d.tool_id)} disabled={d.tool_status === 'DISMISSED'}>
+                        <span className="flex items-center justify-between gap-2 w-full">
+                          <span className="truncate">{d.tool_code} — {d.tool_desc}</span>
+                          <span className="text-[10px] uppercase font-semibold opacity-70 shrink-0">{d.tool_status}</span>
+                        </span>
+                      </SelectItem>
+                    ))
+                  )}
+                </div>
+                {filteredDrones.length > DRONES_PER_PAGE && (
+                  <div className={`flex items-center justify-between px-3 py-1.5 border-t text-xs ${isDark ? 'border-slate-700 text-slate-400' : 'border-slate-100 text-slate-500'}`}>
+                    <button
+                      type="button"
+                      onClick={(e) => { e.preventDefault(); setDronePage((p) => Math.max(0, p - 1)); }}
+                      disabled={dronePage === 0}
+                      className="flex items-center gap-1 px-2 py-1 rounded disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-500/10 cursor-pointer"
+                    >
+                      <ChevronLeft className="h-3.5 w-3.5" /> {t('common.previous')}
+                    </button>
+                    <span>{dronePage + 1} / {totalDronePages}</span>
+                    <button
+                      type="button"
+                      onClick={(e) => { e.preventDefault(); setDronePage((p) => Math.min(totalDronePages - 1, p + 1)); }}
+                      disabled={dronePage >= totalDronePages - 1}
+                      className="flex items-center gap-1 px-2 py-1 rounded disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-500/10 cursor-pointer"
+                    >
+                      {t('common.next')} <ChevronRight className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                )}
+              </SelectContent>
+            </Select>
           </Field>
 
-          <Field label={t('systems.maintenanceLogbook.modals.newTicket.components')}>
-            <select
-              className={`${inputCls} min-h-[90px]`}
-              multiple
-              disabled={components.length === 0}
-              value={form.components.map(String)}
-              onChange={(e) =>
-                onFormChange({
-                  components: Array.from(e.target.selectedOptions, (o) => Number(o.value)),
-                })
-              }
-            >
+          {form.fk_tool_id > 0 && (
+            <Field label={t('systems.maintenanceLogbook.modals.newTicket.components')}>
               {components.length === 0 ? (
-                <option disabled value="">{t('systems.maintenanceLogbook.modals.newTicket.selectDroneFirst')}</option>
+                <div className={`rounded-lg border px-3 py-2 text-sm ${isDark ? 'border-slate-600 text-slate-400' : 'border-slate-200 text-slate-400'}`}>
+                  {t('systems.maintenanceLogbook.modals.newTicket.noComponentsFound')}
+                </div>
               ) : (
-                components.map((c) => (
-                  <option key={c.tool_component_id} value={c.tool_component_id}>
-                    {c.component_code || c.component_type}
-                  </option>
-                ))
+                <div className={`max-h-[160px] overflow-y-auto rounded-lg border divide-y ${isDark ? 'border-slate-600 divide-slate-700' : 'border-slate-200 divide-slate-100'}`}>
+                  {components.map((c) => {
+                    const checked = form.components.includes(c.tool_component_id);
+                    return (
+                      <label
+                        key={c.tool_component_id}
+                        className={`flex items-center gap-2 px-3 py-2 text-sm cursor-pointer transition ${
+                          checked
+                            ? (isDark ? 'bg-indigo-500/20 text-white' : 'bg-indigo-50 text-slate-900')
+                            : (isDark ? 'text-slate-300 hover:bg-slate-700' : 'text-slate-700 hover:bg-slate-50')
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          className="h-4 w-4 shrink-0 rounded border-slate-300 text-indigo-600 focus:ring-indigo-400 cursor-pointer"
+                          checked={checked}
+                          onChange={() => toggleComponent(c.tool_component_id)}
+                        />
+                        <span className="truncate">{c.component_code || c.component_type}</span>
+                      </label>
+                    );
+                  })}
+                </div>
               )}
-            </select>
-          </Field>
+            </Field>
+          )}
 
           <div className="grid grid-cols-2 gap-4">
             <Field label={t('systems.maintenanceLogbook.modals.newTicket.type')}>

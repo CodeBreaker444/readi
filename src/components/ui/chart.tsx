@@ -108,11 +108,17 @@ ${colorConfig
     )
     .join("\n")
 
-  const sanitizedCss = DOMPurify.sanitize(cssContent, {
-    ALLOWED_TAGS: [],
-    ALLOWED_ATTR: [],
-    ALLOW_DATA_ATTR: false,
-  })
+  // dompurify needs a DOM, which isn't present during SSR. The CSS here is
+  // built entirely from internal color values (never raw user input), so
+  // it's safe to skip sanitization server-side and let the client-side
+  // render (this is a "use client" component) sanitize as usual.
+  const sanitizedCss = typeof window === "undefined"
+    ? cssContent
+    : DOMPurify.sanitize(cssContent, {
+        ALLOWED_TAGS: [],
+        ALLOWED_ATTR: [],
+        ALLOW_DATA_ATTR: false,
+      })
 
   return (
     <style

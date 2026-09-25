@@ -2,6 +2,7 @@ import { env } from '@/backend/config/env';
 import { AdminPasswordChangedEmail } from '@/components/email-template/AdminPasswordChangedEmail';
 import { CalendarEventCreatedEmail } from '@/components/email-template/CalendarEventCreatedEmail';
 import { CalendarEventUpdatedEmail } from '@/components/email-template/CalendarEventUpdatedEmail';
+import { InsuranceExpiryEmail } from '@/components/email-template/InsuranceExpiryEmail';
 import { InterventionEndedEmail } from '@/components/email-template/InterventionEndedEmail';
 import { InterventionStartedEmail } from '@/components/email-template/InterventionStartedEmail';
 import { MaintenanceAlertEmail } from '@/components/email-template/MaintenanceAlertEmail';
@@ -264,6 +265,31 @@ export const sendMaintenanceDueEmail = async (
     if (error) console.error('sendMaintenanceDueEmail error:', error);
   } catch (err) {
     console.error('sendMaintenanceDueEmail exception:', err);
+  }
+};
+
+export const sendInsuranceExpiryEmail = async (
+  emails: string[],
+  componentName: string,
+  toolCode: string,
+  expiryDate: string,
+  daysRemaining: number
+) => {
+  if (!emails.length) return;
+  try {
+    const emailHtml = await render(
+      InsuranceExpiryEmail({ componentName, toolCode, expiryDate, daysRemaining })
+    );
+
+    const { error } = await resend.emails.send({
+      from: 'ReADI <no-reply@readi.theun1t.com>',
+      to: emails,
+      subject: `Insurance Expiring — ${toolCode}`,
+      html: emailHtml,
+    });
+    if (error) console.error('sendInsuranceExpiryEmail error:', error);
+  } catch (err) {
+    console.error('sendInsuranceExpiryEmail exception:', err);
   }
 };
 

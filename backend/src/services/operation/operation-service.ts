@@ -141,6 +141,7 @@ export async function listOperations(
     is_recurrent: !!row.recurring_group_id
       || !!(row.mission_metadata as any)?.is_recurrent
       || !!(row.mission_metadata as any)?.recurring_group_id,
+    is_imported: !!(row.mission_metadata as any)?.is_imported,
   })) as unknown as Operation[];
 
   const toolIds = [...new Set(operations.filter((op) => op.fk_tool_id).map((op) => op.fk_tool_id as number))];
@@ -202,6 +203,7 @@ export async function getOperation(id: number): Promise<Operation | null> {
     flight_mode: (data.mission_metadata as any)?.flight_mode ?? null,
     op_type: (data.mission_metadata as any)?.op_type ?? null,
     uspace_id: (data.mission_metadata as any)?.uspace_id ?? null,
+    is_imported: !!(data.mission_metadata as any)?.is_imported,
   } as unknown as Operation;
 }
 
@@ -490,12 +492,18 @@ export async function updateOperation(id: number, input: UpdateOperationSchema, 
       dflight_mission_id: true,
       dflight_flight_authorisation_status: true,
       dflight_mission_status: true,
+      dflight_flight_clearance_status: true,
     },
   });
   assertMissionEditable(current?.status_name);
 
   if ((input as any).status_name === 'IN_PROGRESS' && current?.status_name !== 'IN_PROGRESS') {
-    assertDFlightAuthorized(current?.dflight_mission_id, current?.dflight_flight_authorisation_status, current?.dflight_mission_status);
+    assertDFlightAuthorized(
+      current?.dflight_mission_id,
+      current?.dflight_flight_authorisation_status,
+      current?.dflight_mission_status,
+      current?.dflight_flight_clearance_status,
+    );
   }
 
   const updatePayload: Record<string, unknown> = {};

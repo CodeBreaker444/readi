@@ -177,10 +177,11 @@ export async function getSystemList(
           tool_longitude: (item.tool_metadata as any)?.longitude,
           tool_status: (() => {
             const stored = (item.tool_metadata as any)?.status as string | undefined;
-            if (stored) return stored;
+
+            if (stored && stored !== 'OPERATIONAL') return stored;
             if (toolsNonOperational.has(item.tool_id)) return 'NOT_OPERATIONAL';
             if (toolsInMaintenance.has(item.tool_id)) return 'MAINTENANCE';
-            return 'OPERATIONAL';
+            return stored ?? 'OPERATIONAL';
           })(),
           tot_mission: missionData[item.tool_id]?.count || 0,
           tot_flown_time: missionData[item.tool_id]?.time || 0,
@@ -540,6 +541,8 @@ export async function detachComponent(ownerId: number, componentId: number) {
 
   if (!tool) throw new Error('Component not found or unauthorized');
 
+  const warehouseToolId = await getOrCreateWarehouseTool(ownerId);
+
   const updatedMetadata = {
     ...(comp.component_metadata as Record<string, unknown> ?? {}),
     system_detached: true,
@@ -548,7 +551,10 @@ export async function detachComponent(ownerId: number, componentId: number) {
 
   await prisma.tool_component.update({
     where: { component_id: componentId },
-    data: { component_metadata: updatedMetadata as Prisma.InputJsonValue },
+    data: {
+      fk_tool_id: warehouseToolId,
+      component_metadata: updatedMetadata as Prisma.InputJsonValue,
+    },
   });
 
   // Cascade: also detach all children that reference this component as parent
@@ -569,7 +575,10 @@ export async function detachComponent(ownerId: number, componentId: number) {
     };
     await prisma.tool_component.update({
       where: { component_id: child.component_id },
-      data: { component_metadata: childMeta as Prisma.InputJsonValue },
+      data: {
+        fk_tool_id: warehouseToolId,
+        component_metadata: childMeta as Prisma.InputJsonValue,
+      },
     });
   }
 

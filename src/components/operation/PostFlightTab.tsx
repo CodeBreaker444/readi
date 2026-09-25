@@ -144,6 +144,8 @@ export function PostFlightTab({ data, resultOptions, loading, fromLog, isDark, o
     waypoints.some((wp) => wp.latitude != null && wp.longitude != null)
   );
 
+  const endBeforeStart = !!(data.actual_start && data.actual_end && data.actual_end < data.actual_start);
+
   if (loading) {
     return (
       <div className="space-y-3">
@@ -174,11 +176,17 @@ export function PostFlightTab({ data, resultOptions, loading, fromLog, isDark, o
             <input
               type="datetime-local"
               value={data.actual_end}
+              min={data.actual_start || undefined}
               onChange={(e) => onChange("actual_end", e.target.value)}
-              className={cn(inputCls(isDark), "text-xs")}
+              className={cn(inputCls(isDark), "text-xs", endBeforeStart && "border-red-500 focus:border-red-500")}
             />
           </div>
         </div>
+        {endBeforeStart && (
+          <p className="text-xs text-red-500 mb-3">
+            {t("operations.missionComplete.postFlight.validation.endBeforeStart")}
+          </p>
+        )}
         <div>
           <FieldLabel icon={Trophy} label={t("operations.missionComplete.postFlight.fields.missionResult")} isDark={isDark} />
           <select

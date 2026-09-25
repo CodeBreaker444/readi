@@ -11,7 +11,7 @@ export interface GenericOption { id: number; label: string }
 export interface LucOption { id: number; label: string; steps?: any }
 export interface PilotOption { user_id: number; first_name: string; last_name: string }
 export interface ConflictEvent { id: string; title: string; start: string; end: string }
-export interface UspaceOption { id: string; name: string | null }
+export interface UspaceOption { id: string; name: string | null; boundary?: { lat: number; lng: number }[][] | null; maxHBufferM?: number | null }
 
 export type OpType = 'OPEN' | 'PDRA' | 'STS-01' | 'STS-02'
 export type FlightMode = 'RC' | 'DOCK'
