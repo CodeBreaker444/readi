@@ -24,6 +24,7 @@ const schema = z.object({
     contract_end_date: z.string().optional(),
     payment_terms: z.string().max(100).optional(),
     credit_limit: z.number().nonnegative().optional(),
+    owner_id: z.number().int().positive().optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -44,7 +45,17 @@ export async function POST(req: NextRequest) {
             return zodError(E.VL001, parsed.error);
         }
 
-        const result = await addClient({ ...parsed.data, fk_owner_id: session.user.ownerId });
+        const isSuperAdmin = session.user.role === 'SUPERADMIN';
+
+        if (isSuperAdmin && !parsed.data.owner_id) {
+            return NextResponse.json(
+                { code: 0, error: 'A company must be assigned when adding a client as Super Admin' },
+                { status: 400 },
+            );
+        }
+
+        const { owner_id, ...clientFields } = parsed.data;
+        const result = await addClient({ ...clientFields, fk_owner_id: isSuperAdmin ? owner_id! : session.user.ownerId });
 
         if (result.code === 1 && result.data) {
           logEvent({

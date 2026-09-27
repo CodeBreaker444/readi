@@ -43,7 +43,7 @@ export default function VerifyMFAPage() {
       if (verifyError) throw verifyError
 
       document.cookie = 'mfa_verified=true; path=/; max-age=604800; samesite=strict'
-      router.push('/dashboard')
+      router.push('/')
     } catch (err: any) {
       setError('Invalid code. Please try again.')
       setCode('')

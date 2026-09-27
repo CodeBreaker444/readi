@@ -275,9 +275,16 @@ export function getApiRoutePermission(pathname: string): ApiPermissionEntry | un
   return undefined; 
 }
 
+const SUPERADMIN_ALLOWED_PREFIXES = ['/superadmin', '/audit-logs', '/team', '/company', '/settings'];
+const SUPERADMIN_ALLOWED_ROUTES = ['/profile', '/unauthorized'];
+
 export function canAccessRoute(role: Role | null | undefined, pathname: string): boolean {
   if (!role) return false;
-  if (role === 'SUPERADMIN') return true;
+
+  if (role === 'SUPERADMIN') {
+    if (SUPERADMIN_ALLOWED_ROUTES.includes(pathname)) return true;
+    return SUPERADMIN_ALLOWED_PREFIXES.some((p) => pathname === p || pathname.startsWith(p + '/'));
+  }
 
   if (role === 'CLIENT') {
     return pathname.startsWith('/client/');
@@ -296,7 +303,7 @@ export function canAccessRoute(role: Role | null | undefined, pathname: string):
 export function getAccessibleRoutes(role: Role | null | undefined): string[] {
   if (!role) return [];
   const allRoutes = Array.from(new Set([...Object.keys(ROUTE_PERMISSIONS), ...Object.keys(ROUTE_FEATURE_KEYS)]));
-  if (role === 'SUPERADMIN' || role === 'ADMIN') return allRoutes;
+  if (role === 'ADMIN') return allRoutes;
 
   return allRoutes.filter((route) => canAccessRoute(role, route));
 }
@@ -305,6 +312,7 @@ export function getDefaultRoute(role: Role | null | undefined): string {
   if (!role) return '/auth/login';
 
   if (role === 'CLIENT') return '/client/dashboard';
+  if (role === 'SUPERADMIN') return '/superadmin';
   if (roleHasPermission(role, 'view_dashboard')) return '/dashboard';
   if (roleHasPermission(role, 'view_pilot_dashboard')) return '/dashboard';
   if (roleHasPermission(role, 'view_operations')) return '/operations/table';

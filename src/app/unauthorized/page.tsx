@@ -57,7 +57,7 @@ export default function UnauthorizedPage() {
               Go Back
             </button>
             <button
-              onClick={() => router.push('/dashboard')}
+              onClick={() => router.push('/')}
               className="cursor-pointer px-5 py-2.5 rounded-lg text-white transition-colors"
               style={{
                 fontFamily: "'DM Sans', system-ui, sans-serif",
@@ -66,7 +66,7 @@ export default function UnauthorizedPage() {
                 background: 'linear-gradient(135deg, #7c3aed, #5b21b6)',
               }}
             >
-              Go to Dashboard
+              Go Home
             </button>
           </div>
         </div>

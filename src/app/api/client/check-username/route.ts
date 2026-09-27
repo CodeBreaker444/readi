@@ -13,6 +13,11 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ available: true, similar: [] });
   }
 
-  const result = await checkClientUsername(session.user.ownerId, username);
+  const requestedOwnerId = req.nextUrl.searchParams.get('owner_id');
+  const ownerId = session.user.role === 'SUPERADMIN' && requestedOwnerId
+    ? parseInt(requestedOwnerId, 10)
+    : session.user.ownerId;
+
+  const result = await checkClientUsername(ownerId, username);
   return NextResponse.json(result);
 }

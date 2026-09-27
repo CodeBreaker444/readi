@@ -16,7 +16,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import axios from 'axios';
-import { CheckCircle2, Copy, Eye, EyeOff, Loader2, RefreshCw, XCircle } from 'lucide-react';
+import { Building2, CheckCircle2, Copy, Eye, EyeOff, Loader2, RefreshCw, XCircle } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { ClientData } from '../tables/ClientColumn';
@@ -39,6 +39,8 @@ interface ClientFormModalProps {
   clientData?: ClientData;
   onSubmit: (data: any) => Promise<void>;
   isDark: boolean;
+  isSuperAdmin?: boolean;
+  owners?: { owner_id: number; owner_name: string }[];
 }
 
 type UsernameStatus = 'idle' | 'checking' | 'available' | 'taken' | 'invalid';
@@ -60,6 +62,7 @@ type FormState = {
   contract_end_date: string;
   client_active: string;
   username: string;
+  owner_id: number;
 };
 
 const defaultForm: FormState = {
@@ -79,6 +82,7 @@ const defaultForm: FormState = {
   contract_end_date: '',
   client_active: 'Y',
   username: '',
+  owner_id: 0,
 };
 
 const buildFormState = (clientData?: ClientData): FormState => {
@@ -103,7 +107,7 @@ const buildFormState = (clientData?: ClientData): FormState => {
   };
 };
 
-export function ClientFormModal({ isOpen, onClose, mode, clientData, onSubmit, isDark }: ClientFormModalProps) {
+export function ClientFormModal({ isOpen, onClose, mode, clientData, onSubmit, isDark, isSuperAdmin = false, owners = [] }: ClientFormModalProps) {
   const [formData, setFormData] = useState<FormState>(buildFormState(clientData));
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [usernameStatus, setUsernameStatus] = useState<UsernameStatus>('idle');
@@ -144,13 +148,14 @@ export function ClientFormModal({ isOpen, onClose, mode, clientData, onSubmit, i
     setUsernameStatus('checking');
     debounceRef.current = setTimeout(async () => {
       try {
-        const res = await axios.get(`/api/client/check-username?username=${encodeURIComponent(value)}`);
+        const ownerParam = isSuperAdmin && formData.owner_id ? `&owner_id=${formData.owner_id}` : '';
+        const res = await axios.get(`/api/client/check-username?username=${encodeURIComponent(value)}${ownerParam}`);
         setUsernameStatus(res.data.available ? 'available' : 'taken');
       } catch {
         setUsernameStatus('idle');
       }
     }, 350);
-  }, []);
+  }, [isSuperAdmin, formData.owner_id]);
 
   const set = (key: keyof FormState) => (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -184,6 +189,10 @@ export function ClientFormModal({ isOpen, onClose, mode, clientData, onSubmit, i
         toast.error('Username must be at least 3 characters (lowercase, numbers, underscores only)');
         return;
       }
+      if (isSuperAdmin && !formData.owner_id) {
+        toast.error('Please select a company for this client');
+        return;
+      }
     }
     if (mode === 'add' && formData.client_email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.client_email)) {
       toast.error('Please enter a valid email address');
@@ -204,6 +213,7 @@ export function ClientFormModal({ isOpen, onClose, mode, clientData, onSubmit, i
         contract_end_date: formData.contract_end_date || undefined,
         client_email: mode === 'add' ? (formData.client_email || undefined) : undefined,
         client_website: formData.client_website || undefined,
+        owner_id: isSuperAdmin && mode === 'add' && formData.owner_id ? formData.owner_id : undefined,
       });
     } finally {
       setIsSubmitting(false);
@@ -254,6 +264,33 @@ export function ClientFormModal({ isOpen, onClose, mode, clientData, onSubmit, i
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-5 mt-1">
+
+          {/* Company (super admin add mode only) */}
+          {isSuperAdmin && mode === 'add' && (
+            <div>
+              <p className={`text-[10px] font-bold uppercase tracking-widest mb-3 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Company</p>
+              <div>
+                <label className={labelClass}>
+                  <span className="inline-flex items-center gap-1.5"><Building2 size={12} /> Company *</span>
+                </label>
+                <Select
+                  value={formData.owner_id ? formData.owner_id.toString() : ''}
+                  onValueChange={(value) => setFormData((p) => ({ ...p, owner_id: parseInt(value) }))}
+                >
+                  <SelectTrigger className={`h-9 text-sm ${isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : ''}`}>
+                    <SelectValue placeholder="Select a Company" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {owners.map((owner) => (
+                      <SelectItem key={owner.owner_id} value={owner.owner_id.toString()}>
+                        {owner.owner_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
 
           {/* Basic Info */}
           <div>

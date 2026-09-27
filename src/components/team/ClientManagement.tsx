@@ -84,8 +84,21 @@ export default function ClientManagement({ session }: ClientManagementProps) {
   const [selectedClient, setSelectedClient] = useState<ClientData | null>(null);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [passwordClient, setPasswordClient] = useState<ClientData | null>(null);
+  const [owners, setOwners] = useState<{ owner_id: number; owner_name: string }[]>([]);
 
   useEffect(() => { fetchClients(); }, []);
+
+  useEffect(() => {
+    if (!isSuperAdmin) return;
+    (async () => {
+      try {
+        const res = await axios.get('/api/owner');
+        if (res.data.code === 1 && res.data.data) setOwners(res.data.data);
+      } catch {
+        /* non-critical */
+      }
+    })();
+  }, [isSuperAdmin]);
 
   const fetchClients = async () => {
     try {
@@ -412,6 +425,8 @@ export default function ClientManagement({ session }: ClientManagementProps) {
           mode="add"
           onSubmit={handleAddClient}
           isDark={isDark}
+          isSuperAdmin={isSuperAdmin}
+          owners={owners}
         />
       )}
 

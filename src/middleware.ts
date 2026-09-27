@@ -86,7 +86,7 @@ export async function updateSession(request: NextRequest) {
   if (pathname === '/') {
     if (jwtToken && !isJwtExpired(jwtToken)) {
       const role = decodeJwtRole(jwtToken)
-      const dest = role === 'CLIENT' ? '/client/dashboard' : '/dashboard'
+      const dest = role === 'CLIENT' ? '/client/dashboard' : role === 'SUPERADMIN' ? '/superadmin' : '/dashboard'
       return NextResponse.redirect(new URL(dest, request.url))
     }
     const {
@@ -127,7 +127,7 @@ export async function updateSession(request: NextRequest) {
     }
     if (isPublicRoute || isAuthFlowRoute) {
       const role = decodeJwtRole(jwtToken)
-      const dest = role === 'CLIENT' ? '/client/dashboard' : '/dashboard'
+      const dest = role === 'CLIENT' ? '/client/dashboard' : role === 'SUPERADMIN' ? '/superadmin' : '/dashboard'
       return NextResponse.redirect(new URL(dest, request.url))
     }
 
