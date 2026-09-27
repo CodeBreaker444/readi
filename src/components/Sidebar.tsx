@@ -27,7 +27,7 @@ import {
   HiOutlineUsers
 } from 'react-icons/hi';
 import { MdFlightTakeoff } from 'react-icons/md';
-import { TbDrone, TbLayoutSidebarFilled, TbRadar } from "react-icons/tb";
+import { TbDrone, TbGauge, TbLayoutSidebarFilled, TbRadar } from "react-icons/tb";
 import { canAccessRoute, Role } from '../lib/auth/roles';
 import { supabase } from '../lib/supabase/client';
 
@@ -104,6 +104,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
   };
 
   const navigationItems: NavItem[] = [
+    ...(role === 'SUPERADMIN' ? [{
+      name: 'Superadmin',
+      href: '/superadmin',
+      icon: HiOutlineHome,
+    }] : []),
     {
       name: t('sidebar.dashboard'),
       href: '/dashboard',

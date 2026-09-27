@@ -213,6 +213,14 @@ export async function updateSession(request: NextRequest) {
       }
     }
 
+    // Superadmin platform dashboard — SUPERADMIN only
+    if (pathname.startsWith('/superadmin')) {
+      const role = decodeJwtRole(jwtToken)
+      if (role !== 'SUPERADMIN') {
+        return NextResponse.redirect(new URL('/unauthorized', request.url))
+      }
+    }
+
     // D-Flight settings & fleet — ADMIN/OPM/SUPERADMIN only
     if (pathname.startsWith('/dflight')) {
       const role = decodeJwtRole(jwtToken)
