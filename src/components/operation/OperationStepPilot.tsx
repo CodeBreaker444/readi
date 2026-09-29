@@ -93,6 +93,11 @@ export function OperationStepPilot({ pilots, pilotId, onPilotChange, visualObser
                                 {pilotsPaging.paged.map(p => (
                                     <SelectItem key={p.user_id} value={String(p.user_id)} className={siCls(isDark)}>
                                         {p.first_name} {p.last_name}
+                                        {p.department && (
+                                            <span className={cn('ml-1 text-xs', isDark ? 'text-slate-400' : 'text-slate-500')}>
+                                                — {p.department}
+                                            </span>
+                                        )}
                                     </SelectItem>
                                 ))}
                                 {pilotsPaging.showPagination && Array.from({ length: SELECT_PAGE_SIZE - pilotsPaging.paged.length }).map((_, i) => (

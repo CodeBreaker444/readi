@@ -856,7 +856,7 @@ export async function getPilotOptions(ownerId: number) {
   return prisma.public_users.findMany({
     where: { fk_owner_id: ownerId, user_role: 'PIC', user_active: 'Y' },
     orderBy: { first_name: 'asc' },
-    select: { user_id: true, first_name: true, last_name: true },
+    select: { user_id: true, first_name: true, last_name: true, department: true },
   });
 }
 
@@ -878,7 +878,7 @@ export async function getToolOptions(ownerId: number) {
     }),
     prisma.tool_component.findMany({
       where:  { fk_tool_id: { in: toolIds }, component_type: 'DRONE', component_active: 'Y' },
-      select: { fk_tool_id: true, serial_number: true },
+      select: { fk_tool_id: true, component_name: true, serial_number: true },
     }),
     prisma.tool_component.findMany({
       where:  { fk_tool_id: { in: toolIds }, component_active: 'Y' },
@@ -905,10 +905,18 @@ export async function getToolOptions(ownerId: number) {
     droneComponents.filter((c) => c.fk_tool_id != null).map((c) => c.fk_tool_id as number)
   );
   const droneSerialMap = new Map<number, string | null>();
+  const droneComponentMap = new Map<number, { component_name: string; serial_number: string }[]>();
   droneComponents.forEach((c) => {
-    if (c.fk_tool_id != null && !droneSerialMap.has(c.fk_tool_id)) {
+    if (c.fk_tool_id == null) return;
+    if (!droneSerialMap.has(c.fk_tool_id)) {
       droneSerialMap.set(c.fk_tool_id, c.serial_number?.trim() || null);
     }
+    const serial = c.serial_number?.trim();
+    if (!serial) return;
+    const entry = { component_name: c.component_name, serial_number: serial };
+    const existing = droneComponentMap.get(c.fk_tool_id);
+    if (existing) existing.push(entry);
+    else droneComponentMap.set(c.fk_tool_id, [entry]);
   });
   const nonOperationalSet = new Set<number>(
     expiredComps.filter((c) => c.fk_tool_id != null).map((c) => c.fk_tool_id as number)
@@ -931,6 +939,7 @@ export async function getToolOptions(ownerId: number) {
     is_non_operational: nonOperationalSet.has(t.tool_id),
     is_dismissed: (t.tool_metadata as any)?.status === 'DISMISSED',
     drone_serial_number: droneSerialMap.get(t.tool_id) ?? null,
+    drone_components: droneComponentMap.get(t.tool_id) ?? [],
   }));
 }
 

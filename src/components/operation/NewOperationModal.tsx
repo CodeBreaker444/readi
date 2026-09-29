@@ -218,6 +218,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                     user_id: p.user_id,
                     first_name: p.first_name ?? '',
                     last_name: p.last_name ?? '',
+                    department: p.department ?? null,
                 })))
                 setPlannings(res.data.plannings ?? [])
                 // Only use all-tools fallback when the operation has no client assigned
@@ -226,6 +227,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                         tool_id: t.tool_id, tool_code: t.tool_code,
                         tool_name: t.tool_name, in_maintenance: t.in_maintenance,
                         is_non_operational: t.is_non_operational,
+                        drone_components: t.drone_components ?? [],
                     })))
                 }
             })
@@ -862,7 +864,11 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                             summary={{
                                 clientName: selectedClient?.client_name,
                                 opType,
-                                droneLabel: selectedDrone ? `${selectedDrone.tool_code} — ${selectedDrone.tool_name}` : undefined,
+                                droneLabel: selectedDrone
+                                    ? (selectedDrone.drone_components?.[0]
+                                        ? `${selectedDrone.tool_name} – ${selectedDrone.drone_components[0].component_name} – ${selectedDrone.drone_components[0].serial_number}`
+                                        : `${selectedDrone.tool_code} — ${selectedDrone.tool_name}`)
+                                    : undefined,
                                 planName: selectedPlan?.planning_name,
                                 flightMode,
                                 missionCode: schedulerForm.missionCode,
