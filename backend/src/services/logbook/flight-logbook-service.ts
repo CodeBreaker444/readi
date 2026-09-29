@@ -135,6 +135,10 @@ export async function getOperationLogbookList(
       pic_fullname: row.users
         ? `${row.users.first_name ?? ''} ${row.users.last_name ?? ''}`.trim()
         : '',
+      vo_fullnames: ((row.mission_metadata as any)?.visual_observers ?? [])
+        .map((o: any) => o.name)
+        .filter(Boolean)
+        .join(', '),
       client_name:
         row.client?.client_name ??
         row.planning?.client?.client_name ??

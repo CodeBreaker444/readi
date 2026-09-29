@@ -113,6 +113,7 @@ export interface OperationLogbookItem {
   time_start: string;
   time_end: string;
   pic_fullname: string;
+  vo_fullnames: string;
   client_name: string;
   mission_category_desc: string;
   mission_type_desc: string;

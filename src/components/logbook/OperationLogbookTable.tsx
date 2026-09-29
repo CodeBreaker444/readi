@@ -167,7 +167,7 @@ const table = useReactTable({
                     const skFaint = isDark ? "bg-slate-800/60" : "bg-slate-100";
                     const ratio = 0.5 + ((rowIdx * 3 + colIdx * 7) % 30) / 100;
 
-                    const isDouble = [1, 2, 7, 9, 10].includes(colIdx);
+                    const isDouble = [1, 2, 3, 7, 9, 10].includes(colIdx);
                     const isBadge = [5, 6, 8].includes(colIdx);
 
                     return (
@@ -242,8 +242,8 @@ const table = useReactTable({
       <div className="flex items-center justify-between px-2">
         <ExportButtons
           filename="Operation Logbook"
-          headers={['Mission ID', 'Date Start', 'Date End', 'PIC', 'Client', 'Category', 'Type', 'Vehicle', 'Status', 'Result', 'Plan Code', 'Flown Time', 'Flown Meters', 'Battery Serial Number', 'Notes']}
-          rows={data.map(d => [d.mission_code || d.mission_id, d.date_start, d.date_end, d.pic_fullname, d.client_name, d.mission_category_desc, d.mission_type_desc, d.vehicle_code, d.mission_status_desc, d.mission_result_desc, d.mission_planning_code, d.flown_time, d.flown_meter, d.battery_serial_number, d.mission_notes])}
+          headers={['Mission ID', 'Date Start', 'Date End', 'PIC', 'VO', 'Client', 'Category', 'Type', 'Vehicle', 'Status', 'Result', 'Plan Code', 'Flown Time', 'Flown Meters', 'Battery Serial Number', 'Notes']}
+          rows={data.map(d => [d.mission_code || d.mission_id, d.date_start, d.date_end, d.pic_fullname, d.vo_fullnames, d.client_name, d.mission_category_desc, d.mission_type_desc, d.vehicle_code, d.mission_status_desc, d.mission_result_desc, d.mission_planning_code, d.flown_time, d.flown_meter, d.battery_serial_number, d.mission_notes])}
           pdfColumnWidths={{ 0: 18 }}
         />
         <TablePagination table={table} />
