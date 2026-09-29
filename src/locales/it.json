@@ -2323,7 +2323,8 @@
       "saveError": "Errore durante il salvataggio del documento. Riprova.",
       "component": "Componente",
       "componentOptional": "(opzionale)",
-      "componentNone": "Nessuno — collega a un componente",
+      "componentNone": "Nessuno — collega a uno o più componenti",
+      "componentsSelected": "{{count}} selezionati",
       "selectSystemFirst": "Seleziona prima un sistema",
       "filterBySystem": "Filtra per sistema",
       "allSystems": "Tutti i sistemi"

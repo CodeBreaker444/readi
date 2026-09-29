@@ -2319,7 +2319,8 @@
       "saveError": "Fehler beim Speichern des Dokuments. Bitte versuchen Sie es erneut.",
       "component": "Komponente",
       "componentOptional": "(optional)",
-      "componentNone": "Keine — mit einer Komponente verknüpfen",
+      "componentNone": "Keine — mit einer oder mehreren Komponenten verknüpfen",
+      "componentsSelected": "{{count}} ausgewählt",
       "selectSystemFirst": "Wählen Sie zuerst ein System aus",
       "filterBySystem": "Nach System filtern",
       "allSystems": "Alle Systeme"

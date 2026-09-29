@@ -112,29 +112,22 @@ export function FilesDownloadModal({
             .then(async (compData) => {
                 if (compData.code !== 1 || !compData.data?.length) return;
                 const compIds: number[] = compData.data.map((c: any) => c.tool_component_id);
-                const docResults = await Promise.all(
-                    compIds.map((id) =>
-                        fetch('/api/document/list', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ fk_component_id: id }),
-                        })
-                            .then(r => r.json())
-                            .then(d => (d.items ?? []).map((doc: any) => ({
-                                ...doc,
-                                component_code: compData.data.find((c: any) => c.tool_component_id === id)?.component_code,
-                                component_name: compData.data.find((c: any) => c.tool_component_id === id)?.component_name,
-                            })))
-                            .catch(() => [])
-                    )
-                );
-                const seen = new Set<number>();
-                const unique = docResults.flat().filter((doc) => {
-                    if (seen.has(doc.document_id)) return false;
-                    seen.add(doc.document_id);
-                    return true;
-                });
-                setComponentDocs(unique);
+                const docs = await fetch('/api/document/list', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ component_ids: compIds }),
+                })
+                    .then(r => r.json())
+                    .then(d => (d.items ?? []).map((doc: any) => {
+                        const match = (doc.components ?? []).find((c: any) => compIds.includes(c.component_id));
+                        return {
+                            ...doc,
+                            component_code: match?.component_code,
+                            component_name: match?.component_name,
+                        };
+                    }))
+                    .catch(() => []);
+                setComponentDocs(docs);
             })
             .catch(() => {})
             .finally(() => setDocsLoading(false));

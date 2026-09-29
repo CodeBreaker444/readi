@@ -40,11 +40,19 @@ export interface DocumentRevision {
   uploaded_by_user_id?: number | null; 
 }
 
+export interface DocumentComponentRef {
+  component_id: number;
+  component_code: string | null;
+  component_name: string | null;
+  fk_tool_id: number | null;
+}
+
 export interface RepositoryDocument {
   document_id: number;
   doc_type_id: number;
-  fk_component_id?: number | null;
-  type_name?: string | null;         
+  component_ids: number[];
+  components: DocumentComponentRef[];
+  type_name?: string | null;
   doc_area?: DocumentArea | null;    
   doc_category?: string | null;      
   doc_code?: string | null;
@@ -97,7 +105,7 @@ export interface DocumentHistoryResponse {
   status?: "DRAFT" | "IN_REVIEW" | "APPROVED" | "OBSOLETE";
   owner_role?: string;
   search?: string;
-  fk_component_id?: number;
+  component_ids?: number[];
 };
 
 export type DocumentCreateInput = {
@@ -114,7 +122,7 @@ export type DocumentCreateInput = {
   tags?: string;
   version_label?: string;
   change_log?: string;
-  fk_component_id?: number | null;
+  component_ids?: number[];
 };
 
 export type DocumentUpdateInput = {
@@ -131,7 +139,7 @@ export type DocumentUpdateInput = {
   description?: string | null;
   keywords?: string | null;
   tags?: string | null;
-  fk_component_id?: number | null;
+  component_ids?: number[];
 };
 
 export type DocumentDeleteInput = {

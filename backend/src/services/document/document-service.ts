@@ -127,7 +127,7 @@ export async function listDocuments(input: DocumentListInput): Promise<{
       document_active: 'Y',
       ...(input.status ? { document_status: input.status } : {}),
       ...(input.area   ? { luc_doc_type: { doc_type_category: input.area } } : {}),
-      ...(input.fk_component_id ? { fk_component_id: input.fk_component_id } : {}),
+      ...(input.component_ids?.length ? { luc_document_component: { some: { fk_component_id: { in: input.component_ids } } } } : {}),
       ...(input.search ? {
         OR: [
           { document_title:       { contains: input.search, mode: 'insensitive' } },
@@ -138,6 +138,13 @@ export async function listDocuments(input: DocumentListInput): Promise<{
     },
     include: {
       luc_doc_type: { select: { doc_type_name: true, doc_type_category: true } },
+      luc_document_component: {
+        include: {
+          tool_component: {
+            select: { component_id: true, component_code: true, component_name: true, fk_tool_id: true, expiration_date: true, component_active: true },
+          },
+        },
+      },
     },
     orderBy: { document_id: 'desc' },
   });
@@ -173,37 +180,27 @@ export async function listDocuments(input: DocumentListInput): Promise<{
   });
   const statusSet = [...new Set(allDocs.map((d) => d.document_status).filter(Boolean))] as string[];
 
-  const componentIds = docs
-    .map((d) => d.fk_component_id)
-    .filter((id): id is number => id != null);
-
-
-  const expiredComponentSet = new Set<number>();
-  if (componentIds.length > 0) {
-    const expiredComps = await prisma.tool_component.findMany({
-      where: {
-        component_id:   { in: componentIds },
-        component_active: 'Y',
-        expiration_date:  { lte: new Date(), not: null },
-      },
-      select: { component_id: true },
-    });
-    expiredComps.forEach((c) => expiredComponentSet.add(c.component_id));
-  }
-
   const items: RepositoryDocument[] = (docs ?? []).map((d) => {
     const rev = latestRevMap.get(d.document_id) ?? null;
    const typeData = Array.isArray(d.luc_doc_type)
   ? (d.luc_doc_type as Array<{ doc_type_name: string; doc_type_category: string }>)[0]
   : d.luc_doc_type as { doc_type_name: string; doc_type_category: string } | null;
 
-    const componentId = (d as any).fk_component_id as number | null;
-    const isNonOp = componentId != null && expiredComponentSet.has(componentId);
+    const attachedComponents = d.luc_document_component.map((dc) => dc.tool_component);
+    const isNonOp = attachedComponents.some(
+      (c) => c.component_active === 'Y' && c.expiration_date != null && c.expiration_date <= new Date()
+    );
 
     return {
       document_id:       d.document_id,
       doc_type_id:       d.fk_doc_type_id ?? 0,
-      fk_component_id:   componentId,
+      component_ids:     attachedComponents.map((c) => c.component_id),
+      components:        attachedComponents.map((c) => ({
+        component_id:   c.component_id,
+        component_code: c.component_code,
+        component_name: c.component_name,
+        fk_tool_id:     c.fk_tool_id,
+      })),
       type_name:         typeData?.doc_type_name ?? null,
       doc_area:          (typeData?.doc_type_category ?? null) as RepositoryDocument['doc_area'],
       doc_category:      typeData?.doc_type_category ?? null,
@@ -265,10 +262,16 @@ export async function createDocument(
       tags:                 input.tags ?? null,
       is_current_version:   true,
       document_active:      'Y',
-      fk_component_id:      input.fk_component_id ?? null,
     },
     select: { document_id: true },
   });
+
+  if (input.component_ids?.length) {
+    await prisma.luc_document_component.createMany({
+      data: input.component_ids.map((id) => ({ fk_document_id: doc.document_id, fk_component_id: id })),
+      skipDuplicates: true,
+    });
+  }
 
   try {
     await prisma.luc_document_rev.create({
@@ -304,22 +307,30 @@ export async function updateDocument(input: DocumentUpdateInput): Promise<void> 
     if (existing) throw new Error('A document with code already exists.');
   }
 
-  await prisma.luc_document.updateMany({
-    where: { document_id: input.document_id, document_active: 'Y' },
-    data: {
-      fk_doc_type_id:       input.doc_type_id,
-      document_code:        input.doc_code ?? null,
-      document_title:       input.title,
-      document_description: input.description ?? null,
-      document_status:      input.status,
-      effective_date:       toNullableDate(input.effective_date),
-      expiry_date:          toNullableDate(input.expiry_date),
-      owner_role:           input.owner_role ?? null,
-      keywords:             input.keywords ?? null,
-      tags:                 input.tags ?? null,
-      fk_component_id:      input.fk_component_id ?? null,
-    },
-  });
+  await prisma.$transaction([
+    prisma.luc_document.updateMany({
+      where: { document_id: input.document_id, document_active: 'Y' },
+      data: {
+        fk_doc_type_id:       input.doc_type_id,
+        document_code:        input.doc_code ?? null,
+        document_title:       input.title,
+        document_description: input.description ?? null,
+        document_status:      input.status,
+        effective_date:       toNullableDate(input.effective_date),
+        expiry_date:          toNullableDate(input.expiry_date),
+        owner_role:           input.owner_role ?? null,
+        keywords:             input.keywords ?? null,
+        tags:                 input.tags ?? null,
+      },
+    }),
+    prisma.luc_document_component.deleteMany({ where: { fk_document_id: input.document_id } }),
+    ...(input.component_ids?.length
+      ? [prisma.luc_document_component.createMany({
+          data: input.component_ids.map((id) => ({ fk_document_id: input.document_id, fk_component_id: id })),
+          skipDuplicates: true,
+        })]
+      : []),
+  ]);
 }
 
 
