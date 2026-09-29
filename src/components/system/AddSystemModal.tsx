@@ -16,7 +16,7 @@ const INITIAL_FORM = {
   tool_code: '', tool_description: '',
   tool_status: 'OPERATIONAL', tool_active: 'Y', fk_model_id: '', fk_client_id: '',
   latitude: '', longitude: '', purchase_date: '', activation_date: '',
-  location: '',
+  location: '', locationPseudoName: '',
 };
 
 interface AddToolModalProps {
@@ -66,6 +66,7 @@ export default function AddSystemModal({ open, onClose, onSuccess, models, clien
         location: formData.location || null,
         latitude: formData.latitude ? Number(formData.latitude) : null,
         longitude: formData.longitude ? Number(formData.longitude) : null,
+        locationPseudoName: formData.locationPseudoName || null,
         activationDate: formData.activation_date || null,
       };
       formPayload.append('data', JSON.stringify(payload));
@@ -121,6 +122,15 @@ export default function AddSystemModal({ open, onClose, onSuccess, models, clien
                 if (label !== undefined) handleChange('location', label);
               }}
             />
+            <div className="mt-3">
+              <Label className={labelCls}>{t('systems.components.common.pseudoName')}</Label>
+              <Input
+                className={inputCls}
+                value={formData.locationPseudoName}
+                onChange={e => handleChange('locationPseudoName', e.target.value)}
+                placeholder={t('systems.components.common.pseudoNamePlaceholder')}
+              />
+            </div>
           </div>
 
           <div>

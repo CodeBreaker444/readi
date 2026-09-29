@@ -10,8 +10,10 @@ import {
 } from '@/components/ui/dialog';
 import { useTheme } from '@/components/useTheme';
 import { cn } from '@/lib/utils';
+import type { DocumentComponentRef } from '@/config/types/repository';
 import {
     Download,
+    Eye,
     File,
     FileImage,
     FileText,
@@ -20,6 +22,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { DocumentViewerModal } from '@/components/document-repository/DocumentViewerModal';
 
 
 export interface SystemFile {
@@ -36,8 +39,7 @@ interface ComponentDoc {
     title: string;
     file_name?: string | null;
     version_label?: string | null;
-    component_code?: string | null;
-    component_name?: string | null;
+    components?: DocumentComponentRef[];
     rev_id?: number | null;
 }
 
@@ -99,6 +101,7 @@ export function FilesDownloadModal({
     const [downloading, setDownloading] = useState<string | null>(null);
     const [componentDocs, setComponentDocs] = useState<ComponentDoc[]>([]);
     const [docsLoading, setDocsLoading] = useState(false);
+    const [viewerDoc, setViewerDoc] = useState<ComponentDoc | null>(null);
 
     useEffect(() => {
         if (!open || !toolId) { setComponentDocs([]); return; }
@@ -112,29 +115,15 @@ export function FilesDownloadModal({
             .then(async (compData) => {
                 if (compData.code !== 1 || !compData.data?.length) return;
                 const compIds: number[] = compData.data.map((c: any) => c.tool_component_id);
-                const docResults = await Promise.all(
-                    compIds.map((id) =>
-                        fetch('/api/document/list', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ fk_component_id: id }),
-                        })
-                            .then(r => r.json())
-                            .then(d => (d.items ?? []).map((doc: any) => ({
-                                ...doc,
-                                component_code: compData.data.find((c: any) => c.tool_component_id === id)?.component_code,
-                                component_name: compData.data.find((c: any) => c.tool_component_id === id)?.component_name,
-                            })))
-                            .catch(() => [])
-                    )
-                );
-                const seen = new Set<number>();
-                const unique = docResults.flat().filter((doc) => {
-                    if (seen.has(doc.document_id)) return false;
-                    seen.add(doc.document_id);
-                    return true;
-                });
-                setComponentDocs(unique);
+                const docs = await fetch('/api/document/list', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ component_ids: compIds }),
+                })
+                    .then(r => r.json())
+                    .then(d => (d.items ?? []) as ComponentDoc[])
+                    .catch(() => []);
+                setComponentDocs(docs);
             })
             .catch(() => {})
             .finally(() => setDocsLoading(false));
@@ -169,6 +158,7 @@ export function FilesDownloadModal({
     const totalCount = files.length + componentDocs.length;
 
     return (
+        <>
         <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
             <DialogContent
                 className={cn(
@@ -326,12 +316,18 @@ export function FilesDownloadModal({
                                                     </Badge>
                                                 )}
                                             </div>
-                                            <div className="flex items-center gap-2 mt-0.5">
-                                                {(doc.component_code || doc.component_name) && (
-                                                    <span className={cn('text-[10px] font-mono', isDark ? 'text-slate-500' : 'text-slate-400')}>
-                                                        {doc.component_code || doc.component_name}
+                                            <div className="flex flex-wrap items-center gap-1 mt-1">
+                                                {(doc.components ?? []).map((c) => (
+                                                    <span
+                                                        key={c.component_id}
+                                                        className={cn(
+                                                            'inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-medium border',
+                                                            isDark ? 'bg-slate-800 border-slate-600 text-slate-300' : 'bg-violet-50 border-violet-200 text-violet-700',
+                                                        )}
+                                                    >
+                                                        {c.component_code || c.component_name || `#${c.component_id}`}
                                                     </span>
-                                                )}
+                                                ))}
                                                 {doc.version_label && (
                                                     <Badge variant="secondary" className="text-[9px] px-1.5 py-0 h-4">v{doc.version_label}</Badge>
                                                 )}
@@ -341,10 +337,25 @@ export function FilesDownloadModal({
                                             size="sm"
                                             variant="outline"
                                             className={cn(
-                                                'h-7 px-2.5 text-xs gap-1.5 flex-shrink-0',
+                                                'h-7 w-7 p-0 flex-shrink-0',
                                                 isDark ? 'border-slate-600 text-slate-300 hover:bg-slate-600 hover:text-white' : 'border-slate-200 text-slate-600 hover:bg-violet-50 hover:border-violet-300 hover:text-violet-700',
                                                 !doc.rev_id && 'opacity-40 pointer-events-none',
                                             )}
+                                            title={t('repository.actions.view')}
+                                            onClick={() => setViewerDoc(doc)}
+                                            disabled={!doc.rev_id}
+                                        >
+                                            <Eye className="w-3 h-3" />
+                                        </Button>
+                                        <Button
+                                            size="sm"
+                                            variant="outline"
+                                            className={cn(
+                                                'h-7 w-7 p-0 flex-shrink-0',
+                                                isDark ? 'border-slate-600 text-slate-300 hover:bg-slate-600 hover:text-white' : 'border-slate-200 text-slate-600 hover:bg-violet-50 hover:border-violet-300 hover:text-violet-700',
+                                                !doc.rev_id && 'opacity-40 pointer-events-none',
+                                            )}
+                                            title={t('repository.actions.download')}
                                             onClick={() => handleDocDownload(doc)}
                                             disabled={downloading === `doc-${doc.document_id}` || !doc.rev_id}
                                         >
@@ -376,5 +387,14 @@ export function FilesDownloadModal({
                 </div>
             </DialogContent>
         </Dialog>
+
+        <DocumentViewerModal
+            open={!!viewerDoc}
+            onClose={() => setViewerDoc(null)}
+            revId={viewerDoc?.rev_id ?? null}
+            fileName={viewerDoc?.file_name}
+            title={viewerDoc?.title}
+        />
+        </>
     );
 }

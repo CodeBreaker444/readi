@@ -1,4 +1,3 @@
-
 CREATE TABLE IF NOT EXISTS public.luc_document_component (
   id               SERIAL PRIMARY KEY,
   fk_document_id   INTEGER NOT NULL REFERENCES public.luc_document(document_id) ON DELETE CASCADE,

@@ -1323,32 +1323,31 @@ model luc_doc_type {
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model luc_document {
-  document_id                                   Int                @id @default(autoincrement())
+  document_id                                   Int                      @id @default(autoincrement())
   fk_owner_id                                   Int?
   fk_doc_type_id                                Int?
-  document_code                                 String?            @db.VarChar(50)
-  document_title                                String             @db.VarChar(255)
+  document_code                                 String?                  @db.VarChar(50)
+  document_title                                String                   @db.VarChar(255)
   document_description                          String?
-  document_status                               String?            @db.VarChar(50)
-  effective_date                                DateTime?          @db.Date
-  expiry_date                                   DateTime?          @db.Date
-  version_number                                String?            @db.VarChar(20)
-  is_current_version                            Boolean?           @default(true)
+  document_status                               String?                  @db.VarChar(50)
+  effective_date                                DateTime?                @db.Date
+  expiry_date                                   DateTime?                @db.Date
+  version_number                                String?                  @db.VarChar(20)
+  is_current_version                            Boolean?                 @default(true)
   created_by_user_id                            Int?
   approved_by_user_id                           Int?
-  approved_at                                   DateTime?          @db.Timestamp(6)
-  document_active                               String?            @default("Y") @db.Char(1)
-  created_at                                    DateTime?          @default(now()) @db.Timestamp(6)
-  updated_at                                    DateTime?          @default(now()) @db.Timestamp(6)
-  owner_role                                    String?            @db.VarChar(150)
+  approved_at                                   DateTime?                @db.Timestamp(6)
+  document_active                               String?                  @default("Y") @db.Char(1)
+  created_at                                    DateTime?                @default(now()) @db.Timestamp(6)
+  updated_at                                    DateTime?                @default(now()) @db.Timestamp(6)
+  owner_role                                    String?                  @db.VarChar(150)
   keywords                                      String?
   tags                                          String?
-  fk_component_id                               Int?
-  users_luc_document_approved_by_user_idTousers public_users?      @relation("luc_document_approved_by_user_idTousers", fields: [approved_by_user_id], references: [user_id], onUpdate: NoAction)
-  users_luc_document_created_by_user_idTousers  public_users?      @relation("luc_document_created_by_user_idTousers", fields: [created_by_user_id], references: [user_id], onUpdate: NoAction)
-  tool_component                                tool_component?    @relation(fields: [fk_component_id], references: [component_id], onUpdate: NoAction)
-  luc_doc_type                                  luc_doc_type?      @relation(fields: [fk_doc_type_id], references: [doc_type_id], onDelete: NoAction, onUpdate: NoAction)
-  owner                                         owner?             @relation(fields: [fk_owner_id], references: [owner_id], onDelete: NoAction, onUpdate: NoAction)
+  users_luc_document_approved_by_user_idTousers public_users?            @relation("luc_document_approved_by_user_idTousers", fields: [approved_by_user_id], references: [user_id], onUpdate: NoAction)
+  users_luc_document_created_by_user_idTousers  public_users?            @relation("luc_document_created_by_user_idTousers", fields: [created_by_user_id], references: [user_id], onUpdate: NoAction)
+  luc_doc_type                                  luc_doc_type?            @relation(fields: [fk_doc_type_id], references: [doc_type_id], onDelete: NoAction, onUpdate: NoAction)
+  owner                                         owner?                   @relation(fields: [fk_owner_id], references: [owner_id], onDelete: NoAction, onUpdate: NoAction)
+  luc_document_component                        luc_document_component[]
   luc_document_rev                              luc_document_rev[]
   luc_procedure                                 luc_procedure[]
 
@@ -1356,7 +1355,20 @@ model luc_document {
   @@index([fk_owner_id], map: "idx_document_owner")
   @@index([document_status], map: "idx_document_status")
   @@index([fk_doc_type_id], map: "idx_document_type")
-  @@index([fk_component_id], map: "idx_luc_document_fk_component_id")
+  @@schema("public")
+}
+
+model luc_document_component {
+  id              Int            @id @default(autoincrement())
+  fk_document_id  Int
+  fk_component_id Int
+  created_at      DateTime       @default(now()) @db.Timestamp(6)
+  tool_component  tool_component @relation(fields: [fk_component_id], references: [component_id], onDelete: Cascade, onUpdate: NoAction)
+  luc_document    luc_document   @relation(fields: [fk_document_id], references: [document_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([fk_document_id, fk_component_id], map: "luc_document_component_unique")
+  @@index([fk_component_id], map: "idx_luc_document_component_component")
+  @@index([fk_document_id], map: "idx_luc_document_component_document")
   @@schema("public")
 }
 
@@ -1434,6 +1446,7 @@ model maintenance_ticket {
   intervention_started_at                             DateTime?                       @db.Timestamp(6)
   intervention_ended_at                               DateTime?                       @db.Timestamp(6)
   intervention_started_by                             Int?
+  location_pseudo_name                                String?                         @db.VarChar(50)
   users_maintenance_ticket_assigned_to_user_idTousers public_users?                   @relation("maintenance_ticket_assigned_to_user_idTousers", fields: [assigned_to_user_id], references: [user_id], onUpdate: NoAction)
   tool_component                                      tool_component?                 @relation(fields: [fk_component_id], references: [component_id], onUpdate: NoAction)
   owner                                               owner?                          @relation(fields: [fk_owner_id], references: [owner_id], onDelete: NoAction, onUpdate: NoAction)
@@ -2544,7 +2557,7 @@ model tool_component {
   gcs_serial_number           String?                   @db.VarChar(100)
   certifications              Json?
   component_insurance         component_insurance?
-  luc_document                luc_document[]
+  luc_document_component      luc_document_component[]
   maintenance_ticket          maintenance_ticket[]
   maintenance_ticket_item     maintenance_ticket_item[]
   mission_maintenance_log     mission_maintenance_log[]

@@ -111,6 +111,20 @@ export default function ViewComponentModal({ open, component, systemCode, onClos
                         </div>
                     </div>
 
+                    {(component.latitude != null && component.longitude != null) && (
+                        <>
+                            <div className="border-t border-slate-100" />
+                            <div>
+                                <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-2">Location</p>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <InfoRow label="Pseudo Name" value={component.location_pseudo_name} />
+                                    <InfoRow label="Latitude" value={component.latitude} />
+                                    <InfoRow label="Longitude" value={component.longitude} />
+                                </div>
+                            </div>
+                        </>
+                    )}
+
                     {dFlightEnabled && component.qr_code_image && (
                         <>
                             <div className="border-t border-slate-100" />

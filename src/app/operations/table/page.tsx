@@ -44,6 +44,9 @@ export interface Operation {
   actual_end?: string | null;
   flight_duration?: number | null;
   location?: string | null;
+  location_latitude?: number | null;
+  location_longitude?: number | null;
+  location_pseudo_name?: string | null;
   distance_flown?: number | null;
   max_altitude?: number | null;
   notes?: string | null;

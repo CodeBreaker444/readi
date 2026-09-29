@@ -365,6 +365,16 @@ export function NewTicketModal({
             />
           </Field>
 
+          <Field label={t('systems.components.common.pseudoName')}>
+            <input
+              type="text"
+              className={inputCls}
+              value={form.location_pseudo_name}
+              onChange={(e) => onFormChange({ location_pseudo_name: e.target.value })}
+              placeholder={t('systems.components.common.pseudoNamePlaceholder')}
+            />
+          </Field>
+
           <ModalFooter
             onCancel={onClose}
             onConfirm={onSubmit}

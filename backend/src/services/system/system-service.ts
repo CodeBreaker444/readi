@@ -20,6 +20,7 @@ export interface AddSystemInput {
   location?: string | null;
   latitude?: number | null;
   longitude?: number | null;
+  locationPseudoName?: string | null;
   activationDate?: string | null;
   clientId?: number | null;
   files?: File[];
@@ -175,6 +176,7 @@ export async function getSystemList(
           client_name: clientMap[metaClientId] || '',
           tool_latitude: (item.tool_metadata as any)?.latitude,
           tool_longitude: (item.tool_metadata as any)?.longitude,
+          location_pseudo_name: (item.tool_metadata as any)?.pseudo_name || '',
           tool_status: (() => {
             const stored = (item.tool_metadata as any)?.status as string | undefined;
 
@@ -254,6 +256,7 @@ export async function addSystem(toolData: AddSystemInput) {
         clientId: toolData.clientId ?? null,
         latitude: toolData.latitude ?? null,
         longitude: toolData.longitude ?? null,
+        pseudo_name: toolData.locationPseudoName ?? null,
         activationDate: toolData.activationDate ?? null,
         maintenanceLogbook: 'N',
         files: uploadedFiles,
@@ -289,6 +292,7 @@ export async function updateTool(toolId: number, toolData: any) {
         clientId: toolData.fk_client_id,
         latitude: toolData.tool_latitude,
         longitude: toolData.tool_longitude,
+        pseudo_name: toolData.location_pseudo_name ?? null,
         activationDate: toolData.date_activation || null,
         status: toolData.tool_status,
         maintenanceLogbook: toolData.tool_maintenance_logbook,
@@ -851,6 +855,7 @@ function buildComponentListResult(data: any[]) {
         sts_declarations: item.component_metadata?.sts_declarations ?? null,
         latitude: item.component_metadata?.latitude ?? null,
         longitude: item.component_metadata?.longitude ?? null,
+        location_pseudo_name: item.component_metadata?.pseudo_name ?? null,
         drone_classes: item.component_metadata?.drone_classes ?? null,
         is_primary: item.component_metadata?.is_primary ?? false,
         expiration_date: item.expiration_date || null,
@@ -1024,9 +1029,10 @@ export async function addComponent(componentData: any, ownerId: number) {
         battery_cycle_ratio: componentData.battery_cycle_ratio != null ? Number(componentData.battery_cycle_ratio) : null,
         latitude: componentData.latitude ?? null,
         longitude: componentData.longitude ?? null,
+        pseudo_name: componentData.locationPseudoName ?? null,
         drone_classes: componentData.drone_classes ?? null,
         location_history: componentData.latitude != null && componentData.longitude != null
-          ? [{ latitude: componentData.latitude, longitude: componentData.longitude, changed_at: new Date().toISOString() }]
+          ? [{ latitude: componentData.latitude, longitude: componentData.longitude, pseudo_name: componentData.locationPseudoName ?? null, changed_at: new Date().toISOString() }]
           : [],
         ...(componentData.system_detached ? { system_detached: true } : {}),
       } as Prisma.InputJsonValue,
@@ -1133,12 +1139,14 @@ export async function updateComponent(componentId: number, componentData: any, o
 
   const prevLat = existingMeta?.latitude ?? null;
   const prevLon = existingMeta?.longitude ?? null;
+  const prevPseudoName = (existingMeta?.pseudo_name as string | null) ?? null;
   const newLat = componentData.latitude ?? null;
   const newLon = componentData.longitude ?? null;
+  const newPseudoName = componentData.locationPseudoName ?? null;
   const locationChanged =
     newLat != null &&
     newLon != null &&
-    (String(prevLat) !== String(newLat) || String(prevLon) !== String(newLon));
+    (String(prevLat) !== String(newLat) || String(prevLon) !== String(newLon) || prevPseudoName !== newPseudoName);
 
   const oldPosition = {
     latitude: prevLat,
@@ -1147,7 +1155,7 @@ export async function updateComponent(componentId: number, componentData: any, o
 
   const existingHistory: any[] = Array.isArray(baseMeta.location_history) ? baseMeta.location_history : [];
   const updatedHistory = locationChanged
-    ? [...existingHistory, { latitude: newLat, longitude: newLon, changed_at: new Date().toISOString() }]
+    ? [...existingHistory, { latitude: newLat, longitude: newLon, pseudo_name: newPseudoName, changed_at: new Date().toISOString() }]
     : existingHistory;
 
   const data = await prisma.tool_component.update({
@@ -1193,6 +1201,7 @@ export async function updateComponent(componentId: number, componentData: any, o
         battery_cycle_ratio: componentData.battery_cycle_ratio != null ? Number(componentData.battery_cycle_ratio) : null,
         latitude: newLat,
         longitude: newLon,
+        pseudo_name: newPseudoName,
         drone_classes: componentData.drone_classes ?? baseMeta.drone_classes ?? null,
         location_history: updatedHistory,
         ...(componentData.system_detached ? { system_detached: true } : {}),

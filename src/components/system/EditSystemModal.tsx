@@ -31,7 +31,7 @@ const EMPTY_FORM = {
   tool_status: 'OPERATIONAL', tool_active: 'Y',
   fk_client_id: '',
   tool_latitude: '', tool_longitude: '',
-  date_activation: '', location: '',
+  date_activation: '', location: '', location_pseudo_name: '',
   tool_maintenance_logbook: 'N',
 };
 
@@ -92,6 +92,7 @@ export default function EditSystemModal({ open, toolId, onClose, onSuccess, clie
             tool_longitude: tool.tool_longitude != null ? String(tool.tool_longitude) : '',
             date_activation: tool.date_activation || '',
             location: tool.location || '',
+            location_pseudo_name: tool.location_pseudo_name || '',
             tool_maintenance_logbook: tool.tool_maintenance_logbook || 'N',
           });
         }
@@ -193,6 +194,7 @@ export default function EditSystemModal({ open, toolId, onClose, onSuccess, clie
         tool_longitude: formData.tool_longitude ? Number(formData.tool_longitude) : null,
         date_activation: formData.date_activation || null,
         location: formData.location || null,
+        location_pseudo_name: formData.location_pseudo_name || null,
         tool_maintenance_logbook: formData.tool_maintenance_logbook,
       };
 
@@ -304,6 +306,15 @@ export default function EditSystemModal({ open, toolId, onClose, onSuccess, clie
                     if (label !== undefined) handleChange('location', label);
                   }}
                 />
+                <div className="mt-3">
+                  <Label className={labelCls}>{t('systems.components.common.pseudoName')}</Label>
+                  <Input
+                    className={inputCls}
+                    value={formData.location_pseudo_name}
+                    onChange={e => handleChange('location_pseudo_name', e.target.value)}
+                    placeholder={t('systems.components.common.pseudoNamePlaceholder')}
+                  />
+                </div>
               </div>
 
               <div>

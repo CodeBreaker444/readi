@@ -116,7 +116,8 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
     const [existingMissionCodes, setExistingMissionCodes] = useState<Set<string>>(new Set())
     const [schedulerForm, setSchedulerForm] = useState<SchedulerFormData>({
         missionCode: '', scheduledStart: '', scheduledEnd: '',
-        missionName: '', location: '', notes: '', distanceFlown: '',
+        missionName: '', location: '', locationLat: '', locationLng: '', locationPseudoName: '',
+        notes: '', distanceFlown: '',
         typeId: '', categoryId: '', lucId: '', groupLabel: '',
     })
 
@@ -218,6 +219,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                     user_id: p.user_id,
                     first_name: p.first_name ?? '',
                     last_name: p.last_name ?? '',
+                    department: p.department ?? null,
                 })))
                 setPlannings(res.data.plannings ?? [])
                 // Only use all-tools fallback when the operation has no client assigned
@@ -226,6 +228,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                         tool_id: t.tool_id, tool_code: t.tool_code,
                         tool_name: t.tool_name, in_maintenance: t.in_maintenance,
                         is_non_operational: t.is_non_operational,
+                        drone_components: t.drone_components ?? [],
                     })))
                 }
             })
@@ -283,6 +286,9 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
             scheduledEnd: editOperation.actual_end?.slice(0, 16) ?? '',
             missionName: editOperation.mission_name ?? '',
             location: editOperation.location ?? '',
+            locationLat: editOperation.location_latitude != null ? String(editOperation.location_latitude) : '',
+            locationLng: editOperation.location_longitude != null ? String(editOperation.location_longitude) : '',
+            locationPseudoName: editOperation.location_pseudo_name ?? '',
             notes: editOperation.notes ?? '',
             distanceFlown: editOperation.distance_flown != null ? String(editOperation.distance_flown) : '',
             typeId: editOperation.fk_mission_type_id?.toString() ?? '',
@@ -464,7 +470,8 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
         setIsRecurrent(false); setRecurrentDays([]); setRecurrentEndDate(''); setRecurrentDateError('')
         setSchedulerForm({
             missionCode: '', scheduledStart: '', scheduledEnd: '',
-            missionName: '', location: '', notes: '', distanceFlown: '',
+            missionName: '', location: '', locationLat: '', locationLng: '', locationPseudoName: '',
+            notes: '', distanceFlown: '',
             typeId: '', categoryId: '', lucId: '', groupLabel: '',
         })
         setPostFlight({
@@ -552,6 +559,9 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                     fk_mission_planning_id: missionPlanningId ? parseInt(missionPlanningId) : null,
                     fk_erp_group_id: erpGroupId && erpGroupId !== 'none' ? parseInt(erpGroupId) : null,
                     location: schedulerForm.location || undefined,
+                    location_latitude: schedulerForm.locationLat !== '' ? parseFloat(schedulerForm.locationLat) : null,
+                    location_longitude: schedulerForm.locationLng !== '' ? parseFloat(schedulerForm.locationLng) : null,
+                    location_pseudo_name: schedulerForm.locationPseudoName.trim() || null,
                     notes: schedulerForm.notes || undefined,
                     distance_flown: schedulerForm.distanceFlown !== '' ? parseFloat(schedulerForm.distanceFlown) : null,
                     flight_mode: opType === 'PDRA' ? flightMode : null,
@@ -584,6 +594,9 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                 fk_luc_procedure_id: parseInt(schedulerForm.lucId),
                 fk_erp_group_id: erpGroupId && erpGroupId !== 'none' ? parseInt(erpGroupId) : null,
                 location: schedulerForm.location || undefined,
+                location_latitude: schedulerForm.locationLat !== '' ? parseFloat(schedulerForm.locationLat) : null,
+                location_longitude: schedulerForm.locationLng !== '' ? parseFloat(schedulerForm.locationLng) : null,
+                location_pseudo_name: schedulerForm.locationPseudoName.trim() || null,
                 notes: schedulerForm.notes || undefined,
                 distance_flown: schedulerForm.distanceFlown !== '' ? parseFloat(schedulerForm.distanceFlown) : null,
                 flight_mode: opType === 'PDRA' ? flightMode : null,
@@ -862,7 +875,11 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                             summary={{
                                 clientName: selectedClient?.client_name,
                                 opType,
-                                droneLabel: selectedDrone ? `${selectedDrone.tool_code} — ${selectedDrone.tool_name}` : undefined,
+                                droneLabel: selectedDrone
+                                    ? (selectedDrone.drone_components?.[0]
+                                        ? `${selectedDrone.tool_name} – ${selectedDrone.drone_components[0].component_name} – ${selectedDrone.drone_components[0].serial_number}`
+                                        : `${selectedDrone.tool_code} — ${selectedDrone.tool_name}`)
+                                    : undefined,
                                 planName: selectedPlan?.planning_name,
                                 flightMode,
                                 missionCode: schedulerForm.missionCode,
@@ -876,6 +893,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                                 lucLabel: selectedLuc?.label,
                                 pilotName: selectedPilot ? `${selectedPilot.first_name} ${selectedPilot.last_name}` : undefined,
                                 location: schedulerForm.location,
+                                locationPseudoName: schedulerForm.locationPseudoName || undefined,
                                 uspaceLabel: uspaces.find(u => u.id === uspaceId)?.name ?? (uspaceId || undefined),
                             }}
                         />

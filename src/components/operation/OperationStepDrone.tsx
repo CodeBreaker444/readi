@@ -75,6 +75,13 @@ export function OperationStepDrone({
         ? (clientPlannings.find(p => String(p.planning_id) === planId)?.planning_name ?? selectedPlanName)
         : undefined
 
+    const droneDisplayLabel = (d: Drone): string => {
+        const primaryComponent = d.drone_components?.[0]
+        return primaryComponent
+            ? `${d.tool_name} – ${primaryComponent.component_name} – ${primaryComponent.serial_number}`
+            : `${d.tool_code} — ${d.tool_name}`
+    }
+
     const erpGroupLabel = (erpGroupId && erpGroupId !== 'none')
         ? erpGroups.find(g => String(g.group_id) === erpGroupId)?.name
         : undefined
@@ -141,7 +148,7 @@ export function OperationStepDrone({
                                 className={cn(siCls(isDark), (d.is_non_operational || d.is_dismissed || snMismatch) ? 'opacity-50' : '')}
                             >
                                 <span className="flex items-center gap-2">
-                                    <span>{d.tool_code} — {d.tool_name}</span>
+                                    <span>{droneDisplayLabel(d)}</span>
                                     {snMismatch && (
                                         <span className="text-[10px] font-semibold text-red-600 bg-red-50 border border-red-200 rounded px-1.5 py-0.5 leading-none">
                                             {t('operations.newOperation.drone.snMismatchTag')}

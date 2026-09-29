@@ -128,6 +128,9 @@ export async function getOperationLogbookList(
       mission_name: row.mission_name ?? '',
       mission_description: row.mission_description ?? '',
       location: row.location ?? '',
+      location_latitude: (row.mission_metadata as any)?.location_latitude ?? null,
+      location_longitude: (row.mission_metadata as any)?.location_longitude ?? null,
+      location_pseudo_name: (row.mission_metadata as any)?.location_pseudo_name ?? '',
       date_start: startDT ? dateFmt(startDT) : '',
       date_end: endDT ? dateFmt(endDT) : '',
       time_start: startDT ? timeFmt(startDT) : '',
@@ -135,6 +138,10 @@ export async function getOperationLogbookList(
       pic_fullname: row.users
         ? `${row.users.first_name ?? ''} ${row.users.last_name ?? ''}`.trim()
         : '',
+      vo_fullnames: ((row.mission_metadata as any)?.visual_observers ?? [])
+        .map((o: any) => o.name)
+        .filter(Boolean)
+        .join(', '),
       client_name:
         row.client?.client_name ??
         row.planning?.client?.client_name ??

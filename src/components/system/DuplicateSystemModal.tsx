@@ -24,6 +24,7 @@ type SystemDraft = {
   tool_longitude: string;
   date_activation: string;
   location: string;
+  location_pseudo_name: string;
   tool_maintenance_logbook: string;
 };
 
@@ -142,6 +143,7 @@ export default function DuplicateSystemModal({
           tool_longitude: sourceSystem.tool_longitude != null ? String(sourceSystem.tool_longitude) : '',
           date_activation: sourceSystem.date_activation || '',
           location: sourceSystem.location || '',
+          location_pseudo_name: sourceSystem.location_pseudo_name || '',
           tool_maintenance_logbook: sourceSystem.tool_maintenance_logbook || 'N',
         });
 
@@ -227,6 +229,7 @@ export default function DuplicateSystemModal({
           location: systemDraft.location || null,
           latitude: systemDraft.tool_latitude ? Number(systemDraft.tool_latitude) : null,
           longitude: systemDraft.tool_longitude ? Number(systemDraft.tool_longitude) : null,
+          locationPseudoName: systemDraft.location_pseudo_name || null,
           activationDate: systemDraft.date_activation || null,
         }),
       );
@@ -417,6 +420,10 @@ export default function DuplicateSystemModal({
                 <div>
                   <Label className="pb-2">{t('systems.components.duplicateSystem.systemFields.location')}</Label>
                   <Input className={inputCls} value={systemDraft.location} onChange={(e) => handleSystemChange('location', e.target.value)} />
+                </div>
+                <div>
+                  <Label className="pb-2">{t('systems.components.common.pseudoName')}</Label>
+                  <Input className={inputCls} value={systemDraft.location_pseudo_name} onChange={(e) => handleSystemChange('location_pseudo_name', e.target.value)} placeholder={t('systems.components.common.pseudoNamePlaceholder')} />
                 </div>
               </div>
             </TabsContent>

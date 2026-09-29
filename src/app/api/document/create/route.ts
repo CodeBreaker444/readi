@@ -26,7 +26,7 @@ const DocumentCreateSchema = z.object({
   tags:            z.string().max(1000).optional().nullable(),
   version_label:   z.string().max(20).optional().nullable(),
   change_log:      z.string().max(500).optional().nullable(),
-  fk_component_id: z.number().int().positive().optional().nullable(),
+  component_ids:   z.array(z.number().int().positive()).optional(),
 }).refine(
   (data) => !data.effective_date || !data.expiry_date || data.expiry_date >= data.effective_date,
   { message: 'Expiry date cannot be before effective date', path: ['expiry_date'] }
@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
       return zodError(E.VL001, parsed.error);
     }
 
-    const { s3_key, file_name, file_size, owner_role, description, keywords, tags, version_label, change_log, fk_component_id, ...rest } = parsed.data;
+    const { s3_key, file_name, file_size, owner_role, description, keywords, tags, version_label, change_log, component_ids, ...rest } = parsed.data;
 
     const docInput = {
       ...rest,
@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
       tags:             tags             ?? undefined,
       version_label:    version_label    ?? undefined,
       change_log:       change_log       ?? undefined,
-      fk_component_id:  fk_component_id  ?? null,
+      component_ids:    component_ids    ?? undefined,
     };
 
     const result = await createDocument(docInput, s3_key, file_name, file_size, ownerId);

@@ -13,6 +13,7 @@ const createTicketSchema = z.object({
   issue_description: z.string().optional(),
   latitude:  z.number().min(-90).max(90).optional().nullable(),
   longitude: z.number().min(-180).max(180).optional().nullable(),
+  location_pseudo_name: z.string().max(255).optional().nullable(),
 });
 
 export async function POST(req: NextRequest) {

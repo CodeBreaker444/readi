@@ -548,6 +548,7 @@ export async function importDrones(ownerId: number, clientId?: number) {
   const nonOperationalSet = new Set<number>();
 
   const droneSerialMap = new Map<number, string[]>();
+  const droneComponentMap = new Map<number, { component_name: string; serial_number: string }[]>();
 
   if (toolIds.length > 0) {
     const [openTickets, maintComps, expiredComps, droneComponents] = await Promise.all([
@@ -580,7 +581,7 @@ export async function importDrones(ownerId: number, clientId?: number) {
             { component_type: { equals: 'AIRCRAFT', mode: 'insensitive' } },
           ],
         },
-        select: { fk_tool_id: true, serial_number: true },
+        select: { fk_tool_id: true, component_name: true, serial_number: true },
       }),
     ]);
     openTickets.forEach((t) => { if (t.fk_tool_id != null) inMaintenanceSet.add(t.fk_tool_id); });
@@ -598,6 +599,11 @@ export async function importDrones(ownerId: number, clientId?: number) {
       const existing = droneSerialMap.get(c.fk_tool_id);
       if (existing) existing.push(serial);
       else droneSerialMap.set(c.fk_tool_id, [serial]);
+
+      const componentEntry = { component_name: c.component_name, serial_number: serial };
+      const existingComponents = droneComponentMap.get(c.fk_tool_id);
+      if (existingComponents) existingComponents.push(componentEntry);
+      else droneComponentMap.set(c.fk_tool_id, [componentEntry]);
     });
   }
 
@@ -610,6 +616,7 @@ export async function importDrones(ownerId: number, clientId?: number) {
     is_non_operational: nonOperationalSet.has(t.tool_id),
     is_dismissed: (t.tool_metadata as any)?.status === 'DISMISSED',
     drone_serial_numbers: droneSerialMap.get(t.tool_id) ?? [],
+    drone_components: droneComponentMap.get(t.tool_id) ?? [],
   }));
 }
 
@@ -649,6 +656,6 @@ export async function importPilots(ownerId: number) {
   return prisma.public_users.findMany({
     where: { fk_owner_id: ownerId, user_role: 'PIC', user_active: 'Y' },
     orderBy: { first_name: 'asc' },
-    select: { user_id: true, first_name: true, last_name: true },
+    select: { user_id: true, first_name: true, last_name: true, department: true },
   });
 }

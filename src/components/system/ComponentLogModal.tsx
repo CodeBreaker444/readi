@@ -44,6 +44,7 @@ interface MissionEntry {
 interface LocationHistoryEntry {
   latitude: number;
   longitude: number;
+  pseudo_name?: string | null;
   changed_at: string;
 }
 
@@ -154,7 +155,7 @@ export function ComponentLogModal({
             time: loc.changed_at,
             type: 'LOCATION',
             label: 'LOCATION',
-            description: `${t('systems.components.common.locationUpdated')} ${loc.latitude.toFixed(5)}, ${loc.longitude.toFixed(5)}`,
+            description: `${t('systems.components.common.locationUpdated')} ${loc.latitude.toFixed(5)}, ${loc.longitude.toFixed(5)}${loc.pseudo_name ? ` (${loc.pseudo_name})` : ''}`,
             source: 'location',
           });
         }

@@ -14,6 +14,7 @@ const schema = z.object({
   fk_client_id:            z.number().positive(),
   tool_latitude:           z.number().optional().nullable(),
   tool_longitude:          z.number().optional().nullable(),
+  location_pseudo_name:    z.string().max(255).optional().nullable(),
   date_activation:         z.string().optional().nullable(),
   location:                z.string().optional().nullable(),
   tool_maintenance_logbook: z.string().optional().nullable(),

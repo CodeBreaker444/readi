@@ -102,7 +102,11 @@ export function MissionDetailModal({ mission, onClose }: MissionDetailModalProps
             <Field label="End" value={`${mission.date_end || '—'} ${mission.time_end || ''}`.trim()} />
             <Field label="Flown Time" value={formatMinutes(mission.flown_time)} mono />
             <Field label="Distance" value={formatKm(mission.flown_meter)} mono />
-            <Field label="Location" value={mission.location} className="col-span-2" />
+            <Field
+              label="Location"
+              value={mission.location_pseudo_name ? `${mission.location || '—'} (${mission.location_pseudo_name})` : mission.location}
+              className="col-span-2"
+            />
           </div>
 
           <div className={`${sectionClass} grid grid-cols-2 gap-x-6 gap-y-4`}>

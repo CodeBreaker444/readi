@@ -121,6 +121,7 @@ export async function getTicketList(owner_id: number, tool_id?: number, assigned
       resolution_notes: true,
       location_latitude: true,
       location_longitude: true,
+      location_pseudo_name: true,
       intervention_started_at: true,
       intervention_ended_at: true,
       created_at: true,
@@ -213,6 +214,7 @@ export async function getTicketList(owner_id: number, tool_id?: number, assigned
       trigger_params:     null,
       location_latitude:       row.location_latitude != null ? Number(row.location_latitude) : null,
       location_longitude:      row.location_longitude != null ? Number(row.location_longitude) : null,
+      location_pseudo_name:    row.location_pseudo_name ?? null,
       intervention_started_at: row.intervention_started_at?.toISOString() ?? null,
       intervention_ended_at:   row.intervention_ended_at?.toISOString() ?? null,
     } as MaintenanceTicket;
@@ -240,6 +242,7 @@ export async function createTicket(payload: CreateTicketPayload): Promise<number
     reported_at:         new Date(),
     location_latitude:   payload.latitude  ?? null,
     location_longitude:  payload.longitude ?? null,
+    location_pseudo_name: payload.location_pseudo_name ?? null,
   }));
 
   const created = await prisma.$transaction(
