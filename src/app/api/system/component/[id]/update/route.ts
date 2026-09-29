@@ -44,6 +44,7 @@ const schema = z.object({
   system_detached: z.boolean().optional(),
   latitude: z.number().min(-90).max(90).optional().nullable(),
   longitude: z.number().min(-180).max(180).optional().nullable(),
+  locationPseudoName: z.string().max(255).optional().nullable(),
   drone_classes: z.array(z.string()).optional().nullable(),
   initial_usage_hours: z.number().min(0).optional().nullable(),
   initial_maintenance_hours: z.number().min(0).optional().nullable(),

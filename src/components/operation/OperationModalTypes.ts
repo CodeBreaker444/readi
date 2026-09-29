@@ -30,6 +30,9 @@ export interface SchedulerFormData {
     scheduledEnd: string
     missionName: string
     location: string
+    locationLat: string
+    locationLng: string
+    locationPseudoName: string
     notes: string
     distanceFlown: string
     typeId: string

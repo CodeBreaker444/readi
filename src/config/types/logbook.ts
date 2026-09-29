@@ -108,6 +108,9 @@ export interface OperationLogbookItem {
   mission_name: string;
   mission_description: string;
   location: string;
+  location_latitude: number | null;
+  location_longitude: number | null;
+  location_pseudo_name: string;
   date_start: string;
   date_end: string;
   time_start: string;

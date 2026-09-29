@@ -1,3 +1,2 @@
-
-ALTER TABLE public.pilot_mission
-  ADD COLUMN IF NOT EXISTS dflight_flight_clearance_status VARCHAR(50);
+ALTER TABLE public.maintenance_ticket
+ADD COLUMN location_pseudo_name VARCHAR(255);

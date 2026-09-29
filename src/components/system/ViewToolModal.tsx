@@ -102,6 +102,7 @@ export default function ViewSystemModal({ open, toolId, onClose }: ViewSystemMod
           ['C2 Platform',    toolData.tool_ccPlatform ?? ''],
           ['Latitude',       String(toolData.tool_latitude ?? '')],
           ['Longitude',      String(toolData.tool_longitude ?? '')],
+          ['Pseudo Name',    toolData.location_pseudo_name ?? ''],
         ],
       });
 
@@ -405,6 +406,10 @@ export default function ViewSystemModal({ open, toolId, onClose }: ViewSystemMod
                   <div>
                     <p className="text-sm font-medium text-gray-500">{t('systems.components.viewTool.fields.longitude')}</p>
                     <p className="text-base">{toolData?.tool_longitude || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">{t('systems.components.common.pseudoName')}</p>
+                    <p className="text-base">{toolData?.location_pseudo_name || 'N/A'}</p>
                   </div>
                 </div>
               </TabsContent>

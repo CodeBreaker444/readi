@@ -15,6 +15,7 @@ const toolSchema = z.object({
   location: z.string().optional().nullable(),
   latitude: z.number().optional().nullable(),
   longitude: z.number().optional().nullable(),
+  locationPseudoName: z.string().max(255).optional().nullable(),
   activationDate: z.string().optional().nullable(),
 });
 export async function POST(request: NextRequest) {
@@ -46,6 +47,7 @@ export async function POST(request: NextRequest) {
       location: data.location,
       latitude: data.latitude,
       longitude: data.longitude,
+      locationPseudoName: data.locationPseudoName,
       activationDate: data.activationDate,
       clientId: data.clientId,
       files,

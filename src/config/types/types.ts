@@ -332,6 +332,7 @@ export interface ToolsResponse {
   tool_ccPlatform: string;
   tool_latitude: number | null;
   tool_longitude: number | null;
+  location_pseudo_name?: string | null;
   tool_streaming_type: string;
   tool_streaming_url: string;
   tool_gcs_type: string;

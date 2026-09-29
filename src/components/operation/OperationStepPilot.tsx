@@ -37,6 +37,7 @@ interface SummaryData {
     lucLabel?: string
     pilotName?: string
     location: string
+    locationPseudoName?: string
     uspaceLabel?: string
 }
 
@@ -282,7 +283,7 @@ export function OperationStepPilot({ pilots, pilotId, onPilotChange, visualObser
                 {summary.categoryId && <ReviewRow label={t('operations.newOperation.pilot.summaryCategory')} value={summary.categories.find(c => String(c.id) === summary.categoryId)?.label} isDark={isDark} />}
                 <ReviewRow label={t('operations.newOperation.pilot.summaryProcedure')} value={summary.lucLabel} isDark={isDark} />
                 {pilotId && <ReviewRow label={t('operations.newOperation.pilot.summaryPilot')} value={summary.pilotName} isDark={isDark} />}
-                {summary.location && <ReviewRow label={t('operations.newOperation.pilot.summaryLocation')} value={summary.location} isDark={isDark} />}
+                {summary.location && <ReviewRow label={t('operations.newOperation.pilot.summaryLocation')} value={summary.locationPseudoName ? `${summary.location} (${summary.locationPseudoName})` : summary.location} isDark={isDark} />}
                 {summary.uspaceLabel && <ReviewRow label={t('operations.newOperation.pilot.summaryUspace')} value={summary.uspaceLabel} isDark={isDark} />}
                 {circle && <ReviewRow label={t('operations.newOperation.pilot.summaryCircle')} value={`r=${Math.round(circle.radiusM)}m`} isDark={isDark} />}
             </div>

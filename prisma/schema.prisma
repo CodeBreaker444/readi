@@ -1434,6 +1434,7 @@ model maintenance_ticket {
   intervention_started_at                             DateTime?                       @db.Timestamp(6)
   intervention_ended_at                               DateTime?                       @db.Timestamp(6)
   intervention_started_by                             Int?
+  location_pseudo_name                                String?                         @db.VarChar(50)
   users_maintenance_ticket_assigned_to_user_idTousers public_users?                   @relation("maintenance_ticket_assigned_to_user_idTousers", fields: [assigned_to_user_id], references: [user_id], onUpdate: NoAction)
   tool_component                                      tool_component?                 @relation(fields: [fk_component_id], references: [component_id], onUpdate: NoAction)
   owner                                               owner?                          @relation(fields: [fk_owner_id], references: [owner_id], onDelete: NoAction, onUpdate: NoAction)

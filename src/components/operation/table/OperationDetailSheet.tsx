@@ -382,7 +382,7 @@ export function OperationDetailSheet({
                       <DetailRow
                         icon={<MapPin className="h-3.5 w-3.5" />}
                         label={t('operations.table.detail.location')}
-                        value={operation.location}
+                        value={operation.location_pseudo_name ? `${operation.location} (${operation.location_pseudo_name})` : operation.location}
                       />
                     )}
                   </div>

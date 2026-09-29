@@ -138,6 +138,9 @@ export async function listOperations(
     flight_mode: (row.mission_metadata as any)?.flight_mode ?? null,
     op_type: (row.mission_metadata as any)?.op_type ?? null,
     uspace_id: (row.mission_metadata as any)?.uspace_id ?? null,
+    location_latitude: (row.mission_metadata as any)?.location_latitude ?? null,
+    location_longitude: (row.mission_metadata as any)?.location_longitude ?? null,
+    location_pseudo_name: (row.mission_metadata as any)?.location_pseudo_name ?? null,
     is_recurrent: !!row.recurring_group_id
       || !!(row.mission_metadata as any)?.is_recurrent
       || !!(row.mission_metadata as any)?.recurring_group_id,
@@ -203,6 +206,9 @@ export async function getOperation(id: number): Promise<Operation | null> {
     flight_mode: (data.mission_metadata as any)?.flight_mode ?? null,
     op_type: (data.mission_metadata as any)?.op_type ?? null,
     uspace_id: (data.mission_metadata as any)?.uspace_id ?? null,
+    location_latitude: (data.mission_metadata as any)?.location_latitude ?? null,
+    location_longitude: (data.mission_metadata as any)?.location_longitude ?? null,
+    location_pseudo_name: (data.mission_metadata as any)?.location_pseudo_name ?? null,
     is_imported: !!(data.mission_metadata as any)?.is_imported,
   } as unknown as Operation;
 }
@@ -274,6 +280,9 @@ export async function createOperation(input: CreateOperationSchema, ownerId: num
   if ((input as any).flight_mode) missionMetadata.flight_mode = (input as any).flight_mode;
   if ((input as any).op_type) missionMetadata.op_type = (input as any).op_type;
   if ((input as any).uspace_id) missionMetadata.uspace_id = (input as any).uspace_id;
+  if ((input as any).location_latitude != null) missionMetadata.location_latitude = (input as any).location_latitude;
+  if ((input as any).location_longitude != null) missionMetadata.location_longitude = (input as any).location_longitude;
+  if ((input as any).location_pseudo_name) missionMetadata.location_pseudo_name = (input as any).location_pseudo_name;
   if (isRecurrent) {
     missionMetadata.is_recurrent = true;
     missionMetadata.recurrent_days_of_week = recurrentDays;
@@ -547,7 +556,8 @@ export async function updateOperation(id: number, input: UpdateOperationSchema, 
   }
 
   if (visualObservers?.length || (input as any).flight_mode !== undefined || (input as any).op_type !== undefined
-    || (input as any).uspace_id !== undefined) {
+    || (input as any).uspace_id !== undefined || (input as any).location_latitude !== undefined
+    || (input as any).location_longitude !== undefined || (input as any).location_pseudo_name !== undefined) {
     const currentMetadata = current?.mission_metadata as any ?? {};
     updatePayload.mission_metadata = {
       ...currentMetadata,
@@ -555,6 +565,9 @@ export async function updateOperation(id: number, input: UpdateOperationSchema, 
       ...((input as any).flight_mode !== undefined && { flight_mode: (input as any).flight_mode }),
       ...((input as any).op_type !== undefined && { op_type: (input as any).op_type }),
       ...((input as any).uspace_id !== undefined && { uspace_id: (input as any).uspace_id }),
+      ...((input as any).location_latitude !== undefined && { location_latitude: (input as any).location_latitude }),
+      ...((input as any).location_longitude !== undefined && { location_longitude: (input as any).location_longitude }),
+      ...((input as any).location_pseudo_name !== undefined && { location_pseudo_name: (input as any).location_pseudo_name }),
     };
   }
 

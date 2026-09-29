@@ -38,6 +38,9 @@ const createOperationSchema = z.object({
     { message: 'Invalid datetime string' }
   ).nullable().optional(),
   location: z.string().nullable().optional(),
+  location_latitude: z.number().min(-90).max(90).nullable().optional(),
+  location_longitude: z.number().min(-180).max(180).nullable().optional(),
+  location_pseudo_name: z.string().max(255).nullable().optional(),
   notes: z.string().nullable().optional(),
   fk_pilot_user_id: z.number().int().positive(),
   fk_tool_id: z.number().int().positive().nullable().optional(),
