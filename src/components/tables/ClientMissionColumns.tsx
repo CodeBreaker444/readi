@@ -16,6 +16,7 @@ export interface ClientMission {
   actual_end: string | null;
   flight_duration: number | null;
   location: string | null;
+  location_pseudo_name: string | null;
   distance_flown: number | null;
   notes: string | null;
   pilot_name: string | null;
@@ -123,12 +124,13 @@ export const getClientMissionColumns = (
     {
       accessorKey: 'location',
       header: t('clientPortal.colLocation'),
-      cell: ({ getValue }) => {
-        const loc = getValue<string | null>();
+      cell: ({ row }) => {
+        const loc = row.original.location;
+        const pseudoName = row.original.location_pseudo_name;
         return loc ? (
           <span className={cn('flex items-center gap-1 truncate text-xs max-w-[140px]', textSub)}>
             <MapPin className="h-3 w-3 shrink-0" />
-            {loc}
+            {pseudoName ? `${loc} (${pseudoName})` : loc}
           </span>
         ) : (
           <span className={cn('text-xs', textSub)}>—</span>

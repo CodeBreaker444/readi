@@ -37,6 +37,7 @@ interface SummaryData {
     lucLabel?: string
     pilotName?: string
     location: string
+    locationPseudoName?: string
     uspaceLabel?: string
 }
 
@@ -57,11 +58,12 @@ interface Props {
     onCircleChange?: (circle: DFlightCircle | null) => void
     circleMaxRadiusM?: number
     circleFocusCenter?: { lat: number; lng: number } | null
+    uspaceBoundary?: { lat: number; lng: number }[][] | null
     summary: SummaryData
     isDark: boolean
 }
 
-export function OperationStepPilot({ pilots, pilotId, onPilotChange, visualObserverIds = [], onVisualObserverChange, loadingOptions = false, uspaces = [], uspaceId = '', onUspaceChange, loadingUspaces = false, dFlightEnabled = false, uspaceError = '', circle = null, onCircleChange, circleMaxRadiusM = 250, circleFocusCenter = null, summary, isDark }: Props) {
+export function OperationStepPilot({ pilots, pilotId, onPilotChange, visualObserverIds = [], onVisualObserverChange, loadingOptions = false, uspaces = [], uspaceId = '', onUspaceChange, loadingUspaces = false, dFlightEnabled = false, uspaceError = '', circle = null, onCircleChange, circleMaxRadiusM = 250, circleFocusCenter = null, uspaceBoundary = null, summary, isDark }: Props) {
     const { t } = useTranslation()
     const [qualTarget, setQualTarget] = useState<{ id: number; name: string } | null>(null)
     const pilotsPaging = usePagedItems(pilots)
@@ -92,6 +94,11 @@ export function OperationStepPilot({ pilots, pilotId, onPilotChange, visualObser
                                 {pilotsPaging.paged.map(p => (
                                     <SelectItem key={p.user_id} value={String(p.user_id)} className={siCls(isDark)}>
                                         {p.first_name} {p.last_name}
+                                        {p.department && (
+                                            <span className={cn('ml-1 text-xs', isDark ? 'text-slate-400' : 'text-slate-500')}>
+                                                — {p.department}
+                                            </span>
+                                        )}
                                     </SelectItem>
                                 ))}
                                 {pilotsPaging.showPagination && Array.from({ length: SELECT_PAGE_SIZE - pilotsPaging.paged.length }).map((_, i) => (
@@ -252,6 +259,7 @@ export function OperationStepPilot({ pilots, pilotId, onPilotChange, visualObser
                         maxRadiusM={circleMaxRadiusM}
                         isDark={isDark}
                         focusCenter={circleFocusCenter}
+                        boundary={uspaceBoundary}
                     />
                     {!circle && (
                         <p className={cn('text-xs', isDark ? 'text-slate-400' : 'text-slate-500')}>{t('operations.newOperation.pilot.circleRequired')}</p>
@@ -275,7 +283,7 @@ export function OperationStepPilot({ pilots, pilotId, onPilotChange, visualObser
                 {summary.categoryId && <ReviewRow label={t('operations.newOperation.pilot.summaryCategory')} value={summary.categories.find(c => String(c.id) === summary.categoryId)?.label} isDark={isDark} />}
                 <ReviewRow label={t('operations.newOperation.pilot.summaryProcedure')} value={summary.lucLabel} isDark={isDark} />
                 {pilotId && <ReviewRow label={t('operations.newOperation.pilot.summaryPilot')} value={summary.pilotName} isDark={isDark} />}
-                {summary.location && <ReviewRow label={t('operations.newOperation.pilot.summaryLocation')} value={summary.location} isDark={isDark} />}
+                {summary.location && <ReviewRow label={t('operations.newOperation.pilot.summaryLocation')} value={summary.locationPseudoName ? `${summary.location} (${summary.locationPseudoName})` : summary.location} isDark={isDark} />}
                 {summary.uspaceLabel && <ReviewRow label={t('operations.newOperation.pilot.summaryUspace')} value={summary.uspaceLabel} isDark={isDark} />}
                 {circle && <ReviewRow label={t('operations.newOperation.pilot.summaryCircle')} value={`r=${Math.round(circle.radiusM)}m`} isDark={isDark} />}
             </div>

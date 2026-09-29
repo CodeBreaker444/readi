@@ -54,6 +54,7 @@ const INITIAL_FORM = {
   fk_parent_component_id: '',
   latitude: '',
   longitude: '',
+  locationPseudoName: '',
   drone_classes: [] as string[],
   initial_usage_hours: '',
   initial_maintenance_hours: '',
@@ -265,6 +266,7 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
         fk_parent_component_id: formData.fk_parent_component_id ? Number(formData.fk_parent_component_id) : null,
         latitude: formData.latitude ? Number(formData.latitude) : null,
         longitude: formData.longitude ? Number(formData.longitude) : null,
+        locationPseudoName: formData.locationPseudoName || null,
         drone_classes: formData.drone_classes.length > 0 ? formData.drone_classes : null,
         initial_usage_hours: formData.initial_usage_hours ? Number(formData.initial_usage_hours) : null,
         initial_maintenance_hours: formData.initial_maintenance_hours ? Number(formData.initial_maintenance_hours) : null,
@@ -679,6 +681,14 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
                   handleChange('longitude', lng);
                 }}
               />
+              <div className="mt-3">
+                <Label className="pb-2">{t('systems.components.common.pseudoName')}</Label>
+                <Input
+                  value={formData.locationPseudoName}
+                  onChange={(e) => handleChange('locationPseudoName', e.target.value)}
+                  placeholder={t('systems.components.common.pseudoNamePlaceholder')}
+                />
+              </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 overflow-visible mt-2">

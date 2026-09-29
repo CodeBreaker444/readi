@@ -1,6 +1,10 @@
 import { prisma } from "@/lib/prisma";
 import { getMaintenanceDashboard } from "@/backend/services/system/maintenance-service";
 import { MaintenanceDrone } from "@/config/types/maintenance";
+import {
+  sendMaintenanceAlertEmail,
+  sendMaintenanceDueEmail,
+} from "@/backend/services/settings/module-email-notification-service";
 
 interface AlertItem {
   tool_component_id: number;
@@ -138,7 +142,6 @@ export async function sendMaintenanceAlertNotifications(
 
 
     // Send module-based email notification
-    /*
     if (isDue) {
       sendMaintenanceDueEmail(ownerId, {
         systemCode: item.system_code,
@@ -158,7 +161,6 @@ export async function sendMaintenanceAlertNotifications(
         console.error(`[MaintenanceNotification] Failed to send maintenance alert email:`, error);
       });
     }
-    */
   }
 }
 

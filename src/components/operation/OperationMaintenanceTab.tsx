@@ -245,10 +245,14 @@ export const OperationMaintenanceTab = forwardRef<OperationMaintenanceTabHandle,
                     toast.success(t('operations.newOperation.toast.updateSuccess'))
                     onSuccess()
                 } else {
-                    toast.error(t('operations.board.toast.statusUpdateFailed'))
+                    toast.error(data.message || t('operations.board.toast.statusUpdateFailed'))
+                    if (data.alreadyApplied) onSuccess()
                 }
-            } catch {
-                toast.error(t('operations.board.toast.statusUpdateFailed'))
+            } catch (err) {
+                const message = axios.isAxiosError(err)
+                    ? (err.response?.data as { message?: string } | undefined)?.message
+                    : undefined
+                toast.error(message || t('operations.board.toast.statusUpdateFailed'))
             } finally {
                 onSubmittingChange(false)
             }

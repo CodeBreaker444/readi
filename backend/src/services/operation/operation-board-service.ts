@@ -2,7 +2,7 @@ import { Mission, MissionBoardData, MissionStatusCode, UpdateMissionStatusPayloa
 import { prisma } from '@/lib/prisma';
 import { autoAbortStaleMissions } from './auto-abort-service';
 import { getToolMaintenanceStatusBatch } from './maintenance-cycle-service';
-import { assertMissionEditable, assertDFlightAuthorized } from './mission-lock';
+import { assertMissionEditable, assertDFlightAuthorized, assertDFlightNotStopped } from './mission-lock';
 import { sendMissionStartedModuleEmail, sendMissionCompletedModuleEmail } from '../settings/module-email-notification-service';
 
 // Local timezone conversion function
@@ -119,11 +119,12 @@ export async function getMissionBoard(
   const todayStart = new Date(today.toISOString().split('T')[0] + 'T00:00:00.000Z');
   const todayEnd = new Date(today.toISOString().split('T')[0] + 'T23:59:59.999Z');
 
-  // PDRA missions need D-Flight to accept the flight authorization before
-  // they're actionable — keep them off the "Scheduled" column (and out of
-  // the pilot's daily view) until then, so nobody preps for a flight that
-  // isn't cleared yet. Only applies when the owner actually has D-Flight
-  // enabled; otherwise PDRA missions would never authorize and never show.
+  // When the owner has D-Flight enabled, a mission only belongs on the
+  // "Scheduled" column once D-Flight has accepted its flight authorization —
+  // otherwise nobody preps for a flight that isn't cleared yet. Missions
+  // that haven't been accepted (including ones that never went through
+  // D-Flight at all) are held off the board until they are. Owners without
+  // D-Flight enabled are unaffected.
   const owner = await prisma.owner.findUnique({
     where: { owner_id: ownerId },
     select: { d_flight_enabled: true },
@@ -148,12 +149,7 @@ export async function getMissionBoard(
               { scheduled_start: { gte: todayStart, lte: todayEnd } },
             ],
           },
-          ...(dflightGateActive ? [{
-            OR: [
-              { NOT: { mission_metadata: { path: ['op_type'], equals: 'PDRA' } } },
-              { dflight_flight_authorisation_status: 'ACCEPTED' },
-            ],
-          }] : []),
+          ...(dflightGateActive ? [{ dflight_flight_authorisation_status: 'ACCEPTED' }] : []),
         ],
       },
       orderBy: { scheduled_start: { sort: 'desc', nulls: 'first' } },
@@ -316,6 +312,10 @@ function transformMissionRow(row: MissionRow | null): Mission | null {
       fk_luc_procedure_id: row.fk_luc_procedure_id ?? null,
       luc_procedure_progress: (row.luc_procedure_progress as Mission['luc_procedure_progress']) ?? null,
       luc_completed_at: row.luc_completed_at?.toISOString() ?? null,
+      dflight_mission_id: row.dflight_mission_id ?? null,
+      dflight_mission_status: row.dflight_mission_status ?? null,
+      dflight_flight_authorisation_status: row.dflight_flight_authorisation_status ?? null,
+      dflight_flight_clearance_status: row.dflight_flight_clearance_status ?? null,
     };
   } catch {
     return null;
@@ -328,20 +328,43 @@ export async function updateMissionStatus(
 ): Promise<{ code: number; message: string; check_daily_declaration?: string }> {
   const current = await prisma.pilot_mission.findUnique({
     where: { pilot_mission_id: payload.mission_id },
-    select: { status_name: true, dflight_mission_id: true, dflight_flight_authorisation_status: true, dflight_mission_status: true },
+    select: {
+      status_name: true,
+      dflight_mission_id: true,
+      dflight_flight_authorisation_status: true,
+      dflight_mission_status: true,
+      dflight_flight_clearance_status: true,
+    },
   });
   assertMissionEditable(current?.status_name);
 
   let updateFields: Record<string, unknown>;
 
   if (payload.workflow_mission_status === '_START') {
-    assertDFlightAuthorized(current?.dflight_mission_id, current?.dflight_flight_authorisation_status, current?.dflight_mission_status);
+    assertDFlightAuthorized(
+      current?.dflight_mission_id,
+      current?.dflight_flight_authorisation_status,
+      current?.dflight_mission_status,
+      current?.dflight_flight_clearance_status,
+    );
     const statusId = await resolveOwnerStatusId(payload.owner_id, IN_PROGRESS_STATUS_CODE_ALIASES, 2);
     updateFields = { fk_mission_status_id: statusId, status_name: 'IN_PROGRESS', actual_start: new Date() };
   } else if (payload.workflow_mission_status === '_END') {
+    assertDFlightNotStopped(
+      current?.dflight_mission_id,
+      current?.dflight_flight_authorisation_status,
+      current?.dflight_mission_status,
+      current?.dflight_flight_clearance_status,
+    );
     const statusId = await resolveOwnerStatusId(payload.owner_id, COMPLETED_STATUS_CODE_ALIASES, 3);
     updateFields = { fk_mission_status_id: statusId, status_name: 'COMPLETED', actual_end: new Date() };
   } else {
+    assertDFlightNotStopped(
+      current?.dflight_mission_id,
+      current?.dflight_flight_authorisation_status,
+      current?.dflight_mission_status,
+      current?.dflight_flight_clearance_status,
+    );
     const statusId = await resolveOwnerStatusId(payload.owner_id, IN_PROGRESS_STATUS_CODE_ALIASES, 2);
     updateFields = { fk_mission_status_id: statusId, status_name: 'IN_PROGRESS', actual_end: null };
   }

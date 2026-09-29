@@ -244,11 +244,11 @@
     "analytics": "Analisi",
     "shiKpis": "Indice SHI e KPI",
     "planning": "CO-00 - Pianificazione",
-    "newEvaluationRequest": "P00 - Nuova richiesta di valutazione",
-    "evaluation": "P01 - Valutazione",
-    "planningMission": "P02 - Missione di pianificazione",
-    "planningDashboard": "P02 - Dashboard pianificazione",
-    "missionTemplates": "P04 - Modelli missione",
+    "newEvaluationRequest": "Nuova richiesta di valutazione",
+    "evaluation": "Valutazione",
+    "planningMission": "Missione di pianificazione",
+    "planningDashboard": "Dashboard pianificazione",
+    "missionTemplates": "Modelli missione",
     "flightRequests": "Richieste di volo",
     "operations": "Operazioni",
     "operationsTable": "Tabella missione",
@@ -1762,7 +1762,8 @@
           "notes": "Note post-volo, osservazioni, incidenti…"
         },
         "validation": {
-          "incidentFlagged": "Uno o più flag di incidente sono attivi — verificare prima di salvare"
+          "incidentFlagged": "Uno o più flag di incidente sono attivi — verificare prima di salvare",
+          "endBeforeStart": "L'ora di fine non può essere precedente all'ora di inizio"
         }
       },
       "footer": {
@@ -2277,7 +2278,14 @@
     "deleteDocument": "Elimina Documento",
     "actions": {
       "download": "Scarica",
+      "view": "Visualizza",
       "revisionHistory": "Cronologia revisioni"
+    },
+    "viewer": {
+      "title": "Anteprima Documento",
+      "openInNewTab": "Apri in una nuova scheda",
+      "noPreview": "Anteprima non disponibile per questo tipo di file.",
+      "loadError": "Impossibile caricare l'anteprima del documento."
     },
     "columns": {
       "code": "# Codice",
@@ -2322,7 +2330,8 @@
       "saveError": "Errore durante il salvataggio del documento. Riprova.",
       "component": "Componente",
       "componentOptional": "(opzionale)",
-      "componentNone": "Nessuno — collega a un componente",
+      "componentNone": "Nessuno — collega a uno o più componenti",
+      "componentsSelected": "{{count}} selezionati",
       "selectSystemFirst": "Seleziona prima un sistema",
       "filterBySystem": "Filtra per sistema",
       "allSystems": "Tutti i sistemi"
@@ -4003,6 +4012,9 @@
           "note": "Nota",
           "selectDrone": "Seleziona drone…",
           "selectDroneFirst": "Seleziona prima un drone…",
+          "searchSystems": "Cerca sistemi…",
+          "noSystemsFound": "Nessun sistema trovato",
+          "noComponentsFound": "Nessun componente trovato per questo sistema",
           "selectTechnician": "Seleziona tecnico…",
           "notePlaceholder": "Descrivi il problema…",
           "createTicket": "Crea Ticket",

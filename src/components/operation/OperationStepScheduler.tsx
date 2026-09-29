@@ -3,6 +3,7 @@
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import LocationPicker from '@/components/system/LocationPicker'
 import { cn, formatDateTimeInTz } from '@/lib/utils'
 import { AlertTriangle, CheckCircle2, Loader2, RefreshCw } from 'lucide-react'
 import { useState } from 'react'
@@ -285,10 +286,6 @@ export function OperationStepScheduler({
                     </div>
                 )}
                 <div className="col-span-2">
-                    <Label className={labelCls(isDark)}>{t('operations.newOperation.scheduler.location')} <span className="text-[10px] text-muted-foreground font-normal">{t('operations.newOperation.scheduler.optional')}</span></Label>
-                    <Input value={form.location} onChange={e => onChange('location', e.target.value)} placeholder={t('operations.newOperation.scheduler.locationPlaceholder')} className={inputCls(isDark)} />
-                </div>
-                <div className="col-span-2">
                     <Label className={labelCls(isDark)}>{t('operations.newOperation.scheduler.groupLabel')} <span className="text-[10px] text-muted-foreground font-normal">{t('operations.newOperation.scheduler.optional')}</span></Label>
                     <Input value={form.groupLabel} onChange={e => onChange('groupLabel', e.target.value)} placeholder={t('operations.newOperation.scheduler.groupLabelPlaceholder')} className={inputCls(isDark)} />
                 </div>
@@ -297,6 +294,29 @@ export function OperationStepScheduler({
             <div>
                 <Label className={labelCls(isDark)}>{t('operations.newOperation.scheduler.notes')} <span className="text-[10px] text-muted-foreground font-normal">{t('operations.newOperation.scheduler.optional')}</span></Label>
                 <Input value={form.notes} onChange={e => onChange('notes', e.target.value)} placeholder={t('operations.newOperation.scheduler.notesPlaceholder')} className={inputCls(isDark)} />
+            </div>
+
+            <div>
+                <Label className={labelCls(isDark)}>{t('operations.newOperation.scheduler.location')} <span className="text-[10px] text-muted-foreground font-normal">{t('operations.newOperation.scheduler.optional')}</span></Label>
+                <LocationPicker
+                    lat={form.locationLat}
+                    lng={form.locationLng}
+                    isDark={isDark}
+                    onChange={(lat, lng, label) => {
+                        onChange('locationLat', lat)
+                        onChange('locationLng', lng)
+                        if (label !== undefined) onChange('location', label)
+                    }}
+                />
+                <div className="mt-3">
+                    <Label className={labelCls(isDark)}>{t('systems.components.common.pseudoName')}</Label>
+                    <Input
+                        value={form.locationPseudoName}
+                        onChange={e => onChange('locationPseudoName', e.target.value)}
+                        placeholder={t('systems.components.common.pseudoNamePlaceholder')}
+                        className={inputCls(isDark)}
+                    />
+                </div>
             </div>
         </div>
     )

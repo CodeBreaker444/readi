@@ -1,7 +1,7 @@
 'use client';
 
 import type { DocType, RepositoryDocument } from '@/config/types/repository';
-import { Loader2, Settings2 } from 'lucide-react';
+import { ChevronDown, Loader2, Settings2, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -14,6 +14,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -24,6 +30,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { cn } from '@/lib/utils';
 import axios from 'axios';
 import { Search } from 'lucide-react';
 import { toast } from 'sonner';
@@ -110,7 +117,7 @@ export default function DocumentFormModal({ open, onClose, onSaved, docTypes, on
   const [tags, setTags] = useState('');
   const [versionLabel, setVersionLabel] = useState('');
   const [changeLog, setChangeLog] = useState('');
-  const [fkComponentId, setFkComponentId] = useState('__none__');
+  const [selectedComponentIds, setSelectedComponentIds] = useState<number[]>([]);
   const [components, setComponents] = useState<ComponentOption[]>([]);
   const [systems, setSystems] = useState<SystemOption[]>([]);
   const [filterSystem, setFilterSystem] = useState('__all__');
@@ -156,18 +163,13 @@ export default function DocumentFormModal({ open, onClose, onSaved, docTypes, on
       setTags(document.tags ?? '');
       setVersionLabel(document.version_label ?? '');
       setChangeLog(document.change_log ?? '');
-      setFkComponentId(document.fk_component_id ? String(document.fk_component_id) : '__none__');
-      if (document.fk_component_id) {
-        const comp = components.find(c => c.tool_component_id === document.fk_component_id);
-        setFilterSystem(comp?.fk_tool_id != null ? String(comp.fk_tool_id) : '__all__');
-      } else {
-        setFilterSystem('__all__');
-      }
+      setSelectedComponentIds(document.component_ids ?? []);
+      setFilterSystem('__all__');
     } else {
       setDocTypeId(''); setDocCode(''); setStatus('DRAFT'); setTitle('');
       setConfidentiality('INTERNAL'); setOwnerRole('__none__'); setEffectiveDate('');
       setExpiryDate(''); setDescription(''); setKeywords(''); setTags('');
-      setVersionLabel(''); setChangeLog(''); setFkComponentId('__none__');
+      setVersionLabel(''); setChangeLog(''); setSelectedComponentIds([]);
       setFilterSystem('__all__');
     }
     if (fileRef.current) fileRef.current.value = '';
@@ -241,7 +243,7 @@ export default function DocumentFormModal({ open, onClose, onSaved, docTypes, on
           tags:             tags || undefined,
           version_label:   versionLabel || undefined,
           change_log:       changeLog || undefined,
-          fk_component_id:  fkComponentId !== '__none__' ? Number(fkComponentId) : undefined,
+          component_ids:   selectedComponentIds,
         });
       } else {
         if (file) {
@@ -268,7 +270,7 @@ export default function DocumentFormModal({ open, onClose, onSaved, docTypes, on
           description:     description || null,
           keywords:         keywords || null,
           tags:             tags || null,
-          fk_component_id:  fkComponentId !== '__none__' ? Number(fkComponentId) : null,
+          component_ids:   selectedComponentIds,
         });
       }
       onSaved();
@@ -389,20 +391,7 @@ export default function DocumentFormModal({ open, onClose, onSaved, docTypes, on
                 <div className="flex flex-col sm:flex-row gap-2">
                   <Select
                     value={filterSystem}
-                    onValueChange={(v) => {
-                      setFilterSystem(v);
-                      setSystemSearch('');
-                      if (v === '__all__') {
-                        setFkComponentId('__none__');
-                      } else if (fkComponentId !== '__none__') {
-                        // Only reset component selection if current component is not in the new filtered list
-                        const newFilteredComponents = components.filter(c => c.fk_tool_id != null && String(c.fk_tool_id) === v);
-                        const componentExistsInNewFilter = newFilteredComponents.some(c => String(c.tool_component_id) === fkComponentId);
-                        if (!componentExistsInNewFilter) {
-                          setFkComponentId('__none__');
-                        }
-                      }
-                    }}
+                    onValueChange={(v) => { setFilterSystem(v); setSystemSearch(''); }}
                     disabled={componentsLoading}
                   >
                     <SelectTrigger className={`text-sm w-full sm:w-52 sm:shrink-0 ${selectTriggerCls}`}>
@@ -446,84 +435,119 @@ export default function DocumentFormModal({ open, onClose, onSaved, docTypes, on
                       </div>
                     </SelectContent>
                   </Select>
-                  <Select value={fkComponentId} onValueChange={setFkComponentId} disabled={componentsLoading || filterSystem === '__all__'}>
-                    <SelectTrigger className={`text-sm flex-1 ${selectTriggerCls}`}>
-                      <SelectValue placeholder={componentsLoading ? t('systems.components.common.loading') : t('repository.form.componentNone')}>
-                        {(() => {
-                          if (filterSystem === '__all__') {
-                            return (
-                              <span className={`italic truncate ${isDark ? 'text-slate-500' : 'text-muted-foreground'}`}>
-                                {t('repository.form.selectSystemFirst')}
-                              </span>
-                            );
-                          }
-                          if (fkComponentId === '__none__') {
-                            return (
-                              <span className={`italic truncate ${isDark ? 'text-slate-400' : 'text-muted-foreground'}`}>
-                                {componentsLoading ? t('systems.components.common.loading') : t('repository.form.componentNone')}
-                              </span>
-                            );
-                          }
-                          const c = filteredComponents.find(x => String(x.tool_component_id) === fkComponentId);
-                          if (!c) return null;
-                          const statusClass = STATUS_COLORS[c.component_status ?? ''] || (isDark ? 'bg-slate-600 text-slate-300' : 'bg-gray-100 text-gray-600');
-                          return (
-                            <span className="flex items-center gap-1.5 truncate">
-                              <span className="truncate">{c.component_code || c.component_name || `#${c.tool_component_id}`}</span>
-                              <span className={`shrink-0 px-1.5 py-0.5 rounded text-[10px] font-medium ${statusClass}`}>{c.component_status}</span>
-                            </span>
-                          );
-                        })()}
-                      </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent className={selectContentCls}>
-                      <SelectItem value="__none__"><span className={`italic ${isDark ? 'text-slate-400' : 'text-muted-foreground'}`}>{t('repository.form.none')}</span></SelectItem>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        type="button"
+                        disabled={componentsLoading}
+                        className={cn(
+                          'flex-1 h-9 flex items-center justify-between rounded-md border px-3 text-sm cursor-pointer disabled:cursor-not-allowed disabled:opacity-60',
+                          selectTriggerCls,
+                        )}
+                      >
+                        <span className="truncate">
+                          {componentsLoading
+                            ? t('systems.components.common.loading')
+                            : selectedComponentIds.length > 0
+                              ? t('repository.form.componentsSelected', { count: selectedComponentIds.length })
+                              : <span className={`italic ${isDark ? 'text-slate-400' : 'text-muted-foreground'}`}>{t('repository.form.componentNone')}</span>}
+                        </span>
+                        <ChevronDown className="h-3.5 w-3.5 shrink-0 opacity-60" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start" className="w-87.5 max-h-72 overflow-y-auto">
+                      {filteredComponents.length === 0 && (
+                        <div className="px-2 py-3 text-xs text-muted-foreground">{t('repository.form.componentNone')}</div>
+                      )}
                       {filteredComponents.map(c => {
                         const statusClass = STATUS_COLORS[c.component_status ?? ''] || (isDark ? 'bg-slate-600 text-slate-300' : 'bg-gray-100 text-gray-600');
-                        const mutedCls = isDark ? 'text-slate-400' : 'text-muted-foreground';
+                        const checked = selectedComponentIds.includes(c.tool_component_id);
                         return (
-                          <SelectItem key={c.tool_component_id} value={String(c.tool_component_id)}>
-                            <div className="flex flex-col gap-0.5 leading-tight">
-                              <div className="flex gap-2">
-                                <span className={`w-16 shrink-0 text-[10px] font-semibold uppercase ${mutedCls}`}>Name</span>
-                                <span className={`truncate text-[11px] font-medium ${isDark ? 'text-slate-200' : ''}`}>{c.component_code || c.component_name || `#${c.tool_component_id}`}</span>
-                              </div>
-                              <div className="flex gap-2">
-                                <span className={`w-16 shrink-0 text-[10px] font-semibold uppercase ${mutedCls}`}>Type</span>
-                                <span className={`truncate text-[11px] ${isDark ? 'text-slate-300' : ''}`}>{c.component_type}</span>
-                              </div>
-                              <div className="flex gap-2 items-center">
-                                <span className={`w-16 shrink-0 text-[10px] font-semibold uppercase ${mutedCls}`}>Status</span>
-                                <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${statusClass}`}>{c.component_status || '—'}</span>
-                              </div>
-                            </div>
-                          </SelectItem>
+                          <DropdownMenuCheckboxItem
+                            key={c.tool_component_id}
+                            checked={checked}
+                            onSelect={(e) => {
+                              e.preventDefault();
+                              setSelectedComponentIds(prev => prev.includes(c.tool_component_id)
+                                ? prev.filter(id => id !== c.tool_component_id)
+                                : [...prev, c.tool_component_id]);
+                            }}
+                            className="cursor-pointer"
+                          >
+                            <span className="flex items-center justify-between gap-2 w-full min-w-0">
+                              <span className="flex flex-col min-w-0">
+                                <span className="truncate text-xs font-medium">{c.component_code || c.component_name || `#${c.tool_component_id}`}</span>
+                                <span className="truncate text-[10px] text-muted-foreground">{c.component_type}</span>
+                              </span>
+                              <span className={`shrink-0 px-1.5 py-0.5 rounded text-[9px] font-medium ${statusClass}`}>{c.component_status || '—'}</span>
+                            </span>
+                          </DropdownMenuCheckboxItem>
                         );
                       })}
-                    </SelectContent>
-                  </Select>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
+
+                {selectedComponentIds.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 pt-1">
+                    {selectedComponentIds.map(id => {
+                      const c = components.find(x => x.tool_component_id === id);
+                      const sys = c?.fk_tool_id != null ? systems.find(s => s.tool_id === c.fk_tool_id) : undefined;
+                      return (
+                        <span
+                          key={id}
+                          className={cn(
+                            'inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border',
+                            isDark ? 'bg-slate-700 border-slate-600 text-slate-200' : 'bg-violet-50 border-violet-200 text-violet-700',
+                          )}
+                        >
+                          {c ? (c.component_code || c.component_name || `#${id}`) : `#${id}`}
+                          {sys && <span className="opacity-60">({sys.tool_code})</span>}
+                          <button
+                            type="button"
+                            onClick={() => setSelectedComponentIds(prev => prev.filter(x => x !== id))}
+                            className="ml-0.5 hover:opacity-70 rounded-full p-0.5 transition-opacity cursor-pointer"
+                          >
+                            <X className="h-2.5 w-2.5" />
+                          </button>
+                        </span>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
 
-              {filterSystem !== '__all__' && (() => {
-                const sel = systems.find(s => String(s.tool_id) === filterSystem);
-                if (sel?.tool_status === 'NOT_OPERATIONAL') return (
-                  <div className="sm:col-span-2 lg:col-span-3 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 dark:border-red-800 dark:bg-red-950/40">
-                    <span className="mt-0.5 text-red-500 dark:text-red-400 text-sm">⚠</span>
-                    <p className="text-xs text-red-700 dark:text-red-400 leading-snug">
-                      The selected system is <span className="font-semibold">Not Operational</span> — one of its components has expired. This document will still be saved, but the system cannot be used for new missions.
-                    </p>
-                  </div>
+              {(() => {
+                const selectedSystems = [...new Set(
+                  selectedComponentIds
+                    .map(id => components.find(c => c.tool_component_id === id)?.fk_tool_id)
+                    .filter((id): id is number => id != null)
+                )].map(toolId => systems.find(s => s.tool_id === toolId)).filter((s): s is SystemOption => !!s);
+
+                const notOperational = selectedSystems.filter(s => s.tool_status === 'NOT_OPERATIONAL');
+                const dismissed = selectedSystems.filter(s => s.tool_status === 'DISMISSED');
+                if (notOperational.length === 0 && dismissed.length === 0) return null;
+
+                return (
+                  <>
+                    {notOperational.length > 0 && (
+                      <div className="sm:col-span-2 lg:col-span-3 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 dark:border-red-800 dark:bg-red-950/40">
+                        <span className="mt-0.5 text-red-500 dark:text-red-400 text-sm">⚠</span>
+                        <p className="text-xs text-red-700 dark:text-red-400 leading-snug">
+                          <span className="font-semibold">{notOperational.map(s => s.tool_code).join(', ')}</span> {notOperational.length === 1 ? 'is' : 'are'} <span className="font-semibold">Not Operational</span> — one of its components has expired. This document will still be saved, but the system cannot be used for new missions.
+                        </p>
+                      </div>
+                    )}
+                    {dismissed.length > 0 && (
+                      <div className="sm:col-span-2 lg:col-span-3 flex items-start gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 dark:border-slate-700 dark:bg-slate-800/60">
+                        <span className="mt-0.5 text-slate-500 dark:text-slate-400 text-sm">⚠</span>
+                        <p className="text-xs text-slate-600 dark:text-slate-400 leading-snug">
+                          <span className="font-semibold">{dismissed.map(s => s.tool_code).join(', ')}</span> {dismissed.length === 1 ? 'is' : 'are'} <span className="font-semibold">Dismissed</span> — it has been administratively removed from active use. This document will still be saved, but the system cannot be used for new missions.
+                        </p>
+                      </div>
+                    )}
+                  </>
                 );
-                if (sel?.tool_status === 'DISMISSED') return (
-                  <div className="sm:col-span-2 lg:col-span-3 flex items-start gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 dark:border-slate-700 dark:bg-slate-800/60">
-                    <span className="mt-0.5 text-slate-500 dark:text-slate-400 text-sm">⚠</span>
-                    <p className="text-xs text-slate-600 dark:text-slate-400 leading-snug">
-                      The selected system is <span className="font-semibold">Dismissed</span> — it has been administratively removed from active use. This document will still be saved, but the system cannot be used for new missions.
-                    </p>
-                  </div>
-                );
-                return null;
               })()}
 
               <div className="space-y-1.5">

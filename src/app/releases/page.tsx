@@ -110,6 +110,13 @@ function parseBody(body: string): BodySection[] {
       const text = line.slice(2).trim();
       if (sub) sub.items.push(text);
       else if (sec) sec.items.push(text);
+    } else if (line && sec) {
+      // Release notes are written as a heading followed by a plain
+      // description paragraph (not a "- " bullet) — treat that the same
+      // way, otherwise the description is silently dropped and only the
+      // heading renders.
+      if (sub) sub.items.push(line);
+      else sec.items.push(line);
     }
   }
   if (sub && sec) sec.subSections.push(sub);

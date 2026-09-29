@@ -244,11 +244,11 @@
     "analytics": "Analytics",
     "shiKpis": "SHI Index & KPIs",
     "planning": "CO-00 - Planning",
-    "newEvaluationRequest": "P00 - New Evaluation Request",
-    "evaluation": "P01 - Evaluation",
-    "planningMission": "P02 - Planning Mission",
-    "planningDashboard": "P02 - Planning Dashboard",
-    "missionTemplates": "P04 - Mission Templates",
+    "newEvaluationRequest": "New Evaluation Request",
+    "evaluation": "Evaluation",
+    "planningMission": "Planning Mission",
+    "planningDashboard": "Planning Dashboard",
+    "missionTemplates": "Mission Templates",
     "flightRequests": "Flight Requests",
     "operations": "Operations",
     "operationsTable": "Mission Table",
@@ -1767,7 +1767,8 @@
           "notes": "Post-flight notes, observations, incidents…"
         },
         "validation": {
-          "incidentFlagged": "One or more incident flags are active — review before saving"
+          "incidentFlagged": "One or more incident flags are active — review before saving",
+          "endBeforeStart": "End time cannot be before start time"
         }
       },
       "footer": {
@@ -2283,7 +2284,14 @@
     "deleteDocument": "Delete Document",
     "actions": {
       "download": "Download",
+      "view": "View",
       "revisionHistory": "Revision history"
+    },
+    "viewer": {
+      "title": "Document Preview",
+      "openInNewTab": "Open in new tab",
+      "noPreview": "Preview not available for this file type.",
+      "loadError": "Couldn't load the document preview."
     },
     "columns": {
       "code": "# Code",
@@ -2328,7 +2336,8 @@
       "saveError": "Failed to save document. Please try again.",
       "component": "Component",
       "componentOptional": "(optional)",
-      "componentNone": "None — attach to a component",
+      "componentNone": "None — attach to one or more components",
+      "componentsSelected": "{{count}} selected",
       "selectSystemFirst": "Select a system first",
       "filterBySystem": "Filter by system",
       "allSystems": "All systems"
@@ -3995,7 +4004,8 @@
         "opened": "Opened",
         "closed": "Closed",
         "latitude": "Latitude",
-        "longitude": "Longitude"
+        "longitude": "Longitude",
+        "pseudoName": "Pseudo Name"
       },
       "modals": {
         "newTicket": {
@@ -4008,6 +4018,9 @@
           "note": "Note",
           "selectDrone": "Select drone…",
           "selectDroneFirst": "Select a drone first…",
+          "searchSystems": "Search systems…",
+          "noSystemsFound": "No systems found",
+          "noComponentsFound": "No components found for this system",
           "selectTechnician": "Select technician…",
           "notePlaceholder": "Describe the issue…",
           "createTicket": "Create Ticket",
@@ -4412,7 +4425,9 @@
         "longitude": "Longitude",
         "latPlaceholder": "e.g. 41.902782",
         "lngPlaceholder": "e.g. 12.496366",
-        "clickMapToPlace": "Click the map to place the pin exactly"
+        "clickMapToPlace": "Click the map to place the pin exactly",
+        "pseudoName": "Pseudo Name",
+        "pseudoNamePlaceholder": "e.g. Warehouse A"
       },
       "editSystem": {
         "title": "Edit System",

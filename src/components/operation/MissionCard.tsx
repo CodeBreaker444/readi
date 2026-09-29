@@ -109,6 +109,48 @@ const STATUS_LABEL_KEY: Record<MissionStatusCode, string> = {
   "101": "operations.board.card.status.pending",
 };
 
+// Mirrors the stop-status lists in backend/src/services/operation/mission-lock.ts —
+// any of these means D-Flight has killed the mission (aborted/cancelled it,
+// pulled/refused its authorization, or rejected its clearance).
+const DFLIGHT_STOP_STATUSES = [
+  'ABORT', 'ABORTED', 'ABORTING', 'CANCELLED', 'WITHDRAWN',
+  'REJECTED', 'REVOKED', 'CLEARANCE_REJECTED', 'CLEARANCE_REJECTED_BY_SYSTEM',
+];
+
+function getDFlightBadge(mission: Mission, isDark: boolean): { label: string; className: string } | null {
+  if (!mission.dflight_mission_id) return null;
+
+  const missionStatus = mission.dflight_mission_status?.toUpperCase();
+  const authStatus = mission.dflight_flight_authorisation_status?.toUpperCase();
+  const clearanceStatus = mission.dflight_flight_clearance_status?.toUpperCase();
+
+  const stoppedStatus = [missionStatus, authStatus, clearanceStatus].find(
+    (s): s is string => !!s && DFLIGHT_STOP_STATUSES.includes(s)
+  );
+  if (stoppedStatus) {
+    return {
+      label: `D-Flight: ${stoppedStatus.replace(/_/g, ' ')}`,
+      className: isDark
+        ? "border-red-500/30 bg-red-500/10 text-red-400"
+        : "border-red-200 bg-red-50 text-red-700",
+    };
+  }
+  if (authStatus === 'ACCEPTED') {
+    return {
+      label: 'D-Flight: Accepted',
+      className: isDark
+        ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+        : "border-emerald-200 bg-emerald-50 text-emerald-700",
+    };
+  }
+  return {
+    label: 'D-Flight: Pending',
+    className: isDark
+      ? "border-amber-500/30 bg-amber-500/10 text-amber-400"
+      : "border-amber-200 bg-amber-50 text-amber-700",
+  };
+}
+
 const MAINTENANCE_LABEL_KEY: Record<string, string> = {
   OK: "operations.board.card.maintenanceStatus.ok",
   ALERT: "operations.board.card.maintenanceStatus.alert",
@@ -123,6 +165,7 @@ export function MissionCard({ mission, draggable, onDragStart, onViewDetails, on
   const statusCfg = statusConfig[mission.mission_status_code] ?? statusConfig["00"];
   const statusColor = isDark ? statusCfg.darkColor : statusCfg.lightColor;
   const hasPilot = mission.fk_pic_id > 0;
+  const dflightBadge = getDFlightBadge(mission, isDark);
 
   return (
     <Card
@@ -232,6 +275,11 @@ export function MissionCard({ mission, draggable, onDragStart, onViewDetails, on
             <span className={cn("h-1.5 w-1.5 rounded-full", statusCfg.dot)} />
             {t(STATUS_LABEL_KEY[mission.mission_status_code] ?? STATUS_LABEL_KEY["00"])}
           </span>
+          {dflightBadge && (
+            <span className={cn("inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium", dflightBadge.className)}>
+              {dflightBadge.label}
+            </span>
+          )}
           {mission.mission_category_desc && (
             <Badge
               variant="outline"

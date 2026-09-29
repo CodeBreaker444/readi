@@ -88,6 +88,7 @@ export interface MaintenanceTicket {
   system_components?: Array<{ component_type: string; component_sn: string }>;
   location_latitude?:  number | null;
   location_longitude?: number | null;
+  location_pseudo_name?: string | null;
   intervention_started_at?: string | null;
   intervention_ended_at?: string | null;
 }
@@ -137,6 +138,7 @@ export interface CreateTicketPayload {
   note?: string;
   latitude?: number | null;
   longitude?: number | null;
+  location_pseudo_name?: string | null;
 }
 
 export interface CloseTicketPayload {

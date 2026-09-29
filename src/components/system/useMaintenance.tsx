@@ -22,6 +22,7 @@ export interface NewTicketForm {
   note: string;
   latitude: string;
   longitude: string;
+  location_pseudo_name: string;
 }
 
 export interface ReportForm {
@@ -40,6 +41,7 @@ export const defaultNewTicket: NewTicketForm = {
   note: '',
   latitude: '',
   longitude: '',
+  location_pseudo_name: '',
 };
 
 export const defaultReport: ReportForm = {
@@ -217,6 +219,7 @@ export function useMaintenanceLogbook() {
         opened_by: 'web',
         latitude:  newTicket.latitude  ? Number(newTicket.latitude)  : null,
         longitude: newTicket.longitude ? Number(newTicket.longitude) : null,
+        location_pseudo_name: newTicket.location_pseudo_name || null,
       });
       toast.success('Ticket created successfully');
       closeModal('newTicket');

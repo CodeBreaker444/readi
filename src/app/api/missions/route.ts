@@ -1,9 +1,8 @@
 import {
-  createFlightRequest,
   deleteFlightRequest,
-  flightRequestExists,
   getFlightRequestsByExternalIds,
   updateFlightRequestStatus,
+  upsertFlightRequestByExternalId,
 } from '@/backend/services/mission/flight-request-service';
 import { internalError, zodError } from '@/lib/api-error';
 import { requireApiKey } from '@/lib/auth/api-key-auth';
@@ -71,27 +70,12 @@ export async function POST(req: NextRequest) {
       const { type, target, localization, priority, notes, operator } = parsed.data;
       const missionItems = parsed.data.missions;
 
-      // Pre-check all IDs for duplicates before creating anything
-      for (const item of missionItems) {
-        if (await flightRequestExists(item.missionId, session!.owner_id)) {
-          return NextResponse.json(
-            {
-              code: 0,
-              status: 'ERROR',
-              message: `Mission ID '${item.missionId}' already exists. No missions were created.`,
-            },
-            { status: 409 },
-          );
-        }
-      }
-
-      // Create sequentially — rollback all on any DB error
       const created: Array<{ missionId: string; dcc_status: string }> = [];
       const createdIds: number[] = [];
 
       for (const item of missionItems) {
         try {
-          const { request_id } = await createFlightRequest({
+          const result = await upsertFlightRequestByExternalId({
             owner_id:            session!.owner_id,
             api_key_id:          session!.api_key_id,
             external_mission_id: item.missionId,
@@ -104,10 +88,11 @@ export async function POST(req: NextRequest) {
             notes,
             operator,
           });
-          createdIds.push(request_id);
-          created.push({ missionId: item.missionId, dcc_status: 'NEW' });
+          if (result.created) createdIds.push(result.request_id);
+          created.push({ missionId: item.missionId, dcc_status: result.dcc_status });
         } catch (err: any) {
-          // Rollback all previously created missions in this batch
+          // Rollback all newly-created missions in this batch (updates to
+          // pre-existing requests are left as-is — nothing to roll back to)
           await Promise.allSettled(createdIds.map(id => deleteFlightRequest(id, session!.owner_id)));
           return NextResponse.json(
             {
@@ -139,14 +124,10 @@ export async function POST(req: NextRequest) {
       waypoint, startDateTime, priority, notes, operator,
     } = parsed.data;
 
-    if (await flightRequestExists(missionId, session!.owner_id)) {
-      return NextResponse.json(
-        { code: 0, status: 'ERROR', message: `Mission ID '${missionId}' already exists` },
-        { status: 409 },
-      );
-    }
-
-    await createFlightRequest({
+    // A missionId DCC already sent (e.g. retried after a timeout) is
+    // treated as an update to that existing request rather than a rejected
+    // duplicate 
+    const result = await upsertFlightRequestByExternalId({
       owner_id:            session!.owner_id,
       api_key_id:          session!.api_key_id,
       external_mission_id: missionId,
@@ -163,9 +144,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       code:       1,
       status:     'SUCCESS',
-      message:    'Mission request received',
+      message:    result.created ? 'Mission request received' : 'Mission request updated',
       missionId,
-      dcc_status: 'NEW',
+      dcc_status: result.dcc_status,
       timestamp:  Math.floor(Date.now() / 1000),
       dataRows:   1,
     });

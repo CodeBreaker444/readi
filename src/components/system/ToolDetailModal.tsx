@@ -172,6 +172,7 @@ const tabs = [
               <Field label={t('systems.map.toolDetail.fields.c2Platform')} value={tool.tool_ccPlatform} isDark={isDark} />
               <Field label={t('systems.map.toolDetail.fields.latitude')} value={tool.tool_latitude} isDark={isDark} />
               <Field label={t('systems.map.toolDetail.fields.longitude')} value={tool.tool_longitude} isDark={isDark} />
+              <Field label={t('systems.components.common.pseudoName')} value={tool.location_pseudo_name} isDark={isDark} />
               <Field label={t('systems.map.toolDetail.fields.guaranteeDays')} value={tool.tool_guarantee_day} isDark={isDark} />
               <div className="col-span-2">
                 <Field label={t('systems.map.toolDetail.fields.streamingUrl')} value={tool.tool_streaming_url} isDark={isDark} />

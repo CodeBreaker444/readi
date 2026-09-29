@@ -1,5 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
+import { sendInsuranceExpiryEmail } from "../../../../lib/resend/mail";
+import { isDailyEmailLimitReached, incrementDailyEmailCount } from "@/backend/services/email/email-limit-service";
 
 export const INSURANCE_EXPIRY_NOTIFICATION_TYPE = "INSURANCE_EXPIRY";
 
@@ -51,6 +53,7 @@ async function getAlreadyNotifiedTodayForInsurance(ownerId: number): Promise<Set
 }
 
 async function insertInsuranceNotifications(
+  ownerId: number,
   userIds: number[],
   title: string,
   message: string,
@@ -79,10 +82,22 @@ async function insertInsuranceNotifications(
     })),
   });
 
-  // NOTE: `item.alert_recipients` holds the configurable recipient email list from
-  // the d-flight import/sync (component_insurance.alert_recipients). Actually
-  // dispatching the email is intentionally out of scope for this change — wire a
-  // mail provider here (e.g. resend) when that's ready.
+  if (!item.alert_recipients.length) return;
+
+  const limitReached = await isDailyEmailLimitReached(ownerId);
+  if (limitReached) {
+    console.log(`[InsuranceNotification] Daily email limit reached for owner: ${ownerId}`);
+    return;
+  }
+
+  await sendInsuranceExpiryEmail(
+    item.alert_recipients,
+    item.component_name,
+    item.tool_code,
+    item.expiry_date,
+    item.days_remaining
+  );
+  await incrementDailyEmailCount(ownerId);
 }
 
 export async function sendInsuranceExpiryNotifications(
@@ -111,7 +126,7 @@ export async function sendInsuranceExpiryNotifications(
     const title = `Insurance Expiring — ${item.tool_code}`;
     const message = `Insurance for component "${item.component_name}" (system ${item.tool_code}) expires on ${item.expiry_date} (${item.days_remaining} day${item.days_remaining === 1 ? "" : "s"} left).`;
 
-    await insertInsuranceNotifications(managerIds, title, message, item);
+    await insertInsuranceNotifications(ownerId, managerIds, title, message, item);
   }
 }
 

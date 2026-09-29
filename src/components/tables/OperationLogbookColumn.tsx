@@ -133,9 +133,16 @@ export const operationLogbookColumns: ColumnDef<OperationLogbookItem>[] = [
     accessorKey: "pic_fullname",
     header: "PiC",
     cell: ({ row }) => (
-      <span className="text-xs text-slate-700 dark:text-slate-200">
-        {row.getValue("pic_fullname") || "—"}
-      </span>
+      <div className="flex flex-col gap-0.5">
+        <span className="text-xs text-slate-700 dark:text-slate-200">
+          {row.getValue("pic_fullname") || "—"}
+        </span>
+        {row.original.vo_fullnames && (
+          <span className="text-[11px] text-slate-400 dark:text-slate-500">
+            VO: {row.original.vo_fullnames}
+          </span>
+        )}
+      </div>
     ),
     size: 150,
   },

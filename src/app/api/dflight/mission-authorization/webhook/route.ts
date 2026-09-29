@@ -6,7 +6,11 @@ import { DFLIGHT_ABORT_STATUSES } from '@/backend/services/operation/mission-loc
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
-const ALERT_WORTHY_STATUSES = ['WITHDRAWN', 'REJECTED', 'CONFLICTED', ...DFLIGHT_ABORT_STATUSES];
+const ALERT_WORTHY_STATUSES = [
+  'WITHDRAWN', 'REJECTED', 'CONFLICTED', 'REVOKED', 'CANCELLED',
+  'CLEARANCE_REJECTED', 'CLEARANCE_REJECTED_BY_SYSTEM',
+  ...DFLIGHT_ABORT_STATUSES,
+];
 
 const WebhookSchema = z.object({
   readiMissionId: z.number().int().positive(),
@@ -14,6 +18,7 @@ const WebhookSchema = z.object({
   tech_version: z.string().min(1),
   mission_status: z.string().min(1),
   flight_authorisation_status: z.string().optional(),
+  flight_clearance_status: z.string().optional(),
   detectedAt: z.string().optional(),
 });
 
@@ -59,6 +64,7 @@ export async function POST(req: NextRequest) {
       data: {
         dflight_mission_status: d.mission_status,
         dflight_flight_authorisation_status: d.flight_authorisation_status ?? undefined,
+        dflight_flight_clearance_status: d.flight_clearance_status ?? undefined,
         dflight_tech_version: d.tech_version,
         dflight_last_status_at: d.detectedAt ? new Date(d.detectedAt) : new Date(),
       },
@@ -66,8 +72,13 @@ export async function POST(req: NextRequest) {
 
     const missionStatusUpper = d.mission_status.toUpperCase();
     const authStatusUpper = d.flight_authorisation_status?.toUpperCase();
-    const isAbort = DFLIGHT_ABORT_STATUSES.includes(missionStatusUpper) || (authStatusUpper ? DFLIGHT_ABORT_STATUSES.includes(authStatusUpper) : false);
-    const isAlertWorthy = ALERT_WORTHY_STATUSES.includes(missionStatusUpper) || (authStatusUpper ? ALERT_WORTHY_STATUSES.includes(authStatusUpper) : false);
+    const clearanceStatusUpper = d.flight_clearance_status?.toUpperCase();
+    const isAbort = DFLIGHT_ABORT_STATUSES.includes(missionStatusUpper)
+      || (authStatusUpper ? DFLIGHT_ABORT_STATUSES.includes(authStatusUpper) : false)
+      || (clearanceStatusUpper ? DFLIGHT_ABORT_STATUSES.includes(clearanceStatusUpper) : false);
+    const isAlertWorthy = ALERT_WORTHY_STATUSES.includes(missionStatusUpper)
+      || (authStatusUpper ? ALERT_WORTHY_STATUSES.includes(authStatusUpper) : false)
+      || (clearanceStatusUpper ? ALERT_WORTHY_STATUSES.includes(clearanceStatusUpper) : false);
     const missionInFlight = !!mission.actual_start && !mission.actual_end;
 
     // Abort notification — landing instructions if

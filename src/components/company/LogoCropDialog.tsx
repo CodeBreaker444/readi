@@ -183,13 +183,14 @@ export default function LogoCropDialog({ open, file, onCancel, onCropped }: Logo
     };
 
     const handlePointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
-        if (!dragRef.current || !canvasRef.current) return;
+        const drag = dragRef.current;
+        if (!drag || !canvasRef.current) return;
         const rect = canvasRef.current.getBoundingClientRect();
         const scaleX = vw / rect.width;
         const scaleY = vh / rect.height;
-        const dx = (e.clientX - dragRef.current.startX) * scaleX;
-        const dy = (e.clientY - dragRef.current.startY) * scaleY;
-        updateState((prev) => ({ ...prev, panX: dragRef.current!.panX + dx, panY: dragRef.current!.panY + dy }));
+        const dx = (e.clientX - drag.startX) * scaleX;
+        const dy = (e.clientY - drag.startY) * scaleY;
+        updateState((prev) => ({ ...prev, panX: drag.panX + dx, panY: drag.panY + dy }));
     };
 
     const handlePointerUp = () => { dragRef.current = null; };
@@ -198,9 +199,9 @@ export default function LogoCropDialog({ open, file, onCancel, onCropped }: Logo
         if (!img) return;
         setBusy(true);
         try {
-            const outW = LOGO_EXPORT_MAX_DIMENSION;
-            const outH = Math.round(outW / aspect);
-            const exportScale = outW / vw;
+            const exportScale = LOGO_EXPORT_MAX_DIMENSION / Math.max(vw, vh);
+            const outW = Math.round(vw * exportScale);
+            const outH = Math.round(vh * exportScale);
             const exportCanvas = document.createElement('canvas');
             drawCrop(
                 img,

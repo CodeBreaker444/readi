@@ -36,6 +36,7 @@ export interface ClientPortalMission {
   actual_end: string | null;
   flight_duration: number | null;
   location: string | null;
+  location_pseudo_name: string | null;
   distance_flown: number | null;
   notes: string | null;
   pilot_name: string | null;
@@ -335,6 +336,7 @@ export async function listClientPortalMissions(
         distance_flown: true,
         notes: true,
         created_at: true,
+        mission_metadata: true,
         users: { select: { first_name: true, last_name: true } },
         tool: { select: { tool_code: true, tool_name: true } },
       },
@@ -355,6 +357,7 @@ export async function listClientPortalMissions(
     actual_end: asUtc(row.actual_end),
     flight_duration: row.flight_duration ?? null,
     location: row.location ?? null,
+    location_pseudo_name: (row.mission_metadata as any)?.location_pseudo_name ?? null,
     distance_flown: row.distance_flown ? Number(row.distance_flown) : null,
     notes: row.notes ?? null,
     pilot_name: row.users

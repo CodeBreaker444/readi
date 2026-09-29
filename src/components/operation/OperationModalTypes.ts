@@ -2,16 +2,17 @@ import React from 'react';
 import { CalendarClock, Settings, User } from 'lucide-react';
 
 export interface Client { client_id: number; client_name: string; client_code: string }
-export interface Drone { tool_id: number; tool_code: string; tool_name: string; in_maintenance?: boolean; maintenance_due?: boolean; is_non_operational?: boolean; is_dismissed?: boolean; drone_serial_numbers?: string[] }
+export interface DroneComponent { component_name: string; serial_number: string }
+export interface Drone { tool_id: number; tool_code: string; tool_name: string; in_maintenance?: boolean; maintenance_due?: boolean; is_non_operational?: boolean; is_dismissed?: boolean; drone_serial_numbers?: string[]; drone_components?: DroneComponent[] }
 export interface PlanningOption { planning_id: number; planning_name: string; fk_client_id: number; client_name: string; planning_active?: 'Y' | 'N' }
 export interface MissionPlanningOption {
     mission_planning_name: React.ReactNode | Iterable<React.ReactNode>; mission_planning_id: number; mission_planning_code: string; mission_planning_desc: string; mission_planning_active: string; fk_planning_id: number; tool_code: string 
 }
 export interface GenericOption { id: number; label: string }
 export interface LucOption { id: number; label: string; steps?: any }
-export interface PilotOption { user_id: number; first_name: string; last_name: string }
+export interface PilotOption { user_id: number; first_name: string; last_name: string; department?: string | null }
 export interface ConflictEvent { id: string; title: string; start: string; end: string }
-export interface UspaceOption { id: string; name: string | null }
+export interface UspaceOption { id: string; name: string | null; boundary?: { lat: number; lng: number }[][] | null; maxHBufferM?: number | null }
 
 export type OpType = 'OPEN' | 'PDRA' | 'STS-01' | 'STS-02'
 export type FlightMode = 'RC' | 'DOCK'
@@ -29,6 +30,9 @@ export interface SchedulerFormData {
     scheduledEnd: string
     missionName: string
     location: string
+    locationLat: string
+    locationLng: string
+    locationPseudoName: string
     notes: string
     distanceFlown: string
     typeId: string

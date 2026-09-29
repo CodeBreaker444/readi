@@ -95,6 +95,7 @@ function makePopup(t: ToolsResponse): string {
       </div>
       <div style="font-size:12px;margin-top:4px;color:#888">
         Lat: ${t.tool_latitude ?? "—"} · Lon: ${t.tool_longitude ?? "—"}
+        ${t.location_pseudo_name ? `<div>${t.location_pseudo_name}</div>` : ""}
       </div>
       ${t.tot_mission ? `<div style="font-size:12px;margin-top:2px">Missions: ${t.tot_mission} · ${Math.round(t.tot_flown_meter / 1000)} km · ${Math.round(t.tot_flown_time / 60)} min</div>` : ""}
     </div>`;
@@ -278,7 +279,7 @@ const DroneMap = forwardRef<DroneMapHandle, DroneMapProps>(function DroneMap(
     cluster.addLayers(markers);
 
     if (markers.length > 0) {
-      const bounds = cluster.getBounds();
+      const bounds = L.latLngBounds(markers.map((m) => m.getLatLng()));
       // bounds.extend([controlCenter.lat, controlCenter.lon]);
       map.fitBounds(bounds.pad(0.15));
     } else {

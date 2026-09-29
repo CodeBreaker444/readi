@@ -246,13 +246,21 @@ export function TicketTable({
         cell: ({ row }) => {
           const lat = row.original.location_latitude;
           const lon = row.original.location_longitude;
+          const pseudoName = row.original.location_pseudo_name;
           if (lat === null || lat === undefined || lon === null || lon === undefined) {
             return <span className={`text-xs ${isDark ? "text-slate-600" : "text-slate-300"}`}>—</span>;
           }
           return (
-            <span className={`text-[11px] font-mono tabular-nums whitespace-nowrap ${isDark ? "text-slate-300" : "text-slate-700"}`}>
-              {Number(lat).toFixed(5)} / {Number(lon).toFixed(5)}
-            </span>
+            <div className="flex flex-col gap-0.5">
+              {pseudoName && (
+                <span className={`text-xs font-medium ${isDark ? "text-slate-200" : "text-slate-800"}`}>
+                  {pseudoName}
+                </span>
+              )}
+              <span className={`text-[11px] font-mono tabular-nums whitespace-nowrap ${isDark ? "text-slate-300" : "text-slate-700"}`}>
+                {Number(lat).toFixed(5)} / {Number(lon).toFixed(5)}
+              </span>
+            </div>
           );
         },
       },
@@ -505,6 +513,7 @@ export function TicketTable({
             t('systems.maintenanceLogbook.exportHeaders.system'),
             t('systems.maintenanceLogbook.exportHeaders.latitude'),
             t('systems.maintenanceLogbook.exportHeaders.longitude'),
+            t('systems.maintenanceLogbook.exportHeaders.pseudoName'),
             t('systems.maintenanceLogbook.exportHeaders.component'),
             t('systems.maintenanceLogbook.exportHeaders.componentSN'),
             t('systems.maintenanceLogbook.exportHeaders.description'),
@@ -515,7 +524,7 @@ export function TicketTable({
             t('systems.maintenanceLogbook.exportHeaders.opened'),
             t('systems.maintenanceLogbook.exportHeaders.closed'),
           ]}
-          rows={tickets.map(t => [t.ticket_id, t.ticket_type, t.drone_code ?? '', t.location_latitude ?? '', t.location_longitude ?? '', t.entity_name ?? '', t.component_sn ?? '', t.note ?? '', t.assigner_name ?? '', t.assigner_email ?? '', t.ticket_status, t.ticket_priority, t.opened_at, t.closed_at ?? ''])}
+          rows={tickets.map(t => [t.ticket_id, t.ticket_type, t.drone_code ?? '', t.location_latitude ?? '', t.location_longitude ?? '', t.location_pseudo_name ?? '', t.entity_name ?? '', t.component_sn ?? '', t.note ?? '', t.assigner_name ?? '', t.assigner_email ?? '', t.ticket_status, t.ticket_priority, t.opened_at, t.closed_at ?? ''])}
         />
         <TablePagination table={table} />
       </div>

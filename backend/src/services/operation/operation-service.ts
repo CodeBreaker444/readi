@@ -138,9 +138,13 @@ export async function listOperations(
     flight_mode: (row.mission_metadata as any)?.flight_mode ?? null,
     op_type: (row.mission_metadata as any)?.op_type ?? null,
     uspace_id: (row.mission_metadata as any)?.uspace_id ?? null,
+    location_latitude: (row.mission_metadata as any)?.location_latitude ?? null,
+    location_longitude: (row.mission_metadata as any)?.location_longitude ?? null,
+    location_pseudo_name: (row.mission_metadata as any)?.location_pseudo_name ?? null,
     is_recurrent: !!row.recurring_group_id
       || !!(row.mission_metadata as any)?.is_recurrent
       || !!(row.mission_metadata as any)?.recurring_group_id,
+    is_imported: !!(row.mission_metadata as any)?.is_imported,
   })) as unknown as Operation[];
 
   const toolIds = [...new Set(operations.filter((op) => op.fk_tool_id).map((op) => op.fk_tool_id as number))];
@@ -202,6 +206,10 @@ export async function getOperation(id: number): Promise<Operation | null> {
     flight_mode: (data.mission_metadata as any)?.flight_mode ?? null,
     op_type: (data.mission_metadata as any)?.op_type ?? null,
     uspace_id: (data.mission_metadata as any)?.uspace_id ?? null,
+    location_latitude: (data.mission_metadata as any)?.location_latitude ?? null,
+    location_longitude: (data.mission_metadata as any)?.location_longitude ?? null,
+    location_pseudo_name: (data.mission_metadata as any)?.location_pseudo_name ?? null,
+    is_imported: !!(data.mission_metadata as any)?.is_imported,
   } as unknown as Operation;
 }
 
@@ -272,6 +280,9 @@ export async function createOperation(input: CreateOperationSchema, ownerId: num
   if ((input as any).flight_mode) missionMetadata.flight_mode = (input as any).flight_mode;
   if ((input as any).op_type) missionMetadata.op_type = (input as any).op_type;
   if ((input as any).uspace_id) missionMetadata.uspace_id = (input as any).uspace_id;
+  if ((input as any).location_latitude != null) missionMetadata.location_latitude = (input as any).location_latitude;
+  if ((input as any).location_longitude != null) missionMetadata.location_longitude = (input as any).location_longitude;
+  if ((input as any).location_pseudo_name) missionMetadata.location_pseudo_name = (input as any).location_pseudo_name;
   if (isRecurrent) {
     missionMetadata.is_recurrent = true;
     missionMetadata.recurrent_days_of_week = recurrentDays;
@@ -490,12 +501,18 @@ export async function updateOperation(id: number, input: UpdateOperationSchema, 
       dflight_mission_id: true,
       dflight_flight_authorisation_status: true,
       dflight_mission_status: true,
+      dflight_flight_clearance_status: true,
     },
   });
   assertMissionEditable(current?.status_name);
 
   if ((input as any).status_name === 'IN_PROGRESS' && current?.status_name !== 'IN_PROGRESS') {
-    assertDFlightAuthorized(current?.dflight_mission_id, current?.dflight_flight_authorisation_status, current?.dflight_mission_status);
+    assertDFlightAuthorized(
+      current?.dflight_mission_id,
+      current?.dflight_flight_authorisation_status,
+      current?.dflight_mission_status,
+      current?.dflight_flight_clearance_status,
+    );
   }
 
   const updatePayload: Record<string, unknown> = {};
@@ -539,7 +556,8 @@ export async function updateOperation(id: number, input: UpdateOperationSchema, 
   }
 
   if (visualObservers?.length || (input as any).flight_mode !== undefined || (input as any).op_type !== undefined
-    || (input as any).uspace_id !== undefined) {
+    || (input as any).uspace_id !== undefined || (input as any).location_latitude !== undefined
+    || (input as any).location_longitude !== undefined || (input as any).location_pseudo_name !== undefined) {
     const currentMetadata = current?.mission_metadata as any ?? {};
     updatePayload.mission_metadata = {
       ...currentMetadata,
@@ -547,6 +565,9 @@ export async function updateOperation(id: number, input: UpdateOperationSchema, 
       ...((input as any).flight_mode !== undefined && { flight_mode: (input as any).flight_mode }),
       ...((input as any).op_type !== undefined && { op_type: (input as any).op_type }),
       ...((input as any).uspace_id !== undefined && { uspace_id: (input as any).uspace_id }),
+      ...((input as any).location_latitude !== undefined && { location_latitude: (input as any).location_latitude }),
+      ...((input as any).location_longitude !== undefined && { location_longitude: (input as any).location_longitude }),
+      ...((input as any).location_pseudo_name !== undefined && { location_pseudo_name: (input as any).location_pseudo_name }),
     };
   }
 
@@ -848,7 +869,7 @@ export async function getPilotOptions(ownerId: number) {
   return prisma.public_users.findMany({
     where: { fk_owner_id: ownerId, user_role: 'PIC', user_active: 'Y' },
     orderBy: { first_name: 'asc' },
-    select: { user_id: true, first_name: true, last_name: true },
+    select: { user_id: true, first_name: true, last_name: true, department: true },
   });
 }
 
@@ -870,7 +891,7 @@ export async function getToolOptions(ownerId: number) {
     }),
     prisma.tool_component.findMany({
       where:  { fk_tool_id: { in: toolIds }, component_type: 'DRONE', component_active: 'Y' },
-      select: { fk_tool_id: true, serial_number: true },
+      select: { fk_tool_id: true, component_name: true, serial_number: true },
     }),
     prisma.tool_component.findMany({
       where:  { fk_tool_id: { in: toolIds }, component_active: 'Y' },
@@ -897,10 +918,18 @@ export async function getToolOptions(ownerId: number) {
     droneComponents.filter((c) => c.fk_tool_id != null).map((c) => c.fk_tool_id as number)
   );
   const droneSerialMap = new Map<number, string | null>();
+  const droneComponentMap = new Map<number, { component_name: string; serial_number: string }[]>();
   droneComponents.forEach((c) => {
-    if (c.fk_tool_id != null && !droneSerialMap.has(c.fk_tool_id)) {
+    if (c.fk_tool_id == null) return;
+    if (!droneSerialMap.has(c.fk_tool_id)) {
       droneSerialMap.set(c.fk_tool_id, c.serial_number?.trim() || null);
     }
+    const serial = c.serial_number?.trim();
+    if (!serial) return;
+    const entry = { component_name: c.component_name, serial_number: serial };
+    const existing = droneComponentMap.get(c.fk_tool_id);
+    if (existing) existing.push(entry);
+    else droneComponentMap.set(c.fk_tool_id, [entry]);
   });
   const nonOperationalSet = new Set<number>(
     expiredComps.filter((c) => c.fk_tool_id != null).map((c) => c.fk_tool_id as number)
@@ -923,6 +952,7 @@ export async function getToolOptions(ownerId: number) {
     is_non_operational: nonOperationalSet.has(t.tool_id),
     is_dismissed: (t.tool_metadata as any)?.status === 'DISMISSED',
     drone_serial_number: droneSerialMap.get(t.tool_id) ?? null,
+    drone_components: droneComponentMap.get(t.tool_id) ?? [],
   }));
 }
 

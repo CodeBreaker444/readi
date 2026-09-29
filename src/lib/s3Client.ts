@@ -80,13 +80,14 @@ export async function getPresignedUploadUrl(
 export async function getPresignedDownloadUrl(
   key: string,
   expiresIn = 900,
-  fileName?: string
+  fileName?: string,
+  disposition: 'attachment' | 'inline' = 'attachment'
 ): Promise<string> {
   const command = new GetObjectCommand({
     Bucket: BUCKET,
     Key:    key,
     ...(fileName && {
-      ResponseContentDisposition: `attachment; filename="${encodeURIComponent(fileName)}"`,
+      ResponseContentDisposition: `${disposition}; filename="${encodeURIComponent(fileName)}"`,
     }),
   });
   return getSignedUrl(getS3(), command, { expiresIn });

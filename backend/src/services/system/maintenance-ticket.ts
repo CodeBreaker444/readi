@@ -121,6 +121,7 @@ export async function getTicketList(owner_id: number, tool_id?: number, assigned
       resolution_notes: true,
       location_latitude: true,
       location_longitude: true,
+      location_pseudo_name: true,
       intervention_started_at: true,
       intervention_ended_at: true,
       created_at: true,
@@ -213,6 +214,7 @@ export async function getTicketList(owner_id: number, tool_id?: number, assigned
       trigger_params:     null,
       location_latitude:       row.location_latitude != null ? Number(row.location_latitude) : null,
       location_longitude:      row.location_longitude != null ? Number(row.location_longitude) : null,
+      location_pseudo_name:    row.location_pseudo_name ?? null,
       intervention_started_at: row.intervention_started_at?.toISOString() ?? null,
       intervention_ended_at:   row.intervention_ended_at?.toISOString() ?? null,
     } as MaintenanceTicket;
@@ -240,6 +242,7 @@ export async function createTicket(payload: CreateTicketPayload): Promise<number
     reported_at:         new Date(),
     location_latitude:   payload.latitude  ?? null,
     location_longitude:  payload.longitude ?? null,
+    location_pseudo_name: payload.location_pseudo_name ?? null,
   }));
 
   const created = await prisma.$transaction(
@@ -362,12 +365,22 @@ export async function closeTicket(payload: CloseTicketPayload): Promise<void> {
     },
   });
 
-  // Reset counters for all components of this system
-  await resetComponentCounters(ticket.fk_tool_id!, now.toISOString(), null, ticket.ticket_type ?? undefined);
+  // Reset counters only for the component(s) covered by the ticket(s) being closed.
+  // A ticket with no fk_component_id covers the whole system, so fall back to all components in that case.
+  const ticketedComponentIds = [...new Set(openTickets.map((t) => t.fk_component_id).filter((id): id is number => id != null))];
+  const isSystemWideTicket = openTickets.some((t) => t.fk_component_id == null);
 
-  await setSystemOperationalStatus(ticket.fk_tool_id!, 'OPERATIONAL');
-
-  await setAllComponentsOperational(ticket.fk_tool_id!);
+  if (isSystemWideTicket) {
+    await resetComponentCounters(ticket.fk_tool_id!, now.toISOString(), null, ticket.ticket_type ?? undefined);
+    await setSystemOperationalStatus(ticket.fk_tool_id!, 'OPERATIONAL');
+    await setAllComponentsOperational(ticket.fk_tool_id!);
+  } else {
+    for (const componentId of ticketedComponentIds) {
+      await resetComponentCounters(ticket.fk_tool_id!, now.toISOString(), componentId, ticket.ticket_type ?? undefined);
+    }
+    await setSystemOperationalStatus(ticket.fk_tool_id!, 'OPERATIONAL');
+    await setComponentsOperationalStatus(ticketedComponentIds, 'OPERATIONAL');
+  }
 
   // Add close event to all tickets
   await Promise.all(

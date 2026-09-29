@@ -316,8 +316,6 @@ export async function createAndSubmitMissionAuthorization(
       integration.pfx_password ?? undefined,
     );
 
-console.log('geo data:',geoData)
-
     const uspaceId = (mission.mission_metadata as any)?.uspace_id;
 
     const result = await createDFlightMission(
@@ -396,7 +394,7 @@ export async function registerFlytrelayWatch(
       ? mission.scheduled_start.toISOString()
       : undefined;
 
-    const durationMinutes = mission.flight_duration ?? 120;
+    const durationMinutes = mission.flight_duration ?? 60;
     const missionEndDateTime = mission.scheduled_start
       ? new Date(mission.scheduled_start.getTime() + durationMinutes * 60_000).toISOString()
       : undefined;

@@ -244,11 +244,11 @@
     "analytics": "Analysen",
     "shiKpis": "SHI-Index und KPIs",
     "planning": "CO-00 - Planung",
-    "newEvaluationRequest": "P00 - Neue Bewertungsanfrage",
-    "evaluation": "P01 - Bewertung",
-    "planningMission": "P02 - Planungsmission",
-    "planningDashboard": "P02 - Planungsdashboard",
-    "missionTemplates": "P04 - Missionsvorlagen",
+    "newEvaluationRequest": "Neue Bewertungsanfrage",
+    "evaluation": "Bewertung",
+    "planningMission": "Planungsmission",
+    "planningDashboard": "Planungsdashboard",
+    "missionTemplates": "Missionsvorlagen",
     "flightRequests": "Fluganfragen",
     "operations": "Operationen",
     "operationsTable": "Missionstabelle",
@@ -1760,7 +1760,8 @@
           "notes": "Nachflugnotizen, Beobachtungen, Vorfälle…"
         },
         "validation": {
-          "incidentFlagged": "Ein oder mehrere Vorfallflaggen sind aktiv — vor dem Speichern prüfen"
+          "incidentFlagged": "Ein oder mehrere Vorfallflaggen sind aktiv — vor dem Speichern prüfen",
+          "endBeforeStart": "Endzeit darf nicht vor der Startzeit liegen"
         }
       },
       "footer": {
@@ -2273,7 +2274,14 @@
     "deleteDocument": "Dokument löschen",
     "actions": {
       "download": "Herunterladen",
+      "view": "Anzeigen",
       "revisionHistory": "Revisionsverlauf"
+    },
+    "viewer": {
+      "title": "Dokumentvorschau",
+      "openInNewTab": "In neuem Tab öffnen",
+      "noPreview": "Für diesen Dateityp ist keine Vorschau verfügbar.",
+      "loadError": "Dokumentvorschau konnte nicht geladen werden."
     },
     "columns": {
       "code": "# Code",
@@ -2318,7 +2326,8 @@
       "saveError": "Fehler beim Speichern des Dokuments. Bitte versuchen Sie es erneut.",
       "component": "Komponente",
       "componentOptional": "(optional)",
-      "componentNone": "Keine — mit einer Komponente verknüpfen",
+      "componentNone": "Keine — mit einer oder mehreren Komponenten verknüpfen",
+      "componentsSelected": "{{count}} ausgewählt",
       "selectSystemFirst": "Wählen Sie zuerst ein System aus",
       "filterBySystem": "Nach System filtern",
       "allSystems": "Alle Systeme"
@@ -3921,6 +3930,9 @@
           "note": "Notiz",
           "selectDrone": "Drohne auswählen…",
           "selectDroneFirst": "Zuerst Drohne auswählen…",
+          "searchSystems": "Systeme durchsuchen…",
+          "noSystemsFound": "Keine Systeme gefunden",
+          "noComponentsFound": "Keine Komponenten für dieses System gefunden",
           "selectTechnician": "Techniker auswählen…",
           "notePlaceholder": "Problem beschreiben…",
           "createTicket": "Ticket erstellen",

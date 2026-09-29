@@ -156,7 +156,7 @@ export default function MissionDetailSheet({ mission, isDark, onClose }: Props) 
                     <DetailRow
                       icon={<MapPin className="h-3.5 w-3.5" />}
                       label={t('clientPortal.fieldLocation', 'Location')}
-                      value={mission.location}
+                      value={mission.location_pseudo_name ? `${mission.location} (${mission.location_pseudo_name})` : mission.location}
                     />
                   )}
                 </div>

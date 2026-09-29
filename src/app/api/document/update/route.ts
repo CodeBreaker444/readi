@@ -18,7 +18,7 @@ const DocumentUpdateSchema = z.object({
   description:     z.string().max(2000).optional().nullable(),
   keywords:        z.string().max(500).optional().nullable(),
   tags:            z.string().max(1000).optional().nullable(),
-  fk_component_id: z.number().int().positive().optional().nullable(),
+  component_ids:   z.array(z.number().int().positive()).optional(),
 }).refine(
   (data) => !data.effective_date || !data.expiry_date || data.expiry_date >= data.effective_date,
   { message: 'Expiry date cannot be before effective date', path: ['expiry_date'] }
