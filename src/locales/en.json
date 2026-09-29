@@ -2284,7 +2284,14 @@
     "deleteDocument": "Delete Document",
     "actions": {
       "download": "Download",
+      "view": "View",
       "revisionHistory": "Revision history"
+    },
+    "viewer": {
+      "title": "Document Preview",
+      "openInNewTab": "Open in new tab",
+      "noPreview": "Preview not available for this file type.",
+      "loadError": "Couldn't load the document preview."
     },
     "columns": {
       "code": "# Code",

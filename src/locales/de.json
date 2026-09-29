@@ -2274,7 +2274,14 @@
     "deleteDocument": "Dokument löschen",
     "actions": {
       "download": "Herunterladen",
+      "view": "Anzeigen",
       "revisionHistory": "Revisionsverlauf"
+    },
+    "viewer": {
+      "title": "Dokumentvorschau",
+      "openInNewTab": "In neuem Tab öffnen",
+      "noPreview": "Für diesen Dateityp ist keine Vorschau verfügbar.",
+      "loadError": "Dokumentvorschau konnte nicht geladen werden."
     },
     "columns": {
       "code": "# Code",

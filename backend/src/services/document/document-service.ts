@@ -423,6 +423,11 @@ export async function getRevisionDownloadUrl(
 
   if (!rev?.file_path) throw new Error('Revision not found or has no file');
 
-  const url = await getPresignedDownloadUrl(rev.file_path, 900, rev.revision_description ?? undefined);
+  const url = await getPresignedDownloadUrl(
+    rev.file_path,
+    900,
+    rev.revision_description ?? undefined,
+    input.inline ? 'inline' : 'attachment'
+  );
   return { url, file_name: rev.revision_description };
 }

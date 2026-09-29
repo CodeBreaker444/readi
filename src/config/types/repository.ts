@@ -158,4 +158,5 @@ export type DocumentUploadRevisionInput = {
 
 export type PresignedDownloadInput = {
   rev_id: number;
+  inline?: boolean;
 };

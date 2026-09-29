@@ -11,11 +11,11 @@ export async function POST(req: NextRequest) {
     if (error) return error;
 
     const body = await req.json();
-    const parsed = z.object({ rev_id: z.number().int().positive() }).safeParse(body);
+    const parsed = z.object({ rev_id: z.number().int().positive(), inline: z.boolean().optional() }).safeParse(body);
     if (!parsed.success) {
       return zodError(E.VL001, parsed.error);
-    }   
-    const result = await getRevisionDownloadUrl({ rev_id: parsed.data.rev_id });
+    }
+    const result = await getRevisionDownloadUrl({ rev_id: parsed.data.rev_id, inline: parsed.data.inline });
     return NextResponse.json({ code: 1, ...result });
   } catch (error: any) {
     console.error('[presign_download]', error);

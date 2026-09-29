@@ -2278,7 +2278,14 @@
     "deleteDocument": "Elimina Documento",
     "actions": {
       "download": "Scarica",
+      "view": "Visualizza",
       "revisionHistory": "Cronologia revisioni"
+    },
+    "viewer": {
+      "title": "Anteprima Documento",
+      "openInNewTab": "Apri in una nuova scheda",
+      "noPreview": "Anteprima non disponibile per questo tipo di file.",
+      "loadError": "Impossibile caricare l'anteprima del documento."
     },
     "columns": {
       "code": "# Codice",
