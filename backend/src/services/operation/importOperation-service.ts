@@ -581,7 +581,7 @@ export async function importDrones(ownerId: number, clientId?: number) {
             { component_type: { equals: 'AIRCRAFT', mode: 'insensitive' } },
           ],
         },
-        select: { fk_tool_id: true, component_name: true, serial_number: true },
+        select: { fk_tool_id: true, component_name: true, serial_number: true, component_metadata: true },
       }),
     ]);
     openTickets.forEach((t) => { if (t.fk_tool_id != null) inMaintenanceSet.add(t.fk_tool_id); });
@@ -600,10 +600,15 @@ export async function importDrones(ownerId: number, clientId?: number) {
       if (existing) existing.push(serial);
       else droneSerialMap.set(c.fk_tool_id, [serial]);
 
+      const isPrimary = (c.component_metadata as any)?.is_primary === true;
       const componentEntry = { component_name: c.component_name, serial_number: serial };
       const existingComponents = droneComponentMap.get(c.fk_tool_id);
-      if (existingComponents) existingComponents.push(componentEntry);
-      else droneComponentMap.set(c.fk_tool_id, [componentEntry]);
+      if (existingComponents) {
+        if (isPrimary) existingComponents.unshift(componentEntry);
+        else existingComponents.push(componentEntry);
+      } else {
+        droneComponentMap.set(c.fk_tool_id, [componentEntry]);
+      }
     });
   }
 
