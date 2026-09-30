@@ -891,7 +891,7 @@ export async function getToolOptions(ownerId: number) {
     }),
     prisma.tool_component.findMany({
       where:  { fk_tool_id: { in: toolIds }, component_type: 'DRONE', component_active: 'Y' },
-      select: { fk_tool_id: true, component_name: true, serial_number: true },
+      select: { fk_tool_id: true, component_name: true, serial_number: true, component_metadata: true },
     }),
     prisma.tool_component.findMany({
       where:  { fk_tool_id: { in: toolIds }, component_active: 'Y' },
@@ -926,10 +926,15 @@ export async function getToolOptions(ownerId: number) {
     }
     const serial = c.serial_number?.trim();
     if (!serial) return;
+    const isPrimary = (c.component_metadata as any)?.is_primary === true;
     const entry = { component_name: c.component_name, serial_number: serial };
     const existing = droneComponentMap.get(c.fk_tool_id);
-    if (existing) existing.push(entry);
-    else droneComponentMap.set(c.fk_tool_id, [entry]);
+    if (existing) {
+      if (isPrimary) existing.unshift(entry);
+      else existing.push(entry);
+    } else {
+      droneComponentMap.set(c.fk_tool_id, [entry]);
+    }
   });
   const nonOperationalSet = new Set<number>(
     expiredComps.filter((c) => c.fk_tool_id != null).map((c) => c.fk_tool_id as number)
