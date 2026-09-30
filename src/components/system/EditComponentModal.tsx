@@ -654,7 +654,7 @@ export default function EditComponentModal({
                           {selectedModel ? `${selectedModel.factory_model} — ${selectedModel.factory_type}` : null}
                         </SelectValue>
                       </SelectTrigger>
-                      <SelectContent className={selectContentCls}>
+                      <SelectContent position="popper" align="start" sideOffset={4} className={`${selectContentCls} w-[22rem] max-w-[90vw] overflow-x-hidden`}>
                         {modelPaging.pageItems.map((m: any) => {
                           const inactive = m.model_active !== 'Y';
                           return (

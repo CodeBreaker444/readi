@@ -389,19 +389,24 @@ export async function closeTicket(payload: CloseTicketPayload): Promise<void> {
     },
   });
 
-  // Reset counters only for components explicitly named by the ticket(s) being closed.
-  // A ticket with no fk_component_id is a system-level (drone) ticket and must not touch any component.
+  // Components explicitly named on the ticket(s) are reset. A system-level ticket (no component)
+  // covers the system's drone component only; other components are never touched by it.
   const ticketedComponentIds = [...new Set(
     openTickets
       .flatMap((t) => [t.fk_component_id, ...t.maintenance_ticket_item.map((i) => i.fk_component_id)])
       .filter((id): id is number => id != null)
   )];
+  const hasSystemLevelTicket = openTickets.some(
+    (t) => t.fk_component_id == null && t.maintenance_ticket_item.length === 0
+  );
+  const droneComponentIds = hasSystemLevelTicket ? await getSystemDroneComponentIds(ticket.fk_tool_id!) : [];
+  const resetComponentIds = [...new Set([...ticketedComponentIds, ...droneComponentIds])];
 
-  for (const componentId of ticketedComponentIds) {
+  for (const componentId of resetComponentIds) {
     await resetComponentCounters(ticket.fk_tool_id!, now.toISOString(), componentId, ticket.ticket_type ?? undefined);
   }
   await setSystemOperationalStatus(ticket.fk_tool_id!, 'OPERATIONAL');
-  await setComponentsOperationalStatus(ticketedComponentIds, 'OPERATIONAL');
+  await setComponentsOperationalStatus(resetComponentIds, 'OPERATIONAL');
 
   // Add close event to all tickets
   await Promise.all(
@@ -638,6 +643,11 @@ export async function getComponentList(toolId: number, ticketType?: string): Pro
 
   let rows = data ?? [];
 
+  // Extraordinary maintenance is performed on the drone itself, so only drone components are offered.
+  if (ticketType === 'EXTRAORDINARY') {
+    rows = rows.filter((row) => row.component_type === 'DRONE');
+  }
+
   return rows.map((row) => ({
     tool_component_id: row.component_id,
     component_code:    row.component_code ?? '',
@@ -733,6 +743,15 @@ export async function setComponentsOperationalStatus(componentIds: number[], sta
   );
 }
 
+async function getSystemDroneComponentIds(toolId: number): Promise<number[]> {
+  const drones = await prisma.tool_component.findMany({
+    where: { fk_tool_id: toolId, component_active: 'Y', component_type: 'DRONE' },
+    select: { component_id: true, component_metadata: true },
+  });
+  const primary = drones.filter((c) => (c.component_metadata as any)?.is_primary === true);
+  return (primary.length ? primary : drones).map((c) => c.component_id);
+}
+
 async function resetComponentCounters(
   toolId: number,
   resetAt: string,
@@ -745,29 +764,35 @@ async function resetComponentCounters(
       component_active: 'Y',
       ...(componentId ? { component_id: componentId } : {}),
     },
-    select: { component_id: true, maintenance_cycle: true, maintenance_cycle_day: true },
+    select: {
+      component_id: true,
+      maintenance_cycle: true,
+      maintenance_cycle_hour: true,
+      maintenance_cycle_day: true,
+      maintenance_cycle_flight: true,
+    },
   });
 
   if (!components.length) return;
 
-  const updates = components
-    .filter((comp) => (comp.maintenance_cycle ?? 'NONE') !== 'NONE')
-    .map((comp) => {
-      const cycleType = comp.maintenance_cycle!;
-      const data: Record<string, any> = { last_maintenance_date: new Date(resetAt) };
-      if (cycleType === 'HOURS' || cycleType === 'MIXED') data.current_maintenance_hours = 0;
-      if (cycleType === 'FLIGHTS' || cycleType === 'MIXED') data.current_maintenance_flights = 0;
-      if (cycleType === 'DAYS' || cycleType === 'MIXED') data.current_maintenance_days = 0;
+  // A component named on a closed ticket always gets its last-maintenance date stamped.
+  // Each counter is reset when its cycle type covers it OR it has a limit configured, so
+  // components whose cycle type was never saved (null/NONE) but which have limits still reset.
+  const updates = components.map((comp) => {
+    const cycleType = comp.maintenance_cycle ?? 'NONE';
+    const mixed = cycleType === 'MIXED';
+    const data: Record<string, any> = { last_maintenance_date: new Date(resetAt) };
+    if (mixed || cycleType === 'HOURS' || Number(comp.maintenance_cycle_hour ?? 0) > 0) data.current_maintenance_hours = 0;
+    if (mixed || cycleType === 'FLIGHTS' || Number(comp.maintenance_cycle_flight ?? 0) > 0) data.current_maintenance_flights = 0;
+    if (mixed || cycleType === 'DAYS' || Number(comp.maintenance_cycle_day ?? 0) > 0) data.current_maintenance_days = 0;
 
-      return prisma.tool_component.update({
-        where: { component_id: comp.component_id },
-        data,
-      });
+    return prisma.tool_component.update({
+      where: { component_id: comp.component_id },
+      data,
     });
+  });
 
-  if (updates.length > 0) {
-    await prisma.$transaction(updates);
-  }
+  await prisma.$transaction(updates);
 }
 
 export async function getComponentMissions(componentId: number) {

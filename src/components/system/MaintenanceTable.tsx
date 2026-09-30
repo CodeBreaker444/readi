@@ -141,6 +141,9 @@ function UsageLimitCell({
   );
 }
 
+// System rows show no usage/limit progress; those live on the component rows.
+const systemRowBlank = <span className="text-xs text-slate-300">—</span>;
+
 function CycleBadge({ model, isDark }: { model: MaintenanceComponent["model"]; isDark?: boolean }) {
   const parts: string[] = [];
   if (model.maintenance_cycle_hour > 0) parts.push(`${model.maintenance_cycle_hour}h`);
@@ -422,7 +425,11 @@ function ComponentSubRow({ comp, threshold, isDark }: { comp: MaintenanceCompone
         {comp.serial_number ?? "—"}
       </td>
 
-      <td className={`px-3 py-2.5 text-xs ${isDark ? "text-slate-600" : "text-slate-300"}`}>—</td>
+      <td className={`px-3 py-2.5 text-xs ${isDark ? "text-slate-300" : "text-slate-600"}`}>
+        {[model.factory_serie, model.factory_model].filter(Boolean).join(" ").trim() || (
+          <span className={isDark ? "text-slate-600" : "text-slate-300"}>—</span>
+        )}
+      </td>
 
       <td className="px-3 py-2.5">
         <CycleBadge model={model} isDark={isDark} />
@@ -565,68 +572,22 @@ function buildColumns(threshold: number, isDark: boolean, t: (key: string) => st
     {
       id: "next_maintenance",
       header: t('systems.maintenanceDashboard.table.nextMaintenance'),
-      cell: ({ row }) => {
-        const d = row.original;
-        const info = nextMaintenanceInfo(d.last_maintenance, d.model.maintenance_cycle_day, d.activation_date);
-        return info
-          ? <span className={`text-xs font-medium ${info.cls}`}>{info.date}</span>
-          : <span className={`text-xs ${isDark ? "text-slate-600" : "text-slate-300"}`}>—</span>;
-      },
+      cell: () => systemRowBlank,
     },
     {
       id: "hours",
       header: t('systems.maintenanceDashboard.table.hours'),
-      cell: ({ row }) => {
-        const d = row.original;
-        const triggers = cleanTrigger(d.trigger);
-        return (
-          <UsageLimitCell
-            current={d.total_hours}
-            limit={d.model.maintenance_cycle_hour}
-            unit="h"
-            status={d.status}
-            isTriggered={triggers.includes("HOUR")}
-            threshold={threshold}
-          />
-        );
-      },
+      cell: () => systemRowBlank,
     },
     {
       id: "flights",
       header: t('systems.maintenanceDashboard.table.flights'),
-      cell: ({ row }) => {
-        const d = row.original;
-        const triggers = cleanTrigger(d.trigger);
-        return (
-          <UsageLimitCell
-            current={d.total_flights}
-            limit={d.model.maintenance_cycle_flight}
-            unit="fl"
-            status={d.status}
-            isTriggered={triggers.includes("FLIGHT")}
-            threshold={threshold}
-          />
-        );
-      },
+      cell: () => systemRowBlank,
     },
     {
       id: "days",
       header: t('systems.maintenanceDashboard.table.days'),
-      cell: ({ row }) => {
-        const d = row.original;
-        const triggers = cleanTrigger(d.trigger);
-        return (
-          <UsageLimitCell
-            current={daysSince(d.last_maintenance ?? d.activation_date)}
-            limit={d.model.maintenance_cycle_day}
-            unit="d"
-            status={d.status}
-            isTriggered={triggers.includes("DAY")}
-            threshold={threshold}
-            expiresOn={computeExpiry(d.last_maintenance, d.model.maintenance_cycle_day, d.activation_date)}
-          />
-        );
-      },
+      cell: () => systemRowBlank,
     },
     {
       id: "status",

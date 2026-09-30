@@ -464,7 +464,7 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
                       {selectedModelLabel ? <span className="block w-full truncate text-left">{selectedModelLabel}</span> : null}
                     </SelectValue>
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent position="popper" align="start" sideOffset={4} className="w-[22rem] max-w-[90vw] overflow-x-hidden">
                     {modelPaging.pageItems.map((m: any) => {
                       const inactive = m.model_active !== 'Y';
                       return (

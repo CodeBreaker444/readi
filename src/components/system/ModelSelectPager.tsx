@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import type React from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 export const MODELS_PER_PAGE = 8;
@@ -26,6 +27,9 @@ interface ModelSelectPagerProps {
   onChange: (page: number) => void;
 }
 
+// Stop the button taking focus: focusing it inside the Select viewport scrolls the list sideways.
+const keepScroll = (e: React.MouseEvent) => e.preventDefault();
+
 export function ModelSelectPager({ page, pageCount, onChange }: ModelSelectPagerProps) {
   if (pageCount <= 1) return null;
 
@@ -36,11 +40,11 @@ export function ModelSelectPager({ page, pageCount, onChange }: ModelSelectPager
       className="flex items-center justify-between gap-2 border-t px-2 pt-1.5 pb-0.5 text-[11px] text-muted-foreground"
       onPointerDown={(e) => e.stopPropagation()}
     >
-      <button type="button" className={btn} disabled={page === 0} onClick={() => onChange(page - 1)}>
+      <button type="button" className={btn} disabled={page === 0} onMouseDown={keepScroll} onClick={() => onChange(page - 1)}>
         <ChevronLeft className="h-3.5 w-3.5" />
       </button>
       <span>{page + 1} / {pageCount}</span>
-      <button type="button" className={btn} disabled={page >= pageCount - 1} onClick={() => onChange(page + 1)}>
+      <button type="button" className={btn} disabled={page >= pageCount - 1} onMouseDown={keepScroll} onClick={() => onChange(page + 1)}>
         <ChevronRight className="h-3.5 w-3.5" />
       </button>
     </div>

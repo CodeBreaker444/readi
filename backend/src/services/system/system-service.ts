@@ -395,7 +395,7 @@ interface ModelCycle {
  * specifications.notes ("Maintenance Cycle: MIXED", "Maint. Hours: 100", ...);
  * direct specifications keys are used as a fallback. Tolerates CRLF line endings.
  */
-function parseModelCycle(specs: Record<string, any> | null | undefined): ModelCycle {
+export function parseModelCycle(specs: Record<string, any> | null | undefined): ModelCycle {
   const s = specs ?? {};
   const notes: string = typeof s.notes === 'string' ? s.notes : '';
   const num = (re: RegExp, fallback: unknown): number | null => {
