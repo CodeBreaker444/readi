@@ -135,7 +135,9 @@ export function OperationStepDrone({
                                 : drones.length === 0 ? t('operations.newOperation.drone.noDronesAssigned')
                                     : allInMaintenance ? t('operations.newOperation.drone.allInMaintenance')
                                         : t('operations.newOperation.drone.selectDrone')
-                        } />
+                        }>
+                            {selectedDrone ? droneDisplayLabel(selectedDrone) : undefined}
+                        </SelectValue>
                     </SelectTrigger>
                     <SelectContent className={scCls(isDark)} position="popper" align="start" sideOffset={4}>
                         {pagedDrones.map(d => {
@@ -145,33 +147,40 @@ export function OperationStepDrone({
                                 key={d.tool_id}
                                 value={String(d.tool_id)}
                                 disabled={!!d.is_non_operational || !!d.is_dismissed || !!d.in_maintenance || snMismatch}
-                                className={cn(siCls(isDark), (d.is_non_operational || d.is_dismissed || snMismatch) ? 'opacity-50' : '')}
+                                className={cn(siCls(isDark), 'py-2', (d.is_non_operational || d.is_dismissed || snMismatch) ? 'opacity-50' : '')}
                             >
-                                <span className="flex items-center gap-2">
-                                    <span>{droneDisplayLabel(d)}</span>
-                                    {snMismatch && (
-                                        <span className="text-[10px] font-semibold text-red-600 bg-red-50 border border-red-200 rounded px-1.5 py-0.5 leading-none">
-                                            {t('operations.newOperation.drone.snMismatchTag')}
-                                        </span>
-                                    )}
-                                    {d.is_non_operational && (
-                                        <span className="text-[10px] font-semibold text-red-600 bg-red-50 border border-red-200 rounded px-1.5 py-0.5 leading-none">
-                                            {t('operations.newOperation.drone.notOperationalTag')}
-                                        </span>
-                                    )}
-                                    {!d.is_non_operational && d.is_dismissed && (
-                                        <span className="text-[10px] font-semibold text-slate-600 bg-slate-100 border border-slate-300 rounded px-1.5 py-0.5 leading-none">
-                                            {t('operations.newOperation.drone.dismissedTag')}
-                                        </span>
-                                    )}
-                                    {!d.is_non_operational && !d.is_dismissed && d.in_maintenance && (
-                                        <span className="text-[10px] font-semibold text-amber-600 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 leading-none">
-                                            {t('operations.newOperation.drone.maintenanceTag')}
-                                        </span>
-                                    )}
-                                    {!d.is_non_operational && !d.is_dismissed && !d.in_maintenance && d.maintenance_due && (
-                                        <span className="text-[10px] font-semibold text-orange-600 bg-orange-50 border border-orange-200 rounded px-1.5 py-0.5 leading-none">
-                                            {t('operations.newOperation.drone.maintenanceDueTag')}
+                                <span className="flex flex-col gap-0.5">
+                                    <span className="flex items-center flex-wrap gap-1.5">
+                                        <span className="font-medium">{d.tool_name}</span>
+                                        {snMismatch && (
+                                            <span className="text-[10px] font-semibold text-red-600 bg-red-50 border border-red-200 rounded px-1.5 py-0.5 leading-none">
+                                                {t('operations.newOperation.drone.snMismatchTag')}
+                                            </span>
+                                        )}
+                                        {d.is_non_operational && (
+                                            <span className="text-[10px] font-semibold text-red-600 bg-red-50 border border-red-200 rounded px-1.5 py-0.5 leading-none">
+                                                {t('operations.newOperation.drone.notOperationalTag')}
+                                            </span>
+                                        )}
+                                        {!d.is_non_operational && d.is_dismissed && (
+                                            <span className="text-[10px] font-semibold text-slate-600 bg-slate-100 border border-slate-300 rounded px-1.5 py-0.5 leading-none">
+                                                {t('operations.newOperation.drone.dismissedTag')}
+                                            </span>
+                                        )}
+                                        {!d.is_non_operational && !d.is_dismissed && d.in_maintenance && (
+                                            <span className="text-[10px] font-semibold text-amber-600 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 leading-none">
+                                                {t('operations.newOperation.drone.maintenanceTag')}
+                                            </span>
+                                        )}
+                                        {!d.is_non_operational && !d.is_dismissed && !d.in_maintenance && d.maintenance_due && (
+                                            <span className="text-[10px] font-semibold text-orange-600 bg-orange-50 border border-orange-200 rounded px-1.5 py-0.5 leading-none">
+                                                {t('operations.newOperation.drone.maintenanceDueTag')}
+                                            </span>
+                                        )}
+                                    </span>
+                                    {d.drone_components?.[0] && (
+                                        <span className={cn('text-xs', isDark ? 'text-slate-400' : 'text-slate-500')}>
+                                            {d.drone_components[0].component_name} ({d.drone_components[0].serial_number})
                                         </span>
                                     )}
                                 </span>
