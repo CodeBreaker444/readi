@@ -2,10 +2,10 @@
 
 import { Label } from '@/components/ui/label';
 import type { ReactNode } from 'react';
-import { OpType } from './OperationModalTypes';
+import { DroneComponent, OpType, droneListLabel } from './OperationModalTypes';
 
 interface Client { client_id: number; client_name: string; client_code: string }
-interface DroneSystem { tool_id: number; tool_code: string; tool_name: string }
+interface DroneSystem { tool_id: number; tool_code: string; tool_name: string; drone_components?: DroneComponent[] }
 interface SelectOption { id: number; name: string }
 interface PlanningOptionLike { planning_name: string }
 interface MissionPlanningOptionLike { mission_planning_name: ReactNode | Iterable<ReactNode> }
@@ -62,7 +62,7 @@ export function ImportConfirmStep({
                 </div>
                 <div>
                     <Label className="mb-1.5 block">{t(ns + '.fields.drone')}</Label>
-                    <p className="text-sm font-medium">{drones.find(d => String(d.tool_id) === vehicleId)?.tool_name || '—'}</p>
+                    <p className="text-sm font-medium">{(() => { const d = drones.find(x => String(x.tool_id) === vehicleId); return d ? droneListLabel(d) : '—'; })()}</p>
                 </div>
                 <div>
                     <Label className="mb-1.5 block">{t(ns + '.fields.missionCode')}</Label>

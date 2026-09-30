@@ -891,7 +891,7 @@ export async function getToolOptions(ownerId: number) {
     }),
     prisma.tool_component.findMany({
       where:  { fk_tool_id: { in: toolIds }, component_type: 'DRONE', component_active: 'Y' },
-      select: { fk_tool_id: true, component_name: true, serial_number: true, component_metadata: true },
+      select: { fk_tool_id: true, component_name: true, component_code: true, serial_number: true, component_metadata: true },
     }),
     prisma.tool_component.findMany({
       where:  { fk_tool_id: { in: toolIds }, component_active: 'Y' },
@@ -918,7 +918,7 @@ export async function getToolOptions(ownerId: number) {
     droneComponents.filter((c) => c.fk_tool_id != null).map((c) => c.fk_tool_id as number)
   );
   const droneSerialMap = new Map<number, string | null>();
-  const droneComponentMap = new Map<number, { component_name: string; serial_number: string }[]>();
+  const droneComponentMap = new Map<number, { component_name: string; component_code: string | null; serial_number: string }[]>();
   droneComponents.forEach((c) => {
     if (c.fk_tool_id == null) return;
     if (!droneSerialMap.has(c.fk_tool_id)) {
@@ -927,7 +927,7 @@ export async function getToolOptions(ownerId: number) {
     const serial = c.serial_number?.trim();
     if (!serial) return;
     const isPrimary = (c.component_metadata as any)?.is_primary === true;
-    const entry = { component_name: c.component_name, serial_number: serial };
+    const entry = { component_name: c.component_name, component_code: c.component_code ?? null, serial_number: serial };
     const existing = droneComponentMap.get(c.fk_tool_id);
     if (existing) {
       if (isPrimary) existing.unshift(entry);

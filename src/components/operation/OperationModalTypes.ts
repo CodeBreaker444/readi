@@ -2,7 +2,7 @@ import React from 'react';
 import { CalendarClock, Settings, User } from 'lucide-react';
 
 export interface Client { client_id: number; client_name: string; client_code: string }
-export interface DroneComponent { component_name: string; serial_number: string }
+export interface DroneComponent { component_name: string; component_code?: string | null; serial_number: string }
 export interface Drone { tool_id: number; tool_code: string; tool_name: string; in_maintenance?: boolean; maintenance_due?: boolean; is_non_operational?: boolean; is_dismissed?: boolean; drone_serial_numbers?: string[]; drone_components?: DroneComponent[] }
 export interface PlanningOption { planning_id: number; planning_name: string; fk_client_id: number; client_name: string; planning_active?: 'Y' | 'N' }
 export interface MissionPlanningOption {
@@ -39,4 +39,15 @@ export interface SchedulerFormData {
     categoryId: string
     lucId: string
     groupLabel: string
+}
+
+export function droneComponentLine(d: { drone_components?: DroneComponent[] }): string | null {
+  const primary = d.drone_components?.[0];
+  return primary ? `${primary.component_code || primary.component_name} – ${primary.serial_number}` : null;
+}
+
+/** "System code – component code – serial number" on one line (selected value / summaries). */
+export function droneListLabel(d: { tool_code: string; drone_components?: DroneComponent[] }): string {
+  const line = droneComponentLine(d);
+  return line ? `${d.tool_code} – ${line}` : d.tool_code;
 }

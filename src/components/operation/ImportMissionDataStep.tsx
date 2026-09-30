@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { AlertCircle, CheckCircle2, Fingerprint, Loader2, RefreshCw } from 'lucide-react';
-import { MissionPlanningOption, OpType, PlanningOption } from './OperationModalTypes';
+import { DroneComponent, MissionPlanningOption, OpType, PlanningOption, droneComponentLine, droneListLabel } from './OperationModalTypes';
 import { SelectPaginationFooter, usePagedItems } from './OperationModalHelpers';
 
 interface DroneSystem {
@@ -20,6 +20,7 @@ interface DroneSystem {
     in_maintenance?: boolean; maintenance_due?: boolean;
     is_non_operational?: boolean; is_dismissed?: boolean;
     drone_serial_numbers?: string[];
+    drone_components?: DroneComponent[];
 }
 interface SelectOption { id: number; name: string }
 
@@ -139,11 +140,18 @@ export function ImportMissionDataStep({
                                         disabled={d.in_maintenance || d.is_non_operational || d.is_dismissed}
                                         className={cn((d.in_maintenance || d.is_non_operational || d.is_dismissed) && 'opacity-50')}
                                     >
-                                        {d.tool_name} ({d.tool_code})
-                                        {d.in_maintenance && ' (Maintenance)'}
-                                        {d.maintenance_due && ' (Maintenance Due)'}
-                                        {d.is_non_operational && ' (Non-operational)'}
-                                        {d.is_dismissed && ' (Dismissed)'}
+                                        <span className="flex flex-col gap-0.5">
+                                            <span>
+                                                {d.tool_code}
+                                                {d.in_maintenance && ' (Maintenance)'}
+                                                {d.maintenance_due && ' (Maintenance Due)'}
+                                                {d.is_non_operational && ' (Non-operational)'}
+                                                {d.is_dismissed && ' (Dismissed)'}
+                                            </span>
+                                            {droneComponentLine(d) && (
+                                                <span className="text-xs text-muted-foreground">{droneComponentLine(d)}</span>
+                                            )}
+                                        </span>
                                     </SelectItem>
                             ))}
                             {dronesPaging.showPagination && (
@@ -186,7 +194,7 @@ export function ImportMissionDataStep({
                     {!loadingSerialNumber && matchingDrone && (
                         <p className="mt-1.5 text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
                             <CheckCircle2 className="h-3 w-3 shrink-0" />
-                            {t(ns + '.info.systemAutoSelected', { name: matchingDrone.tool_name })}
+                            {t(ns + '.info.systemAutoSelected', { name: droneListLabel(matchingDrone) })}
                         </p>
                     )}
                 </div>
