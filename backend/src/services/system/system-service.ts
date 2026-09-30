@@ -383,6 +383,39 @@ export async function deleteSystem(ownerId: number, toolId: number) {
 }
 
 
+interface ModelCycle {
+  cycle: string | null;
+  hour: number | null;
+  day: number | null;
+  flight: number | null;
+}
+
+/**
+ * Reads a model's maintenance cycle + limits. Models store them as text lines in
+ * specifications.notes ("Maintenance Cycle: MIXED", "Maint. Hours: 100", ...);
+ * direct specifications keys are used as a fallback. Tolerates CRLF line endings.
+ */
+function parseModelCycle(specs: Record<string, any> | null | undefined): ModelCycle {
+  const s = specs ?? {};
+  const notes: string = typeof s.notes === 'string' ? s.notes : '';
+  const num = (re: RegExp, fallback: unknown): number | null => {
+    const m = notes.match(re);
+    if (m) return Number(m[1]);
+    return fallback != null && fallback !== '' && !Number.isNaN(Number(fallback)) ? Number(fallback) : null;
+  };
+  const cycleMatch = notes.match(/^Maintenance Cycle:[ \t]*(.+?)[ \t]*\r?$/m);
+  const cycle = (cycleMatch ? cycleMatch[1] : typeof s.maintenance_cycle === 'string' ? s.maintenance_cycle : '')
+    .trim()
+    .toUpperCase();
+
+  return {
+    cycle: cycle || null,
+    hour: num(/^Maint\. Hours:[ \t]*([\d.]+)[ \t]*\r?$/m, s.maintenance_cycle_hour),
+    day: num(/^Maint\. Days:[ \t]*([\d.]+)[ \t]*\r?$/m, s.maintenance_cycle_day),
+    flight: num(/^Maint\. Flights:[ \t]*([\d.]+)[ \t]*\r?$/m, s.maintenance_cycle_flight),
+  };
+}
+
 export async function getModelList(ownerId: number) {
   const data = await prisma.tool_model.findMany({
     where: {
@@ -406,11 +439,7 @@ export async function getModelList(ownerId: number) {
     dataRows: data.length,
     data: data.map((item) => {
       const specs = (item.specifications as Record<string, any>) || {};
-      const notes: string = typeof specs.notes === 'string' ? specs.notes : '';
-      const cycleMatch = notes.match(/^Maintenance Cycle:\s*(.+)$/m);
-      const hoursMatch = notes.match(/^Maint\. Hours:\s*([\d.]+)$/m);
-      const daysMatch = notes.match(/^Maint\. Days:\s*([\d.]+)$/m);
-      const flightsMatch = notes.match(/^Maint\. Flights:\s*([\d.]+)$/m);
+      const modelCycle = parseModelCycle(specs);
 
       return {
         tool_model_id: item.model_id,
@@ -425,10 +454,10 @@ export async function getModelList(ownerId: number) {
         max_speed: specs.max_speed ?? null,
         max_altitude: specs.max_altitude ?? null,
         weight: specs.weight ?? null,
-        maintenance_cycle: cycleMatch ? cycleMatch[1].trim() : null,
-        maintenance_cycle_hour: hoursMatch ? Number(hoursMatch[1]) : null,
-        maintenance_cycle_day: daysMatch ? Number(daysMatch[1]) : null,
-        maintenance_cycle_flight: flightsMatch ? Number(flightsMatch[1]) : null,
+        maintenance_cycle: modelCycle.cycle,
+        maintenance_cycle_hour: modelCycle.hour,
+        maintenance_cycle_day: modelCycle.day,
+        maintenance_cycle_flight: modelCycle.flight,
       };
     }),
   };
@@ -692,7 +721,34 @@ export async function updateModel(modelId: number, modelData: any) {
     data: updatePayload,
   });
 
-  return { code: 1, message: 'Model updated successfully', data };
+  // If the cycle type or limits changed, push them to every component using this model.
+  // Only the cycle definition is written; current_maintenance_hours/flights/days stay untouched.
+  const before = parseModelCycle(existing?.specifications as Record<string, any> | null);
+  const after = parseModelCycle(updatedSpecs as Record<string, any>);
+  const cycleChanged =
+    before.cycle !== after.cycle || before.hour !== after.hour ||
+    before.day !== after.day || before.flight !== after.flight;
+
+  let updatedComponents = 0;
+  if (cycleChanged) {
+    const result = await prisma.tool_component.updateMany({
+      where: {
+        OR: [
+          { component_metadata: { path: ['fk_tool_model_id'], equals: modelId } },
+          { component_metadata: { path: ['fk_tool_model_id'], equals: String(modelId) } },
+        ],
+      },
+      data: {
+        maintenance_cycle: after.cycle,
+        maintenance_cycle_hour: after.hour,
+        maintenance_cycle_day: after.day,
+        maintenance_cycle_flight: after.flight,
+      },
+    });
+    updatedComponents = result.count;
+  }
+
+  return { code: 1, message: 'Model updated successfully', data, updatedComponents };
 }
 
 
@@ -949,18 +1005,11 @@ export async function addComponent(componentData: any, ownerId: number) {
       select: { specifications: true },
     });
 
-    if ((model?.specifications as any)?.notes) {
-      const notes: string = (model!.specifications as any).notes;
-      const cycleMatch = notes.match(/^Maintenance Cycle:\s*(.+)$/m);
-      const hoursMatch = notes.match(/^Maint\. Hours:\s*([\d.]+)$/m);
-      const daysMatch = notes.match(/^Maint\. Days:\s*([\d.]+)$/m);
-      const flightsMatch = notes.match(/^Maint\. Flights:\s*([\d.]+)$/m);
-
-      maintenanceCycle = cycleMatch ? cycleMatch[1].trim() : null;
-      maintenanceCycleHour = hoursMatch ? Number(hoursMatch[1]) : null;
-      maintenanceCycleDay = daysMatch ? Number(daysMatch[1]) : null;
-      maintenanceCycleFlight = flightsMatch ? Number(flightsMatch[1]) : null;
-    }
+    const mc = parseModelCycle(model?.specifications as Record<string, any> | null);
+    maintenanceCycle = mc.cycle;
+    maintenanceCycleHour = mc.hour;
+    maintenanceCycleDay = mc.day;
+    maintenanceCycleFlight = mc.flight;
   }
 
   const finalCycle = componentData.maintenance_cycle ?? maintenanceCycle;
@@ -1072,6 +1121,7 @@ export async function updateComponent(componentId: number, componentData: any, o
       current_maintenance_flights: true,
       serial_number: true,
       drone_registration_code: true,
+      maintenance_cycle: true,
     },
   });
 
@@ -1158,6 +1208,22 @@ export async function updateComponent(componentId: number, componentData: any, o
     ? [...existingHistory, { latitude: newLat, longitude: newLon, pseudo_name: newPseudoName, changed_at: new Date().toISOString() }]
     : existingHistory;
 
+  // The assigned model defines the maintenance cycle + limits. Copy them onto the component when
+  // the model changes (or the component has no cycle yet), unless the caller sent explicit values.
+  const newModelId = componentData.fk_tool_model_id ? Number(componentData.fk_tool_model_id) : null;
+  const modelChanged = newModelId != null && newModelId !== Number(existingMeta.fk_tool_model_id ?? 0);
+  let inheritedCycle: ModelCycle | null = null;
+  if (newModelId != null && (modelChanged || existing?.maintenance_cycle == null)) {
+    const model = await prisma.tool_model.findUnique({
+      where: { model_id: newModelId },
+      select: { specifications: true },
+    });
+    const mc = parseModelCycle(model?.specifications as Record<string, any> | null);
+    if (modelChanged || mc.cycle) inheritedCycle = mc;
+  }
+  const cycleField = <T,>(explicit: T | undefined, inherited: T | undefined) =>
+    explicit !== undefined ? explicit : inherited;
+
   const data = await prisma.tool_component.update({
     where: { component_id: componentId },
     data: {
@@ -1180,10 +1246,10 @@ export async function updateComponent(componentId: number, componentData: any, o
       expiry_type: componentData.expiry_type || 'EXPIRATION_DATE',
       expiration_flights: componentData.expiration_flights ?? null,
       expiration_flight_hours: componentData.expiration_flight_hours ?? null,
-      ...(componentData.maintenance_cycle !== undefined && { maintenance_cycle: componentData.maintenance_cycle || null }),
-      ...(componentData.maintenance_cycle_hour !== undefined && { maintenance_cycle_hour: componentData.maintenance_cycle_hour ?? null }),
-      ...(componentData.maintenance_cycle_day !== undefined && { maintenance_cycle_day: componentData.maintenance_cycle_day ?? null }),
-      ...(componentData.maintenance_cycle_flight !== undefined && { maintenance_cycle_flight: componentData.maintenance_cycle_flight ?? null }),
+      ...(cycleField(componentData.maintenance_cycle, inheritedCycle?.cycle) !== undefined && { maintenance_cycle: cycleField(componentData.maintenance_cycle, inheritedCycle?.cycle) || null }),
+      ...(cycleField(componentData.maintenance_cycle_hour, inheritedCycle?.hour) !== undefined && { maintenance_cycle_hour: cycleField(componentData.maintenance_cycle_hour, inheritedCycle?.hour) ?? null }),
+      ...(cycleField(componentData.maintenance_cycle_day, inheritedCycle?.day) !== undefined && { maintenance_cycle_day: cycleField(componentData.maintenance_cycle_day, inheritedCycle?.day) ?? null }),
+      ...(cycleField(componentData.maintenance_cycle_flight, inheritedCycle?.flight) !== undefined && { maintenance_cycle_flight: cycleField(componentData.maintenance_cycle_flight, inheritedCycle?.flight) ?? null }),
       ...(shouldResetUsageHours && { current_usage_hours: componentData.initial_usage_hours }),
       ...(shouldResetMaintenanceHours && { current_maintenance_hours: componentData.initial_maintenance_hours }),
       ...(shouldResetMaintenanceFlights && { current_maintenance_flights: componentData.initial_maintenance_flights }),
