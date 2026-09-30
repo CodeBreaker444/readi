@@ -123,7 +123,14 @@ export async function getMaintenanceDashboard(
       fk_tool_id: { in: toolIds },
       ticket_status: { not: 'CLOSED' },
     },
-    select: { fk_tool_id: true, fk_component_id: true },
+    select: {
+      fk_tool_id: true,
+      fk_component_id: true,
+      maintenance_ticket_item: {
+        where: { item_type: 'COMPONENT', fk_component_id: { not: null } },
+        select: { fk_component_id: true },
+      },
+    },
   });
 
   const toolsInMaintenance = new Set<number>(
@@ -131,8 +138,8 @@ export async function getMaintenanceDashboard(
   );
   const componentsInMaintenance = new Set<number>(
     openTickets
-      .filter((t) => t.fk_component_id != null)
-      .map((t) => t.fk_component_id!)
+      .flatMap((t) => [t.fk_component_id, ...t.maintenance_ticket_item.map((i) => i.fk_component_id)])
+      .filter((id): id is number => id != null)
   );
 
   const maintenanceRecords = await prisma.tool_maintenance.findMany({

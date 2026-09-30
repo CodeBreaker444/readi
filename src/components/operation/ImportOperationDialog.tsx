@@ -18,7 +18,7 @@ import { ImportMissionDataStep } from './ImportMissionDataStep';
 import { ImportPilotStep } from './ImportPilotStep';
 import { isoToLocalInput } from './OperationModalHelpers';
 import { ImportStepIndicator } from './ImportStepIndicator';
-import { MissionPlanningOption, OpType, PlanningOption } from './OperationModalTypes';
+import { DroneComponent, MissionPlanningOption, OpType, PlanningOption } from './OperationModalTypes';
 import { PilotQualificationsSheet } from './PilotQualificationsSheet';
 import { ChevronLeft, ChevronRight, FileUp, Loader2 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
@@ -31,6 +31,7 @@ interface DroneSystem   {
     in_maintenance?: boolean; maintenance_due?: boolean;
     is_non_operational?: boolean; is_dismissed?: boolean;
     drone_serial_numbers?: string[];
+    drone_components?: DroneComponent[];
 }
 interface SelectOption  { id: number; name: string }
 interface Pilot         { user_id: number; first_name: string; last_name: string }

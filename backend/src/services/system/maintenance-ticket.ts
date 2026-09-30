@@ -140,11 +140,19 @@ export async function getTicketList(owner_id: number, tool_id?: number, assigned
       users_maintenance_ticket_assigned_to_user_idTousers: {
         select: { user_id: true, first_name: true, last_name: true, email: true },
       },
+      maintenance_ticket_item: {
+        where: { item_type: 'COMPONENT', fk_component_id: { not: null } },
+        select: { fk_component_id: true },
+      },
     },
     orderBy: { ticket_id: 'desc' },
   });
 
-  const componentIds = [...new Set(rows.map((r) => r.fk_component_id).filter(Boolean))] as number[];
+  const ticketComponentIds = (row: (typeof rows)[number]): number[] =>
+    [...new Set([row.fk_component_id, ...row.maintenance_ticket_item.map((i) => i.fk_component_id)]
+      .filter((id): id is number => id != null))];
+
+  const componentIds = [...new Set(rows.flatMap(ticketComponentIds))];
   const componentMap: Record<number, any> = {};
   if (componentIds.length > 0) {
     const comps = await prisma.tool_component.findMany({
@@ -157,7 +165,7 @@ export async function getTicketList(owner_id: number, tool_id?: number, assigned
   }
 
   const toolIdsWithoutComponent = [...new Set(
-    rows.filter((r) => !r.fk_component_id).map((r) => r.fk_tool_id).filter(Boolean)
+    rows.filter((r) => ticketComponentIds(r).length === 0).map((r) => r.fk_tool_id).filter(Boolean)
   )] as number[];
   const systemComponentsMap: Record<number, Array<{ component_type: string; component_sn: string }>> = {};
   if (toolIdsWithoutComponent.length > 0) {
@@ -179,9 +187,12 @@ export async function getTicketList(owner_id: number, tool_id?: number, assigned
 
   return rows.map((row) => {
     const assignee = row.users_maintenance_ticket_assigned_to_user_idTousers;
-    const comp = row.fk_component_id ? (componentMap[row.fk_component_id] ?? null) : null;
+    const linkedComps = ticketComponentIds(row).map((id) => componentMap[id]).filter(Boolean);
+    const comp = linkedComps.length === 1 ? linkedComps[0] : null;
     const entityName = comp ? (comp.component_type ?? comp.component_name ?? undefined) : undefined;
-    const systemComponents = !comp ? (systemComponentsMap[row.fk_tool_id ?? 0] ?? []) : [];
+    const systemComponents = linkedComps.length > 1
+      ? linkedComps.map((c) => ({ component_type: c.component_type ?? c.component_name ?? '', component_sn: c.serial_number ?? '' }))
+      : !comp ? (systemComponentsMap[row.fk_tool_id ?? 0] ?? []) : [];
 
     return {
       ticket_id:           row.ticket_id,
@@ -189,7 +200,7 @@ export async function getTicketList(owner_id: number, tool_id?: number, assigned
       fk_tool_id:          row.fk_tool_id ?? 0,
       fk_component_id:     row.fk_component_id ?? null,
       ticket_type:         (row.ticket_type ?? 'STANDARD') as MaintenanceTicket['ticket_type'],
-      entity_type:         comp ? 'COMPONENT' as const : 'AIRCRAFT' as const,
+      entity_type:         linkedComps.length > 0 ? 'COMPONENT' as const : 'AIRCRAFT' as const,
       ticket_status:       (row.ticket_status ?? 'OPEN') as MaintenanceTicket['ticket_status'],
       ticket_priority:     (row.ticket_priority ?? 'MEDIUM') as MaintenanceTicket['ticket_priority'],
       assigned_to_user_id: row.assigned_to_user_id ?? null,
@@ -224,32 +235,41 @@ export async function getTicketList(owner_id: number, tool_id?: number, assigned
 
 
 export async function createTicket(payload: CreateTicketPayload): Promise<number> {
-  const targets = payload.components?.length ? payload.components : [null];
+  const componentIds = [...new Set(payload.components ?? [])];
+  const primaryComponentId = componentIds[0] ?? null;
 
-  const rows = targets.map((componentId) => ({
-    fk_owner_id:         payload.fk_owner_id,
-    fk_tool_id:          payload.fk_tool_id,
-    fk_component_id:     componentId ?? null,
-    ticket_title:        componentId
-      ? `Component Maintenance - #${componentId}`
-      : `Maintenance - System #${payload.fk_tool_id}`,
-    ticket_type:         payload.type,
-    ticket_priority:     payload.priority,
-    ticket_status:       'OPEN',
-    reported_by_user_id: payload.fk_user_id,
-    assigned_to_user_id: payload.assigned_to || null,
-    resolution_notes:    payload.note ?? null,
-    reported_at:         new Date(),
-    location_latitude:   payload.latitude  ?? null,
-    location_longitude:  payload.longitude ?? null,
-    location_pseudo_name: payload.location_pseudo_name ?? null,
-  }));
-
-  const created = await prisma.$transaction(
-    rows.map((row) => prisma.maintenance_ticket.create({ data: row, select: { ticket_id: true } }))
-  );
-
-  if (!created.length) throw new Error('createTicket: no rows returned');
+  // One ticket per request; every selected component is linked through maintenance_ticket_item.
+  const ticketRow = await prisma.maintenance_ticket.create({
+    data: {
+      fk_owner_id:         payload.fk_owner_id,
+      fk_tool_id:          payload.fk_tool_id,
+      fk_component_id:     primaryComponentId,
+      ticket_title:        primaryComponentId
+        ? `Component Maintenance - #${componentIds.join(', #')}`
+        : `Maintenance - System #${payload.fk_tool_id}`,
+      ticket_type:         payload.type,
+      ticket_priority:     payload.priority,
+      ticket_status:       'OPEN',
+      reported_by_user_id: payload.fk_user_id,
+      assigned_to_user_id: payload.assigned_to || null,
+      resolution_notes:    payload.note ?? null,
+      reported_at:         new Date(),
+      location_latitude:   payload.latitude  ?? null,
+      location_longitude:  payload.longitude ?? null,
+      location_pseudo_name: payload.location_pseudo_name ?? null,
+      ...(componentIds.length > 0 && {
+        maintenance_ticket_item: {
+          create: componentIds.map((id) => ({
+            fk_component_id:  id,
+            item_description: `Component #${id}`,
+            item_type:        'COMPONENT',
+          })),
+        },
+      }),
+    },
+    select: { ticket_id: true },
+  });
+  const created = [ticketRow];
 
   const reporter = payload.reporter_name ?? `User #${payload.fk_user_id}`;
   const issueDetail = payload.note?.trim() ? `${payload.note.trim()}` : 'No description provided.';
@@ -334,6 +354,10 @@ export async function closeTicket(payload: CloseTicketPayload): Promise<void> {
     select: {
       ticket_id: true,
       fk_component_id: true,
+      maintenance_ticket_item: {
+        where: { item_type: 'COMPONENT', fk_component_id: { not: null } },
+        select: { fk_component_id: true },
+      },
       ticket_type: true,
       reported_by_user_id: true,
       ticket_title: true,
@@ -367,7 +391,11 @@ export async function closeTicket(payload: CloseTicketPayload): Promise<void> {
 
   // Reset counters only for components explicitly named by the ticket(s) being closed.
   // A ticket with no fk_component_id is a system-level (drone) ticket and must not touch any component.
-  const ticketedComponentIds = [...new Set(openTickets.map((t) => t.fk_component_id).filter((id): id is number => id != null))];
+  const ticketedComponentIds = [...new Set(
+    openTickets
+      .flatMap((t) => [t.fk_component_id, ...t.maintenance_ticket_item.map((i) => i.fk_component_id)])
+      .filter((id): id is number => id != null)
+  )];
 
   for (const componentId of ticketedComponentIds) {
     await resetComponentCounters(ticket.fk_tool_id!, now.toISOString(), componentId, ticket.ticket_type ?? undefined);
@@ -783,7 +811,12 @@ export async function getComponentMissions(componentId: number) {
 
 export async function getComponentTicketEvents(componentId: number) {
   const data = await prisma.maintenance_ticket.findMany({
-    where: { fk_component_id: componentId },
+    where: {
+      OR: [
+        { fk_component_id: componentId },
+        { maintenance_ticket_item: { some: { fk_component_id: componentId, item_type: 'COMPONENT' } } },
+      ],
+    },
     select: {
       ticket_id: true,
       ticket_status: true,

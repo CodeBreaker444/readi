@@ -1,5 +1,6 @@
 'use client';
 
+import { ModelSelectPager, usePagedModels } from "./ModelSelectPager";
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -143,6 +144,7 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
   const [insuranceExpanded, setInsuranceExpanded] = useState(false);
   const [certificationsExpanded, setCertificationsExpanded] = useState(false);
 
+  const modelPaging = usePagedModels(models, formData.fk_tool_model_id);
   const selectedModel = models.find((m) => String(m.tool_model_id) === formData.fk_tool_model_id);
   const selectedModelLabel = selectedModel
     ? `${selectedModel.factory_type ?? '—'} / ${selectedModel.factory_model ?? '—'} / ${selectedModel.factory_serie ?? '—'}`
@@ -456,14 +458,14 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
               </div>
               <div className="col-span-1 sm:col-span-4 min-w-0">
                 <Label className="pb-2">{t('systems.components.addComponent.fields.brandModel')}</Label>
-                <Select value={formData.fk_tool_model_id} onValueChange={handleModelSelect}>
+                <Select value={formData.fk_tool_model_id} onValueChange={handleModelSelect} onOpenChange={(o) => o && modelPaging.syncToSelected()}>
                   <SelectTrigger className="w-full min-w-0">
                     <SelectValue placeholder={t('systems.components.common.select')}>
                       {selectedModelLabel ? <span className="block w-full truncate text-left">{selectedModelLabel}</span> : null}
                     </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
-                    {models.map((m: any) => {
+                    {modelPaging.pageItems.map((m: any) => {
                       const inactive = m.model_active !== 'Y';
                       return (
                         <SelectItem
@@ -476,6 +478,7 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
                         </SelectItem>
                       );
                     })}
+                    <ModelSelectPager page={modelPaging.page} pageCount={modelPaging.pageCount} onChange={modelPaging.setPage} />
                   </SelectContent>
                 </Select>
               </div>

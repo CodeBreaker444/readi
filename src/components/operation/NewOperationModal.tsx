@@ -43,7 +43,8 @@ import {
     PlanningOption,
     SchedulerFormData,
     STEPS,
-    UspaceOption
+    UspaceOption,
+    droneListLabel
 } from './OperationModalTypes'
 import type { DFlightCircle } from './DFlightCircleMap'
 import { OperationStepClient } from './OperationStepClient'
@@ -875,11 +876,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                             summary={{
                                 clientName: selectedClient?.client_name,
                                 opType,
-                                droneLabel: selectedDrone
-                                    ? (selectedDrone.drone_components?.[0]
-                                        ? `${selectedDrone.tool_name} – ${selectedDrone.drone_components[0].component_name} – ${selectedDrone.drone_components[0].serial_number}`
-                                        : `${selectedDrone.tool_code} — ${selectedDrone.tool_name}`)
-                                    : undefined,
+                                droneLabel: selectedDrone ? droneListLabel(selectedDrone) : undefined,
                                 planName: selectedPlan?.planning_name,
                                 flightMode,
                                 missionCode: schedulerForm.missionCode,
