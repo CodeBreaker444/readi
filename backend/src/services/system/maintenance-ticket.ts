@@ -365,22 +365,15 @@ export async function closeTicket(payload: CloseTicketPayload): Promise<void> {
     },
   });
 
-  // Reset counters only for the component(s) covered by the ticket(s) being closed.
-  // A ticket with no fk_component_id covers the whole system, so fall back to all components in that case.
+  // Reset counters only for components explicitly named by the ticket(s) being closed.
+  // A ticket with no fk_component_id is a system-level (drone) ticket and must not touch any component.
   const ticketedComponentIds = [...new Set(openTickets.map((t) => t.fk_component_id).filter((id): id is number => id != null))];
-  const isSystemWideTicket = openTickets.some((t) => t.fk_component_id == null);
 
-  if (isSystemWideTicket) {
-    await resetComponentCounters(ticket.fk_tool_id!, now.toISOString(), null, ticket.ticket_type ?? undefined);
-    await setSystemOperationalStatus(ticket.fk_tool_id!, 'OPERATIONAL');
-    await setAllComponentsOperational(ticket.fk_tool_id!);
-  } else {
-    for (const componentId of ticketedComponentIds) {
-      await resetComponentCounters(ticket.fk_tool_id!, now.toISOString(), componentId, ticket.ticket_type ?? undefined);
-    }
-    await setSystemOperationalStatus(ticket.fk_tool_id!, 'OPERATIONAL');
-    await setComponentsOperationalStatus(ticketedComponentIds, 'OPERATIONAL');
+  for (const componentId of ticketedComponentIds) {
+    await resetComponentCounters(ticket.fk_tool_id!, now.toISOString(), componentId, ticket.ticket_type ?? undefined);
   }
+  await setSystemOperationalStatus(ticket.fk_tool_id!, 'OPERATIONAL');
+  await setComponentsOperationalStatus(ticketedComponentIds, 'OPERATIONAL');
 
   // Add close event to all tickets
   await Promise.all(
@@ -705,33 +698,6 @@ export async function setComponentsOperationalStatus(componentIds: number[], sta
           component_metadata: {
             ...(comp.component_metadata as Record<string, unknown> ?? {}),
             component_status: status,
-          } as Prisma.InputJsonValue,
-        },
-      })
-    )
-  );
-}
-
-async function setAllComponentsOperational(toolId: number): Promise<void> {
-  const comps = await prisma.tool_component.findMany({
-    where: { fk_tool_id: toolId, component_active: 'Y' },
-    select: { component_id: true, component_metadata: true },
-  });
-
-  const nonOperational = comps.filter(
-    (comp) => ((comp.component_metadata as any)?.component_status ?? 'OPERATIONAL') !== 'OPERATIONAL',
-  );
-
-  if (!nonOperational.length) return;
-
-  await prisma.$transaction(
-    nonOperational.map((comp) =>
-      prisma.tool_component.update({
-        where: { component_id: comp.component_id },
-        data: {
-          component_metadata: {
-            ...(comp.component_metadata as Record<string, unknown> ?? {}),
-            component_status: 'OPERATIONAL',
           } as Prisma.InputJsonValue,
         },
       })
