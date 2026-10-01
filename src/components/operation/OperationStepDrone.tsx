@@ -9,7 +9,7 @@ import { AlertTriangle, ChevronLeft, ChevronRight, Shield } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { inputCls, labelCls, scCls, SectionTitle, siCls } from './OperationModalHelpers'
-import { Drone, FlightMode, MissionPlanningOption, OpType, PlanningOption } from './OperationModalTypes'
+import { Drone, FlightMode, MissionPlanningOption, OpType, PlanningOption, droneComponentLine, droneListLabel } from './OperationModalTypes'
 
 interface Props {
     opType: OpType
@@ -75,12 +75,7 @@ export function OperationStepDrone({
         ? (clientPlannings.find(p => String(p.planning_id) === planId)?.planning_name ?? selectedPlanName)
         : undefined
 
-    const droneDisplayLabel = (d: Drone): string => {
-        const primaryComponent = d.drone_components?.[0]
-        return primaryComponent
-            ? `${d.tool_name} – ${primaryComponent.component_name} – ${primaryComponent.serial_number}`
-            : `${d.tool_code} — ${d.tool_name}`
-    }
+    const droneDisplayLabel = droneListLabel
 
     const erpGroupLabel = (erpGroupId && erpGroupId !== 'none')
         ? erpGroups.find(g => String(g.group_id) === erpGroupId)?.name
@@ -151,7 +146,7 @@ export function OperationStepDrone({
                             >
                                 <span className="flex flex-col gap-0.5">
                                     <span className="flex items-center flex-wrap gap-1.5">
-                                        <span className="font-medium">{d.tool_name}</span>
+                                        <span>{d.tool_code}</span>
                                         {snMismatch && (
                                             <span className="text-[10px] font-semibold text-red-600 bg-red-50 border border-red-200 rounded px-1.5 py-0.5 leading-none">
                                                 {t('operations.newOperation.drone.snMismatchTag')}
@@ -178,9 +173,9 @@ export function OperationStepDrone({
                                             </span>
                                         )}
                                     </span>
-                                    {d.drone_components?.[0] && (
+                                    {droneComponentLine(d) && (
                                         <span className={cn('text-xs', isDark ? 'text-slate-400' : 'text-slate-500')}>
-                                            {d.drone_components[0].component_name} ({d.drone_components[0].serial_number})
+                                            {droneComponentLine(d)}
                                         </span>
                                     )}
                                 </span>

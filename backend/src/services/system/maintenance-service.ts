@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { refreshMaintenanceDays } from "@/backend/utils/refresh-maintenance-days";
+import { parseModelCycle } from "@/backend/services/system/system-service";
 import {
   MaintenanceComponent,
   MaintenanceDashboardQuery,
@@ -65,14 +66,16 @@ function extractModel(rawModel: Record<string, unknown> | null): MaintenanceMode
       maintenance_cycle_day: 0,
     };
   }
-  const specs = (rawModel.specifications ?? {}) as Record<string, number>;
+  const specs = (rawModel.specifications ?? {}) as Record<string, any>;
+  // Models keep their cycle limits as text lines in specifications.notes; direct keys are a fallback.
+  const cycle = parseModelCycle(specs);
 
   return {
     factory_serie: String(rawModel.manufacturer ?? ""),
     factory_model: String(rawModel.model_name ?? ""),
-    maintenance_cycle_hour: Number(specs.maintenance_cycle_hour ?? 0),
-    maintenance_cycle_flight: Number(specs.maintenance_cycle_flight ?? 0),
-    maintenance_cycle_day: Number(specs.maintenance_cycle_day ?? 0),
+    maintenance_cycle_hour: Number(cycle.hour ?? 0),
+    maintenance_cycle_flight: Number(cycle.flight ?? 0),
+    maintenance_cycle_day: Number(cycle.day ?? 0),
   };
 }
 
@@ -123,7 +126,14 @@ export async function getMaintenanceDashboard(
       fk_tool_id: { in: toolIds },
       ticket_status: { not: 'CLOSED' },
     },
-    select: { fk_tool_id: true, fk_component_id: true },
+    select: {
+      fk_tool_id: true,
+      fk_component_id: true,
+      maintenance_ticket_item: {
+        where: { item_type: 'COMPONENT', fk_component_id: { not: null } },
+        select: { fk_component_id: true },
+      },
+    },
   });
 
   const toolsInMaintenance = new Set<number>(
@@ -131,8 +141,8 @@ export async function getMaintenanceDashboard(
   );
   const componentsInMaintenance = new Set<number>(
     openTickets
-      .filter((t) => t.fk_component_id != null)
-      .map((t) => t.fk_component_id!)
+      .flatMap((t) => [t.fk_component_id, ...t.maintenance_ticket_item.map((i) => i.fk_component_id)])
+      .filter((id): id is number => id != null)
   );
 
   const maintenanceRecords = await prisma.tool_maintenance.findMany({
@@ -210,16 +220,33 @@ export async function getMaintenanceDashboard(
     },
   });
 
+  // Component model label uses the same fields as the drone row: manufacturer + model name.
+  const componentModelIds = [...new Set(
+    components
+      .map((c) => Number(parseComponentMeta(c.component_metadata).fk_tool_model_id))
+      .filter((id) => Number.isFinite(id) && id > 0)
+  )];
+  const componentModels = componentModelIds.length
+    ? await prisma.tool_model.findMany({
+        where: { model_id: { in: componentModelIds } },
+        select: { model_id: true, manufacturer: true, model_name: true },
+      })
+    : [];
+  const componentModelMap = new Map(componentModels.map((m) => [m.model_id, m]));
+
   const compsByTool: Record<number, MaintenanceComponent[]> = {};
+  // Model of each system's drone component, used when the system itself has no model assigned.
+  const droneModelByTool: Record<number, MaintenanceModel> = {};
 
   for (const rawComp of components) {
     const meta = parseComponentMeta(rawComp.component_metadata);
     if (meta.system_detached === true) continue;
     if (meta.component_status === "DECOMMISSIONED") continue;
 
+    const assignedModel = componentModelMap.get(Number(meta.fk_tool_model_id));
     const compModel: MaintenanceModel = {
-      factory_serie: null,
-      factory_model: rawComp.component_name,
+      factory_serie: assignedModel ? String(assignedModel.manufacturer ?? '') : null,
+      factory_model: assignedModel ? String(assignedModel.model_name ?? '') : null,
       maintenance_cycle_hour: Number(rawComp.maintenance_cycle_hour ?? 0),
       maintenance_cycle_flight: Number(rawComp.maintenance_cycle_flight ?? 0),
       maintenance_cycle_day: Number(rawComp.maintenance_cycle_day ?? 0),
@@ -235,6 +262,10 @@ export async function getMaintenanceDashboard(
     const compStatus: MaintenanceStatus = componentsInMaintenance.has(rawComp.component_id)
       ? "IN_MAINTENANCE"
       : computed.status;
+
+    if (rawComp.component_type === 'DRONE' && assignedModel && !droneModelByTool[rawComp.fk_tool_id]) {
+      droneModelByTool[rawComp.fk_tool_id] = compModel;
+    }
 
     const compEntry: MaintenanceComponent = {
       tool_component_id: rawComp.component_id,
@@ -257,7 +288,9 @@ export async function getMaintenanceDashboard(
 
   const result: MaintenanceDrone[] = tools.map((tool) => {
     const toolId = tool.tool_id;
-    const model = extractModel(tool.tool_model as Record<string, unknown> | null);
+    const model = tool.tool_model
+      ? extractModel(tool.tool_model as Record<string, unknown>)
+      : (droneModelByTool[toolId] ?? extractModel(null));
     const stats = statsMap[toolId] ?? { totalHours: 0, totalFlights: 0 };
     const lastMaint = lastMaintenanceMap[toolId] ?? null;
     const droneDays = lastMaint

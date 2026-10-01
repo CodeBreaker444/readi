@@ -233,6 +233,36 @@ export const getModelColumns = ({ isDark, t, onEdit, onDelete }: ModelColumnProp
             cell: ({ getValue }) => <span className={text}>{getValue() as string}</span>,
         },
         {
+            header: () => <span className={hd}>{t('systems.manage.columns.model.maintenanceType')}</span>,
+            accessorKey: 'maintenance_cycle',
+            cell: ({ getValue }) => {
+                const val = getValue() as string | null;
+                if (!val || val === 'NONE') return <span className="text-slate-400 text-xs">—</span>;
+                const key = `systems.components.common.maintenanceCycle.${val.toLowerCase()}`;
+                const label = t(key);
+                return (
+                    <span className={`px-2 py-0.5 rounded text-xs font-medium ${isDark ? 'bg-slate-700 text-slate-300' : 'bg-slate-100 text-slate-600'}`}>
+                        {label === key ? val : label}
+                    </span>
+                );
+            },
+        },
+        {
+            header: () => <span className={hd}>{t('systems.manage.columns.model.maintenanceLimits')}</span>,
+            id: 'maintenance_limits',
+            cell: ({ row }) => {
+                const { maintenance_cycle_hour: h, maintenance_cycle_day: d, maintenance_cycle_flight: f } = row.original;
+                const parts = [
+                    h != null && `${h} h`,
+                    d != null && `${d} d`,
+                    f != null && `${f} fl`,
+                ].filter(Boolean);
+                return parts.length
+                    ? <span className={`text-xs ${text}`}>{parts.join(' / ')}</span>
+                    : <span className="text-slate-400 text-xs">—</span>;
+            },
+        },
+        {
             header: () => <span className={hd}>{t('systems.manage.columns.model.type')}</span>,
             accessorKey: 'model_type',
             cell: ({ getValue }) => {

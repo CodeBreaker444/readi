@@ -552,6 +552,9 @@ export default function EditModelModal({ open, toolId, onClose, onSuccess, initi
                       </div>
                     )}
                   </div>
+                  <p className={`mt-2 text-xs ${isDark ? 'text-slate-400' : 'text-muted-foreground'}`}>
+                    {t('systems.components.common.maintenanceCycle.modelChangeApplies')}
+                  </p>
                 </div>
 
                 <div>

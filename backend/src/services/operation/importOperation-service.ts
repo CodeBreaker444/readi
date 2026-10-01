@@ -548,7 +548,7 @@ export async function importDrones(ownerId: number, clientId?: number) {
   const nonOperationalSet = new Set<number>();
 
   const droneSerialMap = new Map<number, string[]>();
-  const droneComponentMap = new Map<number, { component_name: string; serial_number: string }[]>();
+  const droneComponentMap = new Map<number, { component_name: string; component_code: string | null; serial_number: string }[]>();
 
   if (toolIds.length > 0) {
     const [openTickets, maintComps, expiredComps, droneComponents] = await Promise.all([
@@ -581,7 +581,7 @@ export async function importDrones(ownerId: number, clientId?: number) {
             { component_type: { equals: 'AIRCRAFT', mode: 'insensitive' } },
           ],
         },
-        select: { fk_tool_id: true, component_name: true, serial_number: true, component_metadata: true },
+        select: { fk_tool_id: true, component_name: true, component_code: true, serial_number: true, component_metadata: true },
       }),
     ]);
     openTickets.forEach((t) => { if (t.fk_tool_id != null) inMaintenanceSet.add(t.fk_tool_id); });
@@ -601,7 +601,7 @@ export async function importDrones(ownerId: number, clientId?: number) {
       else droneSerialMap.set(c.fk_tool_id, [serial]);
 
       const isPrimary = (c.component_metadata as any)?.is_primary === true;
-      const componentEntry = { component_name: c.component_name, serial_number: serial };
+      const componentEntry = { component_name: c.component_name, component_code: c.component_code ?? null, serial_number: serial };
       const existingComponents = droneComponentMap.get(c.fk_tool_id);
       if (existingComponents) {
         if (isPrimary) existingComponents.unshift(componentEntry);

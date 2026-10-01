@@ -1,5 +1,6 @@
 'use client';
 
+import { ModelSelectPager, usePagedModels } from "./ModelSelectPager";
 import LocationPicker from '@/components/system/LocationPicker';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -358,6 +359,7 @@ export default function EditComponentModal({
     handleChange('fk_tool_model_id', modelId);
   };
 
+  const modelPaging = usePagedModels(models, formData.fk_tool_model_id);
   const selectedModel = models.find(m => String(m.tool_model_id) === formData.fk_tool_model_id);
   const effectiveCycle = selectedModel?.maintenance_cycle || formData.maintenance_cycle || '';
   const showHours = effectiveCycle === 'HOURS' || effectiveCycle === 'MIXED';
@@ -646,12 +648,14 @@ export default function EditComponentModal({
                   </div>
                   <div className="col-span-1 sm:col-span-4 min-w-0">
                     <Label className={labelCls}>{t('systems.components.addComponent.fields.brandModel')}</Label>
-                    <Select value={formData.fk_tool_model_id} onValueChange={handleModelSelect}>
+                    <Select value={formData.fk_tool_model_id} onValueChange={handleModelSelect} onOpenChange={(o) => o && modelPaging.syncToSelected()}>
                       <SelectTrigger className={`h-14 min-h-10 py-2 items-start ${selectTriggerCls}`}>
-                        <SelectValue placeholder={t('systems.components.common.select')} />
+                        <SelectValue placeholder={t('systems.components.common.select')}>
+                          {selectedModel ? `${selectedModel.factory_model} — ${selectedModel.factory_type}` : null}
+                        </SelectValue>
                       </SelectTrigger>
-                      <SelectContent className={selectContentCls}>
-                        {models.map((m: any) => {
+                      <SelectContent position="popper" align="start" sideOffset={4} className={`${selectContentCls} w-[22rem] max-w-[90vw] overflow-x-hidden`}>
+                        {modelPaging.pageItems.map((m: any) => {
                           const inactive = m.model_active !== 'Y';
                           return (
                             <SelectItem
@@ -671,6 +675,7 @@ export default function EditComponentModal({
                             </SelectItem>
                           );
                         })}
+                        <ModelSelectPager page={modelPaging.page} pageCount={modelPaging.pageCount} onChange={modelPaging.setPage} />
                       </SelectContent>
                     </Select>
                   </div>
