@@ -167,7 +167,8 @@ export async function getTicketList(owner_id: number, tool_id?: number, assigned
   const toolIdsWithoutComponent = [...new Set(
     rows.filter((r) => ticketComponentIds(r).length === 0).map((r) => r.fk_tool_id).filter(Boolean)
   )] as number[];
-  const systemComponentsMap: Record<number, Array<{ component_type: string; component_sn: string }>> = {};
+  type SystemComponent = { component_type: string; component_sn: string; is_drone: boolean };
+  const systemComponentsMap: Record<number, SystemComponent[]> = {};
   if (toolIdsWithoutComponent.length > 0) {
     const sysComps = await prisma.tool_component.findMany({
       where: {
@@ -181,6 +182,7 @@ export async function getTicketList(owner_id: number, tool_id?: number, assigned
       systemComponentsMap[c.fk_tool_id].push({
         component_type: c.component_type ?? c.component_name ?? '',
         component_sn: c.serial_number ?? '',
+        is_drone: c.component_type === 'DRONE',
       });
     }
   }
@@ -192,7 +194,12 @@ export async function getTicketList(owner_id: number, tool_id?: number, assigned
     const entityName = comp ? (comp.component_type ?? comp.component_name ?? undefined) : undefined;
     const systemComponents = linkedComps.length > 1
       ? linkedComps.map((c) => ({ component_type: c.component_type ?? c.component_name ?? '', component_sn: c.serial_number ?? '' }))
-      : !comp ? (systemComponentsMap[row.fk_tool_id ?? 0] ?? []) : [];
+      : !comp
+        // Extraordinary tickets only cover the drone, so they must not fall back to every component.
+        ? (systemComponentsMap[row.fk_tool_id ?? 0] ?? [])
+            .filter((c) => row.ticket_type !== 'EXTRAORDINARY' || c.is_drone)
+            .map(({ component_type, component_sn }) => ({ component_type, component_sn }))
+        : [];
 
     return {
       ticket_id:           row.ticket_id,
@@ -390,17 +397,22 @@ export async function closeTicket(payload: CloseTicketPayload): Promise<void> {
   });
 
   // Components explicitly named on the ticket(s) are reset. A system-level ticket (no component)
-  // covers the system's drone component only; other components are never touched by it.
+  // covers every component of the system; extraordinary ones cover the drone components only.
   const ticketedComponentIds = [...new Set(
     openTickets
       .flatMap((t) => [t.fk_component_id, ...t.maintenance_ticket_item.map((i) => i.fk_component_id)])
       .filter((id): id is number => id != null)
   )];
-  const hasSystemLevelTicket = openTickets.some(
+  const systemLevelTickets = openTickets.filter(
     (t) => t.fk_component_id == null && t.maintenance_ticket_item.length === 0
   );
-  const droneComponentIds = hasSystemLevelTicket ? await getSystemDroneComponentIds(ticket.fk_tool_id!) : [];
-  const resetComponentIds = [...new Set([...ticketedComponentIds, ...droneComponentIds])];
+  const systemComponentIds = systemLevelTickets.length
+    ? await getSystemComponentIds(
+        ticket.fk_tool_id!,
+        systemLevelTickets.every((t) => t.ticket_type === 'EXTRAORDINARY'),
+      )
+    : [];
+  const resetComponentIds = [...new Set([...ticketedComponentIds, ...systemComponentIds])];
 
   for (const componentId of resetComponentIds) {
     await resetComponentCounters(ticket.fk_tool_id!, now.toISOString(), componentId, ticket.ticket_type ?? undefined);
@@ -743,13 +755,22 @@ export async function setComponentsOperationalStatus(componentIds: number[], sta
   );
 }
 
-async function getSystemDroneComponentIds(toolId: number): Promise<number[]> {
-  const drones = await prisma.tool_component.findMany({
-    where: { fk_tool_id: toolId, component_active: 'Y', component_type: 'DRONE' },
+async function getSystemComponentIds(toolId: number, droneOnly: boolean): Promise<number[]> {
+  const components = await prisma.tool_component.findMany({
+    where: {
+      fk_tool_id: toolId,
+      component_active: 'Y',
+      ...(droneOnly && { component_type: 'DRONE' }),
+    },
     select: { component_id: true, component_metadata: true },
   });
-  const primary = drones.filter((c) => (c.component_metadata as any)?.is_primary === true);
-  return (primary.length ? primary : drones).map((c) => c.component_id);
+  // Detached or decommissioned components are no longer part of the system.
+  return components
+    .filter((c) => {
+      const meta = (c.component_metadata ?? {}) as Record<string, unknown>;
+      return meta.system_detached !== true && meta.component_status !== 'DECOMMISSIONED';
+    })
+    .map((c) => c.component_id);
 }
 
 async function resetComponentCounters(
