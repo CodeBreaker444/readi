@@ -320,7 +320,7 @@ export default function MaintenancePage() {
           <>
             <div className="grid grid-cols-2 sm:grid-cols-6 gap-3 mb-4">
               {[...Array(6)].map((_, i) => (
-                <div key={i} className={`rounded-xl border px-4 py-3 h-16 animate-pulse ${isDark ? "bg-slate-800 border-slate-700" : "bg-white border-slate-200"}`} />
+                <div key={i} className={`rounded-xl border px-4 py-3 h-18.5 animate-pulse ${isDark ? "bg-slate-800 border-slate-700" : "bg-white border-slate-200"}`} />
               ))}
             </div>
             <MaintenanceTableSkeleton />

@@ -4066,9 +4066,13 @@
         }
       },
       "toasts": {
+        "interventionEnded": "Intervento terminato",
+        "interventionStarted": "Intervento avviato",
+        "noCountersReset": "Nessun contatore dei componenti è stato azzerato.",
+        "countersReset": "Contatori azzerati per: {{components}}",
         "selectDroneSystem": "Per favore seleziona un drone/sistema",
         "ticketCreated": "Ticket creato con successo",
-        "ticketExists": "Esiste già un ticket aperto per questo sistema",
+        "ticketExists": "Un ticket aperto copre già questo sistema o i componenti selezionati",
         "enterClosingNote": "Per favore inserisci una nota di chiusura",
         "ticketClosed": "Ticket chiuso",
         "ticketAssigned": "Ticket assegnato",

@@ -90,7 +90,18 @@ async function getLastClosedTicketPerTool(
       closed_at: { not: null },
     },
     orderBy: { closed_at: 'desc' },
-    select: { ticket_id: true, fk_tool_id: true, closed_at: true, resolution_notes: true },
+    select: {
+      ticket_id: true,
+      fk_tool_id: true,
+      closed_at: true,
+      // The closing note lives in the CLOSED event; resolution_notes keeps the original issue description
+      maintenance_ticket_event: {
+        where: { event_type: 'CLOSED' },
+        orderBy: { created_at: 'desc' },
+        take: 1,
+        select: { event_description: true },
+      },
+    },
   });
 
   const map: Record<number, Mission['last_closed_ticket']> = {};
@@ -100,7 +111,7 @@ async function getLastClosedTicketPerTool(
       map[toolId] = {
         ticket_id: row.ticket_id,
         closed_at: row.closed_at?.toISOString() ?? '',
-        note: row.resolution_notes ?? null,
+        note: row.maintenance_ticket_event[0]?.event_description ?? null,
       };
     }
   }

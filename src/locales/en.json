@@ -4072,9 +4072,13 @@
         }
       },
       "toasts": {
+        "interventionEnded": "Intervention ended",
+        "interventionStarted": "Intervention started",
+        "noCountersReset": "No component counters were reset.",
+        "countersReset": "Counters reset for: {{components}}",
         "selectDroneSystem": "Please select a drone/system",
         "ticketCreated": "Ticket created successfully",
-        "ticketExists": "An open ticket already exists for this system",
+        "ticketExists": "An open ticket already covers this system or the selected components",
         "enterClosingNote": "Please enter a closing note",
         "ticketClosed": "Ticket closed",
         "ticketAssigned": "Ticket assigned",

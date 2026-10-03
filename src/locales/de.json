@@ -3984,9 +3984,13 @@
         }
       },
       "toasts": {
+        "interventionEnded": "Einsatz beendet",
+        "interventionStarted": "Einsatz gestartet",
+        "noCountersReset": "Es wurden keine Komponentenzähler zurückgesetzt.",
+        "countersReset": "Zähler zurückgesetzt für: {{components}}",
         "selectDroneSystem": "Bitte wählen Sie eine Drohne/ein System aus",
         "ticketCreated": "Ticket erfolgreich erstellt",
-        "ticketExists": "Für dieses System existiert bereits ein offenes Ticket",
+        "ticketExists": "Ein offenes Ticket deckt dieses System oder die ausgewählten Komponenten bereits ab",
         "enterClosingNote": "Bitte geben Sie eine Abschlussnotiz ein",
         "ticketClosed": "Ticket geschlossen",
         "ticketAssigned": "Ticket zugewiesen",

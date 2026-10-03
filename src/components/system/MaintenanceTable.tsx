@@ -141,8 +141,8 @@ function UsageLimitCell({
   );
 }
 
-// System rows show no usage/limit progress; those live on the component rows.
-const systemRowBlank = <span className="text-xs text-slate-300">—</span>;
+// Serial, model, cycle, next maintenance and usage counters only exist on components; system rows leave them blank.
+const systemRowBlank = null;
 
 function CycleBadge({ model, isDark }: { model: MaintenanceComponent["model"]; isDark?: boolean }) {
   const parts: string[] = [];
@@ -182,7 +182,7 @@ function LastMaintenanceCell({
         <div key={label} className="flex items-center gap-1.5 text-xs">
           <span className={`w-6 shrink-0 font-semibold ${isDark ? "text-slate-300" : "text-slate-600"}`}>{label}</span>
           <span className={isDark ? "text-slate-400" : "text-slate-500"}>
-            {value ? new Date(value).toLocaleDateString("en-GB") : <span className={isDark ? "text-slate-600" : "text-slate-300"}>—</span>}
+            {value ? new Date(value).toLocaleDateString("en-GB") : null}
           </span>
         </div>
       ))}
@@ -534,27 +534,17 @@ function buildColumns(threshold: number, isDark: boolean, t: (key: string) => st
     {
       id: "serial",
       header: t('systems.maintenanceDashboard.table.serial'),
-      cell: ({ row }) => (
-        <span className={`text-xs font-mono ${isDark ? "text-slate-400" : "text-slate-500"}`}>
-          {row.original.serial_number || "—"}
-        </span>
-      ),
+      cell: () => systemRowBlank,
     },
     {
       id: "model",
       header: t('systems.maintenanceDashboard.table.model'),
-      cell: ({ row }) => {
-        const m = row.original.model;
-        const label = [m.factory_serie, m.factory_model].filter(Boolean).join(" ").trim();
-        return label
-          ? <span className={`text-xs ${isDark ? "text-slate-300" : "text-slate-600"}`}>{label}</span>
-          : <span className={isDark ? "text-slate-600" : "text-slate-300"}>—</span>;
-      },
+      cell: () => systemRowBlank,
     },
     {
       id: "cycle",
       header: t('systems.maintenanceDashboard.table.maintenanceCycle'),
-      cell: ({ row }) => <CycleBadge model={row.original.model} isDark={isDark} />,
+      cell: () => systemRowBlank,
     },
     {
       id: "last_maintenance",
