@@ -6,10 +6,12 @@ import { FlightRequestsHeader } from '@/components/operation/flight-requests/Fli
 import { FlightRequestsLogModal } from '@/components/operation/flight-requests/FlightRequestsLogModal';
 import { AssignablePlan, FlightRequestsPlanModal } from '@/components/operation/flight-requests/FlightRequestsPlanModal';
 import { FlightRequestsStats } from '@/components/operation/flight-requests/FlightRequestsStats';
+import { InternalFlightRequests } from '@/components/operation/flight-requests/InternalFlightRequests';
 import { FlightRequest, createFlightRequestColumns } from '@/components/tables/flightRequestsColumns';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toastAfterDccAction } from '@/lib/dcc-toast';
+import { cn } from '@/lib/utils';
 import type { DccCallbackResult } from '@/types/dcc-callback';
 import { flexRender, getCoreRowModel, getPaginationRowModel, useReactTable } from '@tanstack/react-table';
 import axios from 'axios';
@@ -29,10 +31,16 @@ interface Planning {
   has_valid_drone: boolean;
 }
 
+const INTERNAL_FILTERS = ['PENDING', 'APPROVED', 'DENIED', 'ALL'];
+
 export default function FlightRequestsTable() {
   const { isDark } = useTheme();
   const { t } = useTranslation();
   const { requireAuthorization } = useAuthorization();
+  const [tab, setTab] = useState<'internal' | 'external'>('internal');
+  const [internalPending, setInternalPending] = useState(0);
+  const [internalFilter, setInternalFilter] = useState('PENDING');
+  const [internalRefresh, setInternalRefresh] = useState(0);
   const [requests, setRequests] = useState<FlightRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState('ALL');
@@ -82,6 +90,13 @@ export default function FlightRequestsTable() {
   }, [filterStatus, t]);
 
   useEffect(() => { load(); }, [load]);
+
+  // Pending badge on the Internal pill — also shown while the External tab is open.
+  useEffect(() => {
+    axios.get('/api/operation/approvals', { params: { status: 'PENDING' } })
+      .then(({ data }) => setInternalPending((data.items ?? []).length))
+      .catch(() => {});
+  }, []);
 
   async function handleDeny(request_id: number) {
     setDenying(request_id);
@@ -325,12 +340,29 @@ export default function FlightRequestsTable() {
 
       <FlightRequestsHeader
         isDark={isDark}
-        filterStatus={filterStatus}
-        statuses={statusOptions}
-        onFilterChange={setFilterStatus}
-        onRefresh={load}
+        filterStatus={tab === 'internal' ? internalFilter : filterStatus}
+        statuses={tab === 'internal' ? INTERNAL_FILTERS : statusOptions}
+        getStatusLabel={(status) => tab === 'internal'
+          ? t(`operations.opmApproval.requests.filters.${status}`)
+          : t(`planning.flightRequests.statuses.${status}`)}
+        tab={tab}
+        hideFilter={tab === 'internal'}
+        onTabChange={setTab}
+        internalPending={internalPending}
+        onFilterChange={tab === 'internal' ? setInternalFilter : setFilterStatus}
+        onRefresh={tab === 'internal' ? () => setInternalRefresh((n) => n + 1) : load}
       />
 
+      {tab === 'internal' ? (
+        <InternalFlightRequests
+          isDark={isDark}
+          filter={internalFilter}
+          onFilterChange={setInternalFilter}
+          refreshKey={internalRefresh}
+          onPendingCountChange={setInternalPending}
+        />
+      ) : (
+      <>
       <FlightRequestsStats isDark={isDark} requests={requests} />
 
       <div className="max-w-[1600px] mx-auto w-full px-6 pb-8">
@@ -381,6 +413,8 @@ export default function FlightRequestsTable() {
         </div>
         <TablePagination table={table} />
       </div>
+      </>
+      )}
 
       <FlightRequestDetailModal
         request={selectedRequest}

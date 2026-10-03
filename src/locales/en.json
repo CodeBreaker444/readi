@@ -2260,6 +2260,58 @@
         "savePostFlight": "Save Post-Flight",
         "saveMaintenance": "Save Maintenance"
       }
+    },
+    "opmApproval": {
+      "badge": {
+        "pending": "OPM approval pending",
+        "approved": "OPM approved",
+        "denied": "OPM denied"
+      },
+      "submittedToast": "Mission submitted for OPM approval",
+      "modal": {
+        "title": "OPM approval required",
+        "willBeSubmitted": "This mission will be submitted to the OPMs of {{department}} ({{count}}). It appears on the daily board and can be started once one of them approves it.",
+        "noOpm": "There is no OPM in the {{department}} department, so nobody can approve this mission yet. It will stay pending (and off the daily board) until an OPM is assigned to the department. Administrators have been notified.",
+        "noDepartment": "You are not assigned to a department, so this mission cannot be routed to an OPM. It will stay pending until a department and OPM are set up. Administrators have been notified.",
+        "submitButton": "Submit for approval"
+      },
+      "detail": {
+        "pending": "Waiting for OPM approval ({{department}}). The mission cannot be started until approved.",
+        "denied": "An OPM denied this mission."
+      },
+      "requests": {
+        "tabs": {
+          "internal": "Internal",
+          "external": "External"
+        },
+        "filters": {
+          "PENDING": "Pending",
+          "APPROVED": "Approved",
+          "DENIED": "Denied",
+          "ALL": "All"
+        },
+        "columns": {
+          "mission": "Mission",
+          "pilot": "Pilot",
+          "schedule": "Scheduled",
+          "department": "Department",
+          "status": "Approval",
+          "actions": "Actions"
+        },
+        "empty": "No internal requests",
+        "approve": "Approve",
+        "deny": "Deny",
+        "occurrences": "{{count}} recurring missions",
+        "requestedBy": "Requested by {{name}}",
+        "loadError": "Failed to load internal requests",
+        "approvedToast": "Mission approved",
+        "deniedToast": "Mission denied",
+        "decideError": "Could not save the decision",
+        "denyTitle": "Deny mission {{code}}?",
+        "denyDesc": "The pilot is notified. You can add a reason.",
+        "denyPlaceholder": "Reason (optional)",
+        "pageOf": "Page {{page}} of {{total}} · {{count}} requests"
+      }
     }
   },
   "repository": {

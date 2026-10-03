@@ -92,3 +92,24 @@ export function assertDFlightAuthorized(
     throw new DFlightNotAuthorizedError();
   }
 }
+
+export class OpmApprovalRequiredError extends Error {
+  code = 'OPM_APPROVAL_REQUIRED';
+  constructor(status?: string | null) {
+    super(
+      status === 'DENIED'
+        ? 'An OPM denied this mission — it cannot be started or moved on the daily board.'
+        : 'This mission is waiting for OPM approval — it cannot be started or moved until it is approved.',
+    );
+  }
+}
+
+/**
+ * Missions created by pilots need an OPM's approval first. A null status means
+ * no approval was ever required (OPM/manager-created, imported, legacy).
+ */
+export function assertOpmApproved(approvalStatus: string | null | undefined): void {
+  if (approvalStatus && approvalStatus !== 'APPROVED') {
+    throw new OpmApprovalRequiredError(approvalStatus);
+  }
+}

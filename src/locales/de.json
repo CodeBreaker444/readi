@@ -2051,7 +2051,7 @@
         "importMission": "Mission importieren",
         "import": "Importieren",
         "done": "Fertig",
-        "back":"Zurück"
+        "back": "Zurück"
       },
       "errors": {
         "endDateBeforeStart": "Enddatum muss nach oder am Startdatum liegen",
@@ -2249,6 +2249,58 @@
         "close": "Schließen",
         "savePostFlight": "Nach-Flug speichern",
         "saveMaintenance": "Wartung speichern"
+      }
+    },
+    "opmApproval": {
+      "badge": {
+        "pending": "OPM-Freigabe ausstehend",
+        "approved": "Von OPM freigegeben",
+        "denied": "Von OPM abgelehnt"
+      },
+      "submittedToast": "Mission zur OPM-Freigabe eingereicht",
+      "modal": {
+        "title": "OPM-Freigabe erforderlich",
+        "willBeSubmitted": "Diese Mission wird an die OPMs von {{department}} ({{count}}) gesendet. Sie erscheint im Tagesboard und kann gestartet werden, sobald einer von ihnen sie freigibt.",
+        "noOpm": "In der Abteilung {{department}} gibt es keinen OPM, daher kann diese Mission noch niemand freigeben. Sie bleibt ausstehend (und außerhalb des Tagesboards), bis ein OPM zugewiesen wird. Administratoren wurden benachrichtigt.",
+        "noDepartment": "Sie sind keiner Abteilung zugewiesen, daher kann die Mission keinem OPM zugeordnet werden. Sie bleibt ausstehend, bis Abteilung und OPM eingerichtet sind. Administratoren wurden benachrichtigt.",
+        "submitButton": "Zur Freigabe einreichen"
+      },
+      "detail": {
+        "pending": "Wartet auf OPM-Freigabe ({{department}}). Die Mission kann erst nach Freigabe gestartet werden.",
+        "denied": "Ein OPM hat diese Mission abgelehnt."
+      },
+      "requests": {
+        "tabs": {
+          "internal": "Intern",
+          "external": "Extern"
+        },
+        "filters": {
+          "PENDING": "Ausstehend",
+          "APPROVED": "Freigegeben",
+          "DENIED": "Abgelehnt",
+          "ALL": "Alle"
+        },
+        "columns": {
+          "mission": "Mission",
+          "pilot": "Pilot",
+          "schedule": "Geplant",
+          "department": "Abteilung",
+          "status": "Freigabe",
+          "actions": "Aktionen"
+        },
+        "empty": "Keine internen Anfragen",
+        "approve": "Freigeben",
+        "deny": "Ablehnen",
+        "occurrences": "{{count}} wiederkehrende Missionen",
+        "requestedBy": "Angefragt von {{name}}",
+        "loadError": "Interne Anfragen konnten nicht geladen werden",
+        "approvedToast": "Mission freigegeben",
+        "deniedToast": "Mission abgelehnt",
+        "decideError": "Entscheidung konnte nicht gespeichert werden",
+        "denyTitle": "Mission {{code}} ablehnen?",
+        "denyDesc": "Der Pilot wird benachrichtigt. Sie können einen Grund angeben.",
+        "denyPlaceholder": "Grund (optional)",
+        "pageOf": "Seite {{page}} von {{total}} · {{count}} Anfragen"
       }
     }
   },

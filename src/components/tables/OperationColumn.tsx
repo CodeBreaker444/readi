@@ -5,6 +5,7 @@ import { FeatureGate } from '@/components/permissions/FeatureGate';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { SystemCell } from '@/components/tables/SystemCell';
+import { OpmApprovalBadge } from '@/components/operation/OpmApprovalBadge';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
     Tooltip,
@@ -92,8 +93,20 @@ const DFLIGHT_STATUS_CONFIG: Record<string, { label: string; light: string; dark
   WITHDRAWN: { label: 'D-Flight: Withdrawn', light: 'bg-red-100 text-red-700 border-red-300', dark: 'bg-red-900/50 text-red-300 border-red-600' },
 };
 
-function DFlightBadge({ dflightMissionId, authorisationStatus, isDark }: { dflightMissionId?: string | null; authorisationStatus?: string | null; isDark: boolean }) {
-  if (!dflightMissionId) return null;
+function DFlightBadge({ dflightMissionId, authorisationStatus, opmStatus, dFlightEnabled, isDark }: { dflightMissionId?: string | null; authorisationStatus?: string | null; opmStatus?: string | null; dFlightEnabled?: boolean; isDark: boolean }) {
+  if (!dflightMissionId) {
+    // D-Flight is only requested after OPM approval, so there is no request to show yet.
+    const label = !dFlightEnabled ? null
+      : opmStatus === 'PENDING' ? 'D-Flight: Awaiting OPM approval'
+      : opmStatus === 'APPROVED' ? 'D-Flight: Not submitted'
+      : null;
+    if (!label) return null;
+    return (
+      <span className={cn('inline-flex items-center rounded-md border px-2 py-0.5 text-[11px] font-medium', isDark ? 'bg-slate-800 text-slate-400 border-slate-600' : 'bg-slate-100 text-slate-600 border-slate-300')}>
+        {label}
+      </span>
+    );
+  }
   const cfg = authorisationStatus ? DFLIGHT_STATUS_CONFIG[authorisationStatus.toUpperCase()] : undefined;
   const label = cfg?.label ?? 'D-Flight: Pending';
   const classes = cfg ? (isDark ? cfg.dark : cfg.light)
@@ -286,12 +299,15 @@ export const getOperationColumns = (t: TFunction, isDark = false, timezone = 'Eu
   {
     accessorKey: 'status_name',
     header: t('planning.form.status'),
-    cell: ({ getValue, row }) => (
+    cell: ({ getValue, row, table }) => (
       <div className="flex flex-col items-start gap-1">
         <StatusBadge status={getValue<string>()} t={t} isDark={isDark} />
+        <OpmApprovalBadge status={row.original.opm_approval_status} isDark={isDark} />
         <DFlightBadge
           dflightMissionId={row.original.dflight_mission_id}
           authorisationStatus={row.original.dflight_flight_authorisation_status}
+          opmStatus={row.original.opm_approval_status}
+          dFlightEnabled={!!(table.options.meta as any)?.dFlightEnabled}
           isDark={isDark}
         />
       </div>
@@ -314,6 +330,7 @@ export const getOperationColumns = (t: TFunction, isDark = false, timezone = 'Eu
       const needsDFlightAuth = !!meta.dFlightEnabled
         && !op.is_imported
         && !isAborted && !isCancelled
+        && (!op.opm_approval_status || op.opm_approval_status === 'APPROVED')
         && op.dflight_flight_authorisation_status !== 'ACCEPTED'
         && !(isCompleted && !!op.dflight_flight_authorisation_status);
       const submittingAuth = meta.submittingDFlightAuthId === op.pilot_mission_id;
