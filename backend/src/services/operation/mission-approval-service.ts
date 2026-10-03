@@ -1,3 +1,4 @@
+import { env } from '@/backend/config/env';
 import { authorizeMissionWithDFlight } from '@/backend/services/integrations/dflight-mission-authorization-service';
 import type { SessionUser } from '@/lib/auth/server-session';
 import { prisma } from '@/lib/prisma';
@@ -90,7 +91,9 @@ async function notifyUsers(
   if (owner?.email_notifications_enabled !== true) return;
 
   const emails = users.map((u) => u.email).filter((e): e is string => !!e);
-  await sendNotificationEmail(emails, title, message, APPROVAL_NOTIFICATION_TYPE, REQUESTS_URL);
+  // Emails need an absolute link; the in-app notification keeps the relative path.
+  const emailUrl = env.APP_URL ? `${env.APP_URL.replace(/\/$/, '')}${REQUESTS_URL}` : REQUESTS_URL;
+  await sendNotificationEmail(emails, title, message, APPROVAL_NOTIFICATION_TYPE, emailUrl);
 }
 
 /** Notify the department's OPMs and managers that a pilot submitted a mission. */
