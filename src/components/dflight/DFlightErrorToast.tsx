@@ -63,6 +63,16 @@ export default function DFlightErrorToast({ toastId, title, details }: Props) {
             <Row label={t('dflightErrorToast.labelAction')} value={title} />
             <Row label={t('dflightErrorToast.labelDescription')} value={details.resultDesc ?? details.reason} />
             {details.resultCode != null && (
+              <div className="rounded-md border border-emerald-300 bg-emerald-50 px-3 py-2">
+                <p className="text-xs font-semibold text-emerald-800">{t('dflightErrorToast.labelSolution')}</p>
+                <p className="mt-0.5 text-emerald-900">
+                  {t(`dflightErrorToast.solutions.${details.resultCode}`, {
+                    defaultValue: t('dflightErrorToast.solutionFallback'),
+                  })}
+                </p>
+              </div>
+            )}
+            {details.resultCode != null && (
               <Row label={t('dflightErrorToast.labelResultCode')} value={String(details.resultCode)} mono />
             )}
             {details.resultCodeDesc && (
