@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
+import { showDFlightErrorToast } from '@/lib/dflight-toast';
 import { cn } from '@/lib/utils';
 import axios from 'axios';
 import { format } from 'date-fns';
@@ -87,7 +88,7 @@ export function InternalFlightRequests({ isDark, filter, onFilterChange, refresh
       });
       toast.success(t(decision === 'APPROVED' ? 'operations.opmApproval.requests.approvedToast' : 'operations.opmApproval.requests.deniedToast'));
       (data.dflight_errors ?? []).forEach((e: { missionCode: string; message: string }) =>
-        toast.error(t('operations.newOperation.toast.dflightAuthError', { missionCode: e.missionCode }), { description: e.message, duration: 10000 }),
+        showDFlightErrorToast(t('operations.newOperation.toast.dflightAuthError', { missionCode: e.missionCode }), e.message),
       );
       setDenyTarget(null);
       setDenyNote('');

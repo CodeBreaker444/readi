@@ -1,5 +1,5 @@
 import { env } from '@/backend/config/env';
-import { authorizeMissionWithDFlight } from '@/backend/services/integrations/dflight-mission-authorization-service';
+import { authorizeMissionWithDFlight, isReportableDFlightFailure } from '@/backend/services/integrations/dflight-mission-authorization-service';
 import type { SessionUser } from '@/lib/auth/server-session';
 import { prisma } from '@/lib/prisma';
 import { sendNotificationEmail } from '../../../../lib/resend/mail';
@@ -320,7 +320,7 @@ export async function decideMissionApproval(
     for (const t of targets) {
       try {
         const { create } = await authorizeMissionWithDFlight(t.pilot_mission_id, user.ownerId);
-        if (create.outcome === 'error') dflightErrors.push({ missionCode: t.mission_code ?? String(t.pilot_mission_id), message: create.message });
+        if (isReportableDFlightFailure(create)) dflightErrors.push({ missionCode: t.mission_code ?? String(t.pilot_mission_id), message: create.message });
       } catch (err) {
         console.warn('[decideMissionApproval] D-Flight authorization failed (non-fatal):', err);
       }

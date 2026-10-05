@@ -2407,6 +2407,19 @@
     "reporting": "Meldung…",
     "reportBug": "Fehler melden"
   },
+  "dflightErrorToast": {
+    "title": "D-Flight-Fehlerdetails",
+    "viewDetails": "Details anzeigen",
+    "dismiss": "Schließen",
+    "labelAction": "Aktion",
+    "labelDescription": "Beschreibung",
+    "labelResultCode": "Ergebniscode",
+    "labelResultCodeDesc": "Beschreibung des Ergebniscodes",
+    "labelResultKind": "Ergebnisart",
+    "labelHttpStatus": "HTTP-Status",
+    "labelMissionId": "D-Flight-Missions-ID",
+    "labelFullResponse": "Vollständige Antwort"
+  },
   "logbooks": {
     "missionPlanning": {
       "title": "Missionsplanungs-Dashboard",

@@ -23,6 +23,13 @@ const CIRCLE_OP_TYPES = ['OPEN', 'STS-01', 'STS-02'];
 export interface DFlightAuthorizationResult {
   outcome: 'success' | 'skipped' | 'error';
   message: string;
+  /** Set on organization-level skips (D-Flight off / not configured) the user can't act on — don't surface them. */
+  silent?: boolean;
+}
+
+/** True when a create result should be reported to the user: an error, or a skip they can fix (e.g. no drone assigned). */
+export function isReportableDFlightFailure(create: DFlightAuthorizationResult): boolean {
+  return create.outcome === 'error' || (create.outcome === 'skipped' && !create.silent);
 }
 
 /**
@@ -250,12 +257,12 @@ export async function createAndSubmitMissionAuthorization(
       select: { d_flight_enabled: true },
     });
     if (!owner?.d_flight_enabled) {
-      return { outcome: 'skipped', message: 'D-Flight is not enabled for this organization' };
+      return { outcome: 'skipped', message: 'D-Flight is not enabled for this organization', silent: true };
     }
 
     const integration = await getDFlightIntegration(ownerId);
     if (!integration) {
-      return { outcome: 'skipped', message: 'No D-Flight credentials configured for this organization' };
+      return { outcome: 'skipped', message: 'No D-Flight credentials configured for this organization', silent: true };
     }
 
     const mission = await prisma.pilot_mission.findUnique({

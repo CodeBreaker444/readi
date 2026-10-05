@@ -2417,6 +2417,19 @@
     "reporting": "Reporting…",
     "reportBug": "Report Bug"
   },
+  "dflightErrorToast": {
+    "title": "D-Flight Error Details",
+    "viewDetails": "View details",
+    "dismiss": "Dismiss",
+    "labelAction": "Action",
+    "labelDescription": "Description",
+    "labelResultCode": "Result code",
+    "labelResultCodeDesc": "Result code description",
+    "labelResultKind": "Result kind",
+    "labelHttpStatus": "HTTP Status",
+    "labelMissionId": "D-Flight Mission ID",
+    "labelFullResponse": "Full response"
+  },
   "logbooks": {
     "missionPlanning": {
       "title": "Mission Planning Dashboard",

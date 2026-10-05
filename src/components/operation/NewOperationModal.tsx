@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { EmergencyResponsePlan } from '@/config/types/erp'
 import { DFLIGHT_CIRCLE_MAX_RADIUS_M } from '@/config/types/operation'
 import { toastWithDcc } from '@/lib/dcc-toast'
-import { formatDFlightErrorReason } from '@/lib/dflight-toast'
+import { showDFlightErrorToast } from '@/lib/dflight-toast'
 import { serialInList } from '@/lib/serial-number'
 import { cn } from '@/lib/utils'
 import axios from 'axios'
@@ -644,10 +644,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
             // success toast rather than blocking on it.
             const dflightErrors: Array<{ missionCode: string; message: string }> = res.data.dflight_errors ?? []
             dflightErrors.forEach(e => {
-                toast.error(t('operations.newOperation.toast.dflightAuthError', { missionCode: e.missionCode }), {
-                    description: formatDFlightErrorReason(e.message),
-                    duration: 10000,
-                })
+                showDFlightErrorToast(t('operations.newOperation.toast.dflightAuthError', { missionCode: e.missionCode }), e.message)
             })
 
             onSaved?.(res.data)

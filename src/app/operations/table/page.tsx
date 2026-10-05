@@ -19,7 +19,7 @@ import { getOperationColumns, OperationTableMeta } from '@/components/tables/Ope
 import { useTimezone } from '@/components/TimezoneProvider';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { useTheme } from '@/components/useTheme';
-import { formatDFlightErrorReason } from '@/lib/dflight-toast';
+import { showDFlightErrorToast } from '@/lib/dflight-toast';
 import { generateMissionReport } from '@/lib/generateMissionReport';
 import {
   getCoreRowModel,
@@ -218,12 +218,12 @@ const tableMeta = useMemo<OperationTableMeta>(
         if (create?.outcome === 'success') {
           toast.success(t('operations.table.toast.dflightAuthSuccess', { missionCode: op.mission_code }));
         } else if (create?.outcome === 'skipped') {
-          toast.warning(create.message ?? t('operations.table.toast.dflightAuthSkipped'));
+          showDFlightErrorToast(
+            t('operations.table.toast.dflightAuthError', { missionCode: op.mission_code }),
+            create.message ?? t('operations.table.toast.dflightAuthSkipped'),
+          );
         } else {
-          toast.error(t('operations.table.toast.dflightAuthError', { missionCode: op.mission_code }), {
-            description: formatDFlightErrorReason(create?.message ?? ''),
-            duration: 10000,
-          });
+          showDFlightErrorToast(t('operations.table.toast.dflightAuthError', { missionCode: op.mission_code }), create?.message ?? '');
         }
       } catch (e: any) {
         toast.error(t('operations.table.toast.dflightAuthError', { missionCode: op.mission_code }), {
