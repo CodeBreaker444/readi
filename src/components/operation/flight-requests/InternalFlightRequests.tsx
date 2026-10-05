@@ -26,7 +26,7 @@ export interface InternalFlightRequest {
   pilot_name: string | null;
   requested_by_name: string | null;
   department: string | null;
-  tool_name: string | null;
+  tool_code: string | null;
   notes: string | null;
   approval_status: 'PENDING' | 'APPROVED' | 'DENIED';
   requested_at: string | null;
@@ -166,7 +166,7 @@ export function InternalFlightRequests({ isDark, filter, onFilterChange, refresh
                   </td>
                   <td className={tdCls}>
                     {r.scheduled_start ? format(new Date(r.scheduled_start), 'dd MMM yyyy HH:mm') : '—'}
-                    {r.tool_name && <div className={muted}>{r.tool_name}</div>}
+                    {r.tool_code && <div className={muted}>{r.tool_code}</div>}
                   </td>
                   <td className={tdCls}>{r.department ?? '—'}</td>
                   <td className={tdCls}>

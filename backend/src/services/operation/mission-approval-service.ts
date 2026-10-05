@@ -162,7 +162,7 @@ export interface InternalFlightRequest {
   pilot_name: string | null;
   requested_by_name: string | null;
   department: string | null;
-  tool_name: string | null;
+  tool_code: string | null;
   notes: string | null;
   approval_status: OpmApprovalStatus;
   requested_at: string | null;
@@ -203,7 +203,7 @@ export async function listInternalRequests(
       opm_approval_decided_at: true,
       opm_approval_note: true,
       users: { select: { first_name: true, last_name: true } },
-      tool: { select: { tool_name: true } },
+      tool: { select: { tool_code: true } },
       pilot_mission_type: { select: { type_name: true } },
     },
   });
@@ -242,7 +242,7 @@ export async function listInternalRequests(
       pilot_name: r.users ? `${r.users.first_name ?? ''} ${r.users.last_name ?? ''}`.trim() : null,
       requested_by_name: nameOf(r.opm_approval_requested_by_user_id),
       department: r.opm_approval_department,
-      tool_name: r.tool?.tool_name ?? null,
+      tool_code: r.tool?.tool_code ?? null,
       notes: r.notes,
       approval_status: r.opm_approval_status as OpmApprovalStatus,
       requested_at: r.opm_approval_requested_at?.toISOString() ?? null,
