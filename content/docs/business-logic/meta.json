@@ -16,5 +16,6 @@
     "evaluation-planning-module",
     "integration-services",
     "parameter-reference"
-  ]
+  ],
+  "icon": "Workflow"
 }

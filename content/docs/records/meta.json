@@ -3,5 +3,6 @@
   "pages": [
     "document-repository",
     "audit-logs"
-  ]
+  ],
+  "icon": "FolderArchive"
 }
