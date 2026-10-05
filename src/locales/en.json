@@ -4059,7 +4059,7 @@
         "closed": "Closed",
         "latitude": "Latitude",
         "longitude": "Longitude",
-        "pseudoName": "Pseudo Name"
+        "pseudoName": "Location Name"
       },
       "modals": {
         "newTicket": {
@@ -4485,7 +4485,7 @@
         "latPlaceholder": "e.g. 41.902782",
         "lngPlaceholder": "e.g. 12.496366",
         "clickMapToPlace": "Click the map to place the pin exactly",
-        "pseudoName": "Pseudo Name",
+        "pseudoName": "Location Name",
         "pseudoNamePlaceholder": "e.g. Warehouse A"
       },
       "editSystem": {

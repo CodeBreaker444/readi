@@ -91,7 +91,6 @@ async function notifyUsers(
   if (owner?.email_notifications_enabled !== true) return;
 
   const emails = users.map((u) => u.email).filter((e): e is string => !!e);
-  // Emails need an absolute link; the in-app notification keeps the relative path.
   const emailUrl = env.APP_URL ? `${env.APP_URL.replace(/\/$/, '')}${REQUESTS_URL}` : REQUESTS_URL;
   await sendNotificationEmail(emails, title, message, APPROVAL_NOTIFICATION_TYPE, emailUrl);
 }

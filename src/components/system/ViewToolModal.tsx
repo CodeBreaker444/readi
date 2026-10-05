@@ -102,7 +102,7 @@ export default function ViewSystemModal({ open, toolId, onClose }: ViewSystemMod
           ['C2 Platform',    toolData.tool_ccPlatform ?? ''],
           ['Latitude',       String(toolData.tool_latitude ?? '')],
           ['Longitude',      String(toolData.tool_longitude ?? '')],
-          ['Pseudo Name',    toolData.location_pseudo_name ?? ''],
+          ['Location Name',   toolData.location_pseudo_name ?? ''],
         ],
       });
 

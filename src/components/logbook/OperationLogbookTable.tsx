@@ -242,7 +242,7 @@ const table = useReactTable({
       <div className="flex items-center justify-between px-2">
         <ExportButtons
           filename="Operation Logbook"
-          headers={['Mission ID', 'Date Start', 'Date End', 'PIC', 'VO', 'Client', 'Category', 'Type', 'Vehicle', 'Status', 'Result', 'Plan Code', 'Flown Time', 'Flown Meters', 'Battery Serial Number', 'Location', 'Location Pseudo Name', 'Notes']}
+          headers={['Mission ID', 'Date Start', 'Date End', 'PIC', 'VO', 'Client', 'Category', 'Type', 'Vehicle', 'Status', 'Result', 'Plan Code', 'Flown Time', 'Flown Meters', 'Battery Serial Number', 'Location', 'Location Location Name', 'Notes']}
           rows={data.map(d => [d.mission_code || d.mission_id, d.date_start, d.date_end, d.pic_fullname, d.vo_fullnames, d.client_name, d.mission_category_desc, d.mission_type_desc, d.vehicle_code, d.mission_status_desc, d.mission_result_desc, d.mission_planning_code, d.flown_time, d.flown_meter, d.battery_serial_number, d.location, d.location_pseudo_name, d.mission_notes])}
           pdfColumnWidths={{ 0: 18 }}
         />
