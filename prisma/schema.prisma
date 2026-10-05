@@ -1841,6 +1841,7 @@ model pilot_declaration {
   @@schema("public")
 }
 
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model pilot_mission {
@@ -1891,6 +1892,13 @@ model pilot_mission {
   dflight_last_status_at              DateTime?                  @db.Timestamp(6)
   dflight_trajectory_data             Json?
   dflight_flight_clearance_status     String?                    @db.VarChar(50)
+  opm_approval_status                 String?                    @db.VarChar(20)
+  opm_approval_department             String?                    @db.VarChar(100)
+  opm_approval_requested_by_user_id   Int?
+  opm_approval_requested_at           DateTime?                  @db.Timestamp(6)
+  opm_approval_decided_by_user_id     Int?
+  opm_approval_decided_at             DateTime?                  @db.Timestamp(6)
+  opm_approval_note                   String?
   controlroom_drone                   controlroom_drone[]
   flight_requests                     flight_requests[]
   mission_maintenance_log             mission_maintenance_log[]
@@ -1918,6 +1926,7 @@ model pilot_mission {
   @@index([fk_planning_id], map: "idx_pilot_mission_fk_planning_id")
   @@index([fk_tool_id], map: "idx_pilot_mission_fk_tool_id")
   @@index([fk_luc_procedure_id], map: "idx_pilot_mission_luc", where: raw("(fk_luc_procedure_id IS NOT NULL)"))
+  @@index([fk_owner_id, opm_approval_status], map: "idx_pilot_mission_opm_approval", where: raw("(opm_approval_status IS NOT NULL)"))
   @@index([fk_owner_id], map: "idx_pilot_mission_owner")
   @@index([fk_pilot_user_id], map: "idx_pilot_mission_pilot")
   @@index([fk_planning_id], map: "idx_pilot_mission_planning")

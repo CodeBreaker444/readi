@@ -106,7 +106,7 @@ export async function POST(req: NextRequest) {
     );
   } catch (err: any) {
     if (err?.code === 'MISSION_LOCKED') return apiError(E.BL003, 422);
-    if (err?.code === 'DFLIGHT_NOT_AUTHORIZED' || err?.code === 'DFLIGHT_ABORTED') {
+    if (err?.code === 'DFLIGHT_NOT_AUTHORIZED' || err?.code === 'DFLIGHT_ABORTED' || err?.code === 'OPM_APPROVAL_REQUIRED') {
       return NextResponse.json({ code: 0, message: err.message, errorCode: err.code }, { status: 422 });
     }
     return internalError(E.SV001, err);

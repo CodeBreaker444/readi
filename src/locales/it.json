@@ -2053,7 +2053,7 @@
         "importMission": "Importa Missione",
         "import": "Importa",
         "done": "Fine",
-        "back":"Indietro"
+        "back": "Indietro"
       },
       "errors": {
         "endDateBeforeStart": "La data di fine deve essere successiva o uguale alla data di inizio",
@@ -2253,6 +2253,58 @@
         "close": "Chiudi",
         "savePostFlight": "Salva Post-Volo",
         "saveMaintenance": "Salva Manutenzione"
+      }
+    },
+    "opmApproval": {
+      "badge": {
+        "pending": "Approvazione OPM in attesa",
+        "approved": "Approvata da OPM",
+        "denied": "Rifiutata da OPM"
+      },
+      "submittedToast": "Missione inviata per approvazione OPM",
+      "modal": {
+        "title": "Approvazione OPM richiesta",
+        "willBeSubmitted": "Questa missione sarà inviata agli OPM di {{department}} ({{count}}). Comparirà nella daily board e potrà essere avviata non appena uno di loro la approva.",
+        "noOpm": "Nel reparto {{department}} non c'è alcun OPM, quindi nessuno può ancora approvare questa missione. Resterà in attesa (e fuori dalla daily board) finché non viene assegnato un OPM. Gli amministratori sono stati avvisati.",
+        "noDepartment": "Non sei assegnato a un reparto, quindi la missione non può essere inoltrata a un OPM. Resterà in attesa finché reparto e OPM non saranno configurati. Gli amministratori sono stati avvisati.",
+        "submitButton": "Invia per approvazione"
+      },
+      "detail": {
+        "pending": "In attesa di approvazione OPM ({{department}}). La missione non può essere avviata finché non è approvata.",
+        "denied": "Un OPM ha rifiutato questa missione."
+      },
+      "requests": {
+        "tabs": {
+          "internal": "Interne",
+          "external": "Esterne"
+        },
+        "filters": {
+          "PENDING": "In attesa",
+          "APPROVED": "Approvate",
+          "DENIED": "Rifiutate",
+          "ALL": "Tutte"
+        },
+        "columns": {
+          "mission": "Missione",
+          "pilot": "Pilota",
+          "schedule": "Pianificata",
+          "department": "Reparto",
+          "status": "Approvazione",
+          "actions": "Azioni"
+        },
+        "empty": "Nessuna richiesta interna",
+        "approve": "Approva",
+        "deny": "Rifiuta",
+        "occurrences": "{{count}} missioni ricorrenti",
+        "requestedBy": "Richiesta da {{name}}",
+        "loadError": "Impossibile caricare le richieste interne",
+        "approvedToast": "Missione approvata",
+        "deniedToast": "Missione rifiutata",
+        "decideError": "Impossibile salvare la decisione",
+        "denyTitle": "Rifiutare la missione {{code}}?",
+        "denyDesc": "Il pilota viene avvisato. Puoi aggiungere un motivo.",
+        "denyPlaceholder": "Motivo (facoltativo)",
+        "pageOf": "Pagina {{page}} di {{total}} · {{count}} richieste"
       }
     }
   },
@@ -4066,9 +4118,13 @@
         }
       },
       "toasts": {
+        "interventionEnded": "Intervento terminato",
+        "interventionStarted": "Intervento avviato",
+        "noCountersReset": "Nessun contatore dei componenti è stato azzerato.",
+        "countersReset": "Contatori azzerati per: {{components}}",
         "selectDroneSystem": "Per favore seleziona un drone/sistema",
         "ticketCreated": "Ticket creato con successo",
-        "ticketExists": "Esiste già un ticket aperto per questo sistema",
+        "ticketExists": "Un ticket aperto copre già questo sistema o i componenti selezionati",
         "enterClosingNote": "Per favore inserisci una nota di chiusura",
         "ticketClosed": "Ticket chiuso",
         "ticketAssigned": "Ticket assegnato",

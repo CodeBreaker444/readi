@@ -4,6 +4,7 @@ import { notifyDccMissionCreation } from '@/backend/services/mission/dcc-callbac
 import { authorizeMissionWithDFlight } from '@/backend/services/integrations/dflight-mission-authorization-service';
 import { notifyPilotAssignment } from '@/backend/services/notification/notification-service';
 import { createOperation, deleteOperation, listOperations } from '@/backend/services/operation/operation-service';
+import { buildInitialApproval, notifyApprovalRequested } from '@/backend/services/operation/mission-approval-service';
 import { assertToolNotInMaintenance, assertToolNotNonOperational } from '@/backend/services/system/maintenance-ticket';
 import { CreateOperationSchema, DFLIGHT_CIRCLE_MAX_RADIUS_M, ListOperationsQuerySchema } from '@/config/types/operation';
 import { internalError } from '@/lib/api-error';
@@ -129,9 +130,13 @@ export async function POST(req: NextRequest) {
     }
 
     let operation;
+    let approvalRequired = false;
     let allOperations: any[] = [];
     try {
-      operation = await createOperation({ ...validated }, ownerId, session.user.userId);
+      // Pilot-created missions are held for OPM approval; OPM/manager ones are not.
+      const approval = await buildInitialApproval(session.user);
+      approvalRequired = !!approval;
+      operation = await createOperation({ ...validated }, ownerId, session.user.userId, approval);
       
       // If this is a recurrent mission, fetch all created missions with the same recurring group
       if (validated.is_recurrent && operation.mission_metadata?.recurring_group_id) {
@@ -176,7 +181,8 @@ export async function POST(req: NextRequest) {
     }
 
     const dflightErrors: Array<{ missionCode: string; message: string }> = [];
-    for (const op of allOperations) {
+    // Awaiting OPM approval: D-Flight authorization is requested once approved.
+    for (const op of approvalRequired ? [] : allOperations) {
       const { create, watch } = await authorizeMissionWithDFlight(op.pilot_mission_id, ownerId);
       if (create.outcome === 'error') {
         console.warn('[POST /api/operation] D-Flight authorization failed (non-fatal):', create.message);
@@ -198,6 +204,14 @@ export async function POST(req: NextRequest) {
           missionCode: op.mission_code,
           fromUserId:  session.user.userId,
         });
+      }
+    }
+
+    if (approvalRequired) {
+      try {
+        await notifyApprovalRequested(session.user, allOperations);
+      } catch (notifyErr) {
+        console.error('[POST /api/operation] approval notification failed (non-fatal):', notifyErr);
       }
     }
 
@@ -229,6 +243,7 @@ export async function POST(req: NextRequest) {
       dcc,
       created_missions: allOperations.length > 1 ? allOperations : undefined,
       dflight_errors: dflightErrors.length > 0 ? dflightErrors : undefined,
+      approval_required: approvalRequired,
     }, { status: 201 });
   } catch (err) {
     if (err instanceof ZodError) {

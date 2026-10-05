@@ -2,7 +2,7 @@ import { Mission, MissionBoardData, MissionStatusCode, UpdateMissionStatusPayloa
 import { prisma } from '@/lib/prisma';
 import { autoAbortStaleMissions } from './auto-abort-service';
 import { getToolMaintenanceStatusBatch } from './maintenance-cycle-service';
-import { assertMissionEditable, assertDFlightAuthorized, assertDFlightNotStopped } from './mission-lock';
+import { assertMissionEditable, assertDFlightAuthorized, assertDFlightNotStopped, assertOpmApproved } from './mission-lock';
 import { sendMissionStartedModuleEmail, sendMissionCompletedModuleEmail } from '../settings/module-email-notification-service';
 
 // Local timezone conversion function
@@ -90,7 +90,18 @@ async function getLastClosedTicketPerTool(
       closed_at: { not: null },
     },
     orderBy: { closed_at: 'desc' },
-    select: { ticket_id: true, fk_tool_id: true, closed_at: true, resolution_notes: true },
+    select: {
+      ticket_id: true,
+      fk_tool_id: true,
+      closed_at: true,
+      // The closing note lives in the CLOSED event; resolution_notes keeps the original issue description
+      maintenance_ticket_event: {
+        where: { event_type: 'CLOSED' },
+        orderBy: { created_at: 'desc' },
+        take: 1,
+        select: { event_description: true },
+      },
+    },
   });
 
   const map: Record<number, Mission['last_closed_ticket']> = {};
@@ -100,7 +111,7 @@ async function getLastClosedTicketPerTool(
       map[toolId] = {
         ticket_id: row.ticket_id,
         closed_at: row.closed_at?.toISOString() ?? '',
-        note: row.resolution_notes ?? null,
+        note: row.maintenance_ticket_event[0]?.event_description ?? null,
       };
     }
   }
@@ -150,6 +161,8 @@ export async function getMissionBoard(
             ],
           },
           ...(dflightGateActive ? [{ dflight_flight_authorisation_status: 'ACCEPTED' }] : []),
+          // Pilot-created missions only appear once an OPM approved them.
+          { OR: [{ opm_approval_status: null }, { opm_approval_status: 'APPROVED' }] },
         ],
       },
       orderBy: { scheduled_start: { sort: 'desc', nulls: 'first' } },
@@ -316,6 +329,8 @@ function transformMissionRow(row: MissionRow | null): Mission | null {
       dflight_mission_status: row.dflight_mission_status ?? null,
       dflight_flight_authorisation_status: row.dflight_flight_authorisation_status ?? null,
       dflight_flight_clearance_status: row.dflight_flight_clearance_status ?? null,
+      opm_approval_status: (row.opm_approval_status as Mission['opm_approval_status']) ?? null,
+      opm_approval_decided_at: row.opm_approval_decided_at?.toISOString() ?? null,
     };
   } catch {
     return null;
@@ -334,9 +349,11 @@ export async function updateMissionStatus(
       dflight_flight_authorisation_status: true,
       dflight_mission_status: true,
       dflight_flight_clearance_status: true,
+      opm_approval_status: true,
     },
   });
   assertMissionEditable(current?.status_name);
+  assertOpmApproved(current?.opm_approval_status);
 
   let updateFields: Record<string, unknown>;
 

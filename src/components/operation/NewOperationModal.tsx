@@ -16,6 +16,7 @@ import {
     CheckCircle2,
     ChevronLeft,
     ChevronRight,
+    AlertTriangle,
     ClipboardList,
     FileUp,
     Loader2,
@@ -91,6 +92,8 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
 
     const [step, setStep] = useState(1)
     const [isSubmitting, setIsSubmitting] = useState(false)
+    // Pilot-created missions need OPM approval; null until the final step loads it.
+    const [approval, setApproval] = useState<{ required: boolean; department: string | null; opmCount: number } | null>(null)
     const [submittingMaint, setSubmittingMaint] = useState(false)
     const [editTab, setEditTab] = useState<EditTab>('data')
 
@@ -350,6 +353,13 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
     useEffect(() => {
         if (step === 3 && !schedulerForm.missionCode) refreshMissionId()
     }, [step])
+
+    useEffect(() => {
+        if (step !== 4 || isEdit || approval) return
+        axios.get('/api/operation/approvals/eligibility')
+            .then(({ data }) => setApproval({ required: !!data.required, department: data.department ?? null, opmCount: data.opmCount ?? 0 }))
+            .catch(() => {})
+    }, [step, isEdit, approval])
 
     useEffect(() => {
         if (step !== 3 || !droneId || !schedulerForm.scheduledStart) {
@@ -621,7 +631,9 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
             if (!res.data.success) throw new Error(res.data.error ?? t('operations.newOperation.toast.createError'))
             
             // Show appropriate success message for recurrent missions
-            if (res.data.created_missions && res.data.created_missions.length > 1) {
+            if (res.data.approval_required) {
+                toast.success(t('operations.opmApproval.submittedToast'))
+            } else if (res.data.created_missions && res.data.created_missions.length > 1) {
                 toast.success(t('operations.newOperation.toast.createRecurrentSuccess', { count: res.data.created_missions.length }))
             } else {
                 toast.success(t('operations.newOperation.toast.createSuccess'))
@@ -896,6 +908,29 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                         />
                     )}
 
+                    {!isEdit && step === 4 && approval?.required && (
+                        <div
+                            className={cn(
+                                'mt-4 flex items-start gap-2 rounded-lg border p-3 text-xs',
+                                approval.opmCount > 0
+                                    ? isDark ? 'border-sky-500/30 bg-sky-500/10 text-sky-300' : 'border-sky-200 bg-sky-50 text-sky-800'
+                                    : isDark ? 'border-amber-500/30 bg-amber-500/10 text-amber-300' : 'border-amber-200 bg-amber-50 text-amber-800',
+                            )}
+                        >
+                            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                            <div>
+                                <p className="font-semibold">{t('operations.opmApproval.modal.title')}</p>
+                                <p>
+                                    {approval.opmCount > 0
+                                        ? t('operations.opmApproval.modal.willBeSubmitted', { department: approval.department, count: approval.opmCount })
+                                        : approval.department
+                                            ? t('operations.opmApproval.modal.noOpm', { department: approval.department })
+                                            : t('operations.opmApproval.modal.noDepartment')}
+                                </p>
+                            </div>
+                        </div>
+                    )}
+
                     {isEdit && editTab === 'execution' && (
                         <OperationErpTab erps={erps} loadingErps={loadingErps} isDark={isDark} />
                     )}
@@ -960,7 +995,8 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                             >
                                 {isSubmitting
                                     ? <><Loader2 className="h-4 w-4 animate-spin" /> {isEdit ? t('operations.newOperation.buttons.saving') : t('operations.newOperation.buttons.creating')}</>
-                                    : isEdit ? t('operations.newOperation.buttons.saveChanges') : t('operations.newOperation.buttons.createOperation')
+                                    : isEdit ? t('operations.newOperation.buttons.saveChanges')
+                                        : approval?.required ? t('operations.opmApproval.modal.submitButton') : t('operations.newOperation.buttons.createOperation')
                                 }
                             </Button>
                         )}

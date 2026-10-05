@@ -11,6 +11,7 @@ import type {
 } from '@/config/types/maintenance';
 import axios from 'axios';
 import { useCallback, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 export interface NewTicketForm {
@@ -53,6 +54,7 @@ export const defaultReport: ReportForm = {
 
 
 export function useMaintenanceLogbook() {
+  const { t } = useTranslation();
   const [tickets, setTickets] = useState<MaintenanceTicket[]>([]);
   const [ticketsLoading, setTicketsLoading] = useState(true);
 
@@ -206,7 +208,7 @@ export function useMaintenanceLogbook() {
   }, [openModal]);
 
   const handleCreateTicket = useCallback(async () => {
-    if (!newTicket.fk_tool_id) { toast.error('Please select a drone/system'); return; }
+    if (!newTicket.fk_tool_id) { toast.error(t('systems.maintenanceLogbook.toasts.selectDroneSystem')); return; }
     setModalLoading(true);
     try {
       const res = await axios.post(`/api/system/maintenance/tickets/create`, {
@@ -221,7 +223,7 @@ export function useMaintenanceLogbook() {
         longitude: newTicket.longitude ? Number(newTicket.longitude) : null,
         location_pseudo_name: newTicket.location_pseudo_name || null,
       });
-      toast.success('Ticket created successfully');
+      toast.success(t('systems.maintenanceLogbook.toasts.ticketCreated'));
       closeModal('newTicket');
       if (res.data.ticket) {
         setTickets(prev => [res.data.ticket, ...prev]);
@@ -230,25 +232,32 @@ export function useMaintenanceLogbook() {
       }
     } catch (e: any) {
       if(e.response?.status === 409) {
-        toast.error('An open ticket already exists for this system');
+        toast.error(t('systems.maintenanceLogbook.toasts.ticketExists'));
       } else {
         toast.error(e.response?.data?.message ?? e.message);
       }
     }finally {
       setModalLoading(false);
     }
-  }, [newTicket, closeModal, loadTickets]);
+  }, [newTicket, closeModal, loadTickets, t]);
 
   const handleCloseTicket = useCallback(async () => {
     if (!activeTicketId) return;
-    if (!closeNote.trim()) { toast.error('Please enter a closing note'); return; }
+    if (!closeNote.trim()) { toast.error(t('systems.maintenanceLogbook.toasts.enterClosingNote')); return; }
     setModalLoading(true);
     try {
-      await axios.post(`/api/system/maintenance/tickets/close`, {
+      const res = await axios.post(`/api/system/maintenance/tickets/close`, {
         ticket_id: activeTicketId,
         note: closeNote,
       });
-      toast.success('Ticket closed');
+      const reset: { component_id: number; component_name: string | null }[] = res.data?.reset_components ?? [];
+      toast.success(t('systems.maintenanceLogbook.toasts.ticketClosed'), {
+        description: reset.length
+          ? t('systems.maintenanceLogbook.toasts.countersReset', { components: reset.map((c) => c.component_name ?? `#${c.component_id}`).join(', ') })
+          : t('systems.maintenanceLogbook.toasts.noCountersReset'),
+        duration: 8000,
+        style: { border: '2px solid #fde68a' },
+      });
       closeModal('close');
       updateLocalTicket(activeTicketId, {
         ticket_status: 'CLOSED',
@@ -259,7 +268,7 @@ export function useMaintenanceLogbook() {
     } finally {
       setModalLoading(false);
     }
-  }, [activeTicketId, closeNote, closeModal, updateLocalTicket]);
+  }, [activeTicketId, closeNote, closeModal, updateLocalTicket, t]);
 
   const handleAssignTicket = useCallback(async () => {
     if (!activeTicketId || !assignTo) return;
@@ -269,7 +278,7 @@ export function useMaintenanceLogbook() {
         ticket_id: activeTicketId,
         assigned_to: assignTo,
       });
-      toast.success('Ticket assigned');
+      toast.success(t('systems.maintenanceLogbook.toasts.ticketAssigned'));
       closeModal('assign');
       const selectedUser = users.find(u => Number(u.user_id) === assignTo);
       updateLocalTicket(activeTicketId, {
@@ -282,13 +291,13 @@ export function useMaintenanceLogbook() {
     } finally {
       setModalLoading(false);
     }
-  }, [activeTicketId, assignTo, users, closeModal, updateLocalTicket]);
+  }, [activeTicketId, assignTo, users, closeModal, updateLocalTicket, t]);
 
   const handleAddReport = useCallback(async (file?: File) => {
     if (!activeTicketId) return;
-    if (!report.text.trim()) { toast.error('Please enter a report description'); return; }
+    if (!report.text.trim()) { toast.error(t('systems.maintenanceLogbook.toasts.enterReportDescription')); return; }
     if (report.work_start && report.work_end && report.work_end < report.work_start) {
-      toast.error('Work end time must be after work start time'); return;
+      toast.error(t('systems.maintenanceLogbook.toasts.workEndAfterStart')); return;
     }
     setModalLoading(true);
     try {
@@ -302,7 +311,7 @@ export function useMaintenanceLogbook() {
       if (file) fd.append('file', file);
 
       await axios.post(`/api/system/maintenance/tickets/report`, fd);
-      toast.success('Report saved');
+      toast.success(t('systems.maintenanceLogbook.toasts.reportSaved'));
       closeModal('report');
       if (report.close) {
         updateLocalTicket(activeTicketId, {
@@ -315,7 +324,7 @@ export function useMaintenanceLogbook() {
     } finally {
       setModalLoading(false);
     }
-  }, [activeTicketId, report, closeModal, updateLocalTicket]);
+  }, [activeTicketId, report, closeModal, updateLocalTicket, t]);
 
   const handleUploadFile = useCallback(async (file: File) => {
     if (!activeTicketId) return;
@@ -327,14 +336,14 @@ export function useMaintenanceLogbook() {
     setModalLoading(true);
     try {
       await axios.post(`/api/system/maintenance/tickets/upload`, fd);
-      toast.success('File uploaded');
+      toast.success(t('systems.maintenanceLogbook.toasts.fileUploaded'));
       closeModal('upload');
     } catch (e: any) {
       toast.error(e.response?.data?.message ?? e.message);
     } finally {
       setModalLoading(false);
     }
-  }, [activeTicketId, uploadDesc, closeModal]);
+  }, [activeTicketId, uploadDesc, closeModal, t]);
 
   const handleIntervention = useCallback(async (ticketId: number, action: 'start' | 'end') => {
     try {
@@ -344,11 +353,11 @@ export function useMaintenanceLogbook() {
         ? { intervention_started_at: now, ticket_status: 'IN_PROGRESS' }
         : { intervention_ended_at: now, ticket_status: 'OPEN' }
       );
-      toast.success(action === 'start' ? 'Intervention started' : 'Intervention ended');
+      toast.success(action === 'start' ? t('systems.maintenanceLogbook.toasts.interventionStarted') : t('systems.maintenanceLogbook.toasts.interventionEnded'));
     } catch (e: any) {
       toast.error(e.response?.data?.message ?? e.message);
     }
-  }, [updateLocalTicket]);
+  }, [updateLocalTicket, t]);
 
   return {
     tickets,

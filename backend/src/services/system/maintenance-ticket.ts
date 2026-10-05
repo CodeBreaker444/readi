@@ -55,6 +55,39 @@ export async function assertNoOpenTicketForTool(toolId: number): Promise<void> {
   }
 }
 
+/**
+ * A new ticket is allowed while others are open as long as it targets specific components
+ * that no open ticket already covers. System-level tickets (no components) cover everything,
+ * so they conflict with any open ticket.
+ */
+export async function assertCanCreateTicket(toolId: number, componentIds: number[] = []): Promise<void> {
+  const openTickets = await prisma.maintenance_ticket.findMany({
+    where: { fk_tool_id: toolId, ticket_status: { not: 'CLOSED' } },
+    select: {
+      fk_component_id: true,
+      maintenance_ticket_item: {
+        where: { item_type: 'COMPONENT', fk_component_id: { not: null } },
+        select: { fk_component_id: true },
+      },
+    },
+  });
+  if (!openTickets.length) return;
+
+  const conflict = () => new Error(
+    'An open maintenance ticket already covers this system or the selected components. Close it first or select different components.'
+  );
+  if (!componentIds.length) throw conflict();
+
+  const covered = new Set<number>();
+  for (const t of openTickets) {
+    const ids = [t.fk_component_id, ...t.maintenance_ticket_item.map((i) => i.fk_component_id)]
+      .filter((id): id is number => id != null);
+    if (!ids.length) throw conflict(); // open system-level ticket covers every component
+    ids.forEach((id) => covered.add(id));
+  }
+  if (componentIds.some((id) => covered.has(id))) throw conflict();
+}
+
 export async function assertToolNotInMaintenance(toolId: number): Promise<void> {
   const openTicket = await prisma.maintenance_ticket.findFirst({
     where: { fk_tool_id: toolId, ticket_status: { not: 'CLOSED' } },
@@ -331,7 +364,7 @@ export async function createTicket(payload: CreateTicketPayload): Promise<number
 
 
 
-export async function closeTicket(payload: CloseTicketPayload): Promise<void> {
+export async function closeTicket(payload: CloseTicketPayload): Promise<{ resetComponents: { component_id: number; component_name: string | null }[] }> {
   const ticket = await prisma.maintenance_ticket.findUnique({
     where: { ticket_id: payload.ticket_id },
     select: {
@@ -352,12 +385,9 @@ export async function closeTicket(payload: CloseTicketPayload): Promise<void> {
   const now = new Date();
   const todayDate = now.toISOString().split('T')[0];
 
-  // Finding all open tickets for this system
+  // Only the selected ticket is closed; other open tickets on the system (other components) stay open
   const openTickets = await prisma.maintenance_ticket.findMany({
-    where: {
-      fk_tool_id: ticket.fk_tool_id,
-      ticket_status: { not: 'CLOSED' },
-    },
+    where: { ticket_id: payload.ticket_id },
     select: {
       ticket_id: true,
       fk_component_id: true,
@@ -371,16 +401,11 @@ export async function closeTicket(payload: CloseTicketPayload): Promise<void> {
     },
   });
 
-  // Close all open tickets for this system
   await prisma.maintenance_ticket.updateMany({
-    where: {
-      fk_tool_id: ticket.fk_tool_id,
-      ticket_status: { not: 'CLOSED' },
-    },
+    where: { ticket_id: payload.ticket_id },
     data: {
       ticket_status:    'CLOSED',
       closed_at:        now,
-      resolution_notes: payload.note ?? null,
     },
   });
 
@@ -417,8 +442,19 @@ export async function closeTicket(payload: CloseTicketPayload): Promise<void> {
   for (const componentId of resetComponentIds) {
     await resetComponentCounters(ticket.fk_tool_id!, now.toISOString(), componentId, ticket.ticket_type ?? undefined);
   }
-  await setSystemOperationalStatus(ticket.fk_tool_id!, 'OPERATIONAL');
+  const stillOpen = await prisma.maintenance_ticket.count({
+    where: { fk_tool_id: ticket.fk_tool_id, ticket_status: { not: 'CLOSED' } },
+  });
+  if (stillOpen === 0) await setSystemOperationalStatus(ticket.fk_tool_id!, 'OPERATIONAL');
   await setComponentsOperationalStatus(resetComponentIds, 'OPERATIONAL');
+
+  const resetComponents = resetComponentIds.length
+    ? await prisma.tool_component.findMany({
+        where: { component_id: { in: resetComponentIds } },
+        select: { component_id: true, component_name: true },
+        orderBy: { component_id: 'asc' },
+      })
+    : [];
 
   // Add close event to all tickets
   await Promise.all(
@@ -452,6 +488,8 @@ export async function closeTicket(payload: CloseTicketPayload): Promise<void> {
       note: payload.note,
     }).catch(() => {});
   }
+
+  return { resetComponents };
 }
 
 
