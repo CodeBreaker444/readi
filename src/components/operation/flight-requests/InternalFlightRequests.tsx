@@ -6,9 +6,9 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
 import { showDFlightErrorToast } from '@/lib/dflight-toast';
-import { cn } from '@/lib/utils';
+import { useTimezone } from '@/components/TimezoneProvider';
+import { cn, formatDateTimeInTz } from '@/lib/utils';
 import axios from 'axios';
-import { format } from 'date-fns';
 import { Check, ChevronLeft, ChevronRight, Inbox, Loader2, Repeat, X } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -33,6 +33,7 @@ export interface InternalFlightRequest {
   requested_at: string | null;
   decided_at: string | null;
   decided_by_name: string | null;
+  decided_by_admin?: boolean;
   decision_note: string | null;
 }
 
@@ -51,6 +52,7 @@ const FILTERS = ['ALL', 'PENDING', 'APPROVED', 'DENIED'];
 
 export function InternalFlightRequests({ isDark, filter, onFilterChange, refreshKey, onPendingCountChange }: Props) {
   const { t } = useTranslation();
+  const { timezone } = useTimezone();
   const [page, setPage] = useState(0);
   const [items, setItems] = useState<InternalFlightRequest[]>([]);
   const [loading, setLoading] = useState(true);
@@ -166,15 +168,15 @@ export function InternalFlightRequests({ isDark, filter, onFilterChange, refresh
                     )}
                   </td>
                   <td className={tdCls}>
-                    {r.scheduled_start ? format(new Date(r.scheduled_start), 'dd MMM yyyy HH:mm') : '—'}
+                    {r.scheduled_start ? formatDateTimeInTz(r.scheduled_start, timezone) : '—'}
                     {r.tool_code && <div className={muted}>{r.tool_code}</div>}
                   </td>
                   <td className={tdCls}>{r.department ?? '—'}</td>
                   <td className={tdCls}>
-                    <OpmApprovalBadge status={r.approval_status} isDark={isDark} />
+                    <OpmApprovalBadge status={r.approval_status} decidedByAdmin={r.decided_by_admin} isDark={isDark} />
                     {r.approval_status !== 'PENDING' && r.decided_by_name && (
                       <div className={`mt-1 ${muted}`}>
-                        {r.decided_by_name}{r.decided_at ? ` · ${format(new Date(r.decided_at), 'dd MMM HH:mm')}` : ''}
+                        {r.decided_by_name}{r.decided_at ? ` · ${formatDateTimeInTz(r.decided_at, timezone)}` : ''}
                       </div>
                     )}
                     {r.decision_note && <div className={`mt-0.5 italic ${muted}`}>&ldquo;{r.decision_note}&rdquo;</div>}

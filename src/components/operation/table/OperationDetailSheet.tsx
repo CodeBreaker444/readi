@@ -197,7 +197,7 @@ export function OperationDetailSheet({
                           : 'D-Flight: Pending'}
                       </Badge>
                     )}
-                    <OpmApprovalBadge status={operation.opm_approval_status} isDark={isDark} />
+                    <OpmApprovalBadge status={operation.opm_approval_status} decidedByAdmin={operation.opm_approval_decided_by_admin} isDark={isDark} />
                     {(operation.mission_group_label || operation.is_recurrent) && (
                       <Badge variant="secondary" className="px-1.5 py-0 text-[10px] font-normal">
                         {operation.mission_group_label && <Tag className="mr-0.5 h-2.5 w-2.5" />}
@@ -236,7 +236,9 @@ export function OperationDetailSheet({
                   <p className="text-xs text-muted-foreground text-left">
                     {operation.opm_approval_status === 'PENDING'
                       ? t('operations.opmApproval.detail.pending', { department: operation.opm_approval_department ?? '—' })
-                      : t('operations.opmApproval.detail.denied')}
+                      : t(operation.opm_approval_decided_by_admin
+                        ? 'operations.opmApproval.detail.adminDenied'
+                        : 'operations.opmApproval.detail.denied')}
                     {operation.opm_approval_note ? ` — ${operation.opm_approval_note}` : ''}
                   </p>
                 )}

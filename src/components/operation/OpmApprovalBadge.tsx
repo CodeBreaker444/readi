@@ -15,10 +15,13 @@ const STYLES: Record<OpmApprovalStatus, { light: string; dark: string; icon: typ
 /** Renders nothing when the mission never needed OPM approval (status is null). */
 export function OpmApprovalBadge({
   status,
+  decidedByAdmin = false,
   isDark = false,
   className,
 }: {
   status?: string | null;
+  /** True when an Admin (fallback approver, no OPM in the department) made the decision. */
+  decidedByAdmin?: boolean;
   isDark?: boolean;
   className?: string;
 }) {
@@ -36,7 +39,7 @@ export function OpmApprovalBadge({
       )}
     >
       <Icon className="h-3 w-3" />
-      {t(`operations.opmApproval.badge.${cfg.key}`)}
+      {t(`operations.opmApproval.badge.${decidedByAdmin && status !== 'PENDING' ? `admin_${cfg.key}` : cfg.key}`)}
     </span>
   );
 }

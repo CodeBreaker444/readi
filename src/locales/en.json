@@ -2265,19 +2265,22 @@
       "badge": {
         "pending": "OPM approval pending",
         "approved": "OPM approved",
-        "denied": "OPM denied"
+        "denied": "OPM denied",
+        "admin_approved": "Admin approved",
+        "admin_denied": "Admin denied"
       },
       "submittedToast": "Mission submitted for OPM approval",
       "modal": {
         "title": "OPM approval required",
         "willBeSubmitted": "This mission will be submitted to the OPMs of {{department}} ({{count}}). It appears on the daily board and can be started once one of them approves it.",
-        "noOpm": "There is no OPM in the {{department}} department, so nobody can approve this mission yet. It will stay pending (and off the daily board) until an OPM is assigned to the department. Administrators have been notified.",
+        "noOpm": "There is no OPM in the {{department}} department, so this request will be sent to the Administrators, who can approve or deny it instead. It stays pending (and off the daily board) until an Administrator decides or an OPM is assigned to the department.",
         "noDepartment": "You are not assigned to a department, so this mission cannot be routed to an OPM. It will stay pending until a department and OPM are set up. Administrators have been notified.",
         "submitButton": "Submit for approval"
       },
       "detail": {
         "pending": "Waiting for OPM approval ({{department}}). The mission cannot be started until approved.",
-        "denied": "An OPM denied this mission."
+        "denied": "An OPM denied this mission.",
+        "adminDenied": "An Admin denied this mission."
       },
       "requests": {
         "tabs": {

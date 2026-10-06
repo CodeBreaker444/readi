@@ -2,6 +2,7 @@ import { Mission, MissionBoardData, MissionStatusCode, UpdateMissionStatusPayloa
 import { prisma } from '@/lib/prisma';
 import { autoAbortStaleMissions } from './auto-abort-service';
 import { getToolMaintenanceStatusBatch } from './maintenance-cycle-service';
+import { getAdminDecidedMissionIds } from './mission-approval-service';
 import { assertMissionEditable, assertDFlightAuthorized, assertDFlightNotStopped, assertOpmApproved } from './mission-lock';
 import { sendMissionStartedModuleEmail, sendMissionCompletedModuleEmail } from '../settings/module-email-notification-service';
 
@@ -207,6 +208,16 @@ export async function getMissionBoard(
   const scheduled = scheduledData.map(transformMissionRow).filter((m): m is Mission => m !== null);
   const in_progress = inProgressData.map(transformMissionRow).filter((m): m is Mission => m !== null);
   const done = doneData.map(transformMissionRow).filter((m): m is Mission => m !== null);
+
+  const adminDecided = await getAdminDecidedMissionIds(
+    [...scheduledData, ...inProgressData, ...doneData].map((r) => ({
+      pilot_mission_id: r.pilot_mission_id,
+      opm_approval_decided_by_user_id: r.opm_approval_decided_by_user_id,
+    })),
+  );
+  for (const m of [...scheduled, ...in_progress, ...done]) {
+    m.opm_approval_decided_by_admin = adminDecided.has(m.mission_id);
+  }
 
   const allMissions = [...scheduled, ...in_progress, ...done];
   const uniqueToolIds = [...new Set(allMissions.map(m => m.fk_vehicle_id).filter(Boolean))];

@@ -1,6 +1,7 @@
 import { seedLucProcedureProgressFromSteps } from '@/backend/services/operation/luc-procedure-progress';
 import { assertMissionEditable, assertDFlightAuthorized, assertOpmApproved } from '@/backend/services/operation/mission-lock';
 import { AttachmentUploadResponse, CreateOperationSchema, ListOperationsQuerySchema, Operation, OperationAttachment, OperationsListResponse, UpdateOperationSchema } from '@/config/types/operation';
+import { getAdminDecidedMissionIds } from '@/backend/services/operation/mission-approval-service';
 import { prisma } from '@/lib/prisma';
 import { buildS3Url, deleteFileFromS3, getPresignedDownloadUrl, REGION, uploadFileToS3 } from '@/lib/s3Client';
 import { sendMissionCreatedModuleEmail, sendMissionAssignedModuleEmail } from '../settings/module-email-notification-service';
@@ -111,6 +112,7 @@ export async function listOperations(
         opm_approval_department: true,
         opm_approval_note: true,
         opm_approval_decided_at: true,
+        opm_approval_decided_by_user_id: true,
         dflight_trajectory_data: true,
         created_at: true,
         updated_at: true,
@@ -125,8 +127,11 @@ export async function listOperations(
     prisma.pilot_mission.count({ where }),
   ]);
 
+  const adminDecided = await getAdminDecidedMissionIds(data);
+
   const operations = data.map((row) => ({
     ...row,
+    opm_approval_decided_by_admin: adminDecided.has(row.pilot_mission_id),
     actual_start: asUtc(row.actual_start),
     actual_end: asUtc(row.actual_end),
     pilot_name: row.users

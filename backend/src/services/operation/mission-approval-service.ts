@@ -149,6 +149,24 @@ async function getDeciderDepartment(user: Pick<SessionUser, 'userId' | 'role'>) 
   return (await getUserDepartment(user.userId)) ?? null;
 }
 
+/** Mission ids (from the given rows) whose approval decision was made by an Admin rather than an OPM. */
+export async function getAdminDecidedMissionIds(
+  rows: Array<{ pilot_mission_id: number; opm_approval_decided_by_user_id?: number | null }>,
+): Promise<Set<number>> {
+  const deciderIds = [...new Set(rows.map((r) => r.opm_approval_decided_by_user_id).filter((x): x is number => !!x))];
+  if (!deciderIds.length) return new Set();
+  const deciders = await prisma.public_users.findMany({
+    where: { user_id: { in: deciderIds } },
+    select: { user_id: true, user_role: true },
+  });
+  const adminIds = new Set(
+    deciders.filter((d) => ADMIN_ROLES.includes((d.user_role ?? '').toUpperCase())).map((d) => d.user_id),
+  );
+  return new Set(
+    rows.filter((r) => r.opm_approval_decided_by_user_id && adminIds.has(r.opm_approval_decided_by_user_id)).map((r) => r.pilot_mission_id),
+  );
+}
+
 export interface InternalFlightRequest {
   request_id: number; // representative pilot_mission_id (first of the recurring group)
   mission_ids: number[];
@@ -168,6 +186,7 @@ export interface InternalFlightRequest {
   requested_at: string | null;
   decided_at: string | null;
   decided_by_name: string | null;
+  decided_by_admin: boolean;
   decision_note: string | null;
 }
 
@@ -210,8 +229,12 @@ export async function listInternalRequests(
 
   const userIds = [...new Set(rows.flatMap((r) => [r.opm_approval_requested_by_user_id, r.opm_approval_decided_by_user_id]).filter((x): x is number => !!x))];
   const people = userIds.length
-    ? await prisma.public_users.findMany({ where: { user_id: { in: userIds } }, select: { user_id: true, first_name: true, last_name: true } })
+    ? await prisma.public_users.findMany({ where: { user_id: { in: userIds } }, select: { user_id: true, first_name: true, last_name: true, user_role: true } })
     : [];
+  const isAdminDecider = (id: number | null) => {
+    const role = people.find((x) => x.user_id === id)?.user_role;
+    return !!role && ADMIN_ROLES.includes(role.toUpperCase());
+  };
   const nameOf = (id: number | null) => {
     const p = people.find((x) => x.user_id === id);
     return p ? `${p.first_name ?? ''} ${p.last_name ?? ''}`.trim() : null;
@@ -248,6 +271,7 @@ export async function listInternalRequests(
       requested_at: r.opm_approval_requested_at?.toISOString() ?? null,
       decided_at: r.opm_approval_decided_at?.toISOString() ?? null,
       decided_by_name: nameOf(r.opm_approval_decided_by_user_id),
+      decided_by_admin: isAdminDecider(r.opm_approval_decided_by_user_id),
       decision_note: r.opm_approval_note,
     };
   });
