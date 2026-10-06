@@ -11,6 +11,8 @@ const DECIDER_ROLES = ['OPM'];
 const ADMIN_ROLES = ['ADMIN', 'SUPERADMIN'];
 const APPROVAL_NOTIFICATION_TYPE = 'mission_approval';
 const REQUESTS_URL = '/operations/flight-requests';
+// Pilots cannot see the Internal requests list, so decisions point them at the Mission Table instead.
+const MISSIONS_URL = '/operations/table';
 
 type Requester = Pick<SessionUser, 'userId' | 'ownerId' | 'role' | 'isManager' | 'fullname'>;
 
@@ -67,6 +69,7 @@ async function notifyUsers(
   title: string,
   message: string,
   data: Record<string, unknown>,
+  url: string = REQUESTS_URL,
 ) {
   if (!users.length) return;
 
@@ -79,7 +82,7 @@ async function notifyUsers(
       notification_data: data as object,
       priority: 'normal',
       is_read: false,
-      action_url: REQUESTS_URL,
+      action_url: url,
       created_at: new Date(),
     })),
   });
@@ -91,7 +94,7 @@ async function notifyUsers(
   if (owner?.email_notifications_enabled !== true) return;
 
   const emails = users.map((u) => u.email).filter((e): e is string => !!e);
-  const emailUrl = env.APP_URL ? `${env.APP_URL.replace(/\/$/, '')}${REQUESTS_URL}` : REQUESTS_URL;
+  const emailUrl = env.APP_URL ? `${env.APP_URL.replace(/\/$/, '')}${url}` : url;
   await sendNotificationEmail(emails, title, message, APPROVAL_NOTIFICATION_TYPE, emailUrl);
 }
 
@@ -364,6 +367,7 @@ export async function decideMissionApproval(
         approved ? 'Mission approved' : 'Mission denied',
         `${user.fullname} ${approved ? 'approved' : 'denied'} mission ${mission.mission_code}${note?.trim() ? `: ${note.trim()}` : '.'}`,
         { mission_id: mission.pilot_mission_id, task_code: mission.mission_code, from_user_id: user.userId, decision },
+        MISSIONS_URL,
       ).catch((err) => console.error('[decideMissionApproval] requester notification failed:', err));
     }
   }

@@ -2273,8 +2273,8 @@
       "modal": {
         "title": "OPM approval required",
         "willBeSubmitted": "This mission will be submitted to the OPMs of {{department}} ({{count}}). It appears on the daily board and can be started once one of them approves it.",
-        "noOpm": "There is no OPM in the {{department}} department, so this request will be sent to the Administrators, who can approve or deny it instead. It stays pending (and off the daily board) until an Administrator decides or an OPM is assigned to the department.",
-        "noDepartment": "You are not assigned to a department, so this mission cannot be routed to an OPM. It will stay pending until a department and OPM are set up. Administrators have been notified.",
+        "noOpm": "No OPM is assigned, so this request will be sent to active Admins. It stays pending (and off the daily board) until an Admin decides or an OPM is assigned to {{department}}.",
+        "noDepartment": "You are not assigned to a department, so no OPM is assigned and this request will be sent to active Admins. It stays pending (and off the daily board) until an Admin decides.",
         "submitButton": "Submit for approval"
       },
       "detail": {

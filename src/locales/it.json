@@ -2267,8 +2267,8 @@
       "modal": {
         "title": "Approvazione OPM richiesta",
         "willBeSubmitted": "Questa missione sarà inviata agli OPM di {{department}} ({{count}}). Comparirà nella daily board e potrà essere avviata non appena uno di loro la approva.",
-        "noOpm": "Nel reparto {{department}} non c'è alcun OPM, quindi questa richiesta verrà inviata agli amministratori, che possono approvarla o rifiutarla al posto dell'OPM. Resterà in attesa (e fuori dalla daily board) finché un amministratore non decide o viene assegnato un OPM.",
-        "noDepartment": "Non sei assegnato a un reparto, quindi la missione non può essere inoltrata a un OPM. Resterà in attesa finché reparto e OPM non saranno configurati. Gli amministratori sono stati avvisati.",
+        "noOpm": "Nessun OPM è assegnato, quindi questa richiesta verrà inviata agli amministratori attivi. Resterà in attesa (e fuori dalla daily board) finché un amministratore non decide o viene assegnato un OPM a {{department}}.",
+        "noDepartment": "Non sei assegnato a un reparto, quindi nessun OPM è assegnato e questa richiesta verrà inviata agli amministratori attivi. Resterà in attesa (e fuori dalla daily board) finché un amministratore non decide.",
         "submitButton": "Invia per approvazione"
       },
       "detail": {
