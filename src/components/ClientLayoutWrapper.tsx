@@ -52,7 +52,7 @@ const ClientLayoutWrapper: React.FC<ClientLayoutWrapperProps> = ({
       }
     });
   }, [sessionPromise]);
-
+  
   useEffect(() => {
     interceptorRef.current = axios.interceptors.response.use(
       (response) => response,

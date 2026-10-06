@@ -81,6 +81,26 @@ const FALLBACK_META = { icon: HiOutlineInformationCircle, bg: 'bg-slate-500/10',
 
 function cleanHeading(h: string) { return h.replace(/^[^a-zA-Z"']+/, '').trim(); }
 
+// Renders `[label](url)` as a link; everything else goes through stripMd.
+function renderInline(s: string): React.ReactNode {
+  const parts: React.ReactNode[] = [];
+  const re = /\[([^\]]+)\]\(([^)\s]+)\)/g;
+  let last = 0;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(s))) {
+    if (m.index > last) parts.push(stripMd(s.slice(last, m.index)));
+    parts.push(
+      <a key={m.index} href={m[2]} target="_blank" rel="noopener noreferrer" className="font-semibold underline underline-offset-2 hover:opacity-80">
+        {stripMd(m[1])}
+      </a>,
+    );
+    last = m.index + m[0].length;
+  }
+  if (last === 0) return stripMd(s);
+  if (last < s.length) parts.push(stripMd(s.slice(last)));
+  return <>{parts}</>;
+}
+
 function stripMd(s: string): string {
   return s
     .replace(/\*\*([^*]+)\*\*/g, '$1')
@@ -572,7 +592,7 @@ export default function ReleasesPage() {
                               <li key={idx} className={`flex items-start gap-2.5 text-[13px] leading-relaxed ${isDark ? 'text-slate-300' : 'text-slate-600'
                                 }`}>
                                 <span className={`mt-2 w-1.5 h-1.5 rounded-full shrink-0 ${isDark ? 'bg-slate-600' : 'bg-slate-300'}`} />
-                                {stripMd(item)}
+                                {renderInline(item)}
                               </li>
                             ))}
                           </ul>

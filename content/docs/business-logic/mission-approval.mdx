@@ -1,0 +1,95 @@
+---
+title: "Mission Approval (OPM)"
+description: "How missions created by pilots are submitted to their department's OPMs for approval, who is exempt, and what each decision triggers."
+---
+
+Missions created by a regular pilot are not active immediately. They are submitted as an **approval request** to the OPMs of the pilot's department. The mission stays off the Daily Board until one of them approves it.
+
+---
+
+## Who needs approval
+
+Approval applies only to **pilots who are not managers**.
+
+| Creator | Approval required |
+|---|---|
+| Pilot (not a manager) | **Yes** |
+| Pilot marked as a manager | No |
+| OPM | No |
+| Manager, Admin, Super Admin | No |
+
+A manager pilot's mission skips the approval step entirely: no OPM is notified, and the D-Flight authorization request is sent as soon as the mission is created, like any other mission.
+
+If a user's manager setting is changed, they need to log in again for it to take effect.
+
+---
+
+## Request lifecycle
+
+```
+Pilot creates mission
+        │
+        ▼
+     PENDING ──► OPMs and managers of the department are notified
+        │
+        ├── OPM approves ──► APPROVED ──► D-Flight authorization requested ──► mission appears on Daily Board
+        │
+        └── OPM denies   ──► DENIED   ──► pilot notified, with the reason if one was given
+```
+
+### Statuses
+
+| Status | Meaning |
+|---|---|
+| Pending | Waiting for a decision. The mission is hidden from the Daily Board and cannot be started, completed or moved to another state. |
+| Approved | Accepted. The mission proceeds normally. |
+| Denied | Rejected. An optional reason is shown on the mission details page. |
+
+Missions that did not need approval show no approval status.
+
+---
+
+## Who can decide
+
+- **OPMs** can decide requests from **their own department** only. An OPM without a department sees no requests.
+- **Admins and Super Admins** can decide requests from every department. This also covers departments that have no OPM.
+- **The first decision is final.** If two OPMs act at the same time, the second is told the request has already been decided.
+- **Recurring missions** are one request: approving or denying one occurrence applies to the whole series.
+
+---
+
+## Notifications
+
+| Event | Who is notified | How |
+|---|---|---|
+| Request submitted | OPMs and managers of the pilot's department (not the pilot). If the department has no OPM, all active admins are notified so the request is not forgotten. | In the app, and by email if email notifications are enabled |
+| Approved or denied | The pilot who submitted the mission | In the app, and by email if email notifications are enabled |
+
+The notification links to the Flight Requests page.
+
+---
+
+## D-Flight authorization
+
+For missions that need approval, the D-Flight authorization request is **not** sent when the mission is created. It is sent when the OPM approves.
+
+- While waiting, the Mission Table shows **D-Flight: Awaiting OPM approval**.
+- If the request cannot be sent after approval, it shows **D-Flight: Not submitted** and can be retried. The approval itself is not undone.
+- Companies using D-Flight only see a mission on the Daily Board once D-Flight has accepted it.
+
+---
+
+## Where it appears in the app
+
+- **New Mission, last step:** a notice that the mission will be submitted for approval, with the pilot's department and the number of OPMs. A warning is shown if the pilot has no department or the department has no OPM. The mission can still be created and stays pending, and admins are notified. The notice is not shown to users who are exempt.
+- **Flight Requests → Internal:** the list of requests with Approve and Deny actions, a filter (All, Pending, Approved, Denied) and a badge with the number of pending requests. **External** keeps the requests received from other systems.
+- **Daily Board, Mission Table and mission details:** the approval status, and the denial reason where one was given.
+
+---
+
+## Related
+
+- [Mission Status Gates](/docs/platform-rules/mission-status-gates)
+- [Operations Board Flow](/docs/platform-rules/operation-board-flow)
+- [Email Notifications](/docs/business-logic/email-notifications)
+- [Role Glossary](/docs/business-logic/role-glossary)

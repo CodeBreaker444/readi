@@ -3,6 +3,7 @@
   "pages": [
     "systems",
     "mission-lifecycle",
+    "mission-approval",
     "pilot-logic",
     "checklist-logic",
     "platform-flow",
