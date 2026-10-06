@@ -276,7 +276,7 @@ export function MissionCard({ mission, draggable, onDragStart, onViewDetails, on
             <span className={cn("h-1.5 w-1.5 rounded-full", statusCfg.dot)} />
             {t(STATUS_LABEL_KEY[mission.mission_status_code] ?? STATUS_LABEL_KEY["00"])}
           </span>
-          <OpmApprovalBadge status={mission.opm_approval_status} isDark={isDark} />
+          <OpmApprovalBadge status={mission.opm_approval_status} decidedByAdmin={mission.opm_approval_decided_by_admin} isDark={isDark} />
           {dflightBadge && (
             <span className={cn("inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium", dflightBadge.className)}>
               {dflightBadge.label}

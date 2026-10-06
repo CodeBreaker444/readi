@@ -25,7 +25,7 @@ const styles: Record<SystemCellSize, { code: string; sub: string }> = {
   },
 };
 
-export function SystemCell({ code, name, primaryDrone, size = 'md', toolStatus }: SystemCellProps) {
+export function SystemCell({ code, primaryDrone, size = 'md', toolStatus }: SystemCellProps) {
   if (!code) return <span className="text-slate-300 dark:text-slate-600">—</span>;
 
   const isNonOp = toolStatus === 'NOT_OPERATIONAL';
@@ -40,7 +40,6 @@ export function SystemCell({ code, name, primaryDrone, size = 'md', toolStatus }
           </span>
         )}
       </div>
-      {name && <span className={s.sub}>{name}</span>}
       {primaryDrone && <span className={s.sub}>↳ {primaryDrone}</span>}
     </div>
   );

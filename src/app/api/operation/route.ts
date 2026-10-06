@@ -1,7 +1,7 @@
 import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { getToolName, getUserName } from '@/backend/services/shared/entity-names';
 import { notifyDccMissionCreation } from '@/backend/services/mission/dcc-callback-service';
-import { authorizeMissionWithDFlight } from '@/backend/services/integrations/dflight-mission-authorization-service';
+import { authorizeMissionWithDFlight, isReportableDFlightFailure } from '@/backend/services/integrations/dflight-mission-authorization-service';
 import { notifyPilotAssignment } from '@/backend/services/notification/notification-service';
 import { createOperation, deleteOperation, listOperations } from '@/backend/services/operation/operation-service';
 import { buildInitialApproval, notifyApprovalRequested } from '@/backend/services/operation/mission-approval-service';
@@ -184,7 +184,7 @@ export async function POST(req: NextRequest) {
     // Awaiting OPM approval: D-Flight authorization is requested once approved.
     for (const op of approvalRequired ? [] : allOperations) {
       const { create, watch } = await authorizeMissionWithDFlight(op.pilot_mission_id, ownerId);
-      if (create.outcome === 'error') {
+      if (isReportableDFlightFailure(create)) {
         console.warn('[POST /api/operation] D-Flight authorization failed (non-fatal):', create.message);
         if (validated.op_type && ['PDRA', 'OPEN', 'STS-01', 'STS-02'].includes(validated.op_type)) {
           dflightErrors.push({ missionCode: op.mission_code, message: create.message });

@@ -109,7 +109,7 @@ export function AddOperationModal({ open, onClose, onSuccess, isDark }: AddOpera
                 })))
                 setTools((d.tools ?? []).map((t: any) => ({
                     id: t.tool_id,
-                    label: `${t.tool_code} — ${t.tool_name}`,
+                    label: t.tool_code,
                     in_maintenance: t.in_maintenance ?? false,
                     has_drone_component: t.has_drone_component,
                     is_non_operational: t.is_non_operational ?? false,

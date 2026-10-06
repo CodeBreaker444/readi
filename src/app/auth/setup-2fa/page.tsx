@@ -56,7 +56,7 @@ export default function Setup2FAPage() {
       await saveMfaSettings(userId, true)
 
       document.cookie = 'mfa_verified=true; path=/; max-age=604800; samesite=strict'
-      router.push(getDefaultRoute(role as any))
+      window.location.href = getDefaultRoute(role as any)
     } catch (err: any) {
       setError('Invalid code. Please try again.')
       setCode('')
@@ -71,7 +71,7 @@ export default function Setup2FAPage() {
     try {
       await saveMfaSettings(userId, false)
       if (factorId) { try { await supabase.auth.mfa.unenroll({ factorId }) } catch {} }
-      router.push(getDefaultRoute(role as any))
+      window.location.href = getDefaultRoute(role as any)
     } catch (err: any) {
       setError('Failed to skip 2FA setup.')
     } finally {

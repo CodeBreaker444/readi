@@ -1,5 +1,5 @@
 import { env } from '@/backend/config/env';
-import { authorizeMissionWithDFlight } from '@/backend/services/integrations/dflight-mission-authorization-service';
+import { authorizeMissionWithDFlight, isReportableDFlightFailure } from '@/backend/services/integrations/dflight-mission-authorization-service';
 import type { SessionUser } from '@/lib/auth/server-session';
 import { prisma } from '@/lib/prisma';
 import { sendNotificationEmail } from '../../../../lib/resend/mail';
@@ -91,7 +91,6 @@ async function notifyUsers(
   if (owner?.email_notifications_enabled !== true) return;
 
   const emails = users.map((u) => u.email).filter((e): e is string => !!e);
-  // Emails need an absolute link; the in-app notification keeps the relative path.
   const emailUrl = env.APP_URL ? `${env.APP_URL.replace(/\/$/, '')}${REQUESTS_URL}` : REQUESTS_URL;
   await sendNotificationEmail(emails, title, message, APPROVAL_NOTIFICATION_TYPE, emailUrl);
 }
@@ -150,6 +149,24 @@ async function getDeciderDepartment(user: Pick<SessionUser, 'userId' | 'role'>) 
   return (await getUserDepartment(user.userId)) ?? null;
 }
 
+/** Mission ids (from the given rows) whose approval decision was made by an Admin rather than an OPM. */
+export async function getAdminDecidedMissionIds(
+  rows: Array<{ pilot_mission_id: number; opm_approval_decided_by_user_id?: number | null }>,
+): Promise<Set<number>> {
+  const deciderIds = [...new Set(rows.map((r) => r.opm_approval_decided_by_user_id).filter((x): x is number => !!x))];
+  if (!deciderIds.length) return new Set();
+  const deciders = await prisma.public_users.findMany({
+    where: { user_id: { in: deciderIds } },
+    select: { user_id: true, user_role: true },
+  });
+  const adminIds = new Set(
+    deciders.filter((d) => ADMIN_ROLES.includes((d.user_role ?? '').toUpperCase())).map((d) => d.user_id),
+  );
+  return new Set(
+    rows.filter((r) => r.opm_approval_decided_by_user_id && adminIds.has(r.opm_approval_decided_by_user_id)).map((r) => r.pilot_mission_id),
+  );
+}
+
 export interface InternalFlightRequest {
   request_id: number; // representative pilot_mission_id (first of the recurring group)
   mission_ids: number[];
@@ -163,12 +180,13 @@ export interface InternalFlightRequest {
   pilot_name: string | null;
   requested_by_name: string | null;
   department: string | null;
-  tool_name: string | null;
+  tool_code: string | null;
   notes: string | null;
   approval_status: OpmApprovalStatus;
   requested_at: string | null;
   decided_at: string | null;
   decided_by_name: string | null;
+  decided_by_admin: boolean;
   decision_note: string | null;
 }
 
@@ -204,15 +222,19 @@ export async function listInternalRequests(
       opm_approval_decided_at: true,
       opm_approval_note: true,
       users: { select: { first_name: true, last_name: true } },
-      tool: { select: { tool_name: true } },
+      tool: { select: { tool_code: true } },
       pilot_mission_type: { select: { type_name: true } },
     },
   });
 
   const userIds = [...new Set(rows.flatMap((r) => [r.opm_approval_requested_by_user_id, r.opm_approval_decided_by_user_id]).filter((x): x is number => !!x))];
   const people = userIds.length
-    ? await prisma.public_users.findMany({ where: { user_id: { in: userIds } }, select: { user_id: true, first_name: true, last_name: true } })
+    ? await prisma.public_users.findMany({ where: { user_id: { in: userIds } }, select: { user_id: true, first_name: true, last_name: true, user_role: true } })
     : [];
+  const isAdminDecider = (id: number | null) => {
+    const role = people.find((x) => x.user_id === id)?.user_role;
+    return !!role && ADMIN_ROLES.includes(role.toUpperCase());
+  };
   const nameOf = (id: number | null) => {
     const p = people.find((x) => x.user_id === id);
     return p ? `${p.first_name ?? ''} ${p.last_name ?? ''}`.trim() : null;
@@ -243,12 +265,13 @@ export async function listInternalRequests(
       pilot_name: r.users ? `${r.users.first_name ?? ''} ${r.users.last_name ?? ''}`.trim() : null,
       requested_by_name: nameOf(r.opm_approval_requested_by_user_id),
       department: r.opm_approval_department,
-      tool_name: r.tool?.tool_name ?? null,
+      tool_code: r.tool?.tool_code ?? null,
       notes: r.notes,
       approval_status: r.opm_approval_status as OpmApprovalStatus,
       requested_at: r.opm_approval_requested_at?.toISOString() ?? null,
       decided_at: r.opm_approval_decided_at?.toISOString() ?? null,
       decided_by_name: nameOf(r.opm_approval_decided_by_user_id),
+      decided_by_admin: isAdminDecider(r.opm_approval_decided_by_user_id),
       decision_note: r.opm_approval_note,
     };
   });
@@ -321,7 +344,7 @@ export async function decideMissionApproval(
     for (const t of targets) {
       try {
         const { create } = await authorizeMissionWithDFlight(t.pilot_mission_id, user.ownerId);
-        if (create.outcome === 'error') dflightErrors.push({ missionCode: t.mission_code ?? String(t.pilot_mission_id), message: create.message });
+        if (isReportableDFlightFailure(create)) dflightErrors.push({ missionCode: t.mission_code ?? String(t.pilot_mission_id), message: create.message });
       } catch (err) {
         console.warn('[decideMissionApproval] D-Flight authorization failed (non-fatal):', err);
       }

@@ -65,6 +65,7 @@ export interface Operation {
   opm_approval_department?: string | null;
   opm_approval_note?: string | null;
   opm_approval_decided_at?: string | null;
+  opm_approval_decided_by_admin?: boolean;
   dflight_trajectory_data?: DFlightTrajectoryCircle | null;
   is_imported?: boolean;
   created_at: string;
@@ -272,6 +273,7 @@ export interface Mission {
   dflight_flight_clearance_status?: string | null;
   opm_approval_status?: 'PENDING' | 'APPROVED' | 'DENIED' | null;
   opm_approval_decided_at?: string | null;
+  opm_approval_decided_by_admin?: boolean;
 }
 
 export interface MissionBoardData {

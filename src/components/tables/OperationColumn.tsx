@@ -302,7 +302,7 @@ export const getOperationColumns = (t: TFunction, isDark = false, timezone = 'Eu
     cell: ({ getValue, row, table }) => (
       <div className="flex flex-col items-start gap-1">
         <StatusBadge status={getValue<string>()} t={t} isDark={isDark} />
-        <OpmApprovalBadge status={row.original.opm_approval_status} isDark={isDark} />
+        <OpmApprovalBadge status={row.original.opm_approval_status} decidedByAdmin={row.original.opm_approval_decided_by_admin} isDark={isDark} />
         <DFlightBadge
           dflightMissionId={row.original.dflight_mission_id}
           authorisationStatus={row.original.dflight_flight_authorisation_status}

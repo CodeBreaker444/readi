@@ -3,6 +3,7 @@
   "pages": [
     "systems",
     "mission-lifecycle",
+    "mission-approval",
     "pilot-logic",
     "checklist-logic",
     "platform-flow",
@@ -16,5 +17,6 @@
     "evaluation-planning-module",
     "integration-services",
     "parameter-reference"
-  ]
+  ],
+  "icon": "Workflow"
 }
