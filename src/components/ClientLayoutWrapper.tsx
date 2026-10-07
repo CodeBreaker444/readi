@@ -34,6 +34,7 @@ const ClientLayoutWrapper: React.FC<ClientLayoutWrapperProps> = ({
   const [loading, setLoading] = useState<boolean>(true);
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false);
   const interceptorRef = useRef<number | null>(null);
+  const sessionRetriedRef = useRef(false);
 
   const handleExpiredSession = async () => {
     try {
@@ -44,15 +45,30 @@ const ClientLayoutWrapper: React.FC<ClientLayoutWrapperProps> = ({
   };
 
   useEffect(() => {
+    let cancelled = false;
     sessionPromise.then((sess) => {
+      if (cancelled) return;
       setSession(sess);
       setLoading(false);
-      if (!sess && !isAuthPage) {
-        router.replace('/auth/login');
+      if (sess) {
+        sessionRetriedRef.current = false;
+        return;
       }
+      if (isAuthPage) return;
+      // This layout persists across client-side navigation, so an empty session captured
+      // before sign-in (e.g. right after the first-login password change) would otherwise
+      // stay empty after middleware bounces the user back to the app. Re-read it from the
+      // server once before treating the user as signed out.
+      if (!sessionRetriedRef.current) {
+        sessionRetriedRef.current = true;
+        router.refresh();
+        return;
+      }
+      router.replace('/auth/login');
     });
+    return () => { cancelled = true; };
   }, [sessionPromise]);
-  
+
   useEffect(() => {
     interceptorRef.current = axios.interceptors.response.use(
       (response) => response,

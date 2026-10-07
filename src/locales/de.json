@@ -2263,8 +2263,8 @@
       "modal": {
         "title": "OPM-Freigabe erforderlich",
         "willBeSubmitted": "Diese Mission wird an die OPMs von {{department}} ({{count}}) gesendet. Sie erscheint im Tagesboard und kann gestartet werden, sobald einer von ihnen sie freigibt.",
-        "noOpm": "In der Abteilung {{department}} gibt es keinen OPM, daher wird diese Anfrage an die Administratoren gesendet, die sie stattdessen freigeben oder ablehnen können. Sie bleibt ausstehend (und außerhalb des Tagesboards), bis ein Administrator entscheidet oder ein OPM zugewiesen wird.",
-        "noDepartment": "Sie sind keiner Abteilung zugewiesen, daher kann die Mission keinem OPM zugeordnet werden. Sie bleibt ausstehend, bis Abteilung und OPM eingerichtet sind. Administratoren wurden benachrichtigt.",
+        "noOpm": "Es ist kein OPM zugewiesen, daher wird diese Anfrage an aktive Administratoren gesendet. Sie bleibt ausstehend (und außerhalb des Tagesboards), bis ein Administrator entscheidet oder {{department}} ein OPM zugewiesen wird.",
+        "noDepartment": "Sie sind keiner Abteilung zugewiesen, daher ist kein OPM zugewiesen und diese Anfrage wird an aktive Administratoren gesendet. Sie bleibt ausstehend (und außerhalb des Tagesboards), bis ein Administrator entscheidet.",
         "submitButton": "Zur Freigabe einreichen"
       },
       "detail": {
