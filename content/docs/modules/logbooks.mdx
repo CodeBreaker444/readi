@@ -1,17 +1,58 @@
 ---
 title: "Logbooks"
-description: "Flight logbooks with multi-axis filtering."
+description: "Searchable records of planned missions, flights flown, and drone batteries."
 ---
 
-Searchable record of all completed missions.
+Logbooks are the official record of your operation. There are three, in the sidebar under **Logbooks**. All of them have filters, a search box and a **Refresh** button.
 
-## Main capabilities
+---
 
-- Filter by pilot, drone, mission type, category, result, status, and date range
-- Each row shows: pilot, drone code, flight duration, distance, mission plan, client, status
-- Drone status reflects the real value from `tool_status.status_code`
-- Export for compliance and audit use
+## Planned Mission Logbook
 
-## Primary app routes
+All mission plans across your evaluations and plannings.
 
-- `/logbooks/operation`
+| Filter | |
+|---|---|
+| Client, PiC (pilot in command), Evaluation, Planning, System | Narrow by who and what |
+| Update From / To | Narrow by date |
+| Search | Across all columns |
+
+Columns: client, evaluation, planning, mission description, mission plan, system, version and active status. You can add, edit or delete entries, and open the files attached to a plan. Deleting is permanent.
+
+---
+
+## Flight Logbook
+
+Every flight flown.
+
+**Filters:** date range, PiC, client, drone system, mission type, category, status, result, mission plan and mission group.
+
+**Columns:** start, end, PiC, client, category, type, drone system, status, result, mission plan, flight time, distance and notes.
+
+Use the export option to download the list for audits or authorities. Exported files include the mission ID, dates, pilot, vehicle, result, plan code, flown time and flown meters.
+
+---
+
+## Battery Logbook
+
+Every battery across your systems.
+
+**Filters:** installed from / to, drone system and status.
+
+| Column | Meaning |
+|---|---|
+| Battery and S/N | Which battery |
+| Drone system | Where it is installed |
+| Status | Current state |
+| Cycle health | How many charge cycles are used against its limit |
+| Installed, Last maintenance, Maintenance cycle | Service history |
+| Vendor, Purchase date | Origin |
+
+Open a battery for its **Cycle Log**: each mission it was used on, with date, duration, pilot and cycles added, plus the total.
+
+---
+
+## Related
+
+- [Operations](/docs/modules/operations)
+- [Maintenance Module](/docs/business-logic/maintenance-module)

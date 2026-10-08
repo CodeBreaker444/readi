@@ -1,18 +1,57 @@
 ---
 title: "Training"
-description: "Course definitions, attendance tracking, and certification management."
+description: "Record courses and certificates for each person, see what is valid or expired, and view the session calendar."
 ---
 
-## Main capabilities
+Training has three pages in the sidebar: **Courses**, **Calendar** and, for Admins, OPMs and Super Admins, **Email Notifications**.
 
-- Define training courses with duration, type, and active status
-- Record attendance: present, absent, excused
-- Track completion status and scores (0–100)
-- Issue certifications with expiry dates
-- View training history per user
+---
 
-## Primary app routes
+## Courses
 
-- `/training`
-- `/training/courses`
-- `/training/attendance`
+Training records for each person and their certificates.
+
+The page shows the total number of records. Filter by **Valid** or **Expired**, or by user, then **Clear** to reset.
+
+### Adding a record
+
+Click **New** and fill in:
+
+| Field | Notes |
+|---|---|
+| Users | Choose one or several people. The same record is created for each |
+| Course Name and Type | What was taught |
+| Session | The session it belongs to |
+| Certificate Type | **Participation** (attended) or **Qualification** (passed an exam) |
+| Session date, Completion date | When it took place and ended |
+| Expiry date | When the certificate stops being valid |
+
+Records can be edited or deleted. Deleting removes that person's record for the course.
+
+### Training curriculum
+
+Open a person to see their **Training Curriculum**, split into **Active** and **History** (older, expired records). Each row shows the course, type, certificate, session, completion date, expiry date, and a **Valid** or **Expired** status.
+
+### Recompute KPI
+
+**Recompute KPI** recalculates the monthly Training indicator from attendance records, which feeds the [Dashboard](/docs/modules/dashboard).
+
+---
+
+## Calendar
+
+Shows scheduled training sessions. Open a session to see each participant, the session date and their status: Completed, In Progress, Absent or Other. Use **Refresh** to reload.
+
+---
+
+## Email Notifications
+
+Admins, OPMs and Super Admins choose which training emails are sent: when a record is created, updated or deleted, and a **Certification Expiring** reminder sent 30, 14, 7, 3 and 1 days before expiry. Nothing is sent if email notifications are disabled for the company.
+
+---
+
+## Related
+
+- [Pilot Logic](/docs/business-logic/pilot-logic)
+- [Safety Management](/docs/modules/safety-management)
+- [Email Notifications](/docs/business-logic/email-notifications)

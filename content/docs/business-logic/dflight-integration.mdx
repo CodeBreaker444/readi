@@ -1,0 +1,106 @@
+---
+title: "D-Flight Integration & Drone Import"
+description: "How to connect D-Flight, view your D-Flight fleet, import drones into Readi, and keep them in sync."
+---
+
+D-Flight is the Italian USSP platform. When an organization has D-Flight enabled, Readi connects to it to pull registered drones and to request flight authorization for missions (see [D-Flight Mission Authorization](/docs/business-logic/dflight-authorization)).
+
+The **D-Flight** entry appears in the sidebar for **Admin, OPM and Super Admin** users, and only when D-Flight is enabled for the company (set on the company record by a Super Admin).
+
+---
+
+## Connecting D-Flight
+
+Go to **D-Flight → Settings** and fill in the connection:
+
+| Field | Notes |
+|---|---|
+| Base URL | D-Flight API address |
+| Username | Required |
+| Password | Encrypted at rest. Leave blank when editing to keep the current one |
+| Client ID | Required |
+| EASA Operator Code | Used as a fallback operator ID when D-Flight does not return one |
+| PFX certificate + password | Optional client certificate |
+
+At least one authentication method is required: **a password, or a PFX certificate with its password**. A password is required the first time you save.
+
+<Warning>
+Until these settings are saved, the Fleet page shows "D-Flight Not Configured", and every mission authorization is skipped silently.
+</Warning>
+
+---
+
+## D-Flight Fleet
+
+**D-Flight → Fleet** lists every active drone registered in D-Flight for your account and matches each one to a Readi drone component **by serial number**.
+
+| Card | Meaning |
+|---|---|
+| Total D-Flight Drones | Drones found in D-Flight |
+| Linked to Readi | Matched to an existing Readi component |
+| Not in Readi | In D-Flight but not yet imported |
+| ReADI Only | Active Readi drone components with no D-Flight match |
+
+Each row shows the D-Flight name, the Readi system and component, serial number, **DRC** (the D-Flight drone ID), model and status, plus the available action: **Import** for unlinked drones, **Sync** for linked ones.
+
+---
+
+## Importing a Drone
+
+Use **Import** on an unlinked drone to create it in Readi. The form is pre-filled from D-Flight (including the brand/model and UAS class where available).
+
+### 1. Choose the system
+
+| Option | What happens |
+|---|---|
+| **Create new system** | Needs a unique **System Code** and a **Client**. The new system is marked as coming from a D-Flight import |
+| **Select existing system** | The drone is added as a component of that system |
+
+### 2. Component and model
+
+- **Component name/code** and **Serial number** (required). The serial number must be unique across your organization (case-insensitive).
+- **Brand / Model** must exist in your model registry. If no match is found you are prompted to create it with **New Model**.
+- UAS/GCS serial numbers, drone classes, insurance (name, company, expiry date, alert recipients, alert days before, default 30) and the QR code are carried over.
+
+### 3. Certifications
+
+ENAC authorizations and STS declarations are **entered manually**: D-Flight does not expose them for import.
+
+### What is created
+
+- A **DRONE** component, status **Operational**, with the D-Flight ID stored as its **Drone Registration Code**.
+- An insurance record, if insurance details were provided.
+- After import, Readi fetches the drone's **STS declarations** from D-Flight and stores them on the component (STS-01 / STS-02 and start date). If that step fails, the import still succeeds.
+
+Importing needs permission to view configuration and to create systems. Errors such as "System code already exists" or "Component serial number already exists" are shown in the form.
+
+---
+
+## Syncing an Existing Drone
+
+For a drone already linked by serial number, **Sync** re-pulls D-Flight data and **overwrites** the previously synced values on the Readi component:
+
+- Drone Registration Code (DRC) and sync timestamp
+- QR code, UAS and GCS serial numbers
+- Drone classes (kept as-is if D-Flight returns none)
+- Insurance (created or updated)
+
+<Warning>
+Sync is blocked unless the component is **Operational**. A component in maintenance or expired gets: "Component must be Operational to sync from D-Flight".
+</Warning>
+
+STS declarations can also be refreshed on demand for a linked component, and the D-Flight declaration PDF can be downloaded.
+
+---
+
+## Insurance Expiry Alerts
+
+Insurance recorded on an imported drone feeds the insurance expiry notification (see [Cron Jobs](/docs/business-logic/cron-jobs)), sent to the configured alert recipients the configured number of days before expiry.
+
+---
+
+## Related
+
+- [D-Flight Mission Authorization](/docs/business-logic/dflight-authorization)
+- [Parameter Reference](/docs/business-logic/parameter-reference): fields used by the D-Flight sync
+- [Maintenance Module](/docs/business-logic/maintenance-module)

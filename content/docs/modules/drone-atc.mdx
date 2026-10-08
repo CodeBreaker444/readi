@@ -1,0 +1,54 @@
+---
+title: "Drone ATC"
+description: "A live map of your drones and the airspace around them."
+---
+
+**Drone ATC** (Air Traffic Control) shows your fleet on a live map, together with nearby aircraft, airspace zones and weather.
+
+It is available from the **Control Center** menu to users with Drone ATC access (Admin, OPM and several other management roles).
+
+---
+
+## Before you start
+
+Drone ATC needs your Control Center account to be connected (see [Control Center](/docs/modules/flytbase)). Without it you see "No Control Center API key configured", with a link to set it up.
+
+The connection indicator at the top shows **Live**, **Connecting**, **Error** or **No API Key**. Use **Retry** if the connection fails.
+
+---
+
+## Fleet panel
+
+The list on the side shows your drones with their state:
+
+| State | Meaning |
+|---|---|
+| **Live** | Flying and sending its position |
+| **Standby** | Available but not flying |
+| **Offline** | Not connected |
+| **No GPS** | Connected but no position yet |
+
+Select a drone to follow it, and open its live feed or video if available.
+
+---
+
+## Map layers
+
+Turn layers on or off from the **Layers** panel:
+
+- **Traffic:** your drones, and other aircraft nearby
+- **Airspace:** zones by class (A, B, C, D), with their height limits
+- **Weather:** wind (animated), temperature, clouds, rain and snow, and air pressure
+
+---
+
+## Updating drones
+
+Use **Sync Drones** (or **Update Drones**) to refresh the list of drones shown on the map from your Readi fleet. Do this after adding or changing a drone.
+
+---
+
+## Related
+
+- [Control Center](/docs/modules/flytbase)
+- [Operations](/docs/modules/operations)

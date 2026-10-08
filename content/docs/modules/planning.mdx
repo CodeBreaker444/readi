@@ -1,21 +1,70 @@
 ---
 title: "Planning"
-description: "Flight plan creation, approval workflow, and mission scheduling."
+description: "Request an evaluation of an operation, build its mission plan, and track the result before flying."
 ---
 
-Plans must reach `POSITIVE_RESULT` before a live mission can be created.
+Planning is where an operation is assessed and prepared before any mission is flown. In the sidebar it is **CO-00 - Planning**.
 
-## Approval workflow
+The usual path is:
 
-`NEW → PROCESSING → REQ_FEEDBACK → POSITIVE_RESULT / NEGATIVE_RESULT`
+```
+New Evaluation Request → Evaluation → Planning → Mission plan → Mission
+```
 
-## Main capabilities
+A planning must end with a **positive result** before a mission that needs a plan (PDRA) can be created.
 
-- Create flight plans with waypoints and flight parameters
-- Test logbook for rehearsal flights before live operations
-- Assign drones and payloads to plans via Mission Component
+---
 
-## Primary app routes
+## New Evaluation Request
 
-- `/planning`
-- `/planning/logbook`
+Start here for a new operational scenario.
+
+1. Pick the **client** and fill in the request form.
+2. Draw the **operation area** on the map.
+3. Upload supporting documents under **Evaluation Files**.
+4. Submit.
+
+## Evaluation
+
+Lists your evaluation requests with their status. Open one to follow its progress, chat with the people involved (**Communications**), and see related **Flight Requests** assigned to it.
+
+---
+
+## Planning statuses
+
+| Status | Meaning |
+|---|---|
+| New Task / New Planning | Just created |
+| Processing / In Progress | Being worked on |
+| Feedback Request | Waiting for someone's answer |
+| Suspended / On Hold | Paused |
+| Completed Positive (✓ Positive) | Approved: missions can be created |
+| Completed Refused (✗ Refused) | Not approved |
+
+---
+
+## Planning Dashboard
+
+Shows the **Operational Scenario Request Logbook**: one row per planning. Search it, and open a row to see its **Communications** and **Checklist**.
+
+## Mission Planning (the plan)
+
+A **mission plan** holds the actual route (waypoints) and flight parameters, and is linked to a system. Plans are versioned: each change is a new version. A plan can be marked Active or Inactive.
+
+For companies using D-Flight, the plan's waypoints are what get sent for authorization on PDRA missions. See [D-Flight Mission Authorization](/docs/business-logic/dflight-authorization).
+
+## Test flights
+
+A **test logbook** records rehearsal flights before live operations.
+
+## Mission Templates
+
+**Mission Templates** lists saved plans from all your plannings. Filter by client, pilot in command, evaluation, planning and date range, and download the files.
+
+---
+
+## Related
+
+- [Evaluation & Planning logic](/docs/business-logic/evaluation-planning-module)
+- [Logbooks](/docs/modules/logbooks)
+- [Operations](/docs/modules/operations)

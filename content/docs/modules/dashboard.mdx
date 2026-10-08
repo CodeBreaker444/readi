@@ -1,18 +1,65 @@
 ---
 title: "Dashboard"
-description: "Operational overview and fleet status at a glance."
+description: "Your operation at a glance: mission totals, flight hours, recent and upcoming missions, and the Safety Health Index."
 ---
 
-The Dashboard gives managers and pilots a real-time snapshot of the operation.
+The Dashboard is the first page after login. It has two views, **Dashboard** and **SHI Index & KPIs** (Safety Health Index), both in the sidebar.
 
-## Main capabilities
+---
 
-- Active mission count and status summary
-- Fleet health — systems `OPERATIONAL` vs `MAINTENANCE` vs `NOT_OPERATIONAL`
-- Upcoming planned missions for the day/week
-- Recent alerts and notifications
-- KPI widgets (safety, compliance, training completion rates)
+## Overview
 
-## Primary app routes
+### Totals
 
-- `/dashboard`
+Cards at the top show the totals for the selected period (**This Year**, **This Month** or **This Week**):
+
+| Card | Meaning |
+|---|---|
+| Total Missions | Missions in the period |
+| Logged Drones | Drones that flew |
+| Hours Flown | Total flight time |
+| Km Flown | Total distance |
+| Customers Served | Clients with at least one mission |
+
+### Mission Results
+
+A chart splits missions into **Completed**, **In Progress** and **Failed**, so you can spot problems early.
+
+### Past and Next Missions
+
+Two lists show what was flown recently and what is coming up. Each row has the mission ID, pilot, date and status. Use **Search** and **Filter** to narrow the list. Missions without a pilot show "Not Assigned".
+
+<Warning>
+Missions waiting for an OPM's approval, and companies using D-Flight where the authorization has not yet been accepted, do not appear as ready to fly. See [Mission Approval (OPM)](/docs/business-logic/mission-approval).
+</Warning>
+
+---
+
+## Safety Health Index (SHI)
+
+The **SHI Index & KPIs** page turns your safety indicators into a single score, based on the EASA model.
+
+| Score | Status |
+|---|---|
+| 85% and above | **Excellent** |
+| 70% to 84% | **Marginal** |
+| Below 70% | **Unsatisfactory** |
+
+The page shows:
+
+- **Overall score** and its status
+- **Safety score by area** (Compliance, Training, Operations, Maintenance), each with its number of indicators
+- **Monthly trend:** current, average and peak score, and change from the previous month
+- **Indicator cards:** each indicator's value against its target, marked Good, Marginal or Alert
+- **Indicator trend:** select an indicator to see its history and how close it is to target
+
+<Warning>
+An indicator only counts once measurement values have been logged for it. See [Safety Management](/docs/modules/safety-management).
+</Warning>
+
+---
+
+## Related
+
+- [Safety Management](/docs/modules/safety-management)
+- [Operations](/docs/modules/operations)

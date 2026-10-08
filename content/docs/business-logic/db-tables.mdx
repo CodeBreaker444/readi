@@ -1,0 +1,97 @@
+---
+title: "Data Overview"
+description: "Where Readi keeps each kind of information, and how the main records relate to each other."
+---
+
+Everything in Readi belongs to a **company** (also called an owner). Users only ever see records of their own company. This page explains the main kinds of records and how they connect.
+
+---
+
+## How the records connect
+
+```
+Company
+ ├─ Clients
+ │    └─ Evaluations → Plannings → Mission plans (routes)
+ │                                   └─ Missions (flights)
+ ├─ Systems (drones and equipment)
+ │    ├─ Components (drone, battery, controller, payload)
+ │    ├─ Models
+ │    └─ Maintenance tickets
+ ├─ Users, teams and roles
+ └─ Integrations (D-Flight, DCC, Control Center)
+```
+
+---
+
+## Main records
+
+| Record | What it holds |
+|---|---|
+| **Company** | The organization: name, address, enabled features (such as D-Flight and Drone ATC), email limits |
+| **Client** | A customer of the company: contact details, contract dates |
+| **Evaluation** | A request to assess an operation for a client, with its status and attached files |
+| **Planning** | The plan that comes from an evaluation: dates, status, who is assigned |
+| **Mission plan** | The route and flight parameters of a planning, with versions and limits |
+| **Mission** | An actual or scheduled flight: pilot, system, times, location, result, approval and D-Flight status |
+| **Flight request** | A request received from outside (a DCC or a client), waiting for an OPM decision |
+| **System** | A drone setup made of components. Has a model, a status and an optional client |
+| **Component** | One part of a system, with serial number, usage hours, maintenance counters, insurance and D-Flight ID |
+| **Model** | The manufacturer and model definition, including maintenance cycle limits |
+| **Maintenance ticket** | A repair or inspection covering one or more components, with history and attachments |
+
+---
+
+## People and access
+
+| Record | What it holds |
+|---|---|
+| **User** | Login, name, role and profile |
+| **Team** | Groups of users |
+| **Permissions** | What each role, and each individual user, may open or change |
+| **Authorization key** | The key behind each user's Authorization PIN, used to sign status changes |
+| **Qualifications and declarations** | Pilot qualifications and declarations |
+
+See the [Role Glossary](/docs/business-logic/role-glossary) for what each role can do.
+
+---
+
+## Records for oversight
+
+| Record | What it holds |
+|---|---|
+| **Audit log** | Who did what and when, with their role and IP address |
+| **Notification** | Messages shown in the app, with read status |
+| **Signed transactions** | Status changes signed with the user's PIN |
+| **Safety records** | Safety reports, actions and performance indicators (SPI/KPI) |
+| **Compliance** | Requirements, evidence and status history |
+| **Training** | Courses, sessions and attendance |
+| **Document repository** | Uploaded files and their types |
+| **Emergency response plans** | Contacts and procedures by emergency type |
+
+---
+
+## Integration settings
+
+| Record | What it holds |
+|---|---|
+| **D-Flight settings** | One per company: address, login and optional certificate. Passwords are stored encrypted |
+| **DCC settings** | One per company: display name and callback address |
+| **Control Center organizations** | Linked accounts and which users may use them |
+| **API keys** | Keys that let outside systems send requests |
+
+---
+
+## Good to know
+
+- **Deleting is often "hiding".** Many records (systems, missions, clients) are marked inactive or deleted rather than erased, so history stays intact.
+- **Serial numbers are unique per company.** The same serial cannot be used twice, ignoring upper or lower case.
+- **Passwords and keys are never shown.** They are stored encrypted.
+
+---
+
+## Related
+
+- [Systems](/docs/business-logic/systems)
+- [Mission Lifecycle](/docs/business-logic/mission-lifecycle)
+- [Audit Logs](/docs/records/audit-logs)

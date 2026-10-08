@@ -1,29 +1,127 @@
 ---
 title: "Operations"
-description: "Centralised execution monitoring and day-to-day activity control."
+description: "Create, schedule and fly missions: the Mission Table, Daily Board, Calendar and Flight Requests."
 ---
 
-Operations is where missions move from planned to completed. Three views of the same data.
-
-## Views
+Operations is where missions move from planned to completed. It has four views of the same missions, in the sidebar under **Operations**.
 
 | View | Purpose |
 |---|---|
-| **Operations Table** | Structured list of all missions with filters |
-| **Daily Board** | Kanban drag-and-drop — move missions between status columns |
-| **Calendar** | Timeline view for scheduling and crew visibility |
+| **Mission Table** | Full list of missions with filters and details |
+| **Daily Board** | Drag-and-drop board: Scheduled, In Progress, Done |
+| **Calendar** | Schedule by week, month or list, and add missions |
+| **Flight Requests** | Requests waiting for a decision (internal and external) |
 
-## Mission status changes
+Admins, OPMs and Super Admins also see **Email Notifications** to choose which mission emails are sent.
 
-Changing a mission status on the Daily Board requires an **Authorization PIN**.
+---
 
-**Blocked cases:**
-- System is `NOT_OPERATIONAL` or `MAINTENANCE`
-- Pilot has not filed a daily declaration
-- User has no Authorization PIN configured
+## Creating a mission
 
-## Primary app routes
+Click **Add Mission** (Calendar) or **New** (Mission Table). The **New Mission** screen has these parts:
 
-- `/operations`
-- `/operations/board`
-- `/operations/calendar`
+1. **Client:** who the mission is for.
+2. **Operation type and drone system:**
+
+| Operation type | What it needs |
+|---|---|
+| **Open** | Pilot flies with the remote control. No mission plan |
+| **PDRA** | Flies under a risk analysis. A mission plan is required |
+| **STS-01 / STS-02** | Standard scenarios. Same as Open, no mission plan |
+
+3. **Mission details:** category, type, location, date and time, pilot, procedure and notes.
+4. **Recurring missions:** choose the days of the week and an end date to create the whole series at once.
+
+### Systems you cannot pick
+
+The list marks systems that are unavailable, with a reason:
+
+- **Maintenance** or **Maintenance Due:** under maintenance, or due soon (review before scheduling)
+- **Not Operational:** a component has expired. Creation is blocked
+- **Dismissed:** administratively retired
+- **SN Mismatch:** no system for that client has the serial number
+
+### Companies using D-Flight
+
+For Open, STS-01, STS-02 and PDRA missions you also draw the flight area on the map (a circle, or the plan's route for PDRA). See [D-Flight Mission Authorization](/docs/business-logic/dflight-authorization).
+
+### Missions created by pilots
+
+A pilot's mission goes to the OPMs of their department for approval before it appears on the Daily Board. See [Mission Approval (OPM)](/docs/business-logic/mission-approval).
+
+---
+
+## Daily Board
+
+Each mission is a card in one of three columns: **Scheduled**, **In Progress** or **Done**. Drag a card to the next column to start or finish the mission.
+
+Cards show the pilot, the system, and its maintenance state (**Maintenance OK**, **Alert**, **Due** or **In Maintenance**). Open a card for the timeline (planned, official start and end, actual start and end), people and equipment, and flight results.
+
+Before a card can move, Readi checks that:
+
+- The system is Operational and not in maintenance
+- The pilot has filed today's declaration (below)
+- The mission has OPM approval, if it needed it
+- D-Flight has accepted it, if your company uses D-Flight
+- You have set an **Authorization PIN**, which you enter to confirm the move
+
+See [Mission Status Gates](/docs/platform-rules/mission-status-gates) and [Authorization Code (PIN)](/docs/platform-rules/authorization-code).
+
+### Daily Pilot Declaration
+
+Each day a pilot must confirm, before starting a mission, that they:
+
+- are rested and not fatigued
+- are physically and mentally fit
+- are not under medication that could affect performance
+- have reviewed the mission plan and area
+- have inspected the equipment and drone systems
+
+All items must be ticked before submitting.
+
+### Procedure tasks
+
+If the mission has a company procedure, its tasks appear on the card. Complete them before finishing the mission. When done the card shows "All tasks completed".
+
+---
+
+## Completing a mission
+
+When a mission is finished, **Mission Complete** has three tabs:
+
+| Tab | What to do |
+|---|---|
+| **Maintenance** | Record the flights, hours and days used on each component. Usage can be automatic or manual. It can only be recorded once per mission |
+| **Flight Logs** | Attach the flight log, by uploading a file (.zip, .json, .xml) or fetching it from Control Center |
+| **Post-Flight Data** | Result, notes, distance and other final details |
+
+A component that reaches its maintenance limit shows "Maintenance is overdue". See the [Maintenance Module](/docs/business-logic/maintenance-module).
+
+---
+
+## Importing a flown mission
+
+Use **Import mission** to add a flight that was already flown. It takes four steps: **Client**, **Log File** (upload a .gutma or .zip file, or pick a flight from Control Center), **Mission Data** and **Pilot**.
+
+---
+
+## Calendar
+
+Shows missions as colored entries: Scheduled, In Progress and Completed. Switch between **Today**, **Week**, **Month** and **List**.
+
+---
+
+## Flight Requests
+
+Has two tabs:
+
+- **Internal:** missions created by your pilots that need OPM approval. Approve, or deny with an optional reason. Filter by All, Pending, Approved or Denied.
+- **External:** requests from outside systems and clients (see [DCC Integration](/docs/business-logic/dcc-integration) and [Client Portal](/docs/modules/client-portal)). Requests are counted as New, Acknowledged or Assigned. An OPM can **Move to Planning** (assign it to a planning mission and a plan), or deny it.
+
+---
+
+## Related
+
+- [Mission Lifecycle](/docs/business-logic/mission-lifecycle)
+- [Operations Module logic](/docs/business-logic/operations-module)
+- [Planning](/docs/modules/planning)

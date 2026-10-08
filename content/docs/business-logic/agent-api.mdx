@@ -1,69 +1,62 @@
 ---
-title: "Agent API"
-description: "AI agent pipeline, role access, coverage gaps, and compliance audit rules."
+title: "AI Assistant"
+description: "What the AI assistant can answer, who can ask what, its current limits, and the safety checks it runs."
 ---
 
-The AI Agent answers natural language questions about missions, maintenance, compliance, and safety — scoped to the user's role and organisation.
+The AI Assistant lets you ask questions in plain language about missions, maintenance, compliance, and safety. It only shows information that your role and your organisation are allowed to see.
 
-## Pipeline
+## How It Works
 
-```
-User question
-    │
-[1] CLASSIFY INTENT
-    DATABASE | PROCEDURE | WEB_SEARCH | DECOMMISSIONED | OTHER
-    │
-[2] SELECT TABLE(S) — LLM picks 1-2 from role allowed list
-    │
-[3] GENERATE QUERY PLAN
-    { table, aggregation: COUNT|LIST, date_filter, extra_filter, row_limit }
-    │
-[4] EXECUTE (Supabase)
-    - fk_owner_id always applied
-    - PIC: pilot_mission filtered to own missions only
-    - Blocked columns stripped
-    - Max 15 rows, data capped at 8,000 chars
-    │
-[5] SYNTHESISE (Groq llama-3.3-70b)
-    DB data + company procedures + optional web search + decommissioned data
-```
+When you ask a question, the assistant:
+
+1. **Understands what you need** — for example a question about your data, a company procedure, a general web lookup, or equipment that is no longer in service.
+2. **Finds the right information** — it looks only in the areas your role has access to.
+3. **Applies privacy rules** — it only uses your organisation's data. Pilots only see their own missions, and sensitive details such as passwords and purchase prices are never shown.
+4. **Prepares a clear answer** — it combines your data with company procedures and, when useful, general web information.
+
+To keep answers fast and readable, the assistant looks at a limited number of records at a time (up to 15). For large results, ask a more specific question, such as a narrower date range.
 
 ---
 
-## Role Access
+## Who Can Ask About What
 
-| Role | Accessible Tables |
+| Role | What the assistant can help with |
 |---|---|
-| **PIC** | `pilot_mission` (own only), `pilot_mission_result`, `planning`, `pilot_declaration`, `notification`, `repository_file` |
-| **OPM** | All of the above + `calendar_shift`, `checklist`, `luc_document`, `users`, `tool`, `tool_maintenance`, `tool_component`, `maintenance_ticket`, `audit`, `compliance_requirement`, `safety_report`, `alert_log`, `training`, `client` |
-| **SM** | `safety_report`, `safety_action`, `spi_kpi`, `alert_log`, `pilot_mission`, `tool`, `maintenance_ticket`, `training_attendance` |
-| **AM** | `pilot_mission`, `planning`, `tool`, `tool_maintenance`, `luc_document`, `audit`, `compliance_requirement` |
-| **CMM** | `audit`, `audit_finding`, `compliance_requirement`, `compliance_evidence`, `compliance_status_log`, `spi_kpi` |
-| **MM** | `tool`, `tool_maintenance`, `tool_component`, `maintenance_ticket`, `maintenance_ticket_event`, `pilot_mission`, `alert_log` |
-| **TM** | `training`, `training_attendance`, `spi_kpi`, `users`, `users_profile` |
-| **DC** | `users`, `users_profile`, `user_permessi`, `pilot_mission`, `repository_file` |
-| **SLA** | `pilot_mission`, `tool`, `maintenance_ticket`, `spi_kpi`, `alert_log`, `client` |
-| **ADMIN** | Same as OPM — must impersonate OPM via `x-opm-impersonate` header |
+| **Pilot in Command (PIC)** | Your own missions and results, planning, your declarations, notifications, and shared files |
+| **Operations Manager (OPM)** | Everything a pilot can see, plus shifts, checklists, documents, users, equipment and maintenance, audits, compliance, safety reports, alerts, training, and clients |
+| **Safety Manager (SM)** | Safety reports and actions, safety indicators, alerts, missions, equipment, maintenance, and training attendance |
+| **Accountable Manager (AM)** | Missions, planning, equipment and its maintenance, documents, audits, and compliance |
+| **Compliance Monitoring Manager (CMM)** | Audits and findings, compliance requirements, evidence and status history, and safety indicators |
+| **Maintenance Manager (MM)** | Equipment, parts, maintenance work and its history, missions, and alerts |
+| **Training Manager (TM)** | Training, attendance, safety indicators, and user profiles |
+| **Data Controller (DC)** | Users and profiles, permissions, missions, and shared files |
+| **Service Level Agreement (SLA)** | Missions, equipment, maintenance, safety indicators, alerts, and clients |
+| **Administrator** | Same as Operations Manager, once acting as an Operations Manager |
 
 ---
 
-## Coverage Gaps
+## Current Limits
 
-| Missing Data | Impact |
+The assistant cannot yet answer some questions:
+
+| Topic | What you can't ask yet |
 |---|---|
-| `evaluation` / `evaluation_action` | Cannot answer "what evaluations are open?" |
-| `user_qualification` | Cannot answer "which pilots have expired qualifications?" |
-| `pilot_declaration` (non-PIC) | OPM cannot ask "did pilot X file a pre-flight declaration?" |
-| `incident_flag`, `rth_unplanned`, `link_loss`, `deviation_flag` | Not in TABLE_SCHEMA — planner unaware |
-| `battery_charge_start/end`, `fuel_used` | Missing from TABLE_SCHEMA |
+| Evaluations | "Which evaluations are still open?" |
+| Pilot qualifications | "Which pilots have expired qualifications?" |
+| Pilot declarations (for managers) | "Did pilot X file a pre-flight declaration?" |
+| Flight incidents | Incident flags, unplanned returns home, lost connection, and route deviations |
+| Battery and fuel | Battery charge and fuel use during a flight |
 
-**Blocked columns:** `password_hash`, `auth_user_id`, `key_`, `api_key`, `session_token`, `purchase_price`
+For security, the assistant never reveals passwords, login details, access keys, or purchase prices.
 
 ---
 
-## Built-in Audit Rules
+## Built-in Safety Checks
 
-1. **Wind compliance** — mission flew while `WIND_ALERT` was `OPEN` → `VIOLATION:`
-2. **Altitude limit** — `max_altitude > 120 m` → `VIOLATION:`
-3. **Maintenance gate** — drone had open `HIGH` priority ticket during flight → `VIOLATION:`
-4. **Decommissioned** — queries `tool_component` for `expiration_date <= today`, groups by system
+When asked to review missions, the assistant automatically flags a **violation** in these cases:
+
+1. **Wind** — the mission flew while a wind alert was still open.
+2. **Altitude** — the drone flew higher than 120 metres.
+3. **Maintenance** — the drone had an open high-priority maintenance issue at the time of the flight.
+
+It can also list **equipment parts that have reached their expiry date** and are no longer in service, grouped by system.
