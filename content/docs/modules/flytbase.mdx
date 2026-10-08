@@ -1,20 +1,82 @@
 ---
-title: "FlytBase Integration"
-description: "Real-time telemetry and ATC feed from FlytBase."
+title: "Control Center"
+description: "Connect your Control Center account, browse recent flights, and save them into Readi."
 ---
 
-Readi integrates with FlytBase ATC for real-time drone telemetry during active missions.
+The Control Center connection lets you bring flights flown with your drones into Readi, so they become part of your flight records.
 
-## What it provides
+---
 
-- Live altitude, battery, and GPS feeds written to active `pilot_mission` records
-- Incident flags set automatically: `link_loss`, `rth_unplanned`, `deviation_flag`
-- Alert ingestion: FlytBase alerts (e.g. `WIND_ALERT`, `LINK_LOSS`) stored in `alert_log`
+## Connecting your account
 
-## Configuration
+Open **Control Center** in the sidebar and enter:
 
-FlytBase credentials are configured at the organisation level via the FlytBase API key in organisation settings.
+| Field | What to enter |
+|---|---|
+| Name | Optional label, such as "Production" |
+| API Token | A long-lived key from your Control Center account (not a short-lived login token) |
+| Organization ID | Found in your Control Center dashboard under Organization Settings |
 
-## Primary app routes
+1. Click **Verify token**. Readi shows the account the token belongs to (name, username, phone, organization).
+2. Check it is your account, then click **Yes, save this token**.
 
-- `/integrations/flytbase`
+The token is stored securely and is never shown to other users. To change it use **Replace token**, or **Remove** to disconnect. After removal, flights from Control Center are no longer available until a new token is added.
+
+<Warning>
+If you see "No Control Center API token configured", ask your administrator to connect the account.
+</Warning>
+
+---
+
+## Recent Flights
+
+**Control Center → Recent Flights** lists the latest flights from your account. Choose a time window (last 1, 6, 12 or 24 hours, or the latest 20 flights) and select a flight to preview it.
+
+The preview has three tabs:
+
+| Tab | Shows |
+|---|---|
+| **Map** | The route flown |
+| **Flight Log** | Every recorded point: time, position, altitude, speed, heading and battery |
+| **Flight Info** | Pilot, mission, start and end time, duration, distance, the drone, battery and controller details, and flight events |
+
+---
+
+## Saving a flight into Readi
+
+Click **Archive to ReADI** to save the flight. Flights already saved show a **Saved to ReADI** label.
+
+<Warning>
+Add the drone and controller serial numbers to your equipment list first. If they are not registered, Readi asks you to register them before archiving.
+</Warning>
+
+An archived flight can then be sent to a connected DCC as the mission's flight report (see [DCC Integration](/docs/business-logic/dcc-integration)).
+
+---
+
+## C2 Config
+
+**C2 Config** is for Administrators, OPMs and Super Admins. It controls which Control Center accounts your company can use and who may use them. It has two tabs.
+
+### Organizations
+
+Each entry is a Control Center account (for example "Production Environment").
+
+- **Add Organization:** enter a name, the Control Center Organization ID and an API token. Readi checks the token before saving.
+- **Delete:** removes the account from Readi, so anyone who used it loses access to its flights.
+
+### Permissions
+
+Lists your users and the organizations each one can use.
+
+- **Edit User:** move organizations between *Available* and *Assigned*, then **Save Changes**.
+- A user with no assigned organization cannot see flights from Control Center.
+
+Deleting an organization and revoking a user's access ask for your [Authorization PIN](/docs/platform-rules/authorization-code).
+
+---
+
+## Related
+
+- [Drone ATC](/docs/modules/drone-atc)
+- [Logbooks](/docs/modules/logbooks)

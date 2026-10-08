@@ -8,7 +8,10 @@
     "safety-management",
     "compliance",
     "training",
-    "flytbase"
+    "flytbase",
+    "drone-atc",
+    "client-portal",
+    "emergency-contact"
   ],
   "icon": "LayoutGrid"
 }

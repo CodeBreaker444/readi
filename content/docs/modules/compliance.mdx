@@ -1,18 +1,60 @@
 ---
 title: "Compliance"
-description: "Audit records, regulatory requirements, and evidence management."
+description: "Track regulatory requirements, their evidence and due dates, the annual audit plan, and suggested safety targets."
 ---
 
-## Main capabilities
+Compliance has four pages in the sidebar.
 
-- Internal, external, and surveillance audit records
-- Individual findings with severity and corrective action tracking
-- Regulatory compliance requirements with status tracking
-- Evidence document upload to support compliance claims
-- Status change history log per requirement
+---
 
-## Primary app routes
+## General Audit Plan
 
-- `/compliance`
-- `/compliance/audits`
-- `/compliance/requirements`
+Based on your Safety Management System (SMS) manual.
+
+- **Totals:** requirements, Compliant, Partial / Non-Compliant and Not Applicable.
+- **Annual Audit Schedule:** four quarterly audits covering all compliance areas, with period, type, subject, responsible person, mode and expected output. Quarterly reports are signed by the Compliance Monitoring Manager (CMM), validated by the Accountable Manager (AM), and archived as PDF for 3 years. Corrective actions are kept in a register with deadlines and owners.
+- **Compliance Requirements:** the list of requirements. Filter by status and area, and use **New Requirement** to add one.
+
+| Field | Notes |
+|---|---|
+| Ref Code, Title | How the requirement is named |
+| Type, Regulatory Body | What it is and who sets it |
+| Status | Compliant, Partial, Non-Compliant or Not Applicable |
+| Criticality | 1 to 5 |
+| Next Due Date, Notes | When to review next |
+
+---
+
+## Requirements & Evidence
+
+Day-to-day management of the same requirements.
+
+- **Change Status:** pick the new status and add a comment. The change is kept in the requirement's history.
+- **Manage Evidence:** attach proof to a requirement. Choose a type (such as a document), add a description, a file link and notes.
+- **Update KPI:** updates the compliance indicators.
+- Edit or delete requirements. Deleting is permanent.
+
+---
+
+## Calendar
+
+Shows due and review dates, colored by status (Compliant, Partial, Non-Compliant, Not Applicable). View by **Month** or **List**, and open an event for its code, title, status, area, source and due date.
+
+---
+
+## Safety Target Review
+
+Suggests new targets for your safety indicators.
+
+1. Choose **Analyse last** 3, 6 or 12 months.
+2. Click **Generate**. Readi compares each indicator's current target with its recent results and proposes a new one, showing the difference.
+3. For each proposal choose **Approve** (the active target is updated) or **Reject** (the current target stays). You can add a note.
+
+The page counts the indicators, and the proposals pending, approved and rejected.
+
+---
+
+## Related
+
+- [Safety Management](/docs/modules/safety-management)
+- [Document Repository](/docs/records/document-repository)

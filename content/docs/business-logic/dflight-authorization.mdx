@@ -1,0 +1,97 @@
+---
+title: "D-Flight Mission Authorization"
+description: "How Readi requests flight authorization from D-Flight, which missions are sent, how status updates arrive, and what blocks a mission."
+---
+
+For companies with D-Flight enabled, Readi requests flight authorization from D-Flight when a mission is created. A mission is only usable on the Daily Board once D-Flight has **accepted** it.
+
+The request is **non-fatal**: if it cannot be sent, the mission is still created, and the problem is reported to the user (see [Errors and retrying](#errors-and-retrying)).
+
+---
+
+## When the request is sent
+
+| Mission created by | Request sent |
+|---|---|
+| OPM, manager, Admin, Super Admin | Immediately at creation |
+| Pilot (not a manager) | After an OPM approves the mission. See [Mission Approval (OPM)](/docs/business-logic/mission-approval) |
+| Recurring (calendar) missions | At creation, per mission |
+
+Until then the Mission Table shows **"D-Flight: Awaiting OPM approval"**, or **"D-Flight: Not submitted"** if the request failed after approval and can be retried.
+
+---
+
+## Requirements
+
+A request is only built when all of these are true:
+
+1. D-Flight is enabled for the company and credentials are saved ([setup](/docs/business-logic/dflight-integration)).
+2. The mission has a **scheduled start**.
+3. The mission's system has an **active DRONE component with a Drone Registration Code**, i.e. a drone imported from or synced with D-Flight.
+4. The mission has **trajectory data** (below).
+
+A missing 1 is skipped silently; a missing 2, 3 or 4 is reported to the user.
+
+### Trajectory by operation type
+
+| Operation type | Source of the flight area |
+|---|---|
+| **OPEN, STS-01, STS-02** | A **circle** drawn on the map when creating the mission. Circles above the maximum radius are not sent |
+| **PDRA** | The **waypoints** of the mission's selected mission plan (falls back to another plan of the same evaluation that has waypoints) |
+| Other types | No trajectory: not sent |
+
+Routes are spread evenly over the flight time, and the area allows a 50 m margin around the route and flying from 0 to 120 m high. The pilot can choose a **U-space** when D-Flight offers several.
+
+<Warning>
+If the scheduled start has already passed, the request starts one minute from now so D-Flight accepts it. Duration defaults to 15 minutes if not set on the mission.
+</Warning>
+
+---
+
+## Status tracking
+
+After D-Flight creates the mission, Readi remembers the D-Flight mission and asks the flytrelay service to watch it. flytrelay checks D-Flight every 30 seconds and tells Readi when a status changes. Three statuses are tracked:
+
+| Status | Examples |
+|---|---|
+| Mission status | SAVED, ABORTED, CANCELLED, WITHDRAWN |
+| Flight authorisation status | ACCEPTED, REJECTED, REVOKED, WITHDRAWN |
+| Flight clearance status | CLEARANCE_REJECTED, CLEARANCE_REJECTED_BY_SYSTEM |
+
+The Daily Board and mission details show the authorisation state as **D-Flight: Pending** (default), **Accepted**, **Rejected** or **Withdrawn**.
+
+---
+
+## What D-Flight status blocks
+
+| Rule | Effect |
+|---|---|
+| Authorisation not yet **ACCEPTED** | Mission cannot be **started** |
+| Mission status ABORT/ABORTED/ABORTING, CANCELLED, WITHDRAWN | Mission cannot proceed on the Daily Board |
+| Authorisation REJECTED, REVOKED, WITHDRAWN | Mission cannot proceed |
+| Clearance rejected | Mission cannot proceed |
+
+Companies using D-Flight only see a mission on the Daily Board once D-Flight has accepted it. Missions with no D-Flight request (D-Flight off, or never created) are not gated.
+
+### Notifications to the pilot
+
+A high-priority notification goes to the assigned pilot when:
+
+- D-Flight **aborts** the mission: "land immediately" if already in flight, "do not take off" otherwise.
+- D-Flight withdraws, rejects, revokes, cancels or conflicts the mission **while it is in flight**: stop immediately.
+
+---
+
+## Errors and retrying
+
+When a request fails, or is skipped for a reason the user can fix (for example, no D-Flight-registered drone assigned), a **D-Flight error** toast explains the cause and a suggested solution. This applies to PDRA, OPEN, STS-01 and STS-02 missions.
+
+A request can be re-sent from the Mission Table (missions marked "Not submitted") after fixing the cause.
+
+---
+
+## Related
+
+- [D-Flight Integration & Drone Import](/docs/business-logic/dflight-integration)
+- [Mission Approval (OPM)](/docs/business-logic/mission-approval)
+- [Mission Status Gates](/docs/platform-rules/mission-status-gates)
