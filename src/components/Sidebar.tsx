@@ -891,7 +891,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
               <HiOutlineDocumentText size={15} className="shrink-0" />
               <span style={{ fontSize: '0.72rem', fontWeight: 500 }}>{t('sidebar.releaseLogs')}</span>
               <span className={`ml-auto text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${isDark ? 'bg-amber-500/15 text-amber-400' : 'bg-amber-100 text-amber-600'
-                }`}>v1.3</span>
+                }`}>v1.4</span>
             </a>
           )}
         </div>
