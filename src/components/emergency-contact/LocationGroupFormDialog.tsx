@@ -18,7 +18,12 @@ import { cn } from '@/lib/utils'
 import { MapPin, Plus, Search, Trash2, UserPlus, X } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { LocationGroupMap } from './LocationGroupMap'
+import dynamic from 'next/dynamic'
+
+const LocationGroupMap = dynamic(
+  () => import('./LocationGroupMap').then((m) => m.LocationGroupMap),
+  { ssr: false },
+)
 
 interface NominatimResult {
   place_id: number
