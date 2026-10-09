@@ -148,6 +148,18 @@ const MISSION_STATUS_ID_TO_CODE: Record<number, string> = {
   3: '10',
 };
 
+const STATUS_NAME_TO_CODE: Record<string, string> = {
+  PLANNED: '00',
+  IN_PROGRESS: '05',
+  COMPLETED: '10',
+};
+
+const STATUS_NAME_TO_DESC: Record<string, string> = {
+  PLANNED: 'Scheduled',
+  IN_PROGRESS: 'In Progress',
+  COMPLETED: 'Completed',
+};
+
 export async function getReadiLastNextMissionList(
   ownerId: number,
   fkClientId: number,
@@ -177,6 +189,7 @@ export async function getReadiLastNextMissionList(
         fk_pilot_user_id: true,
         fk_planning_id: true,
         fk_mission_status_id: true,
+        status_name: true,
         pilot_mission_status: {
           select: {
             status_code: true,
@@ -245,9 +258,14 @@ export async function getReadiLastNextMissionList(
         const planning = item.fk_planning_id ? planningMap.get(item.fk_planning_id) : null;
         const missionResult = item.pilot_mission_result[0] ?? null;
         const displayDate = item.actual_start || item.scheduled_start;
-        const statusCode = MISSION_STATUS_ID_TO_CODE[item.fk_mission_status_id ?? 0]
+        // status_name is what the Operations page shows, so it wins over the FK.
+        const statusCode = STATUS_NAME_TO_CODE[item.status_name ?? '']
+          ?? MISSION_STATUS_ID_TO_CODE[item.fk_mission_status_id ?? 0]
           ?? item.pilot_mission_status?.status_code
           ?? '00';
+        const statusDesc = STATUS_NAME_TO_DESC[item.status_name ?? '']
+          ?? item.pilot_mission_status?.status_name
+          ?? '';
 
         return {
           status: 'success',
@@ -262,7 +280,7 @@ export async function getReadiLastNextMissionList(
           mission_type_desc: item.pilot_mission_type?.type_name || '',
           mission_result_desc: missionResult?.result_type || '',
           mission_status_code: statusCode,
-          mission_status_desc: item.pilot_mission_status?.status_name || '',
+          mission_status_desc: statusDesc,
           mission_duration_min: item.flight_duration || 0,
         };
       });

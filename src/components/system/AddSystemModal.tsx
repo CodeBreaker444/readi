@@ -49,6 +49,10 @@ export default function AddSystemModal({ open, onClose, onSuccess, models, clien
         return;
       }
     }
+    if (!formData.tool_code.trim()) {
+      toast.error(t('systems.components.addSystem.toasts.codeRequired'));
+      return;
+    }
     if (!formData.fk_client_id) {
       toast.error(t('systems.components.addSystem.toasts.clientRequired'));
       return;
@@ -75,7 +79,21 @@ export default function AddSystemModal({ open, onClose, onSuccess, models, clien
       const res = await fetch('/api/system/add', { method: 'POST', body: formPayload });
       const result = await res.json();
       if (result.code === 1) { toast.success(t('systems.components.addSystem.toasts.success')); onSuccess(); }
-      else toast.error(result.message || t('systems.components.addSystem.toasts.failed'));
+      else {
+        // Server messages are English; map known invalid fields to translated text.
+        const fieldKeys: Record<string, string> = {
+          tool_code: 'codeRequired',
+          clientId: 'clientRequired',
+          latitude: 'latitudeRange',
+          longitude: 'longitudeRange',
+        };
+        const invalidField = Object.keys(result.errors ?? {}).find(f => fieldKeys[f]);
+        toast.error(
+          invalidField
+            ? t(`systems.components.addSystem.toasts.${fieldKeys[invalidField]}`)
+            : result.message || t('systems.components.addSystem.toasts.failed')
+        );
+      }
     } catch { toast.error(t('systems.components.addSystem.toasts.error')); } finally { setLoading(false); }
   };
 

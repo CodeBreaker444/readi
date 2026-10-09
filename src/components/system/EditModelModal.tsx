@@ -10,6 +10,7 @@ import { useTheme } from '@/components/useTheme';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
+import { getApiErrorMessage } from '@/lib/api-error-message';
 import { Skeleton } from '../ui/skeleton';
 
 interface EditModelModalProps {
@@ -319,7 +320,7 @@ export default function EditModelModal({ open, toolId, onClose, onSuccess, initi
         toast.success(t('systems.components.editModel.toasts.updateSuccess'));
         onSuccess();
       } else {
-        toast.error(result.message || t('systems.components.editModel.toasts.updateFailed'));
+        toast.error(getApiErrorMessage(result, t('systems.components.editModel.toasts.updateFailed')));
       }
     } catch {
       toast.error(t('systems.components.editModel.toasts.updateError'));

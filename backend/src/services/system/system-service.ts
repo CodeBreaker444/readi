@@ -636,7 +636,25 @@ export async function detachComponent(ownerId: number, componentId: number) {
 }
 
 
+const MODEL_SPEC_LABELS: Record<string, string> = {
+  max_flight_time: 'Max flight time',
+  max_speed: 'Max speed',
+  max_altitude: 'Max altitude',
+  weight: 'Weight',
+};
+
+function findNegativeModelSpec(specs: Record<string, any> | null | undefined): string | null {
+  for (const [key, label] of Object.entries(MODEL_SPEC_LABELS)) {
+    const value = specs?.[key];
+    if (typeof value === 'number' && value < 0) return `${label} cannot be negative.`;
+  }
+  return null;
+}
+
 export async function addModel(modelData: any) {
+  const negativeSpec = findNegativeModelSpec(modelData.technical_specs);
+  if (negativeSpec) return { code: 0, message: negativeSpec };
+
   const normalizedCode = typeof modelData.factory_serie === 'string'
     ? modelData.factory_serie.trim()
     : '';
@@ -673,6 +691,9 @@ export async function addModel(modelData: any) {
 
 
 export async function updateModel(modelId: number, modelData: any) {
+  const negativeSpec = findNegativeModelSpec(modelData);
+  if (negativeSpec) return { code: 0, message: negativeSpec };
+
   const normalizedCode = typeof modelData.model_code === 'string'
     ? modelData.model_code.trim()
     : '';

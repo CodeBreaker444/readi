@@ -13,10 +13,10 @@ const ModelSchema = z.object({
   manufacturer: z.string().min(1, "Manufacturer is required"),
   model_type: z.string().optional().nullable(),
   specifications: z.string().optional(),
-  max_flight_time: z.number().optional(),
-  max_speed: z.number().optional(),
-  max_altitude: z.number().optional(),
-  weight: z.number().optional(),
+  max_flight_time: z.number().nonnegative("Max flight time cannot be negative").optional(),
+  max_speed: z.number().nonnegative("Max speed cannot be negative").optional(),
+  max_altitude: z.number().nonnegative("Max altitude cannot be negative").optional(),
+  weight: z.number().nonnegative("Weight cannot be negative").optional(),
 });
 
 export async function POST(req: NextRequest) {

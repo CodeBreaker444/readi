@@ -4,6 +4,7 @@ import { requireFeatureAccess, requirePermission } from '@/lib/auth/api-auth';
 import { internalError, zodError } from '@/lib/api-error';
 import { E } from '@/lib/error-codes';
 import { prisma } from '@/lib/prisma';
+import { refineTrainingDates } from '@/lib/training-dates';
 import { NextRequest, NextResponse } from 'next/server';
 import z from 'zod';
 
@@ -18,7 +19,13 @@ const addFlatSchema = z.object({
   session_date: z.string().regex(dateRegex, 'Date must be YYYY-MM-DD').optional().nullable(),
   completion_date: z.string().regex(dateRegex, 'Date must be YYYY-MM-DD').optional().nullable(),
   expiry_date: z.string().regex(dateRegex, 'Date must be YYYY-MM-DD').optional().nullable(),
-});
+}).superRefine((d, ctx) =>
+  refineTrainingDates(
+    { session: d.session_date, completion: d.completion_date, expiry: d.expiry_date },
+    { completion: 'completion_date', expiry: 'expiry_date' },
+    ctx
+  )
+);
 
 const updateFlatSchema = z.object({
   attendance_id: z.number().int().positive('attendance_id is required'),
@@ -30,7 +37,13 @@ const updateFlatSchema = z.object({
   session_date: z.string().regex(dateRegex, 'Date must be YYYY-MM-DD').optional().nullable(),
   completion_date: z.string().regex(dateRegex, 'Date must be YYYY-MM-DD').optional().nullable(),
   expiry_date: z.string().regex(dateRegex, 'Date must be YYYY-MM-DD').optional().nullable(),
-});
+}).superRefine((d, ctx) =>
+  refineTrainingDates(
+    { session: d.session_date, completion: d.completion_date, expiry: d.expiry_date },
+    { completion: 'completion_date', expiry: 'expiry_date' },
+    ctx
+  )
+);
 
 export async function POST(req: NextRequest) {
   try {

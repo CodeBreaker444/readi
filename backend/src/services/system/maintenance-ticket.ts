@@ -228,9 +228,7 @@ export async function getTicketList(owner_id: number, tool_id?: number, assigned
     const systemComponents = linkedComps.length > 1
       ? linkedComps.map((c) => ({ component_type: c.component_type ?? c.component_name ?? '', component_sn: c.serial_number ?? '' }))
       : !comp
-        // Extraordinary tickets only cover the drone, so they must not fall back to every component.
         ? (systemComponentsMap[row.fk_tool_id ?? 0] ?? [])
-            .filter((c) => row.ticket_type !== 'EXTRAORDINARY' || c.is_drone)
             .map(({ component_type, component_sn }) => ({ component_type, component_sn }))
         : [];
 
@@ -422,7 +420,7 @@ export async function closeTicket(payload: CloseTicketPayload): Promise<{ resetC
   });
 
   // Components explicitly named on the ticket(s) are reset. A system-level ticket (no component)
-  // covers every component of the system; extraordinary ones cover the drone components only.
+  // covers every component of the system, whatever the ticket type.
   const ticketedComponentIds = [...new Set(
     openTickets
       .flatMap((t) => [t.fk_component_id, ...t.maintenance_ticket_item.map((i) => i.fk_component_id)])
@@ -432,10 +430,7 @@ export async function closeTicket(payload: CloseTicketPayload): Promise<{ resetC
     (t) => t.fk_component_id == null && t.maintenance_ticket_item.length === 0
   );
   const systemComponentIds = systemLevelTickets.length
-    ? await getSystemComponentIds(
-        ticket.fk_tool_id!,
-        systemLevelTickets.every((t) => t.ticket_type === 'EXTRAORDINARY'),
-      )
+    ? await getSystemComponentIds(ticket.fk_tool_id!)
     : [];
   const resetComponentIds = [...new Set([...ticketedComponentIds, ...systemComponentIds])];
 
@@ -691,14 +686,7 @@ export async function getComponentList(toolId: number, ticketType?: string): Pro
 
   if (error) throw new Error(`getComponentList: ${error.message}`);
 
-  let rows = data ?? [];
-
-  // Extraordinary maintenance is performed on the drone itself, so only drone components are offered.
-  if (ticketType === 'EXTRAORDINARY') {
-    rows = rows.filter((row) => row.component_type === 'DRONE');
-  }
-
-  return rows.map((row) => ({
+  return (data ?? []).map((row) => ({
     tool_component_id: row.component_id,
     component_code:    row.component_code ?? '',
     component_type:    row.component_type ?? row.component_name ?? '',
@@ -793,12 +781,11 @@ export async function setComponentsOperationalStatus(componentIds: number[], sta
   );
 }
 
-async function getSystemComponentIds(toolId: number, droneOnly: boolean): Promise<number[]> {
+async function getSystemComponentIds(toolId: number): Promise<number[]> {
   const components = await prisma.tool_component.findMany({
     where: {
       fk_tool_id: toolId,
       component_active: 'Y',
-      ...(droneOnly && { component_type: 'DRONE' }),
     },
     select: { component_id: true, component_metadata: true },
   });
@@ -834,22 +821,20 @@ async function resetComponentCounters(
 
   if (!components.length) return;
 
-  // A component named on a closed ticket always gets its last-maintenance date stamped.
-  // Each counter is reset when its cycle type covers it OR it has a limit configured, so
-  // components whose cycle type was never saved (null/NONE) but which have limits still reset.
-  const updates = components.map((comp) => {
-    const cycleType = comp.maintenance_cycle ?? 'NONE';
-    const mixed = cycleType === 'MIXED';
-    const data: Record<string, any> = { last_maintenance_date: new Date(resetAt) };
-    if (mixed || cycleType === 'HOURS' || Number(comp.maintenance_cycle_hour ?? 0) > 0) data.current_maintenance_hours = 0;
-    if (mixed || cycleType === 'FLIGHTS' || Number(comp.maintenance_cycle_flight ?? 0) > 0) data.current_maintenance_flights = 0;
-    if (mixed || cycleType === 'DAYS' || Number(comp.maintenance_cycle_day ?? 0) > 0) data.current_maintenance_days = 0;
-
-    return prisma.tool_component.update({
+  // A component named on a closed ticket has maintenance performed on it, so its last-maintenance
+  // date is stamped and every maintenance counter restarts from zero, regardless of whether a
+  // cycle type or limit was ever configured for it.
+  const updates = components.map((comp) =>
+    prisma.tool_component.update({
       where: { component_id: comp.component_id },
-      data,
-    });
-  });
+      data: {
+        last_maintenance_date: new Date(resetAt),
+        current_maintenance_hours: 0,
+        current_maintenance_flights: 0,
+        current_maintenance_days: 0,
+      },
+    })
+  );
 
   await prisma.$transaction(updates);
 }
