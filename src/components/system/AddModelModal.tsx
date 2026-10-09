@@ -15,6 +15,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
+import { getApiErrorMessage } from '@/lib/api-error-message';
 
 interface AddModelModalProps {
   open: boolean;
@@ -182,7 +183,7 @@ export default function AddModelModal({ open, onClose, onSuccess, initialValues 
         toast.success(t('systems.components.addModel.toasts.success'));
         onSuccess();
       } else {
-        toast.error(result.message || t('systems.components.addModel.toasts.failed'));
+        toast.error(getApiErrorMessage(result, t('systems.components.addModel.toasts.failed')));
       }
     } catch (error) {
       toast.error(t('systems.components.addModel.toasts.error'));
