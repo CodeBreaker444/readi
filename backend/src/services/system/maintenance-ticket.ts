@@ -821,22 +821,20 @@ async function resetComponentCounters(
 
   if (!components.length) return;
 
-  // A component named on a closed ticket always gets its last-maintenance date stamped.
-  // Each counter is reset when its cycle type covers it OR it has a limit configured, so
-  // components whose cycle type was never saved (null/NONE) but which have limits still reset.
-  const updates = components.map((comp) => {
-    const cycleType = comp.maintenance_cycle ?? 'NONE';
-    const mixed = cycleType === 'MIXED';
-    const data: Record<string, any> = { last_maintenance_date: new Date(resetAt) };
-    if (mixed || cycleType === 'HOURS' || Number(comp.maintenance_cycle_hour ?? 0) > 0) data.current_maintenance_hours = 0;
-    if (mixed || cycleType === 'FLIGHTS' || Number(comp.maintenance_cycle_flight ?? 0) > 0) data.current_maintenance_flights = 0;
-    if (mixed || cycleType === 'DAYS' || Number(comp.maintenance_cycle_day ?? 0) > 0) data.current_maintenance_days = 0;
-
-    return prisma.tool_component.update({
+  // A component named on a closed ticket has maintenance performed on it, so its last-maintenance
+  // date is stamped and every maintenance counter restarts from zero, regardless of whether a
+  // cycle type or limit was ever configured for it.
+  const updates = components.map((comp) =>
+    prisma.tool_component.update({
       where: { component_id: comp.component_id },
-      data,
-    });
-  });
+      data: {
+        last_maintenance_date: new Date(resetAt),
+        current_maintenance_hours: 0,
+        current_maintenance_flights: 0,
+        current_maintenance_days: 0,
+      },
+    })
+  );
 
   await prisma.$transaction(updates);
 }
