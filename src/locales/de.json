@@ -4328,6 +4328,7 @@
         "toasts": {
           "latitudeRange": "Breitengrad muss zwischen -90 und 90 liegen",
           "longitudeRange": "Längengrad muss zwischen -180 und 180 liegen",
+          "codeRequired": "Systemcode ist erforderlich",
           "clientRequired": "Bitte einen Mandanten auswählen",
           "success": "System erfolgreich hinzugefügt",
           "failed": "Gerät konnte nicht hinzugefügt werden",
