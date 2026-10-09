@@ -550,7 +550,14 @@ export async function updateOperation(id: number, input: UpdateOperationSchema, 
   if (input.fk_mission_status_id !== undefined) updatePayload.fk_mission_status_id = input.fk_mission_status_id;
   if ((input as any).fk_mission_type_id !== undefined) updatePayload.fk_mission_type_id = (input as any).fk_mission_type_id;
   if ((input as any).fk_mission_category_id !== undefined) updatePayload.fk_mission_category_id = (input as any).fk_mission_category_id;
-  if ((input as any).status_name !== undefined) updatePayload.status_name = (input as any).status_name;
+  if ((input as any).status_name !== undefined) {
+    updatePayload.status_name = (input as any).status_name;
+    // Keep the FK in step with status_name: Operations reads status_name, the
+    // Dashboard reads the FK, so updating only one made them disagree.
+    if (input.fk_mission_status_id === undefined && STATUS_NAME_TO_ID[(input as any).status_name] !== undefined) {
+      updatePayload.fk_mission_status_id = STATUS_NAME_TO_ID[(input as any).status_name];
+    }
+  }
   if (input.distance_flown !== undefined) updatePayload.distance_flown = input.distance_flown;
   if ((input as any).fk_erp_group_id !== undefined) updatePayload.fk_erp_group_id = (input as any).fk_erp_group_id;
   if ((input as any).mission_group_label !== undefined) updatePayload.mission_group_label = (input as any).mission_group_label;
