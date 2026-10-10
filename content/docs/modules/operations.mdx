@@ -109,6 +109,20 @@ Use **Import mission** to add a flight that was already flown. It takes four ste
 
 Shows missions as colored entries: Scheduled, In Progress and Completed. Switch between **Today**, **Week**, **Month** and **List**.
 
+### Best Time to Fly
+
+The **Best Time to Fly** tab next to the calendar shows the next 7 days as a grid of flight windows (06:00 to 22:00), colored for the drones you fly through Drone ATC.
+
+- **Location:** click the location field to open the map. Search for a place, click the map to drop a pin, then choose **Use this location**. The crosshair button uses your current position. The choice is remembered.
+- **Windows:** each cell is one window (length set by **Slot length**, 1 to 4 hours) with the average wind, the peak gust, the total rain, a weather icon and a score out of 100. A cross means a limit is exceeded; `--` means night.
+- **Colors:** green is good to fly, amber is marginal (close to a limit), red is no-go, grey is night. Hover a cell to see what is limiting it.
+- **Best slot:** the best upcoming window is outlined in violet with a star.
+- **Show:** switch the large number in each cell between the overall score, wind, gusts and rain.
+- **Drones:** pick one or more of your drones (active drone components with a serial number), or leave **All fleet types**. With many drones, use the **+N** list to search. With several selected, a window is only green if every one of them can fly it. A drone with no model set uses generic limits.
+- **Limits:** limits belong to the drone model, so drones of the same model share them. They start from a manufacturer default; use the gear icon on a drone to set your own.
+
+The forecast is advisory only. Always check official aviation weather before you fly.
+
 ---
 
 ## Flight Requests
