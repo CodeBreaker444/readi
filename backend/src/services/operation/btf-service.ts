@@ -1,5 +1,6 @@
 import { resolveModelLimits, GENERIC_LIMITS, type FlightLimits, type HourWeather } from '@/lib/btf/scoring';
 import type { BtfDrone, BtfForecast } from '@/lib/btf/types';
+import { readToolLocation } from '@/lib/btf/location';
 import { prisma } from '@/lib/prisma';
 import type { Prisma } from '@prisma/client';
 
@@ -18,7 +19,7 @@ export async function getBtfFleet(ownerId: number): Promise<BtfDrone[]> {
       component_name: true,
       serial_number: true,
       component_metadata: true,
-      tool: { select: { tool_code: true, tool_name: true, fk_model_id: true, tool_metadata: true } },
+      tool: { select: { tool_code: true, tool_name: true, fk_model_id: true, tool_metadata: true, location: true } },
     },
     orderBy: { component_id: 'asc' },
   });
@@ -44,6 +45,11 @@ export async function getBtfFleet(ownerId: number): Promise<BtfDrone[]> {
     : [];
   const modelById = new Map(models.filter((m) => m.model_active !== 'N').map((m) => [m.model_id, m]));
 
+  const siteOf = (c: (typeof components)[number]) => {
+    const site = readToolLocation(c.tool.tool_metadata, c.tool.location);
+    return { latitude: site?.latitude ?? null, longitude: site?.longitude ?? null, locationName: site?.name ?? null };
+  };
+
   const drones = components.map<BtfDrone>((c) => {
     const model = modelById.get(modelIdOf(c) ?? -1);
     const resolved = model
@@ -61,6 +67,7 @@ export async function getBtfFleet(ownerId: number): Promise<BtfDrone[]> {
       manufacturer: model?.manufacturer ?? null,
       limits: resolved.limits,
       limitsSource: resolved.source,
+      ...siteOf(c),
     };
   });
 
@@ -97,6 +104,7 @@ interface OpenMeteoResponse {
     precipitation: (number | null)[];
     precipitation_probability: (number | null)[];
     weather_code: (number | null)[];
+    cloud_cover: (number | null)[];
     visibility: (number | null)[];
     wind_speed_10m: (number | null)[];
     wind_direction_10m: (number | null)[];
@@ -111,7 +119,7 @@ export async function fetchBtfForecast(lat: number, lon: number, days: number): 
   url.searchParams.set('longitude', lon.toFixed(4));
   url.searchParams.set(
     'hourly',
-    'temperature_2m,precipitation,precipitation_probability,weather_code,visibility,wind_speed_10m,wind_direction_10m,wind_gusts_10m,is_day',
+    'temperature_2m,precipitation,precipitation_probability,weather_code,cloud_cover,visibility,wind_speed_10m,wind_direction_10m,wind_gusts_10m,is_day',
   );
   url.searchParams.set('wind_speed_unit', 'ms');
   url.searchParams.set('forecast_days', String(days));
@@ -131,6 +139,7 @@ export async function fetchBtfForecast(lat: number, lon: number, days: number): 
     visibilityM: h.visibility[i],
     tempC: h.temperature_2m[i],
     weatherCode: h.weather_code[i],
+    cloudCoverPct: h.cloud_cover[i],
     windDir: h.wind_direction_10m[i],
     isDay: h.is_day[i] === 1,
   }));

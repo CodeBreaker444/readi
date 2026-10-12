@@ -1,10 +1,11 @@
 'use client'
 
 import type { WindowSummary } from '@/lib/btf/scoring'
-import { Cloud, CloudFog, CloudLightning, CloudRain, CloudSnow, CloudSun, Droplet, Gauge, Moon, Star, Sun, Wind, X, type LucideIcon } from 'lucide-react'
+import { Droplet, Gauge, Star, Wind, X } from 'lucide-react'
 import { Fragment } from 'react'
 import { useTranslation } from 'react-i18next'
 import { dayLabel, hhmm } from './btf-utils'
+import { WeatherGlyph } from './WeatherGlyph'
 
 export type MetricView = 'overall' | 'wind' | 'gust' | 'rain'
 
@@ -28,24 +29,13 @@ interface Props {
   locale: string
 }
 
-function weatherIcon(code: number, night: boolean): LucideIcon {
-  if (night) return Moon
-  if (code >= 95) return CloudLightning
-  if ((code >= 71 && code <= 77) || code === 85 || code === 86) return CloudSnow
-  if ((code >= 51 && code <= 67) || (code >= 80 && code <= 82)) return CloudRain
-  if (code === 45 || code === 48) return CloudFog
-  if (code === 3) return Cloud
-  if (code >= 1) return CloudSun
-  return Sun
-}
-
 type Tone = 'go' | 'marginal' | 'nogo' | 'night'
 
-const TONES: Record<Tone, { light: string; dark: string; iconLight: string; iconDark: string }> = {
-  go: { light: 'bg-emerald-200 text-emerald-950', dark: 'bg-emerald-500/25 text-emerald-50', iconLight: 'text-emerald-700', iconDark: 'text-emerald-300' },
-  marginal: { light: 'bg-amber-200 text-amber-950', dark: 'bg-amber-500/25 text-amber-50', iconLight: 'text-amber-700', iconDark: 'text-amber-300' },
-  nogo: { light: 'bg-rose-200 text-rose-950', dark: 'bg-rose-500/25 text-rose-50', iconLight: 'text-rose-600', iconDark: 'text-rose-300' },
-  night: { light: 'bg-slate-100 text-slate-600', dark: 'bg-slate-800/70 text-slate-400', iconLight: 'text-slate-400', iconDark: 'text-slate-500' },
+const TONES: Record<Tone, { light: string; dark: string }> = {
+  go: { light: 'bg-emerald-200 text-emerald-950', dark: 'bg-emerald-500/25 text-emerald-50' },
+  marginal: { light: 'bg-amber-200 text-amber-950', dark: 'bg-amber-500/25 text-amber-50' },
+  nogo: { light: 'bg-rose-200 text-rose-950', dark: 'bg-rose-500/25 text-rose-50' },
+  night: { light: 'bg-slate-100 text-slate-600', dark: 'bg-slate-800/70 text-slate-400' },
 }
 
 const toneOf = (s: WindowSummary): Tone => (s.night ? 'night' : s.status)
@@ -113,7 +103,6 @@ export function BtfGrid({ days, starts, cells, bestKey, view, todayKey, isDark, 
                 if (!cell) return <div key={day} />
                 const s = cell.summary
                 const tone = TONES[toneOf(s)]
-                const Icon = weatherIcon(s.weatherCode, s.night)
                 const big = bigValue(s)
                 const best = cell.key === bestKey
                 return (
@@ -131,7 +120,7 @@ export function BtfGrid({ days, starts, cells, bestKey, view, todayKey, isDark, 
                       best ? `ring-2 ring-violet-500 ring-offset-2 ${isDark ? 'ring-offset-slate-800' : 'ring-offset-white'}` : '',
                     ].join(' ')}
                   >
-                    <Icon size={24} strokeWidth={1.75} className={`shrink-0 ${isDark ? tone.iconDark : tone.iconLight}`} />
+                    <WeatherGlyph code={s.weatherCode} night={s.night} isDark={isDark} />
                     <div className="min-w-0 flex-1">
                       <p className="text-[11px] font-semibold leading-tight tabular-nums">
                         {hhmm(cell.startHour)} – {hhmm(cell.endHour)}

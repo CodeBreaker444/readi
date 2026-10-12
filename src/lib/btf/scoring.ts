@@ -29,6 +29,7 @@ export interface HourWeather {
   visibilityM: number | null;
   tempC: number | null;
   weatherCode: number | null;
+  cloudCoverPct: number | null;
   windDir: number | null;
   isDay: boolean;
 }
