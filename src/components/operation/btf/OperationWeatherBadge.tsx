@@ -2,6 +2,7 @@
 
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { useTimezone } from '@/components/TimezoneProvider'
 import { loadBtfFleet, loadBtfForecast } from '@/lib/btf/client'
 import { GENERIC_LIMITS, mergeLimits, scoreForecast, summariseWindow, type FlightLimits } from '@/lib/btf/scoring'
 import type { BtfDrone, BtfForecast } from '@/lib/btf/types'
@@ -10,7 +11,8 @@ import { MapPin } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { WeatherGlyph } from './WeatherGlyph'
-import { hhmm, hourOf } from './btf-utils'
+import { hhmm, hourOf, timeZoneAbbr } from './btf-utils'
+import { useNowHourKey } from './useNowHourKey'
 
 const FORECAST_DAYS = 16
 const MAX_WINDOW_HOURS = 12
@@ -46,7 +48,9 @@ const mean = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.l
 
 /** Weather score for the chosen date and time, with the details on hover. */
 export function OperationWeatherBadge({ start, end, lat, lng, fallback, toolId, isDark }: Props) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
+  // The start time is typed in the user's timezone, so the forecast is requested in it too.
+  const { timezone } = useTimezone()
   const [fleet, setFleet] = useState<BtfDrone[]>([])
   const [forecast, setForecast] = useState<BtfForecast | null>(null)
   const [loading, setLoading] = useState(false)
@@ -82,15 +86,16 @@ export function OperationWeatherBadge({ start, end, lat, lng, fallback, toolId, 
     let cancelled = false
     setLoading(true)
     setFailed(false)
-    loadBtfForecast(cLat, cLng, FORECAST_DAYS)
+    loadBtfForecast(cLat, cLng, FORECAST_DAYS, timezone)
       .then((f) => !cancelled && setForecast(f))
       .catch(() => !cancelled && setFailed(true))
       .finally(() => !cancelled && setLoading(false))
     return () => {
       cancelled = true
     }
-  }, [cLat, cLng])
+  }, [cLat, cLng, timezone])
 
+  const nowHour = useNowHourKey(forecast?.timezone)
   const drones = useMemo(() => (toolId ? fleet.filter((d) => d.toolId === toolId) : []), [fleet, toolId])
   const limits: FlightLimits = useMemo(() => (drones.length ? mergeLimits(drones.map((d) => d.limits)) : GENERIC_LIMITS), [drones])
 
@@ -99,6 +104,8 @@ export function OperationWeatherBadge({ start, end, lat, lng, fallback, toolId, 
     const startKey = `${start.slice(0, 13)}:00`
     const idx = forecast.hours.findIndex((h) => h.time === startKey)
     if (idx < 0) return startKey < forecast.hours[0].time ? { kind: 'past' as const } : { kind: 'range' as const }
+    // Earlier today than the current hour at the site: nothing to plan any more.
+    if (nowHour && startKey < nowHour) return { kind: 'past' as const }
 
     let n = 1
     if (end && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(end)) {
@@ -108,7 +115,7 @@ export function OperationWeatherBadge({ start, end, lat, lng, fallback, toolId, 
     const hours = forecast.hours.slice(idx, idx + n)
     const summary = summariseWindow(hours, scoreForecast(hours, limits))
     return { kind: 'ok' as const, hours, summary }
-  }, [forecast, start, end, limits])
+  }, [forecast, start, end, limits, nowHour])
 
   const muted = isDark ? 'text-slate-400' : 'text-slate-500'
   if (!start) return null
@@ -134,7 +141,7 @@ export function OperationWeatherBadge({ start, end, lat, lng, fallback, toolId, 
   const tone = TONES[s.night ? 'night' : s.status]
   const statusLabel = s.night ? t('operations.calendar.btf.night') : t(`operations.calendar.btf.${s.status}`)
   const first = hours[0]
-  const range = `${hhmm(hourOf(first.time))} – ${hhmm((hourOf(hours[hours.length - 1].time) + 1) % 24)}`
+  const range = `${hhmm(hourOf(first.time))} – ${hhmm((hourOf(hours[hours.length - 1].time) + 1) % 24)} (${timeZoneAbbr(timezone, i18n.language || 'en')})`
   const place = coords.name ?? `${coords.latitude.toFixed(2)}, ${coords.longitude.toFixed(2)}`
 
   const clouds = hours.map((h) => h.cloudCoverPct).filter((v): v is number => v !== null)

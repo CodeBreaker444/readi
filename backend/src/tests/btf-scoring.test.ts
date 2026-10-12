@@ -1,5 +1,7 @@
+import { currentHourKey, relativeAge } from '@/components/operation/btf/btf-utils';
 import { readToolLocation } from '@/lib/btf/location';
 import { wmoKey } from '@/lib/btf/weather';
+import { windowHasStarted, windowStarts } from '@/lib/btf/windows';
 import {
   compareWindows,
   GENERIC_LIMITS,
@@ -141,6 +143,24 @@ describe('summariseWindow', () => {
     expect(summariseWindow(hs, scoreForecast(hs, GENERIC_LIMITS)).weatherCode).toBe(63);
   });
 
+  it('collects visibility, temperature, cloud cover and rain chance for the detail view', () => {
+    const hs = [
+      hour(T(10), { visibilityM: 18000, tempC: 10, cloudCoverPct: 20, precipProb: 10 }),
+      hour(T(11), { visibilityM: 9000, tempC: 14, cloudCoverPct: 60, precipProb: 40 }),
+    ];
+    const sum = summariseWindow(hs, scoreForecast(hs, GENERIC_LIMITS));
+    expect(sum.minVisibilityM).toBe(9000);
+    expect(sum.avgTempC).toBe(12);
+    expect(sum.avgCloudPct).toBe(40);
+    expect(sum.maxPrecipProb).toBe(40);
+  });
+
+  it('leaves the detail numbers null when the forecast has none', () => {
+    const hs = [hour(T(10), { visibilityM: null, tempC: null, cloudCoverPct: null, precipProb: null })];
+    const sum = summariseWindow(hs, scoreForecast(hs, GENERIC_LIMITS));
+    expect(sum).toMatchObject({ minVisibilityM: null, avgTempC: null, avgCloudPct: null, maxPrecipProb: null });
+  });
+
   it('handles an empty window', () => {
     expect(summariseWindow([], [])).toMatchObject({ status: 'go', avgWindMs: 0, rainMm: 0 });
   });
@@ -183,5 +203,94 @@ describe('wmoKey', () => {
     expect([0, 1, 2, 3, 45, 53, 63, 81, 73, 95, null].map(wmoKey)).toEqual([
       'clear', 'mostlyClear', 'partlyCloudy', 'overcast', 'fog', 'drizzle', 'rain', 'rain', 'snow', 'thunderstorm', 'clear',
     ]);
+  });
+});
+
+describe('windowHasStarted', () => {
+  // 11:45 at the site -> now key is the current hour, 11:00
+  const now = '2026-10-12T11:00';
+
+  it('a two-hour window that began at 10:00 cannot be recommended at 11:45', () => {
+    expect(windowHasStarted('2026-10-12', 10, now)).toBe(true);
+  });
+
+  it('a window that starts in the current hour has already started', () => {
+    expect(windowHasStarted('2026-10-12', 11, now)).toBe(true);
+  });
+
+  it('a later window today and any window tomorrow can still be recommended', () => {
+    expect(windowHasStarted('2026-10-12', 12, now)).toBe(false);
+    expect(windowHasStarted('2026-10-13', 6, now)).toBe(false);
+  });
+
+  it('windows on earlier days have started', () => {
+    expect(windowHasStarted('2026-10-11', 18, now)).toBe(true);
+  });
+
+  it('treats an unknown clock as nothing started', () => {
+    expect(windowHasStarted('2026-10-12', 6, '')).toBe(false);
+  });
+});
+
+describe('windowStarts', () => {
+  const day = (from: number, to: number) =>
+    Array.from({ length: 24 }, (_, h) => ({ time: T(h), isDay: h >= from && h <= to }));
+
+  it('covers the daylight hours, aligned to the window length', () => {
+    const hs = day(7, 18);
+    expect(windowStarts(hs, 2)).toEqual([6, 8, 10, 12, 14, 16, 18]);
+    expect(windowStarts(hs, 1)).toEqual([7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18]);
+    expect(windowStarts(hs, 3)).toEqual([6, 9, 12, 15, 18]);
+    expect(windowStarts(hs, 4)).toEqual([4, 8, 12, 16]);
+  });
+
+  it('shifts with the viewer timezone (daylight 10:30-22:30 elsewhere)', () => {
+    expect(windowStarts(day(10, 22), 2)).toEqual([10, 12, 14, 16, 18, 20, 22]);
+  });
+
+  it('never creates a window that runs past midnight', () => {
+    expect(windowStarts(day(18, 23), 3)).toEqual([18, 21]);
+  });
+
+  it('falls back to 06-22 when there is no daylight', () => {
+    expect(windowStarts(day(30, 31), 2)).toEqual([6, 8, 10, 12, 14, 16, 18, 20]);
+  });
+});
+
+describe('currentHourKey', () => {
+  it('reads the hour in the given timezone, dropping the minutes', () => {
+    // 06:15 UTC = 11:45 in India (UTC+5:30)
+    expect(currentHourKey('Asia/Kolkata', new Date('2026-10-12T06:15:00Z'))).toBe('2026-10-12T11:00');
+  });
+
+  it('rolls over at local midnight, never showing hour 24', () => {
+    // 18:30 UTC = 00:00 the next day in India
+    expect(currentHourKey('Asia/Kolkata', new Date('2026-10-12T18:30:00Z'))).toBe('2026-10-13T00:00');
+  });
+
+  it('changes exactly on the local hour boundary', () => {
+    expect(currentHourKey('Europe/Berlin', new Date('2026-10-12T09:59:59Z'))).toBe('2026-10-12T11:00'); // 11:59:59 CEST
+    expect(currentHourKey('Europe/Berlin', new Date('2026-10-12T10:00:00Z'))).toBe('2026-10-12T12:00'); // 12:00:00 CEST
+  });
+
+  it('returns an empty key for an invalid timezone', () => {
+    expect(currentHourKey('Not/AZone', new Date('2026-10-12T10:00:00Z'))).toBe('');
+  });
+});
+
+describe('relativeAge', () => {
+  it('describes how old the forecast is', () => {
+    expect(relativeAge(0)).toEqual({ key: 'justNow', count: 0 });
+    expect(relativeAge(59_000)).toEqual({ key: 'justNow', count: 0 });
+    expect(relativeAge(60_000)).toEqual({ key: 'minAgo', count: 1 });
+    expect(relativeAge(5 * 60_000 + 20_000)).toEqual({ key: 'minAgo', count: 5 });
+    expect(relativeAge(59 * 60_000)).toEqual({ key: 'minAgo', count: 59 });
+    expect(relativeAge(60 * 60_000)).toEqual({ key: 'hourAgo', count: 1 });
+    expect(relativeAge(23 * 3_600_000)).toEqual({ key: 'hourAgo', count: 23 });
+    expect(relativeAge(24 * 3_600_000)).toEqual({ key: 'dayAgo', count: 1 });
+  });
+
+  it('never goes negative if the clocks disagree slightly', () => {
+    expect(relativeAge(-5_000)).toEqual({ key: 'justNow', count: 0 });
   });
 });

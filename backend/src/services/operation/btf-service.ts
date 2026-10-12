@@ -113,22 +113,50 @@ interface OpenMeteoResponse {
   };
 }
 
-export async function fetchBtfForecast(lat: number, lon: number, days: number): Promise<BtfForecast | null> {
-  const url = new URL('https://api.open-meteo.com/v1/forecast');
-  url.searchParams.set('latitude', lat.toFixed(4));
-  url.searchParams.set('longitude', lon.toFixed(4));
-  url.searchParams.set(
-    'hourly',
-    'temperature_2m,precipitation,precipitation_probability,weather_code,cloud_cover,visibility,wind_speed_10m,wind_direction_10m,wind_gusts_10m,is_day',
-  );
-  url.searchParams.set('wind_speed_unit', 'ms');
-  url.searchParams.set('forecast_days', String(days));
-  url.searchParams.set('timezone', 'auto');
+/** A usable IANA timezone id, or 'auto' (the location's own zone) when missing or unknown. */
+function forecastTimeZone(tz?: string): string {
+  if (!tz) return 'auto';
+  try {
+    new Intl.DateTimeFormat('en', { timeZone: tz });
+    return tz;
+  } catch {
+    return 'auto';
+  }
+}
 
-  const res = await fetch(url.toString(), { next: { revalidate: 900 }, signal: AbortSignal.timeout(8000) });
-  if (!res.ok) return null;
+const UPSTREAM_TIMEOUT_MS = 12_000;
+const UPSTREAM_ATTEMPTS = 2;
+/** The same point (to the 4 decimals sent upstream) + day count + timezone within this window is served from memory. */
+const FRESH_MS = 10 * 60_000;
+/** If Open-Meteo is down, an older forecast is better than an error - up to this age. */
+const STALE_OK_MS = 6 * 60 * 60_000;
+const MAX_CACHE_ENTRIES = 200;
 
-  const d = (await res.json()) as OpenMeteoResponse;
+interface CacheEntry {
+  at: number;
+  value?: BtfForecast;
+  /** Shared by concurrent identical requests so they cost one upstream call */
+  pending?: Promise<BtfForecast | null>;
+}
+const forecastCache = new Map<string, CacheEntry>();
+
+/** One upstream request with a timeout and a single retry on timeouts, network errors, 429 and 5xx. */
+async function requestForecast(url: string): Promise<OpenMeteoResponse | null> {
+  for (let attempt = 1; attempt <= UPSTREAM_ATTEMPTS; attempt++) {
+    try {
+      const res = await fetch(url, { next: { revalidate: 900 }, signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS) });
+      if (res.ok) return (await res.json()) as OpenMeteoResponse;
+      if (res.status < 500 && res.status !== 429) return null; // a bad request will not get better
+      console.warn(`[btf] Open-Meteo responded ${res.status} (attempt ${attempt}/${UPSTREAM_ATTEMPTS})`);
+    } catch (err) {
+      const reason = err instanceof Error ? err.name : 'error';
+      console.warn(`[btf] Open-Meteo request failed: ${reason} (attempt ${attempt}/${UPSTREAM_ATTEMPTS})`);
+    }
+  }
+  return null;
+}
+
+function toForecast(d: OpenMeteoResponse): BtfForecast {
   const h = d.hourly;
   const hours: HourWeather[] = h.time.map((time, i) => ({
     time,
@@ -143,6 +171,45 @@ export async function fetchBtfForecast(lat: number, lon: number, days: number): 
     windDir: h.wind_direction_10m[i],
     isDay: h.is_day[i] === 1,
   }));
+  return { latitude: d.latitude, longitude: d.longitude, timezone: d.timezone, hours, retrievedAt: Date.now() };
+}
 
-  return { latitude: d.latitude, longitude: d.longitude, timezone: d.timezone, hours };
+/**
+ * Hourly forecast with all times expressed in `tz` (the viewer's timezone), so they line up with the
+ * app's own dates and times. Returns null only if Open-Meteo is unreachable and nothing recent is cached.
+ */
+export async function fetchBtfForecast(lat: number, lon: number, days: number, tz?: string): Promise<BtfForecast | null> {
+  const zone = forecastTimeZone(tz);
+  const key = `${lat.toFixed(4)},${lon.toFixed(4)},${days},${zone}`;
+
+  const entry = forecastCache.get(key);
+  if (entry?.value && Date.now() - entry.at < FRESH_MS) return entry.value;
+  if (entry?.pending) return entry.pending;
+
+  const url = new URL('https://api.open-meteo.com/v1/forecast');
+  url.searchParams.set('latitude', lat.toFixed(4));
+  url.searchParams.set('longitude', lon.toFixed(4));
+  url.searchParams.set(
+    'hourly',
+    'temperature_2m,precipitation,precipitation_probability,weather_code,cloud_cover,visibility,wind_speed_10m,wind_direction_10m,wind_gusts_10m,is_day',
+  );
+  url.searchParams.set('wind_speed_unit', 'ms');
+  url.searchParams.set('forecast_days', String(days));
+  url.searchParams.set('timezone', zone);
+
+  const pending = requestForecast(url.toString()).then((raw) => {
+    if (raw) {
+      const value = toForecast(raw);
+      forecastCache.set(key, { at: Date.now(), value });
+      if (forecastCache.size > MAX_CACHE_ENTRIES) forecastCache.delete(forecastCache.keys().next().value as string);
+      return value;
+    }
+    // Upstream failed: drop the pending marker and fall back to the last good forecast, if recent enough.
+    const old = forecastCache.get(key);
+    forecastCache.set(key, { at: old?.at ?? 0, value: old?.value });
+    return old?.value && Date.now() - old.at < STALE_OK_MS ? old.value : null;
+  });
+
+  forecastCache.set(key, { at: entry?.at ?? 0, value: entry?.value, pending });
+  return pending;
 }

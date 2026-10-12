@@ -9,22 +9,27 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { compareWindows, MARGINAL_BELOW, mergeLimits, scoreForecast, summariseWindow, type FlightLimits, type WindowSummary } from '@/lib/btf/scoring'
 import { loadBtfFleet, loadBtfForecast } from '@/lib/btf/client'
 import { groupSystems } from '@/lib/btf/systems'
+import { windowHasStarted, windowStarts } from '@/lib/btf/windows'
 import type { BtfDrone, BtfForecast, BtfPlace, BtfSystem } from '@/lib/btf/types'
 import axios from 'axios'
-import { Check, ChevronDown, Lock, MapPin, Plane, Settings2, Star, TriangleAlert, X } from 'lucide-react'
+import { Check, ChevronDown, Clock, Info, Lock, MapPin, Plane, Settings2, Star, TriangleAlert, X } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useTimezone } from '@/components/TimezoneProvider'
 import { BtfGrid, type GridCell, type MetricView } from './BtfGrid'
+import { WeatherGlyph } from './WeatherGlyph'
 import { BtfLocationSelect } from './BtfLocationSelect'
 import { BtfLimitsDialog } from './BtfLimitsDialog'
-import { currentHourKey, dayOf, hourOf, pad2, timeZoneAbbr } from './btf-utils'
+import { dayOf, hourOf, relativeAge, timeZoneAbbr } from './btf-utils'
+import { useNowHourKey } from './useNowHourKey'
 
 const WINDOWS = [1, 2, 3, 4]
 const VIEWS: MetricView[] = ['overall', 'wind', 'gust', 'rain']
-/** The grid covers daylight working hours; the night is still scored but not shown. */
-const DAY_START = 6
-const DAY_END = 22
 const INLINE_CHIPS = 4
+/** A forecast older than this is reloaded in the background */
+const REFRESH_MS = 30 * 60_000
+/** Minimum gap between background reload attempts */
+const REFRESH_RETRY_MS = 5 * 60_000
 
 /** Best-effort place name for a point; falls back to the coordinates. */
 async function nameForPoint(lat: number, lon: number): Promise<string> {
@@ -43,6 +48,8 @@ async function nameForPoint(lat: number, lon: number): Promise<string> {
 
 export function BestTimeToFly({ isDark }: { isDark: boolean }) {
   const { t, i18n } = useTranslation()
+  // Everything is shown in the user's timezone, wherever the location is.
+  const { timezone } = useTimezone()
   const locale = i18n.language || 'en'
 
   // Where the forecast comes from: a system's own location, or a point picked by the user.
@@ -61,6 +68,7 @@ export function BestTimeToFly({ isDark }: { isDark: boolean }) {
   const [view, setView] = useState<MetricView>('overall')
   const [editing, setEditing] = useState<BtfDrone | null>(null)
   const requestId = useRef(0)
+  const lastRefreshTry = useRef(0)
 
   const systems = useMemo(() => groupSystems(fleet), [fleet])
 
@@ -99,12 +107,33 @@ export function BestTimeToFly({ isDark }: { isDark: boolean }) {
     }
     setLoading(true)
     setFailed(false)
-    loadBtfForecast(lat, lon, 7)
-      .then((f) => id === requestId.current && setForecast(f))
+    loadBtfForecast(lat, lon, 7, timezone)
+      .then((f) => {
+        if (id !== requestId.current) return
+        setForecast(f)
+      })
       .catch(() => id === requestId.current && setFailed(true))
       .finally(() => id === requestId.current && setLoading(false))
   }
-  useEffect(loadForecast, [lat, lon])
+  useEffect(loadForecast, [lat, lon, timezone])
+
+  // "Now" in the user's timezone, kept live so windows that start while the page is open drop out.
+  const nowKey = useNowHourKey(forecast?.timezone)
+
+  // A forecast left open goes stale: reload it quietly each hour change, and as soon as the day rolls over.
+  useEffect(() => {
+    if (!forecast || !nowKey || lat === undefined || lon === undefined) return
+    const dayRolledOver = nowKey.slice(0, 10) !== dayOf(forecast.hours[0].time)
+    const stale = Date.now() - forecast.retrievedAt >= REFRESH_MS
+    if (!dayRolledOver && !stale) return
+    // If the weather service keeps failing we get the same old forecast back; don't hammer it.
+    if (Date.now() - lastRefreshTry.current < REFRESH_RETRY_MS) return
+    lastRefreshTry.current = Date.now()
+    const id = ++requestId.current
+    loadBtfForecast(lat, lon, 7, timezone)
+      .then((f) => id === requestId.current && setForecast(f))
+      .catch(() => undefined) // keep showing the previous forecast
+  }, [nowKey, forecast, lat, lon, timezone])
 
   const selectSystem = (sys: BtfSystem) => {
     setSystemId(sys.toolId)
@@ -153,8 +182,6 @@ export function BestTimeToFly({ isDark }: { isDark: boolean }) {
     [activeDrones],
   )
   const scores = useMemo(() => (forecast && limits ? scoreForecast(forecast.hours, limits) : []), [forecast, limits])
-  const nowKey = useMemo(() => (forecast ? currentHourKey(forecast.timezone) : ''), [forecast])
-
   // ── Grid: days x windows, each window rolled up from its hours ─────────────
   const grid = useMemo(() => {
     if (!forecast || !scores.length) return null
@@ -168,8 +195,7 @@ export function BestTimeToFly({ isDark }: { isDark: boolean }) {
     })
 
     const days = [...hourIndex.keys()]
-    const starts: number[] = []
-    for (let h = DAY_START; h + windowHours <= DAY_END; h += windowHours) starts.push(h)
+    const starts = windowStarts(forecast.hours, windowHours)
 
     const cells = new Map<string, GridCell>()
     let bestKey: string | null = null
@@ -188,7 +214,8 @@ export function BestTimeToFly({ isDark }: { isDark: boolean }) {
 
         const summary = summariseWindow(idx.map((i) => forecast.hours[i]), idx.map((i) => scores[i]))
         const endHour = start + windowHours
-        const past = nowKey !== '' && `${day}T${pad2(endHour)}:00` <= nowKey
+        // A window that has already started cannot be recommended (it is shown dimmed).
+        const past = windowHasStarted(day, start, nowKey)
         const key = `${day}|${start}`
         cells.set(key, { key, startHour: start, endHour, summary, past })
 
@@ -231,9 +258,16 @@ export function BestTimeToFly({ isDark }: { isDark: boolean }) {
     setFleet((cur) => cur.map((d) => (d.modelId === modelId ? { ...d, limits: next, limitsSource: 'custom' } : d)))
 
   const card = isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'
-  const label = `mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`
+  const label = `mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`
   const muted = isDark ? 'text-slate-500' : 'text-slate-400'
   const divider = isDark ? 'border-slate-700' : 'border-slate-200'
+
+  // The models behind the limits, so a cell's detail can say what it was scored against.
+  const modelNames = [...new Set(activeDrones.map((d) => d.modelName).filter((n): n is string => n !== null))]
+  const hasGeneric = activeDrones.some((d) => d.modelId === null)
+  const scoredAgainst = modelNames.length
+    ? t('operations.calendar.btf.opLimitsFor', { models: modelNames.join(', ') }) + (hasGeneric ? ' · ' + t('operations.calendar.btf.scoredAlsoGeneric') : '')
+    : t('operations.calendar.btf.opLimitsGeneric')
 
   const ready = !!(place && forecast && limits && grid && !loading && !failed && !fleetLoading)
 
@@ -305,12 +339,20 @@ export function BestTimeToFly({ isDark }: { isDark: boolean }) {
             />
           </div>
 
+          {/* When the forecast was retrieved */}
+          {forecast && (
+            <div className={`border-l px-6 ${divider}`}>
+              <p className={label}>{t('operations.calendar.btf.retrieved')}</p>
+              <RetrievedAt at={forecast.retrievedAt} isDark={isDark} />
+            </div>
+          )}
+
           {/* Legend */}
           <div className={`flex items-end border-l pl-6 ${divider}`}>
             <Legend isDark={isDark} />
           </div>
         </div>
-        {limits && activeDrones.length > 1 && <p className={`px-4 pb-3 text-[11px] ${muted}`}>{t('operations.calendar.btf.mostRestrictive')}</p>}
+        {limits && activeDrones.length > 1 && <p className={`px-4 pb-3 text-xs ${muted}`}>{t('operations.calendar.btf.mostRestrictive')}</p>}
       </div>
 
       {/* ── Weather grid ─────────────────────────────────────────────────── */}
@@ -370,8 +412,11 @@ export function BestTimeToFly({ isDark }: { isDark: boolean }) {
               todayKey={nowKey.slice(0, 10)}
               isDark={isDark}
               locale={locale}
+              limits={limits!}
+              scoredAgainst={scoredAgainst}
+              tzLabel={timeZoneAbbr(forecast!.timezone, locale)}
             />
-            <div className={`flex flex-wrap items-center gap-x-6 gap-y-1 border-t px-5 py-2.5 text-[11px] ${divider} ${muted}`}>
+            <div className={`flex flex-wrap items-center gap-x-6 gap-y-1 border-t px-5 py-2.5 text-xs ${divider} ${muted}`}>
               {!grid!.bestKey && <span className="font-medium text-amber-500">{t('operations.calendar.btf.noBestSlot')}</span>}
               <span>{t('operations.calendar.btf.forecastBy')}</span>
               <span className="ml-auto">{t('operations.calendar.btf.footerNote', { tz: timeZoneAbbr(forecast!.timezone, locale) })}</span>
@@ -387,6 +432,25 @@ export function BestTimeToFly({ isDark }: { isDark: boolean }) {
 }
 
 // ── Controls ─────────────────────────────────────────────────────────────────
+
+/** "5 min ago": how old the forecast is, kept current without re-rendering the whole page. */
+function RetrievedAt({ at, isDark }: { at: number; isDark: boolean }) {
+  const { t } = useTranslation()
+  const [now, setNow] = useState(() => Date.now())
+
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 30_000)
+    return () => clearInterval(id)
+  }, [])
+
+  const { key, count } = relativeAge(now - at)
+  return (
+    <div className={`flex h-9 items-center gap-1.5 text-[13px] ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
+      <Clock size={14} className={isDark ? 'text-slate-500' : 'text-slate-400'} />
+      <span className="tabular-nums">{t(`operations.calendar.btf.${key}`, { count })}</span>
+    </div>
+  )
+}
 
 function Segmented<T extends string | number>({
   options,
@@ -425,26 +489,108 @@ function Segmented<T extends string | number>({
 
 function Legend({ isDark }: { isDark: boolean }) {
   const { t } = useTranslation()
-  const pct = Math.round(MARGINAL_BELOW * 100)
   const items = [
+    { dot: 'bg-emerald-500', k: 'Go' },
+    { dot: 'bg-amber-400', k: 'Marginal' },
+    { dot: 'bg-rose-500', k: 'Nogo' },
+    { dot: isDark ? 'bg-slate-600' : 'bg-slate-300', k: 'Night' },
+  ]
+  return (
+    <div className="flex min-h-9 flex-wrap items-center gap-x-3.5 gap-y-1">
+      {items.map((i) => (
+        <span key={i.k} className="flex items-center gap-1.5">
+          <span className={`h-2.5 w-2.5 rounded-full ${i.dot}`} />
+          <span className={`text-xs font-medium ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>{t(`operations.calendar.btf.legend${i.k}`)}</span>
+        </span>
+      ))}
+      <span className="flex items-center gap-1.5">
+        <Star size={12} className="fill-violet-500 text-violet-500" />
+        <span className={`text-xs font-medium ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>{t('operations.calendar.btf.legendBest')}</span>
+      </span>
+      <LegendHelp isDark={isDark} />
+    </div>
+  )
+}
+
+/** Everything the grid shows, explained - opened by click, tap or keyboard. */
+function LegendHelp({ isDark }: { isDark: boolean }) {
+  const { t } = useTranslation()
+  const pct = Math.round(MARGINAL_BELOW * 100)
+  const colors = [
     { dot: 'bg-emerald-500', k: 'Go', params: {} },
     { dot: 'bg-amber-400', k: 'Marginal', params: { pct } },
     { dot: 'bg-rose-500', k: 'Nogo', params: {} },
     { dot: isDark ? 'bg-slate-600' : 'bg-slate-300', k: 'Night', params: {} },
   ]
+  const icons: Array<{ code: number; night: boolean; label: string }> = [
+    { code: 0, night: false, label: t('operations.calendar.btf.wmo.clear') },
+    { code: 2, night: false, label: t('operations.calendar.btf.wmo.partlyCloudy') },
+    { code: 3, night: false, label: t('operations.calendar.btf.wmo.overcast') },
+    { code: 45, night: false, label: t('operations.calendar.btf.wmo.fog') },
+    { code: 53, night: false, label: t('operations.calendar.btf.wmo.drizzle') },
+    { code: 63, night: false, label: t('operations.calendar.btf.wmo.rain') },
+    { code: 73, night: false, label: t('operations.calendar.btf.wmo.snow') },
+    { code: 95, night: false, label: t('operations.calendar.btf.wmo.thunderstorm') },
+    { code: 0, night: true, label: t('operations.calendar.btf.night') },
+  ]
+  const heading = 'mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground'
+
   return (
-    <div className="flex h-9 flex-wrap items-center gap-x-3.5">
-      {items.map((i) => (
-        <span key={i.k} title={t(`operations.calendar.btf.legend${i.k}Desc`, i.params)} className="flex cursor-help items-center gap-1.5">
-          <span className={`h-2.5 w-2.5 rounded-full ${i.dot}`} />
-          <span className={`text-[11px] font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t(`operations.calendar.btf.legend${i.k}`)}</span>
-        </span>
-      ))}
-      <span title={t('operations.calendar.btf.legendBestDesc')} className="flex cursor-help items-center gap-1.5">
-        <Star size={11} className="fill-violet-500 text-violet-500" />
-        <span className={`text-[11px] font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t('operations.calendar.btf.legendBest')}</span>
-      </span>
-    </div>
+    <Popover>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          className={`flex h-8 cursor-pointer items-center gap-1.5 rounded-lg border px-2.5 text-xs font-semibold transition-colors ${
+            isDark ? 'border-slate-600 text-slate-300 hover:bg-slate-700' : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+          }`}
+        >
+          <Info size={14} /> {t('operations.calendar.btf.helpButton')}
+        </button>
+      </PopoverTrigger>
+      <PopoverContent align="end" className="max-h-[75vh] w-[min(380px,calc(100vw-2rem))] space-y-4 overflow-y-auto p-4">
+        <section>
+          <p className={heading}>{t('operations.calendar.btf.helpColors')}</p>
+          <ul className="space-y-2">
+            {colors.map((c) => (
+              <li key={c.k} className="flex items-start gap-2.5">
+                <span className={`mt-1 h-3 w-3 shrink-0 rounded-full ${c.dot}`} />
+                <p className="text-sm leading-snug">
+                  <span className="font-semibold">{t(`operations.calendar.btf.legend${c.k}`)}</span> – {t(`operations.calendar.btf.legend${c.k}Desc`, c.params)}
+                </p>
+              </li>
+            ))}
+            <li className="flex items-start gap-2.5">
+              <Star size={14} className="mt-0.5 shrink-0 fill-violet-500 text-violet-500" />
+              <p className="text-sm leading-snug">
+                <span className="font-semibold">{t('operations.calendar.btf.legendBest')}</span> – {t('operations.calendar.btf.legendBestDesc')}
+              </p>
+            </li>
+          </ul>
+        </section>
+
+        <section>
+          <p className={heading}>{t('operations.calendar.btf.helpNumbers')}</p>
+          <ul className="space-y-1.5 text-sm leading-snug">
+            <li>{t('operations.calendar.btf.helpWind')}</li>
+            <li>{t('operations.calendar.btf.helpGust')}</li>
+            <li>{t('operations.calendar.btf.helpRain')}</li>
+            <li>{t('operations.calendar.btf.helpScore')}</li>
+          </ul>
+        </section>
+
+        <section>
+          <p className={heading}>{t('operations.calendar.btf.helpIcons')}</p>
+          <ul className="grid grid-cols-2 gap-x-3 gap-y-2">
+            {icons.map((i) => (
+              <li key={i.label} className="flex items-center gap-2 text-sm">
+                <WeatherGlyph code={i.code} night={i.night} isDark={isDark} size="sm" />
+                {i.label}
+              </li>
+            ))}
+          </ul>
+        </section>
+      </PopoverContent>
+    </Popover>
   )
 }
 
@@ -453,6 +599,73 @@ function Legend({ isDark }: { isDark: boolean }) {
 interface SystemGroup {
   sys: BtfSystem
   drones: BtfDrone[]
+}
+
+/** A distinct drone model within a system, with how many of its drones use it. */
+interface ModelRef {
+  drone: BtfDrone
+  count: number
+}
+
+/** The distinct models of a system. Limits belong to the model, so each one needs its own editor. */
+function modelsOf(g: SystemGroup): ModelRef[] {
+  const byModel = new Map<number, ModelRef>()
+  for (const d of g.drones) {
+    if (d.modelId === null) continue
+    const ref = byModel.get(d.modelId)
+    if (ref) ref.count += 1
+    else byModel.set(d.modelId, { drone: d, count: 1 })
+  }
+  return [...byModel.values()]
+}
+
+const missingModelNames = (g: SystemGroup) => g.drones.filter((d) => d.modelId === null).map((d) => d.droneName)
+
+/** Opens the limits editor: straight away for one model, a small list when the system has several. */
+function LimitsMenu({ models, onEdit, className = '' }: { models: ModelRef[]; onEdit: (d: BtfDrone) => void; className?: string }) {
+  const { t } = useTranslation()
+  const [open, setOpen] = useState(false)
+  if (models.length === 0) return null
+
+  const label = models.length === 1 ? `${t('operations.calendar.btf.editLimits')}: ${models[0].drone.modelName}` : t('operations.calendar.btf.editLimits')
+  const trigger = (
+    <button
+      type="button"
+      aria-label={label}
+      title={label}
+      onClick={(e) => {
+        e.stopPropagation()
+        if (models.length === 1) onEdit(models[0].drone)
+      }}
+      className={`flex cursor-pointer items-center justify-center opacity-70 hover:bg-black/10 hover:opacity-100 ${className}`}
+    >
+      <Settings2 size={14} />
+    </button>
+  )
+  if (models.length === 1) return trigger
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>{trigger}</PopoverTrigger>
+      <PopoverContent align="end" className="w-64 p-1" onClick={(e) => e.stopPropagation()}>
+        <p className="px-2 py-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('operations.calendar.btf.editLimitsFor')}</p>
+        {models.map((m) => (
+          <button
+            key={m.drone.modelId}
+            type="button"
+            onClick={() => {
+              setOpen(false)
+              onEdit(m.drone)
+            }}
+            className="flex w-full cursor-pointer items-center justify-between rounded-md px-2 py-2 text-left text-sm hover:bg-accent"
+          >
+            <span className="truncate font-medium">{m.drone.modelName}</span>
+            <span className="ml-2 shrink-0 text-xs text-muted-foreground">×{m.count}</span>
+          </button>
+        ))}
+      </PopoverContent>
+    </Popover>
+  )
 }
 
 function DroneSelector({
@@ -494,78 +707,68 @@ function DroneSelector({
   const isOn = (g: SystemGroup) => g.sys.droneIds.length > 0 && g.sys.droneIds.every((id) => selectedIds.includes(id))
   const hasSelection = (g: SystemGroup) => g.sys.droneIds.some((id) => selectedIds.includes(id))
   const droneNames = (g: SystemGroup) => g.drones.map((d) => d.droneName).join(', ')
-  // Limits live on the drone model; edit the first drone of the system that has one.
-  const editTarget = (g: SystemGroup) => g.drones.find((d) => d.modelId !== null) ?? null
 
   // The first few stay inline; chosen systems further down are pulled in so the choice is always visible.
   const inline = useMemo(() => groups.filter((g, i) => i < INLINE_CHIPS || g.sys.droneIds.some((id) => selectedIds.includes(id))), [groups, selectedIds])
   const hidden = groups.length - inline.length
   const showPicker = groups.length > INLINE_CHIPS
 
-  const gear = (g: SystemGroup) => {
-    const target = editTarget(g)
-    return target === null ? (
-      <span title={t('operations.calendar.btf.noModelHint')} className="ml-1.5 text-amber-400">
-        <TriangleAlert size={12} />
-      </span>
-    ) : (
-      <span
-        role="button"
-        tabIndex={0}
-        aria-label={t('operations.calendar.btf.editLimits')}
-        title={t('operations.calendar.btf.editLimits')}
-        onClick={(e) => {
-          e.stopPropagation()
-          onEdit(target)
-        }}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.stopPropagation()
-            onEdit(target)
-          }
-        }}
-        className="ml-1.5 rounded p-0.5 opacity-60 hover:bg-black/10 hover:opacity-100"
-      >
-        <Settings2 size={11} />
-      </span>
-    )
-  }
+  // Drones without a model, among those that can be chosen: said out loud, not only as an icon.
+  const missing = groups.filter((g) => !isLocked(g)).flatMap(missingModelNames)
+  const missingText = missing.length > 3 ? `${missing.slice(0, 3).join(', ')} +${missing.length - 3}` : missing.join(', ')
 
   return (
-    <div className="flex flex-wrap items-center gap-1.5">
+    <div className="flex flex-wrap items-center gap-2">
       <Chip active={selectedIds.length === 0} onClick={onClear} isDark={isDark}>
         {t('operations.calendar.btf.allDrones')}
       </Chip>
 
-      {inline.map((g) => (
-        <Chip
-          key={g.sys.toolId}
-          active={isOn(g)}
-          disabled={isLocked(g)}
-          onClick={() => onToggleSystem(g.sys.toolId)}
-          isDark={isDark}
-          title={isLocked(g) ? t('operations.calendar.btf.droneLockedHint') : droneNames(g)}
-        >
-          {g.sys.name}
-          {g.drones.length > 1 && <span className="ml-1.5 opacity-70">×{g.drones.length}</span>}
-          {gear(g)}
-        </Chip>
-      ))}
+      {inline.map((g) => {
+        const missingHere = missingModelNames(g)
+        return (
+          <Chip
+            key={g.sys.toolId}
+            active={isOn(g)}
+            disabled={isLocked(g)}
+            onClick={() => onToggleSystem(g.sys.toolId)}
+            isDark={isDark}
+            title={isLocked(g) ? t('operations.calendar.btf.droneLockedHint') : droneNames(g)}
+            trailing={
+              <>
+                {missingHere.length > 0 && (
+                  <span
+                    role="img"
+                    aria-label={t('operations.calendar.btf.noModelHintDrones', { names: missingHere.join(', ') })}
+                    title={t('operations.calendar.btf.noModelHintDrones', { names: missingHere.join(', ') })}
+                    className="flex items-center px-1.5 text-amber-500"
+                  >
+                    <TriangleAlert size={14} />
+                  </span>
+                )}
+                {!isLocked(g) && <LimitsMenu models={modelsOf(g)} onEdit={onEdit} className="h-full rounded-r-lg px-2" />}
+              </>
+            }
+          >
+            {g.sys.name}
+            {g.drones.length > 1 && <span className="ml-1.5 opacity-70">×{g.drones.length}</span>}
+          </Chip>
+        )
+      })}
 
       {showPicker && (
         <Popover open={open} onOpenChange={setOpen}>
           <PopoverTrigger asChild>
             <button
               type="button"
-              className={`flex h-8 cursor-pointer items-center gap-1 rounded-lg border px-2.5 text-xs font-semibold transition-colors ${
+              className={`flex h-9 cursor-pointer items-center gap-1 rounded-lg border px-3 text-[13px] font-semibold transition-colors ${
                 isDark ? 'border-slate-600 text-slate-300 hover:bg-slate-700' : 'border-slate-200 text-slate-600 hover:bg-slate-50'
               }`}
             >
               {hidden > 0 ? `+${hidden}` : t('operations.calendar.btf.selectDrones')}
-              <ChevronDown size={12} />
+              <ChevronDown size={14} />
             </button>
           </PopoverTrigger>
-          <PopoverContent align="start" className="w-[340px] p-0">
+          <PopoverContent align="start" className="w-[min(360px,calc(100vw-2rem))] p-0">
             <Command>
               <CommandInput placeholder={t('operations.calendar.btf.searchDrones')} />
               <CommandList className="max-h-72">
@@ -573,7 +776,7 @@ function DroneSelector({
                 {groups.map((g) => {
                   const on = isOn(g)
                   const locked = isLocked(g)
-                  const target = editTarget(g)
+                  const missingHere = missingModelNames(g)
                   return (
                     <CommandItem
                       key={g.sys.toolId}
@@ -586,33 +789,23 @@ function DroneSelector({
                         {on && <Check size={11} strokeWidth={3} />}
                       </span>
                       <span className="min-w-0 flex-1">
-                        <span className="block truncate text-xs font-semibold">
+                        <span className="block truncate text-[13px] font-semibold">
                           {g.sys.name}
                           {g.drones.length > 1 && <span className="ml-1.5 font-normal opacity-60">×{g.drones.length}</span>}
                         </span>
-                        <span className="block truncate text-[11px] opacity-60">
+                        <span className="block truncate text-xs opacity-70">
                           {droneNames(g)}
-                          {g.drones[0]?.modelName ? ` · ${g.drones[0].modelName}` : ''}
+                          {modelsOf(g).length > 0 ? ` · ${modelsOf(g).map((m) => m.drone.modelName).join(', ')}` : ''}
                         </span>
+                        {missingHere.length > 0 && (
+                          <span className="mt-0.5 flex items-center gap-1 text-xs text-amber-600">
+                            <TriangleAlert size={12} /> {t('operations.calendar.btf.noModelHintDrones', { names: missingHere.join(', ') })}
+                          </span>
+                        )}
                       </span>
-                      {target === null ? (
-                        <span title={t('operations.calendar.btf.noModelHint')}>
-                          <TriangleAlert size={12} className="text-amber-400" />
-                        </span>
-                      ) : (
-                        <span
-                          role="button"
-                          tabIndex={0}
-                          aria-label={t('operations.calendar.btf.editLimits')}
-                          title={t('operations.calendar.btf.editLimits')}
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            setOpen(false)
-                            onEdit(target)
-                          }}
-                          className="rounded p-1 opacity-60 hover:bg-black/10 hover:opacity-100"
-                        >
-                          <Settings2 size={12} />
+                      {!locked && (
+                        <span onClick={(e) => e.stopPropagation()}>
+                          <LimitsMenu models={modelsOf(g)} onEdit={(d) => (setOpen(false), onEdit(d))} className="rounded p-1.5" />
                         </span>
                       )}
                     </CommandItem>
@@ -626,9 +819,9 @@ function DroneSelector({
                     onClear()
                     setOpen(false)
                   }}
-                  className="flex w-full cursor-pointer items-center justify-center gap-1.5 border-t py-2 text-xs font-semibold text-violet-500 hover:bg-violet-500/10"
+                  className="flex w-full cursor-pointer items-center justify-center gap-1.5 border-t py-2.5 text-[13px] font-semibold text-violet-500 hover:bg-violet-500/10"
                 >
-                  <X size={12} /> {t('operations.calendar.btf.clearSelection')}
+                  <X size={14} /> {t('operations.calendar.btf.clearSelection')}
                 </button>
               )}
             </Command>
@@ -636,9 +829,16 @@ function DroneSelector({
         </Popover>
       )}
 
+      {missing.length > 0 && (
+        <p className={`flex basis-full items-start gap-1.5 text-xs leading-snug ${isDark ? 'text-amber-400' : 'text-amber-700'}`}>
+          <TriangleAlert size={13} className="mt-0.5 shrink-0" />
+          {t('operations.calendar.btf.noModelNote', { names: missingText })}
+        </p>
+      )}
+
       {lockedToolId !== null && (
-        <p className={`flex basis-full items-start gap-1.5 text-[11px] leading-snug ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
-          <Lock size={11} className="mt-0.5 shrink-0" />
+        <p className={`flex basis-full items-start gap-1.5 text-xs leading-snug ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+          <Lock size={12} className="mt-0.5 shrink-0" />
           {t('operations.calendar.btf.droneLockNote', { name: groups.find((g) => g.sys.toolId === lockedToolId)?.sys.name ?? '' })}
         </p>
       )}
@@ -646,12 +846,14 @@ function DroneSelector({
   )
 }
 
+/** A selectable chip. Extra controls (warning, limits) sit beside the toggle as siblings, never nested inside it. */
 function Chip({
   active,
   disabled = false,
   onClick,
   isDark,
   title,
+  trailing,
   children,
 }: {
   active: boolean
@@ -659,29 +861,32 @@ function Chip({
   onClick: () => void
   isDark: boolean
   title?: string
+  trailing?: React.ReactNode
   children: React.ReactNode
 }) {
+  const tone = disabled
+    ? isDark
+      ? 'border-dashed border-slate-700 bg-slate-800/40 text-slate-500'
+      : 'border-dashed border-slate-200 bg-slate-100 text-slate-500'
+    : active
+      ? 'border-violet-600 bg-violet-600 text-white shadow-sm'
+      : isDark
+        ? 'border-slate-600 bg-slate-700/40 text-slate-200 hover:bg-slate-700'
+        : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
   return (
-    <button
-      type="button"
-      onClick={disabled ? undefined : onClick}
-      aria-pressed={active}
-      aria-disabled={disabled}
-      title={title}
-      className={`flex h-8 items-center rounded-lg border px-3 text-xs font-semibold transition-colors ${
-        disabled
-          ? isDark
-            ? 'cursor-not-allowed border-dashed border-slate-700 bg-slate-800/40 text-slate-600'
-            : 'cursor-not-allowed border-dashed border-slate-200 bg-slate-100 text-slate-400'
-          : active
-            ? 'cursor-pointer border-violet-600 bg-violet-600 text-white shadow-sm'
-            : isDark
-              ? 'cursor-pointer border-slate-600 bg-slate-700/40 text-slate-300 hover:bg-slate-700'
-              : 'cursor-pointer border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
-      }`}
-    >
-      {children}
-    </button>
+    <div className={`flex h-9 items-stretch rounded-lg border text-[13px] font-semibold transition-colors ${tone}`}>
+      <button
+        type="button"
+        onClick={disabled ? undefined : onClick}
+        aria-pressed={active}
+        aria-disabled={disabled}
+        title={title}
+        className={`flex items-center rounded-lg px-3 ${disabled ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+      >
+        {children}
+      </button>
+      {trailing}
+    </div>
   )
 }
 
