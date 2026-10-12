@@ -277,9 +277,16 @@ export async function createAndSubmitMissionAuthorization(
         fk_mission_planning_id: true,
         mission_metadata: true,
         dflight_trajectory_data: true,
+        dflight_mission_id: true,
+        dflight_tech_version: true,
       },
     });
     if (!mission) return { outcome: 'error', message: 'Mission not found' };
+
+    // Already on D-Flight: update that record in place rather than creating a duplicate.
+    const existing = mission.dflight_mission_id && mission.dflight_tech_version
+      ? { mission_id: mission.dflight_mission_id, tech_version: mission.dflight_tech_version }
+      : undefined;
 
     if (!mission.scheduled_start) {
       return { outcome: 'skipped', message: 'Mission has no scheduled start time' };
@@ -351,6 +358,7 @@ export async function createAndSubmitMissionAuthorization(
       integration.client_id,
       integration.pfx_content ?? undefined,
       integration.pfx_password ?? undefined,
+      existing,
     );
 
     await prisma.pilot_mission.update({
@@ -364,7 +372,7 @@ export async function createAndSubmitMissionAuthorization(
       },
     });
 
-    return { outcome: 'success', message: `D-Flight mission ${result.mission_id} created` };
+    return { outcome: 'success', message: `D-Flight mission ${result.mission_id} ${existing ? 'updated' : 'created'}` };
   } catch (err: any) {
     console.error('[dflight-mission-authorization] createAndSubmitMissionAuthorization failed:', err?.message ?? err);
     return { outcome: 'error', message: err?.message ?? String(err) };
