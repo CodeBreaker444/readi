@@ -1,18 +1,67 @@
 ---
 title: "Safety Management"
-description: "Incident reports, hazard observations, corrective actions, and KPI tracking."
+description: "Define safety indicators (SPI and KPI), log measurements, and watch them feed the Safety Health Index."
 ---
 
-## Main capabilities
+Safety Management in the sidebar contains **SPI & KPI Definitions**. The results are shown on the [Dashboard](/docs/modules/dashboard) as the Safety Health Index. **Emergency Contact List** also lives here: see [Emergency Response Plans](/docs/modules/emergency-contact).
 
-- File safety reports: incidents, hazards, observations
-- Assign severity levels and corrective actions
-- Track action status from open to completed
-- Monitor KPI/SPI values against targets and thresholds
-- View trend history across safety metrics
+---
 
-## Primary app routes
+## SPI and KPI
 
-- `/safety`
-- `/safety/reports`
-- `/safety/kpi`
+| Type | Stands for | Used for |
+|---|---|---|
+| **SPI** | Safety Performance Indicator | Measuring safety, such as number of incidents |
+| **KPI** | Key Performance Indicator | Measuring performance, such as on-time maintenance |
+
+Each indicator belongs to an **area**: Compliance, Training, Operations or Maintenance.
+
+The page shows the total indicators, active monitors and the Operations area count. Filter by area and by Active or Inactive, and search by name.
+
+---
+
+## Creating an indicator
+
+Click **New Indicator** and fill in:
+
+| Field | Notes |
+|---|---|
+| Code | Capital letters, numbers and underscores, at least 3 characters. **Cannot be changed after saving** |
+| Name, Description | What it measures |
+| Type and Area | SPI or KPI, and its area |
+| Unit | For example %, hours or count |
+| Target Value | The goal. Must be positive |
+| Target Direction | **Higher is Better** or **Lower is Better**. For incidents choose Lower |
+| Reporting Frequency | Weekly, Monthly, Quarterly or Yearly |
+| Status | **Active / Monitoring** or **Disabled / Draft** |
+
+---
+
+## Logging a measurement
+
+An indicator does not appear on the dashboard until you log a value.
+
+1. Click **Log measurement value** on its row.
+2. Enter the **Measurement Date** and the **Actual Value**.
+3. The status is worked out for you:
+
+| Status | Meaning |
+|---|---|
+| Green | On track, or better than target |
+| Yellow | At risk, or exactly on target |
+| Red | Breached, or worse than target |
+
+Which side of the target is good depends on the Target Direction.
+
+---
+
+## Reviewing targets
+
+See **Safety Target Review** under [Compliance](/docs/modules/compliance) to get suggested targets based on past data.
+
+---
+
+## Related
+
+- [Dashboard](/docs/modules/dashboard)
+- [Compliance](/docs/modules/compliance)

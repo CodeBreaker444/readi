@@ -50,7 +50,7 @@ import {
 import { useCallback, useEffect, useMemo, useState, Suspense } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import ExportButtons from "@/components/system/ExportButtons";
 import { getColumns } from "@/components/tables/NotificationColumn";
@@ -185,6 +185,17 @@ function NotificationsInner() {
   function handleSearch() {
     loadData(serverFilters);
   }
+
+  const router = useRouter();
+
+  // Rows with a link open it (and are marked read); the action buttons keep their own behavior.
+  const handleRowClick = (e: React.MouseEvent, n: Notification) => {
+    if (!n.action_url?.startsWith("/") || (e.target as HTMLElement).closest("button, a")) return;
+    if (n.is_read === "N") {
+      axios.post("/api/notification/mark-read", { notification_id: n.notification_id }).catch(() => {});
+    }
+    router.push(n.action_url);
+  };
 
   const handleMarkRead = async (notification_id: number) => {
     try {
@@ -610,11 +621,12 @@ function NotificationsInner() {
                       table.getRowModel().rows.map((row) => (
                         <TableRow
                           key={row.id}
-                          className={
+                          onClick={(e) => handleRowClick(e, row.original)}
+                          className={`${
                             row.original.is_read === "N"
                               ? "bg-amber-50/60 hover:bg-amber-50"
                               : "hover:bg-muted/20"
-                          }
+                          } ${row.original.action_url?.startsWith("/") ? "cursor-pointer" : ""}`}
                         >
                           {row.getVisibleCells().map((cell) => (
                             <TableCell key={cell.id}>

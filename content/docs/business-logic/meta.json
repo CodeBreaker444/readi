@@ -3,6 +3,7 @@
   "pages": [
     "systems",
     "mission-lifecycle",
+    "mission-approval",
     "pilot-logic",
     "checklist-logic",
     "platform-flow",
@@ -14,7 +15,10 @@
     "email-notifications",
     "cron-jobs",
     "evaluation-planning-module",
-    "integration-services",
+    "dflight-integration",
+    "dflight-authorization",
+    "dcc-integration",
     "parameter-reference"
-  ]
+  ],
+  "icon": "Workflow"
 }

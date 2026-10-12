@@ -1,0 +1,52 @@
+---
+title: "Client Portal"
+description: "What clients see when they log in: their missions, statistics, and a form to request new flights."
+---
+
+Clients of your company can have their own login. A user with the **Client** role goes straight to the client area and sees only the information about their own missions.
+
+---
+
+## Dashboard
+
+The dashboard gives an overview of the work done for the client:
+
+- **Total missions**, **flight hours**, **distance flown (km)** and **systems used**
+- Missions by status
+- The systems and drones used
+- Flights per day and per month
+
+A separate **Analytics** page shows the same information in more detail over time.
+
+---
+
+## Missions
+
+The Missions page lists the client's missions with code, name, status, pilot, drone, scheduled time, duration and location. Clients can search and filter by status (Planned, In Progress, Completed, Cancelled, Aborted).
+
+Select a mission to see its details: actual start and end, distance flown and notes.
+
+---
+
+## Requesting a flight
+
+Clients can ask for a new flight from **Request Flight**. They fill in:
+
+| Field | Notes |
+|---|---|
+| Mission type or Target / Area | At least one is required |
+| Preferred start time | |
+| Priority | High, Medium or Low |
+| Operator | Company or person responsible for the request |
+| Localization | Position, direction, and starting and ending points |
+| Waypoint | Latitude, longitude and altitude |
+| Notes | Special requirements |
+
+After sending, the client sees a confirmation. The request appears for your team under **Flight Requests → External**, where an OPM can accept or deny it (see [DCC Integration](/docs/business-logic/dcc-integration)).
+
+---
+
+## Related
+
+- [Role Glossary](/docs/business-logic/role-glossary)
+- [Operations](/docs/modules/operations)

@@ -23,6 +23,9 @@ function describeDFlightError(status: number, body: string): string {
     const parsed = JSON.parse(trimmed) as Record<string, unknown>;
     const message = parsed?.error_description ?? parsed?.message ?? parsed?.error;
     if (typeof message === 'string' && message.trim()) return `HTTP ${status}: ${message}`;
+    // D-Flight mission-management result bodies (result_code/result_desc) are
+    // passed through whole so the UI can show every field in its error modal.
+    if (parsed?.result_code != null) return `HTTP ${status}: ${trimmed}`;
   } catch {
     // Not JSON either — fall through to a truncated raw snippet below.
   }

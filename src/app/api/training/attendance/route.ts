@@ -6,6 +6,7 @@ import {
 import { requireFeatureAccess, requirePermission } from '@/lib/auth/api-auth';
 import { internalError, zodError } from '@/lib/api-error';
 import { E } from '@/lib/error-codes';
+import { refineTrainingDates } from '@/lib/training-dates';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
@@ -35,7 +36,13 @@ const addAttendanceSchema = z.object({
     .regex(dateRegex, 'Date must be YYYY-MM-DD')
     .optional()
     .nullable(),
-});
+}).superRefine((d, ctx) =>
+  refineTrainingDates(
+    { session: d.training_session_date, completion: d.certification_date, expiry: d.certification_expiry },
+    { completion: 'certification_date', expiry: 'certification_expiry' },
+    ctx
+  )
+);
 const deleteAttendanceSchema = z.object({
   action: z.literal('delete'),
   attendance_id: z.number().int().positive('attendance_id is required'),

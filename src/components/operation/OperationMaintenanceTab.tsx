@@ -310,7 +310,7 @@ export const OperationMaintenanceTab = forwardRef<OperationMaintenanceTabHandle,
                 <div className="flex items-center justify-between">
                     <div>
                         <p className={cn('text-sm font-medium', isDark ? 'text-slate-200' : 'text-slate-800')}>
-                            {systemData!.tool_code}{systemData!.tool_name ? ` — ${systemData!.tool_name}` : ''}
+                            {systemData!.tool_code}
                         </p>
                     </div>
                     <Badge variant="outline" className={cn('text-[10px] font-medium px-2 py-0.5', isDark ? sysCfg.dark : sysCfg.light)}>

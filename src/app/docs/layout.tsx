@@ -6,12 +6,12 @@ import './docs.css';
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   return (
-    <RootProvider>
+    <RootProvider theme={{ forcedTheme: 'dark', enableSystem: false, storageKey: 'docs-theme' }}>
       <DocsLayout 
         tree={source.getPageTree()} 
         {...baseOptions}
         themeSwitch={{
-          enabled: false,
+          enabled: true,
         }}
       >
         {children}

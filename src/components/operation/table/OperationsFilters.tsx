@@ -131,7 +131,7 @@ export function OperationsFilters({
               <SelectItem value="ALL">{t('operations.table.filters.allDrones')}</SelectItem>
               {tools.map((tool) => (
                 <SelectItem key={tool.tool_id} value={tool.tool_id.toString()}>
-                  {tool.tool_name} {tool.tool_code ? `(${tool.tool_code})` : ''}
+                  {tool.tool_code || tool.tool_name}
                 </SelectItem>
               ))}
             </SelectContent>

@@ -1,5 +1,5 @@
 import { logEvent } from '@/backend/services/auditLog/audit-log';
-import { assertNoOpenTicketForTool, createTicket, getTechnicianName, getToolCode } from '@/backend/services/system/maintenance-ticket';
+import { assertCanCreateTicket, createTicket, getTechnicianName, getToolCode } from '@/backend/services/system/maintenance-ticket';
 import { CreateTicketPayload } from '@/config/types/maintenance';
 import { requireAnyPermission, requireFeatureAccess } from '@/lib/auth/api-auth';
 import { apiError, internalError, zodError } from '@/lib/api-error';
@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
     }
 
     try {
-      await assertNoOpenTicketForTool(body.fk_tool_id);
+      await assertCanCreateTicket(body.fk_tool_id, [...new Set(body.components ?? [])]);
     } catch {
       return apiError(E.BL005, 409);
     }

@@ -7,11 +7,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
 const toolSchema = z.object({
-  tool_code: z.string().min(1).max(50),
+  tool_code: z.string({ error: 'System code is required' }).trim().min(1, 'System code is required').max(50),
   tool_name: z.string().optional(),
   tool_description: z.string().optional().nullable(),
   tool_active: z.string().default('Y'),
-  clientId: z.number().positive(),
+  clientId: z.number({ error: 'Client is required' }).positive('Client is required'),
   location: z.string().optional().nullable(),
   latitude: z.number().optional().nullable(),
   longitude: z.number().optional().nullable(),
@@ -26,9 +26,27 @@ export async function POST(request: NextRequest) {
     const { error: featureError } = await requireFeatureAccess('systems_manage', 'create');
     if (featureError) return featureError;
 
-    const formData = await request.formData();
-    const body = JSON.parse(formData.get('data') as string);
-    const files = formData.getAll('files').filter((f): f is File => f instanceof File && f.size > 0);
+    // An empty or malformed request must fall through to schema validation (400
+    // with per-field errors) rather than throw and surface as a 500.
+    let formData: FormData | null = null;
+    try {
+      formData = await request.formData();
+    } catch {
+      formData = null;
+    }
+
+    let body: Record<string, any> = {};
+    const rawData = formData?.get('data');
+    if (typeof rawData === 'string' && rawData.trim()) {
+      try {
+        const parsed = JSON.parse(rawData);
+        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) body = parsed;
+      } catch {
+        body = {};
+      }
+    }
+
+    const files = (formData?.getAll('files') ?? []).filter((f): f is File => f instanceof File && f.size > 0);
     const ownerId = session!.user.ownerId;
 
     const toValidate = { ...body, clientId: body.fk_client_id ?? body.clientId };

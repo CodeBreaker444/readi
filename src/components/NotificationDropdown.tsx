@@ -5,6 +5,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import type { Notification } from '@/config/types/notification';
 import { Bell, BellOff, CheckCheck, Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
@@ -214,6 +215,16 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isDark }) =
 
   const recentFive = useMemo(() => notifications.slice(0, 5), [notifications]);
 
+  const router = useRouter();
+
+  const handleOpen = (notif: Notification) => {
+    handleMarkRead(notif);
+    if (notif.action_url?.startsWith('/')) {
+      setIsOpen(false);
+      router.push(notif.action_url);
+    }
+  };
+
   const handleMarkRead = async (notif: Notification, e?: React.MouseEvent) => {
     e?.stopPropagation();
     if (notif.is_read === 'Y') return;
@@ -331,7 +342,7 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isDark }) =
                         className={`relative flex items-start gap-3 px-4 py-3 cursor-pointer transition-colors ${
                           idx !== 0 ? `border-t ${divider}` : ''
                         } ${isDark ? 'hover:bg-slate-700/50' : 'hover:bg-slate-50'}`}
-                        onClick={() => handleMarkRead(notif)}
+                        onClick={() => handleOpen(notif)}
                       >
                         {/* Unread dot */}
                         {isUnread && (

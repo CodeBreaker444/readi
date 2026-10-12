@@ -2,7 +2,7 @@
 
 import { Skeleton } from '@/components/ui/skeleton';
 import { SessionUser } from '@/lib/auth/server-session';
-import { AlertTriangle, Check, ChevronDown, FileText, Moon, Search, Send, Settings, Sparkles, Sun, User, UserCog, X } from 'lucide-react';
+import { AlertTriangle, Check, ChevronDown, FileText, Globe, Moon, Search, Send, Settings, Sparkles, Sun, User, UserCog, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -10,6 +10,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { LanguageSelect } from './LanguageSelect';
 import NotificationDropdown from './NotificationDropdown';
+import { useTimezone } from './TimezoneProvider';
 
 interface ChatMessage {
   role: 'user' | 'assistant';
@@ -37,6 +38,7 @@ const CHAT_RESTRICTED_ROLES = ['SUPERADMIN'];
 
 const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData, loading }) => {
   const { t } = useTranslation();
+  const { timezone } = useTimezone();
   const isChatRestricted = CHAT_RESTRICTED_ROLES.includes(userData?.role ?? '');
   const isAdmin = userData?.role === 'ADMIN';
 
@@ -223,6 +225,14 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData, loading 
               </kbd>
             )}
           </button>
+
+          <div
+            className={`hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium ${isDark ? 'bg-slate-800/80 text-slate-300' : 'bg-gray-50 text-gray-600'}`}
+            title={timezone}
+          >
+            <Globe size={14} className="shrink-0" />
+            <span className="whitespace-nowrap">{timezone}</span>
+          </div>
 
           <LanguageSelect isDark={isDark} />
 

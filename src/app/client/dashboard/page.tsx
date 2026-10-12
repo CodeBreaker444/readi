@@ -330,9 +330,6 @@ export default function ClientDashboardPage() {
                         </span>
                         <div className="min-w-0 flex-1">
                           <p className={cn('text-sm font-semibold truncate', textMain)}>{sys.tool_code}</p>
-                          {sys.tool_name && (
-                            <p className={cn('text-xs truncate', textSub)}>{sys.tool_name}</p>
-                          )}
                         </div>
                         <span className={cn(
                           'text-xs font-semibold px-2 py-0.5 rounded-full shrink-0',

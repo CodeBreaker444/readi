@@ -11,9 +11,8 @@ Changing a mission status (e.g. PLANNED → IN_PROGRESS) is gated by several ind
 
 The acting user must have an Authorization PIN configured.
 
-- **API:** `POST /api/authorization/transaction-sign`
-- **Block:** No entry in `user_authorization_keys` for this user
-- **Error:** HTTP 422 — "Authorization PIN not set up"
+- **Block:** No Authorization PIN has been set up for this user
+- **Error:** "Authorization PIN not set up"
 - **Fix:** User configures PIN in Settings → Security
 
 ---
@@ -22,8 +21,7 @@ The acting user must have an Authorization PIN configured.
 
 The pilot assigned to the mission must have filed a declaration today.
 
-- **API:** `POST /api/operation/board/status`
-- **Block:** No `pilot_declaration` with `declared_at >= today 00:00:00`
+- **Block:** The pilot has not filed a pre-flight declaration since the start of today (00:00)
 - **Fix:** Pilot files their pre-flight declaration for the day
 
 ---
@@ -52,7 +50,7 @@ Terminal statuses cannot transition further.
 
 | Gate | Block condition | Resolution |
 |---|---|---|
-| Authorization PIN | No key pair in `user_authorization_keys` | Configure PIN in Settings → Security |
+| Authorization PIN | No Authorization PIN set up | Configure PIN in Settings → Security |
 | Daily declaration | No declaration filed today | Pilot files pre-flight declaration |
 | NOT_OPERATIONAL | Expired component | Replace or deactivate component |
 | MAINTENANCE | Open maintenance ticket | Close the ticket |

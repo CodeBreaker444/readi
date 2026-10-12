@@ -661,7 +661,7 @@ export function FlytbaseFlights({ isActive = true, selectedOrganization, listCon
                                 )}
                               </div>
                               <p className={`text-[10px] mt-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                                {mission.tool?.tool_name || mission.tool?.tool_code}
+                                {mission.tool?.tool_code}
                               </p>
                               <p className={`text-[10px] mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                                 {mission.actual_start && new Date(mission.actual_start).toLocaleString()}

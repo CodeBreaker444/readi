@@ -17,7 +17,7 @@ interface Planning {
 export interface AssignablePlan {
   mission_planning_id: number;
   mission_planning_code: string | null;
-  tool_name: string | null;
+  tool_code: string | null;
   dcc_drone_id: string | null;
 }
 
@@ -154,7 +154,7 @@ export function FlightRequestsPlanModal({
                                   }`}
                               >
                                 <span className="font-mono font-semibold shrink-0"> </span>
-                                {plan.tool_name && <span className="truncate">{plan.tool_name}</span>}
+                                {plan.tool_code && <span className="truncate">{plan.tool_code}</span>}
                                 {planDisabled ? (
                                   <span className={`ml-auto shrink-0 text-[10px] px-1.5 py-0.5 rounded-full ${isDark ? 'bg-slate-800 text-slate-600' : 'bg-gray-100 text-gray-400'}`}>
                                     {t('planning.flightRequests.noDroneId')}

@@ -1,0 +1,74 @@
+---
+title: "DCC Integration"
+description: "How Readi exchanges missions with an external Drone Control Center (DCC): setup, incoming requests, and the updates Readi sends back."
+---
+
+A **DCC** (Drone Control Center) is an external system that requests missions from Readi. Readi keeps it informed as the mission progresses.
+
+---
+
+## Setup
+
+Go to **Settings → Integrations → DCC Server Configuration** (Admin and above) and set:
+
+| Field | Notes |
+|---|---|
+| Display Name | Required, e.g. "AI View Group DCC" |
+| Callback URL | Required, a valid web address. Readi sends all updates to this address |
+
+Saving is recorded in the [Audit Logs](/docs/records/audit-logs). If no DCC is configured, updates are skipped with the message "DCC integration not configured for this organization".
+
+---
+
+## Drone mapping
+
+The DCC identifies drones with its own ID. Enter it as **DCC Drone ID** (a long code provided by the DCC) on the system's **drone component**. If several active drones have one, the most recently installed is used.
+
+<Warning>
+Without a DCC Drone ID, the "Accepted" update is **not sent** to the DCC.
+</Warning>
+
+---
+
+## Flow
+
+1. The DCC creates a request, which appears under **Flight Requests → External**.
+2. An OPM **assigns** it to a planning mission (accepts) or **denies** it.
+3. Readi informs the DCC at each step of the mission (below).
+
+Missions created directly in Readi are also announced to the DCC. The Started and Finished updates are **skipped for missions the DCC never requested**.
+
+---
+
+## Updates sent by Readi
+
+| Update | Sent when |
+|---|---|
+| New mission | A scheduled or on-demand mission is created in Readi |
+| Accepted | An OPM assigns the request (includes the drone) |
+| Denied | An OPM denies the request |
+| Started | The mission moves to **In Progress** |
+| Finished | The mission is **Done**, reported as success or failure with a note |
+| Cancelled | A scheduled program is cancelled |
+| Flight log | A flight log is pushed from the Flight Requests page |
+
+The settings page also lists the exact addresses called, which you can share with your DCC provider.
+
+---
+
+## Pushing a flight log
+
+On a request, archive a Control Center flight, then use **Push to DCC**. It is sent as the mission's flight report. Manual logs cannot be pushed, and the mission needs a drone with a DCC Drone ID.
+
+---
+
+## Errors
+
+A failed update never blocks the action in Readi. The failure is shown in a **DCC Error Details** message, which has a bug-report option.
+
+---
+
+## Related
+
+- [Planning module](/docs/modules/planning)
+- [Mission Lifecycle](/docs/business-logic/mission-lifecycle)

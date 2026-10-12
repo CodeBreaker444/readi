@@ -1,6 +1,7 @@
 export default {
   nav: {
-    title: 'Readi Platform Documentation',
+    title: 'Readi Docs',
+    url: '/docs',
   },
   links: [
     {
@@ -10,6 +11,6 @@ export default {
     },
   ],
   sidebar: {
-    defaultOpenLevel: 0,
+    defaultOpenLevel: 1,
   },
 };

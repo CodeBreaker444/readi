@@ -446,7 +446,6 @@ export function MaintenanceCycleModal({
               {systemData && (
                 <p className={cn("mt-0.5 text-[12px]", isDark ? "text-slate-500" : "text-slate-400")}>
                   {systemData.tool_code}
-                  {systemData.tool_name ? ` — ${systemData.tool_name}` : ""}
                 </p>
               )}
             </div>

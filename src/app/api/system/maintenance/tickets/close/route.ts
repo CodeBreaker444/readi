@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
       return zodError(E.VL001, validation.error);
     }
 
-    await closeTicket({
+    const { resetComponents } = await closeTicket({
       ticket_id: validation.data.ticket_id,
       note: validation.data.note,
       closed_by: Number(session!.user.userId)
@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
       ownerId: session!.user.ownerId,
     });
 
-    return NextResponse.json({ status: 'OK' });
+    return NextResponse.json({ status: 'OK', reset_components: resetComponents });
   } catch (err) {
     console.error('[POST /api/maintenance/tickets/close]', err);
     return internalError(E.SV001, err);

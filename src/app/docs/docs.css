@@ -1,59 +1,176 @@
-/* Docs specific styles */
-.docs-container {
-  min-height: 100vh;
+@import 'tailwindcss';
+@import 'fumadocs-ui/css/neutral.css';
+@import 'fumadocs-ui/css/preset.css';
+
+/* Docs-only polish on top of fumadocs-ui (scoped so it never leaks into the app) */
+
+#nd-docs-layout {
+  --fd-layout-width: 100vw;
 }
 
-.docs-content {
-  max-width: 100%;
+/* Page header */
+#nd-page h1 {
+  font-weight: 700;
+  letter-spacing: -0.025em;
 }
 
-/* Custom scrollbar for docs */
-.docs-content::-webkit-scrollbar {
-  width: 8px;
+#nd-page > header,
+#nd-page article > h1:first-child {
+  padding-bottom: 0.25rem;
 }
 
-.docs-content::-webkit-scrollbar-trace {
-  background: transparent;
+/* Headings in body */
+#nd-page .prose h2 {
+  margin-top: 2.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--color-fd-border);
+  letter-spacing: -0.015em;
 }
 
-.docs-content::-webkit-scrollbar-thumb {
-  background-color: rgba(156, 163, 175, 0.5);
-  border-radius: 4px;
+/* Tables: rounded card look */
+#nd-page .prose table {
+  border-collapse: separate;
+  border-spacing: 0;
+  border: 1px solid var(--color-fd-border);
+  border-radius: var(--radius-lg, 0.75rem);
+  overflow: hidden;
+  font-size: 0.875rem;
 }
 
-.docs-content::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(156, 163, 175, 0.8);
+#nd-page .prose thead th {
+  background: var(--color-fd-secondary);
+  color: var(--color-fd-secondary-foreground);
+  font-weight: 600;
+  text-align: left;
+  border-bottom: 1px solid var(--color-fd-border);
 }
 
-/* Code block styling */
-pre {
-  border-radius: 0.5rem;
-  margin: 1rem 0;
+#nd-page .prose th,
+#nd-page .prose td {
+  padding: 0.6rem 1rem;
+  border: 0;
+  border-bottom: 1px solid var(--color-fd-border);
 }
 
-/* Table styling */
-table {
-  border-collapse: collapse;
-  width: 100%;
-  margin: 1rem 0;
+#nd-page .prose tbody tr:last-child td {
+  border-bottom: 0;
 }
 
-table th,
-table td {
-  border: 1px solid #e5e7eb;
+#nd-page .prose tbody tr:hover {
+  background: color-mix(in srgb, var(--color-fd-accent) 50%, transparent);
+}
+
+/* Inline code gets a subtle accent */
+#nd-page .prose :not(pre) > code {
+  color: var(--color-fd-primary);
+  background: var(--color-fd-secondary);
+  border: 1px solid var(--color-fd-border);
+  border-radius: 0.375rem;
+  padding: 0.1rem 0.35rem;
+}
+
+.dark #nd-page .prose :not(pre) > code {
+  color: var(--color-fd-primary);
+}
+
+/* Code blocks */
+#nd-page figure.shiki {
+  border-radius: var(--radius-lg, 0.75rem);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.04);
+}
+
+/* Blockquotes */
+#nd-page .prose blockquote {
+  border-left: 3px solid var(--color-fd-primary);
+  background: var(--color-fd-card);
+  border-radius: 0 0.5rem 0.5rem 0;
   padding: 0.5rem 1rem;
 }
 
-table th {
-  background-color: #f9fafb;
-  font-weight: 600;
+/* Cards: lift on hover */
+#nd-page a.fd-card,
+#nd-page .prose a[class*="rounded-xl"] {
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
 }
 
-/* Link styling */
-a {
-  text-decoration: underline;
+#nd-page a.fd-card:hover,
+#nd-page .prose a[class*="rounded-xl"]:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px -8px rgb(0 0 0 / 0.2);
+  border-color: var(--color-fd-primary);
 }
 
-a:hover {
-  text-decoration: none;
+/* Subtle page background gradient */
+#nd-docs-layout {
+  background:
+    radial-gradient(60rem 28rem at 70% -10%, color-mix(in srgb, var(--color-fd-primary) 8%, transparent), transparent 70%),
+    var(--color-fd-background);
+}
+
+/* Slim scrollbars */
+#nd-docs-layout *::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+#nd-docs-layout *::-webkit-scrollbar-thumb {
+  background-color: color-mix(in srgb, var(--color-fd-muted-foreground) 40%, transparent);
+  border-radius: 4px;
+}
+
+/* Brand accent on top of the neutral theme */
+:root {
+  --color-fd-primary: hsl(221, 83%, 53%);
+  --color-fd-primary-foreground: hsl(0, 0%, 100%);
+  --color-fd-ring: hsl(221, 83%, 60%);
+  --color-fd-accent: hsl(221, 83%, 96%);
+  --color-fd-accent-foreground: hsl(221, 70%, 35%);
+  --color-fd-secondary: hsl(220, 20%, 95%);
+  --color-fd-card: hsl(220, 25%, 98.5%);
+}
+
+.dark {
+  --color-fd-primary: hsl(217, 91%, 68%);
+  --color-fd-primary-foreground: hsl(222, 47%, 11%);
+  --color-fd-ring: hsl(217, 91%, 68%);
+  --color-fd-accent: hsla(217, 91%, 60%, 0.14);
+  --color-fd-accent-foreground: hsl(217, 91%, 80%);
+  --color-fd-card: hsla(220, 20%, 14%, 0.6);
+}
+
+/* Sidebar: icon tiles for folders, accent for active page */
+#nd-sidebar [data-active="true"] {
+  color: var(--color-fd-primary);
+  background: var(--color-fd-accent);
+  font-weight: 500;
+}
+
+#nd-sidebar button > svg:first-child,
+#nd-sidebar a > svg:first-child {
+  color: var(--color-fd-primary);
+}
+
+/* Intro hero */
+.docs-hero {
+  border: 1px solid var(--color-fd-border);
+  border-radius: 1rem;
+  padding: 1.75rem;
+  margin: 1.5rem 0 2rem;
+  background:
+    radial-gradient(40rem 14rem at 0% 0%, color-mix(in srgb, var(--color-fd-primary) 14%, transparent), transparent 70%),
+    var(--color-fd-card);
+}
+
+/* Black docs theme */
+.dark {
+  --color-fd-background: hsl(0, 0%, 0%);
+  --color-fd-foreground: hsl(0, 0%, 95%);
+  --color-fd-muted: hsl(0, 0%, 8%);
+  --color-fd-muted-foreground: hsl(0, 0%, 63%);
+  --color-fd-popover: hsl(0, 0%, 6%);
+  --color-fd-popover-foreground: hsl(0, 0%, 92%);
+  --color-fd-card: hsl(0, 0%, 6%);
+  --color-fd-border: hsla(0, 0%, 100%, 0.1);
+  --color-fd-secondary: hsl(0, 0%, 10%);
+  --color-fd-secondary-foreground: hsl(0, 0%, 92%);
 }

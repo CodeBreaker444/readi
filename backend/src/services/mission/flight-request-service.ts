@@ -341,7 +341,7 @@ export async function listAssignablePlannings(owner_id: number): Promise<Assigna
 export interface AssignablePlan {
   mission_planning_id: number;
   mission_planning_code: string | null;
-  tool_name: string | null;
+  tool_code: string | null;
   dcc_drone_id: string | null;
 }
 
@@ -358,7 +358,7 @@ export async function listPlansForPlanning(planning_id: number, owner_id: number
       mission_planning_id: true,
       mission_planning_code: true,
       fk_tool_id: true,
-      tool: { select: { tool_name: true } },
+      tool: { select: { tool_code: true } },
     },
     orderBy: { mission_planning_id: 'asc' },
   });
@@ -387,7 +387,7 @@ export async function listPlansForPlanning(planning_id: number, owner_id: number
   return plans.map((p) => ({
     mission_planning_id:   p.mission_planning_id,
     mission_planning_code: p.mission_planning_code,
-    tool_name:             p.tool?.tool_name ?? null,
+    tool_code:             p.tool?.tool_code ?? null,
     dcc_drone_id:          droneIdByToolId.get(p.fk_tool_id as number) ?? null,
   }));
 }

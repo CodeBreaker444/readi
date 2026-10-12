@@ -1,6 +1,7 @@
 import { seedLucProcedureProgressFromSteps } from '@/backend/services/operation/luc-procedure-progress';
-import { assertMissionEditable, assertDFlightAuthorized } from '@/backend/services/operation/mission-lock';
+import { assertMissionEditable, assertDFlightAuthorized, assertOpmApproved } from '@/backend/services/operation/mission-lock';
 import { AttachmentUploadResponse, CreateOperationSchema, ListOperationsQuerySchema, Operation, OperationAttachment, OperationsListResponse, UpdateOperationSchema } from '@/config/types/operation';
+import { getAdminDecidedMissionIds } from '@/backend/services/operation/mission-approval-service';
 import { prisma } from '@/lib/prisma';
 import { buildS3Url, deleteFileFromS3, getPresignedDownloadUrl, REGION, uploadFileToS3 } from '@/lib/s3Client';
 import { sendMissionCreatedModuleEmail, sendMissionAssignedModuleEmail } from '../settings/module-email-notification-service';
@@ -107,6 +108,11 @@ export async function listOperations(
         status_name: true,
         dflight_mission_id: true,
         dflight_flight_authorisation_status: true,
+        opm_approval_status: true,
+        opm_approval_department: true,
+        opm_approval_note: true,
+        opm_approval_decided_at: true,
+        opm_approval_decided_by_user_id: true,
         dflight_trajectory_data: true,
         created_at: true,
         updated_at: true,
@@ -121,8 +127,11 @@ export async function listOperations(
     prisma.pilot_mission.count({ where }),
   ]);
 
+  const adminDecided = await getAdminDecidedMissionIds(data);
+
   const operations = data.map((row) => ({
     ...row,
+    opm_approval_decided_by_admin: adminDecided.has(row.pilot_mission_id),
     actual_start: asUtc(row.actual_start),
     actual_end: asUtc(row.actual_end),
     pilot_name: row.users
@@ -213,7 +222,12 @@ export async function getOperation(id: number): Promise<Operation | null> {
   } as unknown as Operation;
 }
 
-export async function createOperation(input: CreateOperationSchema, ownerId: number, creatorUserId?: number): Promise<Operation> {
+export async function createOperation(
+  input: CreateOperationSchema,
+  ownerId: number,
+  creatorUserId?: number,
+  approval?: Record<string, unknown> | null,
+): Promise<Operation> {
   const codeToChild = input.mission_code;
 
   const existing = await prisma.pilot_mission.findFirst({
@@ -370,6 +384,7 @@ export async function createOperation(input: CreateOperationSchema, ownerId: num
       luc_procedure_progress: luc_procedure_progress as any,
       luc_completed_at: null,
       dflight_trajectory_data: (input as any).dflight_trajectory_data ?? null,
+      ...(approval ?? {}),
       ...(Object.keys(missionMetadata).length && { mission_metadata: { ...missionMetadata, recurring_group_id: recurringGroupId } }),
     };
 
@@ -502,11 +517,13 @@ export async function updateOperation(id: number, input: UpdateOperationSchema, 
       dflight_flight_authorisation_status: true,
       dflight_mission_status: true,
       dflight_flight_clearance_status: true,
+      opm_approval_status: true,
     },
   });
   assertMissionEditable(current?.status_name);
 
   if ((input as any).status_name === 'IN_PROGRESS' && current?.status_name !== 'IN_PROGRESS') {
+    assertOpmApproved(current?.opm_approval_status);
     assertDFlightAuthorized(
       current?.dflight_mission_id,
       current?.dflight_flight_authorisation_status,
@@ -533,7 +550,14 @@ export async function updateOperation(id: number, input: UpdateOperationSchema, 
   if (input.fk_mission_status_id !== undefined) updatePayload.fk_mission_status_id = input.fk_mission_status_id;
   if ((input as any).fk_mission_type_id !== undefined) updatePayload.fk_mission_type_id = (input as any).fk_mission_type_id;
   if ((input as any).fk_mission_category_id !== undefined) updatePayload.fk_mission_category_id = (input as any).fk_mission_category_id;
-  if ((input as any).status_name !== undefined) updatePayload.status_name = (input as any).status_name;
+  if ((input as any).status_name !== undefined) {
+    updatePayload.status_name = (input as any).status_name;
+    // Keep the FK in step with status_name: Operations reads status_name, the
+    // Dashboard reads the FK, so updating only one made them disagree.
+    if (input.fk_mission_status_id === undefined && STATUS_NAME_TO_ID[(input as any).status_name] !== undefined) {
+      updatePayload.fk_mission_status_id = STATUS_NAME_TO_ID[(input as any).status_name];
+    }
+  }
   if (input.distance_flown !== undefined) updatePayload.distance_flown = input.distance_flown;
   if ((input as any).fk_erp_group_id !== undefined) updatePayload.fk_erp_group_id = (input as any).fk_erp_group_id;
   if ((input as any).mission_group_label !== undefined) updatePayload.mission_group_label = (input as any).mission_group_label;

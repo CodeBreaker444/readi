@@ -751,7 +751,7 @@ export function MissionCompleteModal({ open, onClose, onSkip, toolId, missionId,
               </DialogTitle>
               {systemData && (
                 <p className={cn("mt-0.5 text-[11px] sm:text-[12px] truncate", isDark ? "text-slate-500" : "text-slate-400")}>
-                  {systemData.tool_code}{systemData.tool_name ? ` — ${systemData.tool_name}` : ""}
+                  {systemData.tool_code}
                 </p>
               )}
             </div>

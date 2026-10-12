@@ -251,6 +251,11 @@ export default function TrainingCoursesPage() {
       fetchRecords();
     } catch (err) {
       console.error('Failed to save training record', err);
+      const data = axios.isAxiosError(err) ? err.response?.data : undefined;
+      const fieldMessage = Object.values((data?.errors ?? {}) as Record<string, string[] | undefined>)
+        .flat()
+        .find(Boolean);
+      toast.error(fieldMessage || data?.error || 'Failed to save training record');
     } finally {
       setSaving(false);
     }
