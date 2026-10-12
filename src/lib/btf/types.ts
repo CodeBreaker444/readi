@@ -18,6 +18,20 @@ export interface BtfDrone {
   /** Limits come from the drone's model, or generic defaults without one */
   limits: FlightLimits
   limitsSource: LimitsSource
+  /** The system's coordinates (null when the system has no location set) */
+  latitude: number | null
+  longitude: number | null
+  locationName: string | null
+}
+
+/** A system and its drones, with the location the weather is fetched for. */
+export interface BtfSystem {
+  toolId: number
+  code: string
+  name: string
+  location: { latitude: number; longitude: number; name: string | null } | null
+  /** componentIds of its drones */
+  droneIds: number[]
 }
 
 export interface BtfForecast {

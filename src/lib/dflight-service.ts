@@ -840,20 +840,33 @@ export async function createDFlightMission(
   clientId:    string,
   pfxContent?:  string,
   pfxPassword?: string,
+  /** Set to update an already-created D-Flight mission instead of creating a new one. */
+  existing?:    { mission_id: string; tech_version: string },
 ): Promise<DFlightMissionResult> {
   const safeBaseUrl = baseUrl.startsWith('http') ? baseUrl : `https://${baseUrl}`;
 
   const res = await dFetch(
-    dflightUrl(safeBaseUrl, clientId, 'mission-management/mission'),
+    dflightUrl(
+      safeBaseUrl,
+      clientId,
+      existing
+        ? `mission-management/mission/${encodeURIComponent(existing.mission_id)}?techVersion=${encodeURIComponent(existing.tech_version)}`
+        : 'mission-management/mission',
+    ),
     {
-      method: 'POST',
+      method: existing ? 'PUT' : 'POST',
       headers: {
         Authorization: `Bearer ${accessToken}`,
         'Content-Type': 'application/json',
         Accept: 'application/json',
         ...writeRequestHeaders(safeBaseUrl),
       },
-      body: JSON.stringify({ mission_id: -1, mission_status: 'SAVED', ...input }),
+      body: JSON.stringify({
+        mission_id: existing?.mission_id ?? -1,
+        mission_status: 'SAVED',
+        ...(existing && { tech_version: existing.tech_version }),
+        ...input,
+      }),
     },
     pfxContent,
     pfxPassword,

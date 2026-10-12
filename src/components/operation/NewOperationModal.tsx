@@ -859,6 +859,12 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                             recurrentEndDate={recurrentEndDate}
                             onRecurrentEndDateChange={setRecurrentEndDate}
                             onRecurrentDateErrorChange={setRecurrentDateError}
+                            toolId={droneId ? Number(droneId) : undefined}
+                            systemLocation={
+                                selectedDrone?.tool_latitude != null && selectedDrone?.tool_longitude != null
+                                    ? { latitude: selectedDrone.tool_latitude, longitude: selectedDrone.tool_longitude, name: selectedDrone.tool_location_name }
+                                    : null
+                            }
                         />
                     )}
 
