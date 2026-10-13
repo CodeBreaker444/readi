@@ -43,19 +43,26 @@ export function collectAlertItems(drones: MaintenanceDrone[]): AlertItem[] {
   return items;
 }
 
-/** One alert per component per day. */
-export function filterNotYetNotified(items: AlertItem[], alreadyNotified: Set<number>): AlertItem[] {
-  return items.filter((item) => !alreadyNotified.has(item.tool_component_id));
+export const alertKey = (componentId: number, status: string): string => `${componentId}:${status}`;
+
+/**
+ * One alert per component PER STATUS per day: ALERT in the morning and DUE in the afternoon
+ * are two different alerts, but a repeated ALERT (or DUE) is not re-sent.
+ */
+export function filterNotYetNotified(items: AlertItem[], alreadyNotified: Set<string>): AlertItem[] {
+  return items.filter((item) => !alreadyNotified.has(alertKey(item.tool_component_id, item.status)));
 }
 
-/** Component ids found in the notification_data of today's MAINTENANCE notifications. */
-export function extractNotifiedComponentIds(rows: { notification_data: unknown }[]): Set<number> {
-  const ids = new Set<number>();
+/** "<component_id>:<status>" keys found in the notification_data of today's MAINTENANCE notifications. */
+export function extractNotifiedAlertKeys(rows: { notification_data: unknown }[]): Set<string> {
+  const keys = new Set<string>();
   for (const row of rows) {
-    const cid = (row.notification_data as { component_id?: unknown } | null)?.component_id;
-    if (typeof cid === 'number') ids.add(cid);
+    const data = row.notification_data as { component_id?: unknown; status?: unknown } | null;
+    if (typeof data?.component_id === 'number' && typeof data?.status === 'string') {
+      keys.add(alertKey(data.component_id, data.status));
+    }
   }
-  return ids;
+  return keys;
 }
 
 export function buildAlertContent(item: AlertItem): { title: string; message: string; isDue: boolean } {

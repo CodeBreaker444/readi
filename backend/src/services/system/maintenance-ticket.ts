@@ -27,6 +27,7 @@ import {
   uploadFileToS3,
 } from '@/lib/s3Client';
 import { addTicketEvent } from './maintenance-ticket-events';
+import { assertComponentsBelongToTool } from './maintenance-ticket-guards';
 import {
   getSystemComponentIds,
   resetComponentCounters,
@@ -51,6 +52,8 @@ import {
 export async function createTicket(payload: CreateTicketPayload): Promise<number> {
   const componentIds = [...new Set(payload.components ?? [])];
   const primaryComponentId = componentIds[0] ?? null;
+
+  await assertComponentsBelongToTool(payload.fk_tool_id, componentIds);
 
   // One ticket per request; every selected component is linked through maintenance_ticket_item.
   const ticketRow = await prisma.maintenance_ticket.create({
@@ -202,6 +205,13 @@ export async function closeTicket(payload: CloseTicketPayload): Promise<{ resetC
 
 
 export async function assignTicket(payload: AssignTicketPayload): Promise<void> {
+  const existing = await prisma.maintenance_ticket.findUnique({
+    where: { ticket_id: payload.ticket_id },
+    select: { ticket_status: true },
+  });
+  if (!existing) throw new Error('Ticket not found');
+  if (existing.ticket_status === 'CLOSED') throw new Error('Cannot assign a closed ticket');
+
   const ticket = await prisma.maintenance_ticket.update({
     where: { ticket_id: payload.ticket_id },
     data: { assigned_to_user_id: payload.assigned_to },

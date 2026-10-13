@@ -83,3 +83,16 @@ export async function assertToolNotNonOperational(toolId: number): Promise<void>
     );
   }
 }
+
+/** Every component on a new ticket must be an existing component of that same system. */
+export async function assertComponentsBelongToTool(toolId: number, componentIds: number[]): Promise<void> {
+  const unique = [...new Set(componentIds)];
+  if (!unique.length) return;
+
+  const found = await prisma.tool_component.count({
+    where: { component_id: { in: unique }, fk_tool_id: toolId },
+  });
+  if (found !== unique.length) {
+    throw new Error('One or more selected components do not belong to this system.');
+  }
+}

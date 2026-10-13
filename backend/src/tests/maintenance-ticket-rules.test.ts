@@ -10,7 +10,8 @@ import {
 import {
   buildAlertContent,
   collectAlertItems,
-  extractNotifiedComponentIds,
+  alertKey,
+  extractNotifiedAlertKeys,
   filterNotYetNotified,
 } from '@/backend/services/system/maintenance-alert-logic';
 import type { MaintenanceDrone } from '@/config/types/maintenance';
@@ -79,17 +80,23 @@ describe('maintenance alert logic', () => {
     expect(items.map((i) => i.tool_component_id)).toEqual([2, 3]);
     expect(items[1].triggers).toEqual(['FLIGHT', 'DAY']);
   });
-  it('already-notified components are skipped (one alert per component per day)', () => {
+  it('already-notified (component, status) pairs are skipped', () => {
     const items = collectAlertItems([drone]);
-    expect(filterNotYetNotified(items, new Set([2])).map((i) => i.tool_component_id)).toEqual([3]);
+    expect(filterNotYetNotified(items, new Set([alertKey(2, 'ALERT')])).map((i) => i.tool_component_id)).toEqual([3]);
   });
-  it('reads component ids from notification_data safely', () => {
-    const ids = extractNotifiedComponentIds([
-      { notification_data: { component_id: 5 } },
-      { notification_data: { component_id: '6' } },
+  it('an ALERT sent earlier does NOT suppress the later DUE for the same component', () => {
+    const due = collectAlertItems([drone]).filter((i) => i.tool_component_id === 3);
+    expect(filterNotYetNotified(due, new Set([alertKey(3, 'ALERT')]))).toHaveLength(1);
+    expect(filterNotYetNotified(due, new Set([alertKey(3, 'DUE')]))).toHaveLength(0);
+  });
+  it('reads component id + status from notification_data safely', () => {
+    const keys = extractNotifiedAlertKeys([
+      { notification_data: { component_id: 5, status: 'ALERT' } },
+      { notification_data: { component_id: '6', status: 'DUE' } },
+      { notification_data: { component_id: 7 } },
       { notification_data: null },
     ]);
-    expect([...ids]).toEqual([5]);
+    expect([...keys]).toEqual(['5:ALERT']);
   });
   it('builds DUE and ALERT wording', () => {
     const [alert, due] = collectAlertItems([drone]);

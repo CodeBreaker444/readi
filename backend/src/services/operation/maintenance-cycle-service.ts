@@ -26,6 +26,9 @@ import {
   worstStatus,
 } from './mission-maintenance-rules';
 
+/** Namespace for pg_advisory_xact_lock(namespace, mission_id) so mission locks never collide with other advisory locks. */
+const MISSION_MAINTENANCE_LOCK_NAMESPACE = 7101;
+
 interface UpdateComponentInput {
   component_id: number;
   add_flights: number;
@@ -191,30 +194,37 @@ export async function updateComponentMaintenanceCycle(
 
   if (!tool) throw new Error('System not found or unauthorized');
 
-  const existingLog = await prisma.mission_maintenance_log.findFirst({
-    where: { fk_mission_id: missionId },
-    select: { mission_maintenance_log_id: true },
-  });
-
-  if (existingLog) {
-    return {
-      code: 0,
-      message: 'Maintenance has already been recorded for this mission and cannot be updated again.',
-      components: [],
-      alreadyApplied: true,
-    };
-  }
-
   await refreshMaintenanceDaysForTool(toolId);
 
-  const results = await Promise.all(
-    updates.map(async (upd): Promise<ComponentMaintenanceInfo | null> => {
-      const comp = await prisma.tool_component.findFirst({
+  // One transaction per mission, serialised by a database lock: two simultaneous requests for the
+  // same mission cannot both pass the "already applied" check, and a failure half-way rolls back
+  // every component instead of leaving some updated and logged.
+  return prisma.$transaction(async (tx) => {
+    await tx.$queryRaw`SELECT 1 AS locked FROM (SELECT pg_advisory_xact_lock(${MISSION_MAINTENANCE_LOCK_NAMESPACE}::int, ${missionId}::int)) AS mission_lock`;
+
+    const existingLog = await tx.mission_maintenance_log.findFirst({
+      where: { fk_mission_id: missionId },
+      select: { mission_maintenance_log_id: true },
+    });
+
+    if (existingLog) {
+      return {
+        code: 0,
+        message: 'Maintenance has already been recorded for this mission and cannot be updated again.',
+        components: [] as ComponentMaintenanceInfo[],
+        alreadyApplied: true as boolean | undefined,
+      };
+    }
+
+    const results: (ComponentMaintenanceInfo | null)[] = [];
+
+    for (const upd of updates) {
+      const comp = await tx.tool_component.findFirst({
         where: { component_id: upd.component_id, fk_tool_id: toolId },
         select: COMPONENT_CYCLE_SELECT,
       });
 
-      if (!comp) return null;
+      if (!comp) { results.push(null); continue; }
 
       const meta = parseComponentMeta(comp.component_metadata);
       const limits = readComponentLimits(comp);
@@ -230,35 +240,39 @@ export async function updateComponentMaintenanceCycle(
         manualCyclesInput: upd.manual_cycles_input,
       });
 
-      const updated = await prisma.tool_component.updateMany({
+      const updated = await tx.tool_component.updateMany({
         where: { component_id: upd.component_id, fk_tool_id: toolId },
         data: buildMissionComponentPayload(usage, meta, missionId, new Date()),
       });
 
       if (updated.count === 0) {
         console.error(`[maintenance-cycle] update failed for component ${upd.component_id}`);
-        return null;
+        results.push(null);
+        continue;
       }
 
-      await prisma.mission_maintenance_log.create({
+      // The log stores what was really added to the counters (hours, and flights AFTER the battery
+      // cycle ratio) so revertMissionMaintenance can subtract exactly the same amount.
+      await tx.mission_maintenance_log.create({
         data: {
           fk_mission_id: missionId,
           fk_component_id: upd.component_id,
           add_hours: upd.add_hours || 0,
-          add_flights: upd.add_flights || 0,
+          add_flights: usage.appliesFlights ? usage.effectiveFlightCycles : 0,
         },
       });
 
       const after = { hours: usage.finalHours, flights: usage.finalFlights, days: counters.days };
       const evaluation = evaluateComponent(after, limits);
 
-      return buildComponentMaintenanceInfo(comp, after, limits, evaluation, usage.batteryCycleRatio);
-    })
-  );
+      results.push(buildComponentMaintenanceInfo(comp, after, limits, evaluation, usage.batteryCycleRatio));
+    }
 
-  return {
-    code: 1,
-    message: 'Maintenance tracking updated successfully',
-    components: results.filter((r): r is ComponentMaintenanceInfo => r !== null),
-  };
+    return {
+      code: 1,
+      message: 'Maintenance tracking updated successfully',
+      components: results.filter((r): r is ComponentMaintenanceInfo => r !== null),
+      alreadyApplied: undefined,
+    };
+  });
 }

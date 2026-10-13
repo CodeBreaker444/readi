@@ -14,7 +14,7 @@ import {
   MAINTENANCE_ALERT_THRESHOLD_PERCENT,
   buildAlertContent,
   collectAlertItems,
-  extractNotifiedComponentIds,
+  extractNotifiedAlertKeys,
   filterNotYetNotified,
 } from "@/backend/services/system/maintenance-alert-logic";
 
@@ -30,7 +30,7 @@ async function getAlertManagerIds(ownerId: number): Promise<number[]> {
   return managers.map((u) => u.user_id);
 }
 
-async function getAlreadyNotifiedToday(ownerId: number): Promise<Set<number>> {
+async function getAlreadyNotifiedToday(ownerId: number): Promise<Set<string>> {
   const today = new Date().toISOString().slice(0, 10);
   const todayStart = new Date(`${today}T00:00:00.000Z`);
   const todayEnd = new Date(`${today}T23:59:59.999Z`);
@@ -47,7 +47,7 @@ async function getAlreadyNotifiedToday(ownerId: number): Promise<Set<number>> {
     select: { notification_data: true },
   });
 
-  return extractNotifiedComponentIds(notifications);
+  return extractNotifiedAlertKeys(notifications);
 }
 
 async function insertAlertNotifications(
