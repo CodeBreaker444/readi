@@ -1,5 +1,6 @@
 import { logEvent } from '@/backend/services/auditLog/audit-log';
-import { assignTicket, getTechnicianName } from '@/backend/services/system/maintenance-ticket';
+import { assignTicket } from '@/backend/services/system/maintenance-ticket';
+import { getTechnicianName } from '@/backend/services/system/maintenance-ticket-queries';
 import { requireAnyPermission, requireFeatureAccess } from '@/lib/auth/api-auth';
 import { internalError, zodError } from '@/lib/api-error';
 import { E } from '@/lib/error-codes';

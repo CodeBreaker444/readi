@@ -1,5 +1,5 @@
 import { getAuditLogs } from '@/backend/services/auditLog/audit-log';
-import { getComponentMissions, getComponentTicketEvents } from '@/backend/services/system/maintenance-ticket';
+import { getComponentMissions, getComponentTicketEvents } from '@/backend/services/system/maintenance-ticket-queries';
 import { prisma } from '@/lib/prisma';
 import { internalError } from '@/lib/api-error';
 import { requirePermission } from '@/lib/auth/api-auth';

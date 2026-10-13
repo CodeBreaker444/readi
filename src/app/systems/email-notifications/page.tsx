@@ -167,7 +167,7 @@ export default function SystemsEmailNotificationsPage() {
             ownerId={ownerData.ownerId}
             moduleName="maintenance"
             companyEmailEnabled={ownerData.emailEnabled}
-            events={MAINTENANCE_EVENTS.filter(event => event.eventType !== 'maintenance_alert' && event.eventType !== 'maintenance_due')}
+            events={MAINTENANCE_EVENTS}
             translationPrefix="settings.emailNotifications.systems"
           />
         </div>

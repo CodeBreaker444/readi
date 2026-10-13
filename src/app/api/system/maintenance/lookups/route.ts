@@ -1,4 +1,4 @@
-import { getComponentList, getDroneList, getUserList } from '@/backend/services/system/maintenance-ticket';
+import { getComponentList, getDroneList, getUserList } from '@/backend/services/system/maintenance-ticket-queries';
 import { requireAnyPermission } from '@/lib/auth/api-auth';
 import { apiError, internalError, zodError } from '@/lib/api-error';
 import { E } from '@/lib/error-codes';

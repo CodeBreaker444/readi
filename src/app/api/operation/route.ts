@@ -5,7 +5,7 @@ import { authorizeMissionWithDFlight, isReportableDFlightFailure } from '@/backe
 import { notifyPilotAssignment } from '@/backend/services/notification/notification-service';
 import { createOperation, deleteOperation, listOperations } from '@/backend/services/operation/operation-service';
 import { buildInitialApproval, notifyApprovalRequested } from '@/backend/services/operation/mission-approval-service';
-import { assertToolNotInMaintenance, assertToolNotNonOperational } from '@/backend/services/system/maintenance-ticket';
+import { assertToolNotInMaintenance, assertToolNotNonOperational } from '@/backend/services/system/maintenance-ticket-guards';
 import { CreateOperationSchema, DFLIGHT_CIRCLE_MAX_RADIUS_M, ListOperationsQuerySchema } from '@/config/types/operation';
 import { internalError } from '@/lib/api-error';
 import { requirePermission } from '@/lib/auth/api-auth';
@@ -252,4 +252,4 @@ export async function POST(req: NextRequest) {
     console.error('[POST /api/operation]', err);
     return internalError(E.SV001, err);  
   }
-}
+}

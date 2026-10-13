@@ -1,7 +1,30 @@
+/**
+ * Mission -> component maintenance counters.
+ *
+ * This file only loads / saves data. The rules (how hours & flights are added, battery ratio,
+ * ALERT/DUE thresholds) live in:
+ *   - mission-maintenance-rules.ts   (pure mission math / response shapes)
+ *   - ../system/maintenance-rules.ts (pure HH.MM math + status thresholds)
+ * The board-level tool status lives in tool-maintenance-status.ts.
+ */
 import { prisma } from '@/lib/prisma';
-import { refreshMaintenanceDays, refreshMaintenanceDaysForTool } from '@/backend/utils/refresh-maintenance-days';
-import { MaintenanceStatus } from '@/config/types/maintenance';
-
+import { refreshMaintenanceDaysForTool } from '@/backend/utils/refresh-maintenance-days';
+import {
+  CycleStatus,
+  getBatteryCycleRatio,
+  parseComponentMeta,
+  subtractHhmmHours,
+} from '@/backend/services/system/maintenance-rules';
+import {
+  ComponentMaintenanceInfo,
+  buildComponentMaintenanceInfo,
+  buildMissionComponentPayload,
+  computeMissionUsage,
+  evaluateComponent,
+  readComponentCounters,
+  readComponentLimits,
+  worstStatus,
+} from './mission-maintenance-rules';
 
 interface UpdateComponentInput {
   component_id: number;
@@ -10,78 +33,32 @@ interface UpdateComponentInput {
   manual_cycles_input?: boolean;
 }
 
-interface ComponentMaintenanceInfo {
-  component_id: number;
-  component_type: string | null;
-  component_code: string | null;
-  serial_number: string | null;
-  current_hours: number;
-  current_flights: number;
-  current_days: number;
-  limit_hour: number;
-  limit_flight: number;
-  limit_day: number;
-  maintenance_cycle_type: string;
-  last_maintenance_date: string | null;
-  activation_date: string | null;
-  status: 'OK' | 'ALERT' | 'DUE';
-  trigger: string[];
-  battery_cycle_ratio: number;
-}
-
 interface SystemData {
   tool_id: number;
   tool_code: string;
   tool_name: string;
-  system_status: 'OK' | 'ALERT' | 'DUE';
+  system_status: CycleStatus;
   components: ComponentMaintenanceInfo[];
 }
 
-function hhmmToMinutes(hhmm: number): number {
-  const h = Math.floor(hhmm);
-  const m = Math.round((hhmm - h) * 100);
-  return h * 60 + m;
-}
-
-function addHhmmHours(a: number, b: number): number {
-  const totalMin = hhmmToMinutes(a) + hhmmToMinutes(b);
-  return Math.floor(totalMin / 60) + (totalMin % 60) / 100;
-}
-
-function subtractHhmmHours(a: number, b: number): number {
-  const totalMin = Math.max(0, hhmmToMinutes(a) - hhmmToMinutes(b));
-  return Math.floor(totalMin / 60) + (totalMin % 60) / 100;
-}
-
-function computeComponentStatus(
-  currentHours: number,
-  currentFlights: number,
-  currentDays: number,
-  limits: { hour: number; flight: number; day: number }
-): { status: 'OK' | 'ALERT' | 'DUE'; trigger: string[] } {
-  const trigger: string[] = [];
-  let status: 'OK' | 'ALERT' | 'DUE' = 'OK';
-
-  const checks = [
-    ...(limits.hour > 0 ? [{ current: currentHours, limit: limits.hour, name: 'hours' }] : []),
-    ...(limits.flight > 0 ? [{ current: currentFlights, limit: limits.flight, name: 'flights' }] : []),
-    ...(limits.day > 0 ? [{ current: currentDays, limit: limits.day, name: 'days' }] : []),
-  ];
-
-  for (const c of checks) {
-    const ratio = c.current / c.limit;
-    if (ratio >= 1) {
-      status = 'DUE';
-      trigger.push(`${c.name} exceeded (${c.current}/${c.limit})`);
-    } else if (ratio >= 0.8 && status !== 'DUE') {
-      status = 'ALERT';
-      trigger.push(`${c.name} approaching (${c.current}/${c.limit})`);
-    }
-  }
-
-  return { status, trigger };
-}
-
+const COMPONENT_CYCLE_SELECT = {
+  component_id: true,
+  component_type: true,
+  component_code: true,
+  component_name: true,
+  serial_number: true,
+  current_usage_hours: true,
+  installation_date: true,
+  component_metadata: true,
+  maintenance_cycle: true,
+  maintenance_cycle_hour: true,
+  maintenance_cycle_day: true,
+  maintenance_cycle_flight: true,
+  current_maintenance_hours: true,
+  current_maintenance_days: true,
+  current_maintenance_flights: true,
+  last_maintenance_date: true,
+} as const;
 
 export async function getComponentsForMaintenanceCycle(
   toolId: number,
@@ -98,84 +75,28 @@ export async function getComponentsForMaintenanceCycle(
 
   const comps = await prisma.tool_component.findMany({
     where: { fk_tool_id: toolId, component_active: 'Y' },
-    select: {
-      component_id: true,
-      component_type: true,
-      component_code: true,
-      component_name: true,
-      serial_number: true,
-      current_usage_hours: true,
-      installation_date: true,
-      component_metadata: true,
-      component_active: true,
-      maintenance_cycle: true,
-      maintenance_cycle_hour: true,
-      maintenance_cycle_day: true,
-      maintenance_cycle_flight: true,
-      current_maintenance_hours: true,
-      current_maintenance_days: true,
-      current_maintenance_flights: true,
-      last_maintenance_date: true,
-    },
+    select: COMPONENT_CYCLE_SELECT,
   });
 
   const components: ComponentMaintenanceInfo[] = [];
-  let worstStatus: 'OK' | 'ALERT' | 'DUE' = 'OK';
+  let systemStatus: CycleStatus = 'OK';
 
   for (const comp of comps) {
-    const limitHour = Number(comp.maintenance_cycle_hour ?? 0);
-    const limitFlight = Number(comp.maintenance_cycle_flight ?? 0);
-    const limitDay = Number(comp.maintenance_cycle_day ?? 0);
-    const cycleType = comp.maintenance_cycle || 'NONE';
+    const limits = readComponentLimits(comp);
+    const counters = readComponentCounters(comp);
+    const batteryCycleRatio = getBatteryCycleRatio(parseComponentMeta(comp.component_metadata));
 
-    const currentHours = Number(comp.current_maintenance_hours ?? 0);
-    const currentFlights = Number(comp.current_maintenance_flights ?? 0);
-    const currentDays = Number(comp.current_maintenance_days ?? 0);
+    const evaluation = evaluateComponent(counters, limits);
+    systemStatus = worstStatus(systemStatus, evaluation.status);
 
-    const rawMeta = comp.component_metadata;
-    let meta: Record<string, unknown> = {};
-    if (rawMeta) {
-      if (typeof rawMeta === 'string') {
-        try { meta = JSON.parse(rawMeta); } catch { meta = {}; }
-      } else if (typeof rawMeta === 'object' && !Array.isArray(rawMeta)) {
-        meta = rawMeta as Record<string, unknown>;
-      }
-    }
-    const batteryCycleRatio = typeof meta.battery_cycle_ratio === 'number' ? meta.battery_cycle_ratio : 1;
-
-    const hasLimits = limitHour > 0 || limitFlight > 0 || limitDay > 0;
-    const { status, trigger } = hasLimits
-      ? computeComponentStatus(currentHours, currentFlights, currentDays, { hour: limitHour, flight: limitFlight, day: limitDay })
-      : { status: 'OK' as const, trigger: [] };
-
-    if (status === 'DUE') worstStatus = 'DUE';
-    else if (status === 'ALERT' && worstStatus !== 'DUE') worstStatus = 'ALERT';
-
-    components.push({
-      component_id: comp.component_id,
-      component_type: comp.component_type ?? null,
-      component_code: comp.component_code || comp.component_name,
-      serial_number: comp.serial_number ?? null,
-      current_hours: currentHours,
-      current_flights: currentFlights,
-      current_days: currentDays,
-      limit_hour: limitHour,
-      limit_flight: limitFlight,
-      limit_day: limitDay,
-      maintenance_cycle_type: cycleType,
-      last_maintenance_date: comp.last_maintenance_date?.toISOString() ?? null,
-      activation_date: comp.installation_date?.toISOString() ?? null,
-      status,
-      trigger,
-      battery_cycle_ratio: batteryCycleRatio,
-    });
+    components.push(buildComponentMaintenanceInfo(comp, counters, limits, evaluation, batteryCycleRatio));
   }
 
   return {
     tool_id: tool.tool_id,
     tool_code: tool.tool_code ?? '',
     tool_name: tool.tool_name ?? '',
-    system_status: worstStatus,
+    system_status: systemStatus,
     components,
   };
 }
@@ -290,74 +211,28 @@ export async function updateComponentMaintenanceCycle(
     updates.map(async (upd): Promise<ComponentMaintenanceInfo | null> => {
       const comp = await prisma.tool_component.findFirst({
         where: { component_id: upd.component_id, fk_tool_id: toolId },
-        select: {
-          component_id: true,
-          component_type: true,
-          component_code: true,
-          component_name: true,
-          serial_number: true,
-          current_usage_hours: true,
-          installation_date: true,
-          component_metadata: true,
-          maintenance_cycle: true,
-          maintenance_cycle_hour: true,
-          maintenance_cycle_day: true,
-          maintenance_cycle_flight: true,
-          current_maintenance_hours: true,
-          current_maintenance_days: true,
-          current_maintenance_flights: true,
-          last_maintenance_date: true,
-        },
+        select: COMPONENT_CYCLE_SELECT,
       });
 
       if (!comp) return null;
 
-      const rawMeta = comp.component_metadata;
-      let meta: Record<string, unknown> = {};
-      if (rawMeta) {
-        if (typeof rawMeta === 'string') {
-          try { meta = JSON.parse(rawMeta); } catch { meta = {}; }
-        } else if (typeof rawMeta === 'object' && !Array.isArray(rawMeta)) {
-          meta = rawMeta as Record<string, unknown>;
-        }
-      }
+      const meta = parseComponentMeta(comp.component_metadata);
+      const limits = readComponentLimits(comp);
+      const counters = readComponentCounters(comp);
 
-      const cycleType = comp.maintenance_cycle || 'NONE';
-      const limitHour = Number(comp.maintenance_cycle_hour ?? 0);
-      const limitFlight = Number(comp.maintenance_cycle_flight ?? 0);
-      const limitDay = Number(comp.maintenance_cycle_day ?? 0);
-
-      const prevHours = Number(comp.current_maintenance_hours ?? 0);
-      const prevFlights = Number(comp.current_maintenance_flights ?? 0);
-      const currentDays = Number(comp.current_maintenance_days ?? 0);
-      const prevLifetimeHours = Number(comp.current_usage_hours ?? 0);
-
-      const batteryCycleRatio = typeof meta.battery_cycle_ratio === 'number' ? meta.battery_cycle_ratio : 1;
-      const effectiveFlightCycles = upd.manual_cycles_input
-        ? Math.round((upd.add_flights || 0) * 100) / 100
-        : Math.round((upd.add_flights || 0) * batteryCycleRatio * 100) / 100;
-
-      const newHours = addHhmmHours(prevHours, upd.add_hours || 0);
-      const newFlights = Math.round((prevFlights + effectiveFlightCycles) * 100) / 100;
-      const newLifetimeHours = addHhmmHours(prevLifetimeHours, upd.add_hours || 0);
-
-      const now = new Date();
-
-      const updatePayload: Record<string, any> = {
-        current_usage_hours: newLifetimeHours,
-        component_metadata: {
-          ...meta,
-          last_mission_id: missionId,
-          last_maintenance_update: now.toISOString(),
-        },
-      };
-
-      if (upd.add_hours > 0) updatePayload.current_maintenance_hours = newHours;
-      if (upd.add_flights > 0) updatePayload.current_maintenance_flights = newFlights;
+      const usage = computeMissionUsage({
+        prevHours: counters.hours,
+        prevFlights: counters.flights,
+        prevLifetimeHours: Number(comp.current_usage_hours ?? 0),
+        meta,
+        addHours: upd.add_hours,
+        addFlights: upd.add_flights,
+        manualCyclesInput: upd.manual_cycles_input,
+      });
 
       const updated = await prisma.tool_component.updateMany({
         where: { component_id: upd.component_id, fk_tool_id: toolId },
-        data: updatePayload,
+        data: buildMissionComponentPayload(usage, meta, missionId, new Date()),
       });
 
       if (updated.count === 0) {
@@ -374,32 +249,10 @@ export async function updateComponentMaintenanceCycle(
         },
       });
 
-      const finalHours = upd.add_hours > 0 ? newHours : prevHours;
-      const finalFlights = upd.add_flights > 0 ? newFlights : prevFlights;
+      const after = { hours: usage.finalHours, flights: usage.finalFlights, days: counters.days };
+      const evaluation = evaluateComponent(after, limits);
 
-      const { status, trigger } = computeComponentStatus(
-        finalHours, finalFlights, currentDays,
-        { hour: limitHour, flight: limitFlight, day: limitDay }
-      );
-
-      return {
-        component_id: comp.component_id,
-        component_type: comp.component_type ?? null,
-        component_code: comp.component_code || comp.component_name,
-        serial_number: comp.serial_number ?? null,
-        current_hours: finalHours,
-        current_flights: finalFlights,
-        current_days: currentDays,
-        limit_hour: limitHour,
-        limit_flight: limitFlight,
-        limit_day: limitDay,
-        maintenance_cycle_type: cycleType,
-        last_maintenance_date: comp.last_maintenance_date?.toISOString() ?? null,
-        activation_date: comp.installation_date?.toISOString() ?? null,
-        status,
-        trigger,
-        battery_cycle_ratio: batteryCycleRatio,
-      };
+      return buildComponentMaintenanceInfo(comp, after, limits, evaluation, usage.batteryCycleRatio);
     })
   );
 
@@ -408,94 +261,4 @@ export async function updateComponentMaintenanceCycle(
     message: 'Maintenance tracking updated successfully',
     components: results.filter((r): r is ComponentMaintenanceInfo => r !== null),
   };
-}
-
-
-export async function getToolMaintenanceStatus(toolId: number): Promise<MaintenanceStatus> {
-  const statusMap = await getToolMaintenanceStatusBatch([toolId]);
-  return statusMap[toolId] ?? 'OK';
-}
-
-/**
- * Batched form of getToolMaintenanceStatus: resolves maintenance status for many tools
- * with a fixed number of queries instead of ~3 sequential queries per tool.
- */
-export async function getToolMaintenanceStatusBatch(toolIds: number[]): Promise<Record<number, MaintenanceStatus>> {
-  const result: Record<number, MaintenanceStatus> = {};
-  if (toolIds.length === 0) return result;
-
-  const openTickets = await prisma.maintenance_ticket.findMany({
-    where: { fk_tool_id: { in: toolIds }, NOT: { ticket_status: 'CLOSED' } },
-    select: { fk_tool_id: true },
-  });
-  const inMaintenanceSet = new Set(openTickets.map((t) => t.fk_tool_id));
-
-  const remainingToolIds = toolIds.filter((id) => !inMaintenanceSet.has(id));
-
-  if (remainingToolIds.length > 0) {
-    await refreshMaintenanceDays(remainingToolIds);
-  }
-
-  const components = remainingToolIds.length > 0
-    ? await prisma.tool_component.findMany({
-        where: { fk_tool_id: { in: remainingToolIds }, component_active: 'Y' },
-        select: {
-          fk_tool_id: true,
-          maintenance_cycle: true,
-          maintenance_cycle_hour: true,
-          maintenance_cycle_day: true,
-          maintenance_cycle_flight: true,
-          current_maintenance_hours: true,
-          current_maintenance_days: true,
-          current_maintenance_flights: true,
-        },
-      })
-    : [];
-
-  const componentsByTool = new Map<number, typeof components>();
-  for (const comp of components) {
-    const arr = componentsByTool.get(comp.fk_tool_id) ?? [];
-    arr.push(comp);
-    componentsByTool.set(comp.fk_tool_id, arr);
-  }
-
-  for (const toolId of toolIds) {
-    if (inMaintenanceSet.has(toolId)) {
-      result[toolId] = 'IN_MAINTENANCE';
-      continue;
-    }
-
-    const toolComponents = componentsByTool.get(toolId);
-    if (!toolComponents || toolComponents.length === 0) {
-      result[toolId] = 'OK';
-      continue;
-    }
-
-    let worst: MaintenanceStatus = 'OK';
-
-    for (const comp of toolComponents) {
-      const cycleType = comp.maintenance_cycle || 'NONE';
-      if (cycleType === 'NONE') continue;
-
-      const limitHour = Number(comp.maintenance_cycle_hour ?? 0);
-      const limitFlight = Number(comp.maintenance_cycle_flight ?? 0);
-      const limitDay = Number(comp.maintenance_cycle_day ?? 0);
-
-      const currentHours = Number(comp.current_maintenance_hours ?? 0);
-      const currentFlights = Number(comp.current_maintenance_flights ?? 0);
-      const currentDays = Number(comp.current_maintenance_days ?? 0);
-
-      const { status } = computeComponentStatus(
-        currentHours, currentFlights, currentDays,
-        { hour: limitHour, flight: limitFlight, day: limitDay }
-      );
-
-      if (status === 'DUE') { worst = 'DUE'; break; }
-      if (status === 'ALERT') worst = 'ALERT';
-    }
-
-    result[toolId] = worst;
-  }
-
-  return result;
 }

@@ -1,5 +1,7 @@
 import { logEvent } from '@/backend/services/auditLog/audit-log';
-import { assertCanCreateTicket, createTicket, getTechnicianName, getToolCode } from '@/backend/services/system/maintenance-ticket';
+import { assertCanCreateTicket } from '@/backend/services/system/maintenance-ticket-guards';
+import { createTicket } from '@/backend/services/system/maintenance-ticket';
+import { getTechnicianName, getToolCode } from '@/backend/services/system/maintenance-ticket-queries';
 import { CreateTicketPayload } from '@/config/types/maintenance';
 import { requireAnyPermission, requireFeatureAccess } from '@/lib/auth/api-auth';
 import { apiError, internalError, zodError } from '@/lib/api-error';
