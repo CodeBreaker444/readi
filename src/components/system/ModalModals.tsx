@@ -15,7 +15,8 @@ import type {
   TicketType,
   UserOption,
 } from '@/config/types/maintenance';
-import { cn } from '@/lib/utils';
+import { useTimezone } from '@/components/TimezoneProvider';
+import { cn, formatDateTimeInTz } from '@/lib/utils';
 import { AlertTriangle, CheckCircle2, ChevronLeft, ChevronRight, Loader2, Search } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
@@ -669,14 +670,6 @@ export function UploadModal({
 }
 
 
-function fmtDate(iso?: string | null) {
-  if (!iso) return '—';
-  return new Date(iso).toLocaleString('en-GB', {
-    day: '2-digit', month: 'short', year: 'numeric',
-    hour: '2-digit', minute: '2-digit',
-  });
-}
-
 export function EventsModal({
   open, onClose, ticketId, events, isDark, loading,
 }: {
@@ -688,6 +681,7 @@ export function EventsModal({
   loading?: boolean;
 }) {
   const { t } = useTranslation();
+  const { timezone } = useTimezone();
   return (
     <Modal
       title={ticketId
@@ -725,7 +719,7 @@ export function EventsModal({
                   <span className="text-xs text-slate-500 dark:text-slate-400">{ev.created_by}</span>
                 )}
                 {ev.created_by && <span className="text-xs text-slate-300 dark:text-slate-600">·</span>}
-                <time className="text-xs text-slate-400">{fmtDate(ev.created_at)}</time>
+                <time className="text-xs text-slate-400">{formatDateTimeInTz(ev.created_at, timezone)}</time>
               </div>
             </li>
           ))}

@@ -11,6 +11,7 @@ import {
 } from "@tanstack/react-table";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useTimezone } from "@/components/TimezoneProvider";
 import { TablePagination } from "../tables/Pagination";
 import ExportButtons from "./ExportButtons";
 import { Badge, PRIORITY_STYLES, STATUS_STYLES, fmtDate } from "./TicketUi";
@@ -131,6 +132,7 @@ export function TicketTable({
   isDark,
 }: Props) {
   const { t } = useTranslation();
+  const { timezone } = useTimezone();
   const [pagination, setPagination] = useState({
     pageIndex: 0,
     pageSize: 8,
@@ -326,7 +328,7 @@ export function TicketTable({
                 isDark ? "text-slate-400" : "text-slate-500"
               }`}
             >
-              {val ? fmtDate(val) : "—"}
+              {val ? fmtDate(val, timezone) : "—"}
             </span>
           );
         },
@@ -343,7 +345,7 @@ export function TicketTable({
                 isDark ? "text-slate-400" : "text-slate-500"
               }`}
             >
-              {val ? fmtDate(val) : <span className={isDark ? "text-slate-600" : "text-slate-300"}>—</span>}
+              {val ? fmtDate(val, timezone) : <span className={isDark ? "text-slate-600" : "text-slate-300"}>—</span>}
             </span>
           );
         },
@@ -432,7 +434,7 @@ export function TicketTable({
         },
       },
     ],
-    [isDark, onEvents, onAssign, onReport, onUpload, onClose, onDownload, onIntervention, canClose, canAssign, canDownload, canIntervene, t]
+    [isDark, onEvents, onAssign, onReport, onUpload, onClose, onDownload, onIntervention, canClose, canAssign, canDownload, canIntervene, t, timezone]
   );
 
   const table = useReactTable({
