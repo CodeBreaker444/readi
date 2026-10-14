@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import LocationPicker from '@/components/system/LocationPicker'
+import { OperationWeatherBadge } from './btf/OperationWeatherBadge'
 import { cn, formatDateTimeInTz } from '@/lib/utils'
 import { AlertTriangle, CheckCircle2, Loader2, RefreshCw } from 'lucide-react'
 import { useState } from 'react'
@@ -34,6 +35,9 @@ interface Props {
     recurrentEndDate?: string
     onRecurrentEndDateChange?: (value: string) => void
     onRecurrentDateErrorChange?: (error: string) => void
+    /** The selected system and its location - the weather falls back to it when the operation has no location */
+    toolId?: number
+    systemLocation?: { latitude: number; longitude: number; name?: string | null } | null
 }
 
 const WEEKDAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
@@ -46,6 +50,7 @@ export function OperationStepScheduler({
     recurrentDays = [], onRecurrentDaysChange,
     recurrentEndDate = '', onRecurrentEndDateChange,
     onRecurrentDateErrorChange,
+    toolId, systemLocation,
 }: Props) {
     const { t } = useTranslation()
     const [recurrentDateError, setRecurrentDateError] = useState('')
@@ -118,6 +123,16 @@ export function OperationStepScheduler({
                     className={inputCls(isDark)}
                 />
             </div>
+
+            <OperationWeatherBadge
+                start={form.scheduledStart}
+                end={form.scheduledEnd}
+                lat={form.locationLat}
+                lng={form.locationLng}
+                fallback={systemLocation}
+                toolId={toolId}
+                isDark={isDark}
+            />
 
             {!isEdit && (
                 <div className={cn('rounded-lg border p-3 space-y-3', isDark ? 'border-slate-600 bg-slate-700/30' : 'border-slate-200 bg-slate-50/60')}>

@@ -1,4 +1,5 @@
 import { parseGutmaFlightData } from '@/backend/services/integrations/gutma-parser';
+import { readToolLocation } from '@/lib/btf/location';
 import { prisma } from '@/lib/prisma';
 import { serialInList } from '@/lib/serial-number';
 import { BUCKET, s3 } from '@/lib/s3Client';
@@ -535,7 +536,7 @@ export async function importDrones(ownerId: number, clientId?: number) {
   const allTools = await prisma.tool.findMany({
     where: { fk_owner_id: ownerId, tool_active: 'Y' },
     orderBy: { tool_code: 'asc' },
-    select: { tool_id: true, tool_code: true, tool_name: true, tool_metadata: true },
+    select: { tool_id: true, tool_code: true, tool_name: true, tool_metadata: true, location: true },
   });
 
   const tools = clientId
@@ -612,7 +613,12 @@ export async function importDrones(ownerId: number, clientId?: number) {
     });
   }
 
-  return tools.map((t) => ({
+  return tools.map((t) => {
+    const site = readToolLocation(t.tool_metadata, t.location);
+    return {
+    tool_latitude: site?.latitude ?? null,
+    tool_longitude: site?.longitude ?? null,
+    tool_location_name: site?.name ?? null,
     tool_id: t.tool_id,
     tool_code: t.tool_code,
     tool_name: t.tool_name,
@@ -622,7 +628,8 @@ export async function importDrones(ownerId: number, clientId?: number) {
     is_dismissed: (t.tool_metadata as any)?.status === 'DISMISSED',
     drone_serial_numbers: droneSerialMap.get(t.tool_id) ?? [],
     drone_components: droneComponentMap.get(t.tool_id) ?? [],
-  }));
+    };
+  });
 }
 
 export async function importCategories(ownerId: number) {

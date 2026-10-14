@@ -1,3 +1,5 @@
+import { readToolLocation } from '@/lib/btf/location';
+import { wmoKey } from '@/lib/btf/weather';
 import {
   compareWindows,
   GENERIC_LIMITS,
@@ -18,6 +20,7 @@ const hour = (time: string, over: Partial<HourWeather> = {}): HourWeather => ({
   visibilityM: 20000,
   tempC: 18,
   weatherCode: 0,
+  cloudCoverPct: 10,
   windDir: 90,
   isDay: true,
   ...over,
@@ -152,5 +155,33 @@ describe('compareWindows', () => {
       { status: 'nogo' as const, score: 0 },
     ].sort(compareWindows);
     expect(list.map((w) => w.status + ':' + w.score)).toEqual(['go:80', 'go:60', 'marginal:90', 'nogo:0']);
+  });
+});
+
+describe('readToolLocation', () => {
+  it('reads numeric and string coordinates', () => {
+    expect(readToolLocation({ latitude: 52.52, longitude: 13.41, pseudo_name: ' Hangar 3 ' }, 'Berlin')).toEqual({ latitude: 52.52, longitude: 13.41, name: 'Hangar 3' });
+    expect(readToolLocation({ latitude: '45.1', longitude: '9.2' }, 'Milan')).toEqual({ latitude: 45.1, longitude: 9.2, name: 'Milan' });
+  });
+
+  it('returns null when the system has no usable location', () => {
+    expect(readToolLocation(null, 'x')).toBeNull();
+    expect(readToolLocation({ latitude: null, longitude: null })).toBeNull();
+    expect(readToolLocation({ latitude: '', longitude: '' })).toBeNull();
+    expect(readToolLocation({ latitude: 0, longitude: 0 })).toBeNull();
+    expect(readToolLocation({ latitude: 95, longitude: 10 })).toBeNull();
+    expect(readToolLocation({ latitude: 'abc', longitude: 10 })).toBeNull();
+  });
+
+  it('falls back to no name when nothing is set', () => {
+    expect(readToolLocation({ latitude: 10, longitude: 20 })?.name).toBeNull();
+  });
+});
+
+describe('wmoKey', () => {
+  it('maps WMO codes to a condition', () => {
+    expect([0, 1, 2, 3, 45, 53, 63, 81, 73, 95, null].map(wmoKey)).toEqual([
+      'clear', 'mostlyClear', 'partlyCloudy', 'overcast', 'fog', 'drizzle', 'rain', 'rain', 'snow', 'thunderstorm', 'clear',
+    ]);
   });
 });
