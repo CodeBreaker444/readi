@@ -11,6 +11,7 @@ import {
 } from "@tanstack/react-table";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useTimezone } from "@/components/TimezoneProvider";
 import { TablePagination } from "../tables/Pagination";
 import ExportButtons from "./ExportButtons";
 import { Badge, PRIORITY_STYLES, STATUS_STYLES, fmtDate } from "./TicketUi";
@@ -131,6 +132,7 @@ export function TicketTable({
   isDark,
 }: Props) {
   const { t } = useTranslation();
+  const { timezone } = useTimezone();
   const [pagination, setPagination] = useState({
     pageIndex: 0,
     pageSize: 8,
@@ -326,7 +328,7 @@ export function TicketTable({
                 isDark ? "text-slate-400" : "text-slate-500"
               }`}
             >
-              {val ? fmtDate(val) : "—"}
+              {val ? fmtDate(val, timezone) : "—"}
             </span>
           );
         },
@@ -343,7 +345,7 @@ export function TicketTable({
                 isDark ? "text-slate-400" : "text-slate-500"
               }`}
             >
-              {val ? fmtDate(val) : <span className={isDark ? "text-slate-600" : "text-slate-300"}>—</span>}
+              {val ? fmtDate(val, timezone) : <span className={isDark ? "text-slate-600" : "text-slate-300"}>—</span>}
             </span>
           );
         },
@@ -432,7 +434,7 @@ export function TicketTable({
         },
       },
     ],
-    [isDark, onEvents, onAssign, onReport, onUpload, onClose, onDownload, onIntervention, canClose, canAssign, canDownload, canIntervene, t]
+    [isDark, onEvents, onAssign, onReport, onUpload, onClose, onDownload, onIntervention, canClose, canAssign, canDownload, canIntervene, t, timezone]
   );
 
   const table = useReactTable({
@@ -524,7 +526,14 @@ export function TicketTable({
             t('systems.maintenanceLogbook.exportHeaders.opened'),
             t('systems.maintenanceLogbook.exportHeaders.closed'),
           ]}
-          rows={tickets.map(t => [t.ticket_id, t.ticket_type, t.drone_code ?? '', t.location_latitude ?? '', t.location_longitude ?? '', t.location_pseudo_name ?? '', t.entity_name ?? '', t.component_sn ?? '', t.note ?? '', t.assigner_name ?? '', t.assigner_email ?? '', t.ticket_status, t.ticket_priority, t.opened_at, t.closed_at ?? ''])}
+          rows={tickets.map(t => {
+            const sys = t.system_components ?? [];
+            const componentNames = t.entity_name ?? sys.map(c => c.component_type).filter(Boolean).join(', ');
+            const componentSns = t.component_sn ?? sys.map(c => c.component_sn).filter(Boolean).join(', ');
+            const fmt = (d?: string | null) => (d ? d.slice(0, 16).replace('T', ' ') : '');
+            const coord = (v?: number | null) => (v == null ? '' : Number(v).toFixed(5));
+            return [t.ticket_id, t.ticket_type, t.drone_code ?? '', coord(t.location_latitude), coord(t.location_longitude), t.location_pseudo_name ?? '', componentNames, componentSns, t.note ?? '', t.assigner_name ?? '', t.assigner_email ?? '', t.ticket_status, t.ticket_priority, fmt(t.opened_at), fmt(t.closed_at)];
+          })}
         />
         <TablePagination table={table} />
       </div>

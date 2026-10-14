@@ -15,7 +15,7 @@ import {
   getPaginationRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { SlidersHorizontal } from "lucide-react";
+import { AlertTriangle, SlidersHorizontal } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "../useTheme";
@@ -410,7 +410,21 @@ function ComponentSubRow({ comp, threshold, isDark }: { comp: MaintenanceCompone
         <div className="flex items-center gap-2">
           <span className={`w-1 h-4 rounded-full shrink-0 ${isDark ? "bg-slate-600" : "bg-slate-300"}`} />
           <div>
-            <span className={`font-medium ${isDark ? "text-slate-300" : "text-slate-600"}`}>{comp.component_name ?? "—"}</span>
+            <span className={`inline-flex items-center gap-1.5 font-medium ${isDark ? "text-slate-300" : "text-slate-600"}`}>
+              {comp.component_name ?? "—"}
+              {comp.excluded_status && (
+                <span
+                  title={comp.excluded_message ?? comp.excluded_status}
+                  aria-label={comp.excluded_message ?? comp.excluded_status}
+                  className="inline-flex cursor-help items-center gap-1"
+                >
+                  <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
+                  <span className={`rounded border px-1 py-px text-[9px] font-semibold ${isDark ? "border-amber-500/40 text-amber-400" : "border-amber-300 text-amber-600"}`}>
+                    {comp.excluded_status}
+                  </span>
+                </span>
+              )}
+            </span>
             {comp.component_type && (
               <p className="text-[11px] text-slate-400">{comp.component_type}</p>
             )}
@@ -648,7 +662,8 @@ export default function MaintenanceTable({
         const q = search.toLowerCase();
         return (
           d.code.toLowerCase().includes(q) ||
-          (d.serial_number && d.serial_number.toLowerCase().includes(q))
+          (d.serial_number && d.serial_number.toLowerCase().includes(q)) ||
+          (d.components ?? []).some((c) => c.serial_number?.toLowerCase().includes(q))
         );
       }
       return true;

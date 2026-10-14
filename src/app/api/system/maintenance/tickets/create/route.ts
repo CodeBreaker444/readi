@@ -1,5 +1,5 @@
 import { logEvent } from '@/backend/services/auditLog/audit-log';
-import { assertCanCreateTicket } from '@/backend/services/system/maintenance-ticket-guards';
+import { assertCanCreateTicket, assertComponentsTicketable } from '@/backend/services/system/maintenance-ticket-guards';
 import { createTicket } from '@/backend/services/system/maintenance-ticket';
 import { getTechnicianName, getToolCode } from '@/backend/services/system/maintenance-ticket-queries';
 import { CreateTicketPayload } from '@/config/types/maintenance';
@@ -37,6 +37,12 @@ export async function POST(req: NextRequest) {
       await assertCanCreateTicket(body.fk_tool_id, [...new Set(body.components ?? [])]);
     } catch {
       return apiError(E.BL005, 409);
+    }
+
+    try {
+      await assertComponentsTicketable(body.fk_tool_id, body.components ?? []);
+    } catch (err: any) {
+      return NextResponse.json({ status: 'ERROR', message: err.message }, { status: 400 });
     }
 
     const userId= session!.user.userId

@@ -2,6 +2,10 @@ import { prisma } from "@/lib/prisma";
 import { refreshMaintenanceDays } from "@/backend/utils/refresh-maintenance-days";
 import { parseModelCycle } from "@/backend/services/system/system-service";
 import {
+  getComponentStatusesForTools,
+  isPermanentlyBlockedStatus,
+} from "@/backend/services/system/maintenance-ticket-components";
+import {
   computeDashboardStatus,
   isComponentPartOfSystem,
   parseComponentMeta,
@@ -197,9 +201,14 @@ export async function getMaintenanceDashboard(
   // Model of each system's drone component, used when the system itself has no model assigned.
   const droneModelByTool: Record<number, MaintenanceModel> = {};
 
+  const effectiveStatuses = await getComponentStatusesForTools(toolIds);
+
   for (const rawComp of components) {
     const meta = parseComponentMeta(rawComp.component_metadata);
-    if (!isComponentPartOfSystem(meta)) continue;
+    // Dismissed / decommissioned components stay listed with a caution note but take no part in maintenance.
+    const effective = effectiveStatuses.get(rawComp.component_id);
+    const blockedStatus = isPermanentlyBlockedStatus(effective) ? effective : null;
+    if (!blockedStatus && !isComponentPartOfSystem(meta)) continue;
 
     const assignedModel = componentModelMap.get(Number(meta.fk_tool_model_id));
     const compModel: MaintenanceModel = {
@@ -215,13 +224,15 @@ export async function getMaintenanceDashboard(
     const compFlights = Number(rawComp.current_maintenance_flights ?? 0);
     const compDays = Number(rawComp.current_maintenance_days ?? 0);
 
-    const computed = computeDashboardStatus(compHours, compFlights, compDays, compModel, threshold_alert);
+    const computed = blockedStatus
+      ? { status: "OK" as MaintenanceStatus, trigger: [] as (string | null)[] }
+      : computeDashboardStatus(compHours, compFlights, compDays, compModel, threshold_alert);
 
-    const compStatus: MaintenanceStatus = componentsInMaintenance.has(rawComp.component_id)
+    const compStatus: MaintenanceStatus = !blockedStatus && componentsInMaintenance.has(rawComp.component_id)
       ? "IN_MAINTENANCE"
       : computed.status;
 
-    if (rawComp.component_type === 'DRONE' && assignedModel && !droneModelByTool[rawComp.fk_tool_id]) {
+    if (!blockedStatus && rawComp.component_type === 'DRONE' && assignedModel && !droneModelByTool[rawComp.fk_tool_id]) {
       droneModelByTool[rawComp.fk_tool_id] = compModel;
     }
 
@@ -238,6 +249,12 @@ export async function getMaintenanceDashboard(
       status: compStatus,
       trigger: computed.trigger,
       model: compModel,
+      excluded_status: blockedStatus,
+      excluded_message: blockedStatus === 'DECOMMISSIONED'
+        ? 'This component is decommissioned (expired). It is excluded from maintenance tracking and cannot be added to maintenance tickets.'
+        : blockedStatus === 'DISMISSED'
+          ? 'This component is dismissed. It is excluded from maintenance tracking and cannot be added to maintenance tickets.'
+          : null,
     };
 
     if (!compsByTool[rawComp.fk_tool_id]) compsByTool[rawComp.fk_tool_id] = [];

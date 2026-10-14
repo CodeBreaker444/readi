@@ -27,7 +27,10 @@ interface ComponentInfo {
   limit_flight: number;
   limit_day: number;
   status: "OK" | "ALERT" | "DUE";
+  component_status?: string;
 }
+
+const BLOCKED_STATUSES = ["NOT_OPERATIONAL", "DECOMMISSIONED", "DISMISSED"];
 
 interface Props {
   open: boolean;
@@ -234,14 +237,19 @@ export function ReportIssueModal({ open, onClose, toolId, toolCode, missionId, i
                   </label>
                   <div className="space-y-1.5">
                     {components.map((comp) => {
-                      const isSelected = selectedComponentIds.includes(comp.component_id);
+                      const blocked = BLOCKED_STATUSES.includes(comp.component_status ?? "");
+                      const isSelected = !blocked && selectedComponentIds.includes(comp.component_id);
                       return (
                         <button
                           key={comp.component_id}
                           type="button"
+                          disabled={blocked}
                           onClick={() => toggleComponent(comp.component_id)}
                           className={cn(
-                            "w-full text-left cursor-pointer rounded-lg border px-3 py-2.5 transition-all",
+                            "w-full text-left rounded-lg border px-3 py-2.5 transition-all",
+                            blocked
+                              ? "opacity-50 grayscale cursor-not-allowed " + (isDark ? "border-white/[0.06] bg-slate-900/40" : "border-slate-200 bg-slate-100")
+                              : "cursor-pointer",
                             isSelected
                               ? isDark
                                 ? "border-red-500/50 bg-red-500/10"
@@ -277,9 +285,16 @@ export function ReportIssueModal({ open, onClose, toolId, toolCode, missionId, i
                                 )}
                               </div>
                             </div>
-                            <span className={cn("text-[9px] font-semibold px-1.5 py-0.5 rounded border shrink-0", STATUS_STYLE[comp.status] ?? STATUS_STYLE.OK)}>
-                              {comp.status}
-                            </span>
+                            <div className="flex items-center gap-1 shrink-0">
+                              {comp.component_status && comp.component_status !== "OPERATIONAL" && (
+                                <span className={cn("text-[9px] font-semibold px-1.5 py-0.5 rounded border", isDark ? "border-slate-600 text-slate-400" : "border-slate-300 text-slate-500")}>
+                                  {comp.component_status.replace(/_/g, " ")}
+                                </span>
+                              )}
+                              <span className={cn("text-[9px] font-semibold px-1.5 py-0.5 rounded border", STATUS_STYLE[comp.status] ?? STATUS_STYLE.OK)}>
+                                {comp.status}
+                              </span>
+                            </div>
                           </div>
                           <div className="flex items-center gap-3 pl-5">
                             <CycleBar current={comp.current_hours} limit={comp.limit_hour} unit="h" />
