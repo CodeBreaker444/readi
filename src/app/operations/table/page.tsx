@@ -80,6 +80,7 @@ export interface Operation {
   uspace_id?: string | null;
   dflight_mission_id?: string | null;
   dflight_flight_authorisation_status?: string | null;
+  dflight_skip_authorization?: boolean | null;
   opm_approval_status?: 'PENDING' | 'APPROVED' | 'DENIED' | null;
   opm_approval_department?: string | null;
   opm_approval_note?: string | null;

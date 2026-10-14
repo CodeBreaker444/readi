@@ -1,6 +1,7 @@
 'use client'
 
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -53,6 +54,9 @@ interface Props {
     onUspaceChange?: (id: string) => void
     loadingUspaces?: boolean
     dFlightEnabled?: boolean
+    showSkipDFlight?: boolean
+    skipDFlight?: boolean
+    onSkipDFlightChange?: (skip: boolean) => void
     uspaceError?: string
     circle?: DFlightCircle | null
     onCircleChange?: (circle: DFlightCircle | null) => void
@@ -63,7 +67,7 @@ interface Props {
     isDark: boolean
 }
 
-export function OperationStepPilot({ pilots, pilotId, onPilotChange, visualObserverIds = [], onVisualObserverChange, loadingOptions = false, uspaces = [], uspaceId = '', onUspaceChange, loadingUspaces = false, dFlightEnabled = false, uspaceError = '', circle = null, onCircleChange, circleMaxRadiusM = 250, circleFocusCenter = null, uspaceBoundary = null, summary, isDark }: Props) {
+export function OperationStepPilot({ pilots, pilotId, onPilotChange, visualObserverIds = [], onVisualObserverChange, loadingOptions = false, uspaces = [], uspaceId = '', onUspaceChange, loadingUspaces = false, dFlightEnabled = false, showSkipDFlight = false, skipDFlight = false, onSkipDFlightChange, uspaceError = '', circle = null, onCircleChange, circleMaxRadiusM = 250, circleFocusCenter = null, uspaceBoundary = null, summary, isDark }: Props) {
     const { t } = useTranslation()
     const [qualTarget, setQualTarget] = useState<{ id: number; name: string } | null>(null)
     const pilotsPaging = usePagedItems(pilots)
@@ -215,6 +219,23 @@ export function OperationStepPilot({ pilots, pilotId, onPilotChange, visualObser
                     </div>
                 )}
             </div>
+
+            {showSkipDFlight && (
+                <div className="flex items-start gap-2">
+                    <Checkbox
+                        id="skip-dflight-authorization"
+                        checked={skipDFlight}
+                        onCheckedChange={checked => onSkipDFlightChange?.(checked === true)}
+                        className="mt-0.5"
+                    />
+                    <div>
+                        <Label htmlFor="skip-dflight-authorization" className={labelCls(isDark)}>
+                            {t('operations.newOperation.pilot.skipDflightLabel')}
+                        </Label>
+                        <p className="text-xs text-muted-foreground">{t('operations.newOperation.pilot.skipDflightHint')}</p>
+                    </div>
+                </div>
+            )}
 
             {dFlightEnabled && (
                 <div className="max-w-xs">

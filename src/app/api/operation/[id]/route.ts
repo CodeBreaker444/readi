@@ -2,6 +2,7 @@ import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { notifyDccAcceptance } from '@/backend/services/mission/dcc-callback-service';
 import { notifyPilotAssignment } from '@/backend/services/notification/notification-service';
 import { deleteOperation, getOperation, updateOperation } from '@/backend/services/operation/operation-service';
+import { prisma } from '@/lib/prisma';
 import { revertMissionMaintenance } from '@/backend/services/operation/maintenance-cycle-service';
 import { DFLIGHT_CIRCLE_MAX_RADIUS_M, UpdateOperationSchema } from '@/config/types/operation';
 import { apiError, dbError, internalError, notFound, zodError } from '@/lib/api-error';
@@ -45,6 +46,7 @@ const updateOperationSchema = z.object({
   op_type: z.enum(['OPEN', 'PDRA', 'STS-01', 'STS-02']).nullable().optional(),
   mission_group_label: z.string().nullable().optional(),
   uspace_id: z.string().nullable().optional(),
+  dflight_skip_authorization: z.boolean().optional(),
   dflight_trajectory_data: z.object({
     type: z.literal('circle'),
     center: z.object({ lat: z.number(), lng: z.number() }),
@@ -96,6 +98,15 @@ export async function PUT(req: NextRequest, { params }: Params) {
         { error: `dflight_trajectory_data.radius_m exceeds the ${DFLIGHT_CIRCLE_MAX_RADIUS_M}m limit for this mission type` },
         { status: 400 },
       );
+    }
+
+    // Companies without D-Flight always skip, so the flag can't be cleared for them.
+    if (validated.dflight_skip_authorization === false) {
+      const owner = await prisma.owner.findUnique({
+        where: { owner_id: session!.user.ownerId },
+        select: { d_flight_enabled: true },
+      });
+      if (!owner?.d_flight_enabled) validated.dflight_skip_authorization = true;
     }
 
     const currentSession = session || await getUserSession();

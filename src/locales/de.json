@@ -2324,6 +2324,8 @@
         "primaryPilotNote": "PIC — bereits zugewiesen",
         "noPilots": "Keine Piloten verfügbar",
         "viewQualifications": "Qualifikationen",
+        "skipDflightLabel": "D-Flight-Genehmigung überspringen",
+        "skipDflightHint": "Überspringt alle D-Flight-Anforderungen für diese Mission (kein U-Space, kein Bereich, keine Genehmigungsanfrage).",
         "uspaceLabel": "U-Space",
         "selectUspace": "U-Space auswählen…",
         "noUspaces": "Kein U-Space verfügbar — D-Flight-Konfiguration prüfen",

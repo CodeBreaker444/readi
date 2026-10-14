@@ -137,6 +137,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
     const [uspaceId, setUspaceId] = useState('')
     const [loadingUspaces, setLoadingUspaces] = useState(false)
     const [dFlightEnabled, setDFlightEnabled] = useState(false)
+    const [skipDFlight, setSkipDFlight] = useState(false)
     const [uspaceError, setUspaceError] = useState('')
     const [circle, setCircle] = useState<DFlightCircle | null>(null)
     const [uspaceFocus, setUspaceFocus] = useState<{ lat: number; lng: number } | null>(null)
@@ -279,6 +280,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
         setFlightMode(editOperation.flight_mode === 'DOCK' ? 'DOCK' : 'RC')
         setErpGroupId(editOperation.fk_erp_group_id?.toString() ?? '')
         setUspaceId(editOperation.uspace_id ?? '')
+        setSkipDFlight(!!editOperation.dflight_skip_authorization)
         setCircle(
             editOperation.dflight_trajectory_data?.type === 'circle'
                 ? { lat: editOperation.dflight_trajectory_data.center.lat, lng: editOperation.dflight_trajectory_data.center.lng, radiusM: editOperation.dflight_trajectory_data.radius_m }
@@ -476,7 +478,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
         setErps([]); setResultOptions([])
         setFlightWaypoints([]); setLoadingWaypoints(false)
         setErpGroupId(''); setErpGroups([]); setLoadingErpGroups(false)
-        setUspaceId(''); setUspaces([]); setLoadingUspaces(false); setDFlightEnabled(false); setUspaceError('')
+        setUspaceId(''); setUspaces([]); setLoadingUspaces(false); setDFlightEnabled(false); setSkipDFlight(false); setUspaceError('')
         setCircle(null); setUspaceFocus(null)
         setIsRecurrent(false); setRecurrentDays([]); setRecurrentEndDate(''); setRecurrentDateError('')
         setSchedulerForm({
@@ -532,8 +534,8 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
         return true
     }
 
-    const uspaceRequired = dFlightEnabled && ['PDRA', 'OPEN', 'STS-01', 'STS-02'].includes(opType)
-    const circleRequired = dFlightEnabled && ['OPEN', 'STS-01', 'STS-02'].includes(opType)
+    const uspaceRequired = dFlightEnabled && !skipDFlight && ['PDRA', 'OPEN', 'STS-01', 'STS-02'].includes(opType)
+    const circleRequired = dFlightEnabled && !skipDFlight && ['OPEN', 'STS-01', 'STS-02'].includes(opType)
     // D-Flight rejects h_buffer beyond the selected U-space's own registered
     // protection_buffers_horizontal constraint, independent of geometry — cap
     // the drawable/submittable radius to whichever limit is tighter.
@@ -578,7 +580,8 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                     flight_mode: opType === 'PDRA' ? flightMode : null,
                     op_type: opType,
                     mission_group_label: schedulerForm.groupLabel.trim() || null,
-                    uspace_id: uspaceId || null,
+                    uspace_id: skipDFlight ? null : (uspaceId || null),
+                    ...(dFlightEnabled && { dflight_skip_authorization: skipDFlight }),
                     dflight_trajectory_data: circleRequired && circle
                         ? { type: 'circle' as const, center: { lat: circle.lat, lng: circle.lng }, radius_m: circle.radiusM }
                         : null,
@@ -613,7 +616,8 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                 flight_mode: opType === 'PDRA' ? flightMode : null,
                 op_type: opType,
                 mission_group_label: schedulerForm.groupLabel.trim() || undefined,
-                uspace_id: uspaceId || undefined,
+                uspace_id: skipDFlight ? undefined : (uspaceId || undefined),
+                ...(dFlightEnabled && skipDFlight && { dflight_skip_authorization: true }),
                 dflight_trajectory_data: circleRequired && circle
                     ? { type: 'circle' as const, center: { lat: circle.lat, lng: circle.lng }, radius_m: circle.radiusM }
                     : undefined,
@@ -881,6 +885,9 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                             onUspaceChange={setUspaceId}
                             loadingUspaces={loadingUspaces}
                             dFlightEnabled={uspaceRequired}
+                            showSkipDFlight={dFlightEnabled}
+                            skipDFlight={skipDFlight}
+                            onSkipDFlightChange={setSkipDFlight}
                             uspaceError={uspaceError}
                             circle={circle}
                             onCircleChange={setCircle}

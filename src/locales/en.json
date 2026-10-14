@@ -2333,6 +2333,8 @@
         "primaryPilotNote": "PIC — already assigned",
         "noPilots": "No pilots available",
         "viewQualifications": "Qualifications",
+        "skipDflightLabel": "Skip D-Flight authorization",
+        "skipDflightHint": "Skips all D-Flight requirements for this mission (no U-space, area or authorization request).",
         "uspaceLabel": "U-space",
         "selectUspace": "Select u-space…",
         "noUspaces": "No u-spaces available — check your D-Flight configuration",

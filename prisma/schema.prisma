@@ -1899,6 +1899,7 @@ model pilot_mission {
   opm_approval_decided_by_user_id     Int?
   opm_approval_decided_at             DateTime?                  @db.Timestamp(6)
   opm_approval_note                   String?
+  dflight_skip_authorization          Boolean                    @default(false)
   controlroom_drone                   controlroom_drone[]
   flight_requests                     flight_requests[]
   mission_maintenance_log             mission_maintenance_log[]
