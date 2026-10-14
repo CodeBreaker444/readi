@@ -4,6 +4,7 @@
  */
 import { supabase } from '@/backend/database/database';
 import { prisma } from '@/lib/prisma';
+import { findTicketBlockedComponents } from './maintenance-ticket-components';
 import {
   SYSTEM_ALREADY_HAS_OPEN_TICKET_MESSAGE,
   SYSTEM_IN_MAINTENANCE_MESSAGE,
@@ -80,6 +81,16 @@ export async function assertToolNotNonOperational(toolId: number): Promise<void>
   if (tool?.tool_metadata?.status === 'NOT_OPERATIONAL') {
     throw new Error(
       'This system is not operational and cannot be used for mission creation.'
+    );
+  }
+}
+
+/** Not operational, decommissioned (incl. expired) and dismissed components cannot be put on a new ticket. */
+export async function assertComponentsTicketable(toolId: number, componentIds: number[]): Promise<void> {
+  const blocked = await findTicketBlockedComponents(toolId, [...new Set(componentIds)]);
+  if (blocked.length) {
+    throw new Error(
+      `Components cannot be added to a ticket: ${blocked.map((b) => `#${b.component_id} (${b.status})`).join(', ')}.`
     );
   }
 }

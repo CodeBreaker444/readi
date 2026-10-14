@@ -22,6 +22,8 @@ export interface MaintenanceComponent {
   status: MaintenanceStatus;
   trigger: (string | null)[];
   model: MaintenanceModel;
+  excluded_status?: "DISMISSED" | "DECOMMISSIONED" | null;
+  excluded_message?: string | null;
 }
 
 export interface MaintenanceDrone {
@@ -183,6 +185,7 @@ export interface ComponentOption {
   component_code: string;
   component_type: string;
   component_sn: string;
+  component_status: string;
 }
 
 export interface UserOption {

@@ -13,6 +13,7 @@ import type {
 } from '@/config/types/maintenance';
 import { prisma } from '@/lib/prisma';
 import { getPresignedDownloadUrl } from '@/lib/s3Client';
+import { getComponentStatusesForTool, getComponentStatusesForTools, isPermanentlyBlockedStatus } from './maintenance-ticket-components';
 import { getTicketComponentIds } from './maintenance-ticket-rules';
 
 export async function getTicketList(owner_id: number, tool_id?: number, assignedToUserId?: number): Promise<MaintenanceTicket[]> {
@@ -88,9 +89,12 @@ export async function getTicketList(owner_id: number, tool_id?: number, assigned
         fk_tool_id: { in: toolIdsWithoutComponent },
         component_active: 'Y',
       },
-      select: { fk_tool_id: true, component_type: true, component_name: true, serial_number: true },
+      select: { component_id: true, fk_tool_id: true, component_type: true, component_name: true, serial_number: true },
     });
+    // Dismissed / decommissioned components are not covered by a system-level ticket.
+    const effective = await getComponentStatusesForTools(toolIdsWithoutComponent);
     for (const c of sysComps) {
+      if (isPermanentlyBlockedStatus(effective.get(c.component_id))) continue;
       if (!systemComponentsMap[c.fk_tool_id]) systemComponentsMap[c.fk_tool_id] = [];
       systemComponentsMap[c.fk_tool_id].push({
         component_type: c.component_type ?? c.component_name ?? '',
@@ -225,11 +229,14 @@ export async function getComponentList(toolId: number, ticketType?: string): Pro
 
   if (error) throw new Error(`getComponentList: ${error.message}`);
 
+  const statuses = await getComponentStatusesForTool(toolId);
+
   return (data ?? []).map((row) => ({
     tool_component_id: row.component_id,
     component_code:    row.component_code ?? '',
     component_type:    row.component_type ?? row.component_name ?? '',
     component_sn:      row.serial_number ?? '',
+    component_status:  statuses.get(row.component_id) ?? 'OPERATIONAL',
   }));
 }
 

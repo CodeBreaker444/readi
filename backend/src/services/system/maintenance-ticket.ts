@@ -27,9 +27,11 @@ import {
   uploadFileToS3,
 } from '@/lib/s3Client';
 import { addTicketEvent } from './maintenance-ticket-events';
-import { assertComponentsBelongToTool } from './maintenance-ticket-guards';
+import { assertComponentsBelongToTool, assertComponentsTicketable } from './maintenance-ticket-guards';
 import {
+  excludePermanentlyBlocked,
   getSystemComponentIds,
+  getTicketableComponentIds,
   resetComponentCounters,
   setComponentsOperationalStatus,
   setSystemOperationalStatus,
@@ -54,13 +56,20 @@ export async function createTicket(payload: CreateTicketPayload): Promise<number
   const primaryComponentId = componentIds[0] ?? null;
 
   await assertComponentsBelongToTool(payload.fk_tool_id, componentIds);
+  await assertComponentsTicketable(payload.fk_tool_id, componentIds);
 
-  // One ticket per request; every selected component is linked through maintenance_ticket_item.
+  // A system-level ticket (no component picked) covers the components that are eligible NOW.
+  // They are recorded on the ticket so a later status change cannot add or remove components.
+  const coveredIds = componentIds.length
+    ? componentIds
+    : await getTicketableComponentIds(payload.fk_tool_id);
+
+  // One ticket per request; every covered component is linked through maintenance_ticket_item.
   const ticketRow = await prisma.maintenance_ticket.create({
     data: {
       fk_owner_id:         payload.fk_owner_id,
       fk_tool_id:          payload.fk_tool_id,
-      fk_component_id:     primaryComponentId,
+      fk_component_id:     componentIds.length ? primaryComponentId : null,
       ticket_title:        buildTicketTitle(payload.fk_tool_id, componentIds),
       ticket_type:         payload.type,
       ticket_priority:     payload.priority,
@@ -72,9 +81,9 @@ export async function createTicket(payload: CreateTicketPayload): Promise<number
       location_latitude:   payload.latitude  ?? null,
       location_longitude:  payload.longitude ?? null,
       location_pseudo_name: payload.location_pseudo_name ?? null,
-      ...(componentIds.length > 0 && {
+      ...(coveredIds.length > 0 && {
         maintenance_ticket_item: {
-          create: componentIds.map((id) => ({
+          create: coveredIds.map((id) => ({
             fk_component_id:  id,
             item_description: `Component #${id}`,
             item_type:        'COMPONENT',
@@ -164,7 +173,10 @@ export async function closeTicket(payload: CloseTicketPayload): Promise<{ resetC
   const systemComponentIds = hasSystemLevelTicket(closingTickets)
     ? await getSystemComponentIds(ticket.fk_tool_id!)
     : [];
-  const resetComponentIds = mergeResetComponentIds(getTicketedComponentIds(closingTickets), systemComponentIds);
+  const resetComponentIds = await excludePermanentlyBlocked(
+    ticket.fk_tool_id!,
+    mergeResetComponentIds(getTicketedComponentIds(closingTickets), systemComponentIds),
+  );
 
   for (const componentId of resetComponentIds) {
     await resetComponentCounters(ticket.fk_tool_id!, now.toISOString(), componentId);
