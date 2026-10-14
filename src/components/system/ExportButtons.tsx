@@ -68,7 +68,9 @@ async function exportPdf(
     });
   } catch { /* skip if logo not found */ }
 
-  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', compress: true });
+  // Wide tables (e.g. 15 ticket columns) get an A3 page and a smaller font; A4 leaves ~18mm per column.
+  const wide = headers.length > 9;
+  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: wide ? 'a3' : 'a4', compress: true });
   const pageW = doc.internal.pageSize.width;
   const pageH = doc.internal.pageSize.height;
   const exportedOn = new Date().toLocaleDateString('en-GB', {
@@ -93,15 +95,16 @@ async function exportPdf(
     head: [headers],
     body: rows.map(r => r.map(v => (v == null ? '' : String(v)))),
     styles: {
-      fontSize: 7.5,
-      cellPadding: { top: 2, right: 2.5, bottom: 2, left: 2.5 },
+      fontSize: wide ? 6.5 : 7.5,
+      cellPadding: wide ? { top: 1.5, right: 1.5, bottom: 1.5, left: 1.5 } : { top: 2, right: 2.5, bottom: 2, left: 2.5 },
       overflow: 'linebreak',
+      valign: 'middle',
     },
     headStyles: {
       fillColor: [109, 40, 217],
       textColor: 255,
       fontStyle: 'bold',
-      fontSize: 7.5,
+      fontSize: wide ? 6.5 : 7.5,
     },
     alternateRowStyles: { fillColor: [248, 248, 252] },
     margin: { left: 14, right: 14, bottom: 16 },
