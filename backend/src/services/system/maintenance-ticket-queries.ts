@@ -208,14 +208,38 @@ export async function getDroneList(ownerId: number): Promise<DroneOption[]> {
     orderBy: { tool_code: 'asc' },
   });
 
+  const toolIds = data.map((row) => row.tool_id);
+  const [openTickets, maintenanceComps] = toolIds.length
+    ? await Promise.all([
+        prisma.maintenance_ticket.findMany({
+          where: { fk_tool_id: { in: toolIds }, ticket_status: { not: 'CLOSED' } },
+          select: { fk_tool_id: true },
+        }),
+        prisma.tool_component.findMany({
+          where: { fk_tool_id: { in: toolIds }, component_metadata: { path: ['component_status'], equals: 'MAINTENANCE' } },
+          select: { fk_tool_id: true },
+        }),
+      ])
+    : [[], []];
+
+  // Same rule as the systems list: a stored OPERATIONAL system with open work is in maintenance.
+  const inMaintenance = new Set<number>();
+  [...openTickets, ...maintenanceComps].forEach((r) => { if (r.fk_tool_id != null) inMaintenance.add(r.fk_tool_id); });
+
   return data
     .filter((row) => (row.tool_metadata as any)?.is_warehouse !== true && (row.tool_metadata as any)?.deleted !== true)
-    .map((row) => ({
-      tool_id:     row.tool_id,
-      tool_code:   row.tool_code ?? '',
-      tool_desc:   row.tool_description ?? row.tool_name ?? '',
-      tool_status: (row.tool_metadata as any)?.status ?? 'OPERATIONAL',
-    }));
+    .map((row) => {
+      const stored = (row.tool_metadata as any)?.status as string | undefined;
+      const status = (!stored || stored === 'OPERATIONAL') && inMaintenance.has(row.tool_id)
+        ? 'MAINTENANCE'
+        : stored ?? 'OPERATIONAL';
+      return {
+        tool_id:     row.tool_id,
+        tool_code:   row.tool_code ?? '',
+        tool_desc:   row.tool_description ?? row.tool_name ?? '',
+        tool_status: status,
+      };
+    });
 }
 
 export async function getComponentList(toolId: number, ticketType?: string): Promise<ComponentOption[]> {

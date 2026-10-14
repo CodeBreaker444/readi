@@ -33,6 +33,8 @@ export async function POST(req: NextRequest) {
       assigned_to: validation.data.assigned_to,
       technician_name: techName,
       assigned_by_name: session!.user.fullname,
+      assigned_by_user_id: Number(session!.user.userId),
+      assigned_by_email: session!.user.email,
     });
 
     logEvent({

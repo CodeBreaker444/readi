@@ -147,6 +147,7 @@ export interface CloseTicketPayload {
   ticket_id: number;
   note?: string;
   closed_by?: number;
+  closed_by_email?: string;
 }
 
 export interface AssignTicketPayload {
@@ -154,6 +155,8 @@ export interface AssignTicketPayload {
   assigned_to: number;
   technician_name?: string;
   assigned_by_name?: string;
+  assigned_by_user_id?: number;
+  assigned_by_email?: string;
 }
 
 export interface AddReportPayload {

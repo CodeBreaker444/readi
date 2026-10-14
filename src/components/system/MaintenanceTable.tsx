@@ -662,7 +662,8 @@ export default function MaintenanceTable({
         const q = search.toLowerCase();
         return (
           d.code.toLowerCase().includes(q) ||
-          (d.serial_number && d.serial_number.toLowerCase().includes(q))
+          (d.serial_number && d.serial_number.toLowerCase().includes(q)) ||
+          (d.components ?? []).some((c) => c.serial_number?.toLowerCase().includes(q))
         );
       }
       return true;

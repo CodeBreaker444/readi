@@ -198,7 +198,7 @@ export async function closeTicket(payload: CloseTicketPayload): Promise<{ resetC
   // Add close event to all tickets
   await Promise.all(
     closingTickets.map((t) =>
-      addTicketEvent(t.ticket_id, 'CLOSED', payload.note ?? 'Ticket closed')
+      addTicketEvent(t.ticket_id, 'CLOSED', payload.note ?? 'Ticket closed', payload.closed_by_email, payload.closed_by)
     )
   );
 
@@ -234,7 +234,9 @@ export async function assignTicket(payload: AssignTicketPayload): Promise<void> 
   await addTicketEvent(
     payload.ticket_id,
     'ASSIGNED',
-    `Ticket assigned to ${techName}`
+    `Ticket assigned to ${techName}`,
+    payload.assigned_by_email,
+    payload.assigned_by_user_id
   );
 
   await notifyTicketAssigned(ticket, payload, techName);
