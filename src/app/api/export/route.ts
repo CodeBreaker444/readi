@@ -11,8 +11,10 @@ export interface ExportPayload {
 }
 
 function buildCsv(headers: string[], rows: ExportPayload['rows']): string {
+  const DATE_TIME = /^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}/;
   const escape = (v: string | number | null | undefined) => {
     const s = v == null ? '' : String(v);
+    if (DATE_TIME.test(s)) return `"=""${s}"""`;
     return s.includes(',') || s.includes('"') || s.includes('\n')
       ? `"${s.replace(/"/g, '""')}"`
       : s;
