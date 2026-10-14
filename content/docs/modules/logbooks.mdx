@@ -52,6 +52,42 @@ Open a battery for its **Cycle Log**: each mission it was used on, with date, du
 
 ---
 
+## Event Logbook
+
+Pilots report incidents and anomalies (equipment malfunction, GPS signal issue, obstacle detected, weather, bird activity, unexpected landing, fly-away, other) with **Add Report Event**. The wizard collects the drone, an optional mission, the location on the map, the event type, the takeoff time, notes and attachments (JPG, PNG, MP4, PDF, up to 100 MB each).
+
+A pilot can only pick systems and missions assigned to them and only sees the events they reported. Roles that manage systems see every event of the company.
+
+### Webhooks
+
+Admins, OPMs and super admins see a settings icon on the page to configure webhooks. Each webhook can target **one client** (it then only receives events of that client, resolved from the mission, otherwise from the system's assigned client) or **all clients**, and can be limited to specific event types.
+
+Every new event is sent as an HTTPS `POST` with `event.created`:
+
+```json
+{
+  "id": "delivery-uuid",
+  "type": "event.created",
+  "created_at": "2026-10-07T14:20:05.000Z",
+  "data": {
+    "event_id": 126,
+    "event_type": "equipment_malfunction",
+    "takeoff_time": "2026-10-07T10:32:00.000Z",
+    "location": { "latitude": 42.4097, "longitude": 12.8603, "label": "Rieti, Lazio, Italy" },
+    "notes": "Strange vibration from motor",
+    "pilot": { "id": 12, "name": "Jane Doe" },
+    "drone": { "id": 4, "name": "Lito X1", "code": "LX1" },
+    "mission": { "id": 88, "name": "Survey-12", "code": "M-88" },
+    "client": { "id": 3, "name": "Acme" },
+    "attachments": [{ "file_name": "screenshot.png", "file_type": "image/png", "file_size": 120394, "url": "https://…", "url_expires_in_seconds": 604800 }]
+  }
+}
+```
+
+Verify the `X-Readi-Signature` header: `sha256=` + HMAC-SHA256 (hex) of `"<X-Readi-Timestamp>.<raw body>"` with the webhook's signing secret, which is shown once when the webhook is created or rotated. Respond with any `2xx` within 8 seconds; failed deliveries (network error or `5xx`) are retried once. All deliveries appear in each webhook's delivery log. Endpoints must be public HTTPS URLs.
+
+---
+
 ## Related
 
 - [Operations](/docs/modules/operations)

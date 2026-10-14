@@ -679,38 +679,40 @@ model checklist {
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model client {
-  client_id           Int                @id @default(autoincrement())
-  fk_owner_id         Int
-  client_code         String?            @db.VarChar(50)
-  client_name         String             @db.VarChar(255)
-  client_legal_name   String?            @db.VarChar(255)
-  client_address      String?
-  client_city         String?            @db.VarChar(100)
-  client_state        String?            @db.VarChar(100)
-  client_postal_code  String?            @db.VarChar(20)
-  fk_country_id       Int?
-  client_phone        String?            @db.VarChar(50)
-  client_email        String?            @db.VarChar(255)
-  client_website      String?            @db.VarChar(255)
-  client_logo         String?
-  client_active       String?            @default("Y") @db.Char(1)
-  client_unique_code  String?            @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  contract_start_date DateTime?          @db.Date
-  contract_end_date   DateTime?          @db.Date
-  payment_terms       String?            @db.VarChar(100)
-  credit_limit        Decimal?           @db.Decimal(15, 2)
-  created_at          DateTime?          @default(now()) @db.Timestamp(6)
-  updated_at          DateTime?          @default(now()) @db.Timestamp(6)
-  username            String?            @db.VarChar(100)
-  calendar_shift      calendar_shift[]
-  countries           countries?         @relation(fields: [fk_country_id], references: [country_id], onDelete: NoAction, onUpdate: NoAction)
-  owner               owner              @relation(fields: [fk_owner_id], references: [owner_id], onDelete: Cascade, onUpdate: NoAction)
-  evaluation          evaluation[]
-  pilot_mission       pilot_mission[]
-  planning            planning[]
-  planning_logbook    planning_logbook[]
-  tool                tool[]
-  users               public_users[]
+  client_id            Int                    @id @default(autoincrement())
+  fk_owner_id          Int
+  client_code          String?                @db.VarChar(50)
+  client_name          String                 @db.VarChar(255)
+  client_legal_name    String?                @db.VarChar(255)
+  client_address       String?
+  client_city          String?                @db.VarChar(100)
+  client_state         String?                @db.VarChar(100)
+  client_postal_code   String?                @db.VarChar(20)
+  fk_country_id        Int?
+  client_phone         String?                @db.VarChar(50)
+  client_email         String?                @db.VarChar(255)
+  client_website       String?                @db.VarChar(255)
+  client_logo          String?
+  client_active        String?                @default("Y") @db.Char(1)
+  client_unique_code   String?                @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  contract_start_date  DateTime?              @db.Date
+  contract_end_date    DateTime?              @db.Date
+  payment_terms        String?                @db.VarChar(100)
+  credit_limit         Decimal?               @db.Decimal(15, 2)
+  created_at           DateTime?              @default(now()) @db.Timestamp(6)
+  updated_at           DateTime?              @default(now()) @db.Timestamp(6)
+  username             String?                @db.VarChar(100)
+  calendar_shift       calendar_shift[]
+  countries            countries?             @relation(fields: [fk_country_id], references: [country_id], onDelete: NoAction, onUpdate: NoAction)
+  owner                owner                  @relation(fields: [fk_owner_id], references: [owner_id], onDelete: Cascade, onUpdate: NoAction)
+  evaluation           evaluation[]
+  event_webhook_config event_webhook_config[]
+  pilot_event          pilot_event[]
+  pilot_mission        pilot_mission[]
+  planning             planning[]
+  planning_logbook     planning_logbook[]
+  tool                 tool[]
+  users                public_users[]
 
   @@unique([fk_owner_id, client_code])
   @@index([client_active], map: "idx_client_active")
@@ -1179,6 +1181,45 @@ model evaluation_file {
   users               public_users? @relation(fields: [uploaded_by_user_id], references: [user_id], onUpdate: NoAction)
 
   @@index([fk_evaluation_id], map: "idx_evaluation_file_evaluation")
+  @@schema("public")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model event_webhook_config {
+  webhook_id             Int                      @id @default(autoincrement())
+  fk_owner_id            Int
+  fk_client_id           Int?
+  name                   String                   @db.VarChar(100)
+  url                    String
+  secret_encrypted       String
+  event_types            String[]                 @default([])
+  is_active              Boolean                  @default(true)
+  created_by             Int?
+  created_at             DateTime                 @default(now()) @db.Timestamp(6)
+  updated_at             DateTime                 @default(now()) @db.Timestamp(6)
+  client                 client?                  @relation(fields: [fk_client_id], references: [client_id], onDelete: Cascade, onUpdate: NoAction)
+  owner                  owner                    @relation(fields: [fk_owner_id], references: [owner_id], onDelete: Cascade, onUpdate: NoAction)
+  event_webhook_delivery event_webhook_delivery[]
+
+  @@index([fk_owner_id, is_active], map: "idx_event_webhook_config_owner")
+  @@schema("public")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model event_webhook_delivery {
+  delivery_id          Int                  @id @default(autoincrement())
+  fk_webhook_id        Int
+  fk_event_id          Int?
+  is_test              Boolean              @default(false)
+  success              Boolean
+  response_status      Int?
+  error_message        String?              @db.VarChar(500)
+  duration_ms          Int?
+  created_at           DateTime             @default(now()) @db.Timestamp(6)
+  pilot_event          pilot_event?         @relation(fields: [fk_event_id], references: [event_id], onDelete: Cascade, onUpdate: NoAction)
+  event_webhook_config event_webhook_config @relation(fields: [fk_webhook_id], references: [webhook_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([fk_webhook_id, created_at(sort: Desc)], map: "idx_event_webhook_delivery_webhook")
   @@schema("public")
 }
 
@@ -1736,6 +1777,7 @@ model owner {
   drone_class_config                 drone_class_config[]
   emergency_response_plan            emergency_response_plan[]
   evaluation                         evaluation[]
+  event_webhook_config               event_webhook_config[]
   flight_requests                    flight_requests[]
   kanban                             kanban[]
   luc_document                       luc_document[]
@@ -1745,6 +1787,7 @@ model owner {
   countries                          countries?                         @relation(fields: [fk_country_id], references: [country_id], onDelete: NoAction, onUpdate: NoAction)
   owner_territorial_unit             owner_territorial_unit[]
   payload                            payload[]
+  pilot_event                        pilot_event[]
   pilot_mission                      pilot_mission[]
   pilot_mission_result_type          pilot_mission_result_type[]
   pilot_mission_status               pilot_mission_status[]
@@ -1841,6 +1884,50 @@ model pilot_declaration {
   @@schema("public")
 }
 
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model pilot_event {
+  event_id               Int                      @id @default(autoincrement())
+  fk_owner_id            Int
+  fk_pilot_user_id       Int
+  fk_tool_id             Int
+  fk_mission_id          Int?
+  fk_client_id           Int?
+  event_type             String                   @db.VarChar(50)
+  takeoff_time           DateTime                 @db.Timestamp(6)
+  latitude               Decimal?                 @db.Decimal(9, 6)
+  longitude              Decimal?                 @db.Decimal(9, 6)
+  location_label         String?                  @db.VarChar(500)
+  notes                  String?                  @db.VarChar(500)
+  created_at             DateTime                 @default(now()) @db.Timestamp(6)
+  event_webhook_delivery event_webhook_delivery[]
+  client                 client?                  @relation(fields: [fk_client_id], references: [client_id], onUpdate: NoAction)
+  pilot_mission          pilot_mission?           @relation(fields: [fk_mission_id], references: [pilot_mission_id], onUpdate: NoAction)
+  owner                  owner                    @relation(fields: [fk_owner_id], references: [owner_id], onDelete: Cascade, onUpdate: NoAction)
+  users                  public_users             @relation(fields: [fk_pilot_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  tool                   tool                     @relation(fields: [fk_tool_id], references: [tool_id], onDelete: NoAction, onUpdate: NoAction)
+  pilot_event_attachment pilot_event_attachment[]
+
+  @@index([fk_owner_id, created_at(sort: Desc)], map: "idx_pilot_event_owner_created")
+  @@index([fk_pilot_user_id], map: "idx_pilot_event_pilot")
+  @@index([fk_tool_id], map: "idx_pilot_event_tool")
+  @@schema("public")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model pilot_event_attachment {
+  attachment_id Int         @id @default(autoincrement())
+  fk_event_id   Int
+  file_name     String      @db.VarChar(255)
+  file_key      String
+  file_type     String?     @db.VarChar(100)
+  file_size     BigInt?
+  uploaded_at   DateTime    @default(now()) @db.Timestamp(6)
+  pilot_event   pilot_event @relation(fields: [fk_event_id], references: [event_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([fk_event_id], map: "idx_pilot_event_attachment_event")
+  @@schema("public")
+}
+
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
@@ -1904,6 +1991,7 @@ model pilot_mission {
   flight_requests                     flight_requests[]
   mission_maintenance_log             mission_maintenance_log[]
   operation_attachment                operation_attachment[]
+  pilot_event                         pilot_event[]
   planning_logbook                    planning_logbook?          @relation(fields: [fk_mission_planning_id], references: [mission_planning_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_pilot_mission_mission_planning")
   client                              client?                    @relation(fields: [fk_client_id], references: [client_id], onDelete: NoAction, onUpdate: NoAction)
   erp_location_group                  erp_location_group?        @relation(fields: [fk_erp_group_id], references: [group_id], onDelete: NoAction, onUpdate: NoAction)
@@ -2510,6 +2598,7 @@ model tool {
   mission_component  mission_component[]
   payload            payload[]
   pilot_declaration  pilot_declaration[]
+  pilot_event        pilot_event[]
   pilot_mission      pilot_mission[]
   planning_logbook   planning_logbook[]
   client             client?              @relation(fields: [assigned_client_id], references: [client_id], onUpdate: NoAction)
@@ -3005,6 +3094,7 @@ model public_users {
   operation_attachment                                                       operation_attachment[]
   owner_territorial_unit_owner_territorial_unit_unit_manager_idTousers       owner_territorial_unit[]                 @relation("owner_territorial_unit_unit_manager_idTousers")
   pilot_declaration                                                          pilot_declaration[]
+  pilot_event                                                                pilot_event[]
   pilot_mission                                                              pilot_mission[]
   pilot_mission_planned_template_logbook                                     pilot_mission_planned_template_logbook[]
   planning_planning_assigned_to_user_idTousers                               planning[]                               @relation("planning_assigned_to_user_idTousers")
