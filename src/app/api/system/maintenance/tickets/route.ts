@@ -1,4 +1,4 @@
-import { getTicketList } from '@/backend/services/system/maintenance-ticket';
+import { getTicketList } from '@/backend/services/system/maintenance-ticket-queries';
 import { requireAnyPermission } from '@/lib/auth/api-auth';
 import { roleHasPermission } from '@/lib/auth/roles';
 import { internalError } from '@/lib/api-error';

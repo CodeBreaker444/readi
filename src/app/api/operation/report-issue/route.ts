@@ -1,7 +1,9 @@
 import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { sendNotificationToRoles } from '@/backend/services/notification/notification-service';
 import { getComponentsForMaintenanceCycle } from '@/backend/services/operation/maintenance-cycle-service';
-import { assertNoOpenTicketForTool, createTicket, hasOpenTicketForTool, setComponentsOperationalStatus, setSystemOperationalStatus } from '@/backend/services/system/maintenance-ticket';
+import { assertNoOpenTicketForTool, hasOpenTicketForTool } from '@/backend/services/system/maintenance-ticket-guards';
+import { createTicket } from '@/backend/services/system/maintenance-ticket';
+import { setComponentsOperationalStatus, setSystemOperationalStatus } from '@/backend/services/system/maintenance-ticket-components';
 import { requirePermission } from '@/lib/auth/api-auth';
 import { apiError, internalError } from '@/lib/api-error';
 import { E } from '@/lib/error-codes';

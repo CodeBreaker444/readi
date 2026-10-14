@@ -4,7 +4,7 @@ import type { DccCallbackResult } from "@/types/dcc-callback";
 import { isMissionRequestedByDcc, notifyDccExecution, notifyDccTermination } from "@/backend/services/mission/dcc-callback-service";
 import { updateMissionStatus } from "@/backend/services/operation/operation-board-service";
 import { checkDailyDeclaration } from "@/backend/services/operation/pilot-declaration-service";
-import { hasOpenTicketForTool } from "@/backend/services/system/maintenance-ticket";
+import { hasOpenTicketForTool } from "@/backend/services/system/maintenance-ticket-guards";
 import { apiError, internalError } from "@/lib/api-error";
 import { requireFeatureAccess, requirePermission } from "@/lib/auth/api-auth";
 import { E } from "@/lib/error-codes";
@@ -111,4 +111,4 @@ export async function POST(req: NextRequest) {
     }
     return internalError(E.SV001, err);
   }
-}
+}

@@ -10,6 +10,8 @@ const querySchema = z.object({
   lon: z.coerce.number().min(-180).max(180),
   // The planner tab shows 7 days; the new-operation form looks further ahead.
   days: z.coerce.number().int().min(1).max(16).default(7),
+  // The viewer's IANA timezone; times in the forecast are returned in it
+  tz: z.string().max(64).optional(),
 })
 
 /** Hourly forecast for a point. The fleet is a separate call (/fleet) so the location can come from a system. */
@@ -21,8 +23,8 @@ export async function GET(req: NextRequest) {
     const parsed = querySchema.safeParse(Object.fromEntries(new URL(req.url).searchParams))
     if (!parsed.success) return apiError(E.VL004, 400, parsed.error.flatten().fieldErrors)
 
-    const { lat, lon, days } = parsed.data
-    const forecast = await fetchBtfForecast(lat, lon, days)
+    const { lat, lon, days, tz } = parsed.data
+    const forecast = await fetchBtfForecast(lat, lon, days, tz)
     if (!forecast) {
       return NextResponse.json({ success: false, error: 'Weather service unavailable' }, { status: 502 })
     }

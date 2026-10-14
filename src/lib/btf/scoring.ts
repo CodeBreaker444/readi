@@ -208,6 +208,12 @@ export interface WindowSummary {
   rainMm: number;
   /** Most severe WMO weather code in the window (for the icon) */
   weatherCode: number;
+  /** Lowest visibility in the window, metres (null when the forecast has none) */
+  minVisibilityM: number | null;
+  avgTempC: number | null;
+  avgCloudPct: number | null;
+  /** Highest chance of rain in the window, percent */
+  maxPrecipProb: number | null;
 }
 
 /**
@@ -223,9 +229,16 @@ export function summariseWindow(hours: HourWeather[], scores: HourScore[]): Wind
   let gust = 0;
   let rain = 0;
   let code = 0;
+  let minVis: number | null = null;
+  let maxProb: number | null = null;
+  let tempSum = 0;
+  let tempN = 0;
+  let cloudSum = 0;
+  let cloudN = 0;
 
   for (let i = 0; i < hours.length; i++) {
     const s = scores[i];
+    const h = hours[i];
     if (s.limiting === 'night') night = true;
     const rank = STATUS_RANK[s.status];
     if (rank < worstRank) worstRank = rank;
@@ -233,10 +246,20 @@ export function summariseWindow(hours: HourWeather[], scores: HourScore[]): Wind
       minScore = s.score;
       minIdx = i;
     }
-    wind += hours[i].windMs;
-    if (hours[i].gustMs > gust) gust = hours[i].gustMs;
-    rain += hours[i].precipMmH;
-    if ((hours[i].weatherCode ?? 0) > code) code = hours[i].weatherCode ?? 0;
+    wind += h.windMs;
+    if (h.gustMs > gust) gust = h.gustMs;
+    rain += h.precipMmH;
+    if ((h.weatherCode ?? 0) > code) code = h.weatherCode ?? 0;
+    if (h.visibilityM !== null && (minVis === null || h.visibilityM < minVis)) minVis = h.visibilityM;
+    if (h.precipProb !== null && (maxProb === null || h.precipProb > maxProb)) maxProb = h.precipProb;
+    if (h.tempC !== null) {
+      tempSum += h.tempC;
+      tempN++;
+    }
+    if (h.cloudCoverPct !== null) {
+      cloudSum += h.cloudCoverPct;
+      cloudN++;
+    }
   }
 
   const status = night ? 'nogo' : RANK_STATUS[worstRank];
@@ -249,6 +272,10 @@ export function summariseWindow(hours: HourWeather[], scores: HourScore[]): Wind
     maxGustMs: gust,
     rainMm: rain,
     weatherCode: code,
+    minVisibilityM: minVis,
+    avgTempC: tempN ? tempSum / tempN : null,
+    avgCloudPct: cloudN ? cloudSum / cloudN : null,
+    maxPrecipProb: maxProb,
   };
 }
 

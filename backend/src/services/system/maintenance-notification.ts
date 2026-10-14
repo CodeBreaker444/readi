@@ -1,3 +1,7 @@
+/**
+ * Delivery of maintenance alerts: in-app notifications + module emails.
+ * What gets alerted (and the wording) is decided in maintenance-alert-logic.ts.
+ */
 import { prisma } from "@/lib/prisma";
 import { getMaintenanceDashboard } from "@/backend/services/system/maintenance-service";
 import { MaintenanceDrone } from "@/config/types/maintenance";
@@ -5,31 +9,33 @@ import {
   sendMaintenanceAlertEmail,
   sendMaintenanceDueEmail,
 } from "@/backend/services/settings/module-email-notification-service";
+import {
+  MAINTENANCE_ALERT_ROLES,
+  MAINTENANCE_ALERT_THRESHOLD_PERCENT,
+  buildAlertContent,
+  collectAlertItems,
+  extractNotifiedAlertKeys,
+  filterNotYetNotified,
+} from "@/backend/services/system/maintenance-alert-logic";
 
-interface AlertItem {
-  tool_component_id: number;
-  component_name: string;
-  system_code: string;
-  status: "ALERT" | "DUE";
-  triggers: string[];
-  drone_id: number;
+async function getAlertManagerIds(ownerId: number): Promise<number[]> {
+  const managers = await prisma.public_users.findMany({
+    where: {
+      fk_owner_id: ownerId,
+      user_active: "Y",
+      user_role: { in: MAINTENANCE_ALERT_ROLES },
+    },
+    select: { user_id: true },
+  });
+  return managers.map((u) => u.user_id);
 }
 
-async function getAlreadyNotifiedToday(ownerId: number): Promise<Set<number>> {
+async function getAlreadyNotifiedToday(ownerId: number): Promise<Set<string>> {
   const today = new Date().toISOString().slice(0, 10);
   const todayStart = new Date(`${today}T00:00:00.000Z`);
   const todayEnd = new Date(`${today}T23:59:59.999Z`);
 
-  const ownerUsers = await prisma.public_users.findMany({
-    where: {
-      fk_owner_id: ownerId,
-      user_active: "Y",
-      user_role: { in: ["OPM", "RM", "ADMIN"] },
-    },
-    select: { user_id: true },
-  });
-
-  const userIds = ownerUsers.map((u) => u.user_id);
+  const userIds = await getAlertManagerIds(ownerId);
   if (!userIds.length) return new Set();
 
   const notifications = await prisma.notification.findMany({
@@ -41,12 +47,7 @@ async function getAlreadyNotifiedToday(ownerId: number): Promise<Set<number>> {
     select: { notification_data: true },
   });
 
-  const ids = new Set<number>();
-  for (const row of notifications) {
-    const cid = (row.notification_data as any)?.component_id;
-    if (typeof cid === "number") ids.add(cid);
-  }
-  return ids;
+  return extractNotifiedAlertKeys(notifications);
 }
 
 async function insertAlertNotifications(
@@ -76,61 +77,18 @@ export async function sendMaintenanceAlertNotifications(
   ownerId: number,
   drones: MaintenanceDrone[]
 ): Promise<void> {
-
-  const alertItems: AlertItem[] = [];
-  for (const drone of drones) {
-    for (const comp of drone.components) {
-      if (comp.status === "ALERT" || comp.status === "DUE") {
-        alertItems.push({
-          tool_component_id: comp.tool_component_id,
-          component_name: comp.component_name,
-          system_code: drone.code,
-          status: comp.status,
-          triggers: comp.trigger.filter((t): t is string => !!t),
-          drone_id: drone.tool_id,
-        });
-      }
-    }
-  }
-
-
+  const alertItems = collectAlertItems(drones);
   if (!alertItems.length) return;
 
   const alreadyNotified = await getAlreadyNotifiedToday(ownerId);
-  const toNotify = alertItems.filter(
-    (item) => !alreadyNotified.has(item.tool_component_id)
-  );
-
-
+  const toNotify = filterNotYetNotified(alertItems, alreadyNotified);
   if (!toNotify.length) return;
 
-  const managers = await prisma.public_users.findMany({
-    where: {
-      fk_owner_id: ownerId,
-      user_active: "Y",
-      user_role: { in: ["OPM", "RM", "ADMIN"] },
-    },
-    select: { user_id: true },
-  });
-
-
-  if (!managers.length) return;
-
-  const managerIds = managers.map((u) => u.user_id);
+  const managerIds = await getAlertManagerIds(ownerId);
+  if (!managerIds.length) return;
 
   for (const item of toNotify) {
-    const isDue = item.status === "DUE";
-    const triggerStr = item.triggers.length
-      ? item.triggers.map((t) => t.toLowerCase()).join(", ")
-      : "maintenance limit";
-
-    const title = isDue
-      ? `Maintenance Required — ${item.system_code}`
-      : `Maintenance Alert — ${item.system_code}`;
-
-    const message = isDue
-      ? `Component "${item.component_name}" on system ${item.system_code} has reached its maintenance limit (${triggerStr}). Immediate maintenance required.`
-      : `Component "${item.component_name}" on system ${item.system_code} is approaching its maintenance limit (${triggerStr}).`;
+    const { title, message, isDue } = buildAlertContent(item);
 
     await insertAlertNotifications(
       managerIds,
@@ -139,7 +97,6 @@ export async function sendMaintenanceAlertNotifications(
       item.tool_component_id,
       item.status
     );
-
 
     // Send module-based email notification
     if (isDue) {
@@ -168,7 +125,7 @@ export async function triggerMaintenanceAlertCheck(ownerId: number): Promise<voi
   const drones = await getMaintenanceDashboard({
     owner_id: ownerId,
     client_id: 0,
-    threshold_alert: 80,
+    threshold_alert: MAINTENANCE_ALERT_THRESHOLD_PERCENT,
   });
   await sendMaintenanceAlertNotifications(ownerId, drones);
 }

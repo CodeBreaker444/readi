@@ -40,7 +40,7 @@ Hover it to see the conditions, wind and gusts against the drone's limits, rain,
 
 - **Which location:** the mission's own location if you set one, otherwise the selected system's location. If neither has a location, add one to see the weather.
 - **Which limits:** the selected system's drones. Without a drone model, generic limits are used and the badge says so.
-- **Which hour:** the hour starting at the chosen start time, read as local time at the site.
+- **Which hour:** the hour starting at the chosen start time, in your timezone (the same one the rest of the app uses). The details show the time range with the timezone.
 - **How far ahead:** the forecast reaches 16 days. For a time in the past, or further ahead, the badge says so instead.
 
 This is for planning only. It does not stop you from creating the mission.
@@ -138,7 +138,7 @@ No location is selected when you open the tab, and your choice is not kept after
 
 #### Choosing drones
 
-Drones are your active drone components that have a serial number, grouped under their system. Each chip is one system; if a system has more than one drone, the chip shows the count (for example **×2**) and choosing it selects all of them.
+Drones are your active drone components that have a serial number, grouped under their system. A warning icon on a chip, and a note under the drones, mean one or more drones have no model set and use generic limits. Each chip is one system; if a system has more than one drone, the chip shows the count (for example **×2**) and choosing it selects all of them.
 
 - **No location chosen yet:** picking a system selects its drones, and the system's location is used. If that system has no location, you are asked to choose one.
 - **A system supplies the location:** only that system's drones can be chosen. Drones of other systems are greyed out, and a grey note under the drones explains why. Click the chosen system again to deselect it and clear its location; the other systems can then be chosen.
@@ -158,7 +158,11 @@ Each cell is one window (length set by **Slot length**, 1 to 4 hours) with:
 - a weather icon for the conditions
 - a large number: the score out of 100, a cross when a limit is exceeded, or `--` at night
 
-Use **Show** to switch the large number between the overall score, wind, gusts and rain. Hover a cell to see what is limiting it.
+Use **Show** to switch the large number between the overall score, wind, gusts and rain. A window that is not green names what is holding it back (for example **Wind**) right in the cell.
+
+**Click or tap a window** for the full detail: the conditions, the day and time with its timezone, the score, and wind, gusts, rain, rain chance, cloud cover, visibility and temperature next to the limits they were scored against, plus which drone models those limits come from. The **How to read this** button next to the legend explains every color, icon and number.
+
+On a narrow screen (a phone, or a narrow window) the grid shows one day at a time: pick the day from the row of days above it.
 
 | Color | Meaning |
 |---|---|
@@ -167,7 +171,7 @@ Use **Show** to switch the large number between the overall score, wind, gusts a
 | **Red** | No-go: a drone limit is exceeded |
 | **Grey** | Night: outside daylight, never recommended |
 
-The best upcoming window is outlined in violet with a star.
+The best upcoming window is outlined in violet with a star. All times are in your own timezone (shown at the bottom of the grid), even if the location is in another one, and the rows cover the hours that have daylight. A window that has already started, even by a few minutes, is dimmed and is never recommended: at 11:45 the 10:00 to 12:00 window is out, and the next candidate starts at 12:00. The **Retrieved** time next to **Show** says how old the forecast is, for example "5 min ago". The grid keeps itself up to date while the tab is open: windows drop out as they start, and the forecast reloads in the background every hour and when the day changes.
 
 #### Weather icons
 
@@ -191,7 +195,7 @@ A drone that is not waterproof (rain limit 0) is grounded by anything above a tr
 
 #### Limits
 
-Limits belong to the **drone model**, so drones of the same model share them. They start from a manufacturer default; use the gear icon on a drone to set your own: maximum wind, gusts and rain, minimum visibility, and the temperature range.
+Limits belong to the **drone model**, so drones of the same model share them. They start from a manufacturer default; use the gear icon on a system to set your own (if a system has drones of different models, the gear lists each model so you can edit them all): maximum wind, gusts and rain, minimum visibility, and the temperature range.
 
 The forecast is advisory only. Always check official aviation weather before you fly.
 

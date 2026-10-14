@@ -1,6 +1,6 @@
 import { supabase } from '@/backend/database/database';
 import { seedLucProcedureProgressFromSteps } from '@/backend/services/operation/luc-procedure-progress';
-import { assertToolNotInMaintenance, assertToolNotNonOperational } from '@/backend/services/system/maintenance-ticket';
+import { assertToolNotInMaintenance, assertToolNotNonOperational } from '@/backend/services/system/maintenance-ticket-guards';
 import {
     CreateOperationCalendarInput,
     OperationCalendarEvent,
@@ -268,4 +268,4 @@ const deriveEnd = (start: string): string => {
   const d = new Date(start);
   d.setHours(d.getHours() + 1);
   return d.toISOString();
-};
+};

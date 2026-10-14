@@ -1,7 +1,7 @@
 import { Mission, MissionBoardData, MissionStatusCode, UpdateMissionStatusPayload } from '@/config/types/operation';
 import { prisma } from '@/lib/prisma';
 import { autoAbortStaleMissions } from './auto-abort-service';
-import { getToolMaintenanceStatusBatch } from './maintenance-cycle-service';
+import { getToolMaintenanceStatusBatch } from './tool-maintenance-status';
 import { getAdminDecidedMissionIds } from './mission-approval-service';
 import { assertMissionEditable, assertDFlightAuthorized, assertDFlightNotStopped, assertOpmApproved } from './mission-lock';
 import { sendMissionStartedModuleEmail, sendMissionCompletedModuleEmail } from '../settings/module-email-notification-service';

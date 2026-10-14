@@ -1,4 +1,5 @@
-import { endIntervention, getTicketAssignee, startIntervention } from '@/backend/services/system/maintenance-ticket';
+import { endIntervention, startIntervention } from '@/backend/services/system/maintenance-ticket';
+import { getTicketAssignee } from '@/backend/services/system/maintenance-ticket-queries';
 import { userHasSubRole } from '@/lib/auth/api-auth';
 import { requireAuth, requireFeatureAccess } from '@/lib/auth/api-auth';
 import { roleHasPermission } from '@/lib/auth/roles';
