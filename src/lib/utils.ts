@@ -106,6 +106,41 @@ export function nowAsLocalInput(tz: string | null | undefined, offsetHours = 0):
   }).format(d).slice(0, 16).replace(' ', 'T');
 }
 
+/** Formats a UTC instant as "YYYY-MM-DDTHH:mm" wall-clock time in `tz`, for datetime-local inputs. */
+export function utcToLocalInput(iso: string | Date | null | undefined, tz: string | null | undefined): string {
+  if (!iso) return '';
+  const d = typeof iso === 'string' ? new Date(iso) : iso;
+  if (isNaN(d.getTime())) return '';
+  return new Intl.DateTimeFormat('sv', {
+    timeZone: resolveIanaTimezone(tz),
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', hour12: false,
+  }).format(d).slice(0, 16).replace(' ', 'T');
+}
+
+/** Inverse of utcToLocalInput: a "YYYY-MM-DDTHH:mm" wall-clock time in `tz` to a UTC ISO string. */
+export function localInputToUtcIso(value: string | null | undefined, tz: string | null | undefined): string | undefined {
+  if (!value) return undefined;
+  const [date, time = '00:00'] = value.split('T');
+  const [y, m, d] = date.split('-').map(Number);
+  const [h, min] = time.split(':').map(Number);
+  if ([y, m, d, h, min].some(Number.isNaN)) return undefined;
+  const guess = Date.UTC(y, m - 1, d, h, min);
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat('en-US', {
+      timeZone: resolveIanaTimezone(tz),
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', second: '2-digit',
+      hourCycle: 'h23',
+    }).formatToParts(new Date(guess)).map((p) => [p.type, p.value]),
+  );
+  const renderedAsUtc = Date.UTC(
+    Number(parts.year), Number(parts.month) - 1, Number(parts.day),
+    Number(parts.hour), Number(parts.minute), Number(parts.second),
+  );
+  return new Date(guess - (renderedAsUtc - guess)).toISOString();
+}
+
 /**
  * Converts a calendar date (as picked in the user's local timezone) to the UTC
  * instant of that date's midnight (or 23:59:59.999) boundary, so a DB range

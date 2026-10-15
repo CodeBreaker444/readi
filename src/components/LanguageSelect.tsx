@@ -51,14 +51,13 @@ export function LanguageSelect({ isDark }: Props) {
         type="button"
         onClick={() => setOpen((o) => !o)}
         title={t('topbar.language')}
-        className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg border text-[12px] font-medium transition-colors ${
+        className={`flex items-center gap-1 px-1.5 py-1.5 rounded-lg border text-[12px] font-medium transition-colors ${
           isDark
             ? 'bg-slate-800/80 border-slate-700 text-slate-300 hover:bg-slate-700 hover:text-white'
             : 'bg-gray-50/80 border-gray-200 text-gray-600 hover:bg-gray-100 hover:text-gray-900'
         }`}
       >
         <FlagImage countryCode={current.countryCode} />
-        <span className="hidden sm:inline">{current.label}</span>
         <ChevronDown
           size={11}
           className={`transition-transform ${open ? 'rotate-180' : ''} ${isDark ? 'text-slate-500' : 'text-gray-400'}`}

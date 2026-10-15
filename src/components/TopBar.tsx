@@ -191,7 +191,7 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData, loading 
           <button
             type="button"
             onClick={() => { if (!isChatRestricted) setShowSearch(true); }}
-            className={`group relative hidden sm:flex items-center gap-2.5 px-4 py-2 rounded-xl text-sm transition-all duration-200 w-60 ${isDark
+            className={`group relative hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm transition-all duration-200 w-48 min-w-0 ${isDark
               ? 'bg-slate-800/80 text-slate-400 hover:text-slate-300 hover:bg-slate-800'
               : 'bg-gray-50/80 text-gray-400 hover:text-gray-500 hover:bg-gray-100/80'
             } ${isChatRestricted ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'}`}
@@ -214,24 +214,24 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData, loading 
             <div className={`relative flex items-center justify-center w-5 h-5 rounded-md ${isDark ? 'bg-violet-500/10 group-hover:bg-violet-500/15' : 'bg-violet-50 group-hover:bg-violet-100/80'} transition-colors duration-200`}>
               <Search size={12} className={`shrink-0 transition-colors duration-200 ${isDark ? 'text-violet-400' : 'text-violet-500'}`} />
             </div>
-            <span className="relative flex-1 text-left text-[13px] tracking-wide">{t('topbar.askAnything')}</span>
+            <span className="relative flex-1 min-w-0 truncate text-left text-[12px]">{t('topbar.askAnything')}</span>
             {isChatRestricted ? (
               <span className={`relative inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-semibold ${isDark ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30' : 'bg-amber-50 text-amber-600 border border-amber-200'}`}>
                 {t('topbar.comingSoon')}
               </span>
             ) : (
-              <kbd className={`relative inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[10px] font-medium transition-colors duration-200 ${isDark ? 'bg-slate-700/60 text-slate-500 group-hover:bg-slate-700 group-hover:text-slate-400 border border-slate-600/50' : 'bg-white/80 text-gray-400 group-hover:bg-white group-hover:text-gray-500 border border-gray-200/80 shadow-sm'}`}>
+              <kbd className={`relative inline-flex shrink-0 items-center gap-0.5 px-1 py-0.5 rounded-md text-[9px] font-medium whitespace-nowrap transition-colors duration-200 ${isDark ? 'bg-slate-700/60 text-slate-500 group-hover:bg-slate-700 group-hover:text-slate-400 border border-slate-600/50' : 'bg-white/80 text-gray-400 group-hover:bg-white group-hover:text-gray-500 border border-gray-200/80 shadow-sm'}`}>
                 {isMac ? <><span className="text-[11px]">⌘</span>K</> : 'Ctrl K'}
               </kbd>
             )}
           </button>
 
           <div
-            className={`hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium ${isDark ? 'bg-slate-800/80 text-slate-300' : 'bg-gray-50 text-gray-600'}`}
+            className={`hidden sm:flex items-center gap-1 px-1.5 py-1.5 rounded-lg text-[11px] font-medium max-w-28 ${isDark ? 'bg-slate-800/80 text-slate-300' : 'bg-gray-50 text-gray-600'}`}
             title={timezone}
           >
-            <Globe size={14} className="shrink-0" />
-            <span className="whitespace-nowrap">{timezone}</span>
+            <Globe size={12} className="shrink-0" />
+            <span className="truncate">{timezone}</span>
           </div>
 
           <LanguageSelect isDark={isDark} />
@@ -256,7 +256,7 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData, loading 
           </button>
 
 
-          <NotificationDropdown isDark={isDark} />
+          {userData?.role !== 'CLIENT' && <NotificationDropdown isDark={isDark} />}
         </div>
       </div>
 

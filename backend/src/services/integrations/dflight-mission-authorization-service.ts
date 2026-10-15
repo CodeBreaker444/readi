@@ -279,9 +279,13 @@ export async function createAndSubmitMissionAuthorization(
         dflight_trajectory_data: true,
         dflight_mission_id: true,
         dflight_tech_version: true,
+        dflight_skip_authorization: true,
       },
     });
     if (!mission) return { outcome: 'error', message: 'Mission not found' };
+    if (mission.dflight_skip_authorization) {
+      return { outcome: 'skipped', message: 'D-Flight authorization was skipped for this mission', silent: true };
+    }
 
     // Already on D-Flight: update that record in place rather than creating a duplicate.
     const existing = mission.dflight_mission_id && mission.dflight_tech_version

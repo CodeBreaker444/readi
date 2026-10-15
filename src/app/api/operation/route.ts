@@ -61,6 +61,7 @@ const createOperationSchema = z.object({
   recurrent_days_of_week: z.array(z.number().int().min(0).max(6)).nullable().optional(),
   recurrent_end_date: z.string().nullable().optional(),
   uspace_id: z.string().nullable().optional(),
+  dflight_skip_authorization: z.boolean().optional(),
   dflight_trajectory_data: z.object({
     type: z.literal('circle'),
     center: z.object({ lat: z.number(), lng: z.number() }),
@@ -119,6 +120,13 @@ export async function POST(req: NextRequest) {
         { status: 400 },
       );
     }
+
+    // Companies without D-Flight always skip; D-Flight companies skip only when the user ticked the box.
+    const owner = await prisma.owner.findUnique({
+      where: { owner_id: ownerId },
+      select: { d_flight_enabled: true },
+    });
+    validated.dflight_skip_authorization = !owner?.d_flight_enabled || validated.dflight_skip_authorization === true;
 
     if (validated.fk_tool_id) {
       try {

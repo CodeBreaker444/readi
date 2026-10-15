@@ -161,7 +161,8 @@ export async function getMissionBoard(
               { scheduled_start: { gte: todayStart, lte: todayEnd } },
             ],
           },
-          ...(dflightGateActive ? [{ dflight_flight_authorisation_status: 'ACCEPTED' }] : []),
+          // Skipped missions bypass the D-Flight gate.
+          ...(dflightGateActive ? [{ OR: [{ dflight_skip_authorization: true }, { dflight_flight_authorisation_status: 'ACCEPTED' }] }] : []),
           // Pilot-created missions only appear once an OPM approved them.
           { OR: [{ opm_approval_status: null }, { opm_approval_status: 'APPROVED' }] },
         ],
@@ -357,6 +358,7 @@ export async function updateMissionStatus(
     select: {
       status_name: true,
       dflight_mission_id: true,
+      dflight_skip_authorization: true,
       dflight_flight_authorisation_status: true,
       dflight_mission_status: true,
       dflight_flight_clearance_status: true,
@@ -370,7 +372,7 @@ export async function updateMissionStatus(
 
   if (payload.workflow_mission_status === '_START') {
     assertDFlightAuthorized(
-      current?.dflight_mission_id,
+      current?.dflight_skip_authorization ? null : current?.dflight_mission_id,
       current?.dflight_flight_authorisation_status,
       current?.dflight_mission_status,
       current?.dflight_flight_clearance_status,
@@ -379,7 +381,7 @@ export async function updateMissionStatus(
     updateFields = { fk_mission_status_id: statusId, status_name: 'IN_PROGRESS', actual_start: new Date() };
   } else if (payload.workflow_mission_status === '_END') {
     assertDFlightNotStopped(
-      current?.dflight_mission_id,
+      current?.dflight_skip_authorization ? null : current?.dflight_mission_id,
       current?.dflight_flight_authorisation_status,
       current?.dflight_mission_status,
       current?.dflight_flight_clearance_status,
@@ -388,7 +390,7 @@ export async function updateMissionStatus(
     updateFields = { fk_mission_status_id: statusId, status_name: 'COMPLETED', actual_end: new Date() };
   } else {
     assertDFlightNotStopped(
-      current?.dflight_mission_id,
+      current?.dflight_skip_authorization ? null : current?.dflight_mission_id,
       current?.dflight_flight_authorisation_status,
       current?.dflight_mission_status,
       current?.dflight_flight_clearance_status,

@@ -307,7 +307,7 @@ export const getOperationColumns = (t: TFunction, isDark = false, timezone = 'Eu
           dflightMissionId={row.original.dflight_mission_id}
           authorisationStatus={row.original.dflight_flight_authorisation_status}
           opmStatus={row.original.opm_approval_status}
-          dFlightEnabled={!!(table.options.meta as any)?.dFlightEnabled}
+          dFlightEnabled={!!(table.options.meta as any)?.dFlightEnabled && !row.original.dflight_skip_authorization}
           isDark={isDark}
         />
       </div>
@@ -328,6 +328,7 @@ export const getOperationColumns = (t: TFunction, isDark = false, timezone = 'Eu
       const isAborted = op.status_name === 'ABORTED';
       const isCancelled = op.status_name === 'CANCELLED';
       const needsDFlightAuth = !!meta.dFlightEnabled
+        && !op.dflight_skip_authorization
         && !op.is_imported
         && !isAborted && !isCancelled
         && (!op.opm_approval_status || op.opm_approval_status === 'APPROVED')

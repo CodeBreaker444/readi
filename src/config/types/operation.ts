@@ -61,6 +61,7 @@ export interface Operation {
   } | null;
   dflight_mission_id?: string | null;
   dflight_flight_authorisation_status?: string | null;
+  dflight_skip_authorization?: boolean | null;
   opm_approval_status?: 'PENDING' | 'APPROVED' | 'DENIED' | null;
   opm_approval_department?: string | null;
   opm_approval_note?: string | null;
@@ -111,6 +112,7 @@ export type CreateOperationSchema = {
   recurrent_days_of_week?: number[] | null;
   recurrent_end_date?: string | null;
   uspace_id?: string | null;
+  dflight_skip_authorization?: boolean;
   dflight_trajectory_data?: DFlightTrajectoryCircle | null;
 };
 export type UpdateOperationSchema = {
@@ -137,6 +139,7 @@ export type UpdateOperationSchema = {
   op_type?: string | null;
   mission_group_label?: string | null;
   uspace_id?: string | null;
+  dflight_skip_authorization?: boolean;
   dflight_trajectory_data?: DFlightTrajectoryCircle | null;
 };
 export interface OperationAttachment {
@@ -271,6 +274,7 @@ export interface Mission {
   dflight_mission_status?: string | null;
   dflight_flight_authorisation_status?: string | null;
   dflight_flight_clearance_status?: string | null;
+  dflight_skip_authorization?: boolean | null;
   opm_approval_status?: 'PENDING' | 'APPROVED' | 'DENIED' | null;
   opm_approval_decided_at?: string | null;
   opm_approval_decided_by_admin?: boolean;

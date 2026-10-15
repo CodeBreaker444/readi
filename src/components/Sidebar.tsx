@@ -146,6 +146,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
       subItems: [
         { name: t('sidebar.plannedMissionLogbook'), href: '/logbooks/mission-planning-logbook' },
         { name: t('sidebar.flightLogbook'), href: '/logbooks/operation-logbook' },
+        { name: t('sidebar.eventLogbook'), href: '/logbooks/event-logbook' },
         { name: t('sidebar.batteryLogbook'), href: '/logbooks/battery-logbook' },
       ]
     },
@@ -292,6 +293,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isDark, role, isCollapsed, onToggleCo
   const clientPortalItems: SubNavItem[] = isClientRole ? [
     { name: t('clientPortal.dashboard'), href: '/client/dashboard', icon: HiOutlineHome },
     { name: t('clientPortal.missions'), href: '/client/missions', icon: HiOutlineClipboardList },
+    { name: t('logbooks.eventLogbook.title'), href: '/client/events', icon: HiOutlineBookOpen },
     { name: t('clientPortal.analytics', 'Analytics'), href: '/client/analytics', icon: HiOutlineChartBar },
     { name: t('clientPortal.requestFlight', 'Request Flight'), href: '/client/request-flight', icon: MdFlightTakeoff },
   ] : [];
