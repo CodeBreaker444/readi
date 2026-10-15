@@ -8,7 +8,6 @@ import { NextRequest, NextResponse } from 'next/server';
 
 type Params = { params: Promise<{ clientId: string }> };
 
-/** Replaces the default notification contacts of a client (an empty list clears them). */
 export async function PUT(request: NextRequest, { params }: Params) {
   try {
     const { session, error } = await requireFullAccessRole();
