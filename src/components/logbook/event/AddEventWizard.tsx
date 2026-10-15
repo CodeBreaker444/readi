@@ -3,6 +3,7 @@
 import LocationPicker from '@/components/system/LocationPicker';
 import { droneItem, PagedSelect, type PagedSelectItem } from './PagedSelect';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -20,6 +21,7 @@ import {
   type EventAttachmentInput,
   type EventDroneOption,
   type EventMissionOption,
+  type EventNotifyContact,
   type EventType,
 } from '@/config/types/event-logbook';
 import { cn } from '@/lib/utils';
@@ -34,6 +36,9 @@ interface Props {
   onOpenChange: (open: boolean) => void;
   drones: EventDroneOption[];
   missions: EventMissionOption[];
+  contacts: EventNotifyContact[];
+  /** Default contact ids per client id, used to pre-fill the recipients. */
+  defaultContacts: Record<number, number[]>;
   isDark: boolean;
   onCreated: (eventId: number) => void;
 }
@@ -51,8 +56,12 @@ function toLocalInputValue(date: Date): string {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
-export function AddEventWizard({ open, onOpenChange, drones, missions, isDark, onCreated }: Props) {
+export function AddEventWizard({ open, onOpenChange, drones, missions, contacts, defaultContacts, isDark, onCreated }: Props) {
   const { t } = useTranslation();
+  const [notifyIds, setNotifyIds] = useState<number[]>([]);
+  // Once the pilot edits the recipients, changing the mission/drone no longer overwrites them.
+  const [notifyTouched, setNotifyTouched] = useState(false);
+  const [notifySearch, setNotifySearch] = useState('');
   const [step, setStep] = useState(1);
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
@@ -84,6 +93,9 @@ export function AddEventWizard({ open, onOpenChange, drones, missions, isDark, o
     setTakeoff(toLocalInputValue(new Date()));
     setNotes('');
     setFiles([]);
+    setNotifyIds([]);
+    setNotifyTouched(false);
+    setNotifySearch('');
   }, []);
 
   useEffect(() => {
@@ -115,6 +127,24 @@ export function AddEventWizard({ open, onOpenChange, drones, missions, isDark, o
   const selectedMission = toolMissions.find((m) => String(m.pilot_mission_id) === missionId);
   // Same rule as the server: the mission's client, else the system's assigned client.
   const reportClient = selectedMission?.client ?? selectedDrone?.assigned_client ?? null;
+  const reportClientId = reportClient?.client_id ?? null;
+
+  // Pre-fill the recipients with the client's default contacts.
+  useEffect(() => {
+    if (notifyTouched) return;
+    const known = new Set(contacts.map((c) => c.contact_id));
+    setNotifyIds(reportClientId ? (defaultContacts[reportClientId] ?? []).filter((id) => known.has(id)) : []);
+  }, [reportClientId, defaultContacts, contacts, notifyTouched]);
+
+  const toggleNotify = (id: number, checked: boolean) => {
+    setNotifyTouched(true);
+    setNotifyIds((cur) => (checked ? [...new Set([...cur, id])] : cur.filter((x) => x !== id)));
+  };
+  const notifyContacts = useMemo(() => {
+    const q = notifySearch.trim().toLowerCase();
+    if (!q) return contacts;
+    return contacts.filter((c) => [c.name, c.company ?? '', c.email].join(' ').toLowerCase().includes(q));
+  }, [contacts, notifySearch]);
 
   const latNum = Number(lat);
   const lngNum = Number(lng);
@@ -179,6 +209,7 @@ export function AddEventWizard({ open, onOpenChange, drones, missions, isDark, o
         longitude: lngNum,
         location_label: locationLabel || null,
         notes: notes.trim() || null,
+        notify_contact_ids: notifyIds,
         attachments,
       });
       setDone(true);
@@ -460,6 +491,38 @@ export function AddEventWizard({ open, onOpenChange, drones, missions, isDark, o
                     </div>
                   ) : (
                     <span className="text-slate-500 dark:text-slate-400">{w('noClient')}</span>
+                  )}
+                </dd>
+                <dt className="text-slate-500 dark:text-slate-400">{w('notify')}</dt>
+                <dd>
+                  {contacts.length === 0 ? (
+                    <span className="text-xs text-slate-500 dark:text-slate-400">{w('notifyNoContacts')}</span>
+                  ) : (
+                    <div className="space-y-1.5 rounded-lg border border-slate-200 p-2.5 dark:border-slate-700">
+                      <p className="text-xs text-slate-500 dark:text-slate-400">{w('notifyHint', { count: notifyIds.length })}</p>
+                      {contacts.length > 6 && (
+                        <Input
+                          className="h-8 border-slate-200 bg-white text-xs text-slate-800 dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-200"
+                          value={notifySearch}
+                          placeholder={w('notifySearch')}
+                          onChange={(e) => setNotifySearch(e.target.value)}
+                        />
+                      )}
+                      <ul className="max-h-40 space-y-0.5 overflow-y-auto">
+                        {notifyContacts.map((c) => (
+                          <li key={c.contact_id}>
+                            <label className="flex cursor-pointer items-center gap-2 rounded px-1 py-0.5 text-sm hover:bg-slate-100 dark:hover:bg-slate-800">
+                              <Checkbox checked={notifyIds.includes(c.contact_id)} onCheckedChange={(v) => toggleNotify(c.contact_id, v === true)} />
+                              <span className="min-w-0 flex-1 truncate">
+                                {c.name}
+                                {c.company && <span className="text-xs text-slate-500 dark:text-slate-400"> · {c.company}</span>}
+                                <span className="text-xs text-slate-500 dark:text-slate-400"> · {c.email}</span>
+                              </span>
+                            </label>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
                   )}
                 </dd>
               </dl>

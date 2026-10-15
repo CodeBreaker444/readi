@@ -265,6 +265,8 @@ export async function createAttachmentUploadUrl(
   return { upload_url, file_key };
 }
 
+export const MAX_NOTIFY_RECIPIENTS = 20;
+
 export const createEventSchema = z.object({
   tool_id: z.number().int().positive(),
   mission_id: z.number().int().positive().nullable().optional(),
@@ -274,6 +276,8 @@ export const createEventSchema = z.object({
   longitude: z.number().min(-180).max(180),
   location_label: z.string().max(500).nullable().optional(),
   notes: z.string().max(500).nullable().optional(),
+  /** Contact-book entries emailed about this event. */
+  notify_contact_ids: z.array(z.number().int().positive()).max(MAX_NOTIFY_RECIPIENTS).default([]),
   attachments: z
     .array(
       z.object({
@@ -327,6 +331,14 @@ export async function createEvent(user: SessionUser, input: CreateEventInput): P
     clientId = tool?.assigned_client_id ?? null;
   }
 
+  // Contacts must belong to the same company; their addresses are snapshotted on the event.
+  const contactIds = [...new Set(input.notify_contact_ids)];
+  const contacts = contactIds.length
+    ? await prisma.event_contact.findMany({ where: { fk_owner_id: user.ownerId, contact_id: { in: contactIds } }, select: { email: true } })
+    : [];
+  if (contacts.length !== contactIds.length) throw new EventLogbookError('Contact not found', 404);
+  const notifyEmails = [...new Set(contacts.map((c) => c.email.toLowerCase()))];
+
   return prisma.pilot_event.create({
     data: {
       fk_owner_id: user.ownerId,
@@ -340,6 +352,7 @@ export async function createEvent(user: SessionUser, input: CreateEventInput): P
       longitude: input.longitude,
       location_label: input.location_label ?? null,
       notes: input.notes?.trim() || null,
+      notify_emails: notifyEmails,
       pilot_event_attachment: {
         create: input.attachments.map((a) => ({
           file_name: a.file_name,

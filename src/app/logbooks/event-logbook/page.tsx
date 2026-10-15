@@ -14,7 +14,7 @@ import { EventWebhookSettings } from '@/components/logbook/event/EventWebhookSet
 import { eventUi } from '@/components/logbook/event/event-ui';
 import { Button } from '@/components/ui/button';
 import { useTheme } from '@/components/useTheme';
-import type { EventDroneOption, EventLogbookItem, EventMissionOption } from '@/config/types/event-logbook';
+import type { EventDroneOption, EventLogbookItem, EventMissionOption, EventNotifyContact } from '@/config/types/event-logbook';
 import { cn } from '@/lib/utils';
 import axios from 'axios';
 import { Loader2, Mail, Plus, RefreshCw, Settings } from 'lucide-react';
@@ -30,6 +30,8 @@ export default function EventLogbookPage() {
 
   const [drones, setDrones] = useState<EventDroneOption[]>([]);
   const [missions, setMissions] = useState<EventMissionOption[]>([]);
+  const [contacts, setContacts] = useState<EventNotifyContact[]>([]);
+  const [defaultContacts, setDefaultContacts] = useState<Record<number, number[]>>({});
   const [canReport, setCanReport] = useState(false);
   const [canConfigure, setCanConfigure] = useState(false);
   const [scoped, setScoped] = useState(true);
@@ -70,6 +72,8 @@ export default function EventLogbookPage() {
       const res = await axios.get('/api/logbooks/event/options');
       setDrones(res.data.drones ?? []);
       setMissions(res.data.missions ?? []);
+      setContacts(res.data.contacts ?? []);
+      setDefaultContacts(res.data.default_contacts ?? {});
       setCanReport(!!res.data.can_report);
       setCanConfigure(!!res.data.can_configure_webhooks);
       setScoped(!!res.data.scoped);
@@ -160,6 +164,8 @@ export default function EventLogbookPage() {
         onOpenChange={setWizardOpen}
         drones={drones}
         missions={missions}
+        contacts={contacts}
+        defaultContacts={defaultContacts}
         isDark={isDark}
         onCreated={(eventId) => {
           setFilters(EMPTY_EVENT_FILTERS);
@@ -170,7 +176,14 @@ export default function EventLogbookPage() {
       />
 
       {canConfigure && <EventWebhookSettings open={webhooksOpen} onOpenChange={setWebhooksOpen} />}
-      {canConfigure && <EventNotificationSettings open={notificationsOpen} onOpenChange={setNotificationsOpen} />}
+      {canConfigure && <EventNotificationSettings
+          open={notificationsOpen}
+          onOpenChange={(v) => {
+            setNotificationsOpen(v);
+            // Contacts/defaults may have changed; refresh what the report wizard pre-selects.
+            if (!v) fetchOptions();
+          }}
+        />}
     </div>
   );
 }

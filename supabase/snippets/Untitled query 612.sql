@@ -1,1 +1,2 @@
-DELETE FROM notification WHERE notification_type = 'MAINTENANCE' AND created_at::date = CURRENT_DATE;
+alter table public.owner
+update daily_email_limit = 150;

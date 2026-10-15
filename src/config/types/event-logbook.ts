@@ -144,3 +144,11 @@ export function droneComponentLine(d: { drone_components?: EventDroneComponent[]
 export function formatDroneLabel(d: Pick<EventDroneOption, 'tool_id' | 'tool_name' | 'tool_code'>): string {
   return d.tool_name?.trim() || d.tool_code?.trim() || `#${d.tool_id}`;
 }
+
+/** Contact-book entry that can be picked as an email recipient of a reported event. */
+export interface EventNotifyContact {
+  contact_id: number;
+  name: string;
+  company: string | null;
+  email: string;
+}

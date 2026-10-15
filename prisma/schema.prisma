@@ -679,41 +679,41 @@ model checklist {
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model client {
-  client_id                Int                        @id @default(autoincrement())
-  fk_owner_id              Int
-  client_code              String?                    @db.VarChar(50)
-  client_name              String                     @db.VarChar(255)
-  client_legal_name        String?                    @db.VarChar(255)
-  client_address           String?
-  client_city              String?                    @db.VarChar(100)
-  client_state             String?                    @db.VarChar(100)
-  client_postal_code       String?                    @db.VarChar(20)
-  fk_country_id            Int?
-  client_phone             String?                    @db.VarChar(50)
-  client_email             String?                    @db.VarChar(255)
-  client_website           String?                    @db.VarChar(255)
-  client_logo              String?
-  client_active            String?                    @default("Y") @db.Char(1)
-  client_unique_code       String?                    @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  contract_start_date      DateTime?                  @db.Date
-  contract_end_date        DateTime?                  @db.Date
-  payment_terms            String?                    @db.VarChar(100)
-  credit_limit             Decimal?                   @db.Decimal(15, 2)
-  created_at               DateTime?                  @default(now()) @db.Timestamp(6)
-  updated_at               DateTime?                  @default(now()) @db.Timestamp(6)
-  username                 String?                    @db.VarChar(100)
-  calendar_shift           calendar_shift[]
-  countries                countries?                 @relation(fields: [fk_country_id], references: [country_id], onDelete: NoAction, onUpdate: NoAction)
-  owner                    owner                      @relation(fields: [fk_owner_id], references: [owner_id], onDelete: Cascade, onUpdate: NoAction)
-  evaluation               evaluation[]
-  event_email_notification event_email_notification[]
-  event_webhook_config     event_webhook_config[]
-  pilot_event              pilot_event[]
-  pilot_mission            pilot_mission[]
-  planning                 planning[]
-  planning_logbook         planning_logbook[]
-  tool                     tool[]
-  users                    public_users[]
+  client_id             Int                     @id @default(autoincrement())
+  fk_owner_id           Int
+  client_code           String?                 @db.VarChar(50)
+  client_name           String                  @db.VarChar(255)
+  client_legal_name     String?                 @db.VarChar(255)
+  client_address        String?
+  client_city           String?                 @db.VarChar(100)
+  client_state          String?                 @db.VarChar(100)
+  client_postal_code    String?                 @db.VarChar(20)
+  fk_country_id         Int?
+  client_phone          String?                 @db.VarChar(50)
+  client_email          String?                 @db.VarChar(255)
+  client_website        String?                 @db.VarChar(255)
+  client_logo           String?
+  client_active         String?                 @default("Y") @db.Char(1)
+  client_unique_code    String?                 @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  contract_start_date   DateTime?               @db.Date
+  contract_end_date     DateTime?               @db.Date
+  payment_terms         String?                 @db.VarChar(100)
+  credit_limit          Decimal?                @db.Decimal(15, 2)
+  created_at            DateTime?               @default(now()) @db.Timestamp(6)
+  updated_at            DateTime?               @default(now()) @db.Timestamp(6)
+  username              String?                 @db.VarChar(100)
+  calendar_shift        calendar_shift[]
+  countries             countries?              @relation(fields: [fk_country_id], references: [country_id], onDelete: NoAction, onUpdate: NoAction)
+  owner                 owner                   @relation(fields: [fk_owner_id], references: [owner_id], onDelete: Cascade, onUpdate: NoAction)
+  evaluation            evaluation[]
+  event_default_contact event_default_contact[]
+  event_webhook_config  event_webhook_config[]
+  pilot_event           pilot_event[]
+  pilot_mission         pilot_mission[]
+  planning              planning[]
+  planning_logbook      planning_logbook[]
+  tool                  tool[]
+  users                 public_users[]
 
   @@unique([fk_owner_id, client_code])
   @@index([client_active], map: "idx_client_active")
@@ -1188,36 +1188,34 @@ model evaluation_file {
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 /// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
 model event_contact {
-  contact_id  Int      @id @default(autoincrement())
-  fk_owner_id Int
-  name        String   @db.VarChar(100)
-  company     String?  @db.VarChar(150)
-  notes       String?
-  email       String   @db.VarChar(255)
-  created_by  Int?
-  created_at  DateTime @default(now()) @db.Timestamp(6)
-  updated_at  DateTime @default(now()) @db.Timestamp(6)
-  owner       owner    @relation(fields: [fk_owner_id], references: [owner_id], onDelete: Cascade, onUpdate: NoAction)
+  contact_id            Int                     @id @default(autoincrement())
+  fk_owner_id           Int
+  name                  String                  @db.VarChar(100)
+  company               String?                 @db.VarChar(150)
+  notes                 String?
+  email                 String                  @db.VarChar(255)
+  created_by            Int?
+  created_at            DateTime                @default(now()) @db.Timestamp(6)
+  updated_at            DateTime                @default(now()) @db.Timestamp(6)
+  owner                 owner                   @relation(fields: [fk_owner_id], references: [owner_id], onDelete: Cascade, onUpdate: NoAction)
+  event_default_contact event_default_contact[]
 
   @@schema("public")
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
-model event_email_notification {
-  notification_id  Int      @id @default(autoincrement())
-  fk_owner_id      Int
-  fk_client_id     Int?
-  name             String   @db.VarChar(100)
-  recipient_emails String[] @default([])
-  event_types      String[] @default([])
-  is_active        Boolean  @default(true)
-  created_by       Int?
-  created_at       DateTime @default(now()) @db.Timestamp(6)
-  updated_at       DateTime @default(now()) @db.Timestamp(6)
-  client           client?  @relation(fields: [fk_client_id], references: [client_id], onDelete: Cascade, onUpdate: NoAction)
-  owner            owner    @relation(fields: [fk_owner_id], references: [owner_id], onDelete: Cascade, onUpdate: NoAction)
+model event_default_contact {
+  default_id    Int           @id @default(autoincrement())
+  fk_owner_id   Int
+  fk_client_id  Int
+  fk_contact_id Int
+  created_at    DateTime      @default(now()) @db.Timestamp(6)
+  client        client        @relation(fields: [fk_client_id], references: [client_id], onDelete: Cascade, onUpdate: NoAction)
+  event_contact event_contact @relation(fields: [fk_contact_id], references: [contact_id], onDelete: Cascade, onUpdate: NoAction)
+  owner         owner         @relation(fields: [fk_owner_id], references: [owner_id], onDelete: Cascade, onUpdate: NoAction)
 
-  @@index([fk_owner_id, is_active], map: "idx_event_email_notification_owner")
+  @@unique([fk_client_id, fk_contact_id])
+  @@index([fk_owner_id, fk_client_id], map: "idx_event_default_contact_client")
   @@schema("public")
 }
 
@@ -1815,7 +1813,7 @@ model owner {
   emergency_response_plan            emergency_response_plan[]
   evaluation                         evaluation[]
   event_contact                      event_contact[]
-  event_email_notification           event_email_notification[]
+  event_default_contact              event_default_contact[]
   event_webhook_config               event_webhook_config[]
   flight_requests                    flight_requests[]
   kanban                             kanban[]
@@ -1938,6 +1936,7 @@ model pilot_event {
   location_label         String?                  @db.VarChar(500)
   notes                  String?                  @db.VarChar(500)
   created_at             DateTime                 @default(now()) @db.Timestamp(6)
+  notify_emails          String[]                 @default([])
   event_webhook_delivery event_webhook_delivery[]
   client                 client?                  @relation(fields: [fk_client_id], references: [client_id], onUpdate: NoAction)
   pilot_mission          pilot_mission?           @relation(fields: [fk_mission_id], references: [pilot_mission_id], onUpdate: NoAction)

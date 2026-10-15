@@ -90,10 +90,12 @@ Verify the `X-Readi-Signature` header: `sha256=` + HMAC-SHA256 (hex) of `"<X-Rea
 
 Admins, OPMs and super admins also see a **mail icon** next to the webhook settings icon. It opens two tabs:
 
-- **Notifications** – each notification has a name, a **client** (one client or all clients, resolved the same way as for webhooks), optional **event types** (none selected = every type), an active switch and one or more **recipients**. Recipients can be typed (press Enter or comma to add each address) and/or ticked from the contact book. A notification holds up to 20 recipients. Use the send icon to deliver a test email to its recipients.
-- **Contact book** – the company's reusable recipients. Each contact has a **name**, an **email** (unique per company), and an optional **company** and **notes**. Contacts can be searched, edited and deleted. Deleting a contact does not remove its address from notifications that already include it.
+- **Contact book** – the company's reusable recipients. Each contact has a **name**, an **email** (unique per company), and an optional **company** and **notes**. Contacts can be searched, edited, deleted and sent a test email. Deleting a contact also removes it from all client defaults.
+- **Default notifications** – pick a **client** from the dropdown and tick the contacts that should be emailed by default for that client. Defaults are pre-selected whenever an event is reported for that client.
 
-When a pilot submits an event, every active notification matching its client and type sends an email with the event type, report and takeoff times, pilot, drone, client, mission, location, notes and attachment download links (valid for 7 days). A recipient covered by several matching notifications receives a single email. Each send (including test emails) counts towards the company's daily email limit; once it is reached, event emails are skipped until the counter resets. Email failures never block the pilot's report.
+Notifications are **per event**, not per event type: on the last step of **Add Report Event**, the **Notify** section lists the contact book with the client's defaults already ticked. The pilot can add or remove contacts for that event (up to 20); the selection is saved with the event. Changing the mission or system before touching the selection re-applies the new client's defaults.
+
+When the event is submitted, the selected contacts receive one email with the event type, report and takeoff times, pilot, drone, client, mission, location, notes and attachment download links (valid for 7 days). Each send counts towards the company's daily email limit; once it is reached, event emails are skipped until the counter resets. Email failures never block the pilot's report.
 
 ---
 
