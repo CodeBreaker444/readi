@@ -2865,6 +2865,7 @@
         "locationAndPhotos": "Event location & photos",
         "locationHintPlan": "The highlighted area is the mission plan. Tap the map or search to set the exact event location.",
         "notifyNone": "No recipients",
+        "setupSaved": "Mission setup saved",
         "attachmentsHint": "Optional. Add photos, videos or PDFs that show what happened.",
         "notifyMore": "{{count}} more — type in the search box to narrow down",
         "status": { "PLANNED": "Scheduled", "IN_PROGRESS": "In Progress", "COMPLETED": "Completed", "CANCELLED": "Cancelled", "ABORTED": "Aborted" },

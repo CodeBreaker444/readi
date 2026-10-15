@@ -17,7 +17,7 @@ import { useTheme } from '@/components/useTheme';
 import type { EventDroneOption, EventLogbookItem, EventMissionOption, EventNotifyContact } from '@/config/types/event-logbook';
 import { cn } from '@/lib/utils';
 import axios from 'axios';
-import { Loader2, Mail, Plus, RefreshCw, Settings } from 'lucide-react';
+import { Loader2, Mail, Plus, RefreshCw, Settings, SlidersHorizontal } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -40,6 +40,7 @@ export default function EventLogbookPage() {
   const [data, setData] = useState<EventLogbookItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [wizardOpen, setWizardOpen] = useState(false);
+  const [wizardMode, setWizardMode] = useState<'event' | 'setup'>('event');
   const [webhooksOpen, setWebhooksOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [highlightId, setHighlightId] = useState<number | null>(null);
@@ -137,7 +138,28 @@ export default function EventLogbookPage() {
               {e('refresh')}
             </Button>
             {canReport && (
-              <Button size="sm" className="h-8 gap-1.5 bg-violet-600 text-xs text-white hover:bg-violet-700" onClick={() => setWizardOpen(true)}>
+              <Button
+                variant="outline"
+                size="sm"
+                className={cn('h-8 gap-1.5 text-xs', ui.outlineBtn)}
+                onClick={() => {
+                  setWizardMode('setup');
+                  setWizardOpen(true);
+                }}
+              >
+                <SlidersHorizontal className="h-3.5 w-3.5" />
+                {t('logbooks.eventLogbook.wizard.setupTitle')}
+              </Button>
+            )}
+            {canReport && (
+              <Button
+                size="sm"
+                className="h-8 gap-1.5 bg-violet-600 text-xs text-white hover:bg-violet-700"
+                onClick={() => {
+                  setWizardMode('event');
+                  setWizardOpen(true);
+                }}
+              >
                 <Plus className="h-3.5 w-3.5" />
                 {e('addEvent')}
               </Button>
@@ -161,6 +183,7 @@ export default function EventLogbookPage() {
 
       <AddEventWizard
         open={wizardOpen}
+        mode={wizardMode}
         onOpenChange={setWizardOpen}
         drones={drones}
         missions={missions}

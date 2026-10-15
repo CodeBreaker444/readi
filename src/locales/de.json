@@ -2855,6 +2855,7 @@
         "locationAndPhotos": "Ereignisort & Fotos",
         "locationHintPlan": "Der hervorgehobene Bereich ist der Missionsplan. Tippen Sie auf die Karte oder suchen Sie, um den genauen Ort festzulegen.",
         "notifyNone": "Keine Empfänger",
+        "setupSaved": "Missions-Setup gespeichert",
         "attachmentsHint": "Optional. Fügen Sie Fotos, Videos oder PDFs hinzu, die zeigen, was passiert ist.",
         "notifyMore": "{{count}} weitere – Suchfeld nutzen, um einzugrenzen",
         "status": { "PLANNED": "Geplant", "IN_PROGRESS": "In Bearbeitung", "COMPLETED": "Abgeschlossen", "CANCELLED": "Abgebrochen", "ABORTED": "Abgebrochen (Abbruch)" },

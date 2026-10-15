@@ -2861,6 +2861,7 @@
         "locationAndPhotos": "Posizione evento e foto",
         "locationHintPlan": "L'area evidenziata è il piano di missione. Tocca la mappa o cerca per impostare la posizione esatta.",
         "notifyNone": "Nessun destinatario",
+        "setupSaved": "Configurazione missione salvata",
         "attachmentsHint": "Facoltativo. Aggiungi foto, video o PDF che mostrano cosa è successo.",
         "notifyMore": "altri {{count}} — usa la ricerca per restringere",
         "status": { "PLANNED": "Pianificata", "IN_PROGRESS": "In corso", "COMPLETED": "Completata", "CANCELLED": "Annullata", "ABORTED": "Interrotta" },

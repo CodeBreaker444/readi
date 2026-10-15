@@ -27,13 +27,14 @@ import {
 } from '@/config/types/event-logbook';
 import { cn } from '@/lib/utils';
 import axios from 'axios';
-import { CheckCircle2, FileText, Info, Loader2, Map as MapIcon, Pencil, UploadCloud, X } from 'lucide-react';
+import { CheckCircle2, FileText, Info, Loader2, Map as MapIcon, UploadCloud, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 interface Props {
   open: boolean;
+  mode?: 'event' | 'setup';
   onOpenChange: (open: boolean) => void;
   drones: EventDroneOption[];
   missions: EventMissionOption[];
@@ -96,7 +97,7 @@ function writeStoredSetup(setup: MissionSetup) {
   }
 }
 
-export function AddEventWizard({ open, onOpenChange, drones, missions, contacts, defaultContacts, isDark, onCreated }: Props) {
+export function AddEventWizard({ open, mode = 'event', onOpenChange, drones, missions, contacts, defaultContacts, isDark, onCreated }: Props) {
   const { t } = useTranslation();
   const w = (key: string, opts?: Record<string, unknown>) => t(`logbooks.eventLogbook.wizard.${key}`, opts);
 
@@ -158,7 +159,7 @@ export function AddEventWizard({ open, onOpenChange, drones, missions, contacts,
     if (isSetupValid(stored)) {
       setSetup(stored);
       setDraft(stored);
-      setView('event');
+      setView(mode === 'setup' ? 'setup' : 'event');
       return;
     }
     setSetup(null);
@@ -166,7 +167,7 @@ export function AddEventWizard({ open, onOpenChange, drones, missions, contacts,
     const fresh = emptySetup();
     // A single available system needs no choosing.
     setDraft(drones.length === 1 ? { ...fresh, toolId: String(drones[0].tool_id) } : fresh);
-  }, [open, drones, isSetupValid, resetEvent]);
+  }, [open, mode, drones, isSetupValid, resetEvent]);
 
   const droneItems = useMemo<PagedSelectItem[]>(
     () => drones.map((d) => droneItem(d, droneComponentLine(d), formatDroneLabel(d))),
@@ -202,6 +203,12 @@ export function AddEventWizard({ open, onOpenChange, drones, missions, contacts,
     if (!isSetupValid(draft)) return;
     setSetup(draft);
     writeStoredSetup(draft);
+    if (mode === 'setup') {
+      // Opened from the page's Mission setup button: saving is the whole job.
+      toast.success(w('setupSaved'));
+      onOpenChange(false);
+      return;
+    }
     setView('event');
   };
 
@@ -210,11 +217,6 @@ export function AddEventWizard({ open, onOpenChange, drones, missions, contacts,
     const next = { ...setup, notifyIds: ids, notifyTouched: true };
     setSetup(next);
     writeStoredSetup(next);
-  };
-
-  const editSetup = () => {
-    if (setup) setDraft(setup);
-    setView('setup');
   };
 
   const addFiles = (list: FileList | File[]) => {
@@ -383,7 +385,7 @@ export function AddEventWizard({ open, onOpenChange, drones, missions, contacts,
             </div>
 
             <div className="flex items-center justify-between border-t border-slate-200 pt-3 dark:border-slate-700">
-              <Button variant="outline" onClick={() => (setup ? setView('event') : onOpenChange(false))}>
+              <Button variant="outline" onClick={() => onOpenChange(false)}>
                 {w('cancel')}
               </Button>
               <Button className="bg-violet-600 text-white hover:bg-violet-700" disabled={!canSaveSetup} onClick={saveSetup}>
@@ -393,15 +395,9 @@ export function AddEventWizard({ open, onOpenChange, drones, missions, contacts,
           </>
         ) : (
           <>
-            {/* Pre-filled from the mission setup; the pencil reopens it. */}
+            {/* Read-only: pre-filled from the mission setup, which is edited from the page's Mission setup button. */}
             <div className="rounded-lg border border-slate-200 p-3 dark:border-slate-700">
-              <div className="mb-2 flex items-center justify-between">
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{w('setupTitle')}</p>
-                <button type="button" onClick={editSetup} className="flex items-center gap-1 text-xs text-violet-600 hover:underline" title={w('editSetup')}>
-                  <Pencil className="h-3.5 w-3.5" />
-                  {w('editSetup')}
-                </button>
-              </div>
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{w('setupTitle')}</p>
               <dl className="grid grid-cols-[90px_1fr] items-start gap-x-3 gap-y-2 text-sm">
                 <dt className={faint}>{w('system')}</dt>
                 <dd className="flex items-start justify-between gap-2">
@@ -409,7 +405,6 @@ export function AddEventWizard({ open, onOpenChange, drones, missions, contacts,
                     {selectedDrone ? formatDroneLabel(selectedDrone) : '—'}
                     {selectedDrone && droneComponentLine(selectedDrone) && <span className={cn('block text-xs', faint)}>{droneComponentLine(selectedDrone)}</span>}
                   </span>
-                  <EditIcon onClick={editSetup} label={w('editSetup')} />
                 </dd>
 
                 <dt className={faint}>{t('logbooks.eventLogbook.mission')}</dt>
@@ -431,13 +426,11 @@ export function AddEventWizard({ open, onOpenChange, drones, missions, contacts,
                       '—'
                     )}
                   </span>
-                  <EditIcon onClick={editSetup} label={w('editSetup')} />
                 </dd>
 
                 <dt className={faint}>{w('takeoffTime')}</dt>
                 <dd className="flex items-start justify-between gap-2">
                   <span>{current.takeoff ? new Date(current.takeoff).toLocaleString() : '—'}</span>
-                  <EditIcon onClick={editSetup} label={w('editSetup')} />
                 </dd>
 
                 <dt className={cn(faint, 'pt-2')}>{w('notify')}</dt>
@@ -586,13 +579,5 @@ export function AddEventWizard({ open, onOpenChange, drones, missions, contacts,
         )}
       </DialogContent>
     </Dialog>
-  );
-}
-
-function EditIcon({ onClick, label }: { onClick: () => void; label: string }) {
-  return (
-    <button type="button" onClick={onClick} aria-label={label} title={label} className="shrink-0 rounded p-1 text-slate-500 hover:bg-slate-100 hover:text-violet-600 dark:text-slate-400 dark:hover:bg-slate-800">
-      <Pencil className="h-3.5 w-3.5" />
-    </button>
   );
 }
