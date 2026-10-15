@@ -115,7 +115,7 @@ export function OperationStepScheduler({
             </div>
 
             <div className="max-w-xs">
-                <Label className={labelCls(isDark)}>{t('operations.newOperation.scheduler.startDateTime')} <span className="text-red-500">*</span></Label>
+                <Label className={labelCls(isDark)}>{t('operations.newOperation.scheduler.startDateTime')} <span className="text-red-500">*</span> <span className="font-normal text-muted-foreground">({timezone})</span></Label>
                 <Input
                     type="datetime-local"
                     value={form.scheduledStart}

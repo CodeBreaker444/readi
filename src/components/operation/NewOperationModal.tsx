@@ -10,7 +10,7 @@ import { DFLIGHT_CIRCLE_MAX_RADIUS_M } from '@/config/types/operation'
 import { toastWithDcc } from '@/lib/dcc-toast'
 import { showDFlightErrorToast } from '@/lib/dflight-toast'
 import { serialInList } from '@/lib/serial-number'
-import { cn } from '@/lib/utils'
+import { cn, localInputToUtcIso, utcToLocalInput } from '@/lib/utils'
 import axios from 'axios'
 import {
     CheckCircle2,
@@ -288,8 +288,8 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
         )
         setSchedulerForm({
             missionCode: editOperation.mission_code ?? '',
-            scheduledStart: editOperation.scheduled_start?.slice(0, 16) ?? '',
-            scheduledEnd: editOperation.actual_end?.slice(0, 16) ?? '',
+            scheduledStart: utcToLocalInput(editOperation.scheduled_start, timezone),
+            scheduledEnd: utcToLocalInput(editOperation.actual_end, timezone),
             missionName: editOperation.mission_name ?? '',
             location: editOperation.location ?? '',
             locationLat: editOperation.location_latitude != null ? String(editOperation.location_latitude) : '',
@@ -312,8 +312,8 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
         setSchedulerForm(prev => ({
             ...prev,
             missionCode: createPrefill.missionCode || prev.missionCode,
-            scheduledStart: createPrefill.scheduledStart ? isoToLocalInput(createPrefill.scheduledStart) : prev.scheduledStart,
-            scheduledEnd: createPrefill.scheduledEnd ? isoToLocalInput(createPrefill.scheduledEnd) : prev.scheduledEnd,
+            scheduledStart: createPrefill.scheduledStart ? utcToLocalInput(createPrefill.scheduledStart, timezone) : prev.scheduledStart,
+            scheduledEnd: createPrefill.scheduledEnd ? utcToLocalInput(createPrefill.scheduledEnd, timezone) : prev.scheduledEnd,
             distanceFlown: createPrefill.distanceFlown != null ? String(createPrefill.distanceFlown) : prev.distanceFlown,
         }))
     }, [open, isEdit, createPrefill])
@@ -373,8 +373,9 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
             .then(res => {
                 if (cancelled) return
                 const events: any[] = res.data.data ?? []
-                const s = new Date(schedulerForm.scheduledStart).getTime()
-                const e = schedulerForm.scheduledEnd ? new Date(schedulerForm.scheduledEnd).getTime() : s + 3_600_000
+                const s = new Date(localInputToUtcIso(schedulerForm.scheduledStart, timezone)!).getTime()
+                const endIso = localInputToUtcIso(schedulerForm.scheduledEnd, timezone)
+                const e = endIso ? new Date(endIso).getTime() : s + 3_600_000
                 setConflicts(events.filter(ev => {
                     if (String(ev.operation?.fk_tool_id) !== droneId) return false
                     if (isEdit && ev.operation?.pilot_mission_id === editOperation?.pilot_mission_id) return false
@@ -561,8 +562,8 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                 const payload = {
                     mission_code: schedulerForm.missionCode.trim(),
                     mission_name: schedulerForm.missionName.trim(),
-                    scheduled_start: schedulerForm.scheduledStart || undefined,
-                    actual_end: schedulerForm.scheduledEnd || undefined,
+                    scheduled_start: localInputToUtcIso(schedulerForm.scheduledStart, timezone),
+                    actual_end: localInputToUtcIso(schedulerForm.scheduledEnd, timezone),
                     fk_pilot_user_id: parseInt(pilotId),
                     fk_tool_id: droneId ? parseInt(droneId) : null,
                     fk_client_id: clientId ? parseInt(clientId) : null,
@@ -596,8 +597,8 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
             const payload = {
                 mission_code: schedulerForm.missionCode.trim(),
                 mission_name: schedulerForm.missionName.trim(),
-                scheduled_start: schedulerForm.scheduledStart || undefined,
-                actual_end: schedulerForm.scheduledEnd || undefined,
+                scheduled_start: localInputToUtcIso(schedulerForm.scheduledStart, timezone),
+                actual_end: localInputToUtcIso(schedulerForm.scheduledEnd, timezone),
                 fk_pilot_user_id: parseInt(pilotId),
                 fk_tool_id: droneId ? parseInt(droneId) : null,
                 fk_client_id: clientId ? parseInt(clientId) : null,
