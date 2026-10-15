@@ -113,6 +113,8 @@ export function AddEventWizard({ open, onOpenChange, drones, missions, isDark, o
   );
   const selectedDrone = drones.find((d) => String(d.tool_id) === toolId);
   const selectedMission = toolMissions.find((m) => String(m.pilot_mission_id) === missionId);
+  // Same rule as the server: the mission's client, else the system's assigned client.
+  const reportClient = selectedMission?.client ?? selectedDrone?.assigned_client ?? null;
 
   const latNum = Number(lat);
   const lngNum = Number(lng);
@@ -192,7 +194,7 @@ export function AddEventWizard({ open, onOpenChange, drones, missions, isDark, o
 
   return (
     <Dialog open={open} onOpenChange={(v) => !submitting && onOpenChange(v)}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl border-slate-200 bg-white text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100">
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl border-slate-200 bg-white text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100">
         <DialogHeader>
           <DialogTitle>{done ? w('successTitle') : w('title')}</DialogTitle>
         </DialogHeader>
@@ -442,6 +444,24 @@ export function AddEventWizard({ open, onOpenChange, drones, missions, isDark, o
                     <dd className="whitespace-pre-wrap break-words">{notes.trim()}</dd>
                   </>
                 )}
+                <dt className="text-slate-500 dark:text-slate-400">{w('client')}</dt>
+                <dd>
+                  {reportClient ? (
+                    <div className="space-y-0.5 rounded-lg border border-slate-200 p-2.5 dark:border-slate-700">
+                      <p className="font-medium">
+                        {reportClient.client_name}
+                        {reportClient.client_code && <span className="font-normal text-slate-500 dark:text-slate-400"> · {reportClient.client_code}</span>}
+                      </p>
+                      {reportClient.legal_name && <p className="text-xs text-slate-500 dark:text-slate-400">{reportClient.legal_name}</p>}
+                      {reportClient.address && <p className="text-xs">{reportClient.address}</p>}
+                      {reportClient.email && <p className="text-xs">{reportClient.email}</p>}
+                      {reportClient.phone && <p className="text-xs">{reportClient.phone}</p>}
+                      {reportClient.website && <p className="text-xs">{reportClient.website}</p>}
+                    </div>
+                  ) : (
+                    <span className="text-slate-500 dark:text-slate-400">{w('noClient')}</span>
+                  )}
+                </dd>
               </dl>
             )}
 

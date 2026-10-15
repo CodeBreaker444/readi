@@ -1,4 +1,5 @@
 import { createEvent, createEventSchema } from '@/backend/services/logbook/event-logbook-service';
+import { dispatchEventEmails } from '@/backend/services/logbook/event-notification-service';
 import { dispatchEventCreated } from '@/backend/services/logbook/event-webhook-service';
 import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { requireFeatureAccess } from '@/lib/auth/api-auth';
@@ -32,6 +33,7 @@ export async function POST(request: NextRequest) {
 
     // Notify the client's webhook(s) after the response is sent; failures are recorded per delivery.
     after(() => dispatchEventCreated(event_id));
+    after(() => dispatchEventEmails(event_id));
 
     return NextResponse.json({ code: 200, event_id }, { status: 201 });
   } catch (err) {

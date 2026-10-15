@@ -1,5 +1,15 @@
 'use client';
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -53,6 +63,7 @@ export function EventWebhookSettings({ open, onOpenChange }: Props) {
   const [secret, setSecret] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<number | null>(null);
   const [search, setSearch] = useState('');
+  const [deleteTarget, setDeleteTarget] = useState<EventWebhookConfigItem | null>(null);
   const [page, setPage] = useState(0);
   const [deliveries, setDeliveries] = useState<{ id: number; items: EventWebhookDeliveryItem[] } | null>(null);
 
@@ -121,7 +132,6 @@ export function EventWebhookSettings({ open, onOpenChange }: Props) {
   };
 
   const remove = async (hook: EventWebhookConfigItem) => {
-    if (!window.confirm(w('deleteConfirm'))) return;
     setBusyId(hook.webhook_id);
     try {
       await axios.delete(`/api/logbooks/event/webhooks/${hook.webhook_id}`);
@@ -131,6 +141,7 @@ export function EventWebhookSettings({ open, onOpenChange }: Props) {
       toast.error(errorOf(e));
     } finally {
       setBusyId(null);
+      setDeleteTarget(null);
     }
   };
 
@@ -188,7 +199,7 @@ export function EventWebhookSettings({ open, onOpenChange }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl border-slate-200 bg-white text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100">
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-4xl border-slate-200 bg-white text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100">
         <DialogHeader>
           <DialogTitle>{w('title')}</DialogTitle>
           <DialogDescription>{w('description')}</DialogDescription>
@@ -305,6 +316,7 @@ export function EventWebhookSettings({ open, onOpenChange }: Props) {
               </Button>
             </div>
 
+            <div className="h-[34rem] overflow-y-auto pr-1">
             {loading ? (
               <div className="flex justify-center py-8">
                 <Loader2 className="h-5 w-5 animate-spin" />
@@ -312,9 +324,9 @@ export function EventWebhookSettings({ open, onOpenChange }: Props) {
             ) : filteredHooks.length === 0 ? (
               <p className="py-6 text-center text-sm text-slate-500 dark:text-slate-400">{webhooks.length === 0 ? w('none') : w('noMatches')}</p>
             ) : (
-              <ul className="space-y-2">
+              <ul className="space-y-1.5">
                 {pagedHooks.map((hook) => (
-                  <li key={hook.webhook_id} className="rounded-lg border border-slate-200 p-3 dark:border-slate-700">
+                  <li key={hook.webhook_id} className="rounded-lg border border-slate-200 p-2 dark:border-slate-700">
                     <div className="flex flex-wrap items-start justify-between gap-2">
                       <div className="min-w-0 flex-1 text-left">
                         <p className="flex items-center gap-2 text-sm font-medium">
@@ -327,23 +339,25 @@ export function EventWebhookSettings({ open, onOpenChange }: Props) {
                             {hook.is_active ? w('active') : '—'}
                           </span>
                         </p>
-                        <p className="truncate text-xs text-slate-500 dark:text-slate-400">{hook.url}</p>
-                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                        <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
+                          <p className="min-w-0 flex-1 truncate" title={hook.url}>{hook.url}</p>
+                          {hook.last_delivery && (
+                            <p className="flex shrink-0 items-center gap-1">
+                              {hook.last_delivery.success ? (
+                                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+                              ) : (
+                                <XCircle className="h-3.5 w-3.5 text-red-500" />
+                              )}
+                              {new Date(hook.last_delivery.created_at).toLocaleString()}
+                              {hook.last_delivery.response_status ? ` (HTTP ${hook.last_delivery.response_status})` : ''}
+                            </p>
+                          )}
+                        </div>
+                        <p className="truncate text-xs text-slate-500 dark:text-slate-400">
                           {hook.client_name ?? w('allClients')}
                           {hook.event_types.length > 0 &&
                             ` · ${hook.event_types.map((x) => t(`logbooks.eventLogbook.types.${x}`)).join(', ')}`}
                         </p>
-                        {hook.last_delivery && (
-                          <p className="mt-0.5 flex items-center gap-1 text-xs">
-                            {hook.last_delivery.success ? (
-                              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
-                            ) : (
-                              <XCircle className="h-3.5 w-3.5 text-red-500" />
-                            )}
-                            {w('lastDelivery')}: {new Date(hook.last_delivery.created_at).toLocaleString()}
-                            {hook.last_delivery.response_status ? ` (HTTP ${hook.last_delivery.response_status})` : ''}
-                          </p>
-                        )}
                       </div>
                       <div className="flex gap-1">
                         <Button size="icon" variant="ghost" title={w('edit')} aria-label={w('edit')} onClick={() => edit(hook)}>
@@ -358,7 +372,7 @@ export function EventWebhookSettings({ open, onOpenChange }: Props) {
                         <Button size="icon" variant="ghost" title={w('rotate')} disabled={busyId === hook.webhook_id} onClick={() => rotate(hook)}>
                           <KeyRound className="h-4 w-4" />
                         </Button>
-                        <Button size="icon" variant="ghost" title={w('delete')} disabled={busyId === hook.webhook_id} onClick={() => remove(hook)}>
+                        <Button size="icon" variant="ghost" title={w('delete')} disabled={busyId === hook.webhook_id} onClick={() => setDeleteTarget(hook)}>
                           <Trash2 className="h-4 w-4 text-red-500" />
                         </Button>
                       </div>
@@ -394,6 +408,7 @@ export function EventWebhookSettings({ open, onOpenChange }: Props) {
                 ))}
               </ul>
             )}
+            </div>
 
             {!loading && filteredHooks.length > PAGE_SIZE && (
               <div className="flex items-center justify-between gap-2 border-t border-slate-200 pt-2 text-xs text-slate-500 dark:border-slate-700 dark:text-slate-400">
@@ -410,6 +425,37 @@ export function EventWebhookSettings({ open, onOpenChange }: Props) {
             )}
           </div>
         )}
+
+        <AlertDialog open={!!deleteTarget} onOpenChange={(v) => !v && busyId === null && setDeleteTarget(null)}>
+          <AlertDialogContent className="border-slate-200 bg-white text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100">
+            <AlertDialogHeader>
+              <AlertDialogTitle>{w('deleteTitle')}</AlertDialogTitle>
+              <AlertDialogDescription className="text-slate-500 dark:text-slate-400">
+                {w('deleteDescription', { name: deleteTarget?.name ?? '' })}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel
+                disabled={busyId !== null}
+                className="border-slate-200 bg-white text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+              >
+                {w('cancel')}
+              </AlertDialogCancel>
+              <AlertDialogAction
+                className="bg-red-500 text-white hover:bg-red-600"
+                disabled={busyId !== null}
+                onClick={(e) => {
+                  // Keep the dialog open until the request finishes.
+                  e.preventDefault();
+                  if (deleteTarget) void remove(deleteTarget);
+                }}
+              >
+                {busyId !== null && <Loader2 className="mr-1 h-4 w-4 animate-spin" />}
+                {w('delete')}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </DialogContent>
     </Dialog>
   );

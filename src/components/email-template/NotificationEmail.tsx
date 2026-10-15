@@ -180,6 +180,8 @@ const messageText = {
   color: '#202124',
   lineHeight: '24px',
   margin: '0',
+  whiteSpace: 'pre-line' as const,
+  wordBreak: 'break-word' as const,
 };
 
 const actionCard = {

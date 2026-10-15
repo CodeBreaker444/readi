@@ -256,7 +256,7 @@ const TopBar: React.FC<TopBarProps> = ({ isDark, toggleTheme, userData, loading 
           </button>
 
 
-          <NotificationDropdown isDark={isDark} />
+          {userData?.role !== 'CLIENT' && <NotificationDropdown isDark={isDark} />}
         </div>
       </div>
 

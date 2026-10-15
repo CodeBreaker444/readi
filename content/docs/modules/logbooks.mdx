@@ -86,6 +86,15 @@ Every new event is sent as an HTTPS `POST` with `event.created`:
 
 Verify the `X-Readi-Signature` header: `sha256=` + HMAC-SHA256 (hex) of `"<X-Readi-Timestamp>.<raw body>"` with the webhook's signing secret, which is shown once when the webhook is created or rotated. Respond with any `2xx` within 8 seconds; failed deliveries (network error or `5xx`) are retried once. All deliveries appear in each webhook's delivery log. Endpoints must be public HTTPS URLs.
 
+### Email notifications
+
+Admins, OPMs and super admins also see a **mail icon** next to the webhook settings icon. It opens two tabs:
+
+- **Notifications** – each notification has a name, a **client** (one client or all clients, resolved the same way as for webhooks), optional **event types** (none selected = every type), an active switch and one or more **recipients**. Recipients can be typed (press Enter or comma to add each address) and/or ticked from the contact book. A notification holds up to 20 recipients. Use the send icon to deliver a test email to its recipients.
+- **Contact book** – the company's reusable recipients. Each contact has a **name**, an **email** (unique per company), and an optional **company** and **notes**. Contacts can be searched, edited and deleted. Deleting a contact does not remove its address from notifications that already include it.
+
+When a pilot submits an event, every active notification matching its client and type sends an email with the event type, report and takeoff times, pilot, drone, client, mission, location, notes and attachment download links (valid for 7 days). A recipient covered by several matching notifications receives a single email. Each send (including test emails) counts towards the company's daily email limit; once it is reached, event emails are skipped until the counter resets. Email failures never block the pilot's report.
+
 ---
 
 ## Related

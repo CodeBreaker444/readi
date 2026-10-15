@@ -33,12 +33,25 @@ export interface EventDroneComponent {
   serial_number: string;
 }
 
+export interface EventClientInfo {
+  client_id: number;
+  client_name: string;
+  client_code: string | null;
+  legal_name: string | null;
+  email: string | null;
+  phone: string | null;
+  website: string | null;
+  address: string | null;
+}
+
 export interface EventDroneOption {
   tool_id: number;
   tool_name: string | null;
   tool_code: string | null;
   /** DRONE-type components of the system, primary first (same ordering as mission creation). */
   drone_components: EventDroneComponent[];
+  /** Client the system is assigned to; used when the selected mission has no client. */
+  assigned_client: EventClientInfo | null;
 }
 
 export interface EventMissionOption {
@@ -47,6 +60,7 @@ export interface EventMissionOption {
   mission_code: string | null;
   fk_tool_id: number | null;
   scheduled_start: string | null;
+  client: EventClientInfo | null;
 }
 
 export interface EventLogbookItem {

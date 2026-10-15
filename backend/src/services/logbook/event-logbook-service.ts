@@ -6,6 +6,7 @@ import {
   EVENT_ATTACHMENT_MAX_FILES,
   EVENT_TYPES,
   type EventAttachmentInput,
+  type EventClientInfo,
   type EventDroneComponent,
   type EventDroneOption,
   type EventLogbookFilters,
@@ -58,6 +59,7 @@ export async function getEventOptions(user: SessionUser): Promise<{
       mission_name: true,
       mission_code: true,
       fk_tool_id: true,
+      fk_client_id: true,
       scheduled_start: true,
     },
   });
@@ -75,7 +77,7 @@ export async function getEventOptions(user: SessionUser): Promise<{
   const drones = await prisma.tool.findMany({
     where: { fk_owner_id: user.ownerId, tool_active: 'Y', ...(toolIdFilter ? { tool_id: toolIdFilter } : {}) },
     orderBy: { tool_name: 'asc' },
-    select: { tool_id: true, tool_name: true, tool_code: true },
+    select: { tool_id: true, tool_name: true, tool_code: true, assigned_client_id: true },
   });
 
   // Same rule as mission creation: DRONE components with a serial number, primary one first.
@@ -96,12 +98,63 @@ export async function getEventOptions(user: SessionUser): Promise<{
     componentMap.set(c.fk_tool_id, list);
   }
 
+  // Client details shown on the review step: the mission's client, else the system's assigned client.
+  const clientIds = [
+    ...new Set([...missions.map((m) => m.fk_client_id), ...drones.map((d) => d.assigned_client_id)].filter((v): v is number => v != null)),
+  ];
+  const clientRows = clientIds.length
+    ? await prisma.client.findMany({
+        where: { client_id: { in: clientIds }, fk_owner_id: user.ownerId },
+        select: {
+          client_id: true,
+          client_name: true,
+          client_code: true,
+          client_legal_name: true,
+          client_email: true,
+          client_phone: true,
+          client_website: true,
+          client_address: true,
+          client_city: true,
+          client_state: true,
+          client_postal_code: true,
+          countries: { select: { country_name: true } },
+        },
+      })
+    : [];
+  const clientMap = new Map<number, EventClientInfo>(
+    clientRows.map((c) => [
+      c.client_id,
+      {
+        client_id: c.client_id,
+        client_name: c.client_name,
+        client_code: c.client_code,
+        legal_name: c.client_legal_name,
+        email: c.client_email,
+        phone: c.client_phone,
+        website: c.client_website,
+        address:
+          [c.client_address, [c.client_postal_code, c.client_city].filter(Boolean).join(' '), c.client_state, c.countries?.country_name]
+            .map((v) => v?.trim())
+            .filter(Boolean)
+            .join(', ') || null,
+      },
+    ]),
+  );
+
   const droneIds = new Set(drones.map((d) => d.tool_id));
   return {
-    drones: drones.map((d) => ({ ...d, drone_components: componentMap.get(d.tool_id) ?? [] })),
+    drones: drones.map(({ assigned_client_id, ...d }) => ({
+      ...d,
+      drone_components: componentMap.get(d.tool_id) ?? [],
+      assigned_client: assigned_client_id ? (clientMap.get(assigned_client_id) ?? null) : null,
+    })),
     missions: missions
       .filter((m) => m.fk_tool_id != null && droneIds.has(m.fk_tool_id))
-      .map((m) => ({ ...m, scheduled_start: m.scheduled_start?.toISOString() ?? null })),
+      .map(({ fk_client_id, ...m }) => ({
+        ...m,
+        scheduled_start: m.scheduled_start?.toISOString() ?? null,
+        client: fk_client_id ? (clientMap.get(fk_client_id) ?? null) : null,
+      })),
   };
 }
 

@@ -9,6 +9,7 @@ import {
   type EventFilters,
 } from '@/components/logbook/event/EventFilterPanel';
 import { EventLogbookTable } from '@/components/logbook/event/EventLogbookTable';
+import { EventNotificationSettings } from '@/components/logbook/event/EventNotificationSettings';
 import { EventWebhookSettings } from '@/components/logbook/event/EventWebhookSettings';
 import { eventUi } from '@/components/logbook/event/event-ui';
 import { Button } from '@/components/ui/button';
@@ -16,7 +17,7 @@ import { useTheme } from '@/components/useTheme';
 import type { EventDroneOption, EventLogbookItem, EventMissionOption } from '@/config/types/event-logbook';
 import { cn } from '@/lib/utils';
 import axios from 'axios';
-import { Loader2, Plus, RefreshCw, Settings } from 'lucide-react';
+import { Loader2, Mail, Plus, RefreshCw, Settings } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -38,6 +39,7 @@ export default function EventLogbookPage() {
   const [loading, setLoading] = useState(false);
   const [wizardOpen, setWizardOpen] = useState(false);
   const [webhooksOpen, setWebhooksOpen] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [highlightId, setHighlightId] = useState<number | null>(null);
 
   const fetchData = useCallback(
@@ -109,6 +111,17 @@ export default function EventLogbookPage() {
                 variant="outline"
                 size="icon"
                 className={cn('h-8 w-8', ui.outlineBtn)}
+                title={e('emailSettings')}
+                onClick={() => setNotificationsOpen(true)}
+              >
+                <Mail className="h-4 w-4" />
+              </Button>
+            )}
+            {canConfigure && (
+              <Button
+                variant="outline"
+                size="icon"
+                className={cn('h-8 w-8', ui.outlineBtn)}
                 title={e('webhookSettings')}
                 onClick={() => setWebhooksOpen(true)}
               >
@@ -157,6 +170,7 @@ export default function EventLogbookPage() {
       />
 
       {canConfigure && <EventWebhookSettings open={webhooksOpen} onOpenChange={setWebhooksOpen} />}
+      {canConfigure && <EventNotificationSettings open={notificationsOpen} onOpenChange={setNotificationsOpen} />}
     </div>
   );
 }
