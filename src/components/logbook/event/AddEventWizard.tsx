@@ -25,6 +25,7 @@ import {
   type EventNotifyContact,
   type EventType,
 } from '@/config/types/event-logbook';
+import { uploadEventFiles } from '@/lib/event-logbook-upload';
 import { cn } from '@/lib/utils';
 import axios from 'axios';
 import { CheckCircle2, FileText, Info, Loader2, Map as MapIcon, UploadCloud, X } from 'lucide-react';
@@ -243,19 +244,7 @@ export function AddEventWizard({ open, mode = 'event', onOpenChange, drones, mis
     });
   };
 
-  const uploadAll = async (): Promise<EventAttachmentInput[]> => {
-    const uploaded: EventAttachmentInput[] = [];
-    for (const { file } of files) {
-      const presign = await axios.post('/api/logbooks/event/presign', {
-        file_name: file.name,
-        content_type: file.type,
-        file_size: file.size,
-      });
-      await axios.put(presign.data.upload_url, file, { headers: { 'Content-Type': file.type } });
-      uploaded.push({ file_name: file.name, file_key: presign.data.file_key, file_type: file.type, file_size: file.size });
-    }
-    return uploaded;
-  };
+  const uploadAll = (): Promise<EventAttachmentInput[]> => uploadEventFiles(files.map((f) => f.file));
 
   const submit = async () => {
     if (!setup || !eventType || !hasLocation) return;

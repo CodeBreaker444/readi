@@ -98,8 +98,16 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(new URL('/auth/login', request.url))
   }
 
+  // Page the visitor wanted; the login form sends them back to it after signing in (e.g. a link in an email).
+  const wantedPath = pathname + request.nextUrl.search
+  const loginUrlWithNext = () => {
+    const url = new URL('/auth/login', request.url)
+    if (!pathname.startsWith('/api/')) url.searchParams.set('next', wantedPath)
+    return url
+  }
+
   if (jwtToken && isJwtExpired(jwtToken)) {
-    const loginUrl = new URL('/auth/login', request.url)
+    const loginUrl = loginUrlWithNext()
     const redirectResponse = NextResponse.redirect(loginUrl)
     redirectResponse.cookies.delete('readi_auth_token')
     return redirectResponse
@@ -109,7 +117,7 @@ export async function updateSession(request: NextRequest) {
     if (isPublicRoute) {
       return response
     }
-    return NextResponse.redirect(new URL('/auth/login', request.url))
+    return NextResponse.redirect(loginUrlWithNext())
   }
 
   // Protect docs routes - require authentication
@@ -133,6 +141,12 @@ export async function updateSession(request: NextRequest) {
 
     const roleForCheck = decodeJwtRole(jwtToken)
     if (roleForCheck === 'CLIENT') {
+      // Event links in emails point at the staff page; clients see the same event in their portal.
+      if (pathname === '/logbooks/event-logbook' && request.nextUrl.searchParams.has('event')) {
+        const target = new URL('/client/events', request.url)
+        target.searchParams.set('event', request.nextUrl.searchParams.get('event')!)
+        return NextResponse.redirect(target)
+      }
       const isClientPortalRoute =
         pathname.startsWith('/client/') || pathname.startsWith('/api/client-portal')
       const isAllowedAuthRoute =

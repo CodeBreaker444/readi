@@ -2,6 +2,7 @@ import { env } from '@/backend/config/env';
 import { AdminPasswordChangedEmail } from '@/components/email-template/AdminPasswordChangedEmail';
 import { CalendarEventCreatedEmail } from '@/components/email-template/CalendarEventCreatedEmail';
 import { CalendarEventUpdatedEmail } from '@/components/email-template/CalendarEventUpdatedEmail';
+import { EventReportedEmail, type EventReportedEmailProps } from '@/components/email-template/EventReportedEmail';
 import { InsuranceExpiryEmail } from '@/components/email-template/InsuranceExpiryEmail';
 import { InterventionEndedEmail } from '@/components/email-template/InterventionEndedEmail';
 import { InterventionStartedEmail } from '@/components/email-template/InterventionStartedEmail';
@@ -347,6 +348,28 @@ export const sendNotificationEmail = async (
     if (error) console.error('sendNotificationEmail error:', error);
   } catch (err) {
     console.error('sendNotificationEmail exception:', err);
+  }
+};
+
+/** Rich email for a newly reported event (details, map snapshot, image previews, download links, link to the event). */
+export const sendEventReportedEmail = async (emails: string[], subject: string, props: EventReportedEmailProps): Promise<boolean> => {
+  if (!emails.length) return false;
+  try {
+    const emailHtml = await render(EventReportedEmail(props));
+    const { error } = await resend.emails.send({
+      from: 'ReADI <no-reply@readi.theun1t.com>',
+      to: emails,
+      subject,
+      html: emailHtml,
+    });
+    if (error) {
+      console.error('sendEventReportedEmail error:', error);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error('sendEventReportedEmail exception:', err);
+    return false;
   }
 };
 

@@ -2,11 +2,13 @@ import 'server-only';
 
 import { EVENT_TYPE_LABELS, type EventType } from '@/config/types/event-logbook';
 import { prisma } from '@/lib/prisma';
-import { getPresignedDownloadUrl } from '@/lib/s3Client';
+import { env } from '@/backend/config/env';
+import { getPresignedDownloadUrl, putBufferToS3 } from '@/lib/s3Client';
 import { z } from 'zod';
-import { sendNotificationEmail } from '../../../../lib/resend/mail';
+import { sendEventReportedEmail, sendNotificationEmail } from '../../../../lib/resend/mail';
 import { incrementDailyEmailCount, isDailyEmailLimitReached } from '../email/email-limit-service';
-import { EventLogbookError } from './event-logbook-service';
+import { EventLogbookError, mapSnapshotKey } from './event-logbook-service';
+import { renderMapSnapshot } from './event-map-snapshot';
 
 const MAX_EVENT_RECIPIENTS = 20;
 // S3 presigned URLs are valid for at most 7 days.
@@ -25,6 +27,8 @@ export type ContactInput = z.infer<typeof contactInputSchema>;
 export const defaultContactsInputSchema = z.object({
   contact_ids: z.array(z.number().int().positive()).max(MAX_EVENT_RECIPIENTS),
 });
+
+const formatUtc = (d: Date) => `${d.toISOString().slice(0, 16).replace('T', ' ')} UTC`;
 
 const blank = (v: string | null | undefined) => (v && v.trim() ? v.trim() : null);
 
@@ -161,30 +165,61 @@ export async function dispatchEventEmails(eventId: number): Promise<void> {
     ]);
 
     const label = EVENT_TYPE_LABELS[event.event_type as EventType] ?? event.event_type;
-    const lines = [
-      `Event: ${label}`,
-      `Reported: ${event.created_at.toISOString()}`,
-      `Takeoff time: ${event.takeoff_time.toISOString()}`,
-      `Pilot: ${[pilot?.first_name, pilot?.last_name].filter(Boolean).join(' ') || '—'}`,
-      `Drone: ${tool ? `${tool.tool_name}${tool.tool_code ? ` (${tool.tool_code})` : ''}` : '—'}`,
-      ...(client ? [`Client: ${client.client_name}`] : []),
-      ...(mission ? [`Mission: ${mission.mission_name?.trim() || mission.mission_code?.trim() || `#${event.fk_mission_id}`}`] : []),
-      ...(event.location_label ? [`Location: ${event.location_label}`] : []),
-      ...(event.latitude != null && event.longitude != null ? [`Coordinates: ${Number(event.latitude)}, ${Number(event.longitude)}`] : []),
-      ...(event.notes ? [`Notes: ${event.notes}`] : []),
+    const lat = event.latitude != null ? Number(event.latitude) : null;
+    const lng = event.longitude != null ? Number(event.longitude) : null;
+    const hasCoords = lat != null && lng != null;
+
+    const rows: { label: string; value: string }[] = [
+      { label: 'Event', value: label },
+      { label: 'Takeoff time', value: formatUtc(event.takeoff_time) },
+      { label: 'Reported', value: formatUtc(event.created_at) },
+      { label: 'Pilot', value: [pilot?.first_name, pilot?.last_name].filter(Boolean).join(' ') || '—' },
+      { label: 'Drone', value: tool ? `${tool.tool_name}${tool.tool_code ? ` (${tool.tool_code})` : ''}` : '—' },
+      ...(client ? [{ label: 'Client', value: client.client_name }] : []),
+      ...(mission ? [{ label: 'Mission', value: mission.mission_name?.trim() || mission.mission_code?.trim() || `#${event.fk_mission_id}` }] : []),
+      ...(event.location_label ? [{ label: 'Location', value: event.location_label }] : []),
+      ...(hasCoords ? [{ label: 'Coordinates', value: `${lat}, ${lng}` }] : []),
     ];
 
-    if (event.pilot_event_attachment.length > 0) {
-      const links = await Promise.all(
-        event.pilot_event_attachment.map(async (a) => {
-          const url = await getPresignedDownloadUrl(a.file_key, ATTACHMENT_URL_TTL_S, a.file_name);
-          return `${a.file_name}: ${url}`;
-        }),
-      );
-      lines.push('', 'Attachments (links valid for 7 days):', ...links);
+    // Map snapshot: stored in S3 so the email can reference it by (presigned) URL. Optional.
+    let mapImageUrl: string | null = null;
+    if (hasCoords) {
+      try {
+        const png = await renderMapSnapshot(lat, lng);
+        if (png) {
+          const key = mapSnapshotKey(event.fk_owner_id, event.event_id);
+          await putBufferToS3(key, png, 'image/png');
+          mapImageUrl = await getPresignedDownloadUrl(key, ATTACHMENT_URL_TTL_S, 'event-map.png', 'inline');
+        }
+      } catch (err) {
+        console.error('[event-email] map snapshot unavailable', err);
+      }
     }
 
-    await sendNotificationEmail(recipients, `New event reported: ${label}`, lines.join('\n'), 'event_logbook');
+    // Images are previewed inline; every file gets a download link (the long URL is only in the href).
+    const attachments = await Promise.all(
+      event.pilot_event_attachment.map(async (a) => ({
+        name: a.file_name,
+        isImage: (a.file_type ?? '').startsWith('image/'),
+        previewUrl: await getPresignedDownloadUrl(a.file_key, ATTACHMENT_URL_TTL_S, a.file_name, 'inline'),
+        downloadUrl: await getPresignedDownloadUrl(a.file_key, ATTACHMENT_URL_TTL_S, a.file_name, 'attachment'),
+      })),
+    );
+
+    // Opens the event; the recipient must be signed in and allowed to see it (clients are sent to their portal).
+    const viewUrl = `${env.APP_URL}/logbooks/event-logbook?event=${event.event_id}`;
+    const mapLinkUrl = hasCoords ? `https://www.google.com/maps?q=${lat},${lng}` : null;
+
+    const sent = await sendEventReportedEmail(recipients, `New event reported: ${label}`, {
+      eventLabel: label,
+      rows,
+      notes: event.notes,
+      mapImageUrl,
+      mapLinkUrl,
+      attachments,
+      viewUrl,
+    });
+    if (!sent) return;
     await incrementDailyEmailCount(event.fk_owner_id);
     console.log(`[event-email] event #${eventId}: email handed to mail provider for ${recipients.length} recipient(s)`);
   } catch (err) {

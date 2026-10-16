@@ -114,6 +114,20 @@ export async function uploadFileToS3(
 }
 
 
+/** Uploads an in-memory buffer (e.g. a generated image). */
+export async function putBufferToS3(key: string, body: Buffer, contentType: string): Promise<void> {
+  await getS3().send(
+    new PutObjectCommand({
+      Bucket: BUCKET,
+      Key: key,
+      Body: body,
+      ContentType: contentType,
+      ServerSideEncryption: 'AES256',
+    })
+  );
+}
+
+
 export async function deleteFileFromS3(key: string): Promise<void> {
   await getS3().send(new DeleteObjectCommand({ Bucket: BUCKET, Key: key }));
 }
