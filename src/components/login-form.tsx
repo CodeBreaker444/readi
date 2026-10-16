@@ -9,6 +9,12 @@ import { useEffect, useState } from 'react'
 import { CiLock, CiMail } from 'react-icons/ci'
 import { toast } from 'sonner'
 
+/** Only same-site paths are accepted, so the `next` parameter cannot be used to redirect elsewhere. */
+function safeNextPath(next: string | null): string | null {
+  if (!next || !next.startsWith('/') || next.startsWith('//') || next.startsWith('/\\') || next.startsWith('/auth/')) return null
+  return next
+}
+
 export function LoginForm() {
   const searchParams = useSearchParams()
   const [formData, setFormData] = useState({ email: '', password: '' })
@@ -36,7 +42,7 @@ export function LoginForm() {
         return
       }
       toast.success(result.message || 'Login successful!')
-      if (result.data) window.location.href = getDefaultRoute(result.data.role)
+      if (result.data) window.location.href = safeNextPath(searchParams.get('next')) ?? getDefaultRoute(result.data.role)
     } catch (err: any) {
       toast.error(err.response?.data?.error || err.message || 'Login failed.')
     } finally {

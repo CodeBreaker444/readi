@@ -8,7 +8,9 @@ import {
   FILTER_ALL,
   type EventFilters,
 } from '@/components/logbook/event/EventFilterPanel';
+import { EventDetailDialog } from '@/components/logbook/event/EventDetailDialog';
 import { EventLogbookTable } from '@/components/logbook/event/EventLogbookTable';
+import { useEventDeepLink } from '@/components/logbook/event/useEventDeepLink';
 import { EventNotificationSettings } from '@/components/logbook/event/EventNotificationSettings';
 import { EventWebhookSettings } from '@/components/logbook/event/EventWebhookSettings';
 import { eventUi } from '@/components/logbook/event/event-ui';
@@ -22,8 +24,12 @@ import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
+// Defined once so the dialog does not reload the event on every render.
+const staffDetailUrl = (id: number) => `/api/logbooks/event/${id}`;
+
 export default function EventLogbookPage() {
   const { isDark } = useTheme();
+  const { eventId, open: openEvent, close: closeEvent } = useEventDeepLink();
   const { t } = useTranslation();
   const ui = eventUi(isDark);
   const e = (key: string) => t(`logbooks.eventLogbook.${key}`);
@@ -178,8 +184,10 @@ export default function EventLogbookPage() {
           drones={drones}
           missions={missions}
         />
-        <EventLogbookTable data={data} loading={loading} showPilot={!scoped} isDark={isDark} highlightId={highlightId} />
+        <EventLogbookTable data={data} loading={loading} showPilot={!scoped} isDark={isDark} highlightId={highlightId} onView={openEvent} />
       </div>
+
+      <EventDetailDialog eventId={eventId} onClose={closeEvent} onChanged={() => fetchData(filters)} isDark={isDark} detailUrl={staffDetailUrl} />
 
       <AddEventWizard
         open={wizardOpen}

@@ -111,6 +111,27 @@ export interface EventLogbookItem {
   attachment_count: number;
 }
 
+export interface EventAttachmentLink {
+  attachment_id: number;
+  file_name: string;
+  file_type: string | null;
+  file_size: number | null;
+  /** Inline link, used for previews and "open". */
+  url: string;
+  /** Link that forces a download. */
+  download_url: string;
+}
+
+export interface EventDetail extends EventLogbookItem {
+  tool_code: string | null;
+  /** Emails notified when the event was reported; empty in the client portal. */
+  notify_emails: string[];
+  /** Outline of the mission plan, when the mission has one. */
+  plan: { code: string | null; waypoints: EventLatLng[] } | null;
+  attachments: EventAttachmentLink[];
+  can_edit: boolean;
+}
+
 export interface EventAttachmentInput {
   file_name: string;
   file_key: string;

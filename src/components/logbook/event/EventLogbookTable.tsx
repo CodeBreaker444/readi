@@ -8,7 +8,7 @@ import type { EventLogbookItem } from '@/config/types/event-logbook';
 import { cn } from '@/lib/utils';
 import { type ColumnDef, getCoreRowModel, getFilteredRowModel, getPaginationRowModel, useReactTable } from '@tanstack/react-table';
 import axios from 'axios';
-import { FileText, Loader2, Paperclip, Search } from 'lucide-react';
+import { Eye, FileText, Loader2, Paperclip, Search } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -24,6 +24,8 @@ interface Props {
   highlightId?: number | null;
   /** Endpoint returning presigned attachment links for an event (differs for the client portal). */
   attachmentsUrl?: (eventId: number) => string;
+  /** Opens the event details; also triggered by clicking a row. */
+  onView?: (eventId: number) => void;
 }
 
 interface AttachmentLink {
@@ -40,6 +42,7 @@ export function EventLogbookTable({
   isDark,
   highlightId,
   attachmentsUrl = (id) => `/api/logbooks/event/${id}/attachments`,
+  onView,
 }: Props) {
   const { t } = useTranslation();
   const ui = eventUi(isDark);
@@ -87,7 +90,7 @@ export function EventLogbookTable({
 
   const rows = table.getRowModel().rows;
   const filteredCount = table.getFilteredRowModel().rows.length;
-  const colCount = showPilot ? 9 : 7;
+  const colCount = (showPilot ? 9 : 7) + (onView ? 1 : 0);
 
   const openAttachments = async (event: EventLogbookItem) => {
     setViewer({ event, items: null });
@@ -109,6 +112,7 @@ export function EventLogbookTable({
     ...(showPilot ? [c('pilot'), c('client')] : []),
     c('location'),
     c('attachments'),
+    ...(onView ? [c('details')] : []),
   ];
 
   return (
@@ -167,8 +171,10 @@ export function EventLogbookTable({
               rows.map(({ original: e }, i) => (
                 <tr
                   key={e.event_id}
+                  onClick={onView ? () => onView(e.event_id) : undefined}
                   className={cn(
                     'border-b transition-colors',
+                    onView && 'cursor-pointer',
                     ui.rowBorder,
                     ui.rowHover,
                     ui.text,
@@ -203,7 +209,10 @@ export function EventLogbookTable({
                     {e.attachment_count > 0 ? (
                       <button
                         type="button"
-                        onClick={() => openAttachments(e)}
+                        onClick={(ev) => {
+                          ev.stopPropagation();
+                          openAttachments(e);
+                        }}
                         className="inline-flex items-center gap-1 text-violet-500 hover:underline"
                       >
                         <Paperclip className="h-3.5 w-3.5" />
@@ -213,6 +222,22 @@ export function EventLogbookTable({
                       <span className={ui.faint}>—</span>
                     )}
                   </td>
+                  {onView && (
+                    <td className="px-3 py-2.5">
+                      <button
+                        type="button"
+                        title={t('logbooks.eventLogbook.detail.view')}
+                        aria-label={t('logbooks.eventLogbook.detail.view')}
+                        onClick={(ev) => {
+                          ev.stopPropagation();
+                          onView(e.event_id);
+                        }}
+                        className="rounded p-1 text-violet-500 hover:bg-violet-500/10"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </button>
+                    </td>
+                  )}
                 </tr>
               ))
             )}

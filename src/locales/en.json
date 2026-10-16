@@ -2835,7 +2835,8 @@
         "location": "Location",
         "pilot": "Pilot",
         "client": "Client",
-        "attachments": "Attachments"
+        "attachments": "Attachments",
+        "details": "Details"
       },
       "types": {
         "equipment_malfunction": "Equipment malfunction",
@@ -2911,6 +2912,35 @@
         "notifyHint": "Selected contacts are emailed about this event ({{count}} selected). Defaults come from the client.",
         "notifySearch": "Search contacts…",
         "notifyNoContacts": "No contacts in the contact book."
+      },
+      "detail": {
+        "title": "Event #{{id}}",
+        "view": "View event",
+        "close": "Close",
+        "edit": "Edit",
+        "delete": "Delete",
+        "cancel": "Cancel",
+        "save": "Save changes",
+        "saving": "Saving...",
+        "reportedAt": "Reported on",
+        "reportedBy": "Reported by",
+        "notified": "Notified",
+        "openMap": "Open in Google Maps",
+        "planArea": "Highlighted: mission plan area",
+        "noLocation": "No location was recorded for this event.",
+        "noAttachments": "No attachments.",
+        "download": "Download",
+        "addFiles": "Add files",
+        "remove": "Remove",
+        "undo": "Undo",
+        "noRenotify": "Saving changes does not send any new notifications; recipients were informed when the event was reported.",
+        "updated": "Event updated",
+        "updateError": "Failed to update the event",
+        "deleted": "Event deleted",
+        "deleteError": "Failed to delete the event",
+        "loadError": "Could not load this event. It may have been deleted, or you may not have access to it.",
+        "deleteTitle": "Delete this event?",
+        "deleteText": "Event #{{id}} and its attachments will be permanently removed. Emails that were already sent cannot be recalled."
       },
       "webhooks": {
         "title": "Event webhooks",

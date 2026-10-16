@@ -8,6 +8,7 @@ import {
   type EventAttachmentInput,
   type EventClientInfo,
   type EventDroneComponent,
+  type EventDetail,
   type EventDroneOption,
   type EventLogbookFilters,
   type EventLogbookItem,
@@ -20,7 +21,7 @@ import { FULL_ACCESS_ROLES } from '@/lib/auth/feature-permissions-types';
 import { getSessionEffectivePermissions } from '@/lib/auth/feature-permissions';
 import type { SessionUser } from '@/lib/auth/server-session';
 import { prisma } from '@/lib/prisma';
-import { getPresignedDownloadUrl, getPresignedUploadUrl } from '@/lib/s3Client';
+import { deleteFileFromS3, getPresignedDownloadUrl, getPresignedUploadUrl } from '@/lib/s3Client';
 import { z } from 'zod';
 
 export class EventLogbookError extends Error {
@@ -254,7 +255,7 @@ export async function listEventsForClient(
 }
 
 async function findEvents(
-  scopeWhere: { fk_owner_id: number; fk_pilot_user_id?: number; fk_client_id?: number },
+  scopeWhere: { fk_owner_id: number; fk_pilot_user_id?: number; fk_client_id?: number; event_id?: number },
   filters: EventLogbookFilters,
 ): Promise<EventLogbookItem[]> {
   const rows = await prisma.pilot_event.findMany({
@@ -321,6 +322,162 @@ async function findEvents(
     notes: r.notes,
     attachment_count: r._count.pilot_event_attachment,
   }));
+}
+
+type EventScope = { fk_owner_id: number; fk_pilot_user_id?: number; fk_client_id?: number };
+
+/** Full details of one event (with attachment links and the mission plan outline). */
+async function loadEventDetail(scope: EventScope, eventId: number, canEdit: boolean, includeRecipients: boolean): Promise<EventDetail> {
+  const [item] = await findEvents({ ...scope, event_id: eventId }, {});
+  if (!item) throw new EventLogbookError('Event not found', 404);
+
+  const row = await prisma.pilot_event.findUnique({
+    where: { event_id: eventId },
+    select: {
+      notify_emails: true,
+      fk_mission_id: true,
+      tool: { select: { tool_code: true } },
+      pilot_event_attachment: { orderBy: { attachment_id: 'asc' } },
+    },
+  });
+  if (!row) throw new EventLogbookError('Event not found', 404);
+
+  const mission = row.fk_mission_id
+    ? await prisma.pilot_mission.findUnique({
+        where: { pilot_mission_id: row.fk_mission_id },
+        select: { planning_logbook: { select: { mission_planning_code: true, waypoints: true } } },
+      })
+    : null;
+  const waypoints = mission?.planning_logbook ? parseWaypoints(mission.planning_logbook.waypoints) : null;
+
+  const attachments = await Promise.all(
+    row.pilot_event_attachment.map(async (a) => ({
+      attachment_id: a.attachment_id,
+      file_name: a.file_name,
+      file_type: a.file_type,
+      file_size: a.file_size != null ? Number(a.file_size) : null,
+      url: await getPresignedDownloadUrl(a.file_key, 900, a.file_name, 'inline'),
+      download_url: await getPresignedDownloadUrl(a.file_key, 900, a.file_name, 'attachment'),
+    })),
+  );
+
+  return {
+    ...item,
+    tool_code: row.tool?.tool_code ?? null,
+    notify_emails: includeRecipients ? row.notify_emails : [],
+    plan:
+      mission?.planning_logbook && waypoints
+        ? { code: mission.planning_logbook.mission_planning_code, waypoints: waypoints.map(({ lat, lng }) => ({ lat, lng })) }
+        : null,
+    attachments,
+    can_edit: canEdit,
+  };
+}
+
+export async function getEventDetail(user: SessionUser, eventId: number, canEdit: boolean): Promise<EventDetail> {
+  const scoped = await isScopedUser(user);
+  return loadEventDetail({ fk_owner_id: user.ownerId, ...(scoped ? { fk_pilot_user_id: user.userId } : {}) }, eventId, canEdit, true);
+}
+
+/** Client portal: read-only, restricted to events attributed to the client. */
+export async function getClientEventDetail(clientId: number, ownerId: number, eventId: number): Promise<EventDetail> {
+  return loadEventDetail({ fk_owner_id: ownerId, fk_client_id: clientId }, eventId, false, false);
+}
+
+const attachmentInputSchema = z.object({
+  file_name: z.string().min(1).max(255),
+  file_key: z.string().min(1),
+  file_type: z.string().max(100),
+  file_size: z.number().int().nonnegative().max(EVENT_ATTACHMENT_MAX_BYTES),
+});
+
+/** Editable parts of a reported event. System, mission and recipients stay as reported. */
+export const updateEventSchema = z
+  .object({
+    event_type: z.enum(EVENT_TYPES),
+    takeoff_time: z.string().refine((v) => !Number.isNaN(Date.parse(v)), 'Invalid takeoff time'),
+    latitude: z.number().min(-90).max(90),
+    longitude: z.number().min(-180).max(180),
+    location_label: z.string().max(500).nullable().optional(),
+    notes: z.string().max(500).nullable().optional(),
+    remove_attachment_ids: z.array(z.number().int().positive()).default([]),
+    add_attachments: z.array(attachmentInputSchema).default([]),
+  });
+export type UpdateEventInput = z.infer<typeof updateEventSchema>;
+
+function mapSnapshotKey(ownerId: number, eventId: number): string {
+  return `event-logbook/${ownerId}/maps/${eventId}.png`;
+}
+export { mapSnapshotKey };
+
+async function findOwnEvent(user: SessionUser, eventId: number) {
+  const scoped = await isScopedUser(user);
+  const event = await prisma.pilot_event.findFirst({
+    where: { event_id: eventId, fk_owner_id: user.ownerId, ...(scoped ? { fk_pilot_user_id: user.userId } : {}) },
+    include: { pilot_event_attachment: true },
+  });
+  if (!event) throw new EventLogbookError('Event not found', 404);
+  return event;
+}
+
+/** Edits a reported event. Deliberately sends no notifications: recipients were informed when it was reported. */
+export async function updateEvent(user: SessionUser, eventId: number, input: UpdateEventInput): Promise<void> {
+  const event = await findOwnEvent(user, eventId);
+
+  const removeIds = new Set(input.remove_attachment_ids);
+  const removed = event.pilot_event_attachment.filter((a) => removeIds.has(a.attachment_id));
+  if (removed.length !== removeIds.size) throw new EventLogbookError('Attachment not found', 404);
+
+  const prefix = attachmentKeyPrefix(user);
+  for (const a of input.add_attachments) {
+    if (!a.file_key.startsWith(prefix) || a.file_key.includes('..')) throw new EventLogbookError('Invalid attachment key', 403);
+    if (!EVENT_ATTACHMENT_ALLOWED_TYPES.includes(a.file_type)) throw new EventLogbookError(`File type not allowed: ${a.file_type}`);
+  }
+  if (event.pilot_event_attachment.length - removed.length + input.add_attachments.length > EVENT_ATTACHMENT_MAX_FILES) {
+    throw new EventLogbookError(`At most ${EVENT_ATTACHMENT_MAX_FILES} attachments are allowed`);
+  }
+
+  await prisma.$transaction([
+    prisma.pilot_event.update({
+      where: { event_id: eventId },
+      data: {
+        event_type: input.event_type,
+        takeoff_time: new Date(input.takeoff_time),
+        latitude: input.latitude,
+        longitude: input.longitude,
+        location_label: input.location_label ?? null,
+        notes: input.notes?.trim() || null,
+      },
+    }),
+    prisma.pilot_event_attachment.deleteMany({ where: { fk_event_id: eventId, attachment_id: { in: [...removeIds] } } }),
+    prisma.pilot_event_attachment.createMany({
+      data: input.add_attachments.map((a) => ({
+        fk_event_id: eventId,
+        file_name: a.file_name,
+        file_key: a.file_key,
+        file_type: a.file_type,
+        file_size: BigInt(a.file_size),
+      })),
+    }),
+  ]);
+
+  await removeS3Objects(removed.map((a) => a.file_key));
+}
+
+export async function deleteEvent(user: SessionUser, eventId: number): Promise<void> {
+  const event = await findOwnEvent(user, eventId);
+  // Attachment rows and webhook deliveries are removed by the database (ON DELETE CASCADE).
+  await prisma.pilot_event.delete({ where: { event_id: eventId } });
+  await removeS3Objects([...event.pilot_event_attachment.map((a) => a.file_key), mapSnapshotKey(event.fk_owner_id, eventId)]);
+}
+
+/** Storage clean-up is best effort: a leftover file must not fail an edit or delete that already succeeded. */
+async function removeS3Objects(keys: string[]) {
+  await Promise.all(
+    keys.map((key) =>
+      deleteFileFromS3(key).catch((err) => console.error('[event-logbook] could not delete', key, err)),
+    ),
+  );
 }
 
 function sanitizeFileName(name: string): string {

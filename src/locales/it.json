@@ -2831,7 +2831,8 @@
         "location": "Posizione",
         "pilot": "Pilota",
         "client": "Cliente",
-        "attachments": "Allegati"
+        "attachments": "Allegati",
+        "details": "Dettagli"
       },
       "types": {
         "equipment_malfunction": "Malfunzionamento attrezzatura",
@@ -2907,6 +2908,35 @@
         "notifyHint": "I contatti selezionati riceveranno un'email su questo evento ({{count}} selezionati). I valori predefiniti provengono dal cliente.",
         "notifySearch": "Cerca contatti…",
         "notifyNoContacts": "Nessun contatto in rubrica."
+      },
+      "detail": {
+        "title": "Evento #{{id}}",
+        "view": "Visualizza evento",
+        "close": "Chiudi",
+        "edit": "Modifica",
+        "delete": "Elimina",
+        "cancel": "Annulla",
+        "save": "Salva modifiche",
+        "saving": "Salvataggio...",
+        "reportedAt": "Segnalato il",
+        "reportedBy": "Segnalato da",
+        "notified": "Notificati",
+        "openMap": "Apri in Google Maps",
+        "planArea": "Evidenziata: area del piano di missione",
+        "noLocation": "Per questo evento non è stata registrata una posizione.",
+        "noAttachments": "Nessun allegato.",
+        "download": "Scarica",
+        "addFiles": "Aggiungi file",
+        "remove": "Rimuovi",
+        "undo": "Annulla",
+        "noRenotify": "Il salvataggio non invia nuove notifiche; i destinatari sono stati informati quando l'evento è stato segnalato.",
+        "updated": "Evento aggiornato",
+        "updateError": "Impossibile aggiornare l'evento",
+        "deleted": "Evento eliminato",
+        "deleteError": "Impossibile eliminare l'evento",
+        "loadError": "Impossibile caricare questo evento. Potrebbe essere stato eliminato o potresti non avervi accesso.",
+        "deleteTitle": "Eliminare questo evento?",
+        "deleteText": "L'evento #{{id}} e i suoi allegati verranno rimossi definitivamente. Le email già inviate non possono essere richiamate."
       },
       "webhooks": {
         "title": "Webhook eventi",

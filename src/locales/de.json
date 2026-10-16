@@ -2825,7 +2825,8 @@
         "location": "Standort",
         "pilot": "Pilot",
         "client": "Kunde",
-        "attachments": "Anhänge"
+        "attachments": "Anhänge",
+        "details": "Details"
       },
       "types": {
         "equipment_malfunction": "Geräteausfall",
@@ -2901,6 +2902,35 @@
         "notifyHint": "Ausgewählte Kontakte erhalten eine E-Mail zu diesem Ereignis ({{count}} ausgewählt). Standardwerte stammen vom Kunden.",
         "notifySearch": "Kontakte suchen…",
         "notifyNoContacts": "Keine Kontakte im Kontaktbuch."
+      },
+      "detail": {
+        "title": "Ereignis #{{id}}",
+        "view": "Ereignis ansehen",
+        "close": "Schließen",
+        "edit": "Bearbeiten",
+        "delete": "Löschen",
+        "cancel": "Abbrechen",
+        "save": "Änderungen speichern",
+        "saving": "Speichern...",
+        "reportedAt": "Gemeldet am",
+        "reportedBy": "Gemeldet von",
+        "notified": "Benachrichtigt",
+        "openMap": "In Google Maps öffnen",
+        "planArea": "Hervorgehoben: Bereich des Missionsplans",
+        "noLocation": "Für dieses Ereignis wurde kein Ort erfasst.",
+        "noAttachments": "Keine Anhänge.",
+        "download": "Herunterladen",
+        "addFiles": "Dateien hinzufügen",
+        "remove": "Entfernen",
+        "undo": "Rückgängig",
+        "noRenotify": "Beim Speichern werden keine neuen Benachrichtigungen versendet; die Empfänger wurden bei der Meldung informiert.",
+        "updated": "Ereignis aktualisiert",
+        "updateError": "Ereignis konnte nicht aktualisiert werden",
+        "deleted": "Ereignis gelöscht",
+        "deleteError": "Ereignis konnte nicht gelöscht werden",
+        "loadError": "Dieses Ereignis konnte nicht geladen werden. Es wurde möglicherweise gelöscht oder Sie haben keinen Zugriff.",
+        "deleteTitle": "Dieses Ereignis löschen?",
+        "deleteText": "Ereignis #{{id}} und seine Anhänge werden dauerhaft entfernt. Bereits versendete E-Mails können nicht zurückgerufen werden."
       },
       "webhooks": {
         "title": "Ereignis-Webhooks",
