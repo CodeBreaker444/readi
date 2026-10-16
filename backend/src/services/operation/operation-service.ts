@@ -902,10 +902,15 @@ export async function getPilotOptions(ownerId: number) {
 }
 
 export async function getToolOptions(ownerId: number) {
-  const data = await prisma.tool.findMany({
+  const allTools = await prisma.tool.findMany({
     where: { fk_owner_id: ownerId, tool_active: 'Y' },
     orderBy: { tool_name: 'asc' },
     select: { tool_id: true, tool_name: true, tool_code: true, tool_metadata: true },
+  });
+  // The warehouse is a stock placeholder, not a drone; soft-deleted systems are hidden too.
+  const data = allTools.filter((t) => {
+    const meta = t.tool_metadata as { is_warehouse?: boolean; deleted?: boolean } | null;
+    return meta?.is_warehouse !== true && meta?.deleted !== true;
   });
 
   if (data.length === 0) return data;

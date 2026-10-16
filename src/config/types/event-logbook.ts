@@ -52,15 +52,44 @@ export interface EventDroneOption {
   drone_components: EventDroneComponent[];
   /** Client the system is assigned to; used when the selected mission has no client. */
   assigned_client: EventClientInfo | null;
+  /** Where the system is based (from the system's location); used to zoom the event map. */
+  latitude: number | null;
+  longitude: number | null;
+  location_name: string | null;
 }
 
+export interface EventLatLng {
+  lat: number;
+  lng: number;
+}
+
+/** Mission plan (planning logbook) attached to a mission; waypoints outline the planned area. */
+export interface EventMissionPlan {
+  plan_id: number;
+  code: string | null;
+  description: string | null;
+  waypoints: EventLatLng[];
+}
+
+export type EventMissionStatus = 'PLANNED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'ABORTED';
+
 export interface EventMissionOption {
+  /** Canonical status; null when the stored status is not recognised (then status_name is shown as-is). */
+  status_code: EventMissionStatus | null;
   pilot_mission_id: number;
   mission_name: string | null;
   mission_code: string | null;
   fk_tool_id: number | null;
   scheduled_start: string | null;
   client: EventClientInfo | null;
+  /** True while the mission is neither completed, cancelled nor aborted. */
+  is_active: boolean;
+  status_name: string | null;
+  operation_type: string | null;
+  category: string | null;
+  location: string | null;
+  /** Mission plan, when the mission has one. */
+  plan: EventMissionPlan | null;
 }
 
 export interface EventLogbookItem {
@@ -143,4 +172,12 @@ export function droneComponentLine(d: { drone_components?: EventDroneComponent[]
 
 export function formatDroneLabel(d: Pick<EventDroneOption, 'tool_id' | 'tool_name' | 'tool_code'>): string {
   return d.tool_name?.trim() || d.tool_code?.trim() || `#${d.tool_id}`;
+}
+
+/** Contact-book entry that can be picked as an email recipient of a reported event. */
+export interface EventNotifyContact {
+  contact_id: number;
+  name: string;
+  company: string | null;
+  email: string;
 }

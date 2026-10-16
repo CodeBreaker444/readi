@@ -1,4 +1,4 @@
-import { sendTestEmailNotification } from '@/backend/services/logbook/event-notification-service';
+import { sendTestToContact } from '@/backend/services/logbook/event-notification-service';
 import { apiError } from '@/lib/api-error';
 import { requireFullAccessRole } from '@/lib/auth/api-auth';
 import { E } from '@/lib/error-codes';
@@ -15,8 +15,8 @@ export async function POST(_req: NextRequest, { params }: Params) {
     const id = Number((await params).id);
     if (!Number.isInteger(id)) return apiError(E.VL002);
 
-    const result = await sendTestEmailNotification(session!.user.ownerId, id);
-    return NextResponse.json({ code: 200, ...result });
+    await sendTestToContact(session!.user.ownerId, id);
+    return NextResponse.json({ code: 200 });
   } catch (err) {
     return eventLogbookErrorResponse(err);
   }

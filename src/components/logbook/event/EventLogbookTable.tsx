@@ -230,8 +230,10 @@ export function EventLogbookTable({
             </DialogTitle>
           </DialogHeader>
           {viewer?.items == null ? (
-            <div className="flex justify-center py-8">
-              <Loader2 className="h-5 w-5 animate-spin" />
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+              {[0, 1, 2].map((i) => (
+                <Skeleton key={i} className="aspect-square w-full" />
+              ))}
             </div>
           ) : (
             <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">

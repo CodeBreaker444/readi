@@ -54,9 +54,29 @@ Open a battery for its **Cycle Log**: each mission it was used on, with date, du
 
 ## Event Logbook
 
-Pilots report incidents and anomalies (equipment malfunction, GPS signal issue, obstacle detected, weather, bird activity, unexpected landing, fly-away, other) with **Add Report Event**. The wizard collects the drone, an optional mission, the location on the map, the event type, the takeoff time, notes and attachments (JPG, PNG, MP4, PDF, up to 100 MB each).
+Pilots report incidents and anomalies (equipment malfunction, GPS signal issue, obstacle detected, weather, bird activity, unexpected landing, fly-away, other) with **Add Report Event**. Because a flight often has several events, the details they share are set up once, so that adding an event during a flight takes only a few taps.
 
-A pilot can only pick systems and missions assigned to them and only sees the events they reported. Roles that manage systems see every event of the company.
+### Mission setup
+
+The first time you click **Add Report Event** you see **Mission setup**:
+
+- **System** – the drone. If only one is available it is pre-selected. The system's base location is used to open the map.
+- **Mission (optional)** – lists all missions of the chosen system, each with its operation type, status (Scheduled, In Progress, Completed, Cancelled or Aborted), category, client and date. A mission that has a mission plan shows it nested underneath. The list can be searched.
+- **Takeoff time** – filled from the mission's scheduled start, and can be changed.
+- **Notifications** – the contacts to email, pre-selected from the client's defaults.
+
+Save the setup and it is remembered in your browser for 24 hours. From then on **Add Report Event** opens straight to the event screen with these values pre-filled. To change the setup later, use the **Mission setup** button at the top of the page; the event screen only shows it, it cannot be edited there.
+
+### Reporting an event
+
+The event screen is a single modal with no Next buttons:
+
+1. Check the pre-filled setup summary. Only the **Notify** dropdown can be changed in place.
+2. Choose the **event type**.
+3. Set the exact **location** by tapping the map or searching, and optionally add attachments (JPG, PNG, MP4, PDF, up to 100 MB each) in the same section. The map opens on the mission plan when there is one, otherwise on the system's base location. When the mission has a plan, its area is highlighted on the map.
+4. Add optional notes and click **Submit Event**. **Add Another Event** keeps the setup, so the next event only needs a type and a location.
+
+A pilot can only pick systems and missions assigned to them and only sees the events they reported. Roles that manage systems see every event of the company. The warehouse is never offered as a system.
 
 ### Webhooks
 
@@ -90,10 +110,12 @@ Verify the `X-Readi-Signature` header: `sha256=` + HMAC-SHA256 (hex) of `"<X-Rea
 
 Admins, OPMs and super admins also see a **mail icon** next to the webhook settings icon. It opens two tabs:
 
-- **Notifications** – each notification has a name, a **client** (one client or all clients, resolved the same way as for webhooks), optional **event types** (none selected = every type), an active switch and one or more **recipients**. Recipients can be typed (press Enter or comma to add each address) and/or ticked from the contact book. A notification holds up to 20 recipients. Use the send icon to deliver a test email to its recipients.
-- **Contact book** – the company's reusable recipients. Each contact has a **name**, an **email** (unique per company), and an optional **company** and **notes**. Contacts can be searched, edited and deleted. Deleting a contact does not remove its address from notifications that already include it.
+- **Contact book** – the company's reusable recipients. Each contact has a **name**, an **email** (unique per company), and an optional **company** and **notes**. Contacts can be searched, edited, deleted and sent a test email. Deleting a contact also removes it from all client defaults.
+- **Default notifications** – pick a **client** from the dropdown and tick the contacts that should be emailed by default for that client. Defaults are pre-selected whenever an event is reported for that client.
 
-When a pilot submits an event, every active notification matching its client and type sends an email with the event type, report and takeoff times, pilot, drone, client, mission, location, notes and attachment download links (valid for 7 days). A recipient covered by several matching notifications receives a single email. Each send (including test emails) counts towards the company's daily email limit; once it is reached, event emails are skipped until the counter resets. Email failures never block the pilot's report.
+Notifications are **per event**, not per event type: the **Notify** dropdown in the mission setup and on the event screen lists the contact book with the client's defaults already ticked. It shows five contacts at a time, selected ones first, and has a search box to find the rest. The pilot can add or remove contacts (up to 20); the selection is saved with the event. Changing the mission or system before touching the selection re-applies the new client's defaults.
+
+When the event is submitted, the selected contacts receive one email with the event type, report and takeoff times, pilot, drone, client, mission, location, notes and attachment download links (valid for 7 days). Each send counts towards the company's daily email limit; once it is reached, event emails are skipped until the counter resets. Email failures never block the pilot's report.
 
 ---
 

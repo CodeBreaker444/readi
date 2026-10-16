@@ -12,8 +12,10 @@ import {
   type EventLogbookFilters,
   type EventLogbookItem,
   type EventMissionOption,
+  type EventMissionStatus,
   formatMissionLabel,
 } from '@/config/types/event-logbook';
+import { parseWaypoints } from '@/backend/utils/planning-waypoints';
 import { FULL_ACCESS_ROLES } from '@/lib/auth/feature-permissions-types';
 import { getSessionEffectivePermissions } from '@/lib/auth/feature-permissions';
 import type { SessionUser } from '@/lib/auth/server-session';
@@ -61,6 +63,15 @@ export async function getEventOptions(user: SessionUser): Promise<{
       fk_tool_id: true,
       fk_client_id: true,
       scheduled_start: true,
+      actual_end: true,
+      location: true,
+      status_name: true,
+      pilot_mission_status: { select: { status_code: true, status_name: true, is_final_status: true } },
+      pilot_mission_type: { select: { type_name: true } },
+      pilot_mission_category: { select: { category_name: true } },
+      planning_logbook: {
+        select: { mission_planning_id: true, mission_planning_code: true, mission_planning_desc: true, waypoints: true },
+      },
     },
   });
 
@@ -74,10 +85,15 @@ export async function getEventOptions(user: SessionUser): Promise<{
     toolIdFilter = { in: ids.map((r) => r.fk_tool_id as number) };
   }
 
-  const drones = await prisma.tool.findMany({
+  const allTools = await prisma.tool.findMany({
     where: { fk_owner_id: user.ownerId, tool_active: 'Y', ...(toolIdFilter ? { tool_id: toolIdFilter } : {}) },
     orderBy: { tool_name: 'asc' },
-    select: { tool_id: true, tool_name: true, tool_code: true, assigned_client_id: true },
+    select: { tool_id: true, tool_name: true, tool_code: true, assigned_client_id: true, location: true, tool_metadata: true },
+  });
+  // The warehouse is a stock placeholder, not a drone; soft-deleted systems are hidden too.
+  const drones = allTools.filter((t) => {
+    const meta = t.tool_metadata as { is_warehouse?: boolean; deleted?: boolean } | null;
+    return meta?.is_warehouse !== true && meta?.deleted !== true;
   });
 
   // Same rule as mission creation: DRONE components with a serial number, primary one first.
@@ -143,19 +159,84 @@ export async function getEventOptions(user: SessionUser): Promise<{
 
   const droneIds = new Set(drones.map((d) => d.tool_id));
   return {
-    drones: drones.map(({ assigned_client_id, ...d }) => ({
-      ...d,
-      drone_components: componentMap.get(d.tool_id) ?? [],
-      assigned_client: assigned_client_id ? (clientMap.get(assigned_client_id) ?? null) : null,
-    })),
+    drones: drones.map(({ assigned_client_id, location, tool_metadata, ...d }) => {
+      const meta = (tool_metadata ?? {}) as { latitude?: unknown; longitude?: unknown; pseudo_name?: unknown };
+      const lat = Number(meta.latitude);
+      const lng = Number(meta.longitude);
+      const hasCoords = meta.latitude != null && meta.longitude != null && Number.isFinite(lat) && Number.isFinite(lng);
+      return {
+        ...d,
+        drone_components: componentMap.get(d.tool_id) ?? [],
+        assigned_client: assigned_client_id ? (clientMap.get(assigned_client_id) ?? null) : null,
+        latitude: hasCoords ? lat : null,
+        longitude: hasCoords ? lng : null,
+        location_name: (typeof meta.pseudo_name === 'string' && meta.pseudo_name.trim()) || location?.trim() || null,
+      };
+    }),
     missions: missions
       .filter((m) => m.fk_tool_id != null && droneIds.has(m.fk_tool_id))
-      .map(({ fk_client_id, ...m }) => ({
-        ...m,
-        scheduled_start: m.scheduled_start?.toISOString() ?? null,
-        client: fk_client_id ? (clientMap.get(fk_client_id) ?? null) : null,
-      })),
+      .map(({ fk_client_id, pilot_mission_status, pilot_mission_type, pilot_mission_category, planning_logbook, actual_end: _actualEnd, status_name, ...m }) => {
+        const is_active = isMissionActive({ status_name, status: pilot_mission_status });
+        const waypoints = planning_logbook ? parseWaypoints(planning_logbook.waypoints) : null;
+        return {
+          ...m,
+          scheduled_start: m.scheduled_start?.toISOString() ?? null,
+          client: fk_client_id ? (clientMap.get(fk_client_id) ?? null) : null,
+          is_active,
+          status_code: normalizeMissionStatus(status_name, pilot_mission_status),
+          status_name: status_name?.trim() || pilot_mission_status?.status_name || null,
+          operation_type: pilot_mission_type?.type_name ?? null,
+          category: pilot_mission_category?.category_name ?? null,
+          plan:
+            planning_logbook
+              ? {
+                  plan_id: planning_logbook.mission_planning_id,
+                  code: planning_logbook.mission_planning_code,
+                  description: planning_logbook.mission_planning_desc,
+                  waypoints: (waypoints ?? []).map(({ lat, lng }) => ({ lat, lng })),
+                }
+              : null,
+        };
+      }),
   };
+}
+
+const STATUS_ALIASES: Record<string, EventMissionStatus> = {
+  PLANNED: 'PLANNED', SCHEDULED: 'PLANNED', '00': 'PLANNED', PIANIFICATA: 'PLANNED',
+  IN_PROGRESS: 'IN_PROGRESS', IN_FLIGHT: 'IN_PROGRESS', '05': 'IN_PROGRESS', 'IN_ESECUZIONE': 'IN_PROGRESS',
+  COMPLETED: 'COMPLETED', COMPLETATA: 'COMPLETED', '10': 'COMPLETED',
+  CANCELLED: 'CANCELLED', CANCELED: 'CANCELLED', CANCELLATA: 'CANCELLED',
+  ABORTED: 'ABORTED',
+};
+
+/** Canonical status (pilot_mission.status_name first, then the joined status) so the UI can label it consistently. */
+function normalizeMissionStatus(
+  own: string | null,
+  joined: { status_code: string; status_name: string } | null,
+): EventMissionStatus | null {
+  for (const v of [own, joined?.status_code, joined?.status_name]) {
+    const hit = STATUS_ALIASES[v?.trim().toUpperCase().replace(/[\s-]+/g, '_') ?? ''];
+    if (hit) return hit;
+  }
+  return null;
+}
+
+const FINISHED_STATUS_NAMES = ['COMPLETED', 'COMPLETATA', 'CANCELLED', 'CANCELED', 'CANCELLATA', 'ABORTED'];
+
+/**
+ * A mission can still have events reported against it until it is completed, cancelled or aborted.
+ * pilot_mission.status_name (PLANNED | IN_PROGRESS | COMPLETED | CANCELLED | ABORTED) is what the app
+ * writes and filters by; the joined status table has per-owner ids and is only a fallback.
+ */
+function isMissionActive(m: {
+  status_name: string | null;
+  status: { status_code: string; status_name: string; is_final_status: boolean | null } | null;
+}): boolean {
+  const own = m.status_name?.trim().toUpperCase().replace(/[\s-]+/g, '_');
+  if (own) return !FINISHED_STATUS_NAMES.includes(own);
+  if (m.status?.is_final_status) return false;
+  const joined = [m.status?.status_code, m.status?.status_name].map((v) => v?.trim().toUpperCase() ?? '');
+  return !joined.some((v) => FINISHED_STATUS_NAMES.includes(v));
 }
 
 export async function listEvents(user: SessionUser, filters: EventLogbookFilters): Promise<EventLogbookItem[]> {
@@ -265,6 +346,8 @@ export async function createAttachmentUploadUrl(
   return { upload_url, file_key };
 }
 
+export const MAX_NOTIFY_RECIPIENTS = 20;
+
 export const createEventSchema = z.object({
   tool_id: z.number().int().positive(),
   mission_id: z.number().int().positive().nullable().optional(),
@@ -274,6 +357,8 @@ export const createEventSchema = z.object({
   longitude: z.number().min(-180).max(180),
   location_label: z.string().max(500).nullable().optional(),
   notes: z.string().max(500).nullable().optional(),
+  /** Contact-book entries emailed about this event. */
+  notify_contact_ids: z.array(z.number().int().positive()).max(MAX_NOTIFY_RECIPIENTS).default([]),
   attachments: z
     .array(
       z.object({
@@ -327,6 +412,14 @@ export async function createEvent(user: SessionUser, input: CreateEventInput): P
     clientId = tool?.assigned_client_id ?? null;
   }
 
+  // Contacts must belong to the same company; their addresses are snapshotted on the event.
+  const contactIds = [...new Set(input.notify_contact_ids)];
+  const contacts = contactIds.length
+    ? await prisma.event_contact.findMany({ where: { fk_owner_id: user.ownerId, contact_id: { in: contactIds } }, select: { email: true } })
+    : [];
+  if (contacts.length !== contactIds.length) throw new EventLogbookError('Contact not found', 404);
+  const notifyEmails = [...new Set(contacts.map((c) => c.email.toLowerCase()))];
+
   return prisma.pilot_event.create({
     data: {
       fk_owner_id: user.ownerId,
@@ -340,6 +433,7 @@ export async function createEvent(user: SessionUser, input: CreateEventInput): P
       longitude: input.longitude,
       location_label: input.location_label ?? null,
       notes: input.notes?.trim() || null,
+      notify_emails: notifyEmails,
       pilot_event_attachment: {
         create: input.attachments.map((a) => ({
           file_name: a.file_name,

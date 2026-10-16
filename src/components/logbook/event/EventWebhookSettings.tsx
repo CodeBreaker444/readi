@@ -23,6 +23,7 @@ import {
   type EventWebhookDeliveryItem,
 } from '@/config/types/event-logbook';
 import axios from 'axios';
+import { Skeleton } from '@/components/ui/skeleton';
 import { CheckCircle2, ChevronLeft, ChevronRight, Copy, History, KeyRound, Loader2, Pencil, Plus, Search, Send, Trash2, XCircle } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -318,9 +319,14 @@ export function EventWebhookSettings({ open, onOpenChange }: Props) {
 
             <div className="h-[34rem] overflow-y-auto pr-1">
             {loading ? (
-              <div className="flex justify-center py-8">
-                <Loader2 className="h-5 w-5 animate-spin" />
-              </div>
+              <ul className="space-y-1.5">
+                {[0, 1, 2, 3].map((i) => (
+                  <li key={i} className="space-y-2 rounded-lg border border-slate-200 p-2 dark:border-slate-700">
+                    <Skeleton className="h-4 w-1/3" />
+                    <Skeleton className="h-3 w-2/3" />
+                  </li>
+                ))}
+              </ul>
             ) : filteredHooks.length === 0 ? (
               <p className="py-6 text-center text-sm text-slate-500 dark:text-slate-400">{webhooks.length === 0 ? w('none') : w('noMatches')}</p>
             ) : (
