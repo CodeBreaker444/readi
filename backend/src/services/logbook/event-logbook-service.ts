@@ -43,6 +43,13 @@ export async function isScopedUser(user: SessionUser): Promise<boolean> {
   return perms.systems_manage == null;
 }
 
+function toolClientId(t: { assigned_client_id: number | null; tool_metadata: unknown }): number | null {
+  if (t.assigned_client_id) return t.assigned_client_id;
+  const raw = (t.tool_metadata as { clientId?: unknown } | null)?.clientId;
+  const id = Number(raw);
+  return raw != null && Number.isInteger(id) && id > 0 ? id : null;
+}
+
 /** Systems (drones) and missions this user is allowed to report an event against. */
 export async function getEventOptions(user: SessionUser): Promise<{
   drones: EventDroneOption[];
@@ -118,7 +125,7 @@ export async function getEventOptions(user: SessionUser): Promise<{
 
   // Client details shown on the review step: the mission's client, else the system's assigned client.
   const clientIds = [
-    ...new Set([...missions.map((m) => m.fk_client_id), ...drones.map((d) => d.assigned_client_id)].filter((v): v is number => v != null)),
+    ...new Set([...missions.map((m) => m.fk_client_id), ...drones.map((d) => toolClientId(d))].filter((v): v is number => v != null)),
   ];
   const clientRows = clientIds.length
     ? await prisma.client.findMany({
@@ -161,7 +168,8 @@ export async function getEventOptions(user: SessionUser): Promise<{
 
   const droneIds = new Set(drones.map((d) => d.tool_id));
   return {
-    drones: drones.map(({ assigned_client_id, location, tool_metadata, ...d }) => {
+    drones: drones.map(({ assigned_client_id: _assigned, location, tool_metadata, ...d }) => {
+      const assigned_client_id = toolClientId({ assigned_client_id: _assigned, tool_metadata });
       const meta = (tool_metadata ?? {}) as { latitude?: unknown; longitude?: unknown; pseudo_name?: unknown };
       const lat = Number(meta.latitude);
       const lng = Number(meta.longitude);
@@ -583,8 +591,18 @@ export async function createEvent(user: SessionUser, input: CreateEventInput): P
     clientId = m?.fk_client_id ?? null;
   }
   if (!clientId) {
-    const tool = await prisma.tool.findUnique({ where: { tool_id: input.tool_id }, select: { assigned_client_id: true } });
-    clientId = tool?.assigned_client_id ?? null;
+    const tool = await prisma.tool.findUnique({
+      where: { tool_id: input.tool_id },
+      select: { assigned_client_id: true, tool_metadata: true },
+    });
+    clientId = tool ? toolClientId(tool) : null;
+  }
+  if (!clientId) {
+    throw new EventLogbookError(
+      input.mission_id
+        ? 'The selected mission has no client assigned, and neither does the system. Assign a client before reporting an event.'
+        : 'The selected system has no client assigned. Choose a mission with a client or assign a client to the system before reporting an event.',
+    );
   }
 
   // Contacts must belong to the same company; their addresses are snapshotted on the event.
