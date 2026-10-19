@@ -1,6 +1,5 @@
 import 'server-only';
 
-import { EVENT_TYPE_LABELS, type EventType } from '@/config/types/event-logbook';
 import { prisma } from '@/lib/prisma';
 import { env } from '@/backend/config/env';
 import { getPresignedDownloadUrl, putBufferToS3 } from '@/lib/s3Client';
@@ -8,6 +7,7 @@ import { z } from 'zod';
 import { sendEventReportedEmail, sendNotificationEmail } from '../../../../lib/resend/mail';
 import { incrementDailyEmailCount, isDailyEmailLimitReached } from '../email/email-limit-service';
 import { EventLogbookError, mapSnapshotKey } from './event-logbook-service';
+import { eventTypeLabel, getEventTypeLabelMap } from './event-type-service';
 import { renderMapSnapshot } from './event-map-snapshot';
 
 const MAX_EVENT_RECIPIENTS = 20;
@@ -155,7 +155,8 @@ export async function dispatchEventEmails(eventId: number): Promise<void> {
       return;
     }
 
-    const [pilot, tool, mission, client] = await Promise.all([
+    const [typeLabels, pilot, tool, mission, client] = await Promise.all([
+      getEventTypeLabelMap(event.fk_owner_id),
       prisma.public_users.findUnique({ where: { user_id: event.fk_pilot_user_id }, select: { first_name: true, last_name: true } }),
       prisma.tool.findUnique({ where: { tool_id: event.fk_tool_id }, select: { tool_name: true, tool_code: true } }),
       event.fk_mission_id
@@ -164,7 +165,7 @@ export async function dispatchEventEmails(eventId: number): Promise<void> {
       event.fk_client_id ? prisma.client.findUnique({ where: { client_id: event.fk_client_id }, select: { client_name: true } }) : null,
     ]);
 
-    const label = EVENT_TYPE_LABELS[event.event_type as EventType] ?? event.event_type;
+    const label = eventTypeLabel(typeLabels, event.event_type);
     const lat = event.latitude != null ? Number(event.latitude) : null;
     const lng = event.longitude != null ? Number(event.longitude) : null;
     const hasCoords = lat != null && lng != null;

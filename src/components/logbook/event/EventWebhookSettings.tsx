@@ -18,7 +18,6 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import {
-  EVENT_TYPES,
   type EventWebhookConfigItem,
   type EventWebhookDeliveryItem,
 } from '@/config/types/event-logbook';
@@ -28,6 +27,9 @@ import { CheckCircle2, ChevronLeft, ChevronRight, Copy, History, KeyRound, Loade
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
+import { EVENT_TYPE_PAGE_SIZE, Pager } from './Pager';
+import { useEventTypes } from './useEventTypes';
 
 interface Props {
   open: boolean;
@@ -55,6 +57,8 @@ const EMPTY_FORM: FormState = { webhook_id: null, name: '', url: '', client_id: 
 export function EventWebhookSettings({ open, onOpenChange }: Props) {
   const { t } = useTranslation();
   const w = (key: string, opts?: Record<string, unknown>) => t(`logbooks.eventLogbook.webhooks.${key}`, opts);
+  const { types: eventTypes, labelOf } = useEventTypes();
+  const [typePage, setTypePage] = useState(0);
 
   const [loading, setLoading] = useState(false);
   const [webhooks, setWebhooks] = useState<EventWebhookConfigItem[]>([]);
@@ -69,6 +73,13 @@ export function EventWebhookSettings({ open, onOpenChange }: Props) {
   const [deliveries, setDeliveries] = useState<{ id: number; items: EventWebhookDeliveryItem[] } | null>(null);
 
   const errorOf = (e: any) => e?.response?.data?.error ?? w('error');
+
+  const typeCodes = useMemo(
+    () => [...eventTypes.map((x) => x.type_code), ...(form?.event_types ?? []).filter((c) => eventTypes.every((x) => x.type_code !== c))],
+    [eventTypes, form?.event_types],
+  );
+  const typePageCount = Math.max(1, Math.ceil(typeCodes.length / EVENT_TYPE_PAGE_SIZE));
+  useEffect(() => setTypePage(0), [form?.webhook_id, form === null]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -265,17 +276,19 @@ export function EventWebhookSettings({ open, onOpenChange }: Props) {
             </div>
             <div className="space-y-1.5">
               <Label>{w('eventTypes')}</Label>
-              <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
-                {EVENT_TYPES.map((type) => (
+              <div className={cn('grid grid-cols-1 content-start gap-1.5 sm:grid-cols-2', typeCodes.length > EVENT_TYPE_PAGE_SIZE && 'min-h-[12.75rem] sm:min-h-[6.5rem]')}>
+                {/* Codes of deleted types the webhook still lists stay visible so they can be unchecked. */}
+                {typeCodes.slice(typePage * EVENT_TYPE_PAGE_SIZE, (typePage + 1) * EVENT_TYPE_PAGE_SIZE).map((type) => (
                   <label key={type} className="flex items-center gap-2 text-sm">
                     <Checkbox
                       checked={form.event_types.includes(type)}
                       onCheckedChange={(v) => toggleType(type, v === true)}
                     />
-                    {t(`logbooks.eventLogbook.types.${type}`)}
+                    {labelOf(type)}
                   </label>
                 ))}
               </div>
+              <Pager page={typePage} count={typePageCount} total={typeCodes.length} onPage={setTypePage} />
               <p className="text-xs text-slate-500 dark:text-slate-400">{w('eventTypesHint')}</p>
             </div>
             <label className="flex items-center gap-2 text-sm">
@@ -362,7 +375,7 @@ export function EventWebhookSettings({ open, onOpenChange }: Props) {
                         <p className="truncate text-xs text-slate-500 dark:text-slate-400">
                           {hook.client_name ?? w('allClients')}
                           {hook.event_types.length > 0 &&
-                            ` · ${hook.event_types.map((x) => t(`logbooks.eventLogbook.types.${x}`)).join(', ')}`}
+                            ` · ${hook.event_types.map(labelOf).join(', ')}`}
                         </p>
                       </div>
                       <div className="flex gap-1">

@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import { Check, ChevronDown, ChevronLeft, ChevronRight, Search } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 export interface PagedSelectItem {
@@ -64,6 +64,15 @@ export function PagedSelect({
     if (!open) setQuery('');
   }, [open]);
 
+  // Rows can differ in height (sublabels), so keep the tallest page seen: paging then never resizes the list.
+  const listRef = useRef<HTMLUListElement>(null);
+  const [minHeight, setMinHeight] = useState(0);
+  useEffect(() => setMinHeight(0), [open, query, items]);
+  useLayoutEffect(() => {
+    const h = listRef.current?.offsetHeight ?? 0;
+    if (filtered.length > pageSize && h > minHeight) setMinHeight(h);
+  }, [safePage, filtered.length, pageSize, minHeight, open]);
+
   const selected = items.find((i) => i.value === value);
   const triggerText = selected ? (selected.sublabel ? `${selected.label} – ${selected.sublabel}` : selected.label) : (value === clearValue && clearLabel ? clearLabel : null);
 
@@ -121,7 +130,7 @@ export function PagedSelect({
           />
         </div>
 
-        <ul role="listbox" className="space-y-0.5">
+        <ul ref={listRef} role="listbox" className="space-y-0.5" style={minHeight ? { minHeight } : undefined}>
           {clearLabel && !query && (
             <li>
               <button type="button" role="option" aria-selected={value === clearValue} className={rowBase} onClick={() => pick(clearValue)}>

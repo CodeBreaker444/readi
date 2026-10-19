@@ -1,4 +1,4 @@
-import { createEvent, createEventSchema } from '@/backend/services/logbook/event-logbook-service';
+import { createEvent, createEventSchema, describeEventForAudit } from '@/backend/services/logbook/event-logbook-service';
 import { dispatchEventEmails } from '@/backend/services/logbook/event-notification-service';
 import { dispatchEventCreated } from '@/backend/services/logbook/event-webhook-service';
 import { logEvent } from '@/backend/services/auditLog/audit-log';
@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
       eventType: 'CREATE',
       entityType: 'pilot_event',
       entityId: event_id,
-      description: `Reported event "${parsed.data.event_type}" for system #${parsed.data.tool_id}`,
+      description: `Reported event ${await describeEventForAudit(user.ownerId, parsed.data.tool_id, parsed.data.event_type)}`,
       userId: user.userId,
       userName: user.fullname,
       userEmail: user.email,

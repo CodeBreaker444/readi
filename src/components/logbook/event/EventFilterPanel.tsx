@@ -3,10 +3,8 @@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   droneComponentLine,
-  EVENT_TYPES,
   formatDroneLabel,
   formatMissionLabel,
   type EventDroneOption,
@@ -17,6 +15,7 @@ import { droneItem, PagedSelect, type PagedSelectItem } from './PagedSelect';
 import { cn } from '@/lib/utils';
 import { useTranslation } from 'react-i18next';
 import { eventUi } from './event-ui';
+import { useEventTypes } from './useEventTypes';
 
 export const FILTER_ALL = '__all__';
 
@@ -44,6 +43,7 @@ export function EventFilterPanel({ filters, onChange, onSearch, onReset, isDark,
   const { t } = useTranslation();
   const ui = eventUi(isDark);
   const e = (key: string) => t(`logbooks.eventLogbook.${key}`);
+  const { types: eventTypes } = useEventTypes();
   const filterMissions = useMemo(
     () => (filters.tool === FILTER_ALL ? missions : missions.filter((m) => String(m.fk_tool_id) === filters.tool)),
     [missions, filters.tool],
@@ -52,6 +52,10 @@ export function EventFilterPanel({ filters, onChange, onSearch, onReset, isDark,
   const droneItems = useMemo<PagedSelectItem[]>(
     () => (drones ?? []).map((d) => droneItem(d, droneComponentLine(d), formatDroneLabel(d))),
     [drones],
+  );
+  const typeItems = useMemo<PagedSelectItem[]>(
+    () => eventTypes.map((x) => ({ value: x.type_code, label: x.type_name })),
+    [eventTypes],
   );
   const missionItems = useMemo<PagedSelectItem[]>(
     () =>
@@ -104,19 +108,16 @@ export function EventFilterPanel({ filters, onChange, onSearch, onReset, isDark,
         )}
       {field(
         e('eventType'),
-        <Select value={filters.type} onValueChange={(v) => onChange({ ...filters, type: v })}>
-          <SelectTrigger className={trigger}>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent className={ui.selectContent}>
-            <SelectItem value={FILTER_ALL}>{e('all')}</SelectItem>
-            {EVENT_TYPES.map((type) => (
-              <SelectItem key={type} value={type}>
-                {t(`logbooks.eventLogbook.types.${type}`)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>,
+        <PagedSelect
+          isDark={isDark}
+          items={typeItems}
+          value={filters.type}
+          placeholder={e('all')}
+          clearLabel={e('all')}
+          clearValue={FILTER_ALL}
+          className={cn('h-8 text-xs', ui.input)}
+          onChange={(v) => onChange({ ...filters, type: v })}
+        />,
       )}
       {field(
         e('from'),

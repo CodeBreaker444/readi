@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { EVENT_TYPES, EVENT_TYPE_LABELS, type EventType, type EventWebhookConfigItem, type EventWebhookDeliveryItem } from '@/config/types/event-logbook';
+import { EVENT_TYPE_CODE_MAX, type EventWebhookConfigItem, type EventWebhookDeliveryItem } from '@/config/types/event-logbook';
 import { decryptToken, encryptToken } from '@/backend/utils/token-encryption';
 import { prisma } from '@/lib/prisma';
 import { getPresignedDownloadUrl } from '@/lib/s3Client';
@@ -9,6 +9,7 @@ import { lookup } from 'dns/promises';
 import { isIP } from 'net';
 import { z } from 'zod';
 import { EventLogbookError } from './event-logbook-service';
+import { assertEventTypesExist, eventTypeLabel, getEventTypeLabelMap } from './event-type-service';
 
 const DELIVERY_TIMEOUT_MS = 8000;
 const MAX_ATTEMPTS = 2;
@@ -19,7 +20,7 @@ export const webhookInputSchema = z.object({
   name: z.string().trim().min(1).max(100),
   url: z.string().trim().url().max(2000),
   client_id: z.number().int().positive().nullable().optional(),
-  event_types: z.array(z.enum(EVENT_TYPES)).default([]),
+  event_types: z.array(z.string().min(1).max(EVENT_TYPE_CODE_MAX)).default([]),
   is_active: z.boolean().optional(),
 });
 export type WebhookInput = z.infer<typeof webhookInputSchema>;
@@ -106,6 +107,7 @@ export async function listWebhooks(ownerId: number): Promise<EventWebhookConfigI
 export async function createWebhook(ownerId: number, userId: number, input: WebhookInput) {
   await assertPublicHttpsUrl(input.url);
   await assertClientInOwner(ownerId, input.client_id);
+  await assertEventTypesExist(ownerId, input.event_types);
   const secret = generateSecret();
   const row = await prisma.event_webhook_config.create({
     data: {
@@ -130,9 +132,11 @@ async function getOwnedWebhook(ownerId: number, webhookId: number) {
 }
 
 export async function updateWebhook(ownerId: number, webhookId: number, input: Partial<WebhookInput>) {
-  await getOwnedWebhook(ownerId, webhookId);
+  const existing = await getOwnedWebhook(ownerId, webhookId);
   if (input.url) await assertPublicHttpsUrl(input.url);
   if (input.client_id !== undefined) await assertClientInOwner(ownerId, input.client_id);
+  // Codes the webhook already holds stay valid even if their type was deleted since.
+  if (input.event_types) await assertEventTypesExist(ownerId, input.event_types.filter((c) => !existing.event_types.includes(c)));
 
   await prisma.event_webhook_config.update({
     where: { webhook_id: webhookId },
@@ -254,7 +258,8 @@ async function buildEventPayload(eventId: number) {
   const event = await prisma.pilot_event.findUnique({ where: { event_id: eventId }, include: { pilot_event_attachment: true } });
   if (!event) return null;
 
-  const [pilot, tool, mission, client] = await Promise.all([
+  const [typeLabels, pilot, tool, mission, client] = await Promise.all([
+    getEventTypeLabelMap(event.fk_owner_id),
     prisma.public_users.findUnique({ where: { user_id: event.fk_pilot_user_id }, select: { first_name: true, last_name: true } }),
     prisma.tool.findUnique({ where: { tool_id: event.fk_tool_id }, select: { tool_name: true, tool_code: true } }),
     event.fk_mission_id
@@ -280,7 +285,7 @@ async function buildEventPayload(eventId: number) {
     payload: {
       event_id: event.event_id,
       event_type: event.event_type,
-      event_type_label: EVENT_TYPE_LABELS[event.event_type as EventType] ?? event.event_type,
+      event_type_label: eventTypeLabel(typeLabels, event.event_type),
       takeoff_time: event.takeoff_time.toISOString(),
       reported_at: event.created_at.toISOString(),
       location: {

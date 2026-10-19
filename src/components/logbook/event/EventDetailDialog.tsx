@@ -15,7 +15,6 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
 import {
@@ -23,7 +22,7 @@ import {
   EVENT_ATTACHMENT_MAX_BYTES,
   EVENT_ATTACHMENT_MAX_FILES,
   EVENT_NOTES_MAX,
-  EVENT_TYPES,
+  prettifyEventTypeCode,
   type EventDetail,
   type EventType,
 } from '@/config/types/event-logbook';
@@ -31,11 +30,13 @@ import { uploadEventFiles } from '@/lib/event-logbook-upload';
 import { cn } from '@/lib/utils';
 import axios from 'axios';
 import { Download, ExternalLink, FileText, Loader2, Pencil, Trash2, UploadCloud, X } from 'lucide-react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { PagedSelect, type PagedSelectItem } from './PagedSelect';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import EventLocationMap from './EventLocationMap';
 import { eventUi } from './event-ui';
+import { useEventTypes } from './useEventTypes';
 
 interface Props {
   /** Event to show; null keeps the dialog closed. */
@@ -180,7 +181,15 @@ export function EventDetailDialog({ eventId, onClose, onChanged, isDark, detailU
     }
   };
 
-  const typeLabel = (type: string) => t(`logbooks.eventLogbook.types.${type}`, { defaultValue: type });
+  const { types: eventTypes } = useEventTypes();
+  // The event's own type stays selectable while editing even if it was deleted from the list since.
+  const typeItems = useMemo<PagedSelectItem[]>(() => {
+    const items = eventTypes.map((x) => ({ value: x.type_code, label: x.type_name }));
+    if (detail && eventTypes.every((x) => x.type_code !== detail.event_type)) {
+      items.push({ value: detail.event_type, label: detail.event_type_label || prettifyEventTypeCode(detail.event_type) });
+    }
+    return items;
+  }, [eventTypes, detail]);
   const fieldCls = 'border-slate-200 bg-white text-slate-800 dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-200';
   const faint = ui.faint;
   const hasCoords = detail?.latitude != null && detail?.longitude != null;
@@ -214,18 +223,13 @@ export function EventDetailDialog({ eventId, onClose, onChanged, isDark, detailU
                   <Label>
                     {t('logbooks.eventLogbook.eventType')} <span className="text-red-500">*</span>
                   </Label>
-                  <Select value={eventType} onValueChange={(v) => setEventType(v as EventType)}>
-                    <SelectTrigger className={cn('w-full', fieldCls)}>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="border-slate-200 bg-white text-slate-800 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
-                      {EVENT_TYPES.map((type) => (
-                        <SelectItem key={type} value={type}>
-                          {typeLabel(type)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <PagedSelect
+                    isDark={isDark}
+                    items={typeItems}
+                    value={eventType}
+                    placeholder={t('logbooks.eventLogbook.wizard.chooseType')}
+                    onChange={(v) => setEventType(v as EventType)}
+                  />
                 </div>
                 <div className="space-y-1.5">
                   <Label>
@@ -331,7 +335,7 @@ export function EventDetailDialog({ eventId, onClose, onChanged, isDark, detailU
             <>
               <div className="grid gap-5 lg:grid-cols-2">
                 <dl className="grid grid-cols-[110px_1fr] content-start gap-x-3 gap-y-2.5">
-                  {row(t('logbooks.eventLogbook.eventType'), <span className="font-medium">{typeLabel(detail.event_type)}</span>)}
+                  {row(t('logbooks.eventLogbook.eventType'), <span className="font-medium">{detail.event_type_label}</span>)}
                   {row(
                     t('logbooks.eventLogbook.wizard.takeoffTime'),
                     new Date(detail.takeoff_time).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }),

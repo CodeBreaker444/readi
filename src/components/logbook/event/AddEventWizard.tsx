@@ -8,14 +8,12 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import {
   EVENT_ATTACHMENT_ALLOWED_TYPES,
   EVENT_ATTACHMENT_MAX_BYTES,
   EVENT_ATTACHMENT_MAX_FILES,
   EVENT_NOTES_MAX,
-  EVENT_TYPES,
   droneComponentLine,
   formatDroneLabel,
   formatMissionLabel,
@@ -25,6 +23,7 @@ import {
   type EventNotifyContact,
   type EventType,
 } from '@/config/types/event-logbook';
+import { useEventTypes } from './useEventTypes';
 import { uploadEventFiles } from '@/lib/event-logbook-upload';
 import { cn } from '@/lib/utils';
 import axios from 'axios';
@@ -101,6 +100,7 @@ function writeStoredSetup(setup: MissionSetup) {
 export function AddEventWizard({ open, mode = 'event', onOpenChange, drones, missions, contacts, defaultContacts, isDark, onCreated }: Props) {
   const { t } = useTranslation();
   const w = (key: string, opts?: Record<string, unknown>) => t(`logbooks.eventLogbook.wizard.${key}`, opts);
+  const { types: eventTypes, loading: typesLoading } = useEventTypes();
 
   const [view, setView] = useState<'setup' | 'event'>('setup');
   const [setup, setSetup] = useState<MissionSetup | null>(null);
@@ -169,6 +169,11 @@ export function AddEventWizard({ open, mode = 'event', onOpenChange, drones, mis
     // A single available system needs no choosing.
     setDraft(drones.length === 1 ? { ...fresh, toolId: String(drones[0].tool_id) } : fresh);
   }, [open, mode, drones, isSetupValid, resetEvent]);
+
+  const typeItems = useMemo<PagedSelectItem[]>(
+    () => eventTypes.map((x) => ({ value: x.type_code, label: x.type_name })),
+    [eventTypes],
+  );
 
   const droneItems = useMemo<PagedSelectItem[]>(
     () => drones.map((d) => droneItem(d, droneComponentLine(d), formatDroneLabel(d))),
@@ -433,18 +438,19 @@ export function AddEventWizard({ open, mode = 'event', onOpenChange, drones, mis
               <Label>
                 {t('logbooks.eventLogbook.eventType')} <span className="text-red-500">*</span>
               </Label>
-              <Select value={eventType} onValueChange={(v) => setEventType(v as EventType)}>
-                <SelectTrigger className={cn('w-full', fieldCls)}>
-                  <SelectValue placeholder={w('chooseType')} />
-                </SelectTrigger>
-                <SelectContent className="border-slate-200 bg-white text-slate-800 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
-                  {EVENT_TYPES.map((type) => (
-                    <SelectItem key={type} value={type}>
-                      {t(`logbooks.eventLogbook.types.${type}`)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <PagedSelect
+                isDark={isDark}
+                items={typeItems}
+                value={eventType}
+                placeholder={w('chooseType')}
+                onChange={(v) => setEventType(v as EventType)}
+              />
+              {!typesLoading && eventTypes.length === 0 && (
+                <p className="flex items-start gap-1.5 text-xs text-amber-600">
+                  <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                  {w('noEventTypes')}
+                </p>
+              )}
             </div>
 
             {/* Map and attachments side by side on wide screens. */}
