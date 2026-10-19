@@ -1,26 +1,33 @@
-export const EVENT_TYPES = [
-  'equipment_malfunction',
-  'gps_signal_issue',
-  'obstacle_detected',
-  'weather_related',
-  'bird_activity',
-  'unexpected_landing',
-  'flyaway_loss_of_control',
-  'other',
-] as const;
+/** Event types are defined per company (pilot_event_type); events store the type's code. */
+export type EventType = string;
 
-export type EventType = (typeof EVENT_TYPES)[number];
+export interface EventTypeItem {
+  event_type_id: number;
+  type_code: string;
+  type_name: string;
+  /** Reported events using this type; shown before deleting. */
+  event_count: number;
+}
 
-export const EVENT_TYPE_LABELS: Record<EventType, string> = {
-  equipment_malfunction: 'Equipment malfunction',
-  gps_signal_issue: 'GPS signal issue',
-  obstacle_detected: 'Obstacle detected',
-  weather_related: 'Weather-related',
-  bird_activity: 'Bird activity',
-  unexpected_landing: 'Unexpected landing',
-  flyaway_loss_of_control: 'Fly-away / Loss of control',
-  other: 'Other',
-};
+export const EVENT_TYPE_NAME_MAX = 100;
+export const EVENT_TYPE_CODE_MAX = 50;
+
+/** Slug stored on events, e.g. "Bird strike!" -> "bird_strike". */
+export function slugifyEventTypeCode(name: string): string {
+  return name
+    .normalize('NFKD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '')
+    .slice(0, EVENT_TYPE_CODE_MAX);
+}
+
+/** Label for a code whose type no longer exists ("bird_strike" -> "Bird strike"). */
+export function prettifyEventTypeCode(code: string): string {
+  const spaced = code.replace(/_+/g, ' ').trim();
+  return spaced ? spaced.charAt(0).toUpperCase() + spaced.slice(1) : code;
+}
 
 export const EVENT_ATTACHMENT_ALLOWED_TYPES = ['image/jpeg', 'image/png', 'video/mp4', 'application/pdf'];
 export const EVENT_ATTACHMENT_MAX_BYTES = 100 * 1024 * 1024;
@@ -94,7 +101,8 @@ export interface EventMissionOption {
 
 export interface EventLogbookItem {
   event_id: number;
-  event_type: EventType | string;
+  event_type: EventType;
+  event_type_label: string;
   takeoff_time: string;
   created_at: string;
   pilot_user_id: number;

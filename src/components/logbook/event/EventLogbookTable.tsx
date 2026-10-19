@@ -49,8 +49,7 @@ export function EventLogbookTable({
   const [globalFilter, setGlobalFilter] = useState('');
   const [viewer, setViewer] = useState<{ event: EventLogbookItem; items: AttachmentLink[] | null } | null>(null);
 
-  const typeLabel = (type: string) => t(`logbooks.eventLogbook.types.${type}`, { defaultValue: type });
-  const c = (key: string) => t(`logbooks.eventLogbook.columns.${key}`);
+  const c =(key: string) => t(`logbooks.eventLogbook.columns.${key}`);
 
   // The table model only drives filtering and paging; rows are rendered below.
   const columns = useMemo<ColumnDef<EventLogbookItem>[]>(
@@ -67,7 +66,7 @@ export function EventLogbookTable({
       const e = row.original;
       const haystack = [
         e.event_id,
-        typeLabel(e.event_type),
+        e.event_type_label,
         e.event_type,
         e.tool_name,
         e.mission_name,
@@ -197,7 +196,7 @@ export function EventLogbookTable({
                     {e.mission_name ?? '—'}
                   </td>
                   <td className="px-3 py-2.5">
-                    <span title={e.notes ?? undefined}>{typeLabel(e.event_type)}</span>
+                    <span title={e.notes ?? undefined}>{e.event_type_label}</span>
                   </td>
                   {showPilot && <td className="px-3 py-2.5">{e.pilot_name ?? '—'}</td>}
                   {showPilot && <td className="px-3 py-2.5">{e.client_name ?? '—'}</td>}

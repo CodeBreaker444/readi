@@ -1,5 +1,5 @@
 import { logEvent } from '@/backend/services/auditLog/audit-log';
-import { deleteEvent, getEventDetail, updateEvent, updateEventSchema } from '@/backend/services/logbook/event-logbook-service';
+import { deleteEvent, describeEventForAudit, getEventDetail, updateEvent, updateEventSchema } from '@/backend/services/logbook/event-logbook-service';
 import { apiError, zodError } from '@/lib/api-error';
 import { requireFeatureAccess } from '@/lib/auth/api-auth';
 import { getSessionEffectivePermissions } from '@/lib/auth/feature-permissions';
@@ -40,13 +40,13 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     if (!parsed.success) return zodError(E.VL001, parsed.error);
 
     const user = session!.user;
-    await updateEvent(user, eventId, parsed.data);
+    const { tool_id } = await updateEvent(user, eventId, parsed.data);
 
     logEvent({
       eventType: 'UPDATE',
       entityType: 'pilot_event',
       entityId: eventId,
-      description: `Edited event #${eventId} ("${parsed.data.event_type}")`,
+      description: `Edited event ${await describeEventForAudit(user.ownerId, tool_id, parsed.data.event_type)}`,
       userId: user.userId,
       userName: user.fullname,
       userEmail: user.email,
@@ -68,13 +68,13 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
     if (!Number.isInteger(eventId)) return apiError(E.VL002);
 
     const user = session!.user;
-    await deleteEvent(user, eventId);
+    const removed = await deleteEvent(user, eventId);
 
     logEvent({
       eventType: 'DELETE',
       entityType: 'pilot_event',
       entityId: eventId,
-      description: `Deleted event #${eventId}`,
+      description: `Deleted event ${await describeEventForAudit(user.ownerId, removed.tool_id, removed.event_type)}`,
       userId: user.userId,
       userName: user.fullname,
       userEmail: user.email,
