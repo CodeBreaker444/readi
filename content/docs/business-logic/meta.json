@@ -9,6 +9,7 @@
     "platform-flow",
     "agent-api",
     "role-glossary",
+    "role-permissions",
     "db-tables",
     "maintenance-module",
     "operations-module",
