@@ -54,7 +54,7 @@ Open a battery for its **Cycle Log**: each mission it was used on, with date, du
 
 ## Event Logbook
 
-Pilots report incidents and anomalies (equipment malfunction, GPS signal issue, obstacle detected, weather, bird activity, unexpected landing, fly-away, other) with **Add Report Event**. Because a flight often has several events, the details they share are set up once, so that adding an event during a flight takes only a few taps.
+Pilots report incidents and anomalies (for example equipment malfunction, GPS signal issue, obstacle detected, bird activity or fly-away) with **Add Report Event**. The event types are defined by your company: an administrator creates, renames and deletes them from the **Event types** button in the page header. Renaming a type also updates events already reported with it. A deleted type stays on the events that used it, but can no longer be chosen for new ones. Because a flight often has several events, the details they share are set up once, so that adding an event during a flight takes only a few taps.
 
 ### Mission setup
 
@@ -128,6 +128,18 @@ Admins, OPMs and super admins also see a **mail icon** next to the webhook setti
 Notifications are **per event**, not per event type: the **Notify** dropdown in the mission setup and on the event screen lists the contact book with the client's defaults already ticked. It shows five contacts at a time, selected ones first, and has a search box to find the rest. The pilot can add or remove contacts (up to 20); the selection is saved with the event. Changing the mission or system before touching the selection re-applies the new client's defaults.
 
 When the event is submitted, the selected contacts receive one email with the event type, report and takeoff times, pilot, drone, client, mission, location, notes, a **map snapshot** of the location, a preview of every image, a **Download** link for every attachment (valid for 7 days) and a **View event in ReADI** button. The button opens the event after signing in: access follows the normal permissions, so a recipient needs a ReADI account with access to the event logbook (staff) or the client portal (clients, who are taken to their own Events page). Without access they see the usual "unauthorized" page. Each send counts towards the company's daily email limit; once it is reached, event emails are skipped until the counter resets. Email failures never block the pilot's report.
+
+---
+
+## Permissions
+
+Who can read, edit and delete in this area, by role.
+
+<PermissionsTable section="Logbooks" />
+
+<Note>
+Event Logbook settings (**Event types**, **Email notifications** with the contact book, and **Webhooks**) are not part of the editable permissions. Only ADMIN, OPM and SUPERADMIN can open and change them.
+</Note>
 
 ---
 

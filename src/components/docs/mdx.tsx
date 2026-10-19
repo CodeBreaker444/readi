@@ -9,6 +9,7 @@ import { TypeTable } from 'fumadocs-ui/components/type-table';
 import { Rocket, LayoutGrid, Settings, Workflow, ShieldCheck, FolderArchive } from 'lucide-react';
 import type { MDXComponents } from 'mdx/types';
 import React from 'react';
+import { PermissionsLegend, PermissionsTable } from './permissions-table';
 
 export const Note = (props: any) => <Callout type="info" {...props} />;
 export const Warning = (props: any) => <Callout type="warn" {...props} />;
@@ -41,6 +42,8 @@ export function getMDXComponents(components?: MDXComponents) {
     Workflow,
     ShieldCheck,
     FolderArchive,
+    PermissionsTable,
+    PermissionsLegend,
     ...components,
   } satisfies MDXComponents;
 }

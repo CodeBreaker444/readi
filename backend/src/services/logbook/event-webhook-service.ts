@@ -107,7 +107,7 @@ export async function listWebhooks(ownerId: number): Promise<EventWebhookConfigI
 export async function createWebhook(ownerId: number, userId: number, input: WebhookInput) {
   await assertPublicHttpsUrl(input.url);
   await assertClientInOwner(ownerId, input.client_id);
-  await assertEventTypesExist(ownerId, input.event_types);
+  await assertEventTypesExist(ownerId, input.event_types, { allowHistorical: true });
   const secret = generateSecret();
   const row = await prisma.event_webhook_config.create({
     data: {
@@ -136,7 +136,7 @@ export async function updateWebhook(ownerId: number, webhookId: number, input: P
   if (input.url) await assertPublicHttpsUrl(input.url);
   if (input.client_id !== undefined) await assertClientInOwner(ownerId, input.client_id);
   // Codes the webhook already holds stay valid even if their type was deleted since.
-  if (input.event_types) await assertEventTypesExist(ownerId, input.event_types.filter((c) => !existing.event_types.includes(c)));
+  if (input.event_types) await assertEventTypesExist(ownerId, input.event_types.filter((c) => !existing.event_types.includes(c)), { allowHistorical: true });
 
   await prisma.event_webhook_config.update({
     where: { webhook_id: webhookId },

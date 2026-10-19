@@ -5,8 +5,7 @@ import axios from 'axios';
 import { useCallback, useEffect, useState } from 'react';
 
 // One shared copy so the filter, wizard, detail dialog and webhook settings all update when the types are edited.
-let cache: EventTypeItem[] | null = null;
-let inflight: Promise<void> | null = null;
+let cache: EventTypeItem[] | null = null;let inflight: Promise<void> | null = null;
 const listeners = new Set<(types: EventTypeItem[]) => void>();
 
 /** Reloads the company's event types and pushes them to every mounted consumer. */
@@ -14,8 +13,7 @@ export function refreshEventTypes(): Promise<void> {
   inflight ??= axios
     .get('/api/logbooks/event/types')
     .then((res) => {
-      cache = res.data.types ?? [];
-      listeners.forEach((fn) => fn(cache!));
+      cache = res.data.types ?? [];      listeners.forEach((fn) => fn(cache!));
     })
     .catch(() => {
       // Keep whatever we had; the next open retries.

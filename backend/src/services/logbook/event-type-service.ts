@@ -47,18 +47,30 @@ export function eventTypeLabel(labels: Map<string, string>, code: string): strin
 }
 
 /** Throws unless every code is an event type of this company. */
-export async function assertEventTypesExist(ownerId: number, codes: string[]): Promise<void> {
+export async function assertEventTypesExist(ownerId: number, codes: string[], opts: { allowHistorical?: boolean } = {}): Promise<void> {
   const unique = [...new Set(codes)];
   if (unique.length === 0) return;
-  const found = await prisma.pilot_event_type.count({ where: { fk_owner_id: ownerId, type_code: { in: unique } } });
-  if (found !== unique.length) throw new EventLogbookError('Unknown event type');
+  const found = await prisma.pilot_event_type.findMany({ where: { fk_owner_id: ownerId, type_code: { in: unique } }, select: { type_code: true } });
+  let missing = unique.filter((c) => !found.some((f) => f.type_code === c));
+  if (missing.length && opts.allowHistorical) {
+    // Webhook filters may reference historical types that reported events still carry.
+    const historical = await prisma.pilot_event.findMany({
+      where: { fk_owner_id: ownerId, event_type: { in: missing } },
+      distinct: ['event_type'],
+      select: { event_type: true },
+    });
+    missing = missing.filter((c) => !historical.some((h) => h.event_type === c));
+  }
+  if (missing.length) throw new EventLogbookError('Unknown event type');
 }
 
 async function assertNameFree(ownerId: number, name: string, exceptId?: number) {
-  const clash = await prisma.pilot_event_type.findFirst({
-    where: { fk_owner_id: ownerId, type_name: { equals: name, mode: 'insensitive' }, ...(exceptId ? { NOT: { event_type_id: exceptId } } : {}) },
-    select: { event_type_id: true },
+  const slug = slugifyEventTypeCode(name);
+  const rows = await prisma.pilot_event_type.findMany({
+    where: { fk_owner_id: ownerId, ...(exceptId ? { NOT: { event_type_id: exceptId } } : {}) },
+    select: { type_name: true },
   });
+  const clash = rows.some((r) => r.type_name.trim().toLowerCase() === name.trim().toLowerCase() || (slug && slugifyEventTypeCode(r.type_name) === slug));
   if (clash) throw new EventLogbookError('An event type with this name already exists', 409);
 }
 

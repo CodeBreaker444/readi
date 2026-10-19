@@ -1,0 +1,114 @@
+---
+title: "Role Permissions"
+description: "What each role can read, edit and delete in every module, and which permissions an administrator can customise."
+---
+
+This page lists the **default** access of every role in every module. The same table also appears at the end of each module's own page.
+
+## How access works
+
+| Level | What the role can do |
+|---|---|
+| **R** (Read) | Open the module and see its data. In a few modules the role can also add new records (marked ¹ in the tables). |
+| **W** (Write / edit) | Create and edit records. |
+| **D** (Delete) | Delete records. Needs write access **and** the user's **Manager** flag. A user without the Manager flag can create and edit but never delete. |
+
+## Which roles can be customised
+
+| Roles | Behaviour | Customisable in role permissions editor |
+|---|---|---|
+| **AM, SM, OM, MM, TM, CMM, DC, VM, PIC** | Follow the tables below. Where a role has access to a feature, it can be switched between read-only (R) and full (R · W · D). | **Yes**, for features the role already has access to |
+| **ADMIN, OPM, SUPERADMIN** | Always full access everywhere. | No |
+| **RM, SLA** | Follow built-in rules based on the area (for example configuration or logbooks). | No |
+| **CLIENT** | Client Portal only. See [Client Portal](/docs/modules/client-portal). | No |
+
+### The role permissions editor
+
+An ADMIN, OPM or SUPERADMIN opens **Team → Roles & Permissions**. Each column is a role and each row a feature. Click a cell to switch it between **R** (read-only) and **A** (full access: read, write and delete). Press **Save** on the role's column. The change applies to every user of that role in your company who has no individual override. A user with individual custom permissions follows those instead of their role.
+
+A feature a role has no access to (shown as – in the tables) appears as a dash in the editor and cannot be changed there. Delete always depends on the Manager flag, so it cannot be granted from the editor alone.
+
+<Note>
+Some settings are not part of the editable table. For example, the Event Logbook's **Event types**, **Email notifications** and **Webhooks**, and the D-Flight and DCC settings, can only be changed by ADMIN, OPM and SUPERADMIN.
+</Note>
+
+---
+
+## Dashboard
+
+<PermissionsTable section="Dashboard" />
+
+## Planning
+
+<PermissionsTable section="CO-00 - Planning" />
+
+## Operations
+
+<PermissionsTable section="Operation" />
+
+## Logbooks
+
+<PermissionsTable section="Logbooks" />
+
+## Safety Management
+
+<PermissionsTable section="Safety Management" />
+
+## Emergency Contact List
+
+<PermissionsTable section="Emergency contact list" />
+
+## Compliance
+
+<PermissionsTable section="Compliance" />
+
+## Control Center
+
+<PermissionsTable section="Control Center" />
+
+## Drone ATC
+
+<PermissionsTable section="Drone ATC" />
+
+## Training
+
+<PermissionsTable section="Training" />
+
+## Notifications
+
+<PermissionsTable section="Notifications" />
+
+## Document Repository
+
+<PermissionsTable section="Document repository" />
+
+## Audit Logs
+
+<PermissionsTable section="Audit Logs" />
+
+## Organization
+
+<PermissionsTable section="Organization" />
+
+## Mission Definitions
+
+<PermissionsTable section="Mission" />
+
+## Systems
+
+<PermissionsTable section="Systems" />
+
+## Team
+
+<PermissionsTable section="Team" />
+
+## Settings
+
+<PermissionsTable section="Settings" />
+
+---
+
+## Related
+
+- [Role Glossary](/docs/business-logic/role-glossary)
+- [Team](/docs/configuration/team)
