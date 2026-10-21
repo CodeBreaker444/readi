@@ -17,13 +17,13 @@ export async function POST(request: NextRequest) {
     if (!parsed.success) return zodError(E.VL001, parsed.error);
 
     const user = session!.user;
-    const { event_id } = await createEvent(user, parsed.data);
+    const { event_id, event_type_label } = await createEvent(user, parsed.data);
 
     logEvent({
       eventType: 'CREATE',
       entityType: 'pilot_event',
       entityId: event_id,
-      description: `Reported event ${await describeEventForAudit(user.ownerId, parsed.data.tool_id, parsed.data.event_type)}`,
+      description: `Reported event ${await describeEventForAudit(parsed.data.tool_id, event_type_label)}`,
       userId: user.userId,
       userName: user.fullname,
       userEmail: user.email,

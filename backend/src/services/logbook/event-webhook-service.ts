@@ -9,7 +9,7 @@ import { lookup } from 'dns/promises';
 import { isIP } from 'net';
 import { z } from 'zod';
 import { EventLogbookError } from './event-logbook-service';
-import { assertEventTypesExist, eventTypeLabel, getEventTypeLabelMap } from './event-type-service';
+import { assertEventTypesExist, eventTypeFallbackLabel } from './event-type-service';
 
 const DELIVERY_TIMEOUT_MS = 8000;
 const MAX_ATTEMPTS = 2;
@@ -258,8 +258,7 @@ async function buildEventPayload(eventId: number) {
   const event = await prisma.pilot_event.findUnique({ where: { event_id: eventId }, include: { pilot_event_attachment: true } });
   if (!event) return null;
 
-  const [typeLabels, pilot, tool, mission, client] = await Promise.all([
-    getEventTypeLabelMap(event.fk_owner_id),
+  const [pilot, tool, mission, client] = await Promise.all([
     prisma.public_users.findUnique({ where: { user_id: event.fk_pilot_user_id }, select: { first_name: true, last_name: true } }),
     prisma.tool.findUnique({ where: { tool_id: event.fk_tool_id }, select: { tool_name: true, tool_code: true } }),
     event.fk_mission_id
@@ -286,8 +285,10 @@ async function buildEventPayload(eventId: number) {
     event,
     payload: {
       event_id: event.event_id,
+      // Unique id of the type (stable across renames) plus the code and label the event was reported with.
+      event_type_id: event.fk_event_type_id,
       event_type: event.event_type,
-      event_type_label: eventTypeLabel(typeLabels, event.event_type),
+      event_type_label: event.event_type_label ?? eventTypeFallbackLabel(event.event_type),
       takeoff_time: event.takeoff_time.toISOString(),
       reported_at: event.created_at.toISOString(),
       location: {

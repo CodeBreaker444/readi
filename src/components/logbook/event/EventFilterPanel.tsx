@@ -54,7 +54,7 @@ export function EventFilterPanel({ filters, onChange, onSearch, onReset, isDark,
     [drones],
   );
   const typeItems = useMemo<PagedSelectItem[]>(
-    () => eventTypes.map((x) => ({ value: x.type_code, label: x.client_name ? `${x.type_name} · ${x.client_name}` : x.type_name })),
+    () => eventTypes.map((x) => ({ value: String(x.event_type_id), label: x.client_name ? `${x.type_name} · ${x.client_name}` : x.type_name })),
     [eventTypes],
   );
   const missionItems = useMemo<PagedSelectItem[]>(

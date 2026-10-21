@@ -54,11 +54,11 @@ Open a battery for its **Cycle Log**: each mission it was used on, with date, du
 
 ## Event Logbook
 
-Pilots report incidents and anomalies (for example equipment malfunction, GPS signal issue, obstacle detected, bird activity or fly-away) with **Add Report Event**. The event types are defined by your company: an administrator creates, renames and deletes them from the **Event types** button in the page header. Renaming a type also updates events already reported with it. A deleted type stays on the events that used it, but can no longer be chosen for new ones. Event types can be **client-specific**: when you create or edit a type you can pick a **Client**, or leave it on **Default (all clients)**. A default type is offered for every client; a client type is only offered for events of that client. When reporting an event, the type list shows the default types plus the types of the event's client (taken from the mission, otherwise from the system's assigned client). Editing a type lets you move it to another client or back to Default, and the last default type cannot be deleted. Because a flight often has several events, the details they share are set up once, so that adding an event during a flight takes only a few taps.
+Pilots report incidents and anomalies (for example equipment malfunction, GPS signal issue, obstacle detected, bird activity or fly-away) with **Add Report Event**. The event types are defined by your company: an administrator creates, renames and deletes them from the **Event types** button in the page header. Renaming a type changes its name and code for new events; events already reported keep the name and code they were reported with. A deleted type stays on the events that used it, but can no longer be chosen for new ones. Event types can be **client-specific**: when you create or edit a type you can pick a **Client**, or leave it on **Default (all clients)**. A default type is offered for every client; a client type is only offered for events of that client. When reporting an event, the type list shows the default types plus the types of the event's client (taken from the mission, otherwise from the system's assigned client). Editing a type lets you move it to another client or back to Default, and the last default type cannot be deleted. Because a flight often has several events, the details they share are set up once, so that adding an event during a flight takes only a few taps.
 
 ### Event type codes
 
-Every event type has a **name** (what people see, and what you can rename) and a **code** (what is stored on events and sent in webhooks as `event_type`). You only type the name; the code is generated once, when the type is created:
+Every event type has a unique **id** (a number that never changes), a **name** (what people see) and a **code** (sent in webhooks as `event_type`). You only type the name; the code is generated from it when the type is created, and generated again when the type is renamed:
 
 1. Accents are removed ("Détecté" becomes "Detecte") and everything is lowercased.
 2. Each run of characters that are not letters a–z or digits 0–9 (spaces, `-`, `/`, `!` and so on) becomes a single `_`.
@@ -73,7 +73,18 @@ Every event type has a **name** (what people see, and what you can rename) and a
 
 Codes are unique per company, across all clients. If the code is already taken, a number is added: a second "Fire" becomes `fire_2`, then `fire_3`. The code of a deleted type is never reused, because older events still carry it. For example, "Fire" for Client A and "Fire" for Client B get `fire` and `fire_2`, but each client sees both as "Fire".
 
-The code **never changes**. Renaming "Fire" to "Wildfire", or moving the type to another client or to Default, keeps the code `fire`; only the label changes. Webhooks send both `event_type` (the code) and `event_type_label` (the current name), so receiving systems should match on the code.
+#### Renaming a type
+
+Events are linked to their type by its **unique id**, not by the code. Each event also stores a **snapshot** of the type's code and name from the moment it was reported (or its type was changed). Renaming therefore never rewrites events that already exist:
+
+- **New name, new code:** renaming "Fire" to "Water" changes the type to the name "Water" and the code `water` (a duplicate gets a suffix, e.g. `water_2`). Events reported from then on carry `water` / "Water".
+- **Old events keep their old values:** events reported before the rename still show "Fire" and the code `fire`, in the table, details, emails and what was sent to webhooks. They stay linked to the same type (same id), so filtering the event table by "Water" finds both old and new events, and the type's usage count includes them.
+- **Webhook filters follow the rename:** a webhook that was limited to the code `fire` is updated automatically to `water`, so it keeps receiving this type. Webhooks that receive all event types are unaffected.
+- **Moving a type to another client or to Default** does not change its code. Only a change of the name does.
+- **Renaming back** to an earlier name gives the earlier code again, unless another type has taken it in the meantime.
+- **Deleting a type** leaves its events with the name and code they were reported with; they are just no longer linked to a type.
+
+Webhook messages carry all three values: `event_type_id` (the unique id, stable across renames), `event_type` (the code the event was reported with) and `event_type_label` (the name the event was reported with). Receiving systems that need one stable key for a type should use `event_type_id`.
 
 #### Sample code
 
@@ -106,8 +117,8 @@ prettifyEventTypeCode('person_detected'); // "Person detected"
 
 Two limits to keep in mind:
 
-- **A code cannot be turned back into the exact name.** Capitalisation, punctuation and accents are lost, and `prettifyEventTypeCode` only gives a readable approximation. The webhook already sends the real, current name as `event_type_label`, so prefer that for display and use the code only as a stable key.
-- **`slugifyEventTypeCode(name)` matches the stored code only for a type's first name.** The code is fixed at creation, so a renamed type keeps its old code, and a duplicate name gets a suffix (`fire_2`). To find the code of a type, read `event_type` from the message rather than recomputing it from the name.
+- **A code cannot be turned back into the exact name.** Capitalisation, punctuation and accents are lost, and `prettifyEventTypeCode` only gives a readable approximation. The webhook already sends the real name as `event_type_label`, so prefer that for display, and use `event_type_id` (not the code) as the stable key for a type.
+- **`slugifyEventTypeCode(name)` gives the stored code only when the code is not taken.** A duplicate name gets a suffix (`fire_2`), and events keep the code they were reported with after a rename. To find the code of an event, read `event_type` from the message rather than recomputing it from the name.
 
 ### Mission setup
 
@@ -158,6 +169,7 @@ Every new event is sent as an HTTPS `POST` with `event.created`:
   "created_at": "2026-10-07T14:20:05.000Z",
   "data": {
     "event_id": 126,
+    "event_type_id": 2,
     "event_type": "equipment_malfunction",
     "event_type_label": "Equipment malfunction",
     "takeoff_time": "2026-10-07T10:32:00.000Z",
@@ -181,7 +193,8 @@ Every new event is sent as an HTTPS `POST` with `event.created`:
 | `type` | The notification name, `event.created` (also sent as the `X-Readi-Event` header). |
 | `created_at` | When the delivery was created (UTC, ISO 8601). |
 | `data.event_id` | **The id of the event.** This is the number shown in the **ID** column of the event table and as `#id` in the event details. Use it to link every notification, including later updates, to the same event. |
-| `data.event_type` / `data.event_type_label` | The event type code and its current display name. |
+| `data.event_type_id` | The unique id of the event type. It never changes, even when the type is renamed, so it is the stable key for a type. `null` if the type was deleted. |
+| `data.event_type` / `data.event_type_label` | The type's code and name **as the event was reported** (a snapshot). Renaming the type later does not change them for this event. |
 | `data.takeoff_time` / `data.reported_at` | When the flight took off and when the event was reported. |
 | `data.location` | `latitude`, `longitude` and a `label` (when a place was searched). |
 | `data.notes` | The pilot's notes. |
@@ -200,6 +213,7 @@ When supporting media is added to an event that was already reported, the same w
   "data": {
     "update_type": "support_media",
     "event_id": 126,
+    "event_type_id": 2,
     "event_type": "equipment_malfunction",
     "event_type_label": "Equipment malfunction",
     "takeoff_time": "2026-10-07T10:32:00.000Z",

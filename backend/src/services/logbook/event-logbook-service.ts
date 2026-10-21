@@ -26,7 +26,7 @@ import type { SessionUser } from '@/lib/auth/server-session';
 import { prisma } from '@/lib/prisma';
 import { deleteFileFromS3, getPresignedDownloadUrl, getPresignedUploadUrl } from '@/lib/s3Client';
 import { z } from 'zod';
-import { assertEventTypesExist, eventTypeLabel, getEventTypeLabelMap } from './event-type-service';
+import { eventTypeFallbackLabel, resolveEventType } from './event-type-service';
 
 export class EventLogbookError extends Error {
   constructor(message: string, public status = 400) {
@@ -275,7 +275,7 @@ async function findEvents(
       ...scopeWhere,
       ...(filters.tool_id ? { fk_tool_id: filters.tool_id } : {}),
       ...(filters.mission_id ? { fk_mission_id: filters.mission_id } : {}),
-      ...(filters.event_type ? { event_type: filters.event_type } : {}),
+      ...(filters.event_type_id ? { fk_event_type_id: filters.event_type_id } : {}),
       ...(filters.date_start || filters.date_end
         ? {
             takeoff_time: {
@@ -292,8 +292,7 @@ async function findEvents(
 
   if (rows.length === 0) return [];
 
-  const [typeLabels, pilots, tools, missions, clients] = await Promise.all([
-    getEventTypeLabelMap(scopeWhere.fk_owner_id),
+  const [pilots, tools, missions, clients] = await Promise.all([
     prisma.public_users.findMany({
       where: { user_id: { in: [...new Set(rows.map((r) => r.fk_pilot_user_id))] } },
       select: { user_id: true, first_name: true, last_name: true },
@@ -319,8 +318,10 @@ async function findEvents(
 
   return rows.map((r) => ({
     event_id: r.event_id,
+    event_type_id: r.fk_event_type_id,
     event_type: r.event_type,
-    event_type_label: eventTypeLabel(typeLabels, r.event_type),
+    // The label and code the event was reported with; renaming the type later does not change them.
+    event_type_label: r.event_type_label ?? eventTypeFallbackLabel(r.event_type),
     takeoff_time: r.takeoff_time.toISOString(),
     created_at: r.created_at.toISOString(),
     pilot_user_id: r.fk_pilot_user_id,
@@ -410,7 +411,8 @@ const attachmentInputSchema = z.object({
 /** Editable parts of a reported event. System, mission and recipients stay as reported. */
 export const updateEventSchema = z
   .object({
-    event_type: z.string().min(1).max(EVENT_TYPE_CODE_MAX),
+    /** Omitted (or equal to the current type) keeps the type, code and label the event was reported with. */
+    event_type_id: z.number().int().positive().optional(),
     takeoff_time: z.string().refine((v) => !Number.isNaN(Date.parse(v)), 'Invalid takeoff time'),
     latitude: z.number().min(-90).max(90),
     longitude: z.number().min(-180).max(180),
@@ -437,10 +439,14 @@ async function findOwnEvent(user: SessionUser, eventId: number) {
 }
 
 /** Edits a reported event. Deliberately sends no notifications: recipients were informed when it was reported. */
-export async function updateEvent(user: SessionUser, eventId: number, input: UpdateEventInput): Promise<{ tool_id: number }> {
+export async function updateEvent(user: SessionUser, eventId: number, input: UpdateEventInput): Promise<{ tool_id: number; event_type_label: string }> {
   const event = await findOwnEvent(user, eventId);
-  // Keeping the event's current (possibly deleted) type is fine; switching to another must be a live one.
-  if (input.event_type !== event.event_type) await assertEventTypesExist(user.ownerId, [input.event_type], { clientId: event.fk_client_id });
+  // Keeping the event's current (possibly deleted) type is fine; switching to another must be a live one
+  // for the event's client. Switching copies the new type's code and name onto the event (snapshot).
+  const switchTo =
+    input.event_type_id && input.event_type_id !== event.fk_event_type_id
+      ? await resolveEventType(user.ownerId, input.event_type_id, event.fk_client_id)
+      : null;
 
   const removeIds = new Set(input.remove_attachment_ids);
   const removed = event.pilot_event_attachment.filter((a) => removeIds.has(a.attachment_id));
@@ -460,7 +466,7 @@ export async function updateEvent(user: SessionUser, eventId: number, input: Upd
     prisma.pilot_event.update({
       where: { event_id: eventId },
       data: {
-        event_type: input.event_type,
+        ...(switchTo ? { fk_event_type_id: switchTo.event_type_id, event_type: switchTo.type_code, event_type_label: switchTo.type_name } : {}),
         takeoff_time: new Date(input.takeoff_time),
         latitude: input.latitude,
         longitude: input.longitude,
@@ -481,25 +487,22 @@ export async function updateEvent(user: SessionUser, eventId: number, input: Upd
   ]);
 
   await removeS3Objects(removed.map((a) => a.file_key));
-  return { tool_id: event.fk_tool_id };
+  return { tool_id: event.fk_tool_id, event_type_label: switchTo?.type_name ?? event.event_type_label ?? eventTypeFallbackLabel(event.event_type) };
 }
 
-export async function deleteEvent(user: SessionUser, eventId: number): Promise<{ event_type: string; tool_id: number }> {
+export async function deleteEvent(user: SessionUser, eventId: number): Promise<{ event_type_label: string; tool_id: number }> {
   const event = await findOwnEvent(user, eventId);
   // Attachment rows and webhook deliveries are removed by the database (ON DELETE CASCADE).
   await prisma.pilot_event.delete({ where: { event_id: eventId } });
   await removeS3Objects([...event.pilot_event_attachment.map((a) => a.file_key), mapSnapshotKey(event.fk_owner_id, eventId)]);
-  return { event_type: event.event_type, tool_id: event.fk_tool_id };
+  return { event_type_label: event.event_type_label ?? eventTypeFallbackLabel(event.event_type), tool_id: event.fk_tool_id };
 }
 
 /** Human-readable event summary for audit logs, e.g. `"Bird activity" on system "Drone 1"` (no raw ids/codes). */
-export async function describeEventForAudit(ownerId: number, toolId: number, eventType: string): Promise<string> {
-  const [labels, tool] = await Promise.all([
-    getEventTypeLabelMap(ownerId),
-    prisma.tool.findUnique({ where: { tool_id: toolId }, select: { tool_name: true, tool_code: true } }),
-  ]);
+export async function describeEventForAudit(toolId: number, eventTypeLabel: string): Promise<string> {
+  const tool = await prisma.tool.findUnique({ where: { tool_id: toolId }, select: { tool_name: true, tool_code: true } });
   const system = tool?.tool_name?.trim() || tool?.tool_code?.trim();
-  return `"${eventTypeLabel(labels, eventType)}"${system ? ` on system "${system}"` : ''}`;
+  return `"${eventTypeLabel}"${system ? ` on system "${system}"` : ''}`;
 }
 
 /** Storage clean-up is best effort: a leftover file must not fail an edit or delete that already succeeded. */
@@ -548,7 +551,7 @@ export async function addSupportMedia(
   user: SessionUser,
   eventId: number,
   input: AddSupportMediaInput,
-): Promise<{ tool_id: number; event_type: string; attachment_ids: number[] }> {
+): Promise<{ tool_id: number; event_type_label: string; attachment_ids: number[] }> {
   const event = await findOwnEvent(user, eventId);
 
   const prefix = attachmentKeyPrefix(user);
@@ -571,7 +574,11 @@ export async function addSupportMedia(
       }),
     ),
   );
-  return { tool_id: event.fk_tool_id, event_type: event.event_type, attachment_ids: created.map((c) => c.attachment_id) };
+  return {
+    tool_id: event.fk_tool_id,
+    event_type_label: event.event_type_label ?? eventTypeFallbackLabel(event.event_type),
+    attachment_ids: created.map((c) => c.attachment_id),
+  };
 }
 
 export const MAX_NOTIFY_RECIPIENTS = 20;
@@ -579,7 +586,8 @@ export const MAX_NOTIFY_RECIPIENTS = 20;
 export const createEventSchema = z.object({
   tool_id: z.number().int().positive(),
   mission_id: z.number().int().positive().nullable().optional(),
-  event_type: z.string().min(1).max(EVENT_TYPE_CODE_MAX),
+  /** Unique id of the event type; its code and name are copied onto the event when it is reported. */
+  event_type_id: z.number().int().positive(),
   takeoff_time: z.string().refine((v) => !Number.isNaN(Date.parse(v)), 'Invalid takeoff time'),
   latitude: z.number().min(-90).max(90),
   longitude: z.number().min(-180).max(180),
@@ -603,7 +611,7 @@ export const createEventSchema = z.object({
 });
 export type CreateEventInput = z.infer<typeof createEventSchema>;
 
-export async function createEvent(user: SessionUser, input: CreateEventInput): Promise<{ event_id: number }> {
+export async function createEvent(user: SessionUser, input: CreateEventInput): Promise<{ event_id: number; event_type_label: string }> {
   const { drones, missions } = await getEventOptions(user);
 
   // Server-side scope enforcement: never trust the ids the client sends.
@@ -660,7 +668,7 @@ export async function createEvent(user: SessionUser, input: CreateEventInput): P
   }
 
   // Client-specific types only apply to their own client; default types apply everywhere.
-  await assertEventTypesExist(user.ownerId, [input.event_type], { clientId });
+  const eventType = await resolveEventType(user.ownerId, input.event_type_id, clientId);
 
   // Contacts must belong to the same company; their addresses are snapshotted on the event.
   const contactIds = [...new Set(input.notify_contact_ids)];
@@ -670,14 +678,16 @@ export async function createEvent(user: SessionUser, input: CreateEventInput): P
   if (contacts.length !== contactIds.length) throw new EventLogbookError('Contact not found', 404);
   const notifyEmails = [...new Set(contacts.map((c) => c.email.toLowerCase()))];
 
-  return prisma.pilot_event.create({
+  const created = await prisma.pilot_event.create({
     data: {
       fk_owner_id: user.ownerId,
       fk_pilot_user_id: user.userId,
       fk_tool_id: input.tool_id,
       fk_mission_id: input.mission_id ?? null,
       fk_client_id: clientId,
-      event_type: input.event_type,
+      fk_event_type_id: eventType.event_type_id,
+      event_type: eventType.type_code,
+      event_type_label: eventType.type_name,
       takeoff_time: new Date(input.takeoff_time),
       latitude: input.latitude,
       longitude: input.longitude,
@@ -704,6 +714,7 @@ export async function createEvent(user: SessionUser, input: CreateEventInput): P
     },
     select: { event_id: true },
   });
+  return { event_id: created.event_id, event_type_label: eventType.type_name };
 }
 
 async function presignEventAttachments(where: { event_id: number; fk_owner_id: number; fk_pilot_user_id?: number; fk_client_id?: number }) {

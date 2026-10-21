@@ -196,7 +196,7 @@ export function AddEventWizard({ open, mode = 'event', onOpenChange, drones, mis
     () =>
       eventTypes
         .filter((x) => x.client_id == null || x.client_id === reportClientId)
-        .map((x) => ({ value: x.type_code, label: x.type_name, sublabel: x.client_name ?? t('logbooks.eventLogbook.typeSettings.defaultBadge') })),
+        .map((x) => ({ value: String(x.event_type_id), label: x.type_name, sublabel: x.client_name ?? t('logbooks.eventLogbook.typeSettings.defaultBadge') })),
     [eventTypes, reportClientId, t],
   );
 
@@ -302,7 +302,7 @@ export function AddEventWizard({ open, mode = 'event', onOpenChange, drones, mis
       const res = await axios.post('/api/logbooks/event/create', {
         tool_id: Number(setup.toolId),
         mission_id: setup.missionId ? Number(setup.missionId) : null,
-        event_type: eventType,
+        event_type_id: Number(eventType),
         takeoff_time: new Date(setup.takeoff).toISOString(),
         latitude: latNum,
         longitude: lngNum,

@@ -1932,6 +1932,10 @@ model pilot_event {
   fk_mission_id          Int?
   fk_client_id           Int?
   event_type             String                   @db.VarChar(50)
+  /// unique-id link to the event type (null once the type is deleted)
+  fk_event_type_id       Int?
+  /// label of the type when the event was reported/changed; renaming a type never rewrites it
+  event_type_label       String?                  @db.VarChar(100)
   takeoff_time           DateTime                 @db.Timestamp(6)
   latitude               Decimal?                 @db.Decimal(9, 6)
   longitude              Decimal?                 @db.Decimal(9, 6)
@@ -1940,6 +1944,7 @@ model pilot_event {
   created_at             DateTime                 @default(now()) @db.Timestamp(6)
   notify_emails          String[]                 @default([])
   event_webhook_delivery event_webhook_delivery[]
+  pilot_event_type       pilot_event_type?        @relation(fields: [fk_event_type_id], references: [event_type_id], onDelete: SetNull, onUpdate: NoAction)
   client                 client?                  @relation(fields: [fk_client_id], references: [client_id], onUpdate: NoAction)
   pilot_mission          pilot_mission?           @relation(fields: [fk_mission_id], references: [pilot_mission_id], onUpdate: NoAction)
   owner                  owner                    @relation(fields: [fk_owner_id], references: [owner_id], onDelete: Cascade, onUpdate: NoAction)
@@ -1948,6 +1953,7 @@ model pilot_event {
   pilot_event_attachment pilot_event_attachment[]
 
   @@index([fk_owner_id, created_at(sort: Desc)], map: "idx_pilot_event_owner_created")
+  @@index([fk_event_type_id], map: "idx_pilot_event_type_id")
   @@index([fk_pilot_user_id], map: "idx_pilot_event_pilot")
   @@index([fk_tool_id], map: "idx_pilot_event_tool")
   @@schema("public")
@@ -1981,6 +1987,7 @@ model pilot_event_type {
   updated_at    DateTime @default(now()) @db.Timestamp(6)
   fk_client_id  Int?
   client        client?  @relation(fields: [fk_client_id], references: [client_id], onDelete: Cascade, onUpdate: NoAction)
+  pilot_event   pilot_event[]
   owner         owner    @relation(fields: [fk_owner_id], references: [owner_id], onDelete: Cascade, onUpdate: NoAction)
 
   @@unique([fk_owner_id, type_code])

@@ -2985,7 +2985,7 @@
         "search": "Ereignistypen suchen",
         "add": "Ereignistyp hinzufügen",
         "name": "Name",
-        "renameHint": "Die Umbenennung aktualisiert auch bereits gemeldete Ereignisse mit diesem Typ.",
+        "renameHint": "Beim Umbenennen werden auch der Code des Typs und die Webhook-Filter aktualisiert, die ihn verwenden. Bereits gemeldete Ereignisse behalten den Namen und Code, mit dem sie gemeldet wurden.",
         "edit": "Bearbeiten",
         "delete": "Löschen",
         "cancel": "Abbrechen",

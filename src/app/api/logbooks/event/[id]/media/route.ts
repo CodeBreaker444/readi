@@ -22,13 +22,13 @@ export async function POST(request: NextRequest, { params }: Params) {
     if (!parsed.success) return zodError(E.VL001, parsed.error);
 
     const user = session!.user;
-    const { tool_id, event_type, attachment_ids } = await addSupportMedia(user, eventId, parsed.data);
+    const { tool_id, event_type_label, attachment_ids } = await addSupportMedia(user, eventId, parsed.data);
 
     logEvent({
       eventType: 'UPDATE',
       entityType: 'pilot_event',
       entityId: eventId,
-      description: `Added ${attachment_ids.length} supporting media to event ${await describeEventForAudit(user.ownerId, tool_id, event_type)}`,
+      description: `Added ${attachment_ids.length} supporting media to event ${await describeEventForAudit(tool_id, event_type_label)}`,
       userId: user.userId,
       userName: user.fullname,
       userEmail: user.email,
