@@ -1,5 +1,5 @@
 import { logEvent } from '@/backend/services/auditLog/audit-log';
-import { createEventType, eventTypeInputSchema, listEventTypes } from '@/backend/services/logbook/event-type-service';
+import { createEventType, eventTypeInputSchema, listEventTypes, listTypeClients } from '@/backend/services/logbook/event-type-service';
 import { zodError } from '@/lib/api-error';
 import { requireAuth, requireFullAccessRole } from '@/lib/auth/api-auth';
 import { E } from '@/lib/error-codes';
@@ -11,7 +11,9 @@ export async function GET() {
   try {
     const { session, error } = await requireAuth();
     if (error) return error;
-    return NextResponse.json({ code: 200, types: await listEventTypes(session!.user.ownerId) });
+    const ownerId = session!.user.ownerId;
+    const [types, clients] = await Promise.all([listEventTypes(ownerId), listTypeClients(ownerId)]);
+    return NextResponse.json({ code: 200, types, clients });
   } catch (err) {
     return eventLogbookErrorResponse(err);
   }
@@ -32,7 +34,7 @@ export async function POST(request: NextRequest) {
       eventType: 'CREATE',
       entityType: 'pilot_event_type',
       entityId: created.event_type_id,
-      description: `Created event type "${parsed.data.type_name}"`,
+      description: `Created event type "${parsed.data.type_name}"${parsed.data.client_id ? ` for client #${parsed.data.client_id}` : ' (default)'}`,
       userId: user.userId,
       userName: user.fullname,
       userEmail: user.email,

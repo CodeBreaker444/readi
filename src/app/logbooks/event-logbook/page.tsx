@@ -197,10 +197,10 @@ export default function EventLogbookPage() {
           drones={drones}
           missions={missions}
         />
-        <EventLogbookTable data={data} loading={loading} showPilot={!scoped} isDark={isDark} highlightId={highlightId} onView={openEvent} />
+        <EventLogbookTable data={data} loading={loading} showPilot={!scoped} isDark={isDark} highlightId={highlightId} onView={openEvent} canAddMedia={canReport} onMediaAdded={() => fetchData(filters)} />
       </div>
 
-      <EventDetailDialog eventId={eventId} onClose={closeEvent} onChanged={() => fetchData(filters)} isDark={isDark} detailUrl={staffDetailUrl} />
+      <EventDetailDialog eventId={eventId} onClose={closeEvent} onChanged={() => fetchData(filters)} isDark={isDark} detailUrl={staffDetailUrl} canAddMedia={canReport} />
 
       <AddEventWizard
         open={wizardOpen}
@@ -223,6 +223,7 @@ export default function EventLogbookPage() {
       {canConfigure && (
         <EventTypeSettings
           open={typesOpen}
+          isDark={isDark}
           onOpenChange={(v) => {
             setTypesOpen(v);
             // Renames change the labels shown in the list.

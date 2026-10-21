@@ -27,7 +27,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
       eventType: 'UPDATE',
       entityType: 'pilot_event_type',
       entityId: id,
-      description: `Renamed event type "${before.type_name}" to "${parsed.data.type_name}"`,
+      description: `Updated event type "${before.type_name}" to "${parsed.data.type_name}"${parsed.data.client_id === undefined ? '' : parsed.data.client_id ? ` (client #${parsed.data.client_id})` : ' (default)'}`,
       userId: user.userId,
       userName: user.fullname,
       userEmail: user.email,

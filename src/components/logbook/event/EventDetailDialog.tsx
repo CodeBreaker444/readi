@@ -29,13 +29,15 @@ import {
 import { uploadEventFiles } from '@/lib/event-logbook-upload';
 import { cn } from '@/lib/utils';
 import axios from 'axios';
-import { Download, ExternalLink, FileText, Loader2, Pencil, Trash2, UploadCloud, X } from 'lucide-react';
+import { Download, ExternalLink, FileText, Film, Loader2, Pencil, Plus, Trash2, UploadCloud, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { PagedSelect, type PagedSelectItem } from './PagedSelect';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import EventLocationMap from './EventLocationMap';
+import { AddSupportMediaDialog } from './AddSupportMediaDialog';
 import { eventUi } from './event-ui';
+import { isImageMedia, isVideoMedia, isViewableMedia, MediaViewer, type ViewerMedia } from './MediaViewer';
 import { useEventTypes } from './useEventTypes';
 
 interface Props {
@@ -47,6 +49,8 @@ interface Props {
   isDark: boolean;
   /** Endpoint that returns the event details (differs for the client portal). */
   detailUrl: (eventId: number) => string;
+  /** Shows the plus button that adds supporting media. */
+  canAddMedia?: boolean;
 }
 
 function toLocalInputValue(date: Date): string {
@@ -59,7 +63,7 @@ interface NewFile {
   file: File;
 }
 
-export function EventDetailDialog({ eventId, onClose, onChanged, isDark, detailUrl }: Props) {
+export function EventDetailDialog({ eventId, onClose, onChanged, isDark, detailUrl, canAddMedia = false }: Props) {
   const { t } = useTranslation();
   const ui = eventUi(isDark);
   const d = (key: string, opts?: Record<string, unknown>) => t(`logbooks.eventLogbook.detail.${key}`, opts);
@@ -81,6 +85,8 @@ export function EventDetailDialog({ eventId, onClose, onChanged, isDark, detailU
   const [removeIds, setRemoveIds] = useState<number[]>([]);
   const [newFiles, setNewFiles] = useState<NewFile[]>([]);
   const fileInput = useRef<HTMLInputElement>(null);
+  const [mediaIndex, setMediaIndex] = useState<number | null>(null);
+  const [addMedia, setAddMedia] = useState(false);
 
   const load = useCallback(
     async (id: number) => {
@@ -102,6 +108,8 @@ export function EventDetailDialog({ eventId, onClose, onChanged, isDark, detailU
   useEffect(() => {
     setEditing(false);
     setConfirmDelete(false);
+    setMediaIndex(null);
+    setAddMedia(false);
     setDetail(null);
     if (eventId != null) load(eventId);
   }, [eventId, load]);
@@ -119,7 +127,7 @@ export function EventDetailDialog({ eventId, onClose, onChanged, isDark, detailU
     setEditing(true);
   };
 
-  const keptCount = (detail?.attachments.length ?? 0) - removeIds.length;
+  const keptCount = (detail?.attachments ?? []).filter((a) => !a.is_supporting && !removeIds.includes(a.attachment_id)).length;
   const room = Math.max(0, EVENT_ATTACHMENT_MAX_FILES - keptCount - newFiles.length);
 
   const addFiles = (list: FileList) => {
@@ -184,15 +192,66 @@ export function EventDetailDialog({ eventId, onClose, onChanged, isDark, detailU
   const { types: eventTypes } = useEventTypes();
   // The event's own type stays selectable while editing even if it was deleted from the list since.
   const typeItems = useMemo<PagedSelectItem[]>(() => {
-    const items = eventTypes.map((x) => ({ value: x.type_code, label: x.type_name }));
-    if (detail && eventTypes.every((x) => x.type_code !== detail.event_type)) {
+    const items = eventTypes
+      .filter((x) => x.client_id == null || x.client_id === detail?.client_id)
+      .map((x) => ({ value: x.type_code, label: x.client_name ? `${x.type_name} · ${x.client_name}` : x.type_name }));
+    if (detail && items.every((x) => x.value !== detail.event_type)) {
       items.push({ value: detail.event_type, label: detail.event_type_label || prettifyEventTypeCode(detail.event_type) });
     }
     return items;
   }, [eventTypes, detail]);
   const fieldCls = 'border-slate-200 bg-white text-slate-800 dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-200';
   const faint = ui.faint;
+  const original = useMemo(() => (detail?.attachments ?? []).filter((a) => !a.is_supporting), [detail]);
+  const supporting = useMemo(() => (detail?.attachments ?? []).filter((a) => a.is_supporting), [detail]);
+  // Images and videos of both groups open in one viewer, original attachments first.
+  const viewable = useMemo<(ViewerMedia & { attachment_id: number })[]>(
+    () => [...original, ...supporting].filter(isViewableMedia),
+    [original, supporting],
+  );
   const hasCoords = detail?.latitude != null && detail?.longitude != null;
+
+  const renderTiles = (list: EventDetail['attachments']) => (
+    <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+      {list.map((a) => {
+        const viewIdx = viewable.findIndex((v) => v.attachment_id === a.attachment_id);
+        const thumb = isImageMedia(a) ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={a.url} alt={a.file_name} className="h-28 w-full object-cover" />
+        ) : isVideoMedia(a) ? (
+          <div className="relative h-28 w-full bg-black">
+            <video src={`${a.url}#t=0.1`} preload="metadata" muted playsInline className="h-full w-full object-cover" />
+            <Film className="absolute left-1/2 top-1/2 h-7 w-7 -translate-x-1/2 -translate-y-1/2 text-white drop-shadow" />
+          </div>
+        ) : (
+          <div className={cn('flex h-28 items-center justify-center', isDark ? 'bg-slate-800' : 'bg-slate-100')}>
+            <FileText className={cn('h-7 w-7', faint)} />
+          </div>
+        );
+        return (
+          <li key={a.attachment_id} className={cn('overflow-hidden rounded-md border', ui.divider)}>
+            {viewIdx >= 0 ? (
+              <button type="button" className="block w-full" onClick={() => setMediaIndex(viewIdx)}>
+                {thumb}
+              </button>
+            ) : (
+              <a href={a.url} target="_blank" rel="noopener noreferrer" className="block">
+                {thumb}
+              </a>
+            )}
+            <div className="flex items-center gap-1 px-2 py-1">
+              <span className="min-w-0 flex-1 truncate text-xs" title={a.file_name}>
+                {a.file_name}
+              </span>
+              <a href={a.download_url} download={a.file_name} title={d('download')} aria-label={d('download')} className="text-violet-600 hover:text-violet-700">
+                <Download className="h-3.5 w-3.5" />
+              </a>
+            </div>
+          </li>
+        );
+      })}
+    </ul>
+  );
 
   const row = (label: string, value: React.ReactNode) => (
     <>
@@ -226,6 +285,7 @@ export function EventDetailDialog({ eventId, onClose, onChanged, isDark, detailU
                   <PagedSelect
                     isDark={isDark}
                     items={typeItems}
+                    scrollable
                     value={eventType}
                     placeholder={t('logbooks.eventLogbook.wizard.chooseType')}
                     onChange={(v) => setEventType(v as EventType)}
@@ -397,36 +457,24 @@ export function EventDetailDialog({ eventId, onClose, onChanged, isDark, detailU
 
               <div className="space-y-2">
                 <p className={cn('text-xs font-semibold uppercase tracking-wide', faint)}>
-                  {t('logbooks.eventLogbook.columns.attachments')} ({detail.attachments.length})
+                  {t('logbooks.eventLogbook.columns.attachments')} ({original.length})
                 </p>
-                {detail.attachments.length === 0 ? (
-                  <p className={cn('text-sm', faint)}>{d('noAttachments')}</p>
-                ) : (
-                  <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-                    {detail.attachments.map((a) => (
-                      <li key={a.attachment_id} className={cn('overflow-hidden rounded-md border', ui.divider)}>
-                        <a href={a.url} target="_blank" rel="noopener noreferrer" className="block">
-                          {a.file_type?.startsWith('image/') ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img src={a.url} alt={a.file_name} className="h-28 w-full object-cover" />
-                          ) : (
-                            <div className={cn('flex h-28 items-center justify-center', isDark ? 'bg-slate-800' : 'bg-slate-100')}>
-                              <FileText className={cn('h-7 w-7', faint)} />
-                            </div>
-                          )}
-                        </a>
-                        <div className="flex items-center gap-1 px-2 py-1">
-                          <span className="min-w-0 flex-1 truncate text-xs" title={a.file_name}>
-                            {a.file_name}
-                          </span>
-                          <a href={a.download_url} download={a.file_name} title={d('download')} aria-label={d('download')} className="text-violet-600 hover:text-violet-700">
-                            <Download className="h-3.5 w-3.5" />
-                          </a>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                )}
+                {original.length === 0 ? <p className={cn('text-sm', faint)}>{d('noAttachments')}</p> : renderTiles(original)}
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <p className={cn('text-xs font-semibold uppercase tracking-wide', faint)}>
+                    {t('logbooks.eventLogbook.supportMedia.heading')} ({supporting.length})
+                  </p>
+                  {canAddMedia && (
+                    <Button type="button" variant="outline" size="sm" className={ui.outlineBtn} onClick={() => setAddMedia(true)}>
+                      <Plus className="mr-1 h-4 w-4" />
+                      {t('logbooks.eventLogbook.supportMedia.add')}
+                    </Button>
+                  )}
+                </div>
+                {supporting.length === 0 ? <p className={cn('text-sm', faint)}>{t('logbooks.eventLogbook.supportMedia.none')}</p> : renderTiles(supporting)}
               </div>
 
               <div className="flex items-center justify-between border-t border-slate-200 pt-3 dark:border-slate-700">
@@ -450,6 +498,17 @@ export function EventDetailDialog({ eventId, onClose, onChanged, isDark, detailU
           )}
         </DialogContent>
       </Dialog>
+
+      <MediaViewer items={viewable} index={mediaIndex} onIndexChange={setMediaIndex} />
+      <AddSupportMediaDialog
+        eventId={addMedia ? (detail?.event_id ?? null) : null}
+        isDark={isDark}
+        onClose={() => setAddMedia(false)}
+        onAdded={() => {
+          if (detail) void load(detail.event_id);
+          onChanged();
+        }}
+      />
 
       <AlertDialog open={confirmDelete} onOpenChange={(v) => !deleting && setConfirmDelete(v)}>
         <AlertDialogContent>

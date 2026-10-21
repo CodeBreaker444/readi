@@ -30,6 +30,8 @@ interface Props {
   clearLabel?: string;
   clearValue?: string;
   className?: string;
+  /** Show every match in one list that scrolls on its own (search box stays fixed) instead of paging. */
+  scrollable?: boolean;
 }
 
 export function PagedSelect({
@@ -43,6 +45,7 @@ export function PagedSelect({
   clearLabel,
   clearValue = '',
   className,
+  scrollable = false,
 }: Props) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
@@ -57,7 +60,7 @@ export function PagedSelect({
 
   const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
   const safePage = Math.min(page, pageCount - 1);
-  const pageItems = filtered.slice(safePage * pageSize, safePage * pageSize + pageSize);
+  const pageItems = scrollable ? filtered : filtered.slice(safePage * pageSize, safePage * pageSize + pageSize);
 
   useEffect(() => setPage(0), [query, items]);
   useEffect(() => {
@@ -70,7 +73,7 @@ export function PagedSelect({
   useEffect(() => setMinHeight(0), [open, query, items]);
   useLayoutEffect(() => {
     const h = listRef.current?.offsetHeight ?? 0;
-    if (filtered.length > pageSize && h > minHeight) setMinHeight(h);
+    if (!scrollable && filtered.length > pageSize && h > minHeight) setMinHeight(h);
   }, [safePage, filtered.length, pageSize, minHeight, open]);
 
   const selected = items.find((i) => i.value === value);
@@ -112,11 +115,12 @@ export function PagedSelect({
         // Always open downwards (never flip above the field); scroll inside when space is short.
         avoidCollisions={false}
         className={cn(
-          'w-[var(--radix-popover-trigger-width)] min-w-64 max-h-[min(26rem,var(--radix-popover-content-available-height))] overflow-y-auto p-2',
+          'w-[var(--radix-popover-trigger-width)] min-w-64 max-h-[min(26rem,var(--radix-popover-content-available-height))] p-2',
+          scrollable ? 'flex flex-col overflow-hidden' : 'overflow-y-auto',
           isDark ? 'border-slate-700 bg-slate-900 text-slate-200' : 'border-slate-200 bg-white text-slate-800',
         )}
       >
-        <div className="relative mb-2">
+        <div className="relative mb-2 shrink-0">
           <Search className={cn('absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2', muted)} />
           <Input
             autoFocus
@@ -130,7 +134,12 @@ export function PagedSelect({
           />
         </div>
 
-        <ul ref={listRef} role="listbox" className="space-y-0.5" style={minHeight ? { minHeight } : undefined}>
+        <ul
+          ref={listRef}
+          role="listbox"
+          className={cn('space-y-0.5', scrollable && 'min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1')}
+          style={minHeight ? { minHeight } : undefined}
+        >
           {clearLabel && !query && (
             <li>
               <button type="button" role="option" aria-selected={value === clearValue} className={rowBase} onClick={() => pick(clearValue)}>
@@ -160,7 +169,7 @@ export function PagedSelect({
           {filtered.length === 0 && <li className={cn('px-2 py-3 text-center text-xs', muted)}>{t('logbooks.eventLogbook.noResults')}</li>}
         </ul>
 
-        {filtered.length > pageSize && (
+        {!scrollable && filtered.length > pageSize && (
           <div
             className={cn(
               'mt-2 flex items-center justify-between gap-2 border-t pt-2 text-xs',
