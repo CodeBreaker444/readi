@@ -56,6 +56,25 @@ Open a battery for its **Cycle Log**: each mission it was used on, with date, du
 
 Pilots report incidents and anomalies (for example equipment malfunction, GPS signal issue, obstacle detected, bird activity or fly-away) with **Add Report Event**. The event types are defined by your company: an administrator creates, renames and deletes them from the **Event types** button in the page header. Renaming a type also updates events already reported with it. A deleted type stays on the events that used it, but can no longer be chosen for new ones. Event types can be **client-specific**: when you create or edit a type you can pick a **Client**, or leave it on **Default (all clients)**. A default type is offered for every client; a client type is only offered for events of that client. When reporting an event, the type list shows the default types plus the types of the event's client (taken from the mission, otherwise from the system's assigned client). Editing a type lets you move it to another client or back to Default, and the last default type cannot be deleted. Because a flight often has several events, the details they share are set up once, so that adding an event during a flight takes only a few taps.
 
+### Event type codes
+
+Every event type has a **name** (what people see, and what you can rename) and a **code** (what is stored on events and sent in webhooks as `event_type`). You only type the name; the code is generated once, when the type is created:
+
+1. Accents are removed ("Détecté" becomes "Detecte") and everything is lowercased.
+2. Each run of characters that are not letters a–z or digits 0–9 (spaces, `-`, `/`, `!` and so on) becomes a single `_`.
+3. Leading and trailing `_` are removed and the result is cut to 50 characters. If nothing usable is left, the code is `event_type`.
+
+| Name typed | Code |
+| --- | --- |
+| Fire | `fire` |
+| Person detected | `person_detected` |
+| Fly-away / Loss of control | `fly_away_loss_of_control` |
+| Bird strike! | `bird_strike` |
+
+Codes are unique per company, across all clients. If the code is already taken, a number is added: a second "Fire" becomes `fire_2`, then `fire_3`. The code of a deleted type is never reused, because older events still carry it. For example, "Fire" for Client A and "Fire" for Client B get `fire` and `fire_2`, but each client sees both as "Fire".
+
+The code **never changes**. Renaming "Fire" to "Wildfire", or moving the type to another client or to Default, keeps the code `fire`; only the label changes. Webhooks send both `event_type` (the code) and `event_type_label` (the current name), so receiving systems should match on the code.
+
 ### Mission setup
 
 The first time you click **Add Report Event** you see **Mission setup**:
