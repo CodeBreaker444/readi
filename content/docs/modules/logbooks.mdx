@@ -75,6 +75,40 @@ Codes are unique per company, across all clients. If the code is already taken, 
 
 The code **never changes**. Renaming "Fire" to "Wildfire", or moving the type to another client or to Default, keeps the code `fire`; only the label changes. Webhooks send both `event_type` (the code) and `event_type_label` (the current name), so receiving systems should match on the code.
 
+#### Sample code
+
+The same rules as TypeScript, for receiving systems that want to compute a code from a type name, or show a readable label for a code. This is the exact function ReADI uses:
+
+```ts
+const EVENT_TYPE_CODE_MAX = 50;
+
+/** Name -> code, e.g. "Bird strike!" -> "bird_strike". */
+export function slugifyEventTypeCode(name: string): string {
+  return name
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '') // strip accents
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_') // anything else becomes "_"
+    .replace(/^_+|_+$/g, '') // trim leading/trailing "_"
+    .slice(0, EVENT_TYPE_CODE_MAX);
+}
+
+/** Code -> readable fallback label, e.g. "bird_strike" -> "Bird strike". */
+export function prettifyEventTypeCode(code: string): string {
+  const spaced = code.replace(/_+/g, ' ').trim();
+  return spaced ? spaced.charAt(0).toUpperCase() + spaced.slice(1) : code;
+}
+
+slugifyEventTypeCode('Person detected'); // "person_detected"
+slugifyEventTypeCode('Fly-away / Loss of control'); // "fly_away_loss_of_control"
+prettifyEventTypeCode('person_detected'); // "Person detected"
+```
+
+Two limits to keep in mind:
+
+- **A code cannot be turned back into the exact name.** Capitalisation, punctuation and accents are lost, and `prettifyEventTypeCode` only gives a readable approximation. The webhook already sends the real, current name as `event_type_label`, so prefer that for display and use the code only as a stable key.
+- **`slugifyEventTypeCode(name)` matches the stored code only for a type's first name.** The code is fixed at creation, so a renamed type keeps its old code, and a duplicate name gets a suffix (`fire_2`). To find the code of a type, read `event_type` from the message rather than recomputing it from the name.
+
 ### Mission setup
 
 The first time you click **Add Report Event** you see **Mission setup**:
