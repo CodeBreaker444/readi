@@ -24,11 +24,14 @@ async function assertClientInOwner(ownerId: number, clientId: number | null | un
   if (!client) throw new EventLogbookError('Client not found', 404);
 }
 
-/** All of the company's types: default ones (client_id null) and client-specific ones. */
-export async function listEventTypes(ownerId: number): Promise<EventTypeItem[]> {
+/**
+ * The company's types: default ones (client_id null) and client-specific ones.
+ * Pass `onlyClientId` for client-portal users so they only see default types and their own client's.
+ */
+export async function listEventTypes(ownerId: number, onlyClientId?: number): Promise<EventTypeItem[]> {
   const [types, counts] = await Promise.all([
     prisma.pilot_event_type.findMany({
-      where: { fk_owner_id: ownerId },
+      where: { fk_owner_id: ownerId, ...(onlyClientId ? { OR: [{ fk_client_id: null }, { fk_client_id: onlyClientId }] } : {}) },
       orderBy: [{ sort_order: 'asc' }, { type_name: 'asc' }],
       include: { client: { select: { client_name: true } } },
     }),
@@ -164,8 +167,11 @@ export async function updateEventType(ownerId: number, id: number, input: EventT
  */
 export async function deleteEventType(ownerId: number, id: number) {
   const row = await getOwnedType(ownerId, id);
-  const remaining = await prisma.pilot_event_type.count({ where: { fk_owner_id: ownerId, NOT: { event_type_id: id } } });
-  if (remaining === 0) throw new EventLogbookError('At least one event type is required', 409);
+  // Default types serve every client, so the last one must stay.
+  if (row.fk_client_id == null) {
+    const otherDefaults = await prisma.pilot_event_type.count({ where: { fk_owner_id: ownerId, fk_client_id: null, NOT: { event_type_id: id } } });
+    if (otherDefaults === 0) throw new EventLogbookError('At least one default event type is required', 409);
+  }
   await prisma.pilot_event_type.delete({ where: { event_type_id: id } });
   return row;
 }

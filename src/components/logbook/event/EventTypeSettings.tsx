@@ -190,7 +190,7 @@ export function EventTypeSettings({ open, onOpenChange, isDark = false }: Props)
                         <Button size="icon" variant="ghost" title={n('edit')} aria-label={n('edit')} onClick={() => setForm({ id: x.event_type_id, name: x.type_name, clientId: x.client_id ? String(x.client_id) : '' })}>
                           <Pencil className="h-4 w-4" />
                         </Button>
-                        <Button size="icon" variant="ghost" title={n('delete')} aria-label={n('delete')} disabled={types.length <= 1} onClick={() => setDeleteTarget(x)}>
+                        <Button size="icon" variant="ghost" title={n('delete')} aria-label={n('delete')} disabled={x.client_id == null && types.filter((y) => y.client_id == null).length <= 1} onClick={() => setDeleteTarget(x)}>
                           <Trash2 className="h-4 w-4 text-red-500" />
                         </Button>
                       </div>

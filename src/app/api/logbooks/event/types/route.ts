@@ -2,6 +2,7 @@ import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { createEventType, eventTypeInputSchema, listEventTypes, listTypeClients } from '@/backend/services/logbook/event-type-service';
 import { zodError } from '@/lib/api-error';
 import { requireAuth, requireFullAccessRole } from '@/lib/auth/api-auth';
+import { FULL_ACCESS_ROLES } from '@/lib/auth/feature-permissions-types';
 import { E } from '@/lib/error-codes';
 import { eventLogbookErrorResponse } from '@/lib/event-logbook-api';
 import { NextRequest, NextResponse } from 'next/server';
@@ -11,8 +12,10 @@ export async function GET() {
   try {
     const { session, error } = await requireAuth();
     if (error) return error;
-    const ownerId = session!.user.ownerId;
-    const [types, clients] = await Promise.all([listEventTypes(ownerId), listTypeClients(ownerId)]);
+    const { ownerId, clientId, role } = session!.user;
+    // Client-portal users only see default types and their own client's; the client list is for admins managing types.
+    const canManage = FULL_ACCESS_ROLES.includes(role);
+    const [types, clients] = await Promise.all([listEventTypes(ownerId, clientId || undefined), canManage ? listTypeClients(ownerId) : []]);
     return NextResponse.json({ code: 200, types, clients });
   } catch (err) {
     return eventLogbookErrorResponse(err);
