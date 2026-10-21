@@ -2859,7 +2859,13 @@
         "setupSaved": "Missions-Setup gespeichert",
         "attachmentsHint": "Optional. Fügen Sie Fotos, Videos oder PDFs hinzu, die zeigen, was passiert ist.",
         "notifyMore": "{{count}} weitere – Suchfeld nutzen, um einzugrenzen",
-        "status": { "PLANNED": "Geplant", "IN_PROGRESS": "In Bearbeitung", "COMPLETED": "Abgeschlossen", "CANCELLED": "Abgebrochen", "ABORTED": "Abgebrochen (Abbruch)" },
+        "status": {
+          "PLANNED": "Geplant",
+          "IN_PROGRESS": "In Bearbeitung",
+          "COMPLETED": "Abgeschlossen",
+          "CANCELLED": "Abgebrochen",
+          "ABORTED": "Abgebrochen (Abbruch)"
+        },
         "steps": {
           "drone": "Drohne & Mission",
           "location": "Standort",
@@ -2902,7 +2908,8 @@
         "notify": "Benachrichtigen",
         "notifyHint": "Ausgewählte Kontakte erhalten eine E-Mail zu diesem Ereignis ({{count}} ausgewählt). Standardwerte stammen vom Kunden.",
         "notifySearch": "Kontakte suchen…",
-        "notifyNoContacts": "Keine Kontakte im Kontaktbuch."
+        "notifyNoContacts": "Keine Kontakte im Kontaktbuch.",
+        "typesForClient": "Es werden Standard-Ereignistypen und die Typen für {{client}} angezeigt."
       },
       "detail": {
         "title": "Ereignis #{{id}}",
@@ -2993,7 +3000,11 @@
         "deleteDescription": "„{{name}}“ wird beim Melden von Ereignissen nicht mehr angeboten.",
         "deleteInUse_one": "{{count}} gemeldetes Ereignis behält diesen Typ und zeigt ihn weiterhin an.",
         "deleteInUse_other": "{{count}} gemeldete Ereignisse behalten diesen Typ und zeigen ihn weiterhin an.",
-        "error": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut."
+        "error": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.",
+        "client": "Kunde",
+        "defaultOption": "Standard (alle Kunden)",
+        "clientHint": "Standardtypen stehen für jeden Kunden zur Verfügung. Ein Kundentyp wird nur für Ereignisse dieses Kunden angeboten.",
+        "defaultBadge": "Standard"
       },
       "notifications": {
         "title": "E-Mail-Benachrichtigungen",
@@ -3040,7 +3051,31 @@
       "searchPlaceholder": "Ereignisse suchen…",
       "searchOptions": "Suchen…",
       "noResults": "Keine Ergebnisse",
-      "emailSettings": "E-Mail-Benachrichtigungen"
+      "emailSettings": "E-Mail-Benachrichtigungen",
+      "supportMedia": {
+        "heading": "Zusatzmedien",
+        "add": "Zusatzmedien hinzufügen",
+        "addButton": "{{count}} Datei(en) hinzufügen",
+        "none": "Noch keine Zusatzmedien.",
+        "title": "Zusatzmedien zu Ereignis #{{id}} hinzufügen",
+        "description": "Fügen Sie diesem Ereignis weitere Fotos oder Videos hinzu. Es wird keine E-Mail versendet; der Webhook des Kunden erhält die neuen Medien.",
+        "dropHere": "Bilder oder Videos hierher ziehen",
+        "orBrowse": "oder durchsuchen",
+        "supported": "Unterstützt: JPG, PNG, WebP, MP4, WebM, MOV (bis zu {{count}} Dateien gleichzeitig)",
+        "rejected": "{{name}} ist kein unterstütztes Bild/Video oder größer als 100 MB",
+        "added": "Zusatzmedien hinzugefügt",
+        "error": "Die Medien konnten nicht hinzugefügt werden. Bitte erneut versuchen.",
+        "remove": "Entfernen",
+        "cancel": "Abbrechen",
+        "uploading": "Wird hochgeladen...",
+        "wizardHint": "Optional. Zusätzliche Fotos oder Videos zu diesem Ereignis (JPG, PNG, WebP, MP4, WebM, MOV). Sie werden mit dem Ereignis gespeichert und als Zusatzmedien angezeigt."
+      },
+      "viewer": {
+        "description": "Bild- und Videobetrachter",
+        "failed": "Diese Datei konnte nicht angezeigt werden.",
+        "previous": "Zurück",
+        "next": "Weiter"
+      }
     }
   },
   "safety": {

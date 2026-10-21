@@ -8,11 +8,13 @@ import type { EventLogbookItem } from '@/config/types/event-logbook';
 import { cn } from '@/lib/utils';
 import { type ColumnDef, getCoreRowModel, getFilteredRowModel, getPaginationRowModel, useReactTable } from '@tanstack/react-table';
 import axios from 'axios';
-import { Eye, FileText, Loader2, Paperclip, Search } from 'lucide-react';
+import { Eye, FileText, Film, Paperclip, Plus, Search } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
+import { AddSupportMediaDialog } from './AddSupportMediaDialog';
 import { eventUi } from './event-ui';
+import { isImageMedia, isVideoMedia, isViewableMedia, MediaViewer } from './MediaViewer';
 
 const PAGE_SIZE = 8;
 
@@ -26,6 +28,10 @@ interface Props {
   attachmentsUrl?: (eventId: number) => string;
   /** Opens the event details; also triggered by clicking a row. */
   onView?: (eventId: number) => void;
+  /** Shows a plus icon beside each event to add supporting media. */
+  canAddMedia?: boolean;
+  /** Called after supporting media was added so the list can refresh. */
+  onMediaAdded?: () => void;
 }
 
 interface AttachmentLink {
@@ -33,6 +39,8 @@ interface AttachmentLink {
   file_name: string;
   file_type: string | null;
   url: string;
+  download_url?: string;
+  is_supporting?: boolean;
 }
 
 export function EventLogbookTable({
@@ -43,11 +51,16 @@ export function EventLogbookTable({
   highlightId,
   attachmentsUrl = (id) => `/api/logbooks/event/${id}/attachments`,
   onView,
+  canAddMedia = false,
+  onMediaAdded,
 }: Props) {
   const { t } = useTranslation();
   const ui = eventUi(isDark);
   const [globalFilter, setGlobalFilter] = useState('');
   const [viewer, setViewer] = useState<{ event: EventLogbookItem; items: AttachmentLink[] | null } | null>(null);
+  const [mediaIndex, setMediaIndex] = useState<number | null>(null);
+  const [addMediaFor, setAddMediaFor] = useState<number | null>(null);
+  const viewable = useMemo(() => (viewer?.items ?? []).filter(isViewableMedia), [viewer?.items]);
 
   const c =(key: string) => t(`logbooks.eventLogbook.columns.${key}`);
 
@@ -196,7 +209,23 @@ export function EventLogbookTable({
                     {e.mission_name ?? '—'}
                   </td>
                   <td className="px-3 py-2.5">
-                    <span title={e.notes ?? undefined}>{e.event_type_label}</span>
+                    <span className="inline-flex items-center gap-1.5">
+                      <span title={e.notes ?? undefined}>{e.event_type_label}</span>
+                      {canAddMedia && (
+                        <button
+                          type="button"
+                          title={t('logbooks.eventLogbook.supportMedia.add')}
+                          aria-label={t('logbooks.eventLogbook.supportMedia.add')}
+                          onClick={(ev) => {
+                            ev.stopPropagation();
+                            setAddMediaFor(e.event_id);
+                          }}
+                          className="rounded-full border border-violet-500/40 p-0.5 text-violet-500 hover:bg-violet-500/10"
+                        >
+                          <Plus className="h-3.5 w-3.5" />
+                        </button>
+                      )}
+                    </span>
                   </td>
                   {showPilot && <td className="px-3 py-2.5">{e.pilot_name ?? '—'}</td>}
                   {showPilot && <td className="px-3 py-2.5">{e.client_name ?? '—'}</td>}
@@ -261,29 +290,47 @@ export function EventLogbookTable({
             </div>
           ) : (
             <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-              {viewer.items.map((a) => (
-                <li key={a.attachment_id}>
-                  <a
-                    href={a.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={cn('block overflow-hidden rounded-md border', ui.divider)}
-                  >
-                    {a.file_type?.startsWith('image/') ? (
+              {viewer.items.map((a) => {
+                const viewIdx = viewable.findIndex((v) => v.attachment_id === a.attachment_id);
+                const tile = (
+                  <>
+                    {isImageMedia(a) ? (
+                      // eslint-disable-next-line @next/next/no-img-element
                       <img src={a.url} alt={a.file_name} className="h-28 w-full object-cover" />
                     ) : (
                       <div className={cn('flex h-28 items-center justify-center', isDark ? 'bg-slate-800' : 'bg-slate-100')}>
-                        <FileText className={cn('h-7 w-7', ui.faint)} />
+                        {isVideoMedia(a) ? <Film className={cn('h-7 w-7', ui.faint)} /> : <FileText className={cn('h-7 w-7', ui.faint)} />}
                       </div>
                     )}
                     <p className="truncate px-2 py-1 text-xs">{a.file_name}</p>
-                  </a>
-                </li>
-              ))}
+                  </>
+                );
+                return (
+                  <li key={a.attachment_id}>
+                    {viewIdx >= 0 ? (
+                      <button type="button" onClick={() => setMediaIndex(viewIdx)} className={cn('block w-full overflow-hidden rounded-md border text-left', ui.divider)}>
+                        {tile}
+                      </button>
+                    ) : (
+                      <a href={a.url} target="_blank" rel="noopener noreferrer" className={cn('block overflow-hidden rounded-md border', ui.divider)}>
+                        {tile}
+                      </a>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           )}
         </DialogContent>
       </Dialog>
+
+      <MediaViewer items={viewable} index={mediaIndex} onIndexChange={setMediaIndex} />
+      <AddSupportMediaDialog
+        eventId={addMediaFor}
+        isDark={isDark}
+        onClose={() => setAddMediaFor(null)}
+        onAdded={() => onMediaAdded?.()}
+      />
     </div>
   );
 }

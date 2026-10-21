@@ -2869,7 +2869,13 @@
         "setupSaved": "Mission setup saved",
         "attachmentsHint": "Optional. Add photos, videos or PDFs that show what happened.",
         "notifyMore": "{{count}} more — type in the search box to narrow down",
-        "status": { "PLANNED": "Scheduled", "IN_PROGRESS": "In Progress", "COMPLETED": "Completed", "CANCELLED": "Cancelled", "ABORTED": "Aborted" },
+        "status": {
+          "PLANNED": "Scheduled",
+          "IN_PROGRESS": "In Progress",
+          "COMPLETED": "Completed",
+          "CANCELLED": "Cancelled",
+          "ABORTED": "Aborted"
+        },
         "steps": {
           "drone": "Drone & Mission",
           "location": "Location",
@@ -2912,7 +2918,8 @@
         "notify": "Notify",
         "notifyHint": "Selected contacts are emailed about this event ({{count}} selected). Defaults come from the client.",
         "notifySearch": "Search contacts…",
-        "notifyNoContacts": "No contacts in the contact book."
+        "notifyNoContacts": "No contacts in the contact book.",
+        "typesForClient": "Showing default event types and the types for {{client}}."
       },
       "detail": {
         "title": "Event #{{id}}",
@@ -3003,7 +3010,11 @@
         "deleteDescription": "\"{{name}}\" will no longer be offered when reporting events.",
         "deleteInUse_one": "{{count}} reported event keeps this type and will still show it.",
         "deleteInUse_other": "{{count}} reported events keep this type and will still show it.",
-        "error": "Something went wrong. Please try again."
+        "error": "Something went wrong. Please try again.",
+        "client": "Client",
+        "defaultOption": "Default (all clients)",
+        "clientHint": "Default types are offered for every client. A client type is only offered for that client's events.",
+        "defaultBadge": "Default"
       },
       "notifications": {
         "title": "Email notifications",
@@ -3050,7 +3061,31 @@
       "searchPlaceholder": "Search events…",
       "searchOptions": "Search…",
       "noResults": "No results",
-      "emailSettings": "Email notifications"
+      "emailSettings": "Email notifications",
+      "supportMedia": {
+        "heading": "Supporting media",
+        "add": "Add supporting media",
+        "addButton": "Add {{count}} file(s)",
+        "none": "No supporting media yet.",
+        "title": "Add supporting media to event #{{id}}",
+        "description": "Add more photos or videos to this event. Nobody is emailed; the client's webhook receives the new media.",
+        "dropHere": "Drop images or videos here",
+        "orBrowse": "or browse",
+        "supported": "Supported: JPG, PNG, WebP, MP4, WebM, MOV (up to {{count}} files at a time)",
+        "rejected": "{{name}} is not a supported image/video or is larger than 100 MB",
+        "added": "Supporting media added",
+        "error": "Could not add the media. Please try again.",
+        "remove": "Remove",
+        "cancel": "Cancel",
+        "uploading": "Uploading...",
+        "wizardHint": "Optional. Extra photos or videos for this event (JPG, PNG, WebP, MP4, WebM, MOV). They are saved with the event and shown as supporting media."
+      },
+      "viewer": {
+        "description": "Image and video viewer",
+        "failed": "This file could not be displayed.",
+        "previous": "Previous",
+        "next": "Next"
+      }
     }
   },
   "safety": {

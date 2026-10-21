@@ -14,6 +14,8 @@ import {
   EVENT_ATTACHMENT_MAX_BYTES,
   EVENT_ATTACHMENT_MAX_FILES,
   EVENT_NOTES_MAX,
+  EVENT_SUPPORT_MEDIA_ALLOWED_TYPES,
+  EVENT_SUPPORT_MEDIA_MAX_PER_UPLOAD,
   droneComponentLine,
   formatDroneLabel,
   formatMissionLabel,
@@ -27,7 +29,7 @@ import { useEventTypes } from './useEventTypes';
 import { uploadEventFiles } from '@/lib/event-logbook-upload';
 import { cn } from '@/lib/utils';
 import axios from 'axios';
-import { CheckCircle2, FileText, Info, Loader2, Map as MapIcon, UploadCloud, X } from 'lucide-react';
+import { CheckCircle2, Film, FileText, Info, Loader2, Map as MapIcon, Plus, UploadCloud, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -120,9 +122,15 @@ export function AddEventWizard({ open, mode = 'event', onOpenChange, drones, mis
   const fileInput = useRef<HTMLInputElement>(null);
   const filesRef = useRef<PendingFile[]>([]);
   filesRef.current = files;
+  const [mediaFiles, setMediaFiles] = useState<PendingFile[]>([]);
+  const mediaInput = useRef<HTMLInputElement>(null);
+  const mediaRef = useRef<PendingFile[]>([]);
+  mediaRef.current = mediaFiles;
 
   const resetEvent = useCallback(() => {
     filesRef.current.forEach((f) => f.previewUrl && URL.revokeObjectURL(f.previewUrl));
+    mediaRef.current.forEach((f) => f.previewUrl && URL.revokeObjectURL(f.previewUrl));
+    setMediaFiles([]);
     setDone(false);
     setLat('');
     setLng('');
@@ -170,11 +178,6 @@ export function AddEventWizard({ open, mode = 'event', onOpenChange, drones, mis
     setDraft(drones.length === 1 ? { ...fresh, toolId: String(drones[0].tool_id) } : fresh);
   }, [open, mode, drones, isSetupValid, resetEvent]);
 
-  const typeItems = useMemo<PagedSelectItem[]>(
-    () => eventTypes.map((x) => ({ value: x.type_code, label: x.type_name })),
-    [eventTypes],
-  );
-
   const droneItems = useMemo<PagedSelectItem[]>(
     () => drones.map((d) => droneItem(d, droneComponentLine(d), formatDroneLabel(d))),
     [drones],
@@ -185,7 +188,22 @@ export function AddEventWizard({ open, mode = 'event', onOpenChange, drones, mis
   const toolMissions = useMemo(() => activeMissionsFor(current.toolId), [activeMissionsFor, current.toolId]);
   const selectedMission = toolMissions.find((m) => String(m.pilot_mission_id) === current.missionId);
   // Same rule as the server: the mission's client, else the system's assigned client.
-  const reportClientId = (selectedMission?.client ?? selectedDrone?.assigned_client ?? null)?.client_id ?? null;
+  const reportClient = selectedMission?.client ?? selectedDrone?.assigned_client ?? null;
+  const reportClientId = reportClient?.client_id ?? null;
+
+  // Default types (no client) are always offered; client types only for the client this event is reported for.
+  const typeItems = useMemo<PagedSelectItem[]>(
+    () =>
+      eventTypes
+        .filter((x) => x.client_id == null || x.client_id === reportClientId)
+        .map((x) => ({ value: x.type_code, label: x.type_name, sublabel: x.client_name ?? t('logbooks.eventLogbook.typeSettings.defaultBadge') })),
+    [eventTypes, reportClientId, t],
+  );
+
+  // A type picked for one client must not survive a change of client.
+  useEffect(() => {
+    if (eventType && typeItems.every((i) => i.value !== eventType)) setEventType('');
+  }, [typeItems, eventType]);
 
   // Pre-fill the recipients with the client's default contacts.
   useEffect(() => {
@@ -249,6 +267,30 @@ export function AddEventWizard({ open, mode = 'event', onOpenChange, drones, mis
     });
   };
 
+  const addMedia = (list: FileList | File[]) => {
+    const accepted: PendingFile[] = [];
+    for (const file of Array.from(list)) {
+      if (!EVENT_SUPPORT_MEDIA_ALLOWED_TYPES.includes(file.type) || file.size > EVENT_ATTACHMENT_MAX_BYTES) {
+        toast.error(t('logbooks.eventLogbook.supportMedia.rejected', { name: file.name }));
+        continue;
+      }
+      accepted.push({
+        id: `${file.name}-${file.size}-${file.lastModified}-${Math.random().toString(36).slice(2, 7)}`,
+        file,
+        previewUrl: file.type.startsWith('image/') ? URL.createObjectURL(file) : null,
+      });
+    }
+    setMediaFiles((prev) => [...prev, ...accepted].slice(0, EVENT_SUPPORT_MEDIA_MAX_PER_UPLOAD));
+  };
+
+  const removeMedia = (id: string) => {
+    setMediaFiles((prev) => {
+      const target = prev.find((f) => f.id === id);
+      if (target?.previewUrl) URL.revokeObjectURL(target.previewUrl);
+      return prev.filter((f) => f.id !== id);
+    });
+  };
+
   const uploadAll = (): Promise<EventAttachmentInput[]> => uploadEventFiles(files.map((f) => f.file));
 
   const submit = async () => {
@@ -256,6 +298,7 @@ export function AddEventWizard({ open, mode = 'event', onOpenChange, drones, mis
     setSubmitting(true);
     try {
       const attachments = await uploadAll();
+      const support_media = await uploadEventFiles(mediaFiles.map((f) => f.file), 'support');
       const res = await axios.post('/api/logbooks/event/create', {
         tool_id: Number(setup.toolId),
         mission_id: setup.missionId ? Number(setup.missionId) : null,
@@ -267,6 +310,7 @@ export function AddEventWizard({ open, mode = 'event', onOpenChange, drones, mis
         notes: notes.trim() || null,
         notify_contact_ids: setup.notifyIds,
         attachments,
+        support_media,
       });
       setDone(true);
       onCreated(res.data.event_id);
@@ -441,11 +485,13 @@ export function AddEventWizard({ open, mode = 'event', onOpenChange, drones, mis
               <PagedSelect
                 isDark={isDark}
                 items={typeItems}
+                scrollable
                 value={eventType}
                 placeholder={w('chooseType')}
                 onChange={(v) => setEventType(v as EventType)}
               />
-              {!typesLoading && eventTypes.length === 0 && (
+              {reportClient && <p className={cn('text-xs', faint)}>{w('typesForClient', { client: reportClient.client_name })}</p>}
+              {!typesLoading && typeItems.length === 0 && (
                 <p className="flex items-start gap-1.5 text-xs text-amber-600">
                   <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                   {w('noEventTypes')}
@@ -547,6 +593,48 @@ export function AddEventWizard({ open, mode = 'event', onOpenChange, drones, mis
             </div>
             </div>
 
+            <div className="space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <Label>{t('logbooks.eventLogbook.supportMedia.heading')}</Label>
+                <Button type="button" variant="outline" size="sm" disabled={mediaFiles.length >= EVENT_SUPPORT_MEDIA_MAX_PER_UPLOAD} onClick={() => mediaInput.current?.click()}>
+                  <Plus className="mr-1 h-4 w-4" />
+                  {t('logbooks.eventLogbook.supportMedia.add')}
+                </Button>
+              </div>
+              <p className={cn('text-xs', faint)}>{t('logbooks.eventLogbook.supportMedia.wizardHint')}</p>
+              <input
+                ref={mediaInput}
+                type="file"
+                multiple
+                hidden
+                accept={EVENT_SUPPORT_MEDIA_ALLOWED_TYPES.join(',')}
+                onChange={(e) => {
+                  if (e.target.files) addMedia(e.target.files);
+                  e.target.value = '';
+                }}
+              />
+              {mediaFiles.length > 0 && (
+                <ul className="flex flex-wrap gap-2">
+                  {mediaFiles.map((f) => (
+                    <li key={f.id} className="relative h-20 w-24 overflow-hidden rounded-md border border-slate-200 bg-slate-100 dark:border-slate-700 dark:bg-slate-800">
+                      {f.previewUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={f.previewUrl} alt={f.file.name} className="h-full w-full object-cover" />
+                      ) : (
+                        <div className="flex h-full flex-col items-center justify-center gap-1 p-1 text-center">
+                          <Film className={cn('h-6 w-6', faint)} />
+                          <span className="line-clamp-2 break-all text-[10px]">{f.file.name}</span>
+                        </div>
+                      )}
+                      <button type="button" aria-label="Remove" onClick={() => removeMedia(f.id)} className="absolute right-1 top-1 rounded-full bg-black/60 p-0.5 text-white">
+                        <X className="h-3 w-3" />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
             <div className="space-y-1.5">
               <Label>{w('notes')}</Label>
               <Textarea className={fieldCls} rows={3} maxLength={EVENT_NOTES_MAX} value={notes} placeholder={w('notesPlaceholder')} onChange={(e) => setNotes(e.target.value)} />
@@ -563,7 +651,7 @@ export function AddEventWizard({ open, mode = 'event', onOpenChange, drones, mis
                 {submitting ? (
                   <>
                     <Loader2 className="mr-1 h-4 w-4 animate-spin" />
-                    {files.length ? w('uploading') : w('submit')}
+                    {files.length || mediaFiles.length ? w('uploading') : w('submit')}
                   </>
                 ) : (
                   w('submit')

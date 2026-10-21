@@ -1,27 +1,10 @@
--- Event Logbook: new default event type set (replaces the one from 021).
--- Idempotent and non-destructive: a type is only inserted when the company has no type
--- with the same code or the same name (ignoring case, spaces and punctuation).
+-- Event Logbook:
+-- 1) Event types can belong to one client (fk_client_id). NULL = default type, available for every client.
+-- 2) Supporting media: extra images/videos added to an already-reported event (flagged on the attachment row).
 
-CREATE OR REPLACE FUNCTION public.seed_default_event_types(p_owner_id INTEGER) RETURNS void
-LANGUAGE sql AS $$
-  INSERT INTO public.pilot_event_type (fk_owner_id, type_code, type_name, sort_order)
-  SELECT p_owner_id, d.type_code, d.type_name, d.sort_order
-  FROM (VALUES
-    ('obstacle_detected',      'Obstacle detected',       10),
-    ('weather_issue',          'Weather Issue',           20),
-    ('gps',                    'GPS',                     30),
-    ('equipment_malfunction',  'Equipment malfunction',   40),
-    ('weather_related',        'Weather related',         50),
-    ('bird_activity',          'Bird activity',           60),
-    ('flyaway_loss_of_control','Flyaway loss of control', 70)
-  ) AS d(type_code, type_name, sort_order)
-  WHERE NOT EXISTS (
-    SELECT 1 FROM public.pilot_event_type t
-    WHERE t.fk_owner_id = p_owner_id
-      AND (t.type_code = d.type_code
-           OR regexp_replace(lower(t.type_name), '[^a-z0-9]+', '', 'g') = regexp_replace(lower(d.type_name), '[^a-z0-9]+', '', 'g'))
-  );
-$$;
+ALTER TABLE public.pilot_event_type
+  ADD COLUMN IF NOT EXISTS fk_client_id INTEGER REFERENCES public.client(client_id) ON DELETE CASCADE;
+CREATE INDEX IF NOT EXISTS idx_pilot_event_type_client ON public.pilot_event_type (fk_owner_id, fk_client_id);
 
--- Existing companies (the owner-insert trigger from 021 keeps seeding new ones).
-SELECT public.seed_default_event_types(owner_id) FROM public.owner;
+ALTER TABLE public.pilot_event_attachment
+  ADD COLUMN IF NOT EXISTS is_supporting BOOLEAN NOT NULL DEFAULT false;

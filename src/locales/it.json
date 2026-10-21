@@ -2865,7 +2865,13 @@
         "setupSaved": "Configurazione missione salvata",
         "attachmentsHint": "Facoltativo. Aggiungi foto, video o PDF che mostrano cosa è successo.",
         "notifyMore": "altri {{count}} — usa la ricerca per restringere",
-        "status": { "PLANNED": "Pianificata", "IN_PROGRESS": "In corso", "COMPLETED": "Completata", "CANCELLED": "Annullata", "ABORTED": "Interrotta" },
+        "status": {
+          "PLANNED": "Pianificata",
+          "IN_PROGRESS": "In corso",
+          "COMPLETED": "Completata",
+          "CANCELLED": "Annullata",
+          "ABORTED": "Interrotta"
+        },
         "steps": {
           "drone": "Drone e missione",
           "location": "Posizione",
@@ -2908,7 +2914,8 @@
         "notify": "Notifica",
         "notifyHint": "I contatti selezionati riceveranno un'email su questo evento ({{count}} selezionati). I valori predefiniti provengono dal cliente.",
         "notifySearch": "Cerca contatti…",
-        "notifyNoContacts": "Nessun contatto in rubrica."
+        "notifyNoContacts": "Nessun contatto in rubrica.",
+        "typesForClient": "Vengono mostrati i tipi di evento predefiniti e quelli per {{client}}."
       },
       "detail": {
         "title": "Evento #{{id}}",
@@ -2999,7 +3006,11 @@
         "deleteDescription": "\"{{name}}\" non sarà più proposto durante la segnalazione degli eventi.",
         "deleteInUse_one": "{{count}} evento segnalato mantiene questo tipo e lo mostrerà ancora.",
         "deleteInUse_other": "{{count}} eventi segnalati mantengono questo tipo e lo mostreranno ancora.",
-        "error": "Qualcosa è andato storto. Riprova."
+        "error": "Qualcosa è andato storto. Riprova.",
+        "client": "Cliente",
+        "defaultOption": "Predefinito (tutti i clienti)",
+        "clientHint": "I tipi predefiniti sono disponibili per ogni cliente. Un tipo del cliente è proposto solo per gli eventi di quel cliente.",
+        "defaultBadge": "Predefinito"
       },
       "notifications": {
         "title": "Notifiche email",
@@ -3046,7 +3057,31 @@
       "searchPlaceholder": "Cerca eventi…",
       "searchOptions": "Cerca…",
       "noResults": "Nessun risultato",
-      "emailSettings": "Notifiche email"
+      "emailSettings": "Notifiche email",
+      "supportMedia": {
+        "heading": "Media di supporto",
+        "add": "Aggiungi media di supporto",
+        "addButton": "Aggiungi {{count}} file",
+        "none": "Nessun media di supporto.",
+        "title": "Aggiungi media di supporto all'evento #{{id}}",
+        "description": "Aggiungi altre foto o video a questo evento. Nessuna email viene inviata; il webhook del cliente riceve i nuovi media.",
+        "dropHere": "Trascina qui immagini o video",
+        "orBrowse": "o sfoglia",
+        "supported": "Supportati: JPG, PNG, WebP, MP4, WebM, MOV (fino a {{count}} file alla volta)",
+        "rejected": "{{name}} non è un'immagine/video supportato o supera 100 MB",
+        "added": "Media di supporto aggiunti",
+        "error": "Impossibile aggiungere i media. Riprova.",
+        "remove": "Rimuovi",
+        "cancel": "Annulla",
+        "uploading": "Caricamento...",
+        "wizardHint": "Facoltativo. Foto o video aggiuntivi per questo evento (JPG, PNG, WebP, MP4, WebM, MOV). Vengono salvati con l'evento e mostrati come media di supporto."
+      },
+      "viewer": {
+        "description": "Visualizzatore di immagini e video",
+        "failed": "Impossibile visualizzare questo file.",
+        "previous": "Precedente",
+        "next": "Successivo"
+      }
     }
   },
   "safety": {

@@ -5,6 +5,9 @@ export interface EventTypeItem {
   event_type_id: number;
   type_code: string;
   type_name: string;
+  /** Client this type belongs to; null = default type, available for every client. */
+  client_id: number | null;
+  client_name: string | null;
   /** Reported events using this type; shown before deleting. */
   event_count: number;
 }
@@ -33,6 +36,11 @@ export const EVENT_ATTACHMENT_ALLOWED_TYPES = ['image/jpeg', 'image/png', 'video
 export const EVENT_ATTACHMENT_MAX_BYTES = 100 * 1024 * 1024;
 export const EVENT_ATTACHMENT_MAX_FILES = 10;
 export const EVENT_NOTES_MAX = 500;
+
+/** Supporting media (added to an event after it was reported) are images and videos only. */
+export const EVENT_SUPPORT_MEDIA_ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'video/mp4', 'video/webm', 'video/quicktime'];
+export const EVENT_SUPPORT_MEDIA_MAX_FILES = 20;
+export const EVENT_SUPPORT_MEDIA_MAX_PER_UPLOAD = 10;
 
 export interface EventDroneComponent {
   component_name: string;
@@ -111,6 +119,7 @@ export interface EventLogbookItem {
   tool_name: string | null;
   mission_id: number | null;
   mission_name: string | null;
+  client_id: number | null;
   client_name: string | null;
   latitude: number | null;
   longitude: number | null;
@@ -128,6 +137,8 @@ export interface EventAttachmentLink {
   url: string;
   /** Link that forces a download. */
   download_url: string;
+  /** True for supporting media added after the event was reported. */
+  is_supporting: boolean;
 }
 
 export interface EventDetail extends EventLogbookItem {

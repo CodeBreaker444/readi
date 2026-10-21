@@ -4,6 +4,9 @@ import {
   EVENT_ATTACHMENT_ALLOWED_TYPES,
   EVENT_ATTACHMENT_MAX_BYTES,
   EVENT_ATTACHMENT_MAX_FILES,
+  EVENT_SUPPORT_MEDIA_ALLOWED_TYPES,
+  EVENT_SUPPORT_MEDIA_MAX_FILES,
+  EVENT_SUPPORT_MEDIA_MAX_PER_UPLOAD,
   EVENT_TYPE_CODE_MAX,
   type EventAttachmentInput,
   type EventClientInfo,
@@ -326,6 +329,7 @@ async function findEvents(
     tool_name: toolMap.get(r.fk_tool_id) ?? null,
     mission_id: r.fk_mission_id,
     mission_name: r.fk_mission_id ? (missionMap.get(r.fk_mission_id) ?? null) : null,
+    client_id: r.fk_client_id,
     client_name: r.fk_client_id ? (clientMap.get(r.fk_client_id) ?? null) : null,
     latitude: r.latitude != null ? Number(r.latitude) : null,
     longitude: r.longitude != null ? Number(r.longitude) : null,
@@ -369,6 +373,7 @@ async function loadEventDetail(scope: EventScope, eventId: number, canEdit: bool
       file_size: a.file_size != null ? Number(a.file_size) : null,
       url: await getPresignedDownloadUrl(a.file_key, 900, a.file_name, 'inline'),
       download_url: await getPresignedDownloadUrl(a.file_key, 900, a.file_name, 'attachment'),
+      is_supporting: a.is_supporting,
     })),
   );
 
@@ -435,7 +440,7 @@ async function findOwnEvent(user: SessionUser, eventId: number) {
 export async function updateEvent(user: SessionUser, eventId: number, input: UpdateEventInput): Promise<{ tool_id: number }> {
   const event = await findOwnEvent(user, eventId);
   // Keeping the event's current (possibly deleted) type is fine; switching to another must be a live one.
-  if (input.event_type !== event.event_type) await assertEventTypesExist(user.ownerId, [input.event_type]);
+  if (input.event_type !== event.event_type) await assertEventTypesExist(user.ownerId, [input.event_type], { clientId: event.fk_client_id });
 
   const removeIds = new Set(input.remove_attachment_ids);
   const removed = event.pilot_event_attachment.filter((a) => removeIds.has(a.attachment_id));
@@ -446,7 +451,8 @@ export async function updateEvent(user: SessionUser, eventId: number, input: Upd
     if (!a.file_key.startsWith(prefix) || a.file_key.includes('..')) throw new EventLogbookError('Invalid attachment key', 403);
     if (!EVENT_ATTACHMENT_ALLOWED_TYPES.includes(a.file_type)) throw new EventLogbookError(`File type not allowed: ${a.file_type}`);
   }
-  if (event.pilot_event_attachment.length - removed.length + input.add_attachments.length > EVENT_ATTACHMENT_MAX_FILES) {
+  const keptOriginal = event.pilot_event_attachment.filter((a) => !a.is_supporting).length - removed.filter((a) => !a.is_supporting).length;
+  if (keptOriginal + input.add_attachments.length > EVENT_ATTACHMENT_MAX_FILES) {
     throw new EventLogbookError(`At most ${EVENT_ATTACHMENT_MAX_FILES} attachments are allowed`);
   }
 
@@ -515,9 +521,10 @@ function attachmentKeyPrefix(user: SessionUser): string {
 
 export async function createAttachmentUploadUrl(
   user: SessionUser,
-  file: { file_name: string; content_type: string; file_size: number },
+  file: { file_name: string; content_type: string; file_size: number; purpose?: 'attachment' | 'support' },
 ) {
-  if (!EVENT_ATTACHMENT_ALLOWED_TYPES.includes(file.content_type)) {
+  const allowed = file.purpose === 'support' ? EVENT_SUPPORT_MEDIA_ALLOWED_TYPES : EVENT_ATTACHMENT_ALLOWED_TYPES;
+  if (!allowed.includes(file.content_type)) {
     throw new EventLogbookError(`File type not allowed: ${file.content_type}`);
   }
   if (file.file_size > EVENT_ATTACHMENT_MAX_BYTES) {
@@ -526,6 +533,45 @@ export async function createAttachmentUploadUrl(
   const file_key = `${attachmentKeyPrefix(user)}${Date.now()}_${sanitizeFileName(file.file_name)}`;
   const upload_url = await getPresignedUploadUrl(file_key, file.content_type, 600);
   return { upload_url, file_key };
+}
+
+export const addSupportMediaSchema = z.object({
+  media: z.array(attachmentInputSchema).min(1).max(EVENT_SUPPORT_MEDIA_MAX_PER_UPLOAD),
+});
+export type AddSupportMediaInput = z.infer<typeof addSupportMediaSchema>;
+
+/**
+ * Adds supporting images/videos to an already reported event. Recipients are not emailed again;
+ * the caller notifies the client's webhooks (update type `support_media`).
+ */
+export async function addSupportMedia(
+  user: SessionUser,
+  eventId: number,
+  input: AddSupportMediaInput,
+): Promise<{ tool_id: number; event_type: string; attachment_ids: number[] }> {
+  const event = await findOwnEvent(user, eventId);
+
+  const prefix = attachmentKeyPrefix(user);
+  for (const m of input.media) {
+    if (!m.file_key.startsWith(prefix) || m.file_key.includes('..')) throw new EventLogbookError('Invalid attachment key', 403);
+    if (!EVENT_SUPPORT_MEDIA_ALLOWED_TYPES.includes(m.file_type)) {
+      throw new EventLogbookError(`Supporting media must be an image or a video: ${m.file_type}`);
+    }
+  }
+  const existing = event.pilot_event_attachment.filter((a) => a.is_supporting).length;
+  if (existing + input.media.length > EVENT_SUPPORT_MEDIA_MAX_FILES) {
+    throw new EventLogbookError(`At most ${EVENT_SUPPORT_MEDIA_MAX_FILES} supporting media are allowed per event`);
+  }
+
+  const created = await prisma.$transaction(
+    input.media.map((m) =>
+      prisma.pilot_event_attachment.create({
+        data: { fk_event_id: eventId, file_name: m.file_name, file_key: m.file_key, file_type: m.file_type, file_size: BigInt(m.file_size), is_supporting: true },
+        select: { attachment_id: true },
+      }),
+    ),
+  );
+  return { tool_id: event.fk_tool_id, event_type: event.event_type, attachment_ids: created.map((c) => c.attachment_id) };
 }
 
 export const MAX_NOTIFY_RECIPIENTS = 20;
@@ -552,12 +598,13 @@ export const createEventSchema = z.object({
     )
     .max(EVENT_ATTACHMENT_MAX_FILES)
     .default([]),
+  /** Supporting images/videos added while reporting; saved flagged as supporting media. */
+  support_media: z.array(attachmentInputSchema).max(EVENT_SUPPORT_MEDIA_MAX_PER_UPLOAD).default([]),
 });
 export type CreateEventInput = z.infer<typeof createEventSchema>;
 
 export async function createEvent(user: SessionUser, input: CreateEventInput): Promise<{ event_id: number }> {
   const { drones, missions } = await getEventOptions(user);
-  await assertEventTypesExist(user.ownerId, [input.event_type]);
 
   // Server-side scope enforcement: never trust the ids the client sends.
   if (!drones.some((d) => d.tool_id === input.tool_id)) {
@@ -578,6 +625,13 @@ export async function createEvent(user: SessionUser, input: CreateEventInput): P
     }
     if (!EVENT_ATTACHMENT_ALLOWED_TYPES.includes(a.file_type)) {
       throw new EventLogbookError(`File type not allowed: ${a.file_type}`);
+    }
+  }
+
+  for (const m of input.support_media) {
+    if (!m.file_key.startsWith(prefix) || m.file_key.includes('..')) throw new EventLogbookError('Invalid attachment key', 403);
+    if (!EVENT_SUPPORT_MEDIA_ALLOWED_TYPES.includes(m.file_type)) {
+      throw new EventLogbookError(`Supporting media must be an image or a video: ${m.file_type}`);
     }
   }
 
@@ -605,6 +659,9 @@ export async function createEvent(user: SessionUser, input: CreateEventInput): P
     );
   }
 
+  // Client-specific types only apply to their own client; default types apply everywhere.
+  await assertEventTypesExist(user.ownerId, [input.event_type], { clientId });
+
   // Contacts must belong to the same company; their addresses are snapshotted on the event.
   const contactIds = [...new Set(input.notify_contact_ids)];
   const contacts = contactIds.length
@@ -628,12 +685,21 @@ export async function createEvent(user: SessionUser, input: CreateEventInput): P
       notes: input.notes?.trim() || null,
       notify_emails: notifyEmails,
       pilot_event_attachment: {
-        create: input.attachments.map((a) => ({
-          file_name: a.file_name,
-          file_key: a.file_key,
-          file_type: a.file_type,
-          file_size: BigInt(a.file_size),
-        })),
+        create: [
+          ...input.attachments.map((a) => ({
+            file_name: a.file_name,
+            file_key: a.file_key,
+            file_type: a.file_type,
+            file_size: BigInt(a.file_size),
+          })),
+          ...input.support_media.map((a) => ({
+            file_name: a.file_name,
+            file_key: a.file_key,
+            file_type: a.file_type,
+            file_size: BigInt(a.file_size),
+            is_supporting: true,
+          })),
+        ],
       },
     },
     select: { event_id: true },
@@ -654,6 +720,7 @@ async function presignEventAttachments(where: { event_id: number; fk_owner_id: n
       file_type: a.file_type,
       file_size: a.file_size != null ? Number(a.file_size) : null,
       url: await getPresignedDownloadUrl(a.file_key, 900, a.file_name, 'inline'),
+      is_supporting: a.is_supporting,
     })),
   );
 }

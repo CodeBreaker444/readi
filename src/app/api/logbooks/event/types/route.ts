@@ -1,7 +1,8 @@
 import { logEvent } from '@/backend/services/auditLog/audit-log';
-import { createEventType, eventTypeInputSchema, listEventTypes } from '@/backend/services/logbook/event-type-service';
+import { createEventType, eventTypeInputSchema, listEventTypes, listTypeClients } from '@/backend/services/logbook/event-type-service';
 import { zodError } from '@/lib/api-error';
 import { requireAuth, requireFullAccessRole } from '@/lib/auth/api-auth';
+import { FULL_ACCESS_ROLES } from '@/lib/auth/feature-permissions-types';
 import { E } from '@/lib/error-codes';
 import { eventLogbookErrorResponse } from '@/lib/event-logbook-api';
 import { NextRequest, NextResponse } from 'next/server';
@@ -11,7 +12,11 @@ export async function GET() {
   try {
     const { session, error } = await requireAuth();
     if (error) return error;
-    return NextResponse.json({ code: 200, types: await listEventTypes(session!.user.ownerId) });
+    const { ownerId, clientId, role } = session!.user;
+    // Client-portal users only see default types and their own client's; the client list is for admins managing types.
+    const canManage = FULL_ACCESS_ROLES.includes(role);
+    const [types, clients] = await Promise.all([listEventTypes(ownerId, clientId || undefined), canManage ? listTypeClients(ownerId) : []]);
+    return NextResponse.json({ code: 200, types, clients });
   } catch (err) {
     return eventLogbookErrorResponse(err);
   }
@@ -32,7 +37,7 @@ export async function POST(request: NextRequest) {
       eventType: 'CREATE',
       entityType: 'pilot_event_type',
       entityId: created.event_type_id,
-      description: `Created event type "${parsed.data.type_name}"`,
+      description: `Created event type "${parsed.data.type_name}"${parsed.data.client_id ? ` for client #${parsed.data.client_id}` : ' (default)'}`,
       userId: user.userId,
       userName: user.fullname,
       userEmail: user.email,

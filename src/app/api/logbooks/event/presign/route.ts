@@ -10,6 +10,8 @@ const schema = z.object({
   file_name: z.string().min(1).max(255),
   content_type: z.string().min(1),
   file_size: z.number().int().positive(),
+  /** 'support' restricts the file to images and videos. */
+  purpose: z.enum(['attachment', 'support']).optional(),
 });
 
 export async function POST(request: NextRequest) {

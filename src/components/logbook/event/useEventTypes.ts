@@ -5,15 +5,24 @@ import axios from 'axios';
 import { useCallback, useEffect, useState } from 'react';
 
 // One shared copy so the filter, wizard, detail dialog and webhook settings all update when the types are edited.
-let cache: EventTypeItem[] | null = null;let inflight: Promise<void> | null = null;
-const listeners = new Set<(types: EventTypeItem[]) => void>();
+export interface EventTypeClient {
+  client_id: number;
+  client_name: string;
+}
+
+let cache: EventTypeItem[] | null = null;
+let clientsCache: EventTypeClient[] = [];
+let inflight: Promise<void> | null = null;
+const listeners = new Set<(types: EventTypeItem[], clients: EventTypeClient[]) => void>();
 
 /** Reloads the company's event types and pushes them to every mounted consumer. */
 export function refreshEventTypes(): Promise<void> {
   inflight ??= axios
     .get('/api/logbooks/event/types')
     .then((res) => {
-      cache = res.data.types ?? [];      listeners.forEach((fn) => fn(cache!));
+      cache = res.data.types ?? [];
+      clientsCache = res.data.clients ?? [];
+      listeners.forEach((fn) => fn(cache!, clientsCache));
     })
     .catch(() => {
       // Keep whatever we had; the next open retries.
@@ -26,15 +35,17 @@ export function refreshEventTypes(): Promise<void> {
 
 export function useEventTypes() {
   const [types, setTypes] = useState<EventTypeItem[]>(cache ?? []);
+  const [clients, setClients] = useState<EventTypeClient[]>(clientsCache);
   const [loading, setLoading] = useState(cache === null);
 
   useEffect(() => {
-    const onChange = (next: EventTypeItem[]) => {
+    const onChange = (next: EventTypeItem[], nextClients: EventTypeClient[]) => {
       setTypes(next);
+      setClients(nextClients);
       setLoading(false);
     };
     listeners.add(onChange);
-    if (cache) onChange(cache);
+    if (cache) onChange(cache, clientsCache);
     // Always revalidate on mount: another admin may have edited the list since it was cached.
     void refreshEventTypes().finally(() => setLoading(false));
     return () => {
@@ -48,5 +59,5 @@ export function useEventTypes() {
     [types],
   );
 
-  return { types, loading, labelOf };
+  return { types, clients, loading, labelOf };
 }

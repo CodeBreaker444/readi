@@ -272,6 +272,8 @@ async function buildEventPayload(eventId: number) {
 
   const attachments = await Promise.all(
     event.pilot_event_attachment.map(async (a) => ({
+      attachment_id: a.attachment_id,
+      is_supporting: a.is_supporting,
       file_name: a.file_name,
       file_type: a.file_type,
       file_size: a.file_size != null ? Number(a.file_size) : null,
@@ -305,6 +307,18 @@ async function buildEventPayload(eventId: number) {
   };
 }
 
+/** Active webhooks of the owner that target the event's client (or have no client filter) and subscribe to its type. */
+async function findTargets(event: { fk_owner_id: number; fk_client_id: number | null; event_type: string }) {
+  const configs = await prisma.event_webhook_config.findMany({
+    where: {
+      fk_owner_id: event.fk_owner_id,
+      is_active: true,
+      OR: [{ fk_client_id: null }, ...(event.fk_client_id ? [{ fk_client_id: event.fk_client_id }] : [])],
+    },
+  });
+  return configs.filter((c) => c.event_types.length === 0 || c.event_types.includes(event.event_type));
+}
+
 /**
  * Sends `event.created` to every active webhook of the owner that targets the
  * event's client (or has no client filter) and subscribes to its event type.
@@ -315,19 +329,34 @@ export async function dispatchEventCreated(eventId: number): Promise<void> {
     const built = await buildEventPayload(eventId);
     if (!built) return;
     const { event, payload } = built;
-
-    const configs = await prisma.event_webhook_config.findMany({
-      where: {
-        fk_owner_id: event.fk_owner_id,
-        is_active: true,
-        OR: [{ fk_client_id: null }, ...(event.fk_client_id ? [{ fk_client_id: event.fk_client_id }] : [])],
-      },
-    });
-    const targets = configs.filter((c) => c.event_types.length === 0 || c.event_types.includes(event.event_type));
-
+    const targets = await findTargets(event);
     await Promise.allSettled(targets.map((t) => deliver(t, 'event.created', payload, { eventId, isTest: false })));
   } catch (err) {
     console.error('[event-webhook] dispatch failed', err);
+  }
+}
+
+/**
+ * Sends `event.updated` with `update_type: "support_media"` to the same webhooks as `event.created`.
+ * `new_media` holds only the files just added (no full `attachments` list).
+ * Never throws.
+ */
+export async function dispatchEventSupportMedia(eventId: number, attachmentIds: number[]): Promise<void> {
+  try {
+    const built = await buildEventPayload(eventId);
+    if (!built) return;
+    const { event, payload } = built;
+    const added = new Set(attachmentIds);
+    const newMedia = payload.attachments.filter((a) => added.has(a.attachment_id));
+    if (newMedia.length === 0) return;
+    const targets = await findTargets(event);
+    // Only the new files are sent; the receiver already has the rest from event.created.
+    const { attachments: _all, ...eventInfo } = payload;
+    await Promise.allSettled(
+      targets.map((t) => deliver(t, 'event.updated', { ...eventInfo, update_type: 'support_media', new_media: newMedia }, { eventId, isTest: false })),
+    );
+  } catch (err) {
+    console.error('[event-webhook] support media dispatch failed', err);
   }
 }
 
