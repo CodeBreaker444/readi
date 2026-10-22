@@ -39,6 +39,8 @@ export interface BtfForecast {
   longitude: number
   timezone: string
   hours: HourWeather[]
+  /** When the data was fetched from the weather service (epoch ms) - cached copies keep their original time */
+  retrievedAt: number
 }
 
 export interface BtfPlace {

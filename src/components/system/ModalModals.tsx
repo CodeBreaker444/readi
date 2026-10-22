@@ -15,7 +15,8 @@ import type {
   TicketType,
   UserOption,
 } from '@/config/types/maintenance';
-import { cn } from '@/lib/utils';
+import { useTimezone } from '@/components/TimezoneProvider';
+import { cn, formatDateTimeInTz } from '@/lib/utils';
 import { AlertTriangle, CheckCircle2, ChevronLeft, ChevronRight, Loader2, Search } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
@@ -281,23 +282,32 @@ export function NewTicketModal({
               ) : (
                 <div className={`max-h-[160px] overflow-y-auto rounded-lg border divide-y ${isDark ? 'border-slate-600 divide-slate-700' : 'border-slate-200 divide-slate-100'}`}>
                   {components.map((c) => {
-                    const checked = form.components.includes(c.tool_component_id);
+                    const blocked = ['NOT_OPERATIONAL', 'DECOMMISSIONED', 'DISMISSED'].includes(c.component_status);
+                    const checked = !blocked && form.components.includes(c.tool_component_id);
                     return (
                       <label
                         key={c.tool_component_id}
-                        className={`flex items-center gap-2 px-3 py-2 text-sm cursor-pointer transition ${
-                          checked
-                            ? (isDark ? 'bg-indigo-500/20 text-white' : 'bg-indigo-50 text-slate-900')
-                            : (isDark ? 'text-slate-300 hover:bg-slate-700' : 'text-slate-700 hover:bg-slate-50')
+                        className={`flex items-center gap-2 px-3 py-2 text-sm transition ${
+                          blocked
+                            ? 'opacity-50 cursor-not-allowed ' + (isDark ? 'text-slate-500 bg-slate-800/40' : 'text-slate-400 bg-slate-50')
+                            : checked
+                              ? 'cursor-pointer ' + (isDark ? 'bg-indigo-500/20 text-white' : 'bg-indigo-50 text-slate-900')
+                              : 'cursor-pointer ' + (isDark ? 'text-slate-300 hover:bg-slate-700' : 'text-slate-700 hover:bg-slate-50')
                         }`}
                       >
                         <input
                           type="checkbox"
-                          className="h-4 w-4 shrink-0 rounded border-slate-300 text-indigo-600 focus:ring-indigo-400 cursor-pointer"
+                          className="h-4 w-4 shrink-0 rounded border-slate-300 text-indigo-600 focus:ring-indigo-400 cursor-pointer disabled:cursor-not-allowed"
                           checked={checked}
+                          disabled={blocked}
                           onChange={() => toggleComponent(c.tool_component_id)}
                         />
-                        <span className="truncate">{c.component_code || c.component_type}</span>
+                        <span className="truncate flex-1">{c.component_code || c.component_type}</span>
+                        {c.component_status && c.component_status !== 'OPERATIONAL' && (
+                          <span className={`shrink-0 rounded border px-1.5 py-0.5 text-[9px] font-semibold ${isDark ? 'border-slate-600 text-slate-400' : 'border-slate-300 text-slate-500'}`}>
+                            {c.component_status.replace(/_/g, ' ')}
+                          </span>
+                        )}
                       </label>
                     );
                   })}
@@ -660,14 +670,6 @@ export function UploadModal({
 }
 
 
-function fmtDate(iso?: string | null) {
-  if (!iso) return '—';
-  return new Date(iso).toLocaleString('en-GB', {
-    day: '2-digit', month: 'short', year: 'numeric',
-    hour: '2-digit', minute: '2-digit',
-  });
-}
-
 export function EventsModal({
   open, onClose, ticketId, events, isDark, loading,
 }: {
@@ -679,6 +681,7 @@ export function EventsModal({
   loading?: boolean;
 }) {
   const { t } = useTranslation();
+  const { timezone } = useTimezone();
   return (
     <Modal
       title={ticketId
@@ -716,7 +719,7 @@ export function EventsModal({
                   <span className="text-xs text-slate-500 dark:text-slate-400">{ev.created_by}</span>
                 )}
                 {ev.created_by && <span className="text-xs text-slate-300 dark:text-slate-600">·</span>}
-                <time className="text-xs text-slate-400">{fmtDate(ev.created_at)}</time>
+                <time className="text-xs text-slate-400">{formatDateTimeInTz(ev.created_at, timezone)}</time>
               </div>
             </li>
           ))}

@@ -841,7 +841,7 @@ export function MissionCompleteModal({ open, onClose, onSkip, toolId, missionId,
         </div>
 
         <div className={cn("flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-4 sm:px-6 py-4 border-t shrink-0", isDark ? "border-white/[0.06] bg-slate-900/30" : "border-slate-200 bg-slate-50")}>
-          {onSkip ? (
+          {onSkip && !maintenanceApplied ? (
             <div className={cn("flex items-center gap-1.5 rounded-lg px-3 py-2 text-[11px]", isDark ? "bg-amber-500/10 text-amber-400 border border-amber-500/20" : "bg-amber-50 text-amber-600 border border-amber-200")}>
               <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
               <span>{t("operations.missionComplete.footer.updateWarning")}</span>
@@ -865,6 +865,15 @@ export function MissionCompleteModal({ open, onClose, onSkip, toolId, missionId,
                 : t("operations.missionComplete.footer.close")
               }
             </Button>
+
+            {onSkip && maintenanceApplied && (
+              <Button
+                onClick={onClose}
+                className="h-9 cursor-pointer px-4 text-sm bg-emerald-600 hover:bg-emerald-500 text-white flex-1 sm:flex-initial"
+              >
+                {t("operations.missionComplete.footer.saveToDone")}
+              </Button>
+            )}
 
             {activeTab === "maintenance" && !maintenanceApplied && (
               <Button

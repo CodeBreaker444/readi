@@ -36,7 +36,8 @@ export async function POST(req: NextRequest) {
     const { resetComponents } = await closeTicket({
       ticket_id: validation.data.ticket_id,
       note: validation.data.note,
-      closed_by: Number(session!.user.userId)
+      closed_by: Number(session!.user.userId),
+      closed_by_email: session!.user.email,
     });
 
     logEvent({

@@ -79,6 +79,8 @@ export default function MaintenanceLogbookClient({ canIntervene = false }: Props
       t.drone_code?.toLowerCase().includes(q) ||
       t.drone_serial?.toLowerCase().includes(q) ||
       t.assigner_name?.toLowerCase().includes(q) ||
+      t.component_sn?.toLowerCase().includes(q) ||
+      t.system_components?.some((c) => c.component_sn?.toLowerCase().includes(q)) ||
       String(t.ticket_id).includes(q);
     return matchStatus && matchSearch;
   });

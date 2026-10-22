@@ -16,6 +16,7 @@ export type FeatureKey =
   | 'logbook_planned_mission'
   | 'logbook_flight'
   | 'logbook_battery'
+  | 'logbook_event'
   | 'safety_spi_kpi_definitions'
   | 'emergency_contact_list'
   | 'compliance_general_audit_plan'
@@ -80,6 +81,7 @@ export const FEATURE_SECTIONS: FeatureSection[] = [
     { key: 'logbook_planned_mission', label: 'Planned mission logbook' },
     { key: 'logbook_flight', label: 'Flight logbook' },
     { key: 'logbook_battery', label: 'Battery logbook' },
+    { key: 'logbook_event', label: 'Event logbook' },
   ]},
   { section: 'Safety Management', features: [
     { key: 'safety_spi_kpi_definitions', label: 'SPI & KPI Definitions' },
@@ -153,7 +155,7 @@ export const DEFAULT_ROLE_FEATURE_ACCESS: Record<string, RoleFeatureMap> = {
     dashboard_analytics: 'R', dashboard_shi_kpi: 'R',
     planning_new_evaluation: 'A', planning_evaluation: 'A', planning_dashboard: 'A', planning_mission_templates: 'A',
     operation_mission_table: 'A', operation_daily_board: 'A', operation_flight_requests: 'A', operation_calendar: 'A',
-    logbook_planned_mission: 'A', logbook_flight: 'A', logbook_battery: 'A',
+    logbook_planned_mission: 'A', logbook_flight: 'A', logbook_battery: 'A', logbook_event: 'A',
     safety_spi_kpi_definitions: 'A',
     emergency_contact_list: 'A',
     compliance_general_audit_plan: 'A', compliance_safety_target_review: 'A', compliance_requirements_evidence: 'A', compliance_calendar: 'A',
@@ -173,7 +175,7 @@ export const DEFAULT_ROLE_FEATURE_ACCESS: Record<string, RoleFeatureMap> = {
     dashboard_analytics: 'R', dashboard_shi_kpi: 'R',
     planning_new_evaluation: 'A', planning_evaluation: 'A', planning_dashboard: 'A', planning_mission_templates: 'A',
     operation_mission_table: 'A', operation_daily_board: 'R', operation_flight_requests: 'A', operation_calendar: 'A',
-    logbook_planned_mission: 'A', logbook_flight: 'A', logbook_battery: 'A',
+    logbook_planned_mission: 'A', logbook_flight: 'A', logbook_battery: 'A', logbook_event: 'A',
     emergency_contact_list: 'A',
     control_center_settings: 'A', control_center_recent_flights: 'A',
     drone_atc: 'R',
@@ -189,7 +191,7 @@ export const DEFAULT_ROLE_FEATURE_ACCESS: Record<string, RoleFeatureMap> = {
   MM: {
     dashboard_analytics: 'R', dashboard_shi_kpi: 'R',
     operation_mission_table: 'R', operation_calendar: 'R',
-    logbook_planned_mission: 'R', logbook_flight: 'R', logbook_battery: 'R',
+    logbook_planned_mission: 'R', logbook_flight: 'R', logbook_battery: 'R', logbook_event: 'R',
     drone_atc: 'R',
     notifications: 'A',
     document_repository: 'A',
@@ -200,7 +202,7 @@ export const DEFAULT_ROLE_FEATURE_ACCESS: Record<string, RoleFeatureMap> = {
   TM: {
     dashboard_analytics: 'R', dashboard_shi_kpi: 'R',
     operation_mission_table: 'R',
-    logbook_planned_mission: 'R', logbook_flight: 'R', logbook_battery: 'R',
+    logbook_planned_mission: 'R', logbook_flight: 'R', logbook_battery: 'R', logbook_event: 'R',
     drone_atc: 'R',
     training_courses: 'A', training_calendar: 'A',
     notifications: 'A',
@@ -212,7 +214,7 @@ export const DEFAULT_ROLE_FEATURE_ACCESS: Record<string, RoleFeatureMap> = {
     dashboard_analytics: 'R', dashboard_shi_kpi: 'R',
     planning_new_evaluation: 'R', planning_evaluation: 'R', planning_dashboard: 'R', planning_mission_templates: 'R',
     operation_mission_table: 'R', operation_calendar: 'R',
-    logbook_planned_mission: 'R', logbook_flight: 'R', logbook_battery: 'R',
+    logbook_planned_mission: 'R', logbook_flight: 'R', logbook_battery: 'R', logbook_event: 'R',
     compliance_general_audit_plan: 'A', compliance_safety_target_review: 'A', compliance_requirements_evidence: 'A', compliance_calendar: 'A',
     drone_atc: 'R',
     notifications: 'A',
@@ -225,7 +227,7 @@ export const DEFAULT_ROLE_FEATURE_ACCESS: Record<string, RoleFeatureMap> = {
   DC: {
     dashboard_analytics: 'R', dashboard_shi_kpi: 'R',
     operation_mission_table: 'R',
-    logbook_planned_mission: 'R', logbook_flight: 'R', logbook_battery: 'R',
+    logbook_planned_mission: 'R', logbook_flight: 'R', logbook_battery: 'R', logbook_event: 'R',
     drone_atc: 'R',
     notifications: 'A',
     document_repository: 'A',
@@ -243,7 +245,7 @@ export const DEFAULT_ROLE_FEATURE_ACCESS: Record<string, RoleFeatureMap> = {
     dashboard_analytics: 'R',
     planning_evaluation: 'A', planning_dashboard: 'A', planning_mission_templates: 'A',
     operation_mission_table: 'A', operation_daily_board: 'A', operation_calendar: 'R',
-    logbook_planned_mission: 'A', logbook_flight: 'R', logbook_battery: 'R',
+    logbook_planned_mission: 'A', logbook_flight: 'R', logbook_battery: 'R', logbook_event: 'A',
     drone_atc: 'R',
     notifications: 'A',
     systems_maintenance_dashboard: 'R', systems_maintenance_tickets: 'A',

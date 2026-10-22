@@ -20,6 +20,11 @@ export interface LocationPickerProps {
   lng: string;
   onChange: (lat: string, lng: string, label?: string) => void;
   isDark?: boolean;
+  /** Where to centre the map while no pin is placed yet (e.g. the system's base). */
+  focus?: { lat: number; lng: number } | null;
+  /** Planned area (mission plan waypoints) drawn on the map; the view is fitted to it. */
+  area?: { lat: number; lng: number }[] | null;
+  height?: number;
 }
 
 interface NominatimResult {
@@ -46,7 +51,9 @@ const DEFAULT_ZOOM = 4;
 function isValidLat(v: string) { const n = Number(v); return v !== '' && !isNaN(n) && n >= -90 && n <= 90; }
 function isValidLng(v: string) { const n = Number(v); return v !== '' && !isNaN(n) && n >= -180 && n <= 180; }
 
-export default function LocationPickerInner({ lat, lng, onChange, isDark = false }: LocationPickerProps) {
+const AREA_STYLE: L.PathOptions = { color: '#f59e0b', weight: 2, fillColor: '#f59e0b', fillOpacity: 0.18, interactive: false };
+
+export default function LocationPickerInner({ lat, lng, onChange, isDark = false, focus = null, area = null, height = 220 }: LocationPickerProps) {
   const { t } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
@@ -100,8 +107,8 @@ export default function LocationPickerInner({ lat, lng, onChange, isDark = false
     if (!containerRef.current || mapRef.current) return;
 
     const hasCoords = lat && lng;
-    const center: [number, number] = hasCoords ? [Number(lat), Number(lng)] : DEFAULT_CENTER;
-    const zoom = hasCoords ? 13 : DEFAULT_ZOOM;
+    const center: [number, number] = hasCoords ? [Number(lat), Number(lng)] : focus ? [focus.lat, focus.lng] : DEFAULT_CENTER;
+    const zoom = hasCoords ? 13 : focus ? 14 : DEFAULT_ZOOM;
 
     const map = L.map(containerRef.current, { center, zoom, zoomControl: true });
     const tile = L.tileLayer(isDark ? LEAFLET_TILE_DARK : LEAFLET_TILE_LIGHT, {
@@ -156,6 +163,29 @@ export default function LocationPickerInner({ lat, lng, onChange, isDark = false
       markerRef.current = null;
     }
   }, [lat, lng]);
+
+  // Plan area: highlight it and fit the view to it.
+  const areaRef = useRef<L.Polygon | L.Polyline | null>(null);
+  const areaKey = area?.map((p) => `${p.lat},${p.lng}`).join('|') ?? '';
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    areaRef.current?.remove();
+    areaRef.current = null;
+    if (!area || area.length < 2) return;
+    const pts = area.map((p) => [p.lat, p.lng] as [number, number]);
+    const layer = pts.length >= 3 ? L.polygon(pts, AREA_STYLE) : L.polyline(pts, AREA_STYLE);
+    layer.addTo(map);
+    areaRef.current = layer;
+    // A pin the pilot already placed keeps priority over re-fitting.
+    if (!lat || !lng) map.fitBounds(layer.getBounds(), { padding: [24, 24], maxZoom: 17 });
+  }, [areaKey]);
+
+  // Re-centre on the focus point (system base) while nothing has been pinned and there is no area.
+  useEffect(() => {
+    if (!mapRef.current || !focus || lat || lng || area) return;
+    mapRef.current.setView([focus.lat, focus.lng], 14);
+  }, [focus?.lat, focus?.lng]);
 
   useEffect(() => {
     if (query.length < 3) { setResults([]); setShowDropdown(false); return; }
@@ -318,7 +348,7 @@ export default function LocationPickerInner({ lat, lng, onChange, isDark = false
         <div
           ref={containerRef}
           className="w-full rounded-lg overflow-hidden"
-          style={{ height: 220, border: isDark ? '1px solid #334155' : '1px solid #e5e7eb' }}
+          style={{ height, border: isDark ? '1px solid #334155' : '1px solid #e5e7eb' }}
         />
         {showClickHint && (
           <div className="pointer-events-none absolute inset-0 flex items-end justify-center pb-3 z-[99999]">

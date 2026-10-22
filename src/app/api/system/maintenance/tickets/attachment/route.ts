@@ -1,4 +1,4 @@
-import { getTicketAttachments } from "@/backend/services/system/maintenance-ticket";
+import { getTicketAttachments } from "@/backend/services/system/maintenance-ticket-queries";
 import { internalError, zodError } from "@/lib/api-error";
 import { requireAnyPermission } from "@/lib/auth/api-auth";
 import { E } from "@/lib/error-codes";
@@ -28,4 +28,4 @@ export async function GET(req: NextRequest) {
     console.error("[attachments] error:", error);
     return internalError(E.SV001, error);
   }
-}
+}

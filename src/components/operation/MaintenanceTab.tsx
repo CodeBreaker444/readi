@@ -259,7 +259,8 @@ export function MaintenanceTab({
       <div className="space-y-3">
         {systemData!.components.map((comp) => {
           const cfg = STATUS_CONFIG[comp.status];
-          const inp = inputs[comp.component_id];
+          // Recorded maintenance is read-only: prefilled defaults must not show as pending additions.
+          const inp = maintenanceApplied ? undefined : inputs[comp.component_id];
           const ratio = comp.battery_cycle_ratio ?? 1;
           const isManualCycles = manualCyclesInput[comp.component_id] ?? false;
           const effectiveCycles = isManualCycles
@@ -451,7 +452,7 @@ export function MaintenanceTab({
                               >+1</button>
                             </>
                           )}
-                          {inp?.add_flights > 0 && (
+                          {(inp?.add_flights ?? 0) > 0 && (
                             <span className={cn("text-[10px] tabular-nums", isDark ? "text-slate-400" : "text-slate-500")}>
                               {comp.current_flights} → {previewFlights}
                             </span>
@@ -489,7 +490,7 @@ export function MaintenanceTab({
                         <span className={cn("text-[9px] uppercase tracking-wider", isDark ? "text-slate-600" : "text-slate-400")}>
                           {t("operations.missionComplete.maintenance.hmin")}
                         </span>
-                        {inp?.add_hours > 0 && (
+                        {(inp?.add_hours ?? 0) > 0 && (
                           <>
                             <span className={cn("text-[10px] tabular-nums", isDark ? "text-slate-400" : "text-slate-500")}>
                               {formatHhmmHours(comp.current_hours)} → {formatHhmmHours(previewHours)}

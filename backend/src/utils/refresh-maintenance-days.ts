@@ -1,8 +1,11 @@
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
+import { computeMaintenanceDayUpdates } from '@/backend/services/system/maintenance-rules';
 
 /**
  * Call BEFORE any read/write on tool_component to update maintenance days.
+ * The calculation lives in maintenance-rules.ts (computeMaintenanceDayUpdates);
+ * this function only loads the components and writes the result.
  */
 export async function refreshMaintenanceDays(toolIds: number[]): Promise<void> {
   if (toolIds.length === 0) return;
@@ -25,32 +28,7 @@ export async function refreshMaintenanceDays(toolIds: number[]): Promise<void> {
 
   if (components.length === 0) return;
 
-  const today = new Date();
-  today.setUTCHours(0, 0, 0, 0);
-
-  const updates: { id: number; days: number }[] = [];
-
-  for (const comp of components) {
-    const limit = Number(comp.maintenance_cycle_day);
-    const current = Number(comp.current_maintenance_days ?? 0);
-
-    if (current >= limit) continue;
-
-    const refDate = comp.last_maintenance_date ?? comp.installation_date;
-    if (!refDate) continue;
-
-    const lastStamp = new Date(refDate);
-    lastStamp.setUTCHours(0, 0, 0, 0);
-
-    const daysPassed = Math.floor((today.getTime() - lastStamp.getTime()) / 86_400_000);
-
-    if (daysPassed <= 0) continue;
-
-    const newValue = Math.min(daysPassed, limit);
-    if (newValue === current) continue;
-
-    updates.push({ id: comp.component_id, days: newValue });
-  }
+  const updates = computeMaintenanceDayUpdates(components, new Date());
 
   if (updates.length === 0) return;
 

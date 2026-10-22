@@ -18,12 +18,12 @@ export function loadBtfFleet(force = false): Promise<BtfDrone[]> {
   return promise
 }
 
-/** Hourly forecast for a point, cached per ~1 km cell so retyping a date doesn't refetch. */
-export function loadBtfForecast(lat: number, lon: number, days: number): Promise<BtfForecast> {
-  const key = `${lat.toFixed(2)},${lon.toFixed(2)},${days}`
+/** Hourly forecast for a point, cached per exact point so retyping a date doesn't refetch. */
+export function loadBtfForecast(lat: number, lon: number, days: number, tz: string): Promise<BtfForecast> {
+  const key = `${lat.toFixed(4)},${lon.toFixed(4)},${days},${tz}`
   const hit = forecastCache.get(key)
   if (hit && Date.now() - hit.at < FORECAST_TTL_MS) return hit.promise
-  const promise = axios.get('/api/operation/btf', { params: { lat, lon, days } }).then((r) => r.data.data.forecast as BtfForecast)
+  const promise = axios.get('/api/operation/btf', { params: { lat, lon, days, tz } }).then((r) => r.data.data.forecast as BtfForecast)
   forecastCache.set(key, { at: Date.now(), promise })
   promise.catch(() => forecastCache.delete(key))
   return promise

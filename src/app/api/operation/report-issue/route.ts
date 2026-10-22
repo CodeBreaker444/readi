@@ -1,8 +1,9 @@
 import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { sendNotificationToRoles } from '@/backend/services/notification/notification-service';
 import { getComponentsForMaintenanceCycle } from '@/backend/services/operation/maintenance-cycle-service';
-import { assertNoOpenTicketForTool, createTicket, hasOpenTicketForTool, setComponentsOperationalStatus, setSystemOperationalStatus } from '@/backend/services/system/maintenance-ticket';
-import { requirePermission } from '@/lib/auth/api-auth';
+import { assertComponentsTicketable, assertNoOpenTicketForTool, hasOpenTicketForTool } from '@/backend/services/system/maintenance-ticket-guards';
+import { createTicket } from '@/backend/services/system/maintenance-ticket';
+import { getComponentStatusesForTool, setComponentsOperationalStatus, setSystemOperationalStatus } from '@/backend/services/system/maintenance-ticket-components';import { requirePermission } from '@/lib/auth/api-auth';
 import { apiError, internalError } from '@/lib/api-error';
 import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
@@ -20,9 +21,14 @@ export async function GET(req: NextRequest) {
       getComponentsForMaintenanceCycle(toolId, session!.user.ownerId).catch(() => null),
     ]);
 
+    const statuses = await getComponentStatusesForTool(toolId);
+
     return NextResponse.json({
       has_open_ticket: hasOpen,
-      components: systemData?.components ?? [],
+      components: (systemData?.components ?? []).map((c) => ({
+        ...c,
+        component_status: statuses.get(c.component_id) ?? 'OPERATIONAL',
+      })),
     });
   } catch (err) {
     return internalError(E.SV001, err);
@@ -51,9 +57,17 @@ export async function POST(req: NextRequest) {
       return apiError(E.BL005, 409);
     }
 
+    const selectedIds: number[] = Array.isArray(selected_component_ids) ? selected_component_ids : [];
+    try {
+      await assertComponentsTicketable(fk_tool_id, selectedIds);
+    } catch (err: any) {
+      return NextResponse.json({ status: 'ERROR', message: err.message }, { status: 400 });
+    }
+
     const ticket_id = await createTicket({
       fk_owner_id: session!.user.ownerId,
       fk_tool_id,
+      components: selectedIds,
       type: 'STANDARD',
       priority,
       opened_by: session!.user.fullname,

@@ -1,4 +1,4 @@
-import { getTicketEvents } from '@/backend/services/system/maintenance-ticket';
+import { getTicketEvents } from '@/backend/services/system/maintenance-ticket-queries';
 import { requireAnyPermission } from '@/lib/auth/api-auth';
 import { internalError, zodError } from '@/lib/api-error';
 import { E } from '@/lib/error-codes';

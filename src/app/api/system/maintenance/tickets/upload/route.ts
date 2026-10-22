@@ -1,4 +1,5 @@
-import { getTicketAssignee, uploadAttachment } from '@/backend/services/system/maintenance-ticket';
+import { getTicketAssignee } from '@/backend/services/system/maintenance-ticket-queries';
+import { uploadAttachment } from '@/backend/services/system/maintenance-ticket';
 import { requireAuth, requireFeatureAccess, userHasSubRole } from '@/lib/auth/api-auth';
 import { roleHasPermission } from '@/lib/auth/roles';
 import { apiError, forbidden, internalError, zodError } from '@/lib/api-error';

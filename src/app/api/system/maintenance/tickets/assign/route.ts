@@ -1,5 +1,6 @@
 import { logEvent } from '@/backend/services/auditLog/audit-log';
-import { assignTicket, getTechnicianName } from '@/backend/services/system/maintenance-ticket';
+import { assignTicket } from '@/backend/services/system/maintenance-ticket';
+import { getTechnicianName } from '@/backend/services/system/maintenance-ticket-queries';
 import { requireAnyPermission, requireFeatureAccess } from '@/lib/auth/api-auth';
 import { internalError, zodError } from '@/lib/api-error';
 import { E } from '@/lib/error-codes';
@@ -32,6 +33,8 @@ export async function POST(req: NextRequest) {
       assigned_to: validation.data.assigned_to,
       technician_name: techName,
       assigned_by_name: session!.user.fullname,
+      assigned_by_user_id: Number(session!.user.userId),
+      assigned_by_email: session!.user.email,
     });
 
     logEvent({

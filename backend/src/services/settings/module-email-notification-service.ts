@@ -18,20 +18,24 @@ import {
   sendTrainingDeletedEmail as sendTrainingDeletedEmailTemplate,
   sendTrainingCertificationExpiringEmail as sendTrainingCertificationExpiringEmailTemplate,
 } from "../../../../lib/resend/mail";
-import { isDailyEmailLimitReached, incrementDailyEmailCount, getDailyEmailStats } from "@/backend/services/email/email-limit-service";
-import { notifyAdminsOnEmailLimitReached, shouldNotifyEmailLimitReached, markEmailLimitNotificationSent } from "@/backend/services/email/admin-notification-service";
+import { isDailyEmailLimitReached, incrementDailyEmailCount } from "@/backend/services/email/email-limit-service";
+import { isModuleEventEmailEnabled } from "./module-email-config";
+import { dispatchModuleEmail, EmailTemplateFn } from "./module-email-dispatch";
 
-export interface ModuleEmailNotificationConfig {
-  config_id: number;
-  fk_owner_id: number;
-  module_name: string;
-  event_type: string;
-  is_enabled: boolean | null;
-  notification_roles: string[];
-  notification_user_ids: number[];
-  created_at: Date | null;
-  updated_at: Date | null;
-}
+/**
+ * Typed module email senders (maintenance / operations / training).
+ *
+ * Config + recipients: module-email-config.ts   (re-exported below for existing importers)
+ * Limit / counter / admin warning: module-email-dispatch.ts
+ */
+export {
+  isModuleEventEmailEnabled,
+  getModuleEmailConfig,
+  getAllModuleEmailConfigs,
+  getModuleEmailConfigs,
+  updateModuleEmailConfig,
+} from "./module-email-config";
+export type { ModuleEmailNotificationConfig } from "./module-email-config";
 
 export interface MaintenanceEmailData {
   systemCode: string;
@@ -95,306 +99,15 @@ export interface TrainingEmailData {
 }
 
 /**
- * Check if email notifications are enabled for a specific module event
- */
-export async function isModuleEventEmailEnabled(
-  ownerId: number,
-  moduleName: string,
-  eventType: string
-): Promise<boolean> {
-  // console.log('[isModuleEventEmailEnabled] Checking email enabled for ownerId:', ownerId, 'moduleName:', moduleName, 'eventType:', eventType);
-  
-  // Check the appropriate company-level email flag based on module
-  const owner = await prisma.owner.findUnique({
-    where: { owner_id: ownerId },
-    select: {
-      email_notifications_enabled: true,
-      operation_email_enabled: true,
-      system_email_enabled: true,
-      training_email_enabled: true,
-    },
-  });
-
-  if (!owner) {
-    console.log('[isModuleEventEmailEnabled] Owner not found for ownerId:', ownerId);
-    return false;
-  }
-
-  // console.log('[isModuleEventEmailEnabled] Owner settings:', {
-  //   email_notifications_enabled: owner.email_notifications_enabled,
-  //   operation_email_enabled: owner.operation_email_enabled,
-  //   system_email_enabled: owner.system_email_enabled,
-  //   training_email_enabled: owner.training_email_enabled,
-  // });
-
-  let moduleEmailEnabled = false;
-  if (moduleName === 'operations') {
-    moduleEmailEnabled = owner.operation_email_enabled === true;
-  } else if (moduleName === 'maintenance') {
-    moduleEmailEnabled = owner.system_email_enabled === true;
-  } else if (moduleName === 'training') {
-    moduleEmailEnabled = owner.training_email_enabled === true;
-  } else {
-    // For other modules, use the default email flag
-    moduleEmailEnabled = owner.email_notifications_enabled === true;
-  }
-
-  // console.log('[isModuleEventEmailEnabled] Module email enabled for', moduleName, ':', moduleEmailEnabled);
-
-  if (!moduleEmailEnabled) {
-    console.log('[isModuleEventEmailEnabled] Module email is disabled, returning false');
-    return false;
-  }
-
-  const config = await prisma.module_email_notification_config.findUnique({
-    where: {
-      fk_owner_id_module_name_event_type: {
-        fk_owner_id: ownerId,
-        module_name: moduleName,
-        event_type: eventType,
-      },
-    },
-    select: { is_enabled: true },
-  });
-
-  // console.log('[isModuleEventEmailEnabled] Event config:', config);
-  const result = config?.is_enabled === true;
-  // console.log('[isModuleEventEmailEnabled] Final result:', result);
-  return result;
-}
-
-/**
- * Get email notification configuration for a specific module event
- */
-export async function getModuleEmailConfig(
-  ownerId: number,
-  moduleName: string,
-  eventType: string
-): Promise<ModuleEmailNotificationConfig | null> {
-  return await prisma.module_email_notification_config.findUnique({
-    where: {
-      fk_owner_id_module_name_event_type: {
-        fk_owner_id: ownerId,
-        module_name: moduleName,
-        event_type: eventType,
-      },
-    },
-  });
-}
-
-/**
- * Get all email notification configurations for a company
- */
-export async function getAllModuleEmailConfigs(
-  ownerId: number
-): Promise<ModuleEmailNotificationConfig[]> {
-  return await prisma.module_email_notification_config.findMany({
-    where: { fk_owner_id: ownerId },
-    orderBy: [{ module_name: 'asc' }, { event_type: 'asc' }],
-  });
-}
-
-/**
- * Get all email notification configurations for a specific module
- */
-export async function getModuleEmailConfigs(
-  ownerId: number,
-  moduleName: string
-): Promise<ModuleEmailNotificationConfig[]> {
-  return await prisma.module_email_notification_config.findMany({
-    where: { 
-      fk_owner_id: ownerId,
-      module_name: moduleName,
-    },
-    orderBy: { event_type: 'asc' },
-  });
-}
-
-/**
- * Update email notification configuration for a specific module event
- */
-export async function updateModuleEmailConfig(
-  ownerId: number,
-  moduleName: string,
-  eventType: string,
-  data: {
-    is_enabled: boolean;
-    notification_roles: string[];
-    notification_user_ids: number[];
-  }
-): Promise<ModuleEmailNotificationConfig> {
-  return await prisma.module_email_notification_config.upsert({
-    where: {
-      fk_owner_id_module_name_event_type: {
-        fk_owner_id: ownerId,
-        module_name: moduleName,
-        event_type: eventType,
-      },
-    },
-    update: {
-      is_enabled: data.is_enabled,
-      notification_roles: data.notification_roles,
-      notification_user_ids: data.notification_user_ids,
-      updated_at: new Date(),
-    },
-    create: {
-      fk_owner_id: ownerId,
-      module_name: moduleName,
-      event_type: eventType,
-      is_enabled: data.is_enabled,
-      notification_roles: data.notification_roles,
-      notification_user_ids: data.notification_user_ids,
-    },
-  });
-}
-
-/**
- * Get recipient email addresses for a module event based on configuration
- */
-async function getRecipientEmails(
-  ownerId: number,
-  moduleName: string,
-  eventType: string
-): Promise<string[]> {
-  // console.log('[getRecipientEmails] Getting recipient emails for ownerId:', ownerId, 'moduleName:', moduleName, 'eventType:', eventType);
-  
-  const config = await getModuleEmailConfig(ownerId, moduleName, eventType);
-  
-  console.log('[getRecipientEmails] Config:', config);
-  
-  if (!config || !config.is_enabled) {
-    console.log('[getRecipientEmails] Config not found or not enabled, returning empty emails');
-    return [];
-  }
-
-  const emails: string[] = [];
-  const userIds = new Set<number>();
-
-  // Add users from specified roles
-  if (config.notification_roles.length > 0) {
-    // console.log('[getRecipientEmails] Looking for users with roles:', config.notification_roles);
-    const roleUsers = await prisma.public_users.findMany({
-      where: {
-        fk_owner_id: ownerId,
-        user_active: 'Y',
-        user_role: { in: config.notification_roles },
-      },
-      select: { user_id: true, email: true },
-    });
-
-    // console.log('[getRecipientEmails] Found role users:', roleUsers.length);
-
-    for (const user of roleUsers) {
-      if (user.email) {
-        userIds.add(user.user_id);
-        emails.push(user.email);
-      }
-    }
-  }
-
-  // Add specific user IDs
-  if (config.notification_user_ids.length > 0) {
-    // console.log('[getRecipientEmails] Looking for specific user IDs:', config.notification_user_ids);
-    const specificUsers = await prisma.public_users.findMany({
-      where: {
-        user_id: { in: config.notification_user_ids },
-        user_active: 'Y',
-      },
-      select: { user_id: true, email: true },
-    });
-
-    // console.log('[getRecipientEmails] Found specific users:', specificUsers.length);
-
-    for (const user of specificUsers) {
-      if (user.email && !userIds.has(user.user_id)) {
-        userIds.add(user.user_id);
-        emails.push(user.email);
-      }
-    }
-  }
-
-  // console.log('[getRecipientEmails] Final recipient emails:', emails);
-  return emails;
-}
-
-/**
  * Send maintenance module email notification
  */
 async function sendMaintenanceModuleEmail(
   ownerId: number,
   eventType: string,
-  emailFn: (emails: string[], ...args: any[]) => Promise<void>,
+  emailFn: EmailTemplateFn,
   ...emailArgs: any[]
 ): Promise<void> {
-  
-  const isEnabled = await isModuleEventEmailEnabled(ownerId, 'maintenance', eventType);
-  // console.log('isEnabled:',isEnabled)
-  if (!isEnabled) {
-    console.log('[sendMaintenanceModuleEmail] Email is not enabled, skipping email send');
-    return;
-  }
-
-  const emails = await getRecipientEmails(ownerId, 'maintenance', eventType);
-  // console.log('emails:',emails)
-  if (emails.length === 0) {
-    console.log('[sendMaintenanceModuleEmail] No recipient emails found, skipping email send');
-    return;
-  }
-
-  // Check daily email limit
-  const limitReached = await isDailyEmailLimitReached(ownerId);
-  if (limitReached) {
-    // console.log('[sendMaintenanceModuleEmail] Daily email limit reached for owner:', ownerId);
-    const stats = await getDailyEmailStats(ownerId);
-    // console.log('[sendMaintenanceModuleEmail] Email stats:', stats);
-    
-    // Notify admins if limit is reached and notification hasn't been sent today
-    if (stats && await shouldNotifyEmailLimitReached(ownerId)) {
-      const owner = await prisma.owner.findUnique({
-        where: { owner_id: ownerId },
-        select: { owner_name: true },
-      });
-
-      if (owner) {
-        await notifyAdminsOnEmailLimitReached({
-          ownerId,
-          ownerName: owner.owner_name,
-          dailyLimit: stats.limit,
-          currentCount: stats.count,
-        });
-        await markEmailLimitNotificationSent(ownerId);
-      }
-    }
-    return;
-  }
-
-  await emailFn(emails, ...emailArgs);
-
-  // Increment email counter
-  const newCount = await incrementDailyEmailCount(ownerId);
-  // console.log('[sendMaintenanceModuleEmail] Email sent, new daily count:', newCount);
-
-  // Check if we just reached the limit
-  const stats = await getDailyEmailStats(ownerId);
-  if (stats && stats.remaining === 0) {
-    console.log('[sendMaintenanceModuleEmail] Daily email limit just reached for owner:', ownerId);
-    
-    // Get owner details for notification
-    const owner = await prisma.owner.findUnique({
-      where: { owner_id: ownerId },
-      select: { owner_name: true },
-    });
-
-    if (owner && await shouldNotifyEmailLimitReached(ownerId)) {
-      await notifyAdminsOnEmailLimitReached({
-        ownerId,
-        ownerName: owner.owner_name,
-        dailyLimit: stats.limit,
-        currentCount: stats.count,
-      });
-      await markEmailLimitNotificationSent(ownerId);
-    }
-  }
+  await dispatchModuleEmail(ownerId, 'maintenance', eventType, emailFn, emailArgs);
 }
 
 /**
@@ -587,74 +300,10 @@ export async function sendInterventionEndedEmail(
 async function sendOperationsModuleEmail(
   ownerId: number,
   eventType: string,
-  emailFn: (emails: string[], ...args: any[]) => Promise<void>,
+  emailFn: EmailTemplateFn,
   ...emailArgs: any[]
 ): Promise<void> {
-  const isEnabled = await isModuleEventEmailEnabled(ownerId, 'operations', eventType);
-  
-  if (!isEnabled) {
-    return;
-  }
-
-  const emails = await getRecipientEmails(ownerId, 'operations', eventType);
-  
-  if (emails.length === 0) {
-    return;
-  }
-
-  const limitReached = await isDailyEmailLimitReached(ownerId);
-  if (limitReached) {
-    console.log('[sendOperationsModuleEmail] Daily email limit reached for owner:', ownerId);
-    const stats = await getDailyEmailStats(ownerId);
-    console.log('[sendOperationsModuleEmail] Email stats:', stats);
-    
-    // Notify admins if limit is reached and notification hasn't been sent today
-    if (stats && await shouldNotifyEmailLimitReached(ownerId)) {
-      const owner = await prisma.owner.findUnique({
-        where: { owner_id: ownerId },
-        select: { owner_name: true },
-      });
-
-      if (owner) {
-        await notifyAdminsOnEmailLimitReached({
-          ownerId,
-          ownerName: owner.owner_name,
-          dailyLimit: stats.limit,
-          currentCount: stats.count,
-        });
-        await markEmailLimitNotificationSent(ownerId);
-      }
-    }
-    return;
-  }
-
-  await emailFn(emails, ...emailArgs);
-
-  // Increment email counter
-  const newCount = await incrementDailyEmailCount(ownerId);
-  // console.log('[sendOperationsModuleEmail] Email sent, new daily count:', newCount);
-
-  // Check if we just reached the limit
-  const stats = await getDailyEmailStats(ownerId);
-  if (stats && stats.remaining === 0) {
-    // console.log('[sendOperationsModuleEmail] Daily email limit just reached for owner:', ownerId);
-    
-    // Get owner details for notification
-    const owner = await prisma.owner.findUnique({
-      where: { owner_id: ownerId },
-      select: { owner_name: true },
-    });
-
-    if (owner && await shouldNotifyEmailLimitReached(ownerId)) {
-      await notifyAdminsOnEmailLimitReached({
-        ownerId,
-        ownerName: owner.owner_name,
-        dailyLimit: stats.limit,
-        currentCount: stats.count,
-      });
-      await markEmailLimitNotificationSent(ownerId);
-    }
-  }
+  await dispatchModuleEmail(ownerId, 'operations', eventType, emailFn, emailArgs);
 }
 
 /**
@@ -836,80 +485,24 @@ async function sendTrainingModuleEmail(
   ownerId: number,
   eventType: string,
   courseOwnerUserId: number | null | undefined,
-  emailFn: (emails: string[], ...args: any[]) => Promise<void>,
+  emailFn: EmailTemplateFn,
   ...emailArgs: any[]
 ): Promise<void> {
-  const isEnabled = await isModuleEventEmailEnabled(ownerId, 'training', eventType);
-  if (!isEnabled) {
-    console.log('[sendTrainingModuleEmail] Email is not enabled, skipping email send');
-    return;
-  }
-
-  const emails = await getRecipientEmails(ownerId, 'training', eventType);
-
-  // Course owner (training.trainer_user_id) is always notified for enabled
-  // training events, independent of the configured roles/user list.
-  if (courseOwnerUserId) {
-    const ownerUser = await prisma.public_users.findUnique({
-      where: { user_id: courseOwnerUserId },
-      select: { email: true, user_active: true },
-    });
-    if (ownerUser?.email && ownerUser.user_active === 'Y' && !emails.includes(ownerUser.email)) {
-      emails.push(ownerUser.email);
-    }
-  }
-
-  if (emails.length === 0) {
-    console.log('[sendTrainingModuleEmail] No recipient emails found, skipping email send');
-    return;
-  }
-
-  const limitReached = await isDailyEmailLimitReached(ownerId);
-  if (limitReached) {
-    console.log('[sendTrainingModuleEmail] Daily email limit reached for owner:', ownerId);
-    const stats = await getDailyEmailStats(ownerId);
-
-    if (stats && await shouldNotifyEmailLimitReached(ownerId)) {
-      const owner = await prisma.owner.findUnique({
-        where: { owner_id: ownerId },
-        select: { owner_name: true },
+  await dispatchModuleEmail(ownerId, 'training', eventType, emailFn, emailArgs, {
+    // Course owner (training.trainer_user_id) is always notified for enabled
+    // training events, independent of the configured roles/user list.
+    extraRecipientEmails: async (emails) => {
+      if (!courseOwnerUserId) return emails;
+      const ownerUser = await prisma.public_users.findUnique({
+        where: { user_id: courseOwnerUserId },
+        select: { email: true, user_active: true },
       });
-
-      if (owner) {
-        await notifyAdminsOnEmailLimitReached({
-          ownerId,
-          ownerName: owner.owner_name,
-          dailyLimit: stats.limit,
-          currentCount: stats.count,
-        });
-        await markEmailLimitNotificationSent(ownerId);
+      if (ownerUser?.email && ownerUser.user_active === 'Y' && !emails.includes(ownerUser.email)) {
+        emails.push(ownerUser.email);
       }
-    }
-    return;
-  }
-
-  await emailFn(emails, ...emailArgs);
-
-  const newCount = await incrementDailyEmailCount(ownerId);
-  console.log('[sendTrainingModuleEmail] Email sent, new daily count:', newCount);
-
-  const stats = await getDailyEmailStats(ownerId);
-  if (stats && stats.remaining === 0) {
-    const owner = await prisma.owner.findUnique({
-      where: { owner_id: ownerId },
-      select: { owner_name: true },
-    });
-
-    if (owner && await shouldNotifyEmailLimitReached(ownerId)) {
-      await notifyAdminsOnEmailLimitReached({
-        ownerId,
-        ownerName: owner.owner_name,
-        dailyLimit: stats.limit,
-        currentCount: stats.count,
-      });
-      await markEmailLimitNotificationSent(ownerId);
-    }
-  }
+      return emails;
+    },
+  });
 }
 
 /**

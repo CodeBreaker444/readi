@@ -2,6 +2,15 @@ import { prisma } from "@/lib/prisma";
 import { refreshMaintenanceDays } from "@/backend/utils/refresh-maintenance-days";
 import { parseModelCycle } from "@/backend/services/system/system-service";
 import {
+  getComponentStatusesForTools,
+  isPermanentlyBlockedStatus,
+} from "@/backend/services/system/maintenance-ticket-components";
+import {
+  computeDashboardStatus,
+  isComponentPartOfSystem,
+  parseComponentMeta,
+} from "@/backend/services/system/maintenance-rules";
+import {
   MaintenanceComponent,
   MaintenanceDashboardQuery,
   MaintenanceDrone,
@@ -9,52 +18,6 @@ import {
   MaintenanceStatus,
 } from "@/config/types/maintenance";
 
-
-function parseComponentMeta(raw: unknown): Record<string, unknown> {
-  if (!raw) return {};
-  if (typeof raw === 'object') return raw as Record<string, unknown>;
-  if (typeof raw === 'string') {
-    try {
-      const parsed = JSON.parse(raw);
-      if (typeof parsed === 'string') return JSON.parse(parsed);
-      return parsed as Record<string, unknown>;
-    } catch {
-      return {};
-    }
-  }
-  return {};
-}
-
-function computeStatus(
-  currentHours: number,
-  currentFlights: number,
-  currentDays: number,
-  model: MaintenanceModel,
-  threshold: number
-): { status: MaintenanceStatus; trigger: (string | null)[] } {
-  const triggers: (string | null)[] = [null, null, null];
-  let worst = "OK" as MaintenanceStatus;
-
-  if (model.maintenance_cycle_hour > 0) {
-    const pct = (currentHours / model.maintenance_cycle_hour) * 100;
-    if (pct >= 100) { triggers[0] = "HOUR"; worst = "DUE"; }
-    else if (pct >= threshold && worst !== "DUE") { triggers[0] = "HOUR"; worst = "ALERT"; }
-  }
-
-  if (model.maintenance_cycle_flight > 0) {
-    const pct = (currentFlights / model.maintenance_cycle_flight) * 100;
-    if (pct >= 100) { triggers[1] = "FLIGHT"; worst = "DUE"; }
-    else if (pct >= threshold && worst !== "DUE") { triggers[1] = "FLIGHT"; worst = "ALERT"; }
-  }
-
-  if (model.maintenance_cycle_day > 0) {
-    const pct = (currentDays / model.maintenance_cycle_day) * 100;
-    if (pct >= 100) { triggers[2] = "DAY"; worst = "DUE"; }
-    else if (pct >= threshold && worst !== "DUE") { triggers[2] = "DAY"; worst = "ALERT"; }
-  }
-
-  return { status: worst, trigger: triggers };
-}
 
 function extractModel(rawModel: Record<string, unknown> | null): MaintenanceModel {
   if (!rawModel) {
@@ -238,10 +201,14 @@ export async function getMaintenanceDashboard(
   // Model of each system's drone component, used when the system itself has no model assigned.
   const droneModelByTool: Record<number, MaintenanceModel> = {};
 
+  const effectiveStatuses = await getComponentStatusesForTools(toolIds);
+
   for (const rawComp of components) {
     const meta = parseComponentMeta(rawComp.component_metadata);
-    if (meta.system_detached === true) continue;
-    if (meta.component_status === "DECOMMISSIONED") continue;
+    // Dismissed / decommissioned components stay listed with a caution note but take no part in maintenance.
+    const effective = effectiveStatuses.get(rawComp.component_id);
+    const blockedStatus = isPermanentlyBlockedStatus(effective) ? effective : null;
+    if (!blockedStatus && !isComponentPartOfSystem(meta)) continue;
 
     const assignedModel = componentModelMap.get(Number(meta.fk_tool_model_id));
     const compModel: MaintenanceModel = {
@@ -257,13 +224,15 @@ export async function getMaintenanceDashboard(
     const compFlights = Number(rawComp.current_maintenance_flights ?? 0);
     const compDays = Number(rawComp.current_maintenance_days ?? 0);
 
-    const computed = computeStatus(compHours, compFlights, compDays, compModel, threshold_alert);
+    const computed = blockedStatus
+      ? { status: "OK" as MaintenanceStatus, trigger: [] as (string | null)[] }
+      : computeDashboardStatus(compHours, compFlights, compDays, compModel, threshold_alert);
 
-    const compStatus: MaintenanceStatus = componentsInMaintenance.has(rawComp.component_id)
+    const compStatus: MaintenanceStatus = !blockedStatus && componentsInMaintenance.has(rawComp.component_id)
       ? "IN_MAINTENANCE"
       : computed.status;
 
-    if (rawComp.component_type === 'DRONE' && assignedModel && !droneModelByTool[rawComp.fk_tool_id]) {
+    if (!blockedStatus && rawComp.component_type === 'DRONE' && assignedModel && !droneModelByTool[rawComp.fk_tool_id]) {
       droneModelByTool[rawComp.fk_tool_id] = compModel;
     }
 
@@ -280,6 +249,12 @@ export async function getMaintenanceDashboard(
       status: compStatus,
       trigger: computed.trigger,
       model: compModel,
+      excluded_status: blockedStatus,
+      excluded_message: blockedStatus === 'DECOMMISSIONED'
+        ? 'This component is decommissioned (expired). It is excluded from maintenance tracking and cannot be added to maintenance tickets.'
+        : blockedStatus === 'DISMISSED'
+          ? 'This component is dismissed. It is excluded from maintenance tracking and cannot be added to maintenance tickets.'
+          : null,
     };
 
     if (!compsByTool[rawComp.fk_tool_id]) compsByTool[rawComp.fk_tool_id] = [];
@@ -297,7 +272,7 @@ export async function getMaintenanceDashboard(
       ? Math.floor((Date.now() - new Date(lastMaint).getTime()) / 86400000)
       : 0;
 
-    const computed = computeStatus(stats.totalHours, stats.totalFlights, droneDays, model, threshold_alert);
+    const computed = computeDashboardStatus(stats.totalHours, stats.totalFlights, droneDays, model, threshold_alert);
 
     const droneStatus: MaintenanceStatus = toolsInMaintenance.has(toolId)
       ? "IN_MAINTENANCE"

@@ -10,7 +10,7 @@ import { DFLIGHT_CIRCLE_MAX_RADIUS_M } from '@/config/types/operation'
 import { toastWithDcc } from '@/lib/dcc-toast'
 import { showDFlightErrorToast } from '@/lib/dflight-toast'
 import { serialInList } from '@/lib/serial-number'
-import { cn } from '@/lib/utils'
+import { cn, localInputToUtcIso, utcToLocalInput } from '@/lib/utils'
 import axios from 'axios'
 import {
     CheckCircle2,
@@ -137,6 +137,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
     const [uspaceId, setUspaceId] = useState('')
     const [loadingUspaces, setLoadingUspaces] = useState(false)
     const [dFlightEnabled, setDFlightEnabled] = useState(false)
+    const [skipDFlight, setSkipDFlight] = useState(false)
     const [uspaceError, setUspaceError] = useState('')
     const [circle, setCircle] = useState<DFlightCircle | null>(null)
     const [uspaceFocus, setUspaceFocus] = useState<{ lat: number; lng: number } | null>(null)
@@ -279,6 +280,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
         setFlightMode(editOperation.flight_mode === 'DOCK' ? 'DOCK' : 'RC')
         setErpGroupId(editOperation.fk_erp_group_id?.toString() ?? '')
         setUspaceId(editOperation.uspace_id ?? '')
+        setSkipDFlight(!!editOperation.dflight_skip_authorization)
         setCircle(
             editOperation.dflight_trajectory_data?.type === 'circle'
                 ? { lat: editOperation.dflight_trajectory_data.center.lat, lng: editOperation.dflight_trajectory_data.center.lng, radiusM: editOperation.dflight_trajectory_data.radius_m }
@@ -286,8 +288,8 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
         )
         setSchedulerForm({
             missionCode: editOperation.mission_code ?? '',
-            scheduledStart: editOperation.scheduled_start?.slice(0, 16) ?? '',
-            scheduledEnd: editOperation.actual_end?.slice(0, 16) ?? '',
+            scheduledStart: utcToLocalInput(editOperation.scheduled_start, timezone),
+            scheduledEnd: utcToLocalInput(editOperation.actual_end, timezone),
             missionName: editOperation.mission_name ?? '',
             location: editOperation.location ?? '',
             locationLat: editOperation.location_latitude != null ? String(editOperation.location_latitude) : '',
@@ -310,8 +312,8 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
         setSchedulerForm(prev => ({
             ...prev,
             missionCode: createPrefill.missionCode || prev.missionCode,
-            scheduledStart: createPrefill.scheduledStart ? isoToLocalInput(createPrefill.scheduledStart) : prev.scheduledStart,
-            scheduledEnd: createPrefill.scheduledEnd ? isoToLocalInput(createPrefill.scheduledEnd) : prev.scheduledEnd,
+            scheduledStart: createPrefill.scheduledStart ? utcToLocalInput(createPrefill.scheduledStart, timezone) : prev.scheduledStart,
+            scheduledEnd: createPrefill.scheduledEnd ? utcToLocalInput(createPrefill.scheduledEnd, timezone) : prev.scheduledEnd,
             distanceFlown: createPrefill.distanceFlown != null ? String(createPrefill.distanceFlown) : prev.distanceFlown,
         }))
     }, [open, isEdit, createPrefill])
@@ -371,8 +373,9 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
             .then(res => {
                 if (cancelled) return
                 const events: any[] = res.data.data ?? []
-                const s = new Date(schedulerForm.scheduledStart).getTime()
-                const e = schedulerForm.scheduledEnd ? new Date(schedulerForm.scheduledEnd).getTime() : s + 3_600_000
+                const s = new Date(localInputToUtcIso(schedulerForm.scheduledStart, timezone)!).getTime()
+                const endIso = localInputToUtcIso(schedulerForm.scheduledEnd, timezone)
+                const e = endIso ? new Date(endIso).getTime() : s + 3_600_000
                 setConflicts(events.filter(ev => {
                     if (String(ev.operation?.fk_tool_id) !== droneId) return false
                     if (isEdit && ev.operation?.pilot_mission_id === editOperation?.pilot_mission_id) return false
@@ -476,7 +479,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
         setErps([]); setResultOptions([])
         setFlightWaypoints([]); setLoadingWaypoints(false)
         setErpGroupId(''); setErpGroups([]); setLoadingErpGroups(false)
-        setUspaceId(''); setUspaces([]); setLoadingUspaces(false); setDFlightEnabled(false); setUspaceError('')
+        setUspaceId(''); setUspaces([]); setLoadingUspaces(false); setDFlightEnabled(false); setSkipDFlight(false); setUspaceError('')
         setCircle(null); setUspaceFocus(null)
         setIsRecurrent(false); setRecurrentDays([]); setRecurrentEndDate(''); setRecurrentDateError('')
         setSchedulerForm({
@@ -532,8 +535,8 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
         return true
     }
 
-    const uspaceRequired = dFlightEnabled && ['PDRA', 'OPEN', 'STS-01', 'STS-02'].includes(opType)
-    const circleRequired = dFlightEnabled && ['OPEN', 'STS-01', 'STS-02'].includes(opType)
+    const uspaceRequired = dFlightEnabled && !skipDFlight && ['PDRA', 'OPEN', 'STS-01', 'STS-02'].includes(opType)
+    const circleRequired = dFlightEnabled && !skipDFlight && ['OPEN', 'STS-01', 'STS-02'].includes(opType)
     // D-Flight rejects h_buffer beyond the selected U-space's own registered
     // protection_buffers_horizontal constraint, independent of geometry — cap
     // the drawable/submittable radius to whichever limit is tighter.
@@ -559,8 +562,8 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                 const payload = {
                     mission_code: schedulerForm.missionCode.trim(),
                     mission_name: schedulerForm.missionName.trim(),
-                    scheduled_start: schedulerForm.scheduledStart || undefined,
-                    actual_end: schedulerForm.scheduledEnd || undefined,
+                    scheduled_start: localInputToUtcIso(schedulerForm.scheduledStart, timezone),
+                    actual_end: localInputToUtcIso(schedulerForm.scheduledEnd, timezone),
                     fk_pilot_user_id: parseInt(pilotId),
                     fk_tool_id: droneId ? parseInt(droneId) : null,
                     fk_client_id: clientId ? parseInt(clientId) : null,
@@ -578,7 +581,8 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                     flight_mode: opType === 'PDRA' ? flightMode : null,
                     op_type: opType,
                     mission_group_label: schedulerForm.groupLabel.trim() || null,
-                    uspace_id: uspaceId || null,
+                    uspace_id: skipDFlight ? null : (uspaceId || null),
+                    ...(dFlightEnabled && { dflight_skip_authorization: skipDFlight }),
                     dflight_trajectory_data: circleRequired && circle
                         ? { type: 'circle' as const, center: { lat: circle.lat, lng: circle.lng }, radius_m: circle.radiusM }
                         : null,
@@ -593,8 +597,8 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
             const payload = {
                 mission_code: schedulerForm.missionCode.trim(),
                 mission_name: schedulerForm.missionName.trim(),
-                scheduled_start: schedulerForm.scheduledStart || undefined,
-                actual_end: schedulerForm.scheduledEnd || undefined,
+                scheduled_start: localInputToUtcIso(schedulerForm.scheduledStart, timezone),
+                actual_end: localInputToUtcIso(schedulerForm.scheduledEnd, timezone),
                 fk_pilot_user_id: parseInt(pilotId),
                 fk_tool_id: droneId ? parseInt(droneId) : null,
                 fk_client_id: clientId ? parseInt(clientId) : null,
@@ -613,7 +617,8 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                 flight_mode: opType === 'PDRA' ? flightMode : null,
                 op_type: opType,
                 mission_group_label: schedulerForm.groupLabel.trim() || undefined,
-                uspace_id: uspaceId || undefined,
+                uspace_id: skipDFlight ? undefined : (uspaceId || undefined),
+                ...(dFlightEnabled && skipDFlight && { dflight_skip_authorization: true }),
                 dflight_trajectory_data: circleRequired && circle
                     ? { type: 'circle' as const, center: { lat: circle.lat, lng: circle.lng }, radius_m: circle.radiusM }
                     : undefined,
@@ -881,6 +886,9 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                             onUspaceChange={setUspaceId}
                             loadingUspaces={loadingUspaces}
                             dFlightEnabled={uspaceRequired}
+                            showSkipDFlight={dFlightEnabled}
+                            skipDFlight={skipDFlight}
+                            onSkipDFlightChange={setSkipDFlight}
                             uspaceError={uspaceError}
                             circle={circle}
                             onCircleChange={setCircle}

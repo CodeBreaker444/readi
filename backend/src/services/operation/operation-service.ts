@@ -108,7 +108,8 @@ export async function listOperations(
         status_name: true,
         dflight_mission_id: true,
         dflight_flight_authorisation_status: true,
-        opm_approval_status: true,
+        dflight_skip_authorization: true,
+opm_approval_status: true,
         opm_approval_department: true,
         opm_approval_note: true,
         opm_approval_decided_at: true,
@@ -384,6 +385,7 @@ export async function createOperation(
       luc_procedure_progress: luc_procedure_progress as any,
       luc_completed_at: null,
       dflight_trajectory_data: (input as any).dflight_trajectory_data ?? null,
+      dflight_skip_authorization: (input as any).dflight_skip_authorization === true,
       ...(approval ?? {}),
       ...(Object.keys(missionMetadata).length && { mission_metadata: { ...missionMetadata, recurring_group_id: recurringGroupId } }),
     };
@@ -517,6 +519,7 @@ export async function updateOperation(id: number, input: UpdateOperationSchema, 
       dflight_flight_authorisation_status: true,
       dflight_mission_status: true,
       dflight_flight_clearance_status: true,
+      dflight_skip_authorization: true,
       opm_approval_status: true,
     },
   });
@@ -525,7 +528,7 @@ export async function updateOperation(id: number, input: UpdateOperationSchema, 
   if ((input as any).status_name === 'IN_PROGRESS' && current?.status_name !== 'IN_PROGRESS') {
     assertOpmApproved(current?.opm_approval_status);
     assertDFlightAuthorized(
-      current?.dflight_mission_id,
+      current?.dflight_skip_authorization ? null : current?.dflight_mission_id,
       current?.dflight_flight_authorisation_status,
       current?.dflight_mission_status,
       current?.dflight_flight_clearance_status,
@@ -562,6 +565,7 @@ export async function updateOperation(id: number, input: UpdateOperationSchema, 
   if ((input as any).fk_erp_group_id !== undefined) updatePayload.fk_erp_group_id = (input as any).fk_erp_group_id;
   if ((input as any).mission_group_label !== undefined) updatePayload.mission_group_label = (input as any).mission_group_label;
   if ((input as any).dflight_trajectory_data !== undefined) updatePayload.dflight_trajectory_data = (input as any).dflight_trajectory_data;
+  if ((input as any).dflight_skip_authorization !== undefined) updatePayload.dflight_skip_authorization = (input as any).dflight_skip_authorization;
 
   // Handle visual observers assignment
   const rawObserverIds: number[] | null = (input as any).visual_observer_ids ?? null;
@@ -898,10 +902,15 @@ export async function getPilotOptions(ownerId: number) {
 }
 
 export async function getToolOptions(ownerId: number) {
-  const data = await prisma.tool.findMany({
+  const allTools = await prisma.tool.findMany({
     where: { fk_owner_id: ownerId, tool_active: 'Y' },
     orderBy: { tool_name: 'asc' },
     select: { tool_id: true, tool_name: true, tool_code: true, tool_metadata: true },
+  });
+  // The warehouse is a stock placeholder, not a drone; soft-deleted systems are hidden too.
+  const data = allTools.filter((t) => {
+    const meta = t.tool_metadata as { is_warehouse?: boolean; deleted?: boolean } | null;
+    return meta?.is_warehouse !== true && meta?.deleted !== true;
   });
 
   if (data.length === 0) return data;

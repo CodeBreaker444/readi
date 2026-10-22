@@ -55,11 +55,11 @@ export function parseDFlightError(message: string): DFlightErrorDetails {
   return details;
 }
 
-/** Persistent, glowing D-Flight error toast; click "View details" for the full error in a modal. */
+/** glowing D-Flight error toast; click "View details" for the full error in a modal. */
 export function showDFlightErrorToast(title: string, message: string) {
   const details = parseDFlightError(message);
   toast.custom(
     (toastId) => createElement(DFlightErrorToast, { toastId, title, details }),
-    { duration: Infinity },
+    { duration: 30 },
   );
 }
