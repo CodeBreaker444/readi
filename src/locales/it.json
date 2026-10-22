@@ -2991,7 +2991,7 @@
         "search": "Cerca tipi di evento",
         "add": "Aggiungi tipo di evento",
         "name": "Nome",
-        "renameHint": "La rinomina aggiorna anche gli eventi già segnalati con questo tipo.",
+        "renameHint": "Rinominare aggiorna anche il codice del tipo e i filtri dei webhook che lo usano. Gli eventi già segnalati mantengono il nome e il codice con cui sono stati segnalati.",
         "edit": "Modifica",
         "delete": "Elimina",
         "cancel": "Annulla",

@@ -9,7 +9,7 @@ import { z } from 'zod';
 const schema = z.object({
   tool_id: z.coerce.number().int().optional(),
   mission_id: z.coerce.number().int().optional(),
-  event_type: z.string().optional(),
+  event_type_id: z.coerce.number().int().optional(),
   date_start: z.string().optional(),
   date_end: z.string().optional(),
 });
@@ -26,6 +26,7 @@ export async function POST(request: NextRequest) {
       ...parsed.data,
       tool_id: parsed.data.tool_id || undefined,
       mission_id: parsed.data.mission_id || undefined,
+      event_type_id: parsed.data.event_type_id || undefined,
     });
     return NextResponse.json({ code: 200, data });
   } catch (err) {

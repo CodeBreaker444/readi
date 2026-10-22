@@ -54,7 +54,71 @@ Open a battery for its **Cycle Log**: each mission it was used on, with date, du
 
 ## Event Logbook
 
-Pilots report incidents and anomalies (for example equipment malfunction, GPS signal issue, obstacle detected, bird activity or fly-away) with **Add Report Event**. The event types are defined by your company: an administrator creates, renames and deletes them from the **Event types** button in the page header. Renaming a type also updates events already reported with it. A deleted type stays on the events that used it, but can no longer be chosen for new ones. Because a flight often has several events, the details they share are set up once, so that adding an event during a flight takes only a few taps.
+Pilots report incidents and anomalies (for example equipment malfunction, GPS signal issue, obstacle detected, bird activity or fly-away) with **Add Report Event**. The event types are defined by your company: an administrator creates, renames and deletes them from the **Event types** button in the page header. Renaming a type changes its name and code for new events; events already reported keep the name and code they were reported with. A deleted type stays on the events that used it, but can no longer be chosen for new ones. Event types can be **client-specific**: when you create or edit a type you can pick a **Client**, or leave it on **Default (all clients)**. A default type is offered for every client; a client type is only offered for events of that client. When reporting an event, the type list shows the default types plus the types of the event's client (taken from the mission, otherwise from the system's assigned client). Editing a type lets you move it to another client or back to Default, and the last default type cannot be deleted. Because a flight often has several events, the details they share are set up once, so that adding an event during a flight takes only a few taps.
+
+### Event type codes
+
+Every event type has a unique **id** (a number that never changes), a **name** (what people see) and a **code** (sent in webhooks as `event_type`). You only type the name; the code is generated from it when the type is created, and generated again when the type is renamed:
+
+1. Accents are removed ("Détecté" becomes "Detecte") and everything is lowercased.
+2. Each run of characters that are not letters a–z or digits 0–9 (spaces, `-`, `/`, `!` and so on) becomes a single `_`.
+3. Leading and trailing `_` are removed and the result is cut to 50 characters. If nothing usable is left, the code is `event_type`.
+
+| Name typed | Code |
+| --- | --- |
+| Fire | `fire` |
+| Person detected | `person_detected` |
+| Fly-away / Loss of control | `fly_away_loss_of_control` |
+| Bird strike! | `bird_strike` |
+
+Codes are unique per company, across all clients. If the code is already taken, a number is added: a second "Fire" becomes `fire_2`, then `fire_3`. The code of a deleted type is never reused, because older events still carry it. For example, "Fire" for Client A and "Fire" for Client B get `fire` and `fire_2`, but each client sees both as "Fire".
+
+#### Renaming a type
+
+Events are linked to their type by its **unique id**, not by the code. Each event also stores a **snapshot** of the type's code and name from the moment it was reported (or its type was changed). Renaming therefore never rewrites events that already exist:
+
+- **New name, new code:** renaming "Fire" to "Water" changes the type to the name "Water" and the code `water` (a duplicate gets a suffix, e.g. `water_2`). Events reported from then on carry `water` / "Water".
+- **Old events keep their old values:** events reported before the rename still show "Fire" and the code `fire`, in the table, details, emails and what was sent to webhooks. They stay linked to the same type (same id), so filtering the event table by "Water" finds both old and new events, and the type's usage count includes them.
+- **Webhook filters follow the rename:** a webhook that was limited to the code `fire` is updated automatically to `water`, so it keeps receiving this type. Webhooks that receive all event types are unaffected.
+- **Moving a type to another client or to Default** does not change its code. Only a change of the name does.
+- **Renaming back** to an earlier name gives the earlier code again, unless another type has taken it in the meantime.
+- **Deleting a type** leaves its events with the name and code they were reported with; they are just no longer linked to a type.
+
+Webhook messages carry all three values: `event_type_id` (the unique id, stable across renames), `event_type` (the code the event was reported with) and `event_type_label` (the name the event was reported with). Receiving systems that need one stable key for a type should use `event_type_id`.
+
+#### Sample code
+
+The same rules as TypeScript, for receiving systems that want to compute a code from a type name, or show a readable label for a code. This is the exact function ReADI uses:
+
+```ts
+const EVENT_TYPE_CODE_MAX = 50;
+
+/** Name -> code, e.g. "Bird strike!" -> "bird_strike". */
+export function slugifyEventTypeCode(name: string): string {
+  return name
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '') // strip accents
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_') // anything else becomes "_"
+    .replace(/^_+|_+$/g, '') // trim leading/trailing "_"
+    .slice(0, EVENT_TYPE_CODE_MAX);
+}
+
+/** Code -> readable fallback label, e.g. "bird_strike" -> "Bird strike". */
+export function prettifyEventTypeCode(code: string): string {
+  const spaced = code.replace(/_+/g, ' ').trim();
+  return spaced ? spaced.charAt(0).toUpperCase() + spaced.slice(1) : code;
+}
+
+slugifyEventTypeCode('Person detected'); // "person_detected"
+slugifyEventTypeCode('Fly-away / Loss of control'); // "fly_away_loss_of_control"
+prettifyEventTypeCode('person_detected'); // "Person detected"
+```
+
+Two limits to keep in mind:
+
+- **A code cannot be turned back into the exact name.** Capitalisation, punctuation and accents are lost, and `prettifyEventTypeCode` only gives a readable approximation. The webhook already sends the real name as `event_type_label`, so prefer that for display, and use `event_type_id` (not the code) as the stable key for a type.
+- **`slugifyEventTypeCode(name)` gives the stored code only when the code is not taken.** A duplicate name gets a suffix (`fire_2`), and events keep the code they were reported with after a rename. To find the code of an event, read `event_type` from the message rather than recomputing it from the name.
 
 ### Mission setup
 
@@ -74,7 +138,8 @@ The event screen is a single modal with no Next buttons:
 1. Check the pre-filled setup summary. Only the **Notify** dropdown can be changed in place.
 2. Choose the **event type**.
 3. Set the exact **location** by tapping the map or searching, and optionally add attachments (JPG, PNG, MP4, PDF, up to 100 MB each) in the same section. The map opens on the mission plan when there is one, otherwise on the system's base location. When the mission has a plan, its area is highlighted on the map.
-4. Add optional notes and click **Submit Event**. **Add Another Event** keeps the setup, so the next event only needs a type and a location.
+4. Optionally add **Supporting media** (images and videos only) in its own section. They are saved with the event and shown separately from the attachments.
+5. Add optional notes and click **Submit Event**. **Add Another Event** keeps the setup, so the next event only needs a type and a location.
 
 ### Viewing, editing and deleting events
 
@@ -82,11 +147,12 @@ Click a row (or the eye icon) in the event table to open the event:
 
 - **Details** – event type, takeoff and report time, reporting pilot, drone, mission, client, location, notes and the contacts that were notified.
 - **Map** – the exact location on a map. If the mission has a mission plan, its area is highlighted too. A link opens the point in Google Maps.
-- **Attachments** – image previews, a link to open each file and a **Download** button.
+- **Attachments** – image previews, a link to open each file and a **Download** button. Images and videos open in a built-in **viewer** (previous/next, arrow keys, download); PDFs open in a new tab.
+- **Supporting media** – extra images and videos added to the event, shown in their own section and opened in the same viewer. Use the **+** icon beside the event in the table, or the **Add supporting media** button in the details, to add more at any time (JPG, PNG, WebP, MP4, WebM, MOV; up to 10 files per upload and 20 per event). **Adding supporting media never sends emails**; the client's webhooks are notified instead (see below).
 - **Edit** – change the event type, takeoff time, location, notes and attachments. The system, mission and recipients stay as reported. **Editing never sends emails again.**
 - **Delete** – permanently removes the event and its files, after a confirmation.
 
-Edit and Delete are available to users with full access to the event logbook. Pilots can only change events they reported themselves. Clients in the client portal can view their events (details, map and attachments) but not change them.
+Adding supporting media needs edit access to the event logbook; pilots can only add media to events they reported themselves, and the client portal cannot add media. Edit and Delete are available to users with full access to the event logbook. Pilots can only change events they reported themselves. Clients in the client portal can view their events (details, map and attachments) but not change them.
 
 A pilot can only pick systems and missions assigned to them and only sees the events they reported. Roles that manage systems see every event of the company. The warehouse is never offered as a system.
 
@@ -103,18 +169,85 @@ Every new event is sent as an HTTPS `POST` with `event.created`:
   "created_at": "2026-10-07T14:20:05.000Z",
   "data": {
     "event_id": 126,
+    "event_type_id": 2,
     "event_type": "equipment_malfunction",
+    "event_type_label": "Equipment malfunction",
     "takeoff_time": "2026-10-07T10:32:00.000Z",
+    "reported_at": "2026-10-07T14:20:05.000Z",
     "location": { "latitude": 42.4097, "longitude": 12.8603, "label": "Rieti, Lazio, Italy" },
     "notes": "Strange vibration from motor",
     "pilot": { "id": 12, "name": "Jane Doe" },
     "drone": { "id": 4, "name": "Lito X1", "code": "LX1" },
     "mission": { "id": 88, "name": "Survey-12", "code": "M-88" },
     "client": { "id": 3, "name": "Acme" },
-    "attachments": [{ "file_name": "screenshot.png", "file_type": "image/png", "file_size": 120394, "url": "https://…", "url_expires_in_seconds": 604800 }]
+    "attachments": [{ "attachment_id": 28, "is_supporting": false, "file_name": "screenshot.png", "file_type": "image/png", "file_size": 120394, "url": "https://…", "url_expires_in_seconds": 604800 }]
   }
 }
 ```
+
+#### Parameters of `event.created`
+
+| Field | Meaning |
+| --- | --- |
+| `id` | Unique id of **this delivery** (also sent as the `X-Readi-Delivery` header). It changes on every delivery and does **not** identify the event. |
+| `type` | The notification name, `event.created` (also sent as the `X-Readi-Event` header). |
+| `created_at` | When the delivery was created (UTC, ISO 8601). |
+| `data.event_id` | **The id of the event.** This is the number shown in the **ID** column of the event table and as `#id` in the event details. Use it to link every notification, including later updates, to the same event. |
+| `data.event_type_id` | The unique id of the event type. It never changes, even when the type is renamed, so it is the stable key for a type. `null` if the type was deleted. |
+| `data.event_type` / `data.event_type_label` | The type's code and name **as the event was reported** (a snapshot). Renaming the type later does not change them for this event. |
+| `data.takeoff_time` / `data.reported_at` | When the flight took off and when the event was reported. |
+| `data.location` | `latitude`, `longitude` and a `label` (when a place was searched). |
+| `data.notes` | The pilot's notes. |
+| `data.pilot`, `data.drone`, `data.mission`, `data.client` | The reporting pilot, the system, the mission (`null` if none) and the client, each with its `id` and `name` (drone and mission also have a `code`). |
+| `data.attachments[]` | All files of the event. Each has `attachment_id` (id of the file), `is_supporting` (`false` = attached when reporting, `true` = supporting media), `file_name`, `file_type`, `file_size` (bytes), `url` (download link) and `url_expires_in_seconds` (links stay valid for 7 days). |
+
+#### Supporting media updates (`event.updated`)
+
+When supporting media is added to an event that was already reported, the same webhooks (same client and event-type filters) receive an `event.updated` notification with `update_type: "support_media"`. This is how the **new media** reaches the receiver:
+
+```json
+{
+  "id": "delivery-uuid",
+  "type": "event.updated",
+  "created_at": "2026-10-07T15:02:11.000Z",
+  "data": {
+    "update_type": "support_media",
+    "event_id": 126,
+    "event_type_id": 2,
+    "event_type": "equipment_malfunction",
+    "event_type_label": "Equipment malfunction",
+    "takeoff_time": "2026-10-07T10:32:00.000Z",
+    "reported_at": "2026-10-07T14:20:05.000Z",
+    "location": { "latitude": 42.4097, "longitude": 12.8603, "label": "Rieti, Lazio, Italy" },
+    "notes": "Strange vibration from motor",
+    "pilot": { "id": 12, "name": "Jane Doe" },
+    "drone": { "id": 4, "name": "Lito X1", "code": "LX1" },
+    "mission": { "id": 88, "name": "Survey-12", "code": "M-88" },
+    "client": { "id": 3, "name": "Acme" },
+    "new_media": [
+      {
+        "attachment_id": 29,
+        "is_supporting": true,
+        "file_name": "close-up.mp4",
+        "file_type": "video/mp4",
+        "file_size": 5242880,
+        "url": "https://…",
+        "url_expires_in_seconds": 604800
+      }
+    ]
+  }
+}
+```
+
+| Field | Meaning |
+| --- | --- |
+| `type` | `event.updated` – something changed on an existing event. |
+| `data.update_type` | What changed. Currently only `support_media`: supporting media was added. |
+| `data.event_id` | **The id of the event the media belongs to** – the same `event_id` that was sent in `event.created`. Match on this to attach the new media to the right event. |
+| `data.new_media[]` | Only the files added by this update (not the whole list). Each has `attachment_id`, `is_supporting` (always `true`), `file_name`, `file_type` (image or video), `file_size`, `url` and `url_expires_in_seconds`. |
+| Other `data` fields | The same event details as in `event.created` (type, times, location, notes, pilot, drone, mission, client). `attachments` is not included. |
+
+Supporting media added while the event is being reported is part of `event.created` (flagged with `is_supporting: true`), so no separate update is sent for it. The signature, retry and delivery-log rules below apply to both notifications.
 
 Verify the `X-Readi-Signature` header: `sha256=` + HMAC-SHA256 (hex) of `"<X-Readi-Timestamp>.<raw body>"` with the webhook's signing secret, which is shown once when the webhook is created or rotated. Respond with any `2xx` within 8 seconds; failed deliveries (network error or `5xx`) are retried once. All deliveries appear in each webhook's delivery log. Endpoints must be public HTTPS URLs.
 

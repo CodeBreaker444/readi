@@ -21,13 +21,13 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     if (!parsed.success) return zodError(E.VL001, parsed.error);
 
     const user = session!.user;
-    const before = await updateEventType(user.ownerId, id, parsed.data);
+    const { before, type_code, webhooks_updated } = await updateEventType(user.ownerId, id, parsed.data);
 
     logEvent({
       eventType: 'UPDATE',
       entityType: 'pilot_event_type',
       entityId: id,
-      description: `Updated event type "${before.type_name}" to "${parsed.data.type_name}"${parsed.data.client_id === undefined ? '' : parsed.data.client_id ? ` (client #${parsed.data.client_id})` : ' (default)'}`,
+      description: `Updated event type "${before.type_name}" to "${parsed.data.type_name}"${type_code !== before.type_code ? ` (code "${before.type_code}" -> "${type_code}", ${webhooks_updated} webhook filter(s) updated)` : ''}${parsed.data.client_id === undefined ? '' : parsed.data.client_id ? ` (client #${parsed.data.client_id})` : ' (default)'}`,
       userId: user.userId,
       userName: user.fullname,
       userEmail: user.email,

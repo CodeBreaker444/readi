@@ -60,7 +60,7 @@ export default function EventLogbookPage() {
         const res = await axios.post('/api/logbooks/event/list', {
           tool_id: f.tool === FILTER_ALL ? undefined : Number(f.tool),
           mission_id: f.mission === FILTER_ALL ? undefined : Number(f.mission),
-          event_type: f.type === FILTER_ALL ? undefined : f.type,
+          event_type_id: f.type === FILTER_ALL ? undefined : Number(f.type),
           // Day boundaries in the user's own timezone.
           date_start: f.from ? new Date(`${f.from}T00:00:00`).toISOString() : undefined,
           date_end: f.to ? new Date(`${f.to}T23:59:59.999`).toISOString() : undefined,

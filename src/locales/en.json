@@ -2995,7 +2995,7 @@
         "search": "Search event types",
         "add": "Add event type",
         "name": "Name",
-        "renameHint": "Renaming also updates events already reported with this type.",
+        "renameHint": "Renaming also updates the type's code and the webhook filters that use it. Events already reported keep the name and code they were reported with.",
         "edit": "Edit",
         "delete": "Delete",
         "cancel": "Cancel",

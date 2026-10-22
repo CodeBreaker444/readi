@@ -7,7 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
 const schema = z.object({
-  event_type: z.string().optional(),
+  event_type_id: z.coerce.number().int().optional(),
   date_start: z.string().optional(),
   date_end: z.string().optional(),
 });

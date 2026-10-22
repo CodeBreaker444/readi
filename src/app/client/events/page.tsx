@@ -37,7 +37,7 @@ export default function ClientEventsPage() {
       setLoading(true);
       try {
         const res = await axios.post('/api/client-portal/events', {
-          event_type: f.type === FILTER_ALL ? undefined : f.type,
+          event_type_id: f.type === FILTER_ALL ? undefined : Number(f.type),
           date_start: f.from ? new Date(`${f.from}T00:00:00`).toISOString() : undefined,
           date_end: f.to ? new Date(`${f.to}T23:59:59.999`).toISOString() : undefined,
         });

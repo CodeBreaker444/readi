@@ -109,6 +109,9 @@ export interface EventMissionOption {
 
 export interface EventLogbookItem {
   event_id: number;
+  /** Unique id of the event type; null once that type was deleted. */
+  event_type_id: number | null;
+  /** Code and label the event was reported with (a snapshot; later renames do not change them). */
   event_type: EventType;
   event_type_label: string;
   takeoff_time: string;
@@ -161,7 +164,7 @@ export interface EventAttachmentInput {
 export interface EventLogbookFilters {
   tool_id?: number;
   mission_id?: number;
-  event_type?: string;
+  event_type_id?: number;
   date_start?: string;
   date_end?: string;
 }

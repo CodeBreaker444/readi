@@ -1,10 +1,20 @@
--- Event Logbook:
--- 1) Event types can belong to one client (fk_client_id). NULL = default type, available for every client.
--- 2) Supporting media: extra images/videos added to an already-reported event (flagged on the attachment row).
 
-ALTER TABLE public.pilot_event_type
-  ADD COLUMN IF NOT EXISTS fk_client_id INTEGER REFERENCES public.client(client_id) ON DELETE CASCADE;
-CREATE INDEX IF NOT EXISTS idx_pilot_event_type_client ON public.pilot_event_type (fk_owner_id, fk_client_id);
+ALTER TABLE public.pilot_event
+  ADD COLUMN IF NOT EXISTS fk_event_type_id INTEGER REFERENCES public.pilot_event_type(event_type_id) ON DELETE SET NULL,
+  ADD COLUMN IF NOT EXISTS event_type_label VARCHAR(100);
 
-ALTER TABLE public.pilot_event_attachment
-  ADD COLUMN IF NOT EXISTS is_supporting BOOLEAN NOT NULL DEFAULT false;
+-- Backfill existing events from their current type.
+UPDATE public.pilot_event e
+SET fk_event_type_id = t.event_type_id,
+    event_type_label = t.type_name
+FROM public.pilot_event_type t
+WHERE t.fk_owner_id = e.fk_owner_id
+  AND t.type_code = e.event_type
+  AND e.fk_event_type_id IS NULL;
+
+-- Events whose type no longer exists keep a readable label derived from the code.
+UPDATE public.pilot_event
+SET event_type_label = initcap(replace(event_type, '_', ' '))
+WHERE event_type_label IS NULL;
+
+CREATE INDEX IF NOT EXISTS idx_pilot_event_type_id ON public.pilot_event (fk_event_type_id);

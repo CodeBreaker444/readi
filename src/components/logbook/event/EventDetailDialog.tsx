@@ -58,6 +58,10 @@ function toLocalInputValue(date: Date): string {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
+/** Stand-in dropdown value for an event whose type was deleted; saving with it keeps the reported type. */
+const CURRENT_TYPE = '__current__';
+const currentTypeValue = (d: Pick<EventDetail, 'event_type_id'>) => (d.event_type_id != null ? String(d.event_type_id) : CURRENT_TYPE);
+
 interface NewFile {
   id: string;
   file: File;
@@ -116,7 +120,7 @@ export function EventDetailDialog({ eventId, onClose, onChanged, isDark, detailU
 
   const startEdit = () => {
     if (!detail) return;
-    setEventType(detail.event_type as EventType);
+    setEventType(currentTypeValue(detail));
     setTakeoff(toLocalInputValue(new Date(detail.takeoff_time)));
     setLat(detail.latitude != null ? String(detail.latitude) : '');
     setLng(detail.longitude != null ? String(detail.longitude) : '');
@@ -153,7 +157,8 @@ export function EventDetailDialog({ eventId, onClose, onChanged, isDark, detailU
     try {
       const add_attachments = await uploadEventFiles(newFiles.map((f) => f.file));
       await axios.patch(detailUrl(detail.event_id), {
-        event_type: eventType,
+        // Omitted when the event's type was deleted and not replaced: the event keeps its reported type.
+        event_type_id: eventType && eventType !== CURRENT_TYPE ? Number(eventType) : undefined,
         takeoff_time: new Date(takeoff).toISOString(),
         latitude: latNum,
         longitude: lngNum,
@@ -194,9 +199,10 @@ export function EventDetailDialog({ eventId, onClose, onChanged, isDark, detailU
   const typeItems = useMemo<PagedSelectItem[]>(() => {
     const items = eventTypes
       .filter((x) => x.client_id == null || x.client_id === detail?.client_id)
-      .map((x) => ({ value: x.type_code, label: x.client_name ? `${x.type_name} · ${x.client_name}` : x.type_name }));
-    if (detail && items.every((x) => x.value !== detail.event_type)) {
-      items.push({ value: detail.event_type, label: detail.event_type_label || prettifyEventTypeCode(detail.event_type) });
+      .map((x) => ({ value: String(x.event_type_id), label: x.client_name ? `${x.type_name} · ${x.client_name}` : x.type_name }));
+    // The event's own type stays selectable (shown with the label it was reported with) if it was deleted.
+    if (detail && items.every((x) => x.value !== currentTypeValue(detail))) {
+      items.push({ value: currentTypeValue(detail), label: detail.event_type_label || prettifyEventTypeCode(detail.event_type) });
     }
     return items;
   }, [eventTypes, detail]);
