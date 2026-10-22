@@ -452,7 +452,7 @@ export function MaintenanceTab({
                               >+1</button>
                             </>
                           )}
-                          {inp?.add_flights > 0 && (
+                          {(inp?.add_flights ?? 0) > 0 && (
                             <span className={cn("text-[10px] tabular-nums", isDark ? "text-slate-400" : "text-slate-500")}>
                               {comp.current_flights} → {previewFlights}
                             </span>
@@ -490,7 +490,7 @@ export function MaintenanceTab({
                         <span className={cn("text-[9px] uppercase tracking-wider", isDark ? "text-slate-600" : "text-slate-400")}>
                           {t("operations.missionComplete.maintenance.hmin")}
                         </span>
-                        {inp?.add_hours > 0 && (
+                        {(inp?.add_hours ?? 0) > 0 && (
                           <>
                             <span className={cn("text-[10px] tabular-nums", isDark ? "text-slate-400" : "text-slate-500")}>
                               {formatHhmmHours(comp.current_hours)} → {formatHhmmHours(previewHours)}
