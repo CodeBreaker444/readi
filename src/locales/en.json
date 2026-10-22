@@ -1900,6 +1900,7 @@
       "footer": {
         "updateWarning": "Update maintenance to complete mission",
         "backToInProgress": "Back to In Progress",
+        "saveToDone": "Save to Done",
         "close": "Close",
         "updateMaintenance": "Update Maintenance",
         "updating": "Updating…",

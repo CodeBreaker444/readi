@@ -1893,6 +1893,7 @@
       "footer": {
         "updateWarning": "Wartung aktualisieren, um Mission abzuschließen",
         "backToInProgress": "Zurück zu In Bearbeitung",
+        "saveToDone": "Als Erledigt speichern",
         "close": "Schließen",
         "updateMaintenance": "Wartung aktualisieren",
         "updating": "Wird aktualisiert…",

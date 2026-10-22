@@ -1895,6 +1895,7 @@
       "footer": {
         "updateWarning": "Aggiorna la manutenzione per completare la missione",
         "backToInProgress": "Torna a In Corso",
+        "saveToDone": "Salva in Completata",
         "close": "Chiudi",
         "updateMaintenance": "Aggiorna manutenzione",
         "updating": "Aggiornamento…",
