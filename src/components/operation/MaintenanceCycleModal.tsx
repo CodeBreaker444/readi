@@ -390,7 +390,7 @@ export function MaintenanceCycleModal({
         { tool_id: toolId, mission_id: missionId, components }
       );
       if (data.code === 1) {
-        toast.success(t("operations.table.toast.pilotSuccess", { count: 1 }));
+        toast.success(t("operations.missionComplete.toast.updateSuccess"));
         onClose();
       } else if (data.alreadyApplied) {
         toast.error(t("operations.missionComplete.toast.maintenanceAlreadyApplied"));
@@ -505,7 +505,9 @@ export function MaintenanceCycleModal({
             <div className="space-y-3">
               {systemData!.components.map((comp) => {
                 const cfg = STATUS_CONFIG[comp.status];
-                const inp = inputs[comp.component_id];
+                // Once maintenance is recorded the modal is read-only: the prefilled
+                // defaults must not show up as pending additions.
+                const inp = maintenanceApplied ? undefined : inputs[comp.component_id];
 
                 const previewHours = addHhmmHours(comp.current_hours, inp?.add_hours || 0);
                 const ratio = comp.battery_cycle_ratio ?? 1;

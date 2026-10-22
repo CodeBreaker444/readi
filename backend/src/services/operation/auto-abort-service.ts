@@ -7,7 +7,7 @@ const ABORTED_STATUS_ID = 5;
 
 /**
  * A mission still PLANNED once its scheduled day has fully elapsed without
- * ever moving to IN_PROGRESS is a no-show — auto-abort it so it drops off
+ * ever moving to IN_PROGRESS, and with no recorded actual start/end, is a no-show — auto-abort it so it drops off
  * the daily board and reads correctly everywhere else (e.g. the Operations
  * table). Called inline whenever the daily board is fetched, rather than on
  * a fixed schedule, so the correction lands as soon as anyone opens the board.
@@ -21,6 +21,10 @@ export async function autoAbortStaleMissions(ownerId: number): Promise<{ aborted
       fk_owner_id: ownerId,
       fk_mission_status_id: PLANNED_STATUS_ID,
       scheduled_start: { lt: todayStart },
+      // A mission with recorded flight times did fly (e.g. times entered post-flight or imported
+      // from logs) even if its status was never advanced, so it is not a no-show.
+      actual_start: null,
+      actual_end: null,
     },
     select: { pilot_mission_id: true, mission_code: true, mission_name: true },
   });

@@ -259,7 +259,8 @@ export function MaintenanceTab({
       <div className="space-y-3">
         {systemData!.components.map((comp) => {
           const cfg = STATUS_CONFIG[comp.status];
-          const inp = inputs[comp.component_id];
+          // Recorded maintenance is read-only: prefilled defaults must not show as pending additions.
+          const inp = maintenanceApplied ? undefined : inputs[comp.component_id];
           const ratio = comp.battery_cycle_ratio ?? 1;
           const isManualCycles = manualCyclesInput[comp.component_id] ?? false;
           const effectiveCycles = isManualCycles
