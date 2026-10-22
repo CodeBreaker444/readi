@@ -206,12 +206,21 @@ export function AddEventWizard({ open, mode = 'event', onOpenChange, drones, mis
   }, [typeItems, eventType]);
 
   // Pre-fill the recipients with the client's default contacts.
+  // Also runs on the event view, so a setup stored before the defaults existed still picks them up.
   useEffect(() => {
-    if (view !== 'setup' || draft.notifyTouched) return;
+    const active = view === 'setup' ? draft : setup;
+    if (!open || !active || active.notifyTouched) return;
     const known = new Set(contacts.map((c) => c.contact_id));
     const ids = reportClientId ? (defaultContacts[reportClientId] ?? []).filter((id) => known.has(id)) : [];
-    setDraft((d) => (d.notifyTouched ? d : { ...d, notifyIds: ids }));
-  }, [view, reportClientId, defaultContacts, contacts, draft.notifyTouched]);
+    if (ids.length === active.notifyIds.length && ids.every((id, i) => id === active.notifyIds[i])) return;
+    if (view === 'setup') {
+      setDraft((d) => (d.notifyTouched ? d : { ...d, notifyIds: ids }));
+    } else {
+      const next = { ...active, notifyIds: ids };
+      setSetup(next);
+      writeStoredSetup(next);
+    }
+  }, [open, view, reportClientId, defaultContacts, contacts, draft, setup]);
 
   const planArea = selectedMission?.plan && selectedMission.plan.waypoints.length >= 2 ? selectedMission.plan.waypoints : null;
   const focus = selectedDrone?.latitude != null && selectedDrone?.longitude != null ? { lat: selectedDrone.latitude, lng: selectedDrone.longitude } : null;
