@@ -101,12 +101,12 @@ export async function getSystemList(
       // Tools with at least one date-expired component
       prisma.tool_component.findMany({
         where: { fk_tool_id: { in: toolIds }, component_active: 'Y', expiration_date: { lte: new Date(), not: null } },
-        select: { fk_tool_id: true, component_id: true, component_name: true, expiration_date: true },
+        select: { fk_tool_id: true, component_id: true, component_name: true, expiration_date: true, component_metadata: true },
       }),
       // Tools with components that may be flight-expired
       prisma.tool_component.findMany({
         where: { fk_tool_id: { in: toolIds }, component_active: 'Y', expiry_type: { in: ['FLIGHTS', 'FLIGHT_HOURS', 'MIXED'] } },
-        select: { fk_tool_id: true, expiration_flights: true, current_maintenance_flights: true, expiration_flight_hours: true, current_usage_hours: true },
+        select: { fk_tool_id: true, component_metadata: true, expiration_flights: true, current_maintenance_flights: true, expiration_flight_hours: true, current_usage_hours: true },
       }),
     ]);
 
@@ -133,8 +133,12 @@ export async function getSystemList(
       });
       if (effective === 'MAINTENANCE') toolsInMaintenance.add(c.fk_tool_id);
     });
-    expiredComps.forEach((c) => { if (c.fk_tool_id != null) toolsNonOperational.add(c.fk_tool_id); });
+    // A decommissioned (or detached) component is out of the system, so its expiry no longer blocks the system.
+    expiredComps
+      .filter((c) => isComponentPartOfSystem(parseComponentMeta(c.component_metadata)))
+      .forEach((c) => { if (c.fk_tool_id != null) toolsNonOperational.add(c.fk_tool_id); });
     flightExpirableComps
+      .filter((c) => isComponentPartOfSystem(parseComponentMeta(c.component_metadata)))
       .filter((c) =>
         (c.expiration_flights != null && Number(c.current_maintenance_flights) >= Number(c.expiration_flights)) ||
         (c.expiration_flight_hours != null && Number(c.current_usage_hours) >= Number(c.expiration_flight_hours))
@@ -284,13 +288,13 @@ export async function addSystem(toolData: AddSystemInput) {
  */
 async function findOperationalBlocker(toolId: number): Promise<string | null> {
   const [expired, flightExpirable, openTicket, maintComps] = await Promise.all([
-    prisma.tool_component.findFirst({
+    prisma.tool_component.findMany({
       where: { fk_tool_id: toolId, component_active: 'Y', expiration_date: { lte: new Date(), not: null } },
-      select: { component_name: true },
+      select: { component_name: true, component_metadata: true },
     }),
     prisma.tool_component.findMany({
       where: { fk_tool_id: toolId, component_active: 'Y', expiry_type: { in: ['FLIGHTS', 'FLIGHT_HOURS', 'MIXED'] } },
-      select: { component_name: true, expiration_flights: true, current_maintenance_flights: true, expiration_flight_hours: true, current_usage_hours: true },
+      select: { component_name: true, component_metadata: true, expiration_flights: true, current_maintenance_flights: true, expiration_flight_hours: true, current_usage_hours: true },
     }),
     prisma.maintenance_ticket.findFirst({
       where: { fk_tool_id: toolId, ticket_status: { not: 'CLOSED' } },
@@ -305,13 +309,16 @@ async function findOperationalBlocker(toolId: number): Promise<string | null> {
     }),
   ]);
 
-  const flightExpired = flightExpirable.find((c) =>
+  // Decommissioned (or detached) components are out of the system, so their expiry does not block it.
+  const inSystem = (c: { component_metadata: unknown }) => isComponentPartOfSystem(parseComponentMeta(c.component_metadata));
+  const dateExpired = expired.find(inSystem);
+  const flightExpired = flightExpirable.filter(inSystem).find((c) =>
     (c.expiration_flights != null && Number(c.current_maintenance_flights) >= Number(c.expiration_flights)) ||
     (c.expiration_flight_hours != null && Number(c.current_usage_hours) >= Number(c.expiration_flight_hours))
   );
-  const expiredName = expired?.component_name ?? flightExpired?.component_name;
-  if (expired || flightExpired) {
-    return `Component "${expiredName}" has expired. Replace it or set it inactive before putting the system in operation.`;
+  const expiredName = dateExpired?.component_name ?? flightExpired?.component_name;
+  if (dateExpired || flightExpired) {
+    return `Component "${expiredName}" has expired. Set it to Decommissioned, remove it, or move it to the warehouse before putting the system in operation.`;
   }
   if (openTicket) return 'The system has an open maintenance ticket. Close it first.';
 

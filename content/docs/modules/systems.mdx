@@ -96,6 +96,36 @@ Use them to answer "how much has this battery been used?" or "where has this par
 
 ---
 
+## Component statuses
+
+A component has one of five statuses:
+
+| Status | Meaning |
+|---|---|
+| **Operational** | In service and usable |
+| **Not Operational** | Not usable at the moment |
+| **Maintenance** | Being serviced. Holds the system in maintenance |
+| **Dismissed** | Retired administratively |
+| **Decommissioned** | Permanently out of service. The system no longer counts it |
+
+### Expiry is permanent
+
+When a component passes its expiry date, or reaches its flight or flight-hour limit, it is **expired**, and expired is final:
+
+- It shows as **Decommissioned** and the system becomes **Not Operational**.
+- **It cannot be made Operational again.** Changing its expiry date or status to bring it back is not a supported way to restore it.
+- **No maintenance ticket can be created for it.** Expiry means the component is retired for good, not that it is waiting for service.
+
+To make the system operational again, take the expired component out of the system's count in one of these ways:
+
+- Set its status to **Decommissioned**.
+- Remove it from the system.
+- Move it to the warehouse.
+
+Then fit a replacement component if the system needs one.
+
+---
+
 ## Models, component types and drone classes
 
 Drop-down lists such as the model, type and class of a component are managed by you, from the system screens.

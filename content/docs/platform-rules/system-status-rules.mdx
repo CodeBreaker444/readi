@@ -46,6 +46,10 @@ A component that is only **Alert** or **Due** for maintenance does not change th
 Set `component_active = N` on an expired component to remove it from the status computation without deleting it.
 </Note>
 
+<Warning>
+**Expiry is permanent.** An expired component cannot be made Operational again, and no maintenance ticket can be created for it. Do not renew it by editing its expiry date. Set it to **Decommissioned**, remove it from the system, or move it to the warehouse. See [Component statuses](/docs/modules/systems).
+</Warning>
+
 ---
 
 ## Where Status Appears
@@ -66,5 +70,5 @@ Set `component_active = N` on an expired component to remove it from the status 
 
 | Status | How to clear |
 |---|---|
-| `NOT_OPERATIONAL` | Set `component_active = N` on the expired component, or update `expiration_date` after replacement |
+| `NOT_OPERATIONAL` | Set the expired component to Decommissioned, remove it from the system, or move it to the warehouse. Expired components cannot be renewed |
 | `MAINTENANCE` | Close the maintenance ticket (`ticket_status = CLOSED`) |

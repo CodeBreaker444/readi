@@ -4,6 +4,7 @@
  */
 import { supabase } from '@/backend/database/database';
 import { prisma } from '@/lib/prisma';
+import { isComponentPartOfSystem, parseComponentMeta } from './maintenance-rules';
 import { findTicketBlockedComponents, getComponentStatusesForTool } from './maintenance-ticket-components';
 import {
   SYSTEM_ALREADY_HAS_OPEN_TICKET_MESSAGE,
@@ -56,15 +57,16 @@ export async function assertToolNotInMaintenance(toolId: number): Promise<void> 
 export async function assertToolNotNonOperational(toolId: number): Promise<void> {
   const today = new Date().toISOString().split('T')[0];
 
-  const { data: expiredComp } = await supabase
+  const { data: expiredComps } = await supabase
     .from('tool_component')
-    .select('component_id, component_name')
+    .select('component_id, component_name, component_metadata')
     .eq('fk_tool_id', toolId)
     .eq('component_active', 'Y')
     .lte('expiration_date', today)
-    .not('expiration_date', 'is', null)
-    .limit(1)
-    .maybeSingle();
+    .not('expiration_date', 'is', null);
+
+  // A decommissioned (or detached) expired component is out of the system and does not block it.
+  const expiredComp = (expiredComps ?? []).find((c) => isComponentPartOfSystem(parseComponentMeta(c.component_metadata)));
 
   if (expiredComp) {
     throw new Error(
