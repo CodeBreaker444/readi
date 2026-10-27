@@ -3,7 +3,7 @@ title: "System Status Rules"
 description: "How OPERATIONAL, MAINTENANCE, and NOT_OPERATIONAL are computed on every fleet load."
 ---
 
-A system status is **not stored**. It is computed fresh every time the fleet list loads.
+A system's status is worked out every time the fleet list loads, from its components and its maintenance tickets. A status that was set by hand on the system (for example Dismissed or Decommissioned) is kept and wins over the rules below.
 
 ---
 
@@ -14,11 +14,13 @@ For each system (tool):
 
   1. Check components:
      Find any active component (component_active = Y)
-     where expiration_date <= today
+     where expiration_date <= today,
+     or its flight / flight-hour expiry limit is reached
      → If found: NOT_OPERATIONAL
 
   2. Check maintenance tickets:
-     Find any ticket where ticket_status != CLOSED
+     Find any ticket where ticket_status != CLOSED,
+     or any component whose status is MAINTENANCE
      → If found: MAINTENANCE
 
   3. Neither condition → OPERATIONAL
@@ -32,9 +34,13 @@ For each system (tool):
 
 | Status | Trigger |
 |---|---|
-| `OPERATIONAL` | No expired active components, no open tickets |
-| `MAINTENANCE` | `ticket_status IN (open, in_progress, resolved)` |
-| `NOT_OPERATIONAL` | `component_active = Y` AND `expiration_date <= today` |
+| `OPERATIONAL` | No expired active components, no open tickets, no component set to MAINTENANCE |
+| `MAINTENANCE` | A ticket that is not closed, or a component set to MAINTENANCE |
+| `NOT_OPERATIONAL` | `component_active = Y` AND (`expiration_date <= today` OR its flight or flight-hour expiry limit is reached) |
+
+<Note>
+A component that is only **Alert** or **Due** for maintenance does not change the system status. It shows on the Maintenance Dashboard. The system becomes In Maintenance when a ticket is opened. See [Maintenance](/docs/modules/maintenance).
+</Note>
 
 <Note>
 Set `component_active = N` on an expired component to remove it from the status computation without deleting it.

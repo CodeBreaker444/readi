@@ -1,25 +1,16 @@
 ---
 title: "Systems and Maintenance"
-description: "Asset inventory, component management, and maintenance ticket workflows."
+description: "Where to find drone, component and maintenance guidance."
 ---
 
-## Main capabilities
+Everything about drones and their upkeep has its own pages:
 
-- System and component inventory management
-- Component expiry tracking — expired components push a system to `NOT_OPERATIONAL`
-- Maintenance dashboard and ticket lifecycle: `open → in_progress → resolved → closed`
-- System map for location visualisation
-
-## Key logic
-
-See [System Status Rules](/platform-rules/system-status-rules) for how `OPERATIONAL / MAINTENANCE / NOT_OPERATIONAL` is computed.
-
-## Primary app routes
-
-- `/systems/manage`
-- `/systems/map`
-- `/systems/maintenance-dashboard`
-- `/systems/maintenance-tickets`
+| You want to | Read |
+|---|---|
+| Add or manage drones and components, duplicate a system, use the warehouse, print a QTB report, see the map | [Systems](/docs/modules/systems) |
+| Raise and close maintenance tickets, use the logbook, choose maintenance emails | [Maintenance](/docs/modules/maintenance) |
+| Understand why a system is Operational, in Maintenance or Not Operational | [System Status Rules](/docs/platform-rules/system-status-rules) |
+| See how maintenance limits and alerts are worked out | [Maintenance Module logic](/docs/business-logic/maintenance-module) |
 
 ---
 

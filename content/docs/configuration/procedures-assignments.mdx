@@ -1,0 +1,92 @@
+---
+title: "Procedures, Assignments and Communication"
+description: "Build the procedures your pilots follow, with their checklists, assignments and communication protocols."
+---
+
+The **Organisation** section of the sidebar is where you define how your operation works. Pilots then follow these on every mission. It has these building blocks:
+
+| Page | What it is |
+|---|---|
+| **Checklist** | Checklists that pilots complete |
+| **Organisation Chart** | Who reports to whom in your company |
+| **Assignments** | Who or what is assigned to a task, defined by a form |
+| **Communication Protocols** | Radio or contact scripts, defined by a form |
+| **Procedures** | A named set of steps that bundles checklists, assignments and communications |
+
+Assignments, Communication and Procedures each use a small piece of **JSON**, a plain-text format for describing a form or a list. You do not need to be a developer: the editor tells you whether what you typed is valid, and the easiest way to start is to copy an existing item and change it.
+
+---
+
+## Checklists
+
+Open **Checklist** to manage the checklists used in missions. Click **Add Checklist** and give it a **Protocol Code** and a form written as a **JSON Schema (SurveyJS)**, the format that describes the questions and tick boxes.
+
+- **Validate JSON:** tells you "Valid JSON Schema" or shows what is wrong. The text must be a JSON object.
+- Search the list from the search box.
+- An **active** checklist cannot be deleted. Set it to **Inactive** first.
+
+---
+
+## Organisation Chart
+
+The **Organisation Chart** shows your reporting structure as a tree, with the number of **Members**, **Levels** and **Active** people.
+
+- Click a person or box to **edit the node**: set the **Position / Role** (for example "Operations Manager") and who they **Report To**. Choose **Company Root** to put someone at the top.
+- The position cannot be left empty.
+- If the chart does not load, use **Retry**.
+
+---
+
+## Procedures
+
+A procedure is the full set of steps a mission follows, for example an operator certificate procedure. Open **Procedures** to add, edit or delete them. You can search and filter by status.
+
+Each procedure has a **code** (for example `LUC-001`), a **name**, a **description**, a **version**, a **sector** and a **status** (Evaluation, Planning or Mission, meaning the stage where it is used). A procedure must be set to **Inactive** before it can be deleted.
+
+### Procedure steps
+
+The **Procedure Steps (JSON)** box lists the tasks of the procedure. Each step can contain checklists, assignments and communications, each identified by its **code**:
+
+```json
+{
+  "tasks": [
+    {
+      "checklist": [{ "checklist_code": "PRE-FLIGHT" }],
+      "assignment": [{ "assignment_code": "CREW" }],
+      "communication": [{ "communication_code": "RADIO-CHECK" }]
+    }
+  ]
+}
+```
+
+Use codes that exist on the Checklist, Assignments and Communication pages. A section you do not need can stay empty (`[]`). If the text is not valid you will see "Invalid JSON for procedure steps" and it will not save.
+
+When a mission uses the procedure, its tasks appear on the mission card and the pilot ticks them off. See [Operations](/docs/modules/operations).
+
+---
+
+## Assignments
+
+Open **Assignments** to see the list, search it and add new ones with **Add Assignment**. Each assignment has a code, a name and a **JSON Schema** that describes the fields the person fills in.
+
+- **Validate:** next to the schema box, a check button tells you "Valid JSON Schema" or shows a syntax error. Fix any error before saving.
+- **Preview:** open the JSON Schema of an existing assignment from the list to see what it contains.
+- An **active** assignment cannot be deleted. Set it to **Inactive** first.
+
+---
+
+## Communication protocols
+
+Open **Communication Protocols** for the contact and radio scripts used during operations.
+
+- **New Communication:** give it a **Communication Code** and write its **JSON Schema**.
+- **Prettify:** tidies up the layout of your text so it is easy to read.
+- **Save:** stores the protocol. If the text is not valid JSON you see "Invalid JSON format".
+- Existing protocols can be edited or deleted from the list.
+
+---
+
+## Related
+
+- [Operations](/docs/modules/operations)
+- [Mission Definitions](/docs/configuration/mission-definitions)

@@ -1,25 +1,44 @@
 ---
 title: "Mission Definitions"
-description: "Configure mission statuses, types, categories, and result types."
+description: "Set up the types, categories, statuses and results that missions use."
 ---
 
-Organisation-defined lookup values that power mission tracking.
+Mission Definitions are the choices people see when they create or finish a mission. Your company defines them, so they match the way you work. There are four, in the sidebar under **Mission**:
 
-## Configurable sets
+| Set | What it describes | Fields |
+|---|---|---|
+| **Mission Type** | The kind of work, for example a survey | Code (for example `SURV`), Name, Description |
+| **Mission Category** | The kind of customer or job, for example Commercial | Category Code (for example `COMMERCIAL`), Category Name, Description |
+| **Mission Status** | The stages a mission moves through, for example Planned | Code (for example `PLANNED`), Name, Description, Order, Final Status |
+| **Mission Result** | How a mission ended, for example Success | Code (for example `SUCCESS`), Description |
 
-| Set | Key field |
-|---|---|
-| **Mission Statuses** | `is_final_status`, `status_order` |
-| **Mission Types** | `type_name` |
-| **Mission Categories** | `category_name` |
-| **Result Types** | `result_type_desc` |
+Each page works the same way. It shows how many items you have, with a list you can search.
 
-Each set is scoped to the organisation.
+---
 
-## Primary app routes
+## Adding, editing and deleting
 
-- `/settings/mission-statuses`
-- `/settings/mission-types`
+1. Open the page, for example **Mission Type**.
+2. Click **Add** (for example **Add Mission Type**).
+3. Fill in the fields. All of them are required.
+4. Click **Add**. To change one later, use its edit button and **Save Changes**.
+
+Deleting asks you to confirm.
+
+<Warning>
+Missions that already use a value keep it. Think before you rename or delete something that is in use, because it changes how past missions read.
+</Warning>
+
+---
+
+## Mission statuses in detail
+
+Statuses are the most important set because they drive the Daily Board and the mission rules.
+
+- **Order:** the position of the status in the workflow, from first to last.
+- **Final Status:** tick it for a status that ends a mission, such as Completed or Cancelled. The page shows how many statuses are active and how many are final.
+
+Changing the built-in statuses can affect which moves are allowed. See [Mission Status Gates](/docs/platform-rules/mission-status-gates) and [Mission Lifecycle](/docs/business-logic/mission-lifecycle) first.
 
 ---
 

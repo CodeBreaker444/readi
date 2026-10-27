@@ -71,7 +71,7 @@ This document provides a master index of all business logic parameters across th
 | System | `fk_tool_id` | number | null | FK | **YES** - Forces system to MAINTENANCE status |
 | Component | `fk_component_id` | number | null | FK | **YES** - Links ticket to component |
 | Status | `ticket_status` | string | 'NEW' | Enum | **YES** - Open tickets force MAINTENANCE status |
-| Type | `ticket_type` | string | null | Enum | Categorization (preventive, corrective, etc.) |
+| Type | `ticket_type` | string | null | Enum | Categorization (BASIC, STANDARD, EXTRAORDINARY) |
 | Priority | `ticket_priority` | string | null | Enum | Notification routing |
 | Title | `ticket_title` | string | null | Required | Display |
 | Description | `ticket_description` | string | null | Free text | Details |

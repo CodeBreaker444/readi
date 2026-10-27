@@ -4,6 +4,8 @@
     "dashboard",
     "operations",
     "planning",
+    "systems",
+    "maintenance",
     "logbooks",
     "safety-management",
     "compliance",
@@ -11,6 +13,9 @@
     "flytbase",
     "drone-atc",
     "client-portal",
+    "notifications",
+    "ai-assistant",
+    "releases",
     "emergency-contact"
   ],
   "icon": "LayoutGrid"

@@ -5,7 +5,6 @@
     "mission-lifecycle",
     "mission-approval",
     "pilot-logic",
-    "checklist-logic",
     "platform-flow",
     "agent-api",
     "role-glossary",

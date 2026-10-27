@@ -32,6 +32,31 @@ Click **Add Mission** (Calendar) or **New** (Mission Table). The **New Mission**
 3. **Mission details:** category, type, location, date and time, pilot, procedure and notes.
 4. **Recurring missions:** choose the days of the week and an end date to create the whole series at once.
 
+### Pilot, observers and drone
+
+Choosing who flies and with what:
+
+- **Drone dropdown:** each drone is shown as the system code, then the drone component's code and its serial number, for example `LITO-01 – DRN-01 – SN12345`. This makes it easy to tell similar drones apart.
+- **Pilot:** the list shows each pilot's **department** beside their name, so you can pick someone from the right team. Use **Qualifications** next to the pilot to check their licences and training before you assign them.
+- **Visual Observers (optional):** pick a pilot first, then tick one or more observers. The pilot you chose is already flying the mission, so they appear greyed out ("PIC, already assigned") and cannot be picked as an observer too. If you change the pilot, they are removed from the observers automatically.
+
+### Location name and mission group
+
+- **Location Name:** next to the map coordinates you can type a friendly name, for example "North Field" or "Warehouse A". It is shown beside the coordinates in mission details and in the Flight Logbook, so people do not have to read raw numbers.
+- **Group Label:** a free label such as "Spring Survey 2025". Give the same label to every mission that belongs together and you can find them as one group later, using the **Mission Group** filter in the Flight Logbook and in the Daily Board details. Missions created as a recurring series are a natural fit for one label.
+
+### Skip D-Flight authorization
+
+If your company uses D-Flight, the pilot step has a **Skip D-Flight authorization** checkbox. Tick it for a mission that you do not want to send to D-Flight for authorization.
+
+When it is ticked, Readi drops **all** D-Flight requirements for that mission:
+
+- you do not have to choose a U-space
+- you do not have to draw the flight area on the map
+- no authorization request is sent to D-Flight, and the Daily Board does not wait for D-Flight to accept the mission
+
+Leave it unticked for normal flights. Skipping is a decision for the operator: check that the flight really does not need an authorization before you use it.
+
 ### Weather for the mission
 
 Once you choose a start date and time, a **Weather** badge appears under it showing the conditions icon, whether the hour is good, marginal or no-go, and a score out of 100 (a cross for no-go, `--` for night).
@@ -114,7 +139,7 @@ A component that reaches its maintenance limit shows "Maintenance is overdue". S
 
 ## Importing a flown mission
 
-Use **Import mission** to add a flight that was already flown. It takes four steps: **Client**, **Log File** (upload a .gutma or .zip file, or pick a flight from Control Center), **Mission Data** and **Pilot**.
+Use **Import mission** to add a flight that was already flown. It takes four steps: **Client**, **Log File** (upload a .gutma or .zip file, or pick a flight from Control Center), **Mission Data** and **Pilot**. In these steps you can also set a **Group Label** and choose **Visual Observers**, the same way as for a new mission.
 
 ---
 

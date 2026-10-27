@@ -40,7 +40,7 @@ Schedules are defined in `vercel.json` at the project root and are evaluated in 
 
 - **Schedule:** `0 */6 * * *` (every 6 hours)
 - **Purpose:** Finds active tool components whose `expiration_date` has passed and sends expiration notifications, grouped by owner.
-- **Sends email:** Yes, subject to the module/event enablement checks described in [Email Notification Business Logic](/business-logic/email-notifications).
+- **Sends email:** Yes, subject to the module/event enablement checks described in [Email Notification Business Logic](/docs/business-logic/email-notifications).
 
 ### check-maintenance-alerts
 
@@ -58,7 +58,7 @@ Schedules are defined in `vercel.json` at the project root and are evaluated in 
 
 - **Schedule:** `0 0 * * *` (daily, midnight)
 - **Purpose:** Resets each owner's `daily_email_count` to 0 and updates `daily_email_count_reset_date` once per day, and clears `email_limit_notification_sent_date` so the limit-reached admin notification can fire again the next day. Skips owners already reset today (idempotent/safe to run more than once).
-- **Sends email:** No — this is the daily-limit counter reset that other jobs depend on (see [Daily Email Limit Logic](/business-logic/email-notifications)).
+- **Sends email:** No — this is the daily-limit counter reset that other jobs depend on (see [Daily Email Limit Logic](/docs/business-logic/email-notifications)).
 
 ### check-training-expiration
 
