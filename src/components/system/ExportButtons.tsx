@@ -8,7 +8,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import ExportOptionsModal, { ExportFormat, ExportOptions } from '@/components/system/ExportOptionsModal';
 import { useTheme } from '@/components/useTheme';
+import { detectImageFormat, loadReportLogo } from '@/lib/exportLogo';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FaFileCsv, FaFileExcel, FaFilePdf } from 'react-icons/fa';
@@ -21,18 +23,19 @@ export interface ExportButtonsProps {
   pdfColumnWidths?: Record<number, number>;
 }
 
-type Format = 'csv' | 'xlsx' | 'pdf';
+type Format = ExportFormat;
 
 async function exportViaApi(
   format: 'csv' | 'xlsx',
   filename: string,
   headers: string[],
   rows: ExportButtonsProps['rows'],
+  includeLogo: boolean,
 ) {
   const res = await fetch('/api/export', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ format, filename, headers, rows }),
+    body: JSON.stringify({ format, filename, headers, rows, includeLogo }),
   });
   if (!res.ok) throw new Error('Export failed');
   const blob = await res.blob();
@@ -48,25 +51,15 @@ async function exportPdf(
   filename: string,
   headers: string[],
   rows: ExportButtonsProps['rows'],
-  pdfColumnWidths?: Record<number, number>,
+  pdfColumnWidths: Record<number, number> | undefined,
+  includeLogo: boolean,
 ) {
   const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([
     import('jspdf'),
     import('jspdf-autotable'),
   ]);
 
-  // Try to load the logo
-  let logoBase64: string | null = null;
-  try {
-    const res = await fetch('/logo-sm.png');
-    const blob = await res.blob();
-    logoBase64 = await new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result as string);
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
-  } catch { /* skip if logo not found */ }
+  const logoBase64 = includeLogo ? await loadReportLogo() : null;
 
   // Wide tables (e.g. 15 ticket columns) get an A3 page and a smaller font; A4 leaves ~18mm per column.
   const wide = headers.length > 9;
@@ -122,7 +115,12 @@ async function exportPdf(
   for (let i = 1; i <= totalPages; i++) {
     doc.setPage(i);
     if (logoBase64) {
-      doc.addImage(logoBase64, 'PNG', pageW - 26, 5, 12, 12);
+      // Fit inside a 36x14mm box (right-aligned) without distorting the logo's aspect ratio.
+      const { width: imgW, height: imgH } = doc.getImageProperties(logoBase64);
+      const scale = Math.min(36 / imgW, 14 / imgH);
+      const w = imgW * scale;
+      const h = imgH * scale;
+      doc.addImage(logoBase64, detectImageFormat(logoBase64), pageW - 14 - w, 4 + (14 - h) / 2, w, h);
     }
     doc.setDrawColor(226, 232, 240);
     doc.setLineWidth(0.3);
@@ -142,15 +140,30 @@ export default function ExportButtons({ filename, headers, rows, pdfColumnWidths
   const { t } = useTranslation();
   const { isDark } = useTheme();
   const [loading, setLoading] = useState<Format | null>(null);
+  const [pendingFormat, setPendingFormat] = useState<Format | null>(null);
 
-  const handle = async (format: Format) => {
+  const handleConfirm = async (options: ExportOptions) => {
+    const format = pendingFormat;
+    if (!format) return;
+
+    // Apply the column selection; remap fixed PDF widths to the surviving column positions.
+    const cols = options.columns;
+    const selHeaders = cols.map(i => headers[i]);
+    const selRows = rows.map(r => cols.map(i => r[i]));
+    const selWidths = pdfColumnWidths
+      ? Object.fromEntries(
+          cols.flatMap((orig, newIdx) => (pdfColumnWidths[orig] != null ? [[newIdx, pdfColumnWidths[orig]]] : [])),
+        )
+      : undefined;
+
     setLoading(format);
     try {
       if (format === 'pdf') {
-        await exportPdf(filename, headers, rows, pdfColumnWidths);
+        await exportPdf(filename, selHeaders, selRows, selWidths, options.includeLogo);
       } else {
-        await exportViaApi(format, filename, headers, rows);
+        await exportViaApi(format, filename, selHeaders, selRows, options.includeLogo);
       }
+      setPendingFormat(null);
     } catch (e) {
       console.error('Export error:', e);
     } finally {
@@ -159,62 +172,70 @@ export default function ExportButtons({ filename, headers, rows, pdfColumnWidths
   };
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <button
-          disabled={!!loading}
-          className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border text-xs font-medium transition-colors disabled:opacity-60 disabled:cursor-not-allowed
-            ${isDark
-              ? 'border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white'
-              : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-            }`}
-        >
-          <HiDownload className="w-3.5 h-3.5" />
-          {loading ? t('export.exporting') : t('export.export')}
-        </button>
-      </DropdownMenuTrigger>
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            disabled={!!loading}
+            className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border text-xs font-medium transition-colors disabled:opacity-60 disabled:cursor-not-allowed
+              ${isDark
+                ? 'border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white'
+                : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+              }`}
+          >
+            <HiDownload className="w-3.5 h-3.5" />
+            {loading ? t('export.exporting') : t('export.export')}
+          </button>
+        </DropdownMenuTrigger>
 
-      <DropdownMenuContent
-        align="start"
-        className={`min-w-44 ${isDark ? 'bg-slate-800 border-slate-700 text-slate-200' : ''}`}
-      >
-        <DropdownMenuLabel
-          className={`text-[10px] uppercase tracking-widest ${isDark ? 'text-slate-500' : 'text-slate-400'}`}
+        <DropdownMenuContent
+          align="start"
+          className={`min-w-44 ${isDark ? 'bg-slate-800 border-slate-700 text-slate-200' : ''}`}
         >
-          {t('export.downloadAs')}
-        </DropdownMenuLabel>
-        <DropdownMenuSeparator className={isDark ? 'bg-slate-700' : ''} />
+          <DropdownMenuLabel
+            className={`text-[10px] uppercase tracking-widest ${isDark ? 'text-slate-500' : 'text-slate-400'}`}
+          >
+            {t('export.downloadAs')}
+          </DropdownMenuLabel>
+          <DropdownMenuSeparator className={isDark ? 'bg-slate-700' : ''} />
 
-        <DropdownMenuItem
-          onClick={() => handle('csv')}
-          disabled={!!loading}
-          className={`text-xs gap-2 cursor-pointer ${isDark ? 'hover:bg-slate-700' : ''}`}
-        >
-          <FaFileCsv className="w-3.5 h-3.5 text-emerald-600" />
-          CSV (.csv)
-          {loading === 'csv' && <span className="ml-auto text-[10px] opacity-60">…</span>}
-        </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={() => setPendingFormat('csv')}
+            disabled={!!loading}
+            className={`text-xs gap-2 cursor-pointer ${isDark ? 'hover:bg-slate-700' : ''}`}
+          >
+            <FaFileCsv className="w-3.5 h-3.5 text-emerald-600" />
+            CSV (.csv)
+          </DropdownMenuItem>
 
-        <DropdownMenuItem
-          onClick={() => handle('xlsx')}
-          disabled={!!loading}
-          className={`text-xs gap-2 cursor-pointer ${isDark ? 'hover:bg-slate-700' : ''}`}
-        >
-          <FaFileExcel className="w-3.5 h-3.5 text-emerald-600" />
-          Excel (.xlsx)
-          {loading === 'xlsx' && <span className="ml-auto text-[10px] opacity-60">…</span>}
-        </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={() => setPendingFormat('xlsx')}
+            disabled={!!loading}
+            className={`text-xs gap-2 cursor-pointer ${isDark ? 'hover:bg-slate-700' : ''}`}
+          >
+            <FaFileExcel className="w-3.5 h-3.5 text-emerald-600" />
+            Excel (.xlsx)
+          </DropdownMenuItem>
 
-        <DropdownMenuItem
-          onClick={() => handle('pdf')}
-          disabled={!!loading}
-          className={`text-xs gap-2 cursor-pointer ${isDark ? 'hover:bg-slate-700' : ''}`}
-        >
-          <FaFilePdf className="w-3.5 h-3.5 text-red-500" />
-          PDF (.pdf)
-          {loading === 'pdf' && <span className="ml-auto text-[10px] opacity-60">…</span>}
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+          <DropdownMenuItem
+            onClick={() => setPendingFormat('pdf')}
+            disabled={!!loading}
+            className={`text-xs gap-2 cursor-pointer ${isDark ? 'hover:bg-slate-700' : ''}`}
+          >
+            <FaFilePdf className="w-3.5 h-3.5 text-red-500" />
+            PDF (.pdf)
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <ExportOptionsModal
+        open={pendingFormat !== null}
+        format={pendingFormat}
+        headers={headers}
+        busy={!!loading}
+        onCancel={() => setPendingFormat(null)}
+        onConfirm={handleConfirm}
+      />
+    </>
   );
 }
