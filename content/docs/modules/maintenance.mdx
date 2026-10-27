@@ -82,10 +82,31 @@ When a ticket is closed:
 
 - The system goes back to **operational**, unless another ticket is still open on it.
 - A maintenance record is added to the system's history.
-- The **counters of the components on the ticket are reset to zero** (hours, flights and days since maintenance) and their last maintenance date becomes today. If the ticket covered the whole system, every component of the system is reset. Components that are dismissed, decommissioned or expired are not reset.
+- The **maintenance counters of the components on the ticket are reset to zero**: hours, flights and days since maintenance. Their last maintenance date becomes the day you close the ticket. If the ticket covered the whole system, every component of the system is reset. Components that are dismissed, decommissioned or expired are not reset.
 - A message confirms which components were reset, for example "Counters reset for: Battery 1, Motor 2".
 
-Only the ticket you close is affected. Other open tickets on the same system stay open.
+### What is reset and what is kept
+
+| Kept | Reset to zero |
+|---|---|
+| **Lifetime hours** of the component (its total usage since it was new). Servicing does not erase them, and they still count towards its expiry limit | **Hours since maintenance** |
+| The component's history and past flights | **Flights since maintenance** |
+| | **Days since maintenance** |
+
+### How the days are counted afterwards
+
+The day counter starts again from the **day the ticket was closed**, not from the day the component was installed. Until a component is serviced for the first time, its days are counted from its installation date. After that, they are always counted from the last time a ticket covering it was closed. So close the ticket on the day the work is really finished, because that date becomes the new starting point.
+
+### Closing does not override other blocks
+
+Closing a ticket returns the system to **operational** only when nothing else is holding it back. These still apply after you close it:
+
+- **Another open ticket** on the same system keeps it in maintenance. Only the ticket you close is affected.
+- **An expired component** (past its expiry date or its flight or hour limit) keeps the system **not operational**, and is not reset. Replace or deactivate it. See [System Status Rules](/docs/platform-rules/system-status-rules).
+- **Dismissed or decommissioned components** stay as they are.
+- If the system became **not operational** while the ticket was open (for example a component expired in the meantime), Readi will not let you close the ticket. It asks you to change the system status to **Maintenance** first, then close it.
+
+Closing a ticket (or saving a report with **Close ticket on save**) is limited to the Responsible Manager (RM), Admin and Super Admin roles.
 
 <Warning>
 Closing a ticket restarts the maintenance counters, so only close it when the work is really finished.

@@ -1,5 +1,6 @@
 import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { closeTicket } from '@/backend/services/system/maintenance-ticket';
+import { TicketRuleError } from '@/backend/services/system/maintenance-ticket-guards';
 import { requireAnyPermission, requireFeatureAccess } from '@/lib/auth/api-auth';
 import { forbidden, internalError, zodError } from '@/lib/api-error';
 import { E } from '@/lib/error-codes';
@@ -54,6 +55,9 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ status: 'OK', reset_components: resetComponents });
   } catch (err) {
+    if (err instanceof TicketRuleError) {
+      return NextResponse.json({ status: 'ERROR', message: err.message }, { status: 400 });
+    }
     console.error('[POST /api/maintenance/tickets/close]', err);
     return internalError(E.SV001, err);
   }

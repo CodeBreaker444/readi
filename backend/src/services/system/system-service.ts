@@ -1,5 +1,6 @@
 import { refreshMaintenanceDaysForOwner, refreshMaintenanceDaysForTool } from '@/backend/utils/refresh-maintenance-days';
 import { prisma } from '@/lib/prisma';
+import { isComponentPartOfSystem, parseComponentMeta } from './maintenance-rules';
 import { buildS3Url, getPresignedDownloadUrl, uploadFileToS3 } from '@/lib/s3Client';
 import { Prisma } from '@prisma/client';
 
@@ -78,10 +79,23 @@ export async function getSystemList(
         where: { fk_tool_id: { in: toolIds }, ticket_status: { not: 'CLOSED' } },
         select: { fk_tool_id: true },
       }),
-      // Tools whose components are in maintenance
+      // Tools whose active components are in maintenance (re-checked below against the effective status)
       prisma.tool_component.findMany({
-        where: { fk_tool_id: { in: toolIds }, component_metadata: { path: ['component_status'], equals: 'MAINTENANCE' } },
-        select: { fk_tool_id: true },
+        where: {
+          fk_tool_id: { in: toolIds },
+          component_active: 'Y',
+          component_metadata: { path: ['component_status'], equals: 'MAINTENANCE' },
+        },
+        select: {
+          fk_tool_id: true,
+          component_metadata: true,
+          expiration_date: true,
+          expiry_type: true,
+          expiration_flights: true,
+          expiration_flight_hours: true,
+          current_maintenance_flights: true,
+          current_usage_hours: true,
+        },
       }),
       // Tools with at least one date-expired component
       prisma.tool_component.findMany({
@@ -106,7 +120,18 @@ export async function getSystemList(
     });
 
     openTickets.forEach((t) => { if (t.fk_tool_id != null) toolsInMaintenance.add(t.fk_tool_id); });
-    openComponentTickets.forEach((c) => { if (c.fk_tool_id != null) toolsInMaintenance.add(c.fk_tool_id); });
+    // A stale MAINTENANCE flag on a component that has since expired / been detached must not hold the system in maintenance.
+    openComponentTickets.forEach((c) => {
+      if (c.fk_tool_id == null) return;
+      const meta = parseComponentMeta(c.component_metadata);
+      if (!isComponentPartOfSystem(meta)) return;
+      const effective = computeEffectiveComponentStatus({
+        ...c,
+        component_metadata: meta,
+        expiration_date: c.expiration_date ? new Date(c.expiration_date).toISOString().split('T')[0] : null,
+      });
+      if (effective === 'MAINTENANCE') toolsInMaintenance.add(c.fk_tool_id);
+    });
     expiredComps.forEach((c) => { if (c.fk_tool_id != null) toolsNonOperational.add(c.fk_tool_id); });
     flightExpirableComps
       .filter((c) =>
@@ -115,23 +140,6 @@ export async function getSystemList(
       )
       .forEach((c) => { if (c.fk_tool_id != null) toolsNonOperational.add(c.fk_tool_id); });
 
-    // Expiration notifications moved to cron job 
-    // if (expiredComps.length > 0) {
-    //   const { sendExpirationNotifications } = await import('@/backend/services/system/expiration-notification');
-    //   const expiredItems = expiredComps
-    //     .filter((c) => c.fk_tool_id != null)
-    //     .map((c) => {
-    //       const tool = data.find((t) => t.tool_id === c.fk_tool_id);
-    //       return {
-    //         tool_component_id: c.component_id,
-    //         component_name: c.component_name,
-    //         tool_id: c.fk_tool_id as number,
-    //         tool_code: tool?.tool_code ?? String(c.fk_tool_id),
-    //         expiration_date: c.expiration_date?.toISOString() ?? '',
-    //       };
-    //     });
-    //   sendExpirationNotifications(ownerId, expiredItems).catch(() => { });
-    // }
   }
 
   let filtered = data;
@@ -268,11 +276,68 @@ export async function addSystem(toolData: AddSystemInput) {
 }
 
 
+/**
+ * Why a system cannot be put back to OPERATIONAL right now, mirroring the fleet-list computation:
+ * an expired active component (NOT_OPERATIONAL wins), an open ticket or an active component in maintenance.
+ */
+async function findOperationalBlocker(toolId: number): Promise<string | null> {
+  const [expired, flightExpirable, openTicket, maintComps] = await Promise.all([
+    prisma.tool_component.findFirst({
+      where: { fk_tool_id: toolId, component_active: 'Y', expiration_date: { lte: new Date(), not: null } },
+      select: { component_name: true },
+    }),
+    prisma.tool_component.findMany({
+      where: { fk_tool_id: toolId, component_active: 'Y', expiry_type: { in: ['FLIGHTS', 'FLIGHT_HOURS', 'MIXED'] } },
+      select: { component_name: true, expiration_flights: true, current_maintenance_flights: true, expiration_flight_hours: true, current_usage_hours: true },
+    }),
+    prisma.maintenance_ticket.findFirst({
+      where: { fk_tool_id: toolId, ticket_status: { not: 'CLOSED' } },
+      select: { ticket_id: true },
+    }),
+    prisma.tool_component.findMany({
+      where: { fk_tool_id: toolId, component_active: 'Y', component_metadata: { path: ['component_status'], equals: 'MAINTENANCE' } },
+      select: {
+        component_name: true, component_metadata: true, expiration_date: true, expiry_type: true,
+        expiration_flights: true, expiration_flight_hours: true, current_maintenance_flights: true, current_usage_hours: true,
+      },
+    }),
+  ]);
+
+  const flightExpired = flightExpirable.find((c) =>
+    (c.expiration_flights != null && Number(c.current_maintenance_flights) >= Number(c.expiration_flights)) ||
+    (c.expiration_flight_hours != null && Number(c.current_usage_hours) >= Number(c.expiration_flight_hours))
+  );
+  const expiredName = expired?.component_name ?? flightExpired?.component_name;
+  if (expired || flightExpired) {
+    return `Component "${expiredName}" has expired. Replace it or set it inactive before putting the system in operation.`;
+  }
+  if (openTicket) return 'The system has an open maintenance ticket. Close it first.';
+
+  const inMaintenance = maintComps.find((c) => {
+    const meta = parseComponentMeta(c.component_metadata);
+    return isComponentPartOfSystem(meta) && computeEffectiveComponentStatus({
+      ...c,
+      component_metadata: meta,
+      expiration_date: c.expiration_date ? new Date(c.expiration_date).toISOString().split('T')[0] : null,
+    }) === 'MAINTENANCE';
+  });
+  if (inMaintenance) return `Component "${inMaintenance.component_name}" is still in maintenance.`;
+
+  return null;
+}
+
 export async function updateTool(toolId: number, toolData: any) {
   const current = await prisma.tool.findUnique({
     where: { tool_id: toolId },
     select: { tool_metadata: true },
   });
+
+  // The fleet list overrides a stored OPERATIONAL with the computed state, so refuse the change instead of silently ignoring it.
+  // The stored status can still read OPERATIONAL while the computed one is NOT_OPERATIONAL (e.g. a component expired), so check regardless of it.
+  if (toolData.tool_status === 'OPERATIONAL') {
+    const blocker = await findOperationalBlocker(toolId);
+    if (blocker) return { code: 0, message: `Cannot set the system to Operational. ${blocker}` };
+  }
 
   const oldMetadata = current?.tool_metadata as Record<string, unknown> | null;
   const oldPosition = {

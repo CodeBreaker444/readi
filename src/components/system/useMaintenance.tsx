@@ -264,7 +264,7 @@ export function useMaintenanceLogbook() {
         closed_at: new Date().toISOString(),
       });
     } catch (e: any) {
-      toast.error(e.response?.data?.message ?? e.message);
+      toast.error(e.response?.data?.message ?? e.response?.data?.error ?? e.message, { duration: 8000 });
     } finally {
       setModalLoading(false);
     }

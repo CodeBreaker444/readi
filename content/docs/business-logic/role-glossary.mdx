@@ -14,8 +14,16 @@ description: "All platform roles, their full names, and primary responsibilities
 | **TM** | Training Manager | Training courses, attendance, certifications |
 | **DC** | Data Controller | User management, permissions, data governance |
 | **SLA** | SLA Manager | Service-level tracking, client performance metrics |
+| **RM** | Responsible Manager | Oversees operations, logs and logbooks, and emergency plans. Can close maintenance tickets and manage the pilot-technician sub-role. Follows built-in rules, so its access cannot be edited |
+| **OM** | See note below | Works across planning, operations, logbooks, documents, organisation setup and mission definitions, and can manage users and the Control Center |
+| **VM** | See note below | Read-only view of the dashboard and Drone ATC, plus notifications, the Document Repository and API keys |
+| **CLIENT** | Client | An outside customer. Sees only the Client Portal and only their own company's missions. Cannot be customised |
 | **ADMIN** | Platform Administrator | Full access; impersonates OPM for AI agent queries |
 | **SUPERADMIN** | Internal | Blocked from AI agent entirely |
+
+<Note>
+The full names of **OM** and **VM** are not defined in the app, so they are shown by code here. The access listed for them is what the app gives these roles today. **RM** is called Responsible Manager in the Emergency Response Plans.
+</Note>
 
 For what each role can read, edit and delete in every module, see [Role Permissions](/docs/business-logic/role-permissions).
 

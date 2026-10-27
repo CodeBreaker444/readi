@@ -27,7 +27,7 @@ import {
   uploadFileToS3,
 } from '@/lib/s3Client';
 import { addTicketEvent } from './maintenance-ticket-events';
-import { assertComponentsBelongToTool, assertComponentsTicketable } from './maintenance-ticket-guards';
+import { assertComponentsBelongToTool, assertComponentsTicketable, assertSystemCanCloseTicket } from './maintenance-ticket-guards';
 import {
   excludePermanentlyBlocked,
   getSystemComponentIds,
@@ -35,6 +35,7 @@ import {
   resetComponentCounters,
   setComponentsOperationalStatus,
   setSystemOperationalStatus,
+  settleBlockedMaintenanceComponents,
 } from './maintenance-ticket-components';
 import {
   notifyInterventionEnded,
@@ -128,6 +129,7 @@ export async function closeTicket(payload: CloseTicketPayload): Promise<{ resetC
 
   if (!ticket) throw new Error('Ticket not found');
   if (ticket.ticket_status === 'CLOSED') throw new Error('Ticket is already closed');
+  await assertSystemCanCloseTicket(ticket.fk_tool_id!);
 
   const now = new Date();
   const todayDate = now.toISOString().split('T')[0];
@@ -186,6 +188,7 @@ export async function closeTicket(payload: CloseTicketPayload): Promise<{ resetC
   });
   if (stillOpen === 0) await setSystemOperationalStatus(ticket.fk_tool_id!, 'OPERATIONAL');
   await setComponentsOperationalStatus(resetComponentIds, 'OPERATIONAL');
+  await settleBlockedMaintenanceComponents(ticket.fk_tool_id!);
 
   const resetComponents = resetComponentIds.length
     ? await prisma.tool_component.findMany({
