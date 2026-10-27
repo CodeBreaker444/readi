@@ -102,9 +102,19 @@ The day counter starts again from the **day the ticket was closed**, not from th
 Closing a ticket returns the system to **operational** only when nothing else is holding it back. These still apply after you close it:
 
 - **Another open ticket** on the same system keeps it in maintenance. Only the ticket you close is affected.
-- **An expired component** (past its expiry date or its flight or hour limit) keeps the system **not operational**, and is not reset. Replace or deactivate it. See [System Status Rules](/docs/platform-rules/system-status-rules).
+- **An expired component** (past its expiry date or its flight or hour limit) keeps the system **not operational**, and is not reset. Expiry is permanent: no maintenance ticket can be created for an expired component. Decommission it, remove it, or move it to the warehouse. See [System Status Rules](/docs/platform-rules/system-status-rules).
 - **Dismissed or decommissioned components** stay as they are.
 - If the system became **not operational** while the ticket was open (for example a component expired in the meantime), Readi will not let you close the ticket. It asks you to change the system status to **Maintenance** first, then close it.
+
+### If a component expires while a ticket is open
+
+A component can pass its expiry date, or its flight or flight-hour limit, while the ticket is still open. The system then becomes **Not Operational** and the ticket **cannot be closed** until you have dealt with it:
+
+1. **Deal with the expired component.** Expiry is permanent, so it cannot be renewed. Set it to Decommissioned, remove it from the system, or move it to the warehouse. See [System Status Rules](/docs/platform-rules/system-status-rules).
+2. **Set the system status to Maintenance.**
+3. **Close the ticket** as usual.
+
+Until both steps are done, Readi refuses to close the ticket. This stops a system with an expired part from being closed out as if it were ready to fly.
 
 Closing a ticket (or saving a report with **Close ticket on save**) is limited to the Responsible Manager (RM), Admin and Super Admin roles.
 

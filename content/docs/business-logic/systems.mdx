@@ -50,6 +50,10 @@ See [System Status Rules](/docs/platform-rules/system-status-rules) for the full
 
 **Automated:** Not currently automated. The platform sends expiration notifications to managers when a component expires, but does not auto-decommission.
 
+<Warning>
+**Expiry is permanent.** An expired component cannot be made operational again and no maintenance ticket can be created for it. To make the system operational, set the component to Decommissioned, remove it from the system, or move it to the warehouse.
+</Warning>
+
 | State | `tool_active` | In fleet? | Missions? |
 |---|---|---|---|
 | In service | `Y` | Yes | Yes |
