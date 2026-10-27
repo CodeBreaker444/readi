@@ -20,6 +20,9 @@ export type Role =
 
 export type SubRole = 'PIC_TECHNICIAN';
 
+/** Roles allowed to close a maintenance ticket (enforced by the close API, mirrored in the UI). */
+export const CLOSE_TICKET_ROLES: Role[] = ['RM', 'ADMIN', 'SUPERADMIN'];
+
 export const SUBROLES: Record<SubRole, SubRole> = {
   PIC_TECHNICIAN: 'PIC_TECHNICIAN',
 };

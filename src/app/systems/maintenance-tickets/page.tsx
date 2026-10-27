@@ -1,5 +1,6 @@
 import MaintenanceLogbookClient from '@/components/system/MaintenanceLogbookClient';
 import { userHasActiveSubRole } from '@/backend/services/system/user-subrole';
+import { CLOSE_TICKET_ROLES, type Role } from '@/lib/auth/roles';
 import { getUserSession } from '@/lib/auth/server-session';
 
 export default async function MaintenanceLogbookPage() {
@@ -9,5 +10,7 @@ export default async function MaintenanceLogbookPage() {
     ? await userHasActiveSubRole(session!.user.userId, 'PIC_TECHNICIAN')
     : false;
 
-  return <MaintenanceLogbookClient canIntervene={canIntervene} />;
+  const canCloseByRole = CLOSE_TICKET_ROLES.includes(role as Role);
+
+  return <MaintenanceLogbookClient canIntervene={canIntervene} canCloseByRole={canCloseByRole} />;
 }

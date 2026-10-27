@@ -18,6 +18,7 @@ export interface AddSystemInput {
   tool_name?: string;
   tool_description?: string | null;
   tool_active?: string;
+  tool_status?: 'OPERATIONAL' | 'NOT_OPERATIONAL' | 'MAINTENANCE' | 'DISMISSED';
   location?: string | null;
   latitude?: number | null;
   longitude?: number | null;
@@ -267,6 +268,7 @@ export async function addSystem(toolData: AddSystemInput) {
         pseudo_name: toolData.locationPseudoName ?? null,
         activationDate: toolData.activationDate ?? null,
         maintenanceLogbook: 'N',
+        status: toolData.tool_status ?? 'OPERATIONAL',
         files: uploadedFiles,
       } as unknown as Prisma.InputJsonValue,
     },
@@ -1360,6 +1362,24 @@ export async function updateComponent(componentId: number, componentData: any, o
       } as Prisma.InputJsonValue,
     },
   });
+
+  // A component leaving Maintenance for Decommissioned no longer holds the system in maintenance:
+  // with no open ticket (or other blocker) the system returns to Operational.
+  const toolIdAfter = data.fk_tool_id;
+  if (
+    existingMeta.component_status === 'MAINTENANCE' &&
+    componentData.component_status === 'DECOMMISSIONED' &&
+    toolIdAfter != null
+  ) {
+    const tool = await prisma.tool.findUnique({ where: { tool_id: toolIdAfter }, select: { tool_metadata: true } });
+    const toolMeta = (tool?.tool_metadata as Record<string, unknown> | null) ?? {};
+    if (toolMeta.status === 'MAINTENANCE' && !(await findOperationalBlocker(toolIdAfter))) {
+      await prisma.tool.update({
+        where: { tool_id: toolIdAfter },
+        data: { tool_metadata: { ...toolMeta, status: 'OPERATIONAL' } as Prisma.InputJsonValue },
+      });
+    }
+  }
 
   if (
     componentData.insurance_name !== undefined || componentData.insurance_company !== undefined ||

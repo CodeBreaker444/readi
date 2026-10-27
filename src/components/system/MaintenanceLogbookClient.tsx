@@ -23,14 +23,15 @@ import { useTranslation } from 'react-i18next';
 
 interface Props {
   canIntervene?: boolean;
+  canCloseByRole?: boolean;
 }
 
-export default function MaintenanceLogbookClient({ canIntervene = false }: Props) {
+export default function MaintenanceLogbookClient({ canIntervene = false, canCloseByRole = false }: Props) {
   const { isDark } = useTheme();
   const { t } = useTranslation();
   const { canEdit } = usePermissions();
   const canManage = canEdit('systems_maintenance_tickets');
-  const canClose = canManage;
+  const canClose = canManage && canCloseByRole;
   const canAssign = canManage;
   const canDownload = canManage;
 

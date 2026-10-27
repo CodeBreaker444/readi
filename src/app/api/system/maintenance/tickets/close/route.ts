@@ -3,11 +3,10 @@ import { closeTicket } from '@/backend/services/system/maintenance-ticket';
 import { TicketRuleError } from '@/backend/services/system/maintenance-ticket-guards';
 import { requireAnyPermission, requireFeatureAccess } from '@/lib/auth/api-auth';
 import { forbidden, internalError, zodError } from '@/lib/api-error';
+import { CLOSE_TICKET_ROLES, type Role } from '@/lib/auth/roles';
 import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
 import z from 'zod';
-
-const CLOSE_TICKET_ROLES = ['RM', 'ADMIN', 'SUPERADMIN'];
 
 const closeTicketSchema = z.object({
   ticket_id: z.coerce.number(),
@@ -21,7 +20,7 @@ export async function POST(req: NextRequest) {
       const { session, error } = await requireAnyPermission('view_config', 'view_maintenance_tickets');
       if (error) return error;
 
-    if (!CLOSE_TICKET_ROLES.includes(session!.user.role ?? '')) {
+    if (!CLOSE_TICKET_ROLES.includes(session!.user.role as Role)) {
       return forbidden(E.PX001);
     }
 

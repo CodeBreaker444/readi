@@ -283,11 +283,11 @@ export default function EditSystemModal({ open, toolId, onClose, onSuccess, clie
               <div>
                 <p className={sectionLabelCls}>{t('systems.components.editSystem.sections.basicInfo')}</p>
                 <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
-                  <div className="col-span-1 sm:col-span-2">
+                  <div className="col-span-1 sm:col-span-4">
                     <Label className={labelCls}>{t('systems.components.editSystem.fields.code')}</Label>
                     <Input className={inputCls} value={formData.tool_code} onChange={e => handleChange('tool_code', e.target.value)} required />
                   </div>
-                  <div className="col-span-1 sm:col-span-3">
+                  <div className="col-span-1 sm:col-span-8">
                     <Label className={labelCls}>{t('systems.components.editSystem.fields.description')}</Label>
                     <Input className={inputCls} value={formData.tool_desc} onChange={e => handleChange('tool_desc', e.target.value)} />
                   </div>
