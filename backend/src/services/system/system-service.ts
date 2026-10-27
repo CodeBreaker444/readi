@@ -318,7 +318,7 @@ async function findOperationalBlocker(toolId: number): Promise<string | null> {
   );
   const expiredName = dateExpired?.component_name ?? flightExpired?.component_name;
   if (dateExpired || flightExpired) {
-    return `Component "${expiredName}" has expired. Set it to Decommissioned, remove it, or move it to the warehouse before putting the system in operation.`;
+    return `Component "${expiredName}" has expired. Set it to Decommissioned, remove it, move it to the warehouse, or extend its expiry date and set it to Operational before putting the system in operation.`;
   }
   if (openTicket) return 'The system has an open maintenance ticket. Close it first.';
 
@@ -932,7 +932,11 @@ export function computeEffectiveComponentStatus(item: {
   current_usage_hours: number | Prisma.Decimal | null;
 }, today: string = new Date().toISOString().split('T')[0]): string {
   const expiryType: string = item.expiry_type || 'EXPIRATION_DATE';
-  const isDateExpired = item.expiration_date && item.expiration_date <= today;
+  // Callers pass either a Date (Prisma rows) or a YYYY-MM-DD string; a Date compared with a string is never <=, so normalise first.
+  const expiryDay = item.expiration_date instanceof Date
+    ? item.expiration_date.toISOString().split('T')[0]
+    : item.expiration_date;
+  const isDateExpired = expiryDay && expiryDay <= today;
   const isFlightExpired =
     item.expiration_flights != null &&
     Number(item.current_maintenance_flights) >= item.expiration_flights;
@@ -1217,8 +1221,54 @@ export async function updateComponent(componentId: number, componentData: any, o
       serial_number: true,
       drone_registration_code: true,
       maintenance_cycle: true,
+      expiration_date: true,
+      expiry_type: true,
+      expiration_flights: true,
+      expiration_flight_hours: true,
     },
   });
+
+  // Expiry check against the stored limits (before this edit) and the submitted ones (after it).
+  // Date, flight, flight-hour and mixed expiry are all handled by computeEffectiveComponentStatus, using the expiry type in force.
+  const isExpiredWith = (limits: {
+    expiration_date: string | null;
+    expiry_type: string | null;
+    expiration_flights: number | null;
+    expiration_flight_hours: number | null;
+    current_maintenance_flights: number | null;
+    current_usage_hours: number | null;
+  }) => computeEffectiveComponentStatus({ component_metadata: {}, ...limits }) === 'DECOMMISSIONED';
+
+  const storedLimits = {
+    expiration_date: existing?.expiration_date ? new Date(existing.expiration_date).toISOString().split('T')[0] : null,
+    expiry_type: existing?.expiry_type ?? null,
+    expiration_flights: existing?.expiration_flights ?? null,
+    expiration_flight_hours: existing?.expiration_flight_hours != null ? Number(existing.expiration_flight_hours) : null,
+    current_maintenance_flights: existing?.current_maintenance_flights != null ? Number(existing.current_maintenance_flights) : null,
+    current_usage_hours: existing?.current_usage_hours != null ? Number(existing.current_usage_hours) : null,
+  };
+  const submittedLimits = {
+    expiration_date: componentData.expiration_date !== undefined ? (componentData.expiration_date || null) : storedLimits.expiration_date,
+    expiry_type: componentData.expiry_type ?? storedLimits.expiry_type,
+    expiration_flights: componentData.expiration_flights !== undefined ? componentData.expiration_flights : storedLimits.expiration_flights,
+    expiration_flight_hours: componentData.expiration_flight_hours !== undefined ? componentData.expiration_flight_hours : storedLimits.expiration_flight_hours,
+    current_maintenance_flights: componentData.initial_maintenance_flights ?? storedLimits.current_maintenance_flights,
+    current_usage_hours: componentData.initial_usage_hours ?? storedLimits.current_usage_hours,
+  };
+  const wasExpired = isExpiredWith(storedLimits);
+  const expiredNow = isExpiredWith(submittedLimits);
+
+  if (componentData.component_status === 'DECOMMISSIONED' && wasExpired && !expiredNow) {
+    // The limits were raised past the point of expiry on a decommissioned (expired) component: it is back in service.
+    // Any other status (Maintenance, Dismissed, ...) is left exactly as submitted.
+    componentData.component_status = 'OPERATIONAL';
+  } else if (componentData.component_status && componentData.component_status !== 'DECOMMISSIONED' && expiredNow) {
+    // Any status other than Decommissioned is refused while the expiry data still reads as expired.
+    return {
+      code: 0,
+      message: 'This component has expired. Extend its expiry date before changing its status, or set it to Decommissioned.',
+    };
+  }
 
   // Once a component is linked to d-flight (drone_registration_code set), its serial
   // number is the key the d-flight fleet sync matches on — never let it drift, even if
@@ -1288,10 +1338,13 @@ export async function updateComponent(componentId: number, componentData: any, o
   const newLat = componentData.latitude ?? null;
   const newLon = componentData.longitude ?? null;
   const newPseudoName = componentData.locationPseudoName ?? null;
-  const locationChanged =
+  const coordsChanged =
     newLat != null &&
     newLon != null &&
-    (String(prevLat) !== String(newLat) || String(prevLon) !== String(newLon) || prevPseudoName !== newPseudoName);
+    (String(prevLat) !== String(newLat) || String(prevLon) !== String(newLon));
+  const nameChanged =
+    componentData.locationPseudoName !== undefined && (prevPseudoName ?? null) !== newPseudoName;
+  const locationChanged = coordsChanged || nameChanged;
 
   const oldPosition = {
     latitude: prevLat,
@@ -1300,7 +1353,13 @@ export async function updateComponent(componentId: number, componentData: any, o
 
   const existingHistory: any[] = Array.isArray(baseMeta.location_history) ? baseMeta.location_history : [];
   const updatedHistory = locationChanged
-    ? [...existingHistory, { latitude: newLat, longitude: newLon, pseudo_name: newPseudoName, changed_at: new Date().toISOString() }]
+    ? [...existingHistory, {
+        latitude: newLat ?? prevLat,
+        longitude: newLon ?? prevLon,
+        pseudo_name: newPseudoName,
+        previous_pseudo_name: prevPseudoName,
+        changed_at: new Date().toISOString(),
+      }]
     : existingHistory;
 
   // The assigned model defines the maintenance cycle + limits. Copy them onto the component when

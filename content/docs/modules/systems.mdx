@@ -108,21 +108,17 @@ A component has one of five statuses:
 | **Dismissed** | Retired administratively |
 | **Decommissioned** | Permanently out of service. The system no longer counts it |
 
-### Expiry is permanent
+### Expired components
 
-When a component passes its expiry date, or reaches its flight or flight-hour limit, it is **expired**, and expired is final:
+When a component passes its expiry date, or reaches its flight or flight-hour limit, it is **expired**. It shows as **Decommissioned** and the system becomes **Not Operational**. **No maintenance ticket can be created for an expired component.**
 
-- It shows as **Decommissioned** and the system becomes **Not Operational**.
-- **It cannot be made Operational again.** Changing its expiry date or status to bring it back is not a supported way to restore it.
-- **No maintenance ticket can be created for it.** Expiry means the component is retired for good, not that it is waiting for service.
+To make the system operational again, do one of these:
 
-To make the system operational again, take the expired component out of the system's count in one of these ways:
+- Set the component's status to **Decommissioned**. The system no longer counts it.
+- Remove it from the system, or move it to the warehouse.
+- **Reactivate it:** extend its expiry (a later date, or a higher flight or flight-hour limit, depending on the expiry type). If the component is Decommissioned because it expired and the new limits are no longer reached, Readi sets it to **Operational** on save. A component in Maintenance or any other status keeps the status you chose.
 
-- Set its status to **Decommissioned**.
-- Remove it from the system.
-- Move it to the warehouse.
-
-Then fit a replacement component if the system needs one.
+Readi checks the expiry whenever you save a status other than Decommissioned. If the component is still expired, the change is refused and you are asked to extend the expiry date first.
 
 ---
 

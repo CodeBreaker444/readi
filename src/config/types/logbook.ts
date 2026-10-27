@@ -122,6 +122,7 @@ export interface OperationLogbookItem {
   mission_type_desc: string;
   vehicle_code: string;
   vehicle_desc: string;
+  drone_serial_number?: string;
   mission_status_desc: string;
   mission_result_desc: string;
   fk_mission_planning_id: number;
