@@ -114,6 +114,35 @@ export async function getOperationLogbookList(
     }
   }
 
+  // Drone serial: the primary drone (DRONE component with no parent) logged on the mission,
+  // else the system's active primary drone
+  const hasParent = (meta: unknown) => (meta as any)?.fk_parent_component_id != null;
+  const droneSerialByMission = new Map<number, string>();
+  const droneSerialByTool = new Map<number, string>();
+  if (missionIds.length > 0) {
+    const droneLogs = await prisma.mission_maintenance_log.findMany({
+      where: { fk_mission_id: { in: missionIds }, tool_component: { component_type: 'DRONE' } },
+      select: { fk_mission_id: true, tool_component: { select: { serial_number: true, uas_serial_number: true, component_metadata: true } } },
+    });
+    for (const log of droneLogs) {
+      if (hasParent(log.tool_component.component_metadata)) continue;
+      const sn = log.tool_component.serial_number || log.tool_component.uas_serial_number;
+      if (sn && !droneSerialByMission.has(log.fk_mission_id)) droneSerialByMission.set(log.fk_mission_id, sn);
+    }
+    const toolIds = [...new Set(data.map((r) => r.tool?.tool_id).filter((id): id is number => !!id))];
+    if (toolIds.length > 0) {
+      const droneComps = await prisma.tool_component.findMany({
+        where: { fk_tool_id: { in: toolIds }, component_type: 'DRONE', component_active: 'Y' },
+        select: { fk_tool_id: true, serial_number: true, uas_serial_number: true, component_metadata: true },
+      });
+      for (const c of droneComps) {
+        if (hasParent(c.component_metadata)) continue;
+        const sn = c.serial_number || c.uas_serial_number;
+        if (sn && !droneSerialByTool.has(c.fk_tool_id)) droneSerialByTool.set(c.fk_tool_id, sn);
+      }
+    }
+  }
+
   const timezone = params.user_timezone || 'UTC';
   const dateFmt = (d: Date) => d.toLocaleDateString('en-GB', { timeZone: timezone });
   const timeFmt = (d: Date) => d.toLocaleTimeString('en-GB', { timeZone: timezone, hour: '2-digit', minute: '2-digit', hour12: false });
@@ -150,6 +179,10 @@ export async function getOperationLogbookList(
       mission_type_desc: row.pilot_mission_type?.type_name ?? '',
       vehicle_code: row.tool?.tool_code ?? '',
       vehicle_desc: row.tool?.tool_name ?? '',
+      drone_serial_number:
+        droneSerialByMission.get(row.pilot_mission_id) ??
+        (row.tool ? droneSerialByTool.get(row.tool.tool_id) : undefined) ??
+        '',
       mission_status_desc:
         STATUS_ID_TO_DESC[row.fk_mission_status_id ?? 0] ??
         row.pilot_mission_status?.status_name ??

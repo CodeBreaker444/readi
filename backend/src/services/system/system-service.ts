@@ -1338,10 +1338,13 @@ export async function updateComponent(componentId: number, componentData: any, o
   const newLat = componentData.latitude ?? null;
   const newLon = componentData.longitude ?? null;
   const newPseudoName = componentData.locationPseudoName ?? null;
-  const locationChanged =
+  const coordsChanged =
     newLat != null &&
     newLon != null &&
-    (String(prevLat) !== String(newLat) || String(prevLon) !== String(newLon) || prevPseudoName !== newPseudoName);
+    (String(prevLat) !== String(newLat) || String(prevLon) !== String(newLon));
+  const nameChanged =
+    componentData.locationPseudoName !== undefined && (prevPseudoName ?? null) !== newPseudoName;
+  const locationChanged = coordsChanged || nameChanged;
 
   const oldPosition = {
     latitude: prevLat,
@@ -1350,7 +1353,13 @@ export async function updateComponent(componentId: number, componentData: any, o
 
   const existingHistory: any[] = Array.isArray(baseMeta.location_history) ? baseMeta.location_history : [];
   const updatedHistory = locationChanged
-    ? [...existingHistory, { latitude: newLat, longitude: newLon, pseudo_name: newPseudoName, changed_at: new Date().toISOString() }]
+    ? [...existingHistory, {
+        latitude: newLat ?? prevLat,
+        longitude: newLon ?? prevLon,
+        pseudo_name: newPseudoName,
+        previous_pseudo_name: prevPseudoName,
+        changed_at: new Date().toISOString(),
+      }]
     : existingHistory;
 
   // The assigned model defines the maintenance cycle + limits. Copy them onto the component when
