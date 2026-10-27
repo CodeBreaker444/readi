@@ -97,12 +97,12 @@ For each component with a maintenance cycle defined:
 
 ### System Status Calculation
 
-System status is the worst status among all its components:
-- If any component has Expiration Date reached → NOT_OPERATIONAL
-- If any open maintenance ticket exists → MAINTENANCE
-- If any component status is DUE → MAINTENANCE
-- If any component status is ALERT → MAINTENANCE (or OPERATIONAL based on policy)
+System status is worked out from its components and tickets:
+- If any active component has passed its Expiration Date, or reached its flight or flight-hour expiry limit → NOT_OPERATIONAL
+- If any maintenance ticket is open, or a component is set to MAINTENANCE → MAINTENANCE
 - Otherwise → OPERATIONAL
+
+A component that is only **DUE** or **ALERT** (approaching or at its maintenance limit) does **not** change the system status. It shows on the Maintenance Dashboard and sends notifications. The system moves to MAINTENANCE when a ticket is opened for it.
 
 **Priority:** NOT_OPERATIONAL > MAINTENANCE > OPERATIONAL
 
@@ -156,16 +156,17 @@ When a mission completes (actual_end recorded), component usage is updated:
 - System (fk_tool_id) - Links ticket to drone system
 - Component (fk_component_id) - Links ticket to specific component
 - Status (ticket_status) - Controls system maintenance status
-- Type (ticket_type) - Categorization (preventive, corrective, inspection, calibration)
+- Type (ticket_type) - Categorization (BASIC, STANDARD, EXTRAORDINARY)
 
 ### Maintenance Types
 
-| Type | Trigger | Typical Parameters |
-|---|---|---|
-| preventive | Calendar schedule | Day-based cycle, Activation Date |
-| corrective | Damage discovered | Manual ticket creation, Component Status |
-| inspection | Regulatory periodic check | Day-based cycle, Expiration Date |
-| calibration | Sensor recalibration | Hour or flight-based cycle, Maintenance Hours/Flights |
+| Type | Notes |
+|---|---|
+| BASIC | Basic-level maintenance |
+| STANDARD | Standard-level maintenance (the default when no type is stored) |
+| EXTRAORDINARY | Maintenance outside the normal routine |
+
+The type is kept on the ticket and on the maintenance record created when the ticket closes. The maintenance dashboard exports show the last maintenance date for each type. See [Maintenance](/docs/modules/maintenance).
 
 ---
 
@@ -197,8 +198,8 @@ Emails are sent only when:
 | Maintenance Status | Operational Status | Condition |
 |---|---|---|
 | IN_MAINTENANCE | MAINTENANCE | Open ticket exists |
-| DUE | MAINTENANCE | Component at limit (if no ticket) |
-| ALERT | OPERATIONAL | Approaching limit (if no ticket) |
+| DUE | OPERATIONAL | Component at limit. Shown on the dashboard until a ticket is opened |
+| ALERT | OPERATIONAL | Approaching limit. Shown on the dashboard |
 | OK | OPERATIONAL | Within limits (if no ticket) |
 | Component expired | NOT_OPERATIONAL | Expiration date reached |
 

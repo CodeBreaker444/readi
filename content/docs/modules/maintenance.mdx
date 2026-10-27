@@ -1,0 +1,137 @@
+---
+title: "Maintenance"
+description: "Raise maintenance tickets, record the work done, close them and keep a searchable maintenance logbook."
+---
+
+Maintenance is where you keep drones airworthy. It has two pages in the sidebar under **Systems**:
+
+| Page | Purpose |
+|---|---|
+| **Maintenance Dashboard** | See which systems and components are OK, near their limit (Alert) or past it (Due) |
+| **Maintenance Logbook** | Every maintenance ticket: create, assign, report, close, search and export |
+
+While a ticket is open on a system, that system is marked as **in maintenance** and cannot be used for a mission. See [System Status Rules](/docs/platform-rules/system-status-rules).
+
+---
+
+## Ticket types
+
+When you create a ticket you choose one of three types:
+
+| Type | Meaning |
+|---|---|
+| **Basic** | Basic-level maintenance |
+| **Standard** | Standard-level maintenance |
+| **Extraordinary** | Extraordinary maintenance, outside the normal routine |
+
+Choose the type that matches your maintenance programme. It is saved on the ticket and shown in the logbook and the exports.
+
+---
+
+## Creating a ticket
+
+Click **New Ticket** and fill in:
+
+1. **Drone:** choose the system. You can search by code.
+2. **Components (optional, multi-select):** choose one or more components the work is about. Pick them all on one ticket instead of opening a ticket per part. Leave it empty to cover the **whole system**.
+3. **Type** and **Priority**.
+4. **Assign To:** the technician who will do the work (you can also do this later).
+5. **Location** (optional) and a **Note** describing the issue.
+
+Tickets cannot overlap. If an open ticket already covers the system, or any component you picked, you will see "An open ticket already covers this system or the selected components". Close that ticket first or choose different components. A ticket with no components covers the whole system, so it cannot be opened while another ticket is open on that system.
+
+---
+
+## Working on a ticket
+
+Each row in the Maintenance Logbook has actions:
+
+| Action | What it does |
+|---|---|
+| **Assign** | Choose or change the technician |
+| **Report** | Add the technician's work report (below) |
+| **Upload** | Attach a file as evidence, with a short description |
+| **Download Files** | Download the attached files |
+| **Events** | Show the ticket history |
+| **Close Ticket** | Finish the ticket |
+
+### Technician work report
+
+Open **Report** to record what was done:
+
+- **Work Start** and **Work End:** when the work began and finished. The end must be after the start.
+- **Report:** a description of the work performed. This is required.
+- **Attachment (optional):** a photo, document or other file.
+
+Save it with **Save Report**. A ticket can have several reports.
+
+### Ticket history and evidence
+
+**Events** lists what happened on the ticket in order: created, assigned, reports added, files uploaded and closed, each with who did it and when. Files uploaded to the ticket stay with it and can be downloaded later with **Download Files**. Together they are your evidence trail for audits.
+
+---
+
+## Closing a ticket
+
+There are two ways to close a ticket, and both have the same effect:
+
+- **Close ticket on save:** tick this box in the report window. The ticket closes as soon as you save, and the report text becomes the closing note.
+- **Close Ticket** (the separate action): write a **Closing Note** describing the work and confirm.
+
+When a ticket is closed:
+
+- The system goes back to **operational**, unless another ticket is still open on it.
+- A maintenance record is added to the system's history.
+- The **counters of the components on the ticket are reset to zero** (hours, flights and days since maintenance) and their last maintenance date becomes today. If the ticket covered the whole system, every component of the system is reset. Components that are dismissed, decommissioned or expired are not reset.
+- A message confirms which components were reset, for example "Counters reset for: Battery 1, Motor 2".
+
+Only the ticket you close is affected. Other open tickets on the same system stay open.
+
+<Warning>
+Closing a ticket restarts the maintenance counters, so only close it when the work is really finished.
+</Warning>
+
+---
+
+## Searching, filtering and exporting
+
+The Maintenance Logbook shows totals for **Total**, **Open**, **Closed** and **High Priority** tickets.
+
+- **Filter** by All, Open or Closed.
+- **Search** by drone code, serial number or technician.
+- **Export** the list. The file includes the ticket number, type, status, priority, system, serial, component, technician, dates, notes and the location with its name.
+
+---
+
+## Email notifications
+
+**Systems → Email Notifications** lets you choose which maintenance emails are sent and to whom. It is available to administrators.
+
+| Event | Sent when |
+|---|---|
+| **Ticket Created** | A new maintenance ticket is created |
+| **Ticket Assigned** | A ticket is assigned to a technician (sent directly to that technician) |
+| **Ticket Closed** | A ticket is closed |
+| **Maintenance Alert** | A component is approaching its maintenance limit |
+| **Maintenance Due** | A component has reached its limit |
+| **Intervention Started / Ended** | Work on a ticket begins or ends |
+
+For each event, choose **Notify Roles**, the roles that receive the email. If no role is selected, nobody is emailed for that event. Changes are saved automatically.
+
+If the page says email notifications are disabled, ask your administrator to switch them on for the company. See also [Email Notifications](/docs/business-logic/email-notifications).
+
+---
+
+## Permissions
+
+Who can read, edit and delete in this area, by role.
+
+<PermissionsTable section="Systems" />
+
+---
+
+## Related
+
+- [Systems](/docs/modules/systems)
+- [Maintenance Module logic](/docs/business-logic/maintenance-module)
+- [Operations](/docs/modules/operations)

@@ -38,18 +38,17 @@ Build the detailed flight plan.
 
 ## Phase 3 — Mission
 
-See [Mission Lifecycle](/business-logic/mission-lifecycle). Key linkage: `pilot_mission.fk_planning_id`.
+See [Mission Lifecycle](/docs/business-logic/mission-lifecycle). Key linkage: `pilot_mission.fk_planning_id`.
 
 ---
 
 ## Phase 4 — Maintenance
 
-| Type | Triggered by |
+| Type | Meaning |
 |---|---|
-| `preventive` | Calendar schedule |
-| `corrective` | Damage discovered during/after a mission |
-| `inspection` | Regulatory periodic check |
-| `calibration` | Sensor/compass recalibration |
+| `BASIC` | Basic-level maintenance |
+| `STANDARD` | Standard-level maintenance |
+| `EXTRAORDINARY` | Maintenance outside the normal routine |
 
 **Component cycle:**
 ```
