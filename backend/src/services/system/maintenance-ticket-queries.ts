@@ -15,6 +15,7 @@ import { prisma } from '@/lib/prisma';
 import { getPresignedDownloadUrl } from '@/lib/s3Client';
 import { getComponentStatusesForTool, getComponentStatusesForTools, isPermanentlyBlockedStatus } from './maintenance-ticket-components';
 import { getTicketComponentIds } from './maintenance-ticket-rules';
+import { getNonOperationalToolIds } from './system-service';
 
 export async function getTicketList(owner_id: number, tool_id?: number, assignedToUserId?: number): Promise<MaintenanceTicket[]> {
   const rows = await prisma.maintenance_ticket.findMany({
@@ -209,6 +210,7 @@ export async function getDroneList(ownerId: number): Promise<DroneOption[]> {
   });
 
   const toolIds = data.map((row) => row.tool_id);
+  const nonOperational = await getNonOperationalToolIds(toolIds);
   const [openTickets, maintenanceComps] = toolIds.length
     ? await Promise.all([
         prisma.maintenance_ticket.findMany({
@@ -230,8 +232,10 @@ export async function getDroneList(ownerId: number): Promise<DroneOption[]> {
     .filter((row) => (row.tool_metadata as any)?.is_warehouse !== true && (row.tool_metadata as any)?.deleted !== true)
     .map((row) => {
       const stored = (row.tool_metadata as any)?.status as string | undefined;
-      const status = (!stored || stored === 'OPERATIONAL') && inMaintenance.has(row.tool_id)
-        ? 'MAINTENANCE'
+      // Same precedence as the systems list: stored non-operational > expired component > open work.
+      const status = stored && stored !== 'OPERATIONAL' ? stored
+        : nonOperational.has(row.tool_id) ? 'NOT_OPERATIONAL'
+        : inMaintenance.has(row.tool_id) ? 'MAINTENANCE'
         : stored ?? 'OPERATIONAL';
       return {
         tool_id:     row.tool_id,

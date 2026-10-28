@@ -4,6 +4,39 @@ import { isComponentPartOfSystem, parseComponentMeta } from './maintenance-rules
 import { buildS3Url, getPresignedDownloadUrl, uploadFileToS3 } from '@/lib/s3Client';
 import { Prisma } from '@prisma/client';
 
+/**
+ * Tools with an expired active component (by date, flights or flight hours). Shared by the systems list and
+ * the ticket drone lookup so both show the same status. A decommissioned (or detached) component is out of
+ * the system, so its expiry no longer blocks the system.
+ */
+export async function getNonOperationalToolIds(toolIds: number[]): Promise<Set<number>> {
+  const result = new Set<number>();
+  if (!toolIds.length) return result;
+
+  const [expiredComps, flightExpirableComps] = await Promise.all([
+    prisma.tool_component.findMany({
+      where: { fk_tool_id: { in: toolIds }, component_active: 'Y', expiration_date: { lte: new Date(), not: null } },
+      select: { fk_tool_id: true, component_metadata: true },
+    }),
+    prisma.tool_component.findMany({
+      where: { fk_tool_id: { in: toolIds }, component_active: 'Y', expiry_type: { in: ['FLIGHTS', 'FLIGHT_HOURS', 'MIXED'] } },
+      select: { fk_tool_id: true, component_metadata: true, expiration_flights: true, current_maintenance_flights: true, expiration_flight_hours: true, current_usage_hours: true },
+    }),
+  ]);
+
+  expiredComps
+    .filter((c) => isComponentPartOfSystem(parseComponentMeta(c.component_metadata)))
+    .forEach((c) => { if (c.fk_tool_id != null) result.add(c.fk_tool_id); });
+  flightExpirableComps
+    .filter((c) => isComponentPartOfSystem(parseComponentMeta(c.component_metadata)))
+    .filter((c) =>
+      (c.expiration_flights != null && Number(c.current_maintenance_flights) >= Number(c.expiration_flights)) ||
+      (c.expiration_flight_hours != null && Number(c.current_usage_hours) >= Number(c.expiration_flight_hours))
+    )
+    .forEach((c) => { if (c.fk_tool_id != null) result.add(c.fk_tool_id); });
+  return result;
+}
+
 export interface StoredFile {
   filename: string;
   filekey: string;
@@ -69,7 +102,7 @@ export async function getSystemList(
   const toolsNonOperational = new Set<number>();
 
   if (toolIds.length > 0) {
-    const [missions, openTickets, openComponentTickets, expiredComps, flightExpirableComps] = await Promise.all([
+    const [missions, openTickets, openComponentTickets, nonOperationalIds] = await Promise.all([
       // Mission stats per tool
       prisma.pilot_mission.findMany({
         where: { fk_owner_id: ownerId, fk_tool_id: { in: toolIds } },
@@ -98,16 +131,7 @@ export async function getSystemList(
           current_usage_hours: true,
         },
       }),
-      // Tools with at least one date-expired component
-      prisma.tool_component.findMany({
-        where: { fk_tool_id: { in: toolIds }, component_active: 'Y', expiration_date: { lte: new Date(), not: null } },
-        select: { fk_tool_id: true, component_id: true, component_name: true, expiration_date: true, component_metadata: true },
-      }),
-      // Tools with components that may be flight-expired
-      prisma.tool_component.findMany({
-        where: { fk_tool_id: { in: toolIds }, component_active: 'Y', expiry_type: { in: ['FLIGHTS', 'FLIGHT_HOURS', 'MIXED'] } },
-        select: { fk_tool_id: true, component_metadata: true, expiration_flights: true, current_maintenance_flights: true, expiration_flight_hours: true, current_usage_hours: true },
-      }),
+      getNonOperationalToolIds(toolIds),
     ]);
 
     missions.forEach((m) => {
@@ -133,18 +157,7 @@ export async function getSystemList(
       });
       if (effective === 'MAINTENANCE') toolsInMaintenance.add(c.fk_tool_id);
     });
-    // A decommissioned (or detached) component is out of the system, so its expiry no longer blocks the system.
-    expiredComps
-      .filter((c) => isComponentPartOfSystem(parseComponentMeta(c.component_metadata)))
-      .forEach((c) => { if (c.fk_tool_id != null) toolsNonOperational.add(c.fk_tool_id); });
-    flightExpirableComps
-      .filter((c) => isComponentPartOfSystem(parseComponentMeta(c.component_metadata)))
-      .filter((c) =>
-        (c.expiration_flights != null && Number(c.current_maintenance_flights) >= Number(c.expiration_flights)) ||
-        (c.expiration_flight_hours != null && Number(c.current_usage_hours) >= Number(c.expiration_flight_hours))
-      )
-      .forEach((c) => { if (c.fk_tool_id != null) toolsNonOperational.add(c.fk_tool_id); });
-
+    nonOperationalIds.forEach((id) => toolsNonOperational.add(id));
   }
 
   let filtered = data;
