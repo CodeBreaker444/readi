@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { OwnerData } from '../tables/OwnerColumn';
 
@@ -32,6 +33,7 @@ interface EditOwnerModalProps {
 }
 
 export default function EditOwnerModal({ open, onClose, onSuccess, owner }: EditOwnerModalProps) {
+  const { t } = useTranslation();
   const [form, setForm] = useState({
     owner_name: '',
     owner_address: '',
@@ -89,15 +91,15 @@ export default function EditOwnerModal({ open, onClose, onSuccess, owner }: Edit
 
       if (data.code === 1) {
         onSuccess();
-        toast.success('Company updated successfully');
+        toast.success(t('companyPage.toast.updatedSuccessfully'));
         onClose();
       } else {
         setError(data.message || 'Something went wrong');
-        toast.error(data.message || 'Failed to update company');
+        toast.error(data.message || t('companyPage.toast.updateCompanyFailed'));
       }
     } catch (err) {
       setError('Network error');
-      toast.error('Network error. Failed to update company');
+      toast.error(t('companyPage.toast.networkErrorUpdateFailed'));
     } finally {
       setLoading(false);
     }

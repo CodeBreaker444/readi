@@ -354,6 +354,19 @@ export async function updateTool(toolId: number, toolData: any) {
     longitude: oldMetadata?.longitude as number | null,
   };
 
+  // Only fields present in the request overwrite stored metadata. An omitted field (undefined) keeps its
+  // stored value; an explicit null clears it. Spreading undefined would drop the key on save and lose the value.
+  const metadataPatch: Record<string, unknown> = {
+    clientId: toolData.fk_client_id,
+    latitude: toolData.tool_latitude,
+    longitude: toolData.tool_longitude,
+    pseudo_name: toolData.location_pseudo_name,
+    activationDate: toolData.date_activation === undefined ? undefined : (toolData.date_activation || null),
+    status: toolData.tool_status || undefined,
+    maintenanceLogbook: toolData.tool_maintenance_logbook,
+  };
+  const definedPatch = Object.fromEntries(Object.entries(metadataPatch).filter(([, v]) => v !== undefined));
+
   const data = await prisma.tool.update({
     where: { tool_id: toolId },
     data: {
@@ -363,13 +376,7 @@ export async function updateTool(toolId: number, toolData: any) {
       tool_active: toolData.tool_active,
       tool_metadata: {
         ...(current?.tool_metadata as Record<string, unknown> ?? {}),
-        clientId: toolData.fk_client_id,
-        latitude: toolData.tool_latitude,
-        longitude: toolData.tool_longitude,
-        pseudo_name: toolData.location_pseudo_name ?? null,
-        activationDate: toolData.date_activation || null,
-        status: toolData.tool_status,
-        maintenanceLogbook: toolData.tool_maintenance_logbook,
+        ...definedPatch,
       } as Prisma.InputJsonValue,
     },
   });
@@ -595,23 +602,23 @@ export async function deleteComponent(ownerId: number, componentId: number, forc
 
   if (!comp) throw new Error('Component not found');
 
-  if (comp.fk_tool_id !== null) {
-    const tool = await prisma.tool.findFirst({
-      where: { tool_id: comp.fk_tool_id, fk_owner_id: ownerId },
-      select: { tool_id: true, tool_code: true },
-    });
+  const tool = comp.fk_tool_id == null
+    ? null
+    : await prisma.tool.findFirst({
+        where: { tool_id: comp.fk_tool_id, fk_owner_id: ownerId },
+        select: { tool_id: true, tool_code: true },
+      });
 
-    if (!tool) throw new Error('Component not found or unauthorized');
+  if (!tool) throw new Error('Component not found or unauthorized');
 
-    const isDetached = (comp.component_metadata as any)?.system_detached === true;
+  const isDetached = (comp.component_metadata as any)?.system_detached === true;
 
-    if (!force && !isDetached) {
-      return {
-        code: 2,
-        message: `Component is attached to system "${tool.tool_code}". Detach it from the system before deleting.`,
-        system_code: tool.tool_code,
-      };
-    }
+  if (!force && !isDetached) {
+    return {
+      code: 2,
+      message: `Component is attached to system "${tool.tool_code}". Detach it from the system before deleting.`,
+      system_code: tool.tool_code,
+    };
   }
 
   await prisma.tool_component.delete({ where: { component_id: componentId } });
@@ -643,10 +650,12 @@ export async function detachComponent(ownerId: number, componentId: number) {
 
   if (!comp) throw new Error('Component not found');
 
-  const tool = await prisma.tool.findFirst({
-    where: { tool_id: comp.fk_tool_id ?? undefined, fk_owner_id: ownerId },
-    select: { tool_id: true, tool_code: true, tool_metadata: true },
-  });
+  const tool = comp.fk_tool_id == null
+    ? null
+    : await prisma.tool.findFirst({
+        where: { tool_id: comp.fk_tool_id, fk_owner_id: ownerId },
+        select: { tool_id: true, tool_code: true, tool_metadata: true },
+      });
 
   if (!tool) throw new Error('Component not found or unauthorized');
 
@@ -668,7 +677,7 @@ export async function detachComponent(ownerId: number, componentId: number) {
 
   // Cascade: also detach all children that reference this component as parent
   const siblings = await prisma.tool_component.findMany({
-    where: { fk_tool_id: comp.fk_tool_id ?? undefined, component_id: { not: componentId } },
+    where: { fk_tool_id: tool.tool_id, component_id: { not: componentId } },
     select: { component_id: true, component_metadata: true },
   });
 
@@ -1274,10 +1283,13 @@ export async function updateComponent(componentId: number, componentData: any, o
 
   // Before/after values for the audit log: shown status (expiry included) and the expiry limits.
   const prevExistingMeta = (existing?.component_metadata as Record<string, unknown> | null) ?? {};
+  // An omitted status/expiry type keeps the stored value instead of resetting to the default.
+  const finalStatus: string = componentData.component_status || (prevExistingMeta.component_status as string | undefined) || 'OPERATIONAL';
+  const finalExpiryType: string = componentData.expiry_type || existing?.expiry_type || 'EXPIRATION_DATE';
   const statusChange = {
     from: computeEffectiveComponentStatus({ component_metadata: prevExistingMeta, ...storedLimits }),
     to: computeEffectiveComponentStatus({
-      component_metadata: { component_status: componentData.component_status || 'OPERATIONAL' },
+      component_metadata: { component_status: finalStatus },
       ...submittedLimits,
     }),
   };
@@ -1431,7 +1443,7 @@ export async function updateComponent(componentId: number, componentData: any, o
         ? (componentData.certifications as Prisma.InputJsonValue)
         : Prisma.JsonNull,
       expiration_date: componentData.expiration_date ? new Date(componentData.expiration_date) : null,
-      expiry_type: componentData.expiry_type || 'EXPIRATION_DATE',
+      expiry_type: finalExpiryType,
       expiration_flights: componentData.expiration_flights ?? null,
       expiration_flight_hours: componentData.expiration_flight_hours ?? null,
       ...(cycleField(componentData.maintenance_cycle, inheritedCycle?.cycle) !== undefined && { maintenance_cycle: cycleField(componentData.maintenance_cycle, inheritedCycle?.cycle) || null }),
@@ -1445,7 +1457,7 @@ export async function updateComponent(componentId: number, componentData: any, o
         ...baseMeta,
         cc_platform: componentData.cc_platform || null,
         gcs_type: componentData.gcs_type || null,
-        component_status: componentData.component_status || 'OPERATIONAL',
+        component_status: finalStatus,
         component_category: componentData.component_category || 'STANDARD',
         fk_tool_model_id: componentData.fk_tool_model_id || null,
         fk_parent_component_id: componentData.fk_parent_component_id ?? null,

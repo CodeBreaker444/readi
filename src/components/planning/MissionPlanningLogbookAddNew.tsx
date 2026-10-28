@@ -16,6 +16,8 @@ import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
+
 interface MissionPlanningLogbookAddNewProps {
   isDark: boolean;
   planningId: number;
@@ -59,11 +61,49 @@ export default function MissionPlanningLogbookAddNew({
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
+  // Returns the first validation message, or null when the form is valid.
+  const validate = (): string | null => {
+    const code = form.mission_planning_code.trim();
+    const limits = form.mission_planning_limit_json.trim();
+    const file = fileInputRef.current?.files?.[0];
+
+    if (!code) return t("planning.validation.missionCodeRequired");
+    if (code.length > 100) return t("planning.validation.missionCodeTooLong");
+    if (form.mission_planning_desc.length > 500) {
+      return t("planning.validation.missionDescTooLong");
+    }
+    if (limits) {
+      try {
+        JSON.parse(limits);
+      } catch {
+        return t("planning.validation.missionLimitsInvalidJson");
+      }
+    }
+    const version = form.mission_planning_ver.trim();
+    if (!version) return t("planning.validation.missionVersionRequired");
+    if (!/^[1-9]\d{0,8}$/.test(version)) {
+      return t("planning.validation.missionVersionInvalid");
+    }
+    if (!form.mission_planning_tool || form.mission_planning_tool === "0") {
+      return t("planning.missionPlanning.selectSystemRequired");
+    }
+    if (file) {
+      if (!/\.(kmz|kml|json|geojson)$/i.test(file.name)) {
+        return t("planning.validation.missionFileInvalidType");
+      }
+      if (file.size > MAX_FILE_SIZE) {
+        return t("planning.validation.missionFileTooLarge");
+      }
+    }
+    return null;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!form.mission_planning_tool || form.mission_planning_tool === "0") {
-      toast.error(t("planning.missionPlanning.selectSystemRequired"));
+    const validationError = validate();
+    if (validationError) {
+      toast.error(validationError);
       return;
     }
 
@@ -73,7 +113,7 @@ export default function MissionPlanningLogbookAddNew({
       formData.append("fk_planning_id", String(planningId));
       formData.append("fk_evaluation_id", String(evaluationId));
       formData.append("fk_client_id", String(clientId));
-      Object.entries(form).forEach(([key, val]) => formData.append(key, val));
+      Object.entries(form).forEach(([key, val]) => formData.append(key, val.trim()));
       if (fileInputRef.current?.files?.[0]) {
         formData.append("mission_planning_file", fileInputRef.current.files[0]);
       }
@@ -154,9 +194,13 @@ export default function MissionPlanningLogbookAddNew({
             </Select>
           </div>
           <div className="md:col-span-2 space-y-2">
-            <Label className={labelStyle}>{t("planning.form.version")}</Label>
+            <Label className={labelStyle}>
+              {t("planning.form.version")}
+              <span className="text-red-500 ml-0.5">*</span>
+            </Label>
             <Input
               name="mission_planning_ver"
+              inputMode="numeric"
               value={form.mission_planning_ver}
               onChange={handleChange}
               className={inputStyle}

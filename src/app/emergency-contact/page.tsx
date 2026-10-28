@@ -184,11 +184,11 @@ export default function EmergencyContactPage() {
       const res = await axios.get('/api/erp/location-group/list')
       setGroups(res.data.data || [])
     } catch {
-      toast.error('Failed to load location groups')
+      toast.error(t('erp.locationGroup.toastLoadFailed'))
     } finally {
       setGroupsLoading(false)
     }
-  }, [])
+  }, [t])
 
   useEffect(() => {
     if (activeTab === 'location-group') loadGroups()
@@ -210,10 +210,10 @@ export default function EmergencyContactPage() {
       if (res.data.code === 1 && res.data.data) {
         if (editGroup) {
           setGroups(prev => prev.map(g => g.group_id === editGroup.group_id ? res.data.data : g))
-          toast.success('Group updated')
+          toast.success(t('erp.locationGroup.toastUpdated'))
         } else {
           setGroups(prev => [res.data.data, ...prev])
-          toast.success('Group created')
+          toast.success(t('erp.locationGroup.toastCreated'))
         }
         setGroupDialogOpen(false)
         setEditGroup(null)
@@ -221,9 +221,10 @@ export default function EmergencyContactPage() {
         throw new Error(res.data.error || 'Server returned an error')
       }
     } catch (err) {
+      const fallback = editGroup ? t('erp.locationGroup.toastUpdateFailed') : t('erp.locationGroup.toastCreateFailed')
       const message = axios.isAxiosError(err)
-        ? err.response?.data?.error || err.response?.data?.message || (editGroup ? 'Failed to update group' : 'Failed to create group')
-        : (editGroup ? 'Failed to update group' : 'Failed to create group')
+        ? err.response?.data?.error || err.response?.data?.message || fallback
+        : fallback
       toast.error(message)
       console.error('Location group submit error:', err)
     } finally {

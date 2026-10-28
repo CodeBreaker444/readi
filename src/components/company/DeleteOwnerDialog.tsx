@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useAuthorization } from '@/components/authorization/AuthorizationProvider';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { OwnerData } from '../tables/OwnerColumn';
 
@@ -23,6 +24,7 @@ interface DeleteOwnerDialogProps {
 }
 
 export default function DeleteOwnerDialog({ open, onClose, onSuccess, owner }: DeleteOwnerDialogProps) {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const { requireAuthorization } = useAuthorization();
 
@@ -46,12 +48,12 @@ export default function DeleteOwnerDialog({ open, onClose, onSuccess, owner }: D
       const data = await res.json();
       if (data.code === 1) {
         onSuccess();
-        toast.success('Company deactivated successfully');
+        toast.success(t('companyPage.toast.deactivated'));
         onClose();
       }
     } catch (err) {
       console.error('Delete failed', err);
-      toast.error('Failed to deactivate company');
+      toast.error(t('companyPage.toast.deactivateFailed'));
     } finally {
       setLoading(false);
     }

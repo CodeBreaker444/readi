@@ -43,6 +43,7 @@ import {
 } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 interface OwnerMetrics {
@@ -134,6 +135,7 @@ export default function CompanyDetailPage() {
     const { id } = useParams<{ id: string }>();
     const router = useRouter();
     const { isDark } = useTheme();
+    const { t } = useTranslation();
 
     const [owner, setOwner] = useState<OwnerData | null>(null);
     const [metrics, setMetrics] = useState<OwnerMetrics | null>(null);
@@ -204,9 +206,9 @@ export default function CompanyDetailPage() {
         try {
             const res = await axios.get(`/api/owner/${id}`);
             if (res.data.code === 1) { setOwner(res.data.data); populateForms(res.data.data); }
-        } catch { toast.error('Failed to load company'); }
+        } catch { toast.error(t('companyPage.toast.loadFailed')); }
         finally { setLoading(false); }
-    }, [id, populateForms]);
+    }, [id, populateForms, t]);
 
     const fetchMetrics = useCallback(async () => {
         setMetricsLoading(true);
@@ -225,11 +227,11 @@ export default function CompanyDetailPage() {
         try {
             const res = await axios.put(`/api/owner/${id}`, buildPayload(generalForm, securityForm, featuresForm));
             if (res.data.code === 1) {
-                toast.success('Company updated');
+                toast.success(t('companyPage.toast.updated'));
                 await fetchOwner();
                 setGeneralEditing(false); setSecurityEditing(false); setFeaturesEditing(false);
-            } else { toast.error(res.data.message || 'Update failed'); }
-        } catch { toast.error('Network error'); }
+            } else { toast.error(res.data.message || t('companyPage.toast.updateFailed')); }
+        } catch { toast.error(t('companyPage.toast.networkError')); }
         finally { setSaving(false); }
     };
 
@@ -257,12 +259,12 @@ export default function CompanyDetailPage() {
             });
             if (res.data.code === 1) {
                 setOwner((prev) => (prev ? { ...prev, owner_logo_url: res.data.logoUrl } : prev));
-                toast.success('Logo updated');
+                toast.success(t('companyPage.toast.logoUpdated'));
             } else {
-                toast.error(res.data.message || 'Failed to upload logo');
+                toast.error(res.data.message || t('companyPage.toast.logoUploadFailed'));
             }
         } catch {
-            toast.error('Network error');
+            toast.error(t('companyPage.toast.networkError'));
         } finally {
             setLogoUploading(false);
         }
@@ -280,7 +282,7 @@ export default function CompanyDetailPage() {
                 new_password: newPassword,
             });
             if (res.data.code === 1) {
-                toast.success('Admin password updated successfully');
+                toast.success(t('companyPage.toast.adminPasswordUpdated'));
                 setNewPassword(''); setConfirmPassword('');
             } else { setPwError(res.data.message || 'Failed to update password'); }
         } catch { setPwError('Network error'); }
@@ -301,8 +303,8 @@ export default function CompanyDetailPage() {
             });
             if (res.data.code === 1) {
                 toast.success(res.data.data?.activationEmailSent
-                    ? 'Admin email updated — activation link resent to the new address'
-                    : 'Admin email updated successfully');
+                    ? t('companyPage.toast.adminEmailUpdatedResent')
+                    : t('companyPage.toast.adminEmailUpdated'));
                 await fetchOwner();
             } else { setEmailError(res.data.message || 'Failed to update email'); }
         } catch (err: any) { setEmailError(err?.response?.data?.message || 'Network error'); }
@@ -315,12 +317,12 @@ export default function CompanyDetailPage() {
         try {
             const res = await axios.put(`/api/owner/${id}`, buildPayload(generalForm, { owner_active: 'Y' }, featuresForm));
             if (res.data.code === 1) {
-                toast.success('Company activated');
+                toast.success(t('companyPage.toast.companyActivated'));
                 await fetchOwner();
             } else {
-                toast.error(res.data.message || 'Failed to activate company');
+                toast.error(res.data.message || t('companyPage.toast.activateFailed'));
             }
-        } catch { toast.error('Network error'); }
+        } catch { toast.error(t('companyPage.toast.networkError')); }
         finally { setSaving(false); }
     };
 
@@ -663,12 +665,12 @@ export default function CompanyDetailPage() {
                                                             try {
                                                                 const res = await axios.post(`/api/owner/${id}/resend-verification`);
                                                                 if (res.data.code === 1) {
-                                                                    toast.success('Activation email sent successfully');
+                                                                    toast.success(t('companyPage.toast.activationEmailSent'));
                                                                 } else {
-                                                                    toast.error(res.data.message || 'Failed to send activation email');
+                                                                    toast.error(res.data.message || t('companyPage.toast.activationEmailFailed'));
                                                                 }
                                                             } catch {
-                                                                toast.error('Network error');
+                                                                toast.error(t('companyPage.toast.networkError'));
                                                             } finally {
                                                                 setResendingEmail(false);
                                                             }

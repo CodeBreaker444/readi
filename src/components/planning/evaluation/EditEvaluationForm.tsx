@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Evaluation, EvaluationResult, EvaluationStatus } from '@/config/types/evaluation';
+import { cn } from '@/lib/utils';
 import axios from 'axios';
 import { Loader2, Save } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -21,6 +22,8 @@ interface Props {
   evaluation: Evaluation | null;
   onUpdated?: (ev: Evaluation) => void;
 }
+
+type FieldErrors = Record<string, string>;
 
 function toDateOnly(value?: string | null): string {
   if (!value) return '';
@@ -52,9 +55,11 @@ export function EditEvaluationForm({ evaluation, onUpdated }: Props) {
     evaluation_result: 'PROCESSING' as EvaluationResult,
   });
   const [isSaving, setIsSaving] = useState(false);
+  const [errors, setErrors] = useState<FieldErrors>({});
 
   useEffect(() => {
     if (!evaluation) return;
+    setErrors({});
     setForm({
       evaluation_request_date: toDateOnly(evaluation.evaluation_request_date),
       evaluation_year: String(evaluation.evaluation_year ?? ''),
@@ -68,11 +73,68 @@ export function EditEvaluationForm({ evaluation, onUpdated }: Props) {
 
   function handleChange(field: string, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }));
+    setErrors((prev) => {
+      if (!prev[field]) return prev;
+      const { [field]: _removed, ...rest } = prev;
+      return rest;
+    });
+  }
+
+  function validate(): FieldErrors {
+    const next: FieldErrors = {};
+    const year = form.evaluation_year.trim();
+
+    if (!form.evaluation_request_date) {
+      next.evaluation_request_date = t('planning.evaluation.validation.requestDateRequired');
+    }
+    if (!year) {
+      next.evaluation_year = t('planning.evaluation.validation.yearRequired');
+    } else if (!/^\d{4}$/.test(year) || Number(year) < 2000 || Number(year) > 2100) {
+      next.evaluation_year = t('planning.evaluation.validation.yearInvalid');
+    }
+    if (form.evaluation_desc.length > 500) {
+      next.evaluation_desc = t('planning.evaluation.validation.descTooLong');
+    }
+    if (form.evaluation_offer.length > 255) {
+      next.evaluation_offer = t('planning.evaluation.validation.offerTooLong');
+    }
+    if (form.evaluation_sale_manager.length > 255) {
+      next.evaluation_sale_manager = t('planning.evaluation.validation.salesManagerTooLong');
+    }
+    return next;
+  }
+
+  function isDirty(): boolean {
+    if (!evaluation) return false;
+    return (
+      form.evaluation_request_date !== toDateOnly(evaluation.evaluation_request_date) ||
+      form.evaluation_year.trim() !== String(evaluation.evaluation_year ?? '') ||
+      form.evaluation_desc !== (evaluation.evaluation_desc ?? '') ||
+      form.evaluation_offer !== (evaluation.evaluation_offer ?? '') ||
+      form.evaluation_sale_manager !== (evaluation.evaluation_sale_manager ?? '') ||
+      form.evaluation_status !== normalizeStatus(evaluation.evaluation_status) ||
+      form.evaluation_result !== normalizeResult(evaluation.evaluation_result)
+    );
+  }
+
+  function errorText(field: string) {
+    return errors[field] ? <p className="text-xs text-red-500">{errors[field]}</p> : null;
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!evaluation) return;
+
+    const validationErrors = validate();
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      toast.error(t('planning.evaluation.validationFailed'));
+      return;
+    }
+    if (!isDirty()) {
+      toast.info(t('planning.evaluation.noChanges'));
+      return;
+    }
 
     try {
       setIsSaving(true);
@@ -91,8 +153,17 @@ export function EditEvaluationForm({ evaluation, onUpdated }: Props) {
         evaluation_year: Number(form.evaluation_year),
       };
       onUpdated?.(updated);
-    } catch {
-      toast.error(t('planning.evaluation.updateFailed'));
+    } catch (err) {
+      const data = axios.isAxiosError(err) ? err.response?.data : undefined;
+      const serverFieldErrors: Record<string, string[] | undefined> | undefined = data?.errors;
+      if (serverFieldErrors) {
+        const mapped: FieldErrors = {};
+        for (const [field, msgs] of Object.entries(serverFieldErrors)) {
+          if (msgs?.length) mapped[field] = msgs[0];
+        }
+        setErrors(mapped);
+      }
+      toast.error(data?.message ?? data?.error ?? t('planning.evaluation.updateFailed'));
     } finally {
       setIsSaving(false);
     }
@@ -117,16 +188,22 @@ export function EditEvaluationForm({ evaluation, onUpdated }: Props) {
             type="date"
             value={form.evaluation_request_date}
             onChange={(e) => handleChange('evaluation_request_date', e.target.value)}
-            className="h-8 text-sm"
+            aria-invalid={!!errors.evaluation_request_date}
+            className={cn('h-8 text-sm', errors.evaluation_request_date && 'border-red-500')}
           />
+          {errorText('evaluation_request_date')}
         </div>
         <div className="space-y-1.5">
           <Label className="text-xs font-medium text-slate-500">{t('planning.form.yearReference')}</Label>
           <Input
             value={form.evaluation_year}
             onChange={(e) => handleChange('evaluation_year', e.target.value)}
-            className="h-8 text-sm"
+            inputMode="numeric"
+            maxLength={4}
+            aria-invalid={!!errors.evaluation_year}
+            className={cn('h-8 text-sm', errors.evaluation_year && 'border-red-500')}
           />
+          {errorText('evaluation_year')}
         </div>
       </div>
 
@@ -136,24 +213,30 @@ export function EditEvaluationForm({ evaluation, onUpdated }: Props) {
           <Input
             value={form.evaluation_desc}
             onChange={(e) => handleChange('evaluation_desc', e.target.value)}
-            className="h-8 text-sm"
+            aria-invalid={!!errors.evaluation_desc}
+            className={cn('h-8 text-sm', errors.evaluation_desc && 'border-red-500')}
           />
+          {errorText('evaluation_desc')}
         </div>
         <div className="space-y-1.5">
           <Label className="text-xs font-medium text-slate-500">{t('planning.form.offerRef')}</Label>
           <Input
             value={form.evaluation_offer}
             onChange={(e) => handleChange('evaluation_offer', e.target.value)}
-            className="h-8 text-sm"
+            aria-invalid={!!errors.evaluation_offer}
+            className={cn('h-8 text-sm', errors.evaluation_offer && 'border-red-500')}
           />
+          {errorText('evaluation_offer')}
         </div>
         <div className="space-y-1.5">
           <Label className="text-xs font-medium text-slate-500">{t('planning.form.salesManager')}</Label>
           <Input
             value={form.evaluation_sale_manager}
             onChange={(e) => handleChange('evaluation_sale_manager', e.target.value)}
-            className="h-8 text-sm"
+            aria-invalid={!!errors.evaluation_sale_manager}
+            className={cn('h-8 text-sm', errors.evaluation_sale_manager && 'border-red-500')}
           />
+          {errorText('evaluation_sale_manager')}
         </div>
       </div>
 

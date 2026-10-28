@@ -199,12 +199,12 @@ const tableMeta = useMemo<OperationTableMeta>(
     onDelete: (op) => setDeleteTarget(op),
     onViewDetails: (op) => setDetailTarget(op),
     onDownloadReport: async (op) => {
-      const toastId = toast.loading(`Generating report for ${op.mission_code}…`);
+      const toastId = toast.loading(t('operations.table.toast.reportGenerating', { missionCode: op.mission_code }));
       try {
         await generateMissionReport(op, timezone);
-        toast.success('Report downloaded.', { id: toastId });
+        toast.success(t('operations.table.toast.reportDownloaded'), { id: toastId });
       } catch {
-        toast.error('Failed to generate report.', { id: toastId });
+        toast.error(t('operations.table.toast.reportFailed'), { id: toastId });
       }
     },
     onSubmitDFlightAuth: async (op) => {
@@ -295,7 +295,7 @@ const table = useReactTable({
     const eligibleRows = selectedRows.filter((r) => r.status_name !== 'ABORTED');
     const skipped = selectedRows.length - eligibleRows.length;
     if (!eligibleRows.length) {
-      toast.warning('Aborted missions cannot be updated.');
+      toast.warning(t('operations.table.toast.abortedCannotUpdate'));
       return;
     }
     setBatchUpdating(true);

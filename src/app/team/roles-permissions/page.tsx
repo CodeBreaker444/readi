@@ -7,6 +7,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import axios from 'axios';
 import { Loader2, ShieldCheck } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 type Matrix = Record<string, Partial<Record<FeatureKey, AccessLevel>>>;
@@ -15,6 +16,7 @@ const LOCKED_FULL_ACCESS_ROLES: Role[] = ['OPM', 'ADMIN'];
 
 export default function RolesPermissionsPage() {
   const { isDark } = useTheme();
+  const { t } = useTranslation();
   const [matrix, setMatrix] = useState<Matrix>({});
   const [dirty, setDirty] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
@@ -26,7 +28,7 @@ export default function RolesPermissionsPage() {
       const res = await axios.get('/api/permissions/role-defaults');
       setMatrix(res.data?.data?.matrix ?? {});
     } catch {
-      toast.error('Failed to load role permissions');
+      toast.error(t('team.rolesPermissionsToast.loadFailed'));
     } finally {
       setLoading(false);
     }
@@ -48,9 +50,9 @@ export default function RolesPermissionsPage() {
     try {
       await axios.patch('/api/permissions/role-defaults', { role, access: matrix[role] ?? {} });
       setDirty((prev) => { const next = new Set(prev); next.delete(role); return next; });
-      toast.success(`${role} permissions saved`);
+      toast.success(t('team.rolesPermissionsToast.saved', { role }));
     } catch {
-      toast.error(`Failed to save ${role} permissions`);
+      toast.error(t('team.rolesPermissionsToast.saveFailed', { role }));
     } finally {
       setSavingRole(null);
     }
