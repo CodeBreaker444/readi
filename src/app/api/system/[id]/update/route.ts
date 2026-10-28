@@ -59,16 +59,24 @@ export async function POST(
         positionPart = ` — location: ${parsed.data.location}`;
       }
       
-      const statusPart = parsed.data.tool_status ? `, status: ${parsed.data.tool_status}` : '';
-      
+      const statusChanged = result.oldStatus !== result.newStatus;
+      const statusPart = statusChanged
+        ? `, status: ${result.oldStatus} → ${result.newStatus} — by ${session!.user.fullname} (${session!.user.email})`
+        : parsed.data.tool_status ? `, status: ${parsed.data.tool_status}` : '';
+
       const metadata: Record<string, unknown> = {};
       if (isPositionUpdate && result.oldPosition) {
         metadata.oldPosition = result.oldPosition;
       }
-      
+      if (statusChanged) {
+        metadata.statusChange = { from: result.oldStatus, to: result.newStatus };
+        metadata.changedBy = { userId: session!.user.userId, name: session!.user.fullname, email: session!.user.email };
+      }
+
       logEvent({
         eventType: 'UPDATE',
         entityType: 'system',
+        entityId: Number(id),
         description: `Updated system '${parsed.data.tool_code}'${positionPart}${statusPart}`,
         userId: session!.user.userId,
         userName: session!.user.fullname,

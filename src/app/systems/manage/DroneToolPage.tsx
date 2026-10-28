@@ -282,6 +282,10 @@ export default function DroneToolPage({ dFlightEnabled }: DroneToolPageProps) {
                     setToolData(applyDismissed);
                     setTools(applyDismissed);
                 }
+
+                // Pull the server's view so the list and system status reflect the removal without a manual refresh.
+                fetchAllComponents();
+                fetchToolData();
             } else {
                 toast.error(result.message || t('systems.manage.toasts.detachFailed'));
             }
@@ -604,6 +608,7 @@ export default function DroneToolPage({ dFlightEnabled }: DroneToolPageProps) {
                 <EditSystemModal open={showEditSystem} toolId={selectedToolId}
                     onClose={() => { setShowEditSystem(false); setSelectedToolId(null); }}
                     onSuccess={() => { setShowEditSystem(false); setSelectedToolId(null); fetchToolData(); }}
+                    onComponentRemoved={() => { fetchAllComponents(); fetchToolData(); }}
                     clients={clients} models={models} dFlightEnabled={dFlightEnabled} />
             )}
 

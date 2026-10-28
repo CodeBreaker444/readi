@@ -133,7 +133,8 @@ export async function POST(req: NextRequest) {
       logEvent({
         eventType: 'CREATE',
         entityType: 'system_component',
-        description: `Added component '${label}' (type: ${d.component_type}${snInfo}) to ${destination}`,
+        entityId: result.data?.component_id,
+        description: `Added component '${label}' (type: ${d.component_type}${snInfo}) to ${destination}${d.expiration_date ? ` — expiry: ${d.expiration_date}` : ''} — by ${session!.user.fullname} (${session!.user.email})`,
         userId: session!.user.userId,
         userName: session!.user.fullname,
         userEmail: session!.user.email,

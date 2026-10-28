@@ -20,6 +20,8 @@ interface EditSystemModalProps {
   toolId: number | null;
   onClose: () => void;
   onSuccess: () => void;
+  /** Called after a component is removed from the system, so the parent list can refresh without closing the modal. */
+  onComponentRemoved?: () => void;
   clients: any[];
   models?: any[];
   tools?: any[];
@@ -48,7 +50,7 @@ const STATUS_STYLES_DARK: Record<string, string> = {
   DECOMMISSIONED: 'bg-gray-800 text-gray-400 border border-gray-700',
 };
 
-export default function EditSystemModal({ open, toolId, onClose, onSuccess, clients, models = [], tools = [], dFlightEnabled = false }: EditSystemModalProps) {
+export default function EditSystemModal({ open, toolId, onClose, onSuccess, onComponentRemoved, clients, models = [], tools = [], dFlightEnabled = false }: EditSystemModalProps) {
   const { isDark } = useTheme();
   const { t } = useTranslation();
   const { requireAuthorization } = useAuthorization();
@@ -144,6 +146,7 @@ export default function EditSystemModal({ open, toolId, onClose, onSuccess, clie
       if (result.code === 1) {
         toast.success(t('systems.components.editSystem.toasts.componentRemoved'));
         setComponents(prev => prev.filter(c => c.tool_component_id !== componentId));
+        onComponentRemoved?.();
       } else {
         toast.error(result.message || t('systems.components.editSystem.toasts.removeFailed'));
       }
