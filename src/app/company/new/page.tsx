@@ -20,6 +20,7 @@ import { validateLogoFile } from '@/lib/logo-constraints';
 import { ArrowLeft, Building2, Camera, House, Loader2, UserCog, CheckCircle2, AlertCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 const initialForm = {
@@ -122,6 +123,7 @@ function SectionCard({
 export default function NewCompanyPage() {
     const router = useRouter();
     const { isDark } = useTheme();
+    const { t } = useTranslation();
 
     const [form, setForm] = useState<Form>(initialForm);
     const [loading, setLoading] = useState(false);
@@ -210,11 +212,11 @@ export default function NewCompanyPage() {
 
     const handleSubmit = async () => {
         if (!validate()) {
-            toast.error('Please fix the highlighted fields');
+            toast.error(t('companyPage.toast.fixFields'));
             return;
         }
         if (Object.values(uniqueErrors).some(Boolean)) {
-            toast.error('Please resolve the duplicate field errors before submitting');
+            toast.error(t('companyPage.toast.resolveDuplicates'));
             return;
         }
 
@@ -234,16 +236,16 @@ export default function NewCompanyPage() {
                         fd.append('logo', logoFile);
                         await fetch(`/api/owner/${data.data.owner_id}/logo`, { method: 'POST', body: fd });
                     } catch {
-                        toast.error('Company created, but logo upload failed. You can add it from the company page.');
+                        toast.error(t('companyPage.toast.createdLogoFailed'));
                     }
                 }
-                toast.success('Company and admin user created successfully');
+                toast.success(t('companyPage.toast.created'));
                 router.push(`/company/${data.data.owner_id}`);
             } else {
-                toast.error(data.message || 'Failed to create company');
+                toast.error(data.message || t('companyPage.toast.createFailed'));
             }
         } catch {
-            toast.error('Network error. Please try again.');
+            toast.error(t('companyPage.toast.networkErrorRetry'));
         } finally {
             setLoading(false);
         }

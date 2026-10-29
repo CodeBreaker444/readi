@@ -83,6 +83,31 @@ function getBarColor(index: number): string {
   return `hsl(${hue.toFixed(1)}, 65%, 55%)`;
 }
 
+// Animates a numeric string from 0 to its value; non-numeric values render as-is.
+function CountUp({ value, duration = 1200 }: { value: string; duration?: number }) {
+  const target = Number(value);
+  const valid = Number.isFinite(target);
+  const [display, setDisplay] = useState(0);
+
+  useEffect(() => {
+    if (!valid) return;
+    let raf = 0;
+    const start = performance.now();
+    const tick = (now: number) => {
+      const p = Math.min((now - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - p, 3);
+      setDisplay(target * eased);
+      if (p < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [target, valid, duration]);
+
+  if (!valid) return <>{value}</>;
+  const decimals = (value.split('.')[1] || '').length;
+  return <>{display.toFixed(decimals)}</>;
+}
+
 const STATS = (data: any, t: any) => [
   {
     label: t('dashboard.stats.totalMissions'),
@@ -435,7 +460,7 @@ export default function DashboardClient({ ownerId, userProfileCode, userId, init
               </div>
 
               <div className={cn('text-3xl font-bold tabular-nums tracking-tight', isDark ? 'text-white' : 'text-gray-900')}>
-                {s.value}
+                <CountUp value={s.value} />
               </div>
 
               {/* <div className="flex items-center gap-1.5">
@@ -476,7 +501,16 @@ export default function DashboardClient({ ownerId, userProfileCode, userId, init
                 <YAxis stroke={axisColor} tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
                 <ChartTooltip
                   cursor={{ fill: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)' }}
-                  content={<ChartTooltipContent indicator="dot" />}
+                  wrapperStyle={{ zIndex: 50, outline: 'none' }}
+                  content={
+                    <ChartTooltipContent
+                      indicator="dot"
+                      className={cn(
+                        'opacity-100 shadow-2xl',
+                        isDark ? '!bg-slate-900 !border-slate-700 text-slate-200' : '!bg-white !border-slate-200 text-slate-700'
+                      )}
+                    />
+                  }
                 />
                 <ChartLegend content={<ChartLegendContent />} />
                 {droneKeys.map((key) => (

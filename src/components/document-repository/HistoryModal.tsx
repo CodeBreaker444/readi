@@ -4,6 +4,7 @@ import type { RepositoryDocument } from '@/config/types/repository';
 import { format } from 'date-fns';
 import { Clock, Download, FileText, Loader2 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -27,6 +28,7 @@ interface Props {
 }
 
 function RevDownloadButton({ revId }: { revId: number }) {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
 
   async function handleClick() {
@@ -36,7 +38,7 @@ function RevDownloadButton({ revId }: { revId: number }) {
       if (!data?.url) throw new Error('No URL returned');
       window.location.href = data.url;
     } catch {
-      toast.error('Download failed. Please try again.');
+      toast.error(t('historyModalToast.downloadFailed'));
     } finally {
       setLoading(false);
     }
@@ -59,6 +61,7 @@ function RevDownloadButton({ revId }: { revId: number }) {
 
 export default function HistoryModal({ open, onClose, document }: Props) {
   const { isDark } = useTheme();
+  const { t } = useTranslation();
   const [revisions, setRevisions] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -73,11 +76,11 @@ export default function HistoryModal({ open, onClose, document }: Props) {
       setRevisions(res.data.items);
     } catch (error) {
       console.error('Error fetching document history:', error);
-      toast.error('Failed to load history');
+      toast.error(t('historyModalToast.loadFailed'));
     } finally {
       setLoading(false);
     }
-  }, [document?.document_id]);
+  }, [document?.document_id, t]);
 
   useEffect(() => {
     if (open && document) fetchHistory();

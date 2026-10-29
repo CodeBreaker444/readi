@@ -13,6 +13,7 @@ import {
 import { PlanningData } from "@/config/types/evaluation-planning";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 
 interface EditPlanningRequestCardProps {
   isDark: boolean;
@@ -68,9 +69,11 @@ export default function EditPlanningRequestCard({
 
   const [submitting, setSubmitting] = useState(false);
 
+  const [initialForm, setInitialForm] = useState<PlanningForm | null>(null);
+
   useEffect(() => {
     if (planningData) {
-      setForm({
+      const loaded: PlanningForm = {
         planning_status: planningData.planning_status || "NEW",
         planning_result: planningData.planning_result || "PROGRESS",
         planning_active: planningData.planning_active || "Y",
@@ -87,7 +90,9 @@ export default function EditPlanningRequestCard({
           : planningData.planning_year || "",
         planning_desc: planningData.planning_desc || "",
         planning_type: planningData.planning_type || "",
-      });
+      };
+      setForm(loaded);
+      setInitialForm(loaded);
     }
   }, [planningData, clinetId, evaluationId, planningId]);
 
@@ -107,8 +112,44 @@ export default function EditPlanningRequestCard({
     setForm((prev) => ({ ...prev, planning_year: String(value) }));
   };
 
+  // Returns the first validation message, or null when the form is valid.
+  const validate = (): string | null => {
+    const year = String(form.planning_year).trim();
+
+    if (!form.planning_request_date) {
+      return t("planning.editPlanning.validation.requestDateRequired");
+    }
+    if (!year) {
+      return t("planning.editPlanning.validation.yearRequired");
+    }
+    if (!/^\d{4}$/.test(year) || Number(year) < 2000 || Number(year) > 2100) {
+      return t("planning.editPlanning.validation.yearInvalid");
+    }
+    if (!form.planning_desc.trim()) {
+      return t("planning.editPlanning.validation.descRequired");
+    }
+    if (form.planning_desc.length > 500) {
+      return t("planning.editPlanning.validation.descTooLong");
+    }
+    if (form.planning_type.length > 255) {
+      return t("planning.editPlanning.validation.typeTooLong");
+    }
+    return null;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    const validationError = validate();
+    if (validationError) {
+      toast.error(validationError);
+      return;
+    }
+    if (initialForm && JSON.stringify(initialForm) === JSON.stringify(form)) {
+      toast.info(t("planning.editPlanning.noChanges"));
+      return;
+    }
+
     setSubmitting(true);
     try {
       // Ensure planning_year is included in the update payload
@@ -203,6 +244,8 @@ export default function EditPlanningRequestCard({
             <Label className={labelColor}>{t("planning.form.yearReference")}</Label>
             <Input
               type="number"
+              min={2000}
+              max={2100}
               name="planning_year"
               value={form.planning_year}
               onChange={handleYearChange}

@@ -78,7 +78,43 @@
     "password": "Password",
     "forgotPassword": "Forgot password?",
     "signIn": "Sign in",
-    "signingIn": "Signing in…"
+    "signingIn": "Signing in…",
+    "accountActivated": "Account activated successfully!",
+    "invalidActivationLink": "Invalid activation link.",
+    "activationFailed": "Activation failed. Link may have expired.",
+    "activationError": "Activation error. Please try again.",
+    "loginFailed": "Login failed",
+    "loginSuccess": "Login successful!",
+    "setNewPassword": "Please set a new password to continue."
+  },
+  "companyPage": {
+    "toast": {
+      "activated": "{{name}} activated",
+      "activateFailed": "Failed to activate company",
+      "activationEmailSent": "Activation email sent successfully",
+      "activationEmailFailed": "Failed to send activation email",
+      "networkError": "Network error",
+      "loadFailed": "Failed to load company",
+      "updated": "Company updated",
+      "updateFailed": "Update failed",
+      "companyActivated": "Company activated",
+      "logoUpdated": "Logo updated",
+      "logoUploadFailed": "Failed to upload logo",
+      "adminPasswordUpdated": "Admin password updated successfully",
+      "adminEmailUpdatedResent": "Admin email updated — activation link resent to the new address",
+      "adminEmailUpdated": "Admin email updated successfully",
+      "fixFields": "Please fix the highlighted fields",
+      "resolveDuplicates": "Please resolve the duplicate field errors before submitting",
+      "createdLogoFailed": "Company created, but logo upload failed. You can add it from the company page.",
+      "created": "Company and admin user created successfully",
+      "createFailed": "Failed to create company",
+      "networkErrorRetry": "Network error. Please try again.",
+      "deactivated": "Company deactivated successfully",
+      "deactivateFailed": "Failed to deactivate company",
+      "updatedSuccessfully": "Company updated successfully",
+      "updateCompanyFailed": "Failed to update company",
+      "networkErrorUpdateFailed": "Network error. Failed to update company"
+    }
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -133,6 +169,25 @@
     "monthsAgo": "{{count}} months ago"
   },
   "team": {
+    "rolesPermissionsToast": {
+      "loadFailed": "Failed to load role permissions",
+      "saved": "{{role}} permissions saved",
+      "saveFailed": "Failed to save {{role}} permissions"
+    },
+    "createUserToast": {
+      "createFailed": "Failed to create user",
+      "created": "User created successfully",
+      "tokenLinkFailed": "User created but Control Center token could not be linked.",
+      "subroleFailed": "User created but PIC-Technician sub-role could not be granted.",
+      "qualificationsFailed": "User created but qualifications could not be saved. You can add them from the edit page.",
+      "pendingActivationHint": "Find the user in the list and click the resend invite button."
+    },
+    "editUserToast": {
+      "notFound": "User not found",
+      "loadFailed": "Failed to load user",
+      "updateFailed": "Failed to update user",
+      "updated": "User updated successfully"
+    },
     "addUser": "Add User",
     "editUser": "Edit User",
     "deleteUser": "Delete User",
@@ -865,6 +920,16 @@
       "deleteDescSuffix": "This action cannot be undone.",
       "updated": "Evaluation updated successfully",
       "updateFailed": "Update failed",
+      "noChanges": "No changes to save",
+      "validationFailed": "Please fix the highlighted fields",
+      "validation": {
+        "requestDateRequired": "Request date is required",
+        "yearRequired": "Year is required",
+        "yearInvalid": "Year must be a whole number between 2000 and 2100",
+        "descTooLong": "Description must be at most 500 characters",
+        "offerTooLong": "Offer reference must be at most 255 characters",
+        "salesManagerTooLong": "Sales manager must be at most 255 characters"
+      },
       "savedSuccess": "Checklist saved",
       "saveFailed": "Failed to save checklist result",
       "checklistNotFound": "Checklist not found",
@@ -938,6 +1003,14 @@
     "validation": {
       "selectClient": "Please select a client",
       "selectLucProcedure": "Please select a Procedure.",
+      "missionCodeRequired": "Mission code is required",
+      "missionCodeTooLong": "Mission code must be at most 100 characters",
+      "missionDescTooLong": "Description must be at most 500 characters",
+      "missionVersionRequired": "Version is required",
+      "missionVersionInvalid": "Version must be a whole number of 1 or more (decimals are not allowed)",
+      "missionLimitsInvalidJson": "Mission operation limits must be valid JSON",
+      "missionFileInvalidType": "File must be a .kmz, .kml, .json or .geojson file",
+      "missionFileTooLarge": "File must be smaller than 10 MB",
       "selectPic": "Please assign a Pilot in Command.",
       "enterDescription": "Please enter a description",
       "descriptionMinLength": "Description must be at least 4 characters",
@@ -1457,6 +1530,15 @@
     },
     "editPlanning": {
       "editTitle": "Edit Planning Request",
+      "validation": {
+        "requestDateRequired": "Request date is required",
+        "yearRequired": "Year is required",
+        "yearInvalid": "Year must be a whole number between 2000 and 2100",
+        "descRequired": "Description is required",
+        "descTooLong": "Description must be at most 500 characters",
+        "typeTooLong": "Type must be at most 255 characters"
+      },
+      "noChanges": "No changes to save",
       "selectStatus": "Select status",
       "selectResult": "Select result"
     },
@@ -1589,7 +1671,11 @@
         "autofillError": "Failed to autofill tasks",
         "dflightAuthSuccess": "D-Flight authorization submitted for {{missionCode}}",
         "dflightAuthSkipped": "D-Flight authorization was skipped for this mission",
-        "dflightAuthError": "D-Flight authorization failed for {{missionCode}}"
+        "dflightAuthError": "D-Flight authorization failed for {{missionCode}}",
+        "reportGenerating": "Generating report for {{missionCode}}…",
+        "reportDownloaded": "Report downloaded.",
+        "reportFailed": "Failed to generate report.",
+        "abortedCannotUpdate": "Aborted missions cannot be updated."
       },
       "procedureBadge": {
         "noLuc": "No LUC",
@@ -3948,7 +4034,12 @@
       "deleteDialogTitle": "Delete Location Group",
       "deleteDialogDescription": "Are you sure you want to delete \"{{name}}\"? This will also remove all associated locations and contact links.",
       "toastDeleted": "Group deleted",
-      "toastDeleteFailed": "Failed to delete group"
+      "toastDeleteFailed": "Failed to delete group",
+      "toastLoadFailed": "Failed to load location groups",
+      "toastUpdated": "Group updated",
+      "toastCreated": "Group created",
+      "toastUpdateFailed": "Failed to update group",
+      "toastCreateFailed": "Failed to create group"
     }
   },
   "auditLogs": {
@@ -4103,10 +4194,70 @@
       "failed": "Connection failed"
     }
   },
+  "clientFormToast": {
+    "nameRequired": "Client name is required",
+    "emailRequired": "Email is required",
+    "usernameRequired": "Username is required",
+    "usernameTaken": "Username is already taken",
+    "usernameInvalid": "Username must be at least 3 characters (lowercase, numbers, underscores only)",
+    "emailInvalid": "Please enter a valid email address",
+    "contractDatesInvalid": "Contract end date must be after start date"
+  },
+  "reportIssueToast": {
+    "openTicketExists": "This system already has an open maintenance ticket.",
+    "describeIssue": "Please describe the issue",
+    "reported": "Issue reported — maintenance ticket created",
+    "reportFailed": "Failed to report issue"
+  },
+  "historyModalToast": {
+    "downloadFailed": "Download failed. Please try again.",
+    "loadFailed": "Failed to load history"
+  },
+  "docTypesToast": {
+    "updated": "Type updated",
+    "updateFailed": "Update failed",
+    "updateTypeFailed": "Failed to update type",
+    "removed": "Type removed",
+    "deleteFailed": "Delete failed",
+    "deleteTypeFailed": "Failed to delete type",
+    "nameRequired": "Name is required",
+    "areaRequired": "Area is required",
+    "added": "Type added",
+    "addFailed": "Failed to add type"
+  },
+  "resultFormToast": {
+    "fillAllFields": "Please fill in all fields"
+  },
+  "flytbaseFlightsToast": {
+    "selectFlightFirst": "Please select a flight first",
+    "noSerialNumber": "No drone serial number found in flight log",
+    "fetchMissionsFailed": "Failed to fetch missions",
+    "attachedPdraWarning": "Flight log attached. Note: This PDRA mission was logged after the flight — a compliance warning has been recorded in the audit log.",
+    "attached": "Flight log attached to mission — post-flight data has been filled in automatically.",
+    "attachFailed": "Failed to attach flight log",
+    "alreadyAttached": "This flight log is already attached to a mission.",
+    "createdAttachedMismatch": "Mission created and flight log attached — but the drone's serial number doesn't match the log (log: {{logSerial}}, mission drone: {{missionSerial}}).",
+    "createdAttached": "Mission created and flight log attached.",
+    "createdAttachFailedWithReason": "Mission created, but attaching the flight log failed: {{message}}",
+    "createdAttachFailed": "Mission created, but attaching the flight log failed."
+  },
+  "checklistView": {
+    "toast": {
+      "notFound": "Checklist not found",
+      "loadFailed": "Failed to load checklist",
+      "completed": "Checklist completed successfully",
+      "saveFailed": "Failed to save checklist result"
+    }
+  },
   "export": {
     "export": "Export",
     "exporting": "Exporting…",
-    "downloadAs": "Download as"
+    "downloadAs": "Download as",
+    "toast": {
+      "xlsxFailed": "Failed to export Excel file.",
+      "docxFailed": "Failed to export Word document.",
+      "pdfFailed": "Failed to export PDF. Make sure jspdf is installed."
+    }
   },
   "organization": {
     "common": {

@@ -78,7 +78,43 @@
     "password": "Password",
     "forgotPassword": "Password dimenticata?",
     "signIn": "Accedi",
-    "signingIn": "Accesso in corso…"
+    "signingIn": "Accesso in corso…",
+    "accountActivated": "Account attivato con successo!",
+    "invalidActivationLink": "Link di attivazione non valido.",
+    "activationFailed": "Attivazione non riuscita. Il link potrebbe essere scaduto.",
+    "activationError": "Errore di attivazione. Riprova.",
+    "loginFailed": "Accesso non riuscito",
+    "loginSuccess": "Accesso effettuato con successo!",
+    "setNewPassword": "Imposta una nuova password per continuare."
+  },
+  "companyPage": {
+    "toast": {
+      "activated": "{{name}} attivata",
+      "activateFailed": "Impossibile attivare l'azienda",
+      "activationEmailSent": "Email di attivazione inviata con successo",
+      "activationEmailFailed": "Impossibile inviare l'email di attivazione",
+      "networkError": "Errore di rete",
+      "loadFailed": "Impossibile caricare l'azienda",
+      "updated": "Azienda aggiornata",
+      "updateFailed": "Aggiornamento non riuscito",
+      "companyActivated": "Azienda attivata",
+      "logoUpdated": "Logo aggiornato",
+      "logoUploadFailed": "Impossibile caricare il logo",
+      "adminPasswordUpdated": "Password amministratore aggiornata con successo",
+      "adminEmailUpdatedResent": "Email amministratore aggiornata — link di attivazione reinviato al nuovo indirizzo",
+      "adminEmailUpdated": "Email amministratore aggiornata con successo",
+      "fixFields": "Correggi i campi evidenziati",
+      "resolveDuplicates": "Risolvi gli errori sui campi duplicati prima di inviare",
+      "createdLogoFailed": "Azienda creata, ma il caricamento del logo non è riuscito. Puoi aggiungerlo dalla pagina dell'azienda.",
+      "created": "Azienda e utente amministratore creati con successo",
+      "createFailed": "Impossibile creare l'azienda",
+      "networkErrorRetry": "Errore di rete. Riprova.",
+      "deactivated": "Azienda disattivata con successo",
+      "deactivateFailed": "Impossibile disattivare l'azienda",
+      "updatedSuccessfully": "Azienda aggiornata con successo",
+      "updateCompanyFailed": "Impossibile aggiornare l'azienda",
+      "networkErrorUpdateFailed": "Errore di rete. Impossibile aggiornare l'azienda"
+    }
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -133,6 +169,25 @@
     "monthsAgo": "{{count}} mesi fa"
   },
   "team": {
+    "rolesPermissionsToast": {
+      "loadFailed": "Impossibile caricare i permessi dei ruoli",
+      "saved": "Permessi di {{role}} salvati",
+      "saveFailed": "Impossibile salvare i permessi di {{role}}"
+    },
+    "createUserToast": {
+      "createFailed": "Impossibile creare l'utente",
+      "created": "Utente creato con successo",
+      "tokenLinkFailed": "Utente creato, ma non è stato possibile collegare il token del Control Center.",
+      "subroleFailed": "Utente creato, ma non è stato possibile assegnare il sottoruolo PIC-Technician.",
+      "qualificationsFailed": "Utente creato, ma non è stato possibile salvare le qualifiche. Puoi aggiungerle dalla pagina di modifica.",
+      "pendingActivationHint": "Trova l'utente nell'elenco e fai clic sul pulsante per reinviare l'invito."
+    },
+    "editUserToast": {
+      "notFound": "Utente non trovato",
+      "loadFailed": "Impossibile caricare l'utente",
+      "updateFailed": "Impossibile aggiornare l'utente",
+      "updated": "Utente aggiornato con successo"
+    },
     "addUser": "Aggiungi Utente",
     "editUser": "Modifica Utente",
     "deleteUser": "Elimina Utente",
@@ -862,6 +917,16 @@
       "deleteDescSuffix": "Questa azione non può essere annullata.",
       "updated": "Valutazione aggiornata con successo",
       "updateFailed": "Aggiornamento fallito",
+      "noChanges": "Nessuna modifica da salvare",
+      "validationFailed": "Correggi i campi evidenziati",
+      "validation": {
+        "requestDateRequired": "La data di richiesta è obbligatoria",
+        "yearRequired": "L'anno è obbligatorio",
+        "yearInvalid": "L'anno deve essere un numero intero tra 2000 e 2100",
+        "descTooLong": "La descrizione può contenere al massimo 500 caratteri",
+        "offerTooLong": "Il riferimento offerta può contenere al massimo 255 caratteri",
+        "salesManagerTooLong": "Il responsabile vendite può contenere al massimo 255 caratteri"
+      },
       "savedSuccess": "Checklist salvata",
       "saveFailed": "Salvataggio checklist fallito",
       "checklistNotFound": "Checklist non trovata",
@@ -935,6 +1000,14 @@
     "validation": {
       "selectClient": "Seleziona un cliente",
       "selectLucProcedure": "Seleziona una Procedura.",
+      "missionCodeRequired": "Il codice missione è obbligatorio",
+      "missionCodeTooLong": "Il codice missione può contenere al massimo 100 caratteri",
+      "missionDescTooLong": "La descrizione può contenere al massimo 500 caratteri",
+      "missionVersionRequired": "La versione è obbligatoria",
+      "missionVersionInvalid": "La versione deve essere un numero intero pari o superiore a 1 (i decimali non sono ammessi)",
+      "missionLimitsInvalidJson": "I limiti operativi della missione devono essere un JSON valido",
+      "missionFileInvalidType": "Il file deve essere di tipo .kmz, .kml, .json o .geojson",
+      "missionFileTooLarge": "Il file deve essere inferiore a 10 MB",
       "selectPic": "Assegna un Pilota in Comando.",
       "enterDescription": "Inserisci una descrizione",
       "descriptionMinLength": "La descrizione deve contenere almeno 4 caratteri",
@@ -1456,6 +1529,15 @@
     },
     "editPlanning": {
       "editTitle": "Modifica Richiesta di Pianificazione",
+      "validation": {
+        "requestDateRequired": "La data di richiesta è obbligatoria",
+        "yearRequired": "L'anno è obbligatorio",
+        "yearInvalid": "L'anno deve essere un numero intero tra 2000 e 2100",
+        "descRequired": "La descrizione è obbligatoria",
+        "descTooLong": "La descrizione può contenere al massimo 500 caratteri",
+        "typeTooLong": "Il tipo può contenere al massimo 255 caratteri"
+      },
+      "noChanges": "Nessuna modifica da salvare",
       "selectStatus": "Seleziona stato",
       "selectResult": "Seleziona risultato"
     },
@@ -1587,7 +1669,11 @@
         "autofillError": "Compilazione automatica delle attività fallita",
         "dflightAuthSuccess": "Autorizzazione D-Flight inviata per {{missionCode}}",
         "dflightAuthSkipped": "L'autorizzazione D-Flight è stata saltata per questa missione",
-        "dflightAuthError": "Autorizzazione D-Flight non riuscita per {{missionCode}}"
+        "dflightAuthError": "Autorizzazione D-Flight non riuscita per {{missionCode}}",
+        "reportGenerating": "Generazione del report per {{missionCode}}…",
+        "reportDownloaded": "Report scaricato.",
+        "reportFailed": "Impossibile generare il report.",
+        "abortedCannotUpdate": "Le missioni annullate non possono essere aggiornate."
       },
       "procedureBadge": {
         "noLuc": "Nessun LUC",
@@ -3943,7 +4029,12 @@
       "deleteDialogTitle": "Elimina gruppo di posizioni",
       "deleteDialogDescription": "Sei sicuro di voler eliminare \"{{name}}\"? Verranno rimosse anche tutte le posizioni e i collegamenti ai contatti associati.",
       "toastDeleted": "Gruppo eliminato",
-      "toastDeleteFailed": "Impossibile eliminare il gruppo"
+      "toastDeleteFailed": "Impossibile eliminare il gruppo",
+      "toastLoadFailed": "Impossibile caricare i gruppi di posizioni",
+      "toastUpdated": "Gruppo aggiornato",
+      "toastCreated": "Gruppo creato",
+      "toastUpdateFailed": "Impossibile aggiornare il gruppo",
+      "toastCreateFailed": "Impossibile creare il gruppo"
     }
   },
   "auditLogs": {
@@ -4098,10 +4189,70 @@
       "failed": "Connessione fallita"
     }
   },
+  "clientFormToast": {
+    "nameRequired": "Il nome del cliente è obbligatorio",
+    "emailRequired": "L'email è obbligatoria",
+    "usernameRequired": "Il nome utente è obbligatorio",
+    "usernameTaken": "Il nome utente è già in uso",
+    "usernameInvalid": "Il nome utente deve contenere almeno 3 caratteri (solo minuscole, numeri e trattini bassi)",
+    "emailInvalid": "Inserisci un indirizzo email valido",
+    "contractDatesInvalid": "La data di fine contratto deve essere successiva alla data di inizio"
+  },
+  "reportIssueToast": {
+    "openTicketExists": "Questo sistema ha già un ticket di manutenzione aperto.",
+    "describeIssue": "Descrivi il problema",
+    "reported": "Problema segnalato — ticket di manutenzione creato",
+    "reportFailed": "Impossibile segnalare il problema"
+  },
+  "historyModalToast": {
+    "downloadFailed": "Download non riuscito. Riprova.",
+    "loadFailed": "Impossibile caricare la cronologia"
+  },
+  "docTypesToast": {
+    "updated": "Tipo aggiornato",
+    "updateFailed": "Aggiornamento non riuscito",
+    "updateTypeFailed": "Impossibile aggiornare il tipo",
+    "removed": "Tipo rimosso",
+    "deleteFailed": "Eliminazione non riuscita",
+    "deleteTypeFailed": "Impossibile eliminare il tipo",
+    "nameRequired": "Il nome è obbligatorio",
+    "areaRequired": "L'area è obbligatoria",
+    "added": "Tipo aggiunto",
+    "addFailed": "Impossibile aggiungere il tipo"
+  },
+  "resultFormToast": {
+    "fillAllFields": "Compila tutti i campi"
+  },
+  "flytbaseFlightsToast": {
+    "selectFlightFirst": "Seleziona prima un volo",
+    "noSerialNumber": "Nessun numero di serie del drone trovato nel registro di volo",
+    "fetchMissionsFailed": "Impossibile recuperare le missioni",
+    "attachedPdraWarning": "Registro di volo allegato. Nota: questa missione PDRA è stata registrata dopo il volo — un avviso di conformità è stato registrato nel log di audit.",
+    "attached": "Registro di volo allegato alla missione — i dati post-volo sono stati compilati automaticamente.",
+    "attachFailed": "Impossibile allegare il registro di volo",
+    "alreadyAttached": "Questo registro di volo è già allegato a una missione.",
+    "createdAttachedMismatch": "Missione creata e registro di volo allegato — ma il numero di serie del drone non corrisponde al registro (registro: {{logSerial}}, drone della missione: {{missionSerial}}).",
+    "createdAttached": "Missione creata e registro di volo allegato.",
+    "createdAttachFailedWithReason": "Missione creata, ma l'allegato del registro di volo non è riuscito: {{message}}",
+    "createdAttachFailed": "Missione creata, ma l'allegato del registro di volo non è riuscito."
+  },
+  "checklistView": {
+    "toast": {
+      "notFound": "Checklist non trovata",
+      "loadFailed": "Impossibile caricare la checklist",
+      "completed": "Checklist completata con successo",
+      "saveFailed": "Impossibile salvare il risultato della checklist"
+    }
+  },
   "export": {
     "export": "Esporta",
     "exporting": "Esportazione…",
-    "downloadAs": "Scarica come"
+    "downloadAs": "Scarica come",
+    "toast": {
+      "xlsxFailed": "Impossibile esportare il file Excel.",
+      "docxFailed": "Impossibile esportare il documento Word.",
+      "pdfFailed": "Impossibile esportare il PDF. Assicurati che jspdf sia installato."
+    }
   },
   "organization": {
     "common": {

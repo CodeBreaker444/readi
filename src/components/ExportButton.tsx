@@ -14,6 +14,7 @@ import {
 import { useState } from 'react';
 import { FaFileExcel, FaFilePdf, FaFileWord } from 'react-icons/fa';
 import { HiDownload } from 'react-icons/hi';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 export interface ExportColumn {
@@ -44,6 +45,7 @@ export function ExportButton({
   size = 'sm',
   className = '',
 }: ExportButtonProps) {
+  const { t } = useTranslation();
   const [exporting, setExporting] = useState<ExportFormat | null>(null);
 
   const headers = columns.map((c) => c.header);
@@ -84,7 +86,7 @@ export function ExportButton({
       triggerDownload(blob, `${filename}.xlsx`);
     } catch (err: unknown) {
       console.error('[ExportButton] xlsx error', err);
-      toast.error('Failed to export Excel file.');
+      toast.error(t('export.toast.xlsxFailed'));
     } finally {
       setExporting(null);
     }
@@ -98,7 +100,7 @@ export function ExportButton({
       triggerDownload(blob, `${filename}.docx`);
     } catch (err: unknown) {
       console.error('[ExportButton] docx error', err);
-      toast.error('Failed to export Word document.');
+      toast.error(t('export.toast.docxFailed'));
     } finally {
       setExporting(null);
     }
@@ -183,7 +185,7 @@ export function ExportButton({
       doc.save(`${filename}.pdf`);
     } catch (err: unknown) {
       console.error('[ExportButton] pdf error', err);
-      toast.error('Failed to export PDF. Make sure jspdf is installed.');
+      toast.error(t('export.toast.pdfFailed'));
     } finally {
       setExporting(null);
     }

@@ -10,9 +10,11 @@ import { Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 export default function OwnersPage() {
   const { isDark } = useTheme();
+  const { t } = useTranslation();
   const router = useRouter();
 
   const [data, setData] = useState<OwnerData[]>([]);
@@ -62,31 +64,31 @@ export default function OwnersPage() {
         license_expiry: owner.license_expiry,
       });
       if (res.data.code === 1) {
-        toast.success(`${owner.owner_name} activated`);
+        toast.success(t('companyPage.toast.activated', { name: owner.owner_name }));
         fetchOwners();
       } else {
-        toast.error(res.data.message || 'Failed to activate company');
+        toast.error(res.data.message || t('companyPage.toast.activateFailed'));
       }
     } catch {
-      toast.error('Failed to activate company');
+      toast.error(t('companyPage.toast.activateFailed'));
     }
-  }, [fetchOwners]);
+  }, [fetchOwners, t]);
 
   const handleResendVerification = useCallback(async (owner: OwnerData) => {
     setResendingOwnerId(owner.owner_id);
     try {
       const res = await axios.post(`/api/owner/${owner.owner_id}/resend-verification`);
       if (res.data.code === 1) {
-        toast.success('Activation email sent successfully');
+        toast.success(t('companyPage.toast.activationEmailSent'));
       } else {
-        toast.error(res.data.message || 'Failed to send activation email');
+        toast.error(res.data.message || t('companyPage.toast.activationEmailFailed'));
       }
     } catch {
-      toast.error('Network error');
+      toast.error(t('companyPage.toast.networkError'));
     } finally {
       setResendingOwnerId(null);
     }
-  }, []);
+  }, [t]);
 
   const columns = useMemo(
     () =>

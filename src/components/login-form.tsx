@@ -6,6 +6,7 @@ import { EyeIcon, EyeOffIcon, Loader2Icon } from 'lucide-react'
 import Image from 'next/image'
 import { useSearchParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { CiLock, CiMail } from 'react-icons/ci'
 import { toast } from 'sonner'
 
@@ -16,18 +17,19 @@ function safeNextPath(next: string | null): string | null {
 }
 
 export function LoginForm() {
+  const { t } = useTranslation()
   const searchParams = useSearchParams()
   const [formData, setFormData] = useState({ email: '', password: '' })
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    if (searchParams.get('activated') === 'true') toast.success('Account activated successfully!')
+    if (searchParams.get('activated') === 'true') toast.success(t('auth.accountActivated'))
     const error = searchParams.get('error')
-    if (error === 'invalid_link') toast.error('Invalid activation link.')
-    else if (error === 'activation_failed') toast.error('Activation failed. Link may have expired.')
-    else if (error === 'activation_error') toast.error('Activation error. Please try again.')
-  }, [searchParams])
+    if (error === 'invalid_link') toast.error(t('auth.invalidActivationLink'))
+    else if (error === 'activation_failed') toast.error(t('auth.activationFailed'))
+    else if (error === 'activation_error') toast.error(t('auth.activationError'))
+  }, [searchParams, t])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -35,16 +37,16 @@ export function LoginForm() {
     try {
       const response = await axios.post('/api/auth/login', formData)
       const result = response.data
-      if (!result.success) { toast.error(result.error || 'Login failed'); return }
+      if (!result.success) { toast.error(result.error || t('auth.loginFailed')); return }
       if (result.redirect) {
-        toast.info('Please set a new password to continue.')
+        toast.info(t('auth.setNewPassword'))
         window.location.href = result.redirect
         return
       }
-      toast.success(result.message || 'Login successful!')
+      toast.success(result.message || t('auth.loginSuccess'))
       if (result.data) window.location.href = safeNextPath(searchParams.get('next')) ?? getDefaultRoute(result.data.role)
     } catch (err: any) {
-      toast.error(err.response?.data?.error || err.message || 'Login failed.')
+      toast.error(err.response?.data?.error || err.message || t('auth.loginFailed'))
     } finally {
       setLoading(false)
     }

@@ -3,6 +3,7 @@
 import { MissionResult } from '@/config/types/types';
 import { Plus } from 'lucide-react';
 import { FormEvent, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 interface ResultFormProps {
@@ -11,6 +12,7 @@ interface ResultFormProps {
 }
 
 export default function ResultForm({ onSubmit, isDark}: ResultFormProps) {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState({
     code: '',
     description: '',
@@ -20,7 +22,7 @@ export default function ResultForm({ onSubmit, isDark}: ResultFormProps) {
     e.preventDefault();
     
     if (!formData.code.trim() || !formData.description.trim()) {
-      toast.error('Please fill in all fields');
+      toast.error(t('resultFormToast.fillAllFields'));
       return;
     }
 

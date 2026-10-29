@@ -172,12 +172,12 @@ export function FlytbaseFlights({ isActive = true, selectedOrganization, listCon
 
   const handleOpenAttachMissionModal = async () => {
     if (!selectedFlight || !preview) {
-      toast.error('Please select a flight first');
+      toast.error(t('flytbaseFlightsToast.selectFlightFirst'));
       return;
     }
     const droneSerialNumber = preview?.aircraft?.serial_number;
     if (!droneSerialNumber) {
-      toast.error('No drone serial number found in flight log');
+      toast.error(t('flytbaseFlightsToast.noSerialNumber'));
       return;
     }
     setAttachMissionModalOpen(true);
@@ -191,10 +191,10 @@ export function FlytbaseFlights({ isActive = true, selectedOrganization, listCon
       if (res.data.code === 1) {
         setAttachableMissions(res.data.data);
       } else {
-        toast.error(res.data.message || 'Failed to fetch missions');
+        toast.error(res.data.message || t('flytbaseFlightsToast.fetchMissionsFailed'));
       }
     } catch {
-      toast.error('Failed to fetch missions');
+      toast.error(t('flytbaseFlightsToast.fetchMissionsFailed'));
     } finally {
       setAttachableMissionsLoading(false);
     }
@@ -240,9 +240,9 @@ export function FlytbaseFlights({ isActive = true, selectedOrganization, listCon
       });
       if (res.data.code === 1) {
         if (isPdra) {
-          toast.warning('Flight log attached. Note: This PDRA mission was logged after the flight — a compliance warning has been recorded in the audit log.');
+          toast.warning(t('flytbaseFlightsToast.attachedPdraWarning'));
         } else {
-          toast.success('Flight log attached to mission — post-flight data has been filled in automatically.');
+          toast.success(t('flytbaseFlightsToast.attached'));
         }
         markFlightAsLinked(selectedFlight.flight_id);
         setAttachMissionModalOpen(false);
@@ -254,10 +254,10 @@ export function FlytbaseFlights({ isActive = true, selectedOrganization, listCon
           if (missionsRes.data.code === 1) setAttachableMissions(missionsRes.data.data);
         }
       } else {
-        toast.error(res.data.message || 'Failed to attach flight log');
+        toast.error(res.data.message || t('flytbaseFlightsToast.attachFailed'));
       }
     } catch (err: any) {
-      toast.error(err.response?.data?.message ?? 'Failed to attach flight log');
+      toast.error(err.response?.data?.message ?? t('flytbaseFlightsToast.attachFailed'));
     } finally {
       setAttachingMissionId(null);
     }
@@ -265,7 +265,7 @@ export function FlytbaseFlights({ isActive = true, selectedOrganization, listCon
 
   const handleOpenNewMission = async () => {
     if (selectedFlight?.linked_to_mission) {
-      toast.error('This flight log is already attached to a mission.');
+      toast.error(t('flytbaseFlightsToast.alreadyAttached'));
       setAttachMissionModalOpen(false);
       return;
     }
@@ -306,21 +306,24 @@ export function FlytbaseFlights({ isActive = true, selectedOrganization, listCon
         markFlightAsLinked(selectedFlight.flight_id, op.mission_code);
         const mismatch = res.data.serialNumberMismatch;
         if (mismatch) {
-          toast.warning(`Mission created and flight log attached — but the drone's serial number doesn't match the log (log: ${mismatch.logSerialNumber}, mission drone: ${mismatch.missionSerialNumber}).`);
+          toast.warning(t('flytbaseFlightsToast.createdAttachedMismatch', {
+            logSerial: mismatch.logSerialNumber,
+            missionSerial: mismatch.missionSerialNumber,
+          }));
         } else {
-          toast.success('Mission created and flight log attached.');
+          toast.success(t('flytbaseFlightsToast.createdAttached'));
         }
       } else {
         toast.error(res.data.message
-          ? `Mission created, but attaching the flight log failed: ${res.data.message}`
-          : 'Mission created, but attaching the flight log failed.');
+          ? t('flytbaseFlightsToast.createdAttachFailedWithReason', { message: res.data.message })
+          : t('flytbaseFlightsToast.createdAttachFailed'));
       }
     } catch (err: any) {
       console.error('Failed to auto-attach flight log to new mission:', err);
       const message = err?.response?.data?.message ?? '';
       toast.error(message
-        ? `Mission created, but attaching the flight log failed: ${message}`
-        : 'Mission created, but attaching the flight log failed.');
+        ? t('flytbaseFlightsToast.createdAttachFailedWithReason', { message })
+        : t('flytbaseFlightsToast.createdAttachFailed'));
     }
   };
 

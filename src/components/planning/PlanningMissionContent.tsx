@@ -202,7 +202,11 @@ export const PlanningMissionContent: FC<PlanningMissionProps> = ({ user }) => {
       return { success: true };
     } catch (err: any) {
       console.error("Add failed:", err);
-      toast.error(t("planning.missionPlanning.addFailed"));
+      const data = axios.isAxiosError(err) ? err.response?.data : undefined;
+      const fieldMsg = data?.errors
+        ? (Object.values(data.errors).flat().find(Boolean) as string | undefined)
+        : undefined;
+      toast.error(fieldMsg ?? data?.message ?? t("planning.missionPlanning.addFailed"));
       return { success: false };
     }
   };
@@ -217,7 +221,11 @@ export const PlanningMissionContent: FC<PlanningMissionProps> = ({ user }) => {
       return { success: true };
     } catch (err) {
       console.error("Update failed:", err);
-      toast.error(t("planning.evaluation.updateFailed"));
+      const data = axios.isAxiosError(err) ? err.response?.data : undefined;
+      const fieldMsg = data?.errors
+        ? (Object.values(data.errors).flat().find(Boolean) as string | undefined)
+        : undefined;
+      toast.error(fieldMsg ?? data?.message ?? data?.error ?? t("planning.evaluation.updateFailed"));
       return { success: false };
     }
   };
