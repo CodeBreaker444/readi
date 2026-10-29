@@ -34,7 +34,7 @@ export async function GET(
       }),
     ]);
 
-    const locationHistory: { latitude: number; longitude: number; changed_at: string }[] =
+    const locationHistory: { latitude: number | null; longitude: number | null; pseudo_name?: string | null; previous_pseudo_name?: string | null; changed_at: string }[] =
       (compMeta?.component_metadata as any)?.location_history ?? [];
 
     return NextResponse.json({

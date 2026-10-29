@@ -1,0 +1,161 @@
+---
+title: "Systems"
+description: "Manage your drones and their components: reports, duplicates, relations, warehouse and component history."
+---
+
+A **system** is a drone and everything it is built from. Each part (the drone itself, a battery, a motor, a controller) is a **component** with its own serial number and usage. Open **Systems** in the sidebar to manage them. This page covers the tools beyond adding and editing records.
+
+---
+
+## Systems map
+
+**Systems → Map** (Drone System Map) shows your installed docks and drone systems on a map.
+
+- **Filters:** by **Status** (Operational, Not Operational, Maintenance, Decommissioned), by **Client**, and a search box (for example a system code). **Docks only** and **Installed only** narrow it further.
+- **Legend:** the symbols are the Control Center, Dock, Drone and Cluster (several systems close together), coloured by status.
+- **Tool List:** a table of the systems on the map. **Locate** jumps to one on the map, and **Detail** opens its details: general info, specifications and its components.
+- **Panel tabs:** **Systems** shows the components attached to a system, and **Warehouse** shows the spare components that are not on any system, with their serial numbers.
+- A system with no location is not shown on the map ("No map location available for this item").
+- **Reload** refreshes the map.
+
+---
+
+## Location name
+
+A system can have a **Location Name** next to its map coordinates, for example "Warehouse A". It makes lists, exports and the Maintenance Logbook easier to read than raw coordinates. Missions have one too (see [Operations](/docs/modules/operations)).
+
+---
+
+## QTB report (PDF)
+
+The QTB report is a printable flight record for a drone. It is available on **drone** components.
+
+1. In the components list, find the drone and choose **QTB Report**.
+2. Pick a **start date** and an **end date**. They use your own timezone, and both start as today.
+3. Click **Generate PDF**. The file downloads straight away.
+
+The end date must be on or after the start date. If you choose a very long period you may see "too many flights"; just narrow the dates and try again.
+
+---
+
+## Duplicate System
+
+Use **Duplicate System** to set up a new drone that is like an existing one, without typing everything again.
+
+1. Choose **Duplicate** on the system you want to copy.
+2. **System Details** tab: the details are copied and the code ends in `-copy`. Change the **Code** and choose the **Client** (both are required). You can also change the description, location, status and activation date.
+3. **Components** tab: every component of the original is copied as a new one, and you can review them one by one. Codes and serial numbers also end in `-copy`, so replace them with the real ones. You can edit the type, name, model, dates, vendor, maintenance cycle and parent component of each.
+4. Click **Save Duplicate**.
+
+The copy is a brand-new system with its own components. The original is not changed.
+
+---
+
+## Component relations
+
+**Relations** lets you organise the parts of a system into a simple family tree, for example a battery and a camera that belong to a drone.
+
+- Open **Relations** on a system. Every component has a **Parent** dropdown.
+- Choose a parent to make a component a **child** of another. Choose **None (top-level)** to take it out again.
+- **Live Preview** shows the result before you save. Click **Save** to apply it.
+
+There is only **one level**:
+
+- A component cannot be its own parent.
+- Only top-level components can be parents. A child cannot have children of its own.
+- A component that already has children cannot become a child. Remove its children first.
+
+### Primary component
+
+In the same window, choose the **Primary Component** of the system, normally the drone itself. It is marked **PRIMARY** and is the component shown for the system in mission details. Only one component can be primary at a time.
+
+---
+
+## Warehouse: moving and reassigning components
+
+Spare parts that are not on a drone live in the **Warehouse**.
+
+- To take a component off a system, **detach** it and confirm. It moves to the warehouse. A component that is still attached to a system cannot be deleted, so detach it first.
+- The **Warehouse** tab, in the components list and on the systems map, shows what is available, with serial numbers.
+- To use a warehouse component again, assign it to a system. This is how you swap a battery or move a part from one drone to another.
+
+Components in the warehouse are not offered as systems for missions. Detaching is recorded as a secure transaction in the [Audit Logs](/docs/records/audit-logs).
+
+---
+
+## Component Log and Flights
+
+Each component has two views of its own history:
+
+| View | Shows |
+|---|---|
+| **Log** | A timeline for this component, such as location changes and the missions it was used on |
+| **Flights** | The flight logs for this component |
+
+Use them to answer "how much has this battery been used?" or "where has this part been?".
+
+---
+
+## Component statuses
+
+A component has one of five statuses:
+
+| Status | Meaning |
+|---|---|
+| **Operational** | In service and usable |
+| **Not Operational** | Not usable at the moment |
+| **Maintenance** | Being serviced. Holds the system in maintenance |
+| **Dismissed** | Retired administratively |
+| **Decommissioned** | Permanently out of service. The system no longer counts it |
+
+### Expiry is permanent
+
+When a component passes its expiry date, or reaches its flight or flight-hour limit, it is **expired**, and expired is final:
+
+- It shows as **Decommissioned** and the system becomes **Not Operational**.
+- **It cannot be made Operational again.** Extending its expiry date or limits, or changing its status, is refused.
+- **No maintenance ticket can be created for it.** Expiry means the component is retired for good, not that it is waiting for service.
+
+To make the system operational again, take the expired component out of the system's count in one of these ways:
+
+- Set its status to **Decommissioned**.
+- Remove it from the system.
+- Move it to the warehouse.
+
+Then fit a replacement component if the system needs one.
+
+---
+
+## Models, component types and drone classes
+
+Drop-down lists such as the model, type and class of a component are managed by you, from the system screens.
+
+- **Models:** use **Add Model** to describe a drone or other equipment once and reuse it. A model holds the brand, model code and name, type and sub-type (for example multirotor, fixed wing, VTOL or dock), weight, operating conditions (wind and temperature range), performance (endurance, speed, altitude), the maintenance cycle and the guarantee. Use **Edit Model** to change one later. The wind and temperature limits are the ones used for the weather forecast in [Operations](/docs/modules/operations).
+- **Manage Component Types:** add, rename or remove the types you can choose for a component.
+- **Manage Drone Classes:** add or rename the drone classes.
+
+---
+
+## Insurance and alerts
+
+A component can store its **insurance** details: the insurance name, company and **expiry date**. To be warned before it expires:
+
+- **Notify Users:** choose which users are emailed.
+- **Days before:** how many days before expiry the reminder is sent.
+- **Additional Emails:** add people who do not have a Readi account.
+
+---
+
+## Permissions
+
+Who can read, edit and delete in this area, by role.
+
+<PermissionsTable section="Systems" />
+
+---
+
+## Related
+
+- [Maintenance](/docs/modules/maintenance)
+- [Systems logic](/docs/business-logic/systems)
+- [System Status Rules](/docs/platform-rules/system-status-rules)

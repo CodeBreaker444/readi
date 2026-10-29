@@ -123,6 +123,34 @@ export async function setComponentsOperationalStatus(componentIds: number[], sta
   );
 }
 
+/**
+ * A component that expired (or was dismissed) while flagged MAINTENANCE keeps the stale flag, because a ticket
+ * cannot revive it. Persist its real status so it stops holding the system in maintenance.
+ */
+export async function settleBlockedMaintenanceComponents(toolId: number): Promise<void> {
+  const rows = await prisma.tool_component.findMany({
+    where: { fk_tool_id: toolId, component_metadata: { path: ['component_status'], equals: 'MAINTENANCE' } },
+    select: { ...EFFECTIVE_STATUS_SELECT },
+  });
+
+  for (const row of rows) {
+    const meta = parseComponentMeta(row.component_metadata);
+    const effective = meta.system_detached === true
+      ? 'DISMISSED'
+      : computeEffectiveComponentStatus({
+          ...row,
+          component_metadata: meta,
+          expiration_date: row.expiration_date ? new Date(row.expiration_date).toISOString().split('T')[0] : null,
+        });
+    if (!PERMANENT_BLOCKED_STATUSES.includes(effective)) continue;
+
+    await prisma.tool_component.update({
+      where: { component_id: row.component_id },
+      data: { component_metadata: { ...meta, component_status: effective } as Prisma.InputJsonValue },
+    });
+  }
+}
+
 /** Active components still attached to the system (detached / dismissed / decommissioned / expired ones are excluded). */
 export async function getSystemComponentIds(toolId: number): Promise<number[]> {
   const components = await prisma.tool_component.findMany({

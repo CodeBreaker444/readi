@@ -23,7 +23,10 @@ const schema = z.object({
   mission_planning_desc: z.string().default(""),
   mission_planning_limit_json: z.string().default(""),
   mission_planning_active: z.string().default("N"),
-  mission_planning_ver: z.string().default(""),
+  mission_planning_ver: z
+    .string()
+    .trim()
+    .regex(/^[1-9]\d{0,8}$/, "Version must be a whole number of 1 or more"),
   mission_planning_tool: z.coerce.number().default(0),
 });
 

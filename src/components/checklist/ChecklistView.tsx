@@ -3,6 +3,7 @@
 import axios from 'axios';
 import { Loader2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { ChecklistRenderer } from './ChecklistRenderer';
 
@@ -23,6 +24,7 @@ export function ChecklistView({
   onComplete,
   isDark = false,
 }: ChecklistViewProps) {
+  const { t } = useTranslation();
   const [checklistJson, setChecklistJson] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -45,11 +47,11 @@ export function ChecklistView({
           : JSON.stringify(res.data.data.checklist_json);
         setChecklistJson(json);
       } else {
-        toast.error('Checklist not found');
+        toast.error(t('checklistView.toast.notFound'));
       }
     } catch (error) {
       console.error('Error loading checklist:', error);
-      toast.error('Failed to load checklist');
+      toast.error(t('checklistView.toast.loadFailed'));
     } finally {
       setLoading(false);
     }
@@ -66,16 +68,16 @@ export function ChecklistView({
       const res = await axios.post('/api/organization/checklist/result', result);
       
       if (res.data.code === 1) {
-        toast.success('Checklist completed successfully');
+        toast.success(t('checklistView.toast.completed'));
         if (onComplete) {
           onComplete(survey.data);
         }
       } else {
-        toast.error('Failed to save checklist result');
+        toast.error(t('checklistView.toast.saveFailed'));
       }
     } catch (error) {
       console.error('Error saving checklist:', error);
-      toast.error('Failed to save checklist result');
+      toast.error(t('checklistView.toast.saveFailed'));
     } finally {
       setSubmitting(false);
     }

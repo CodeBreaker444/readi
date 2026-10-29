@@ -29,8 +29,9 @@ export default function AddSystemModal({ open, onClose, onSuccess, models, clien
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState(INITIAL_FORM);
   const [files, setFiles] = useState<File[]>([]);
+  const [codeError, setCodeError] = useState(false);
 
-  useEffect(() => { if (open) { setFormData(INITIAL_FORM); setFiles([]); } }, [open]);
+  useEffect(() => { if (open) { setFormData(INITIAL_FORM); setFiles([]); setCodeError(false); } }, [open]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,6 +51,7 @@ export default function AddSystemModal({ open, onClose, onSuccess, models, clien
       }
     }
     if (!formData.tool_code.trim()) {
+      setCodeError(true);
       toast.error(t('systems.components.addSystem.toasts.codeRequired'));
       return;
     }
@@ -66,6 +68,7 @@ export default function AddSystemModal({ open, onClose, onSuccess, models, clien
         tool_name: formData.tool_code,
         tool_description: formData.tool_description,
         tool_active: formData.tool_active,
+        tool_status: formData.tool_status,
         fk_client_id: formData.fk_client_id ? Number(formData.fk_client_id) : null,
         location: formData.location || null,
         latitude: formData.latitude ? Number(formData.latitude) : null,
@@ -119,10 +122,21 @@ export default function AddSystemModal({ open, onClose, onSuccess, models, clien
           <div>
             <p className={sectionLabelCls}>{t('systems.components.addSystem.sections.basicInfo')}</p>
             <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
-              <div className="col-span-1 sm:col-span-2"><Label className={labelCls}>{t('systems.components.addSystem.fields.code')}</Label>
-                <Input className={inputCls} value={formData.tool_code} onChange={e => handleChange('tool_code', e.target.value)} required />
+              <div className="col-span-1 sm:col-span-4"><Label className={labelCls}>{t('systems.components.addSystem.fields.code')}</Label>
+                <Input
+                  className={`${inputCls} ${codeError ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
+                  value={formData.tool_code}
+                  onChange={e => { handleChange('tool_code', e.target.value); setCodeError(false); }}
+                  aria-invalid={codeError}
+                  aria-describedby={codeError ? 'tool-code-error' : undefined}
+                />
+                {codeError && (
+                  <p id="tool-code-error" role="alert" className="mt-1 text-xs text-red-500">
+                    {t('systems.components.addSystem.toasts.codeRequired')}
+                  </p>
+                )}
               </div>
-              <div className="col-span-1 sm:col-span-3"><Label className={labelCls}>{t('systems.components.addSystem.fields.description')}</Label>
+              <div className="col-span-1 sm:col-span-8"><Label className={labelCls}>{t('systems.components.addSystem.fields.description')}</Label>
                 <Input className={inputCls} value={formData.tool_description} onChange={e => handleChange('tool_description', e.target.value)} />
               </div>
             </div>

@@ -7,16 +7,33 @@ Welcome to the official documentation for **Readi**, an operations and complianc
 
 ## What is Readi?
 
-Readi helps aviation and drone operations teams manage planning, missions, training, compliance, maintenance, and records in one workspace. Built to support day-to-day operations while keeping audit readiness and safety visibility across teams.
+Readi helps aviation and drone operations teams manage planning, missions, training, compliance, maintenance, and records in one workspace. It is built for day-to-day operations while keeping your team audit-ready and giving everyone visibility of safety.
+
+This documentation is written for the people who use Readi: pilots, operations managers, maintenance staff, safety and compliance managers and administrators. You do not need technical knowledge. The **Business Logic** and **Platform Rules** sections go deeper for people who want to know exactly how a rule works.
 
 ## What you can do in Readi
 
-- Track mission planning, flight requests, and approvals
-- Manage operations boards, calendars, and logbooks
-- Maintain system and component records with maintenance tickets
-- Run compliance workflows with evidence tracking and safety reviews
-- Organise personnel, qualifications, assignments, and crew shifts
-- Manage training calendars, attendance, and course progress
+- Request evaluations and plan missions, with approvals and flight requests
+- Run operations on a daily board and calendar, with weather help and D-Flight authorization
+- Record every flight, battery and incident in the logbooks
+- Manage drones and their components, and keep them airworthy with maintenance tickets
+- Keep documents with versions, and link them to the equipment they apply to
+- Run compliance with evidence tracking, audit plans and safety targets
+- Track safety indicators and see your Safety Health Index
+- Organise personnel, departments, qualifications, procedures and checklists
+- Manage training courses, certificates and expiry dates
+- Get alerts in one inbox, and ask questions to the AI assistant
+
+## Where do I start?
+
+| If you are | Start with |
+|---|---|
+| **New to Readi** | [Getting Started](/docs/start-guide/getting-started), then [Key Features](/docs/start-guide/key-features) |
+| **A pilot** | [Operations](/docs/modules/operations) (declaration, Daily Board, completing a mission), then [Logbooks](/docs/modules/logbooks) |
+| **An operations manager** | [Planning](/docs/modules/planning), [Operations](/docs/modules/operations) and [Mission Approval](/docs/business-logic/mission-approval) |
+| **In maintenance** | [Systems](/docs/modules/systems) and [Maintenance](/docs/modules/maintenance) |
+| **In safety or compliance** | [Safety Management](/docs/modules/safety-management), [Compliance](/docs/modules/compliance) and [Audit Logs](/docs/records/audit-logs) |
+| **An administrator** | [Company](/docs/configuration/company), [Team Management](/docs/configuration/team) and [Settings and Security](/docs/configuration/settings-security) |
 
 ## Explore the docs
 
@@ -24,13 +41,17 @@ Readi helps aviation and drone operations teams manage planning, missions, train
   <Card icon={<Rocket />} title="Getting Started" href="/docs/start-guide/getting-started">
     Requirements, key features and your first steps.
   </Card>
-  <Card icon={<LayoutGrid />} title="Core Modules" href="/docs/modules/planning">
-    Planning, operations, training, compliance and more.
+  <Card icon={<LayoutGrid />} title="Core Modules" href="/docs/modules/operations">
+    Operations, planning, systems, maintenance, logbooks and more.
   </Card>
   <Card icon={<Settings />} title="Configuration" href="/docs/configuration/company">
-    Company, organization, team and security settings.
+    Company, team, mission definitions and security settings.
   </Card>
   <Card icon={<Workflow />} title="Business Logic" href="/docs/business-logic/mission-lifecycle">
     Mission lifecycle, cron jobs, notifications and rules.
   </Card>
 </Cards>
+
+<Note>
+Missing something, or found a page that does not match the app? Check [Release Notes](/docs/modules/releases) for recent changes, and tell your administrator.
+</Note>

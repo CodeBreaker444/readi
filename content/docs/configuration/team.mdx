@@ -1,6 +1,6 @@
 ---
 title: "Team Management"
-description: "User accounts, roles, and access control."
+description: "User accounts, roles, departments, qualifications and staff profiles."
 ---
 
 ## Main capabilities
@@ -8,6 +8,7 @@ description: "User accounts, roles, and access control."
 - Create and manage user accounts (name, email, role, timezone)
 - Role assignment: PIC, OPM, SM, AM, CMM, MM, TM, DC, SLA, ADMIN
 - Viewer and Manager flags for additional permission layers
+- Departments and qualifications for each person
 - Territorial unit assignment
 - Resend activation invites to pending users
 
@@ -15,9 +16,78 @@ description: "User accounts, roles, and access control."
 
 New users receive an activation email with a one-time link. Until activated, they appear as **Pending**. Use "Resend Invite" if the email was missed.
 
+---
+
+## Departments
+
+Departments group your people, for example "Flight Operations" or "Maintenance". The department is shown beside a pilot's name when you assign them to a mission.
+
+- **Assign a department:** choose it in the **Department** field when you create or edit a user.
+- **Create or manage departments:** next to that field, click **Manage** to add a new department or remove one, without leaving the form.
+- **Filter:** on the Team page, use **All Departments** to see one department.
+
+---
+
+## Qualifications
+
+Qualifications are a person's licences and certificates, such as a pilot licence, with a start and an expiry date. They are shown when you pick a pilot for a mission.
+
+### When creating a user
+
+You can add qualifications before the user exists. In the **Qualifications** section, fill in the details and add them to the list. They are **staged**, which means they are only saved when you click **Save** and the user is created. You can stage up to 10 at a time. If saving the qualifications fails, the user is still created and you can add them later from the edit page.
+
+### For an existing user
+
+Open the user and expand **Qualifications** to see what is on file, add more, or remove one.
+
+---
+
+## Staff Profile
+
+Everyone can open their own **Profile** from the menu at the top right.
+
+| Field | Notes |
+|---|---|
+| Full name, phone, timezone | Your contact details. You can edit them. Timezone sets how dates and times are shown to you |
+| **Email** | **Read-only** for most people. It is your sign-in address and shown greyed out. Only an Admin or Super Admin can change an email address. Ask your administrator if yours is wrong |
+| **Department** | Pick from the departments your company has set up |
+| **Signature** | Your signature text, used on documents that need one |
+| EASA operator code | If your role requires it |
+
+Click **Update Profile** to save.
+
+Your **Training Curriculum** is shown in the profile too, split into **Active** and **History**, with each course, its certificate, completion and expiry dates and whether it is **Valid** or **Expired**. You can see your own curriculum at any time without asking an administrator. See [Training](/docs/modules/training) to add records.
+
+---
+
+## Clients
+
+Open **Clients** in the Team menu to manage the companies you fly for. It shows the totals for **Total Clients**, **Active**, **Inactive** and **Expiring Soon** (contracts about to end).
+
+- **Add New Client:** enter the contact details, location, website, payment terms and contract end date.
+- **Search** by name, email, code or city, and filter by status.
+- Each row has **Edit Client**, **Update Password** (the new password is emailed to the client) and **Delete Client**.
+
+Clients you add here can then be chosen on missions and in the [Client Portal](/docs/modules/client-portal).
+
+---
+
+## Roles & Permissions
+
+The **Roles & Permissions** page shows what each role can do by default. Each row is a feature and each column a role.
+
+- Click a cell to switch between **Read-only** and **Full access**.
+- Click **Save** under a role to store its changes.
+- **OPM** and **Admin** always have full access and cannot be changed.
+- A user without a personal override follows this table.
+
+See [Role Permissions](/docs/business-logic/role-permissions) for what each role means.
+
+---
+
 ## Primary app routes
 
-- `/settings/team`
+- `/team/personnel`
 
 ---
 

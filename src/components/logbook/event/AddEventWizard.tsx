@@ -59,8 +59,8 @@ interface MissionSetup {
   missionId: string;
   takeoff: string;
   notifyIds: number[];
-  /** Once the pilot edits the recipients, changing the system/mission no longer overwrites them. */
-  notifyTouched: boolean;
+  /** Client whose default contacts were last applied to `notifyIds`; defaults are re-applied only when the client changes. */
+  notifyClientId: number | null;
 }
 
 const SETUP_STORAGE_KEY = 'readi.eventLogbook.missionSetup.v1';
@@ -71,7 +71,7 @@ function toLocalInputValue(date: Date): string {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
-const emptySetup = (): MissionSetup => ({ toolId: '', missionId: '', takeoff: toLocalInputValue(new Date()), notifyIds: [], notifyTouched: false });
+const emptySetup = (): MissionSetup => ({ toolId: '', missionId: '', takeoff: toLocalInputValue(new Date()), notifyIds: [], notifyClientId: null });
 
 function readStoredSetup(): MissionSetup | null {
   try {
@@ -84,7 +84,7 @@ function readStoredSetup(): MissionSetup | null {
       missionId: String(parsed.missionId ?? ''),
       takeoff: String(parsed.takeoff ?? ''),
       notifyIds: Array.isArray(parsed.notifyIds) ? parsed.notifyIds.filter((n): n is number => typeof n === 'number') : [],
-      notifyTouched: parsed.notifyTouched === true,
+      notifyClientId: typeof parsed.notifyClientId === 'number' ? parsed.notifyClientId : null,
     };
   } catch {
     return null;
@@ -205,18 +205,19 @@ export function AddEventWizard({ open, mode = 'event', onOpenChange, drones, mis
     if (eventType && typeItems.every((i) => i.value !== eventType)) setEventType('');
   }, [typeItems, eventType]);
 
-  // Pre-fill the recipients with the client's default contacts.
+  // Pre-select the client's default contacts whenever the client changes (or its defaults were never applied).
+  // The pilot can then uncheck them or tick extra contacts; those edits are kept until the client changes again.
   // Also runs on the event view, so a setup stored before the defaults existed still picks them up.
   useEffect(() => {
     const active = view === 'setup' ? draft : setup;
-    if (!open || !active || active.notifyTouched) return;
+    if (!open || !active || contacts.length === 0 || active.notifyClientId === reportClientId) return;
     const known = new Set(contacts.map((c) => c.contact_id));
-    const ids = reportClientId ? (defaultContacts[reportClientId] ?? []).filter((id) => known.has(id)) : [];
-    if (ids.length === active.notifyIds.length && ids.every((id, i) => id === active.notifyIds[i])) return;
+    const defaults = reportClientId ? (defaultContacts[reportClientId] ?? []).filter((id) => known.has(id)) : [];
+    const apply = (s: MissionSetup): MissionSetup => ({ ...s, notifyIds: defaults, notifyClientId: reportClientId });
     if (view === 'setup') {
-      setDraft((d) => (d.notifyTouched ? d : { ...d, notifyIds: ids }));
+      setDraft(apply);
     } else {
-      const next = { ...active, notifyIds: ids };
+      const next = apply(active);
       setSetup(next);
       writeStoredSetup(next);
     }
@@ -247,7 +248,7 @@ export function AddEventWizard({ open, mode = 'event', onOpenChange, drones, mis
 
   const setNotify = (ids: number[]) => {
     if (!setup) return;
-    const next = { ...setup, notifyIds: ids, notifyTouched: true };
+    const next = { ...setup, notifyIds: ids, notifyClientId: reportClientId };
     setSetup(next);
     writeStoredSetup(next);
   };
@@ -426,7 +427,7 @@ export function AddEventWizard({ open, mode = 'event', onOpenChange, drones, mis
                   isDark={isDark}
                   contacts={contacts}
                   value={draft.notifyIds}
-                  onChange={(ids) => setDraft((d) => ({ ...d, notifyIds: ids, notifyTouched: true }))}
+                  onChange={(ids) => setDraft((d) => ({ ...d, notifyIds: ids, notifyClientId: reportClientId }))}
                 />
               </div>
             </div>

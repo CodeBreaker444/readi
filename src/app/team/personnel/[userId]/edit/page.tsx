@@ -6,6 +6,7 @@ import { getUserSession } from '@/lib/auth/server-session';
 import axios from 'axios';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 export default function EditUserPage() {
@@ -13,6 +14,7 @@ export default function EditUserPage() {
   const params = useParams<{ userId: string }>();
   const userId = Number(params.userId);
   const { isDark } = useTheme();
+  const { t } = useTranslation();
   const [clients, setClients] = useState<{ client_id: number; client_name: string }[]>([]);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [canEditEmail, setCanEditEmail] = useState(true);
@@ -43,13 +45,13 @@ export default function EditUserPage() {
         const listData = await listRes.json();
         const found = (listData.data ?? []).find((u: any) => u.user_id === userId);
         if (!found) {
-          toast.error('User not found');
+          toast.error(t('team.editUserToast.notFound'));
           router.replace('/team/personnel');
           return;
         }
         setUserData(found);
       } catch {
-        toast.error('Failed to load user');
+        toast.error(t('team.editUserToast.loadFailed'));
         router.replace('/team/personnel');
         return;
       }
@@ -76,14 +78,14 @@ export default function EditUserPage() {
       });
       const data = res.data;
       if (data.code !== 1) {
-        toast.error(data.error || 'Failed to update user');
+        toast.error(data.error || t('team.editUserToast.updateFailed'));
         return;
       }
 
-      toast.success('User updated successfully');
+      toast.success(t('team.editUserToast.updated'));
       router.push('/team/personnel');
     } catch {
-      toast.error('Failed to update user');
+      toast.error(t('team.editUserToast.updateFailed'));
     }
   };
 

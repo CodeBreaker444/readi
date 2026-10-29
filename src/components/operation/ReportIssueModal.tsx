@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 import axios from "axios";
 import { AlertTriangle, Loader2, Wrench } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
 interface ComponentInfo {
@@ -70,6 +71,7 @@ function CycleBar({ current, limit, unit }: { current: number; limit: number; un
 }
 
 export function ReportIssueModal({ open, onClose, toolId, toolCode, missionId, isDark }: Props) {
+  const { t } = useTranslation();
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState<Priority>("MEDIUM");
   const [checking, setChecking] = useState(true);
@@ -91,7 +93,7 @@ export function ReportIssueModal({ open, onClose, toolId, toolCode, missionId, i
       setComponents(data?.components ?? []);
       if (data?.has_open_ticket) {
         setAlreadyInMaintenance(true);
-        toast.error("This system already has an open maintenance ticket.");
+        toast.error(t("reportIssueToast.openTicketExists"));
       } else {
         setAlreadyInMaintenance(false);
       }
@@ -101,7 +103,7 @@ export function ReportIssueModal({ open, onClose, toolId, toolCode, missionId, i
     } finally {
       setChecking(false);
     }
-  }, [toolId]);
+  }, [toolId, t]);
 
   useEffect(() => {
     if (open && toolId > 0) {
@@ -113,7 +115,7 @@ export function ReportIssueModal({ open, onClose, toolId, toolCode, missionId, i
 
   async function handleSubmit() {
     if (!description.trim()) {
-      toast.error("Please describe the issue");
+      toast.error(t("reportIssueToast.describeIssue"));
       return;
     }
     setSubmitting(true);
@@ -125,13 +127,13 @@ export function ReportIssueModal({ open, onClose, toolId, toolCode, missionId, i
         selected_component_ids: selectedComponentIds,
       });
       if (data.status === "OK") {
-        toast.success("Issue reported — maintenance ticket created");
+        toast.success(t("reportIssueToast.reported"));
         onClose();
       } else {
-        toast.error(data.message || "Failed to report issue");
+        toast.error(data.message || t("reportIssueToast.reportFailed"));
       }
     } catch (e: any) {
-      const msg = e.response?.data?.message ?? "Failed to report issue";
+      const msg = e.response?.data?.message ?? t("reportIssueToast.reportFailed");
       toast.error(msg);
       if (e.response?.status === 409) setAlreadyInMaintenance(true);
     } finally {

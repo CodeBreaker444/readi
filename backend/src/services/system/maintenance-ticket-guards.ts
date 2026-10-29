@@ -4,7 +4,8 @@
  */
 import { supabase } from '@/backend/database/database';
 import { prisma } from '@/lib/prisma';
-import { findTicketBlockedComponents } from './maintenance-ticket-components';
+import { isComponentPartOfSystem, parseComponentMeta } from './maintenance-rules';
+import { findTicketBlockedComponents, getComponentStatusesForTool } from './maintenance-ticket-components';
 import {
   SYSTEM_ALREADY_HAS_OPEN_TICKET_MESSAGE,
   SYSTEM_IN_MAINTENANCE_MESSAGE,
@@ -56,15 +57,16 @@ export async function assertToolNotInMaintenance(toolId: number): Promise<void> 
 export async function assertToolNotNonOperational(toolId: number): Promise<void> {
   const today = new Date().toISOString().split('T')[0];
 
-  const { data: expiredComp } = await supabase
+  const { data: expiredComps } = await supabase
     .from('tool_component')
-    .select('component_id, component_name')
+    .select('component_id, component_name, component_metadata')
     .eq('fk_tool_id', toolId)
     .eq('component_active', 'Y')
     .lte('expiration_date', today)
-    .not('expiration_date', 'is', null)
-    .limit(1)
-    .maybeSingle();
+    .not('expiration_date', 'is', null);
+
+  // A decommissioned (or detached) expired component is out of the system and does not block it.
+  const expiredComp = (expiredComps ?? []).find((c) => isComponentPartOfSystem(parseComponentMeta(c.component_metadata)));
 
   if (expiredComp) {
     throw new Error(
@@ -83,6 +85,34 @@ export async function assertToolNotNonOperational(toolId: number): Promise<void>
       'This system is not operational and cannot be used for mission creation.'
     );
   }
+}
+
+/** Thrown for expected business-rule failures so routes can answer 400 with the message instead of a generic 500. */
+export class TicketRuleError extends Error {}
+
+/**
+ * A ticket cannot be closed while the system has turned NOT_OPERATIONAL (e.g. a component expired mid-ticket)
+ * unless the operator has first set the system to Maintenance by hand.
+ */
+export async function assertSystemCanCloseTicket(toolId: number): Promise<void> {
+  const tool = await prisma.tool.findUnique({ where: { tool_id: toolId }, select: { tool_metadata: true } });
+  const stored = (tool?.tool_metadata as Record<string, unknown> | null)?.status;
+  if (stored === 'MAINTENANCE') return;
+
+  const statuses = await getComponentStatusesForTool(toolId);
+  const expiredIds = [...statuses.entries()].filter(([, s]) => s === 'DECOMMISSIONED').map(([id]) => id);
+  if (stored !== 'NOT_OPERATIONAL' && !expiredIds.length) return;
+
+  const names = expiredIds.length
+    ? (await prisma.tool_component.findMany({
+        where: { component_id: { in: expiredIds } },
+        select: { component_name: true },
+      })).map((c) => c.component_name).filter(Boolean).join(', ')
+    : '';
+  throw new TicketRuleError(
+    `System is now in Not Operational status${names ? ` (expired component: ${names})` : ''}. ` +
+    'Change the system status to Maintenance, then close the ticket.'
+  );
 }
 
 /** Not operational, decommissioned (incl. expired) and dismissed components cannot be put on a new ticket. */

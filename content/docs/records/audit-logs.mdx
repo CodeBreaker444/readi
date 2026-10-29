@@ -1,9 +1,17 @@
 ---
 title: "Audit Logs"
-description: "Platform-wide event log for every create, update, and delete action."
+description: "Platform-wide event log for every create, update, and delete action, plus signed records of PIN-authorized actions."
 ---
 
-## What is logged
+The Audit Logs page has two tabs: **Event Records** and **Secure Transactions**.
+
+---
+
+## Event Records
+
+A chronological log of what people did in Readi.
+
+### What is logged
 
 - User created / updated / deleted
 - Mission status changes (who changed it and when)
@@ -11,7 +19,7 @@ description: "Platform-wide event log for every create, update, and delete actio
 - Document uploads
 - System and component changes
 
-## Fields per entry
+### Fields per entry
 
 | Field | Meaning |
 |---|---|
@@ -22,9 +30,45 @@ description: "Platform-wide event log for every create, update, and delete actio
 | `user_name` / `user_email` | Who performed the action |
 | `created_at` | When it happened |
 
+Use the filters (company, user, event, section) and the search box to narrow the list.
+
+---
+
+## Secure Transactions
+
+Some important actions need your [Authorization PIN](/docs/platform-rules/authorization-code). Each time someone confirms one with their PIN, Readi saves a **signed record** of it. This tab lists them, so you can prove who authorized what and that nothing was changed afterwards.
+
+Actions that appear here include starting, completing or reverting a mission, detaching a component, putting a drone into operation, and completing or reviewing an evaluation.
+
+### Reading the table
+
+| Column | Meaning |
+|---|---|
+| **Date / Time** | When the action was authorized |
+| **Action** | What was authorized, for example Mission Start |
+| **Entity** | The mission, drone or record it applied to |
+| **Authorized by** | The person who entered their PIN |
+| **Integrity** | Whether the record can be trusted (below) |
+
+### Checking a record
+
+Click **Verify** on a row. Readi checks the digital signature of that record and shows one of:
+
+| Result | Meaning |
+|---|---|
+| **Valid** | The record was signed by that person and has not been altered |
+| **Tampered** | The record does not match its signature, so it may have been changed. Investigate |
+| **Unknown** | It could not be checked |
+
+Open a row to see the **Action Details** and the **Cryptographic Record** (transaction ID and the signature data) if an auditor needs to check it independently.
+
+If the tab says "No authorized transactions recorded yet", nobody has confirmed an action with their PIN yet.
+
+---
+
 ## Primary app routes
 
-- `/records/audit-logs`
+- `/audit-logs`
 
 ---
 

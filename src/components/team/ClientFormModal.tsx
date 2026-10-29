@@ -18,6 +18,7 @@ import {
 import axios from 'axios';
 import { CheckCircle2, Copy, Eye, EyeOff, Loader2, RefreshCw, XCircle } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { ClientData } from '../tables/ClientColumn';
 
@@ -104,6 +105,7 @@ const buildFormState = (clientData?: ClientData): FormState => {
 };
 
 export function ClientFormModal({ isOpen, onClose, mode, clientData, onSubmit, isDark }: ClientFormModalProps) {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState<FormState>(buildFormState(clientData));
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [usernameStatus, setUsernameStatus] = useState<UsernameStatus>('idle');
@@ -164,33 +166,33 @@ export function ClientFormModal({ isOpen, onClose, mode, clientData, onSubmit, i
     e.preventDefault();
 
     if (!formData.client_name.trim()) {
-      toast.error('Client name is required');
+      toast.error(t('clientFormToast.nameRequired'));
       return;
     }
     if (mode === 'add') {
       if (!formData.client_email) {
-        toast.error('Email is required');
+        toast.error(t('clientFormToast.emailRequired'));
         return;
       }
       if (!formData.username) {
-        toast.error('Username is required');
+        toast.error(t('clientFormToast.usernameRequired'));
         return;
       }
       if (usernameStatus === 'taken') {
-        toast.error('Username is already taken');
+        toast.error(t('clientFormToast.usernameTaken'));
         return;
       }
       if (usernameStatus === 'invalid') {
-        toast.error('Username must be at least 3 characters (lowercase, numbers, underscores only)');
+        toast.error(t('clientFormToast.usernameInvalid'));
         return;
       }
     }
     if (mode === 'add' && formData.client_email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.client_email)) {
-      toast.error('Please enter a valid email address');
+      toast.error(t('clientFormToast.emailInvalid'));
       return;
     }
     if (formData.contract_start_date && formData.contract_end_date && formData.contract_end_date < formData.contract_start_date) {
-      toast.error('Contract end date must be after start date');
+      toast.error(t('clientFormToast.contractDatesInvalid'));
       return;
     }
 

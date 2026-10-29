@@ -6,13 +6,67 @@ description: "Centralised storage for operational documents, evidence, and regul
 ## Main capabilities
 
 - Upload and tag operational documents (SOPs, manuals, certificates)
+- Link one document to several components or systems
+- Keep every version of a document, with a change log
 - Attach documents to compliance requirements as evidence
-- Filter by tags, document type, and upload date
+- Filter by area, status, confidentiality, document type and upload date
 - Non-operational drone warning on linked documents
+
+---
+
+## Adding or editing a document
+
+Click **New Document**. The form asks for:
+
+| Field | Notes |
+|---|---|
+| **Title** and **Type** | Both required. Pick the type from the list |
+| **Confidentiality** | **Public**, **Internal**, **Confidential** or **Restricted**. Use it to show how sensitive the document is |
+| **Owner (Role)** | The role responsible for the document |
+| **Status** | **Draft**, **In Review**, **Approved** or **Obsolete**. New documents start as Draft |
+| **Effective date** and **Expiry date** | When the document starts and stops being valid. The expiry must be after the effective date |
+| **Description**, **Keywords** | Help people find it with search |
+| **File** | PDF, DOCX, XLSX, JPG, PNG or TXT, up to 25 MB |
+
+The **Validity** column in the list shows these dates at a glance.
+
+### Managing document types
+
+Missing a type? Click **Manage** next to the type field (**Manage document types**) to add, rename or remove types without leaving the form.
+
+### Linking to components and systems
+
+In the **Component** field you can pick **one or more** components, from one system or several, so the same document (for example a manual or certificate) is attached to everything it applies to. The systems those components belong to are linked too.
+
+- Use **Filter by system** to narrow the component list.
+- A counter shows how many you have selected.
+- If a linked system is not operational or has been dismissed, the form warns you.
+
+---
+
+## Versions, Change Log and Revision History
+
+Documents change over time, and Readi keeps the old versions.
+
+1. Open the document with **Edit**.
+2. Upload the updated file under **New Revision**.
+3. Describe the change in **Change Log**, for example "Updated battery limits".
+4. Save. The **Version** number goes up and the previous file is kept.
+
+Choose **Revision history** on a document to see all its versions with their change log, so you can open or download any earlier one.
+
+---
+
+## Viewing and downloading
+
+- **View** opens a preview inside Readi (or in a new tab for file types that cannot be previewed).
+- **Download** saves the file to your computer.
+
+---
 
 ## Primary app routes
 
-- `/records/documents`
+- `/document-repository`
 
 ---
 

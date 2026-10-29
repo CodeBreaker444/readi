@@ -6,11 +6,13 @@ import { getUserSession } from '@/lib/auth/server-session';
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 export default function CreateUserPage() {
   const router = useRouter();
   const { isDark } = useTheme();
+  const { t } = useTranslation();
   const [clients, setClients] = useState<{ client_id: number; client_name: string }[]>([]);
   const [owners, setOwners] = useState<{ owner_id: number; owner_name: string }[]>([]);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
@@ -67,7 +69,7 @@ export default function CreateUserPage() {
       });
       const data = res.data;
       if (data.code !== 1) {
-        toast.error(data.error || 'Failed to create user');
+        toast.error(data.error || t('team.createUserToast.createFailed'));
         return;
       }
 
@@ -80,7 +82,7 @@ export default function CreateUserPage() {
             tokenName: formData.ccTokenName || undefined,
           });
         } catch {
-          toast.warning('User created but Control Center token could not be linked.');
+          toast.warning(t('team.createUserToast.tokenLinkFailed'));
         }
       }
       if (formData.grant_pic_technician && data.newId) {
@@ -91,7 +93,7 @@ export default function CreateUserPage() {
             action: 'grant',
           });
         } catch {
-          toast.warning('User created but PIC-Technician sub-role could not be granted.');
+          toast.warning(t('team.createUserToast.subroleFailed'));
         }
       }
       if (formData.pendingQualifications?.length && data.newId) {
@@ -101,22 +103,22 @@ export default function CreateUserPage() {
             qualifications: formData.pendingQualifications,
           });
         } catch {
-          toast.warning('User created but qualifications could not be saved. You can add them from the edit page.');
+          toast.warning(t('team.createUserToast.qualificationsFailed'));
         }
       }
 
-      toast.success('User created successfully');
+      toast.success(t('team.createUserToast.created'));
       router.push('/team/personnel');
     } catch (err: any) {
       const responseData = err?.response?.data;
       if (responseData?.status === 'PENDING_ACTIVATION') {
         toast.error(responseData.error_list?.[0] || responseData.message, {
-          description: 'Find the user in the list and click the resend invite button.',
+          description: t('team.createUserToast.pendingActivationHint'),
           duration: 6000,
         });
         return;
       }
-      const msg = responseData?.error_list?.[0] || responseData?.message || 'Failed to create user';
+      const msg = responseData?.error_list?.[0] || responseData?.message || t('team.createUserToast.createFailed');
       const lowerMsg = msg.toLowerCase();
       if (lowerMsg.includes('email')) return { fieldErrors: { email: msg } as Record<string, string> };
       if (lowerMsg.includes('username')) return { fieldErrors: { username: msg } as Record<string, string> };

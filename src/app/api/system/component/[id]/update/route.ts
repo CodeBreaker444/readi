@@ -19,12 +19,12 @@ const schema = z.object({
   component_activation_date: z.string().optional().nullable(),
   component_purchase_date: z.string().optional().nullable(),
   expiration_date: z.string().optional().nullable(),
-  expiry_type: z.enum(['EXPIRATION_DATE', 'FLIGHTS', 'FLIGHT_HOURS', 'MIXED']).optional().default('EXPIRATION_DATE'),
+  expiry_type: z.enum(['EXPIRATION_DATE', 'FLIGHTS', 'FLIGHT_HOURS', 'MIXED']).optional(),
   expiration_flights: z.number().int().positive().optional().nullable(),
   expiration_flight_hours: z.number().min(0).max(9999).optional().nullable(),
   component_vendor: z.string().optional().nullable(),
   component_guarantee_day: z.number().optional().nullable(),
-  component_status: z.string().default('OPERATIONAL'),
+  component_status: z.string().optional(),
   cc_platform: z.string().optional().nullable(),
   gcs_type: z.string().optional().nullable(),
   dcc_drone_id: z.string().optional().nullable(),
@@ -122,9 +122,45 @@ export async function POST(
         metadata.oldPosition = result.oldPosition;
       }
 
+      const actor = `${session!.user.fullname} (${session!.user.email})`;
+      const changeParts: string[] = [];
+      const label = parsed.data.component_code ?? parsed.data.component_name ?? parsed.data.component_type;
+      const { statusChange, expiryChange, systemStatusChange } = result;
+      if (statusChange && statusChange.from !== statusChange.to) {
+        changeParts.push(`status: ${statusChange.from} → ${statusChange.to}`);
+        metadata.statusChange = statusChange;
+      }
+      if (expiryChange) {
+        const fmt = (e: Record<string, unknown>) =>
+          [e.expiry_type, e.expiration_date, e.expiration_flights != null && `${e.expiration_flights} flights`, e.expiration_flight_hours != null && `${e.expiration_flight_hours} h`]
+            .filter(Boolean).join(' ') || '—';
+        changeParts.push(`expiry: ${fmt(expiryChange.from)} → ${fmt(expiryChange.to)}`);
+        metadata.expiryChange = expiryChange;
+      }
+      if (changeParts.length) {
+        description += ` — ${changeParts.join(', ')} — by ${actor}`;
+        metadata.changedBy = { userId: session!.user.userId, name: session!.user.fullname, email: session!.user.email };
+      }
+
+      if (systemStatusChange) {
+        logEvent({
+          eventType: 'UPDATE',
+          entityType: 'system',
+          entityId: systemStatusChange.toolId,
+          description: `System '${systemCode ?? systemStatusChange.toolId}' status: ${systemStatusChange.from} → ${systemStatusChange.to} (component '${label}' left Maintenance) — by ${actor}`,
+          userId: session!.user.userId,
+          userName: session!.user.fullname,
+          userEmail: session!.user.email,
+          userRole: session!.user.role,
+          ownerId: session!.user.ownerId,
+          metadata: { changedBy: { userId: session!.user.userId, name: session!.user.fullname, email: session!.user.email } },
+        });
+      }
+
       logEvent({
         eventType: 'UPDATE',
         entityType: 'system_component',
+        entityId: Number(id),
         description,
         userId: session!.user.userId,
         userName: session!.user.fullname,

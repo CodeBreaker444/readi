@@ -196,7 +196,7 @@ export const operationLogbookColumns: ColumnDef<OperationLogbookItem>[] = [
     id: "drone",
     header: "Drone System",
     cell: ({ row }) => (
-      <SystemCell code={row.original.vehicle_code} name={row.original.vehicle_desc} size="sm" />
+      <SystemCell code={row.original.vehicle_code} name={row.original.vehicle_desc} primaryDrone={row.original.drone_serial_number ? `S/N ${row.original.drone_serial_number}` : null} size="sm" />
     ),
     size: 140,
   },

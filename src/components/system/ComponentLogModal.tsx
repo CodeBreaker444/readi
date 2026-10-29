@@ -42,9 +42,10 @@ interface MissionEntry {
 }
 
 interface LocationHistoryEntry {
-  latitude: number;
-  longitude: number;
+  latitude: number | null;
+  longitude: number | null;
   pseudo_name?: string | null;
+  previous_pseudo_name?: string | null;
   changed_at: string;
 }
 
@@ -155,7 +156,13 @@ export function ComponentLogModal({
             time: loc.changed_at,
             type: 'LOCATION',
             label: 'LOCATION',
-            description: `${t('systems.components.common.locationUpdated')} ${loc.latitude.toFixed(5)}, ${loc.longitude.toFixed(5)}${loc.pseudo_name ? ` (${loc.pseudo_name})` : ''}`,
+            description: [
+              t('systems.components.common.locationUpdated'),
+              loc.latitude != null && loc.longitude != null ? `${loc.latitude.toFixed(5)}, ${loc.longitude.toFixed(5)}` : '',
+              loc.previous_pseudo_name !== undefined && (loc.previous_pseudo_name ?? '') !== (loc.pseudo_name ?? '')
+                ? `(${loc.previous_pseudo_name || '—'} → ${loc.pseudo_name || '—'})`
+                : loc.pseudo_name ? `(${loc.pseudo_name})` : '',
+            ].filter(Boolean).join(' '),
             source: 'location',
           });
         }

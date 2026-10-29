@@ -9,6 +9,7 @@ import type { DocType } from '@/config/types/repository';
 import axios from 'axios';
 import { Check, Loader2, Pencil, Plus, Trash2, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 const AREA_OPTIONS = [
@@ -26,6 +27,7 @@ interface Props {
 
 export function ManageDocTypesModal({ open, onClose, types, onReload, isDark }: Props) {
   const { requireAuthorization } = useAuthorization();
+  const { t } = useTranslation();
   const [localTypes, setLocalTypes] = useState<DocType[]>(types);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editLabel, setEditLabel] = useState('');
@@ -69,14 +71,14 @@ export function ManageDocTypesModal({ open, onClose, types, onReload, isDark }: 
               : item,
           ),
         );
-        toast.success('Type updated');
+        toast.success(t('docTypesToast.updated'));
         setEditingId(null);
         onReload();
       } else {
-        toast.error(data.error ?? 'Update failed');
+        toast.error(data.error ?? t('docTypesToast.updateFailed'));
       }
     } catch (e: any) {
-      toast.error(e.response?.data?.error || 'Failed to update type');
+      toast.error(e.response?.data?.error || t('docTypesToast.updateTypeFailed'));
     } finally {
       setSavingId(null);
     }
@@ -100,21 +102,21 @@ export function ManageDocTypesModal({ open, onClose, types, onReload, isDark }: 
       const { data } = await axios.delete(`/api/document/types/${typeId}`);
       if (data.code === 1) {
         setLocalTypes((prev) => prev.filter((item) => item.doc_type_id !== typeId));
-        toast.success('Type removed');
+        toast.success(t('docTypesToast.removed'));
         onReload();
       } else {
-        toast.error(data.error ?? 'Delete failed');
+        toast.error(data.error ?? t('docTypesToast.deleteFailed'));
       }
     } catch (e: any) {
-      toast.error(e.response?.data?.error || 'Failed to delete type');
+      toast.error(e.response?.data?.error || t('docTypesToast.deleteTypeFailed'));
     } finally {
       setDeletingId(null);
     }
   };
 
   const handleAdd = async () => {
-    if (!newName.trim()) { toast.error('Name is required'); return; }
-    if (!newArea) { toast.error('Area is required'); return; }
+    if (!newName.trim()) { toast.error(t('docTypesToast.nameRequired')); return; }
+    if (!newArea) { toast.error(t('docTypesToast.areaRequired')); return; }
     setAdding(true);
     try {
       const { data } = await axios.post('/api/document/types', {
@@ -125,15 +127,15 @@ export function ManageDocTypesModal({ open, onClose, types, onReload, isDark }: 
         if (data.data) {
           setLocalTypes((prev) => [...prev, data.data as DocType]);
         }
-        toast.success('Type added');
+        toast.success(t('docTypesToast.added'));
         setNewName('');
         setNewArea('');
         onReload();
       } else {
-        toast.error(data.error ?? 'Failed to add type');
+        toast.error(data.error ?? t('docTypesToast.addFailed'));
       }
     } catch (e: any) {
-      toast.error(e.response?.data?.error ?? 'Failed to add type');
+      toast.error(e.response?.data?.error ?? t('docTypesToast.addFailed'));
     } finally {
       setAdding(false);
     }

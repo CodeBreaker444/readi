@@ -20,6 +20,8 @@ interface EditSystemModalProps {
   toolId: number | null;
   onClose: () => void;
   onSuccess: () => void;
+  /** Called after a component is removed from the system, so the parent list can refresh without closing the modal. */
+  onComponentRemoved?: () => void;
   clients: any[];
   models?: any[];
   tools?: any[];
@@ -48,7 +50,7 @@ const STATUS_STYLES_DARK: Record<string, string> = {
   DECOMMISSIONED: 'bg-gray-800 text-gray-400 border border-gray-700',
 };
 
-export default function EditSystemModal({ open, toolId, onClose, onSuccess, clients, models = [], tools = [], dFlightEnabled = false }: EditSystemModalProps) {
+export default function EditSystemModal({ open, toolId, onClose, onSuccess, onComponentRemoved, clients, models = [], tools = [], dFlightEnabled = false }: EditSystemModalProps) {
   const { isDark } = useTheme();
   const { t } = useTranslation();
   const { requireAuthorization } = useAuthorization();
@@ -144,6 +146,7 @@ export default function EditSystemModal({ open, toolId, onClose, onSuccess, clie
       if (result.code === 1) {
         toast.success(t('systems.components.editSystem.toasts.componentRemoved'));
         setComponents(prev => prev.filter(c => c.tool_component_id !== componentId));
+        onComponentRemoved?.();
       } else {
         toast.error(result.message || t('systems.components.editSystem.toasts.removeFailed'));
       }
@@ -283,11 +286,11 @@ export default function EditSystemModal({ open, toolId, onClose, onSuccess, clie
               <div>
                 <p className={sectionLabelCls}>{t('systems.components.editSystem.sections.basicInfo')}</p>
                 <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
-                  <div className="col-span-1 sm:col-span-2">
+                  <div className="col-span-1 sm:col-span-4">
                     <Label className={labelCls}>{t('systems.components.editSystem.fields.code')}</Label>
                     <Input className={inputCls} value={formData.tool_code} onChange={e => handleChange('tool_code', e.target.value)} required />
                   </div>
-                  <div className="col-span-1 sm:col-span-3">
+                  <div className="col-span-1 sm:col-span-8">
                     <Label className={labelCls}>{t('systems.components.editSystem.fields.description')}</Label>
                     <Input className={inputCls} value={formData.tool_desc} onChange={e => handleChange('tool_desc', e.target.value)} />
                   </div>

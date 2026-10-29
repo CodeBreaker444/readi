@@ -1,27 +1,108 @@
 ---
 title: "Settings and Security"
-description: "Password policy, MFA, API keys, and Authorization PIN setup."
+description: "Activate your account, set up two-factor authentication, set your Authorization PIN, create API keys and connect a DCC."
 ---
 
-## Main capabilities
+This page covers how you sign in and the security settings you manage yourself. The security page is in the sidebar under **Settings**.
 
-- Password policy and change flows
-- Multi-factor authentication (MFA) setup and verification
-- API key management for third-party integrations
-- **Authorization PIN setup** — required before any mission status change can be performed
+---
+
+## Activating your account
+
+When an administrator creates your account, you get an email with an **activation link**.
+
+1. Click the link in the email. Readi activates your account and shows "Account activated!".
+2. Sign in and follow the setup steps below.
+
+If the link says "Invalid activation link", or you never received the email, ask your administrator to **Resend Invite**. See [Team Management](/docs/configuration/team).
+
+---
+
+## Passwords
+
+You can change your password from the **Change password** page. A password must have:
+
+- at least 8 characters
+- one uppercase letter and one lowercase letter
+- one number
+- one special character
+
+Type the new password twice. Readi tells you if they do not match. If you forget your password, ask your administrator to set a new one.
+
+---
+
+## Two-factor setup
+
+Two-factor authentication adds a second check to your account: a 6-digit code from an authenticator app on your phone, in addition to your password.
+
+### When you are offered it
+
+The first time you sign in, you set a new password. Right after that, Readi offers to set up two-factor authentication. Client users do not see this step.
+
+### Setting it up
+
+1. Install an authenticator app on your phone, such as Google Authenticator or Authy.
+2. On the setup page, **scan the QR code** with the app. If you cannot scan it, type the secret key shown under "Can't scan? Enter manually".
+3. Enter the **6-digit code** from the app and click **Enable 2FA**. The code changes every 30 seconds, so use the current one. If it is rejected, wait for the next code and try again.
+
+If you do not want to set it up now, click **Skip for now**. You will not be asked for a code on this occasion.
+
+<Note>
+Today Readi offers two-factor setup once, at this first step. Signing in still uses your email and password, and the app does not yet ask for a code on each sign-in. Keep your password private, and ask your administrator if you need your two-factor setup reviewed.
+</Note>
+
+---
 
 ## Authorization PIN
 
-Every user who performs mission status changes must configure a 6-digit Authorization PIN.
+Important actions, such as starting or completing a mission or moving a component, must be confirmed with a **6-digit Authorization PIN**. Each confirmation is signed, so it can be checked later in the [Audit Logs](/docs/records/audit-logs).
 
-If a user tries to move a mission without a PIN configured:
-> "Authorization PIN not set up"
+Set it up under **Settings → Security**:
 
-Go to **Settings → Security** to configure it.
+1. Choose a 6-digit PIN.
+2. Enter it again to confirm. Readi then creates your personal signing key.
+
+Your PIN protects that key and never leaves your browser. The page shows your key fingerprint and public key, with a **Copy** button.
+
+If you try to confirm an action without a PIN you will see "Authorization PIN not set up".
+
+### Changing your PIN
+Use **Change PIN**. This creates a new signing key. Records you signed before stay valid and can still be checked.
+
+See also [Authorization Code (PIN)](/docs/platform-rules/authorization-code).
+
+---
+
+## API keys
+
+API keys let another program, such as an external flight app, send flight mission requests to Readi.
+
+1. Under **Settings → Security → API Keys**, click **New Key**.
+2. Give it a **Key Name**, for example "External Flight App". You can set an expiry date.
+3. Click **Create Key**.
+4. **Copy the key now.** It is shown only once.
+
+The other program sends it in the `X-API-KEY` header when it submits a mission. The table lists each key with its name, the start of the key, its status, when it was last used and when it expires.
+
+- **Revoke** stops a key from working but keeps it in the list.
+- **Delete** removes it completely.
+
+<Warning>
+Treat an API key like a password. If it leaks, revoke it and create a new one.
+</Warning>
+
+---
+
+## Integrations
+
+For administrators, **Integrations** connects Readi to an outside control system (a DCC). Enter a **Display Name** and the **Callback URL** of the server and click **Save**. Readi then sends it mission status updates. The page lists the exact updates and when each is sent. See [DCC Integration](/docs/business-logic/dcc-integration).
+
+---
 
 ## Primary app routes
 
 - `/settings/security`
+- `/settings/integrations`
 - `/auth/setup-2fa`
 - `/auth/change-password`
 
