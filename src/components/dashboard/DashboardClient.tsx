@@ -449,6 +449,7 @@ export default function DashboardClient({ ownerId, userProfileCode, userId, init
           return (
             <div key={i} className={cn(card, 'relative overflow-hidden p-5 flex flex-col gap-3')}>
               <div className="absolute left-0 top-0 h-full w-0.5 rounded-l-xl" style={{ backgroundColor: s.accent }} />
+              <div className="absolute -right-4 -bottom-4 w-20 h-20 rounded-full opacity-10" style={{ backgroundColor: s.accent }} />
 
               <div className="flex items-center justify-between">
                 <span className={cn('text-xs font-medium tracking-wide uppercase', isDark ? 'text-slate-400' : 'text-gray-500')}>

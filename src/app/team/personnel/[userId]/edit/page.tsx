@@ -75,6 +75,7 @@ export default function EditUserPage() {
         is_manager: formData.is_manager,
         flytrelay_access: formData.flytrelay_access,
         department: formData.department || null,
+        timezone: formData.timezone || undefined,
       });
       const data = res.data;
       if (data.code !== 1) {

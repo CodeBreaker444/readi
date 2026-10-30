@@ -27,6 +27,7 @@ const UpdateUserSchema = z.object({
   user_signature: z.string().optional().nullable(),
   flytrelay_access: z.boolean().optional(),
   department: z.string().max(100).optional().nullable(),
+  timezone: z.string().max(64).optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -62,6 +63,7 @@ export async function POST(request: NextRequest) {
       user_signature: d.user_signature || undefined,
       flytrelay_access: d.flytrelay_access,
       department: d.department,
+      timezone: d.timezone,
     });
 
     return NextResponse.json({

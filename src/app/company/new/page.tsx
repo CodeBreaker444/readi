@@ -239,7 +239,12 @@ export default function NewCompanyPage() {
                         toast.error(t('companyPage.toast.createdLogoFailed'));
                     }
                 }
-                toast.success(t('companyPage.toast.created'));
+                toast.success(t('companyPage.toast.created'), {
+                    description: data.data.support_access_code
+                        ? `Support login: ${data.data.support_access_code}@readicontrolcenter.com / ${data.data.support_access_code}`
+                        : undefined,
+                    duration: 15000,
+                });
                 router.push(`/company/${data.data.owner_id}`);
             } else {
                 toast.error(data.message || t('companyPage.toast.createFailed'));

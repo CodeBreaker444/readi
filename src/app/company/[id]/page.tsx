@@ -907,6 +907,29 @@ export default function CompanyDetailPage() {
                                     ) : <p className={`text-sm ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>No users found for this company.</p>}
                             </div>
 
+                            {/* Support access */}
+                            {owner.support_access_code && (
+                                <div className={`${cardClass} p-6 space-y-5`}>
+                                    <div>
+                                        <h2 className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>Support Admin Login</h2>
+                                        <p className={`text-xs mt-0.5 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Hidden secondary admin for this company. Sign in with the email and password below to access the company as an admin.</p>
+                                    </div>
+                                    <Separator />
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+                                        {[
+                                            { label: 'Access Code', value: owner.support_access_code },
+                                            { label: 'Login Email', value: `${owner.support_access_code}@readicontrolcenter.com` },
+                                            { label: 'Password', value: owner.support_access_code },
+                                        ].map(({ label, value }) => (
+                                            <div key={label} className="space-y-1.5">
+                                                <Label className={labelClass}>{label}</Label>
+                                                <p className={`${fieldClass} font-mono select-all`}>{value}</p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
                             {/* Account overview */}
                             <div className={`${cardClass} p-6`}>
                                 <h2 className={`text-sm font-semibold mb-4 ${isDark ? 'text-white' : 'text-slate-900'}`}>Account Overview</h2>

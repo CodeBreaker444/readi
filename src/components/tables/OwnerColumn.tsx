@@ -5,6 +5,7 @@ import { Building2, Loader2, Mail } from 'lucide-react';
 export interface OwnerData {
   owner_id: number;
   owner_code: string;
+  support_access_code?: string | null;
   owner_name: string;
   owner_legal_name: string | null;
   owner_type: string | null;
