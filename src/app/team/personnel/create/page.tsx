@@ -62,14 +62,14 @@ export default function CreateUserPage() {
         user_type: formData.user_type,
         user_viewer: formData.is_viewer,
         user_manager: formData.is_manager,
-        timezone: 'Europe/Berlin',
+        timezone: formData.timezone || 'Europe/Berlin',
         flytrelay_access: formData.flytrelay_access,
         department: formData.department || null,
         ...(isSuperAdmin && { owner_id: formData.owner_id }),
       });
       const data = res.data;
       if (data.code !== 1) {
-        toast.error(data.error || t('team.createUserToast.createFailed'));
+        toast.error(data.error || data.message || t('team.createUserToast.createFailed'));
         return;
       }
 
@@ -118,7 +118,15 @@ export default function CreateUserPage() {
         });
         return;
       }
-      const msg = responseData?.error_list?.[0] || responseData?.message || t('team.createUserToast.createFailed');
+      const fieldMsgs = responseData?.errors
+        ? (Object.values(responseData.errors).flat().filter(Boolean) as string[])
+        : [];
+      const msg: string =
+        responseData?.error_list?.[0] ||
+        responseData?.message ||
+        fieldMsgs[0] ||
+        responseData?.error ||
+        t('team.createUserToast.createFailed');
       const lowerMsg = msg.toLowerCase();
       if (lowerMsg.includes('email')) return { fieldErrors: { email: msg } as Record<string, string> };
       if (lowerMsg.includes('username')) return { fieldErrors: { username: msg } as Record<string, string> };

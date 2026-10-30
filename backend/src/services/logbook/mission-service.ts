@@ -139,15 +139,20 @@ export async function getDroneList(ownerId: number): Promise<{ data: DroneOption
   const drones = await prisma.tool.findMany({
     where: { fk_owner_id: ownerId, tool_active: 'Y' },
     orderBy: { tool_code: 'asc' },
-    select: { tool_id: true, tool_code: true, tool_name: true },
+    select: { tool_id: true, tool_code: true, tool_name: true, tool_metadata: true },
   });
 
-  const data: DroneOption[] = drones.map((t) => ({
-    tool_id: t.tool_id,
-    tool_code: t.tool_code ?? '',
-    tool_desc: t.tool_name ?? '',
-    tool_status: 'OPERATIONAL',
-  }));
+  const data: DroneOption[] = drones
+    .filter((t) => {
+      const meta = t.tool_metadata as { is_warehouse?: boolean; deleted?: boolean } | null;
+      return meta?.is_warehouse !== true && meta?.deleted !== true;
+    })
+    .map((t) => ({
+      tool_id: t.tool_id,
+      tool_code: t.tool_code ?? '',
+      tool_desc: t.tool_name ?? '',
+      tool_status: 'OPERATIONAL',
+    }));
 
   return { data };
 }

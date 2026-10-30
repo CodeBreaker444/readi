@@ -172,7 +172,7 @@ export function OperationFilterPanel({
         <FilterSelect label={t('logbooks.operationLogbook.filter.client')} allLabel={t('logbooks.operationLogbook.filter.all')} value={clientId} onChange={setClientId} isDark={isDark}
           options={clients.map((c) => ({ value: String(c.client_id), label: c.client_name }))}
         />
-        <FilterSelect label={t('logbooks.operationLogbook.filter.droneSystem')} allLabel={t('logbooks.operationLogbook.filter.all')} value={droneId} onChange={setDroneId} isDark={isDark}
+        <FilterSelect label={t('logbooks.operationLogbook.filter.droneSystem')} allLabel={t('logbooks.operationLogbook.filter.all')} value={droneId} onChange={setDroneId} isDark={isDark} pageSize={8}
           options={drones.map((d) => ({ value: String(d.tool_id), label: `${d.tool_code} — ${d.tool_desc}` }))}
         />
         <FilterSelect label={t('logbooks.operationLogbook.filter.missionType')} allLabel={t('logbooks.operationLogbook.filter.all')} value={typeId} onChange={setTypeId} isDark={isDark}
@@ -242,6 +242,7 @@ function FilterSelect({
   options,
   isDark,
   noneValue = "0",
+  pageSize,
 }: {
   label: string;
   allLabel: string;
@@ -250,7 +251,17 @@ function FilterSelect({
   options: { value: string; label: string }[];
   isDark: boolean;
   noneValue?: string;
+  pageSize?: number;
 }) {
+  const [page, setPage] = useState(0);
+  const paged = !!pageSize && options.length > pageSize;
+  const pageCount = paged ? Math.ceil(options.length / pageSize!) : 1;
+  const safePage = Math.min(page, pageCount - 1);
+  let visible = paged ? options.slice(safePage * pageSize!, (safePage + 1) * pageSize!) : options;
+  // keep the selected option mounted so the trigger can still show its label
+  const selected = options.find((o) => o.value === value);
+  if (paged && selected && !visible.includes(selected)) visible = [selected, ...visible];
+
   return (
     <div className="space-y-1.5">
       <Label
@@ -283,11 +294,37 @@ function FilterSelect({
           >
             {allLabel}
           </SelectItem>
-          {options.map((o) => (
+          {visible.map((o) => (
             <SelectItem key={o.value} value={o.value} className="text-xs">
               {o.label}
             </SelectItem>
           ))}
+          {paged && (
+            <div
+              className={`flex items-center justify-between gap-2 border-t px-2 pt-1.5 pb-0.5 text-xs ${
+                isDark ? "border-slate-700 text-slate-400" : "border-slate-200 text-slate-500"
+              }`}
+              onPointerDown={(e) => e.stopPropagation()}
+            >
+              <button
+                type="button"
+                disabled={safePage === 0}
+                onClick={() => setPage(safePage - 1)}
+                className="rounded px-2 py-0.5 hover:bg-slate-500/20 disabled:opacity-40"
+              >
+                ‹ Prev
+              </button>
+              <span>{safePage + 1} / {pageCount}</span>
+              <button
+                type="button"
+                disabled={safePage >= pageCount - 1}
+                onClick={() => setPage(safePage + 1)}
+                className="rounded px-2 py-0.5 hover:bg-slate-500/20 disabled:opacity-40"
+              >
+                Next ›
+              </button>
+            </div>
+          )}
         </SelectContent>
       </Select>
     </div>

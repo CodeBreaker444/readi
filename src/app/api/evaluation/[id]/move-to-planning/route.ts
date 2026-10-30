@@ -2,6 +2,7 @@ import { moveEvaluationToPlanning } from '@/backend/services/planning/evaluation
 import { requirePermission } from '@/lib/auth/api-auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { zDateString } from '@/lib/zod-date';
 
 const evaluationIdParamSchema = z.object({
     id: z.coerce.number().int().positive('Invalid evaluation ID'),
@@ -12,7 +13,7 @@ const moveToPlanningSchema = z.object({
     planning_name: z.string().min(1).max(255),
     planning_description: z.string().max(1000).optional(),
     planning_type: z.string().max(50).optional(),
-    planned_date: z.string().optional(),
+    planned_date: zDateString().optional(),
 });
 
 

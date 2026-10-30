@@ -1,6 +1,7 @@
 import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { deleteOwner, getOwnerById, updateOwner } from '@/backend/services/company/owner-service';
 import { apiError, forbidden, internalError, notFound, unauthorized, zodError } from '@/lib/api-error';
+import { zDateString } from '@/lib/zod-date';
 import { getUserSession } from '@/lib/auth/server-session';
 import { E } from '@/lib/error-codes';
 import { NextResponse } from 'next/server';
@@ -23,6 +24,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 }
 
 const editOwnerValidation = z.object({
+    owner_code: z.string().trim().min(2, 'Organization code must be at least 2 characters').max(50).optional(),
     owner_name: z.string().min(2, 'Organization name must be at least 2 characters'),
     owner_legal_name: z.string().optional().nullable(),
     owner_type: z.string().optional().nullable(),
@@ -46,7 +48,7 @@ const editOwnerValidation = z.object({
     tax_id: z.string().optional().nullable(),
     registration_number: z.string().optional().nullable(),
     license_number: z.string().optional().nullable(),
-    license_expiry: z.string().optional().nullable(),
+    license_expiry: zDateString().optional().nullable(),
 });
 
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -78,6 +80,9 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 
         return NextResponse.json({ code: 1, message: 'Updated', data });
     } catch (err) {
+        if (err instanceof Error && err.message === 'This company code is already in use') {
+            return NextResponse.json({ code: 0, message: err.message }, { status: 409 });
+        }
         return internalError(E.SV001, err);
     }
 }

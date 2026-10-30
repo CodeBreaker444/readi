@@ -1,5 +1,6 @@
 import { createApiKey, listApiKeys } from '@/backend/services/mission/flight-request-service';
 import { internalError, zodError } from '@/lib/api-error';
+import { zDateString } from '@/lib/zod-date';
 import { requireAuth, requireFeatureAccess } from '@/lib/auth/api-auth';
 import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
@@ -7,7 +8,7 @@ import { z } from 'zod';
 
 const CreateSchema = z.object({
   key_name:   z.string().min(1, 'Key name is required').max(100),
-  expires_at: z.string().optional(),
+  expires_at: zDateString().optional(),
 });
 
 export async function GET() {

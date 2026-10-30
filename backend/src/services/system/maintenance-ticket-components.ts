@@ -51,7 +51,7 @@ async function loadEffectiveStatuses(where: Prisma.tool_componentWhereInput): Pr
       : computeEffectiveComponentStatus({
           ...row,
           component_metadata: meta,
-          expiration_date: row.expiration_date ? new Date(row.expiration_date).toISOString().split('T')[0] : null,
+          expiration_date: row.expiration_date ?? null, // computeEffectiveComponentStatus normalises Date/invalid values
         });
     statuses.set(row.component_id, status);
   }
@@ -140,7 +140,7 @@ export async function settleBlockedMaintenanceComponents(toolId: number): Promis
       : computeEffectiveComponentStatus({
           ...row,
           component_metadata: meta,
-          expiration_date: row.expiration_date ? new Date(row.expiration_date).toISOString().split('T')[0] : null,
+          expiration_date: row.expiration_date ?? null, // computeEffectiveComponentStatus normalises Date/invalid values
         });
     if (!PERMANENT_BLOCKED_STATUSES.includes(effective)) continue;
 

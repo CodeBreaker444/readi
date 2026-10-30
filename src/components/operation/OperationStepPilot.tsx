@@ -19,7 +19,7 @@ import type { DFlightCircle } from './DFlightCircleMap'
 
 const DFlightCircleMap = dynamic(() => import('./DFlightCircleMap'), { ssr: false })
 
-const CIRCLE_OP_TYPES: OpType[] = ['OPEN', 'STS-01', 'STS-02']
+const CIRCLE_OP_TYPES: OpType[] = ['OPEN', 'STS-01', 'STS-02', 'NO-STD']
 
 interface SummaryData {
     clientName?: string

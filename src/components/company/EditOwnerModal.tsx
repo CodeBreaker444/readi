@@ -35,6 +35,7 @@ interface EditOwnerModalProps {
 export default function EditOwnerModal({ open, onClose, onSuccess, owner }: EditOwnerModalProps) {
   const { t } = useTranslation();
   const [form, setForm] = useState({
+    owner_code: '',
     owner_name: '',
     owner_address: '',
     owner_phone: '',
@@ -52,6 +53,7 @@ export default function EditOwnerModal({ open, onClose, onSuccess, owner }: Edit
   useEffect(() => {
     if (owner) {
       setForm({
+        owner_code: owner.owner_code || '',
         owner_name: owner.owner_name,
         owner_address: owner.owner_address || '',
         owner_phone: owner.owner_phone || '',
@@ -75,7 +77,7 @@ export default function EditOwnerModal({ open, onClose, onSuccess, owner }: Edit
     if (!owner) return;
     setError('');
 
-    if (!form.owner_name || !form.owner_email || !form.owner_website) {
+    if (!form.owner_code.trim() || !form.owner_name ||!form.owner_email || !form.owner_website) {
       setError('Please fill all required fields');
       return;
     }
@@ -120,6 +122,7 @@ export default function EditOwnerModal({ open, onClose, onSuccess, owner }: Edit
 
         <div className="space-y-4">
           {[
+            { name: 'owner_code', label: 'Code', required: true },
             { name: 'owner_name', label: 'Name', required: true },
             { name: 'owner_address', label: 'Address' },
             { name: 'owner_phone', label: 'Phone' },

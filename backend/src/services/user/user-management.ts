@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { getPresignedDownloadUrl } from '@/lib/s3Client';
 import { Prisma } from '@prisma/client';
 import bcrypt from 'bcrypt';
+import { EXCLUDE_SUPPORT_ADMIN } from '../company/support-admin';
 import { sendAdminPasswordChangedEmail, sendUserActivationEmail } from '../../../../lib/resend/mail';
 
 async function resolveAvatarUrl(profilePicture: string | null | undefined): Promise<string | null> {
@@ -38,6 +39,7 @@ export interface UserCreateData {
 }
 
 export interface UserUpdateData {
+  timezone?: string;
   user_id: number;
   owner_id: number;
   fullname?: string;
@@ -61,7 +63,7 @@ export async function getUserListByOwner(ownerId: number, userProfileId: number,
     const users = await prisma.public_users.findMany({
       where: {
         ...(ownerId > 0 ? { fk_owner_id: ownerId } : {}),
-        NOT: { user_id: currentUserId },
+        NOT: [{ user_id: currentUserId }, EXCLUDE_SUPPORT_ADMIN.NOT],
       },
       select: {
         user_id: true,
@@ -73,6 +75,7 @@ export async function getUserListByOwner(ownerId: number, userProfileId: number,
         user_active: true,
         user_role: true,
         department: true,
+        user_timezone: true,
         user_unique_code: true,
         auth_user_id: true,
         key_: true,
@@ -104,6 +107,7 @@ export async function getUserListByOwner(ownerId: number, userProfileId: number,
         phone: user.phone || '',
         user_role: user.user_role || 'Unknown',
         department: user.department || null,
+        timezone: user.user_timezone || undefined,
         user_unique_code: user.user_unique_code || '',
         fk_user_profile_id: user.fk_user_profile_id || getRoleIdFromCode(user.user_role ?? '') || 0,
         active: user.user_active === 'Y' ? 1 : 0,
@@ -298,6 +302,7 @@ export async function updateUser(userData: UserUpdateData) {
         ...(userData.is_viewer ? { is_viewer: userData.is_viewer } : {}),
         is_manager: userData.is_manager || null,
         department: userData.department,
+        ...(userData.timezone ? { user_timezone: userData.timezone } : {}),
         fk_territorial_unit: toIntOrNull(userData.fk_territorial_unit),
         fk_client_id: toIntOrNull(userData.fk_client_id),
         flytrelay_access: userData.flytrelay_access,

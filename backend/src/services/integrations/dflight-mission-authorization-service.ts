@@ -18,7 +18,7 @@ import { parseWaypoints, type PlanningWaypoint } from '@/backend/utils/planning-
 import { DFLIGHT_CIRCLE_MAX_RADIUS_M, type DFlightTrajectoryCircle } from '@/config/types/operation';
 
 // Op types that submit a drawn geofence circle instead of a waypoint trajectory.
-const CIRCLE_OP_TYPES = ['OPEN', 'STS-01', 'STS-02'];
+const CIRCLE_OP_TYPES = ['OPEN', 'STS-01', 'STS-02', 'NO-STD'];
 
 export interface DFlightAuthorizationResult {
   outcome: 'success' | 'skipped' | 'error';
@@ -283,7 +283,7 @@ export async function createAndSubmitMissionAuthorization(
       },
     });
     if (!mission) return { outcome: 'error', message: 'Mission not found' };
-    if (mission.dflight_skip_authorization) {
+    if (mission.dflight_skip_authorization || (mission.mission_metadata as any)?.is_imported) {
       return { outcome: 'skipped', message: 'D-Flight authorization was skipped for this mission', silent: true };
     }
 

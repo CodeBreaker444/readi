@@ -909,11 +909,11 @@ export default function EditComponentModal({
                 <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 mt-2">
                   <div className="col-span-1 sm:col-span-3">
                     <Label className={labelCls}>{t('systems.components.addComponent.fields.activationDate')}</Label>
-                    <Input type="date" className={inputCls} value={formData.component_activation_date} onChange={e => handleChange('component_activation_date', e.target.value)} />
+                    <Input type="date" className={inputCls} min="1900-01-01" max="2200-12-31" value={formData.component_activation_date} onChange={e => handleChange('component_activation_date', e.target.value)} />
                   </div>
                   <div className="col-span-1 sm:col-span-3">
                     <Label className={labelCls}>{t('systems.components.addComponent.fields.purchaseDate')}</Label>
-                    <Input type="date" className={inputCls} value={formData.component_purchase_date} onChange={e => handleChange('component_purchase_date', e.target.value)} />
+                    <Input type="date" className={inputCls} min="1900-01-01" max="2200-12-31" value={formData.component_purchase_date} onChange={e => handleChange('component_purchase_date', e.target.value)} />
                   </div>
                   <div className="col-span-1 sm:col-span-3">
                     <Label className={labelCls}>{t('systems.components.common.expiryType.label')} <span className="font-normal opacity-60">{t('systems.components.common.optional')}</span></Label>
@@ -930,7 +930,7 @@ export default function EditComponentModal({
                   {(formData.expiry_type === 'EXPIRATION_DATE' || formData.expiry_type === 'MIXED') && (
                     <div className="col-span-1 sm:col-span-3">
                       <Label className={labelCls}>{t('systems.components.addComponent.fields.expirationDate')}</Label>
-                      <Input type="date" className={inputCls} value={formData.expiration_date} onChange={e => handleChange('expiration_date', e.target.value)} />
+                      <Input type="date" className={inputCls} min="1900-01-01" max="2200-12-31" value={formData.expiration_date} onChange={e => handleChange('expiration_date', e.target.value)} />
                       {formData.expiry_type === 'EXPIRATION_DATE' && (
                         <p className={`text-[10px] mt-1 ${isDark ? 'text-slate-500' : 'text-muted-foreground'}`}>{t('systems.components.common.autoDecommissionHint')}</p>
                       )}
