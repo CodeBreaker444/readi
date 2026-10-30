@@ -1,6 +1,7 @@
 import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { deleteOwner, getOwnerById, updateOwner } from '@/backend/services/company/owner-service';
 import { apiError, forbidden, internalError, notFound, unauthorized, zodError } from '@/lib/api-error';
+import { zDateString } from '@/lib/zod-date';
 import { getUserSession } from '@/lib/auth/server-session';
 import { E } from '@/lib/error-codes';
 import { NextResponse } from 'next/server';
@@ -47,7 +48,7 @@ const editOwnerValidation = z.object({
     tax_id: z.string().optional().nullable(),
     registration_number: z.string().optional().nullable(),
     license_number: z.string().optional().nullable(),
-    license_expiry: z.string().optional().nullable(),
+    license_expiry: zDateString().optional().nullable(),
 });
 
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {

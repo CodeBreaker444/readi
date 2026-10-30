@@ -3,6 +3,7 @@ import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { requireFeatureAccess } from '@/lib/auth/api-auth';
 import { getUserSession } from '@/lib/auth/server-session';
 import { internalError, unauthorized, zodError } from '@/lib/api-error';
+import { zDateString } from '@/lib/zod-date';
 import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
@@ -20,8 +21,8 @@ const schema = z.object({
     client_website: z.string().url('Invalid URL').optional().or(z.literal('')),
     username: z.string().min(3, 'Username must be at least 3 characters').max(100).regex(/^[a-z0-9_.@+-]+$/, 'Username can only contain lowercase letters, numbers, and . _ @ + -'),
     password: z.string().min(6).max(128).optional(),
-    contract_start_date: z.string().optional(),
-    contract_end_date: z.string().optional(),
+    contract_start_date: zDateString().optional(),
+    contract_end_date: zDateString().optional(),
     payment_terms: z.string().max(100).optional(),
     credit_limit: z.number().nonnegative().optional(),
 });

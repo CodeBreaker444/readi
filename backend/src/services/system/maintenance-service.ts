@@ -18,6 +18,10 @@ import {
   MaintenanceStatus,
 } from "@/config/types/maintenance";
 
+/** ISO string for a Date; null when missing or an Invalid Date (toISOString would throw RangeError). */
+function safeIso(d: Date | null | undefined): string | null {
+  return d && !Number.isNaN(d.getTime()) ? d.toISOString() : null;
+}
 
 function extractModel(rawModel: Record<string, unknown> | null): MaintenanceModel {
   if (!rawModel) {
@@ -120,13 +124,13 @@ export async function getMaintenanceDashboard(
   const lastMaintenanceMap: Record<number, string> = {};
   const lastMaintenanceByTypeMap: Record<number, { basic: string | null; standard: string | null; extraordinary: string | null }> = {};
   for (const rec of maintenanceRecords) {
-    if (!lastMaintenanceMap[rec.fk_tool_id] && rec.completed_date) {
-      lastMaintenanceMap[rec.fk_tool_id] = rec.completed_date.toISOString().slice(0, 10);
+    const dateStr = safeIso(rec.completed_date)?.slice(0, 10);
+    if (!dateStr) continue;
+    if (!lastMaintenanceMap[rec.fk_tool_id]) {
+      lastMaintenanceMap[rec.fk_tool_id] = dateStr;
     }
 
-    if (!rec.completed_date) continue;
     const byType = lastMaintenanceByTypeMap[rec.fk_tool_id] ?? { basic: null, standard: null, extraordinary: null };
-    const dateStr = rec.completed_date.toISOString().slice(0, 10);
     switch (rec.maintenance_type) {
       case 'BASIC':
         if (!byType.basic) byType.basic = dateStr;
@@ -218,7 +222,7 @@ export async function getMaintenanceDashboard(
       maintenance_cycle_flight: Number(rawComp.maintenance_cycle_flight ?? 0),
       maintenance_cycle_day: Number(rawComp.maintenance_cycle_day ?? 0),
     };
-    const lastMaint = rawComp.last_maintenance_date?.toISOString() ?? null;
+    const lastMaint = safeIso(rawComp.last_maintenance_date);
 
     const compHours = Number(rawComp.current_maintenance_hours ?? 0);
     const compFlights = Number(rawComp.current_maintenance_flights ?? 0);
@@ -242,7 +246,7 @@ export async function getMaintenanceDashboard(
       component_type: rawComp.component_type,
       serial_number: rawComp.serial_number,
       last_maintenance: lastMaint,
-      activation_date: rawComp.installation_date?.toISOString().slice(0, 10) ?? null,
+      activation_date: safeIso(rawComp.installation_date)?.slice(0, 10) ?? null,
       total_hours: compHours,
       total_flights: compFlights,
       total_days: compDays,

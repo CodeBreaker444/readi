@@ -1,6 +1,7 @@
 import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { getToolCode, updateComponent } from '@/backend/services/system/system-service';
 import { internalError, zodError } from '@/lib/api-error';
+import { zDateString } from '@/lib/zod-date';
 import { requireFeatureAccess, requirePermission } from '@/lib/auth/api-auth';
 import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
@@ -16,9 +17,9 @@ const schema = z.object({
   component_desc: z.string().optional().nullable(),
   fk_tool_model_id: z.number().optional().nullable(),
   component_sn: z.string().optional().nullable(),
-  component_activation_date: z.string().optional().nullable(),
-  component_purchase_date: z.string().optional().nullable(),
-  expiration_date: z.string().optional().nullable(),
+  component_activation_date: zDateString('Invalid activation date').optional().nullable(),
+  component_purchase_date: zDateString('Invalid purchase date').optional().nullable(),
+  expiration_date: zDateString('Invalid expiration date').optional().nullable(),
   expiry_type: z.enum(['EXPIRATION_DATE', 'FLIGHTS', 'FLIGHT_HOURS', 'MIXED']).optional(),
   expiration_flights: z.number().int().positive().optional().nullable(),
   expiration_flight_hours: z.number().min(0).max(9999).optional().nullable(),
@@ -51,7 +52,7 @@ const schema = z.object({
   initial_maintenance_flights: z.number().min(0).optional().nullable(),
   insurance_name: z.string().optional().nullable(),
   insurance_company: z.string().optional().nullable(),
-  insurance_expiry_date: z.string().optional().nullable(),
+  insurance_expiry_date: zDateString().optional().nullable(),
   alert_recipients: z.array(z.string().email()).optional().nullable(),
   alert_days_before: z.number().int().min(1).max(365).optional().nullable(),
 });
@@ -175,4 +176,4 @@ export async function POST(
   } catch (err) {
     return internalError(E.SV001, err);
   }
-}
+}

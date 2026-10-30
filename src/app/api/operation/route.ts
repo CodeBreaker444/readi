@@ -14,6 +14,7 @@ import { E } from '@/lib/error-codes';
 import { prisma } from '@/lib/prisma';
 import { NextRequest, NextResponse } from 'next/server';
 import { ZodError, z } from 'zod';
+import { zDateString } from '@/lib/zod-date';
 
 
 
@@ -51,7 +52,7 @@ const createOperationSchema = z.object({
   fk_mission_type_id: z.number().int().positive().nullable().optional(),
   fk_mission_category_id: z.number().int().positive().nullable().optional(),
   fk_luc_procedure_id: z.number().int().positive(),
-  actual_end: z.string().nullable().optional(),
+  actual_end: zDateString().nullable().optional(),
   visual_observer_ids: z.array(z.number().int().positive()).optional().nullable(),
   fk_erp_group_id: z.number().int().positive().nullable().optional(),
   flight_mode: z.enum(['RC', 'DOCK']).nullable().optional(),
@@ -59,7 +60,7 @@ const createOperationSchema = z.object({
   mission_group_label: z.string().nullable().optional(),
   is_recurrent: z.boolean().optional(),
   recurrent_days_of_week: z.array(z.number().int().min(0).max(6)).nullable().optional(),
-  recurrent_end_date: z.string().nullable().optional(),
+  recurrent_end_date: zDateString().nullable().optional(),
   uspace_id: z.string().nullable().optional(),
   dflight_skip_authorization: z.boolean().optional(),
   dflight_trajectory_data: z.object({
@@ -260,4 +261,4 @@ export async function POST(req: NextRequest) {
     console.error('[POST /api/operation]', err);
     return internalError(E.SV001, err);  
   }
-}
+}

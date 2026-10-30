@@ -1,6 +1,7 @@
 import { getPostFlightData, updatePostFlightData, upsertMissionResult } from "@/backend/services/mission/post-flight-service";
 import { getMissionResultList } from "@/backend/services/mission/result-service";
 import { apiError, dbError, internalError, notFound, zodError } from "@/lib/api-error";
+import { zDateString } from '@/lib/zod-date';
 import { requireFeatureAccess, requirePermission } from "@/lib/auth/api-auth";
 import { E } from "@/lib/error-codes";
 import { NextRequest, NextResponse } from "next/server";
@@ -39,8 +40,8 @@ export async function GET(req: NextRequest) {
 const postFlightSchema = z.object({
   mission_id: z.number().int().positive(),
   flight_duration: z.number().nonnegative().nullable().optional(),
-  actual_start: z.string().nullable().optional(),
-  actual_end: z.string().nullable().optional(),
+  actual_start: zDateString().nullable().optional(),
+  actual_end: zDateString().nullable().optional(),
   distance_flown: z.number().nonnegative().nullable().optional(),
   battery_charge_start: z.number().min(0).max(100).nullable().optional(),
   battery_charge_end: z.number().min(0).max(100).nullable().optional(),

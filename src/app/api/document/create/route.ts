@@ -2,6 +2,7 @@ import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { createDocument } from '@/backend/services/document/document-service';
 import { requireFeatureAccess, requirePermission } from '@/lib/auth/api-auth';
 import { apiError, internalError, zodError } from '@/lib/api-error';
+import { zDateString } from '@/lib/zod-date';
 import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
 import z from 'zod';
@@ -19,8 +20,8 @@ const DocumentCreateSchema = z.object({
   title:           z.string().min(1, 'Title is required').max(255),
   confidentiality: z.enum(['INTERNAL', 'PUBLIC', 'CONFIDENTIAL', 'RESTRICTED']).default('INTERNAL'),
   owner_role:      z.string().max(150).optional().nullable(),
-  effective_date:  z.string().optional().nullable(),
-  expiry_date:     z.string().optional().nullable(),
+  effective_date:  zDateString().optional().nullable(),
+  expiry_date:     zDateString().optional().nullable(),
   description:     z.string().max(2000).optional().nullable(),
   keywords:        z.string().max(500).optional().nullable(),
   tags:            z.string().max(1000).optional().nullable(),

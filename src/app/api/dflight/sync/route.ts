@@ -1,6 +1,7 @@
 import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { syncDFlightDrone } from '@/backend/services/integrations/dflight-sync-service';
 import { internalError, zodError } from '@/lib/api-error';
+import { zDateString } from '@/lib/zod-date';
 import { requireFeatureAccess, requirePermission } from '@/lib/auth/api-auth';
 import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
@@ -14,7 +15,7 @@ const SyncSchema = z.object({
   gcs_serial_number: z.string().optional().nullable(),
   insurance_name: z.string().optional().nullable(),
   insurance_company: z.string().optional().nullable(),
-  insurance_expiry_date: z.string().optional().nullable(),
+  insurance_expiry_date: zDateString().optional().nullable(),
   qr_code_image: z.string().optional().nullable(),
 });
 

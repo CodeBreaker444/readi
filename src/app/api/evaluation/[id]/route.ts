@@ -5,6 +5,7 @@ import {
 } from '@/backend/services/planning/evaluation-detail';
 import { requireFeatureAccess, requirePermission } from '@/lib/auth/api-auth';
 import { internalError, zodError } from '@/lib/api-error';
+import { zDateString } from '@/lib/zod-date';
 import { E } from '@/lib/error-codes';
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -37,7 +38,7 @@ const evaluationUpdateSchema = z.object({
   evaluation_id: z.coerce.number().int().positive(),
   fk_owner_id: z.coerce.number().int().positive(),
   fk_client_id: z.coerce.number().int().positive(),
-  evaluation_request_date: z.string().optional(),
+  evaluation_request_date: zDateString().optional(),
   evaluation_year: z.coerce.number().int().min(2000).max(2100).optional(),
   evaluation_desc: z.string().max(500).optional(),
   evaluation_offer: z.string().max(255).optional(),
