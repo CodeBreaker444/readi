@@ -43,7 +43,7 @@ const updateOperationSchema = z.object({
   max_altitude: z.number().nonnegative().nullable().optional(),
   fk_erp_group_id: z.number().int().positive().nullable().optional(),
   flight_mode: z.enum(['RC', 'DOCK']).nullable().optional(),
-  op_type: z.enum(['OPEN', 'PDRA', 'STS-01', 'STS-02']).nullable().optional(),
+  op_type: z.enum(['OPEN', 'PDRA', 'STS-01', 'STS-02', 'NO-STD']).nullable().optional(),
   mission_group_label: z.string().nullable().optional(),
   uspace_id: z.string().nullable().optional(),
   dflight_skip_authorization: z.boolean().optional(),
@@ -92,7 +92,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
 
     const validated = parsed.data as UpdateOperationSchema;
 
-    if (['OPEN', 'STS-01', 'STS-02'].includes(validated.op_type ?? '') && validated.dflight_trajectory_data
+    if (['OPEN', 'STS-01', 'STS-02', 'NO-STD'].includes(validated.op_type ?? '') && validated.dflight_trajectory_data
       && validated.dflight_trajectory_data.radius_m > DFLIGHT_CIRCLE_MAX_RADIUS_M) {
       return NextResponse.json(
         { error: `dflight_trajectory_data.radius_m exceeds the ${DFLIGHT_CIRCLE_MAX_RADIUS_M}m limit for this mission type` },

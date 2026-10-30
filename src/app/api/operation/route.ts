@@ -55,7 +55,7 @@ const createOperationSchema = z.object({
   visual_observer_ids: z.array(z.number().int().positive()).optional().nullable(),
   fk_erp_group_id: z.number().int().positive().nullable().optional(),
   flight_mode: z.enum(['RC', 'DOCK']).nullable().optional(),
-  op_type: z.enum(['OPEN', 'PDRA', 'STS-01', 'STS-02']).nullable().optional(),
+  op_type: z.enum(['OPEN', 'PDRA', 'STS-01', 'STS-02', 'NO-STD']).nullable().optional(),
   mission_group_label: z.string().nullable().optional(),
   is_recurrent: z.boolean().optional(),
   recurrent_days_of_week: z.array(z.number().int().min(0).max(6)).nullable().optional(),
@@ -113,7 +113,7 @@ export async function POST(req: NextRequest) {
 
     const validated = createOperationSchema.parse(body) as CreateOperationSchema;
 
-    if (['OPEN', 'STS-01', 'STS-02'].includes(validated.op_type ?? '') && validated.dflight_trajectory_data
+    if (['OPEN', 'STS-01', 'STS-02', 'NO-STD'].includes(validated.op_type ?? '') && validated.dflight_trajectory_data
       && validated.dflight_trajectory_data.radius_m > DFLIGHT_CIRCLE_MAX_RADIUS_M) {
       return NextResponse.json(
         { error: `dflight_trajectory_data.radius_m exceeds the ${DFLIGHT_CIRCLE_MAX_RADIUS_M}m limit for this mission type` },
@@ -194,7 +194,7 @@ export async function POST(req: NextRequest) {
       const { create, watch } = await authorizeMissionWithDFlight(op.pilot_mission_id, ownerId);
       if (isReportableDFlightFailure(create)) {
         console.warn('[POST /api/operation] D-Flight authorization failed (non-fatal):', create.message);
-        if (validated.op_type && ['PDRA', 'OPEN', 'STS-01', 'STS-02'].includes(validated.op_type)) {
+        if (validated.op_type && ['PDRA', 'OPEN', 'STS-01', 'STS-02', 'NO-STD'].includes(validated.op_type)) {
           dflightErrors.push({ missionCode: op.mission_code, message: create.message });
         }
       }

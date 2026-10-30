@@ -258,12 +258,13 @@ export function ImportMissionDataStep({
                 <div>
                     <Label className="mb-1.5 block">{t(ns + '.fields.opType')}</Label>
                     <Select value={opType} onValueChange={handleOpTypeChange}>
-                        <SelectTrigger><SelectValue>{opType}</SelectValue></SelectTrigger>
+                        <SelectTrigger><SelectValue>{opType === 'NO-STD' ? 'Specific - NO STD' : opType}</SelectValue></SelectTrigger>
                         <SelectContent>
                             <SelectItem value="OPEN">OPEN</SelectItem>
                             <SelectItem value="PDRA">PDRA</SelectItem>
                             <SelectItem value="STS-01">STS-01</SelectItem>
                             <SelectItem value="STS-02">STS-02</SelectItem>
+                            <SelectItem value="NO-STD">Specific - NO STD</SelectItem>
                         </SelectContent>
                     </Select>
                 </div>

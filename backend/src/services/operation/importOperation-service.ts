@@ -287,6 +287,8 @@ async function processGutmaBuffer(
       weather_temperature: weatherTemperature,
       notes: notesArr.join(' | ') || null,
       mission_group_label: params.groupLabel || null,
+      // Imported missions are already flown — never send them to D-Flight for authorization
+      dflight_skip_authorization: true,
       ...(recurringGroupId && {
         recurring_group_id: recurringGroupId,
         mission_date_until: params.recurrentEndDate ? new Date(params.recurrentEndDate) : null,

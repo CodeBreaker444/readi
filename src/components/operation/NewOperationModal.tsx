@@ -535,8 +535,8 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
         return true
     }
 
-    const uspaceRequired = dFlightEnabled && !skipDFlight && ['PDRA', 'OPEN', 'STS-01', 'STS-02'].includes(opType)
-    const circleRequired = dFlightEnabled && !skipDFlight && ['OPEN', 'STS-01', 'STS-02'].includes(opType)
+    const uspaceRequired = dFlightEnabled && !skipDFlight && ['PDRA', 'OPEN', 'STS-01', 'STS-02', 'NO-STD'].includes(opType)
+    const circleRequired = dFlightEnabled && !skipDFlight && ['OPEN', 'STS-01', 'STS-02', 'NO-STD'].includes(opType)
     // D-Flight rejects h_buffer beyond the selected U-space's own registered
     // protection_buffers_horizontal constraint, independent of geometry — cap
     // the drawable/submittable radius to whichever limit is tighter.
