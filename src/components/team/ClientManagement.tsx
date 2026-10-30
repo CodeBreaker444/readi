@@ -422,6 +422,7 @@ export default function ClientManagement({ session }: ClientManagementProps) {
           mode="edit"
           clientData={selectedClient}
           onSubmit={handleUpdateClient}
+          onPortalUpdated={fetchClients}
           isDark={isDark}
         />
       )}

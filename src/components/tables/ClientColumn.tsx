@@ -38,6 +38,7 @@ export interface ClientData {
   owner_name?: string;
   user_id?: number;
   user_active?: string;
+  portal_email?: string;
   is_pending?: boolean;
 }
 interface GetClientColumnsOptions {

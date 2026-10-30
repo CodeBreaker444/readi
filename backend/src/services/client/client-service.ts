@@ -29,6 +29,7 @@ export interface ClientData {
   owner_name?: string;
   user_id?: number;
   user_active?: string;
+  portal_email?: string;
   is_pending?: boolean;
 }
 
@@ -88,7 +89,7 @@ export async function listClients(owner_id?: number, activeOnly = true): Promise
         owner: { select: { owner_code: true, owner_name: true } },
         users: {
           where: { user_role: 'CLIENT' },
-          select: { user_id: true, user_active: true, auth_user_id: true, key_: true },
+          select: { user_id: true, user_active: true, auth_user_id: true, key_: true, email: true },
           take: 1,
         },
       },
@@ -105,6 +106,7 @@ export async function listClients(owner_id?: number, activeOnly = true): Promise
         users: undefined,
         user_id: loginUser?.user_id,
         user_active: loginUser?.user_active ?? undefined,
+        portal_email: loginUser?.email ?? undefined,
         is_pending: loginUser ? loginUser.user_active !== 'Y' : false,
         contract_start_date: c.contract_start_date?.toISOString().slice(0, 10),
         contract_end_date: c.contract_end_date?.toISOString().slice(0, 10),
@@ -323,6 +325,101 @@ export async function updateClientPassword(
     await sendAdminPasswordChangedEmail(loginUser.email ?? '', fullname, loginUser.username ?? '', newPassword, owner?.owner_name ?? 'ReADI');
 
     return { code: 1, message: 'Password updated successfully' };
+  } catch (e: any) {
+    return { code: 0, error: e.message };
+  }
+}
+
+export interface UpdatePortalUserInput {
+  client_id: number;
+  ownerId: number;
+  isSuperAdmin?: boolean;
+  username?: string;
+  email?: string;
+  reset_password?: boolean;
+}
+
+/** Edit a client's portal login (username / login email) and/or reset its password and email the new one. */
+export async function updatePortalUser(
+  input: UpdatePortalUserInput,
+): Promise<{ code: number; message?: string; changes?: string[]; email?: string; error?: string }> {
+  try {
+    const { client_id, ownerId, isSuperAdmin = false, reset_password } = input;
+    const username = input.username?.trim().toLowerCase();
+    const email = input.email?.trim().toLowerCase();
+
+    const loginUser = await prisma.public_users.findFirst({
+      where: {
+        fk_client_id: client_id,
+        user_role: 'CLIENT',
+        ...(!isSuperAdmin ? { fk_owner_id: ownerId } : {}),
+      },
+      select: {
+        user_id: true, email: true, username: true, first_name: true, last_name: true,
+        auth_user_id: true, fk_owner_id: true,
+      },
+    });
+    if (!loginUser) return { code: 0, error: 'Portal user not found for this client' };
+
+    const usernameChanged = !!username && username !== (loginUser.username ?? '').toLowerCase();
+    const emailChanged = !!email && email !== (loginUser.email ?? '').toLowerCase();
+
+    if (usernameChanged) {
+      const taken = await prisma.public_users.findFirst({
+        where: { username: { equals: username, mode: 'insensitive' }, user_id: { not: loginUser.user_id } },
+        select: { user_id: true },
+      });
+      if (taken) return { code: 0, error: 'Username is already taken' };
+    }
+    if (emailChanged) {
+      const taken = await prisma.public_users.findFirst({
+        where: { email: { equals: email, mode: 'insensitive' }, user_id: { not: loginUser.user_id } },
+        select: { user_id: true },
+      });
+      if (taken) return { code: 0, error: 'Email is already used by another user' };
+    }
+
+    const newPassword = reset_password
+      ? Array.from(crypto.getRandomValues(new Uint8Array(12)))
+          .map((b) => 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'[b % 62])
+          .join('')
+      : undefined;
+
+    if (loginUser.auth_user_id && (emailChanged || newPassword)) {
+      const { error: authError } = await supabase.auth.admin.updateUserById(loginUser.auth_user_id, {
+        ...(emailChanged ? { email, email_confirm: true } : {}),
+        ...(newPassword ? { password: newPassword } : {}),
+      });
+      if (authError) return { code: 0, error: authError.message };
+    }
+
+    await prisma.public_users.update({
+      where: { user_id: loginUser.user_id },
+      data: {
+        ...(usernameChanged ? { username } : {}),
+        ...(emailChanged ? { email } : {}),
+        ...(newPassword ? { password_hash: await bcrypt.hash(newPassword, 10) } : {}),
+        updated_at: new Date(),
+      },
+    });
+    if (usernameChanged) {
+      await prisma.client.update({ where: { client_id }, data: { username, updated_at: new Date() } });
+    }
+
+    const finalEmail = emailChanged ? email! : (loginUser.email ?? '');
+    const finalUsername = usernameChanged ? username! : (loginUser.username ?? '');
+    if (newPassword) {
+      const owner = await prisma.owner.findUnique({ where: { owner_id: loginUser.fk_owner_id! }, select: { owner_name: true } });
+      const fullname = [loginUser.first_name, loginUser.last_name].filter(Boolean).join(' ') || finalUsername;
+      await sendAdminPasswordChangedEmail(finalEmail, fullname, finalUsername, newPassword, owner?.owner_name ?? 'ReADI');
+    }
+
+    const changes = [
+      ...(usernameChanged ? ['username'] : []),
+      ...(emailChanged ? ['email'] : []),
+      ...(newPassword ? ['password'] : []),
+    ];
+    return { code: 1, message: changes.length ? 'Portal user updated' : 'No changes', changes, email: finalEmail };
   } catch (e: any) {
     return { code: 0, error: e.message };
   }

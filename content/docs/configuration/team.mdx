@@ -68,6 +68,17 @@ Open **Clients** in the Team menu to manage the companies you fly for. It shows 
 - **Search** by name, email, code or city, and filter by status.
 - Each row has **Edit Client**, **Update Password** (the new password is emailed to the client) and **Delete Client**.
 
+### Portal access
+
+Every client gets a portal login when you add them.
+
+- **Portal User:** when you type the contact email, the **Portal User** field fills itself with the same value. Edit it if you want a different username. It accepts lowercase letters, numbers and `. _ @ + -`. Once you change it by hand, it stops following the email.
+- **Password:** a temporary password is generated for you. You can show, copy or regenerate it. It is emailed to the client together with their activation link.
+- **Edit Client → Portal Access:** change the **Portal User** or the **Portal Login Email** and select **Save Portal User**. Clients log in with the login email, not the username. The contact email stays read-only.
+- **Reset Password:** generates a new password and emails it to the client. It also works after the client has activated their account, and the old password stops working.
+
+Changes to a portal user are recorded in the audit log.
+
 Clients you add here can then be chosen on missions and in the [Client Portal](/docs/modules/client-portal).
 
 ---
