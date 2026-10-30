@@ -173,6 +173,11 @@ export default function CompanyDetailPage() {
     const [emailSaving, setEmailSaving] = useState(false);
     const [emailError, setEmailError] = useState('');
 
+    const [supportCode, setSupportCode] = useState('');
+    const [supportPassword, setSupportPassword] = useState('');
+    const [supportSaving, setSupportSaving] = useState(false);
+    const [supportError, setSupportError] = useState('');
+
     const [logoUploading, setLogoUploading] = useState(false);
     const [cropSource, setCropSource] = useState<File | null>(null);
     const logoInputRef = useRef<HTMLInputElement>(null);
@@ -208,7 +213,7 @@ export default function CompanyDetailPage() {
         setLoading(true);
         try {
             const res = await axios.get(`/api/owner/${id}`);
-            if (res.data.code === 1) { setOwner(res.data.data); populateForms(res.data.data); }
+            if (res.data.code === 1) { setOwner(res.data.data); populateForms(res.data.data); setSupportCode(res.data.data.support_access_code ?? ''); }
         } catch { toast.error(t('companyPage.toast.loadFailed')); }
         finally { setLoading(false); }
     }, [id, populateForms, t]);
@@ -312,6 +317,31 @@ export default function CompanyDetailPage() {
             } else { setEmailError(res.data.message || 'Failed to update email'); }
         } catch (err: any) { setEmailError(err?.response?.data?.message || 'Network error'); }
         finally { setEmailSaving(false); }
+    };
+
+    const handleSupportAccessUpdate = async () => {
+        if (!owner?.support_access_code) return;
+        const code = supportCode.trim();
+        const password = supportPassword.trim();
+        setSupportError('');
+        if (!/^\d{6}$/.test(code)) { setSupportError('Access code must be exactly 6 digits'); return; }
+        const codeChanged = code !== owner.support_access_code;
+        if (password && !/^(?=.*[A-Z])(?=.*[0-9])(?=.*[^A-Za-z0-9]).{8,}$/.test(password)) { setSupportError('Password must be at least 8 characters with an uppercase letter, a number and a special character'); return; }
+        if (codeChanged && password) { setSupportError('Update the access code and the password separately'); return; }
+        if (!codeChanged && !password) { setSupportError('Change the access code or enter a new password'); return; }
+        setSupportSaving(true);
+        try {
+            const res = await axios.put(`/api/owner/${id}/support-access`, {
+                ...(codeChanged ? { access_code: code } : {}),
+                ...(password ? { new_password: password } : {}),
+            });
+            if (res.data.code === 1) {
+                toast.success('Support access updated');
+                setSupportPassword('');
+                await fetchOwner();
+            } else { setSupportError(res.data.message || 'Failed to update support access'); }
+        } catch (err: any) { setSupportError(err?.response?.data?.message || 'Network error'); }
+        finally { setSupportSaving(false); }
     };
 
     const handleActivate = async () => {
@@ -915,18 +945,32 @@ export default function CompanyDetailPage() {
                                         <p className={`text-xs mt-0.5 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Hidden secondary admin for this company. Sign in with the email and password below to access the company as an admin.</p>
                                     </div>
                                     <Separator />
-                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-                                        {[
-                                            { label: 'Access Code', value: owner.support_access_code },
-                                            { label: 'Login Email', value: `${owner.support_access_code}@readicontrolcenter.com` },
-                                            { label: 'Password', value: owner.support_access_code },
-                                        ].map(({ label, value }) => (
-                                            <div key={label} className="space-y-1.5">
-                                                <Label className={labelClass}>{label}</Label>
-                                                <p className={`${fieldClass} font-mono select-all`}>{value}</p>
-                                            </div>
-                                        ))}
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                                        <div className="space-y-1.5">
+                                            <Label className={labelClass}>Login Email</Label>
+                                            <p className={`${fieldClass} font-mono select-all`}>{owner.support_access_code}@readicontrolcenter.com</p>
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            <Label className={labelClass}>Password</Label>
+                                            <p className={fieldClass}>Not shown (stored hashed). Initially equal to the access code.</p>
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            <Label className={labelClass}>Access Code (6 digits)</Label>
+                                            <Input value={supportCode} maxLength={6} inputMode="numeric" className="h-9 text-sm font-mono"
+                                                onChange={(e) => { setSupportCode(e.target.value.replace(/\D/g, '')); setSupportError(''); }} />
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            <Label className={labelClass}>New Password (optional)</Label>
+                                            <Input type="password" value={supportPassword} autoComplete="new-password" className="h-9 text-sm"
+                                                placeholder="Min 8 chars, A-Z, 0-9, special char"
+                                                onChange={(e) => { setSupportPassword(e.target.value); setSupportError(''); }} />
+                                        </div>
                                     </div>
+                                    <p className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Changing the access code changes the login email and resets the password to the new code. Setting a password never changes the email. Update them separately.</p>
+                                    {supportError && <p className="text-xs text-red-500">{supportError}</p>}
+                                    <Button size="sm" className="h-9 text-xs" onClick={handleSupportAccessUpdate} disabled={supportSaving}>
+                                        {supportSaving ? 'Saving…' : 'Update Support Access'}
+                                    </Button>
                                 </div>
                             )}
 

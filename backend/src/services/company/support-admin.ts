@@ -84,3 +84,45 @@ export async function ensureSupportAdmin(ownerId: number, timezone?: string): Pr
 
     return code;
 }
+
+/**
+ * SuperAdmin update of the support admin's credentials. Changing the code also renames the login email
+ * (`<code>@readicontrolcenter.com`); the password is reset to the new code unless one is supplied.
+ * Only a bcrypt hash is stored for the password.
+ */
+export async function updateSupportAdmin(ownerId: number, input: { accessCode?: string; password?: string }) {
+    const code = await ensureSupportAdmin(ownerId);
+    const oldEmail = supportAdminEmail(code);
+    const user = await prisma.public_users.findUnique({ where: { email: oldEmail }, select: { user_id: true } });
+    if (!user) throw new Error('Support admin not found');
+
+    const newCode = input.accessCode ?? code;
+    const codeChanged = newCode !== code;
+
+    if (codeChanged) {
+        const [codeTaken, emailTaken] = await Promise.all([
+            prisma.owner.findFirst({ where: { support_access_code: newCode }, select: { owner_id: true } }),
+            prisma.public_users.findUnique({ where: { email: supportAdminEmail(newCode) }, select: { user_id: true } }),
+        ]);
+        if (codeTaken || emailTaken) throw new Error('Access code is already in use');
+    }
+
+    const newPassword = input.password ?? (codeChanged ? newCode : undefined);
+
+    await prisma.$transaction([
+        ...(codeChanged
+            ? [prisma.owner.update({ where: { owner_id: ownerId }, data: { support_access_code: newCode } })]
+            : []),
+        prisma.public_users.update({
+            where: { user_id: user.user_id },
+            data: {
+                updated_at: new Date(),
+                ...(codeChanged ? { email: supportAdminEmail(newCode), username: `support_${newCode}` } : {}),
+                // Sign out any open session that used the old credentials.
+                ...(newPassword ? { password_hash: await bcrypt.hash(newPassword, 10), last_logout_at: new Date() } : {}),
+            },
+        }),
+    ]);
+
+    return { accessCode: newCode };
+}
