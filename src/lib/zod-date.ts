@@ -1,8 +1,15 @@
 import { z } from 'zod';
 
-/** True for '' (treated as "no date" downstream) or any string `new Date()` can parse. */
+/**
+ * True for '' (treated as "no date" downstream) or a string `new Date()` parses to a plausible year.
+ * `<input type="date">` lets users type 5+ digit years ("20226-10-30"), which is an Invalid Date in JS.
+ */
 export function isValidDateString(v: string): boolean {
-  return v === '' || !Number.isNaN(new Date(v).getTime());
+  if (v === '') return true;
+  const t = new Date(v).getTime();
+  if (Number.isNaN(t)) return false;
+  const year = new Date(t).getUTCFullYear();
+  return year >= 1900 && year <= 2200;
 }
 
 /**
