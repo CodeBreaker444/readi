@@ -1,5 +1,6 @@
 'use client';
 
+import { ClientStatusTag, isClientInactive } from '@/components/client/ClientStatusTag';
 import { useAuthorization } from '@/components/authorization/AuthorizationProvider';
 import EditComponentModal from '@/components/system/EditComponentModal';
 import { Button } from '@/components/ui/button';
@@ -351,7 +352,7 @@ export default function EditSystemModal({ open, toolId, onClose, onSuccess, onCo
                       <SelectTrigger className={selectTriggerCls}><SelectValue placeholder={t('systems.components.common.select')} /></SelectTrigger>
                       <SelectContent className={selectContentCls}>
                         {clients.map((c: any) => (
-                          <SelectItem key={c.client_id} value={c.client_id.toString()}>{c.client_name}</SelectItem>
+                          <SelectItem key={c.client_id} value={c.client_id.toString()} disabled={isClientInactive(c.client_active)}>{c.client_name}<ClientStatusTag clientActive={c.client_active} notActivated={c.is_pending} /></SelectItem>
                         ))}
                       </SelectContent>
                     </Select>

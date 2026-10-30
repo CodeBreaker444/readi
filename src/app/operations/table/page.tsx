@@ -142,7 +142,7 @@ export default function OperationsPage() {
     { user_id: number; first_name: string; last_name: string }[]
   >([]);
   const [tools, setTools] = useState<{ tool_id: number; tool_name: string; tool_code: string }[]>([]);
-  const [clients, setClients] = useState<{ client_id: number; client_name: string }[]>([]);
+  const [clients, setClients] = useState<{ client_id: number; client_name: string; client_active?: string | null; not_activated?: boolean }[]>([]);
   const [groupLabels, setGroupLabels] = useState<string[]>([]);
   const [optionsLoaded, setOptionsLoaded] = useState(false);
   const [dFlightEnabled, setDFlightEnabled] = useState(false);

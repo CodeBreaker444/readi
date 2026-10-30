@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Loader2 } from 'lucide-react';
 import { SelectPaginationFooter, usePagedItems } from './OperationModalHelpers';
 
-interface Client { client_id: number; client_name: string; client_code: string }
+interface Client { client_id: number; client_name: string; client_code: string; not_activated?: boolean; client_active?: string | null }
 
 interface ImportClientStepProps {
     t: (key: string, opts?: any) => string;
@@ -39,8 +39,8 @@ export function ImportClientStep({ t, ns, loadingClients, clientId, setClientId,
                     </SelectTrigger>
                     <SelectContent position="popper" align="start" sideOffset={4}>
                         {pagedClients.map((c) => (
-                            <SelectItem key={c.client_id} value={String(c.client_id)}>
-                            {c.client_name} ({c.client_code})
+                            <SelectItem key={c.client_id} value={String(c.client_id)} disabled={c.client_active === 'N'}>
+                            {c.client_name} ({c.client_code}){c.client_active === 'N' && <span className="ml-2 text-xs text-rose-500">({t("common.inactive")})</span>}{c.not_activated && <span className="ml-2 text-xs text-amber-500">({t("common.notActivated")})</span>}
                             </SelectItem>
                         ))}
                         {showPagination && (

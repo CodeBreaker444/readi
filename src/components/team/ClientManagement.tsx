@@ -123,6 +123,23 @@ export default function ClientManagement({ session }: ClientManagementProps) {
     }
   };
 
+  const handleActivate = async (client: ClientData) => {
+    try {
+      const res = await axios.post('/api/client/activate', {
+        client_id: client.client_id,
+        client_name: client.client_name,
+      });
+      if (res.data.code === 1) {
+        toast.success(t('team.client.toast.activated'));
+        fetchClients();
+      } else {
+        toast.error(res.data.message || t('team.client.toast.activateFailed'));
+      }
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || t('team.client.toast.activateFailed'));
+    }
+  };
+
   const handleDelete = async (clientId: number) => {
     const client = clients.find((c) => c.client_id === clientId);
 
@@ -242,7 +259,7 @@ export default function ClientManagement({ session }: ClientManagementProps) {
   );
 
   const columns = useMemo(
-    () => getClientColumns({ isDark, onEdit: handleEdit, onDelete: handleDelete, onUpdatePassword: handleUpdatePassword, timezone, t }),
+    () => getClientColumns({ isDark, onEdit: handleEdit, onDelete: handleDelete, onUpdatePassword: handleUpdatePassword, onActivate: handleActivate, canActivate: session.user.role === 'ADMIN' || isSuperAdmin, timezone, t }),
     [isDark, timezone, t]
   );
 
@@ -438,4 +455,4 @@ export default function ClientManagement({ session }: ClientManagementProps) {
       )}
     </div>
   );
-}
+}

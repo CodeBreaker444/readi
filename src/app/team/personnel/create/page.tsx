@@ -13,7 +13,7 @@ export default function CreateUserPage() {
   const router = useRouter();
   const { isDark } = useTheme();
   const { t } = useTranslation();
-  const [clients, setClients] = useState<{ client_id: number; client_name: string }[]>([]);
+  const [clients, setClients] = useState<{ client_id: number; client_name: string; client_active?: string | null; is_pending?: boolean }[]>([]);
   const [owners, setOwners] = useState<{ owner_id: number; owner_name: string }[]>([]);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [canEditEmail, setCanEditEmail] = useState(true);

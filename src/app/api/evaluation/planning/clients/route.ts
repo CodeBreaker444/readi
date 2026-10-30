@@ -10,7 +10,7 @@ export async function GET() {
         const { session, error } = await requirePermission('view_planning');
         if (error) return error;
 
-        const result = await listClients(session!.user.ownerId);
+        const result = await listClients(session!.user.ownerId, false);
 
         return NextResponse.json(result);
     } catch (err) {

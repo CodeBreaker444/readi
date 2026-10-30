@@ -1,3 +1,4 @@
+import { clientLoginActivation, isClientNotActivated } from '@/backend/services/client/client-service';
 import { seedLucProcedureProgressFromSteps } from '@/backend/services/operation/luc-procedure-progress';
 import { assertMissionEditable, assertDFlightAuthorized, assertOpmApproved } from '@/backend/services/operation/mission-lock';
 import { AttachmentUploadResponse, CreateOperationSchema, ListOperationsQuerySchema, Operation, OperationAttachment, OperationsListResponse, UpdateOperationSchema } from '@/config/types/operation';
@@ -1029,11 +1030,12 @@ export async function getMissionGroupLabelOptions(ownerId: number) {
 }
 
 export async function getClientOptions(ownerId: number) {
-  return prisma.client.findMany({
-    where: { fk_owner_id: ownerId, client_active: 'Y' },
+  const rows = await prisma.client.findMany({
+    where: { fk_owner_id: ownerId },
     orderBy: { client_name: 'asc' },
-    select: { client_id: true, client_name: true },
+    select: { client_id: true, client_name: true, client_active: true, ...clientLoginActivation },
   });
+  return rows.map(({ users, ...c }) => ({ ...c, not_activated: isClientNotActivated({ users }) }));
 }
 
 export async function getPlanningOptions(ownerId: number) {
@@ -1064,4 +1066,4 @@ export async function getLucProcedureOptions(ownerId: number) {
     orderBy: { procedure_name: 'asc' },
     select: { procedure_id: true, procedure_name: true, procedure_code: true, procedure_steps: true },
   });
-}
+}

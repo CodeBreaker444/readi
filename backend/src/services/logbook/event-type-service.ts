@@ -49,8 +49,8 @@ export async function listEventTypes(ownerId: number, onlyClientId?: number): Pr
 }
 
 /** The company's clients, offered when assigning an event type to a client. */
-export async function listTypeClients(ownerId: number): Promise<{ client_id: number; client_name: string }[]> {
-  return prisma.client.findMany({ where: { fk_owner_id: ownerId }, orderBy: { client_name: 'asc' }, select: { client_id: true, client_name: true } });
+export async function listTypeClients(ownerId: number): Promise<{ client_id: number; client_name: string; client_active: string | null }[]> {
+  return prisma.client.findMany({ where: { fk_owner_id: ownerId }, orderBy: { client_name: 'asc' }, select: { client_id: true, client_name: true, client_active: true } });
 }
 
 /** Label for an event whose snapshot has none (should not happen after migration 024). */

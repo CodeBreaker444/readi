@@ -3,7 +3,7 @@
 import '@/lib/i18n/config';
 import { formatDateInTz } from '@/lib/utils';
 import { ColumnDef } from '@tanstack/react-table';
-import { Building2, Globe, KeyRound, Mail, MoreHorizontal, Pencil, Phone, Trash2 } from 'lucide-react';
+import { Building2, Globe, KeyRound, Mail, MoreHorizontal, Pencil, Phone, Trash2, UserCheck } from 'lucide-react';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import {
@@ -46,11 +46,13 @@ interface GetClientColumnsOptions {
   onEdit: (client: ClientData) => void;
   onDelete: (clientId: number) => void;
   onUpdatePassword: (client: ClientData) => void;
+  onActivate: (client: ClientData) => void;
+  canActivate: boolean;
   timezone?: string;
   t: (key: string) => string;
 }
 
-export function getClientColumns({ isDark, onEdit, onDelete, onUpdatePassword, timezone, t }: GetClientColumnsOptions): ColumnDef<ClientData>[] {
+export function getClientColumns({ isDark, onEdit, onDelete, onUpdatePassword, onActivate, canActivate, timezone, t }: GetClientColumnsOptions): ColumnDef<ClientData>[] {
   return [
     {
       accessorKey: 'client_name',
@@ -182,6 +184,21 @@ export function getClientColumns({ isDark, onEdit, onDelete, onUpdatePassword, t
       },
     },
     {
+      id: 'email_status',
+      header: () => t('team.client.columns.emailStatus'),
+      cell: ({ row }) => {
+        const verified = row.original.user_active === 'Y';
+        return (
+          <Badge className={`text-xs font-semibold border-0 ${verified
+            ? (isDark ? 'bg-emerald-900/40 text-emerald-400' : 'bg-emerald-100 text-emerald-700')
+            : (isDark ? 'bg-amber-900/40 text-amber-400' : 'bg-amber-100 text-amber-700')
+          }`}>
+            {verified ? t('team.client.columns.emailActivated') : t('common.notActivated')}
+          </Badge>
+        );
+      },
+    },
+    {
       id: 'actions',
       header: '',
       cell: ({ row }) => {
@@ -198,9 +215,16 @@ export function getClientColumns({ isDark, onEdit, onDelete, onUpdatePassword, t
                 <Pencil size={12} /> {t('team.client.columns.editClient')}
               </DropdownMenuItem>
               {client.is_pending && (
-                <DropdownMenuItem onClick={() => onUpdatePassword(client)} className="gap-2 text-xs cursor-pointer">
-                  <KeyRound size={12} /> {t('team.client.columns.updatePassword')}
-                </DropdownMenuItem>
+                <>
+                  {canActivate && (
+                    <DropdownMenuItem onClick={() => onActivate(client)} className="gap-2 text-xs cursor-pointer">
+                      <UserCheck size={12} /> {t('team.client.columns.activateEmail')}
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuItem onClick={() => onUpdatePassword(client)} className="gap-2 text-xs cursor-pointer">
+                    <KeyRound size={12} /> {t('team.client.columns.updatePassword')}
+                  </DropdownMenuItem>
+                </>
               )}
               <DropdownMenuSeparator />
               <DropdownMenuItem

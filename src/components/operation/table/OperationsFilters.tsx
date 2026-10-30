@@ -1,5 +1,6 @@
 'use client';
 
+import { ClientStatusTag, isClientInactive } from '@/components/client/ClientStatusTag';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -39,6 +40,8 @@ interface Tool {
 interface Client {
   client_id: number;
   client_name: string;
+  client_active?: string | null;
+  not_activated?: boolean;
 }
 
 interface OperationsFiltersProps {
@@ -147,8 +150,8 @@ export function OperationsFilters({
             <SelectContent>
               <SelectItem value="ALL">{t('operations.table.filters.allClients')}</SelectItem>
               {clients.map((c) => (
-                <SelectItem key={c.client_id} value={c.client_id.toString()}>
-                  {c.client_name}
+                <SelectItem key={c.client_id} value={c.client_id.toString()} disabled={isClientInactive(c.client_active)}>
+                  {c.client_name}<ClientStatusTag clientActive={c.client_active} notActivated={c.not_activated} />
                 </SelectItem>
               ))}
             </SelectContent>

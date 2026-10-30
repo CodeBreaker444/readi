@@ -1,6 +1,7 @@
 
 'use client';
 
+import { ClientStatusTag, isClientInactive } from '@/components/client/ClientStatusTag';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -201,7 +202,7 @@ export default function AddSystemModal({ open, onClose, onSuccess, models, clien
                 <Select value={formData.fk_client_id} onValueChange={v => handleChange('fk_client_id', v)}>
                   <SelectTrigger className={selectTriggerCls}><SelectValue placeholder={t('systems.components.common.select')} /></SelectTrigger>
                   <SelectContent className={selectContentCls}>
-                    {clients.map((c: any) => (<SelectItem key={c.client_id} value={c.client_id.toString()}>{c.client_name}</SelectItem>))}
+                    {clients.map((c: any) => (<SelectItem key={c.client_id} value={c.client_id.toString()} disabled={isClientInactive(c.client_active)}>{c.client_name}<ClientStatusTag clientActive={c.client_active} notActivated={c.is_pending} /></SelectItem>))}
                   </SelectContent>
                 </Select>
               </div>

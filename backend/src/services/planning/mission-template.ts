@@ -1,3 +1,4 @@
+import { clientLoginActivation, isClientNotActivated } from '@/backend/services/client/client-service';
 import { prisma } from '@/lib/prisma';
 import { getPresignedDownloadUrl } from '@/lib/s3Client';
 
@@ -133,7 +134,7 @@ export async function getMissionTemplateFilterOptions(ownerId: number) {
     prisma.client.findMany({
       where: { fk_owner_id: ownerId },
       orderBy: { client_name: 'asc' },
-      select: { client_id: true, client_name: true, client_active: true },
+      select: { client_id: true, client_name: true, client_active: true, ...clientLoginActivation },
     }),
     prisma.public_users.findMany({
       where: { fk_owner_id: ownerId, user_role: 'PIC' },
@@ -157,6 +158,7 @@ export async function getMissionTemplateFilterOptions(ownerId: number) {
       id: c.client_id,
       name: c.client_name,
       active: c.client_active === 'Y',
+      not_activated: isClientNotActivated(c),
     })),
     pilots: pilots.map((p) => ({
       id: p.user_id,

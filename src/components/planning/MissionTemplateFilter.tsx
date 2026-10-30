@@ -4,6 +4,8 @@ import React from 'react';
 interface FilterOption {
     id: number;
     name: string;
+    active?: boolean;
+    not_activated?: boolean;
 }
 
 interface MissionTemplateFiltersProps {
@@ -47,8 +49,8 @@ const MissionTemplateFilters: React.FC<MissionTemplateFiltersProps> = ({
                     >
                         <option value="0">Select</option>
                         {clients.map((client) => (
-                            <option key={client.id} value={client.id}>
-                                {client.name}
+                            <option key={client.id} value={client.id} disabled={client.active === false}>
+                                {client.name}{client.active === false ? ' (Inactive)' : ''}{client.not_activated ? ' (Not activated)' : ''}
                             </option>
                         ))}
                     </select>
@@ -146,4 +148,4 @@ const MissionTemplateFilters: React.FC<MissionTemplateFiltersProps> = ({
     );
 };
 
-export default MissionTemplateFilters;
+export default MissionTemplateFilters;

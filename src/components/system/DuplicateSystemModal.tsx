@@ -1,5 +1,6 @@
 'use client';
 
+import { ClientStatusTag, isClientInactive } from '@/components/client/ClientStatusTag';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -410,8 +411,8 @@ export default function DuplicateSystemModal({
                     </SelectTrigger>
                     <SelectContent>
                       {clients.map((client: any) => (
-                        <SelectItem key={client.client_id} value={String(client.client_id)}>
-                          {client.client_name}
+                        <SelectItem key={client.client_id} value={String(client.client_id)} disabled={isClientInactive(client.client_active)}>
+                          {client.client_name}<ClientStatusTag clientActive={client.client_active} notActivated={client.is_pending} />
                         </SelectItem>
                       ))}
                     </SelectContent>

@@ -9,6 +9,7 @@ import {
 import { useTheme } from "@/components/useTheme";
 import type { Client, MapFilters } from "@/config/types/types";
 import { useTranslation } from "react-i18next";
+import { ClientStatusTag, isClientInactive } from "@/components/client/ClientStatusTag";
 
 interface MapFiltersProps {
   filters: MapFilters;
@@ -60,8 +61,8 @@ export default function MapFilters({ filters, clients, onChange }: MapFiltersPro
           <SelectContent className={selectContentCls}>
             <SelectItem value="__all__">{t('systems.map.filters.allClients')}</SelectItem>
             {clients.map((c) => (
-              <SelectItem key={c.client_id} value={String(c.client_id)}>
-                {c.client_name}{c.client_code ? ` (${c.client_code})` : ""}
+              <SelectItem key={c.client_id} value={String(c.client_id)} disabled={isClientInactive(c.client_active)}>
+                {c.client_name}{c.client_code ? ` (${c.client_code})` : ""}<ClientStatusTag clientActive={c.client_active} notActivated={c.is_pending} />
               </SelectItem>
             ))}
           </SelectContent>
@@ -99,4 +100,4 @@ export default function MapFilters({ filters, clients, onChange }: MapFiltersPro
 
     </div>
   );
-}
+}

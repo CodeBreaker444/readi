@@ -1,3 +1,4 @@
+import { clientLoginActivation, isClientNotActivated } from '@/backend/services/client/client-service';
 import { prisma } from '@/lib/prisma';
 import type {
   ClientOption,
@@ -93,13 +94,15 @@ export async function getClientList(ownerId: number): Promise<{ data: ClientOpti
   const clients = await prisma.client.findMany({
     where: { fk_owner_id: ownerId },
     orderBy: { client_name: 'asc' },
-    select: { client_id: true, client_name: true, client_code: true },
+    select: { client_id: true, client_name: true, client_code: true, client_active: true, ...clientLoginActivation },
   });
   return {
     data: clients.map((c) => ({
       client_id: c.client_id,
       client_name: c.client_name,
       client_code: c.client_code ?? undefined,
+      client_active: c.client_active ?? undefined,
+      not_activated: isClientNotActivated(c),
     })),
   };
 }

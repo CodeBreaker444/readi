@@ -1,5 +1,6 @@
 'use client';
 
+import { ClientStatusTag, isClientInactive } from '@/components/client/ClientStatusTag';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -39,6 +40,8 @@ interface Props {
 interface ClientOption {
   client_id: number;
   client_name: string;
+  client_active?: string | null;
+  not_activated?: boolean;
 }
 
 interface FormState {
@@ -266,8 +269,8 @@ export function EventWebhookSettings({ open, onOpenChange }: Props) {
                 <SelectContent className="border-slate-200 bg-white text-slate-800 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
                   <SelectItem value="__all__">{w('allClients')}</SelectItem>
                   {clients.map((c) => (
-                    <SelectItem key={c.client_id} value={String(c.client_id)}>
-                      {c.client_name}
+                    <SelectItem key={c.client_id} value={String(c.client_id)} disabled={isClientInactive(c.client_active)}>
+                      {c.client_name}<ClientStatusTag clientActive={c.client_active} notActivated={c.not_activated} />
                     </SelectItem>
                   ))}
                 </SelectContent>

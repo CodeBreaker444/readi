@@ -1,5 +1,6 @@
 "use client";
 
+import { clientStatusText, isClientInactive } from '@/components/client/ClientStatusTag';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -170,7 +171,7 @@ export function OperationFilterPanel({
           options={pilots.map((p) => ({ value: String(p.user_id), label: `${p.fullname} [${p.pilot_status_desc}]` }))}
         />
         <FilterSelect label={t('logbooks.operationLogbook.filter.client')} allLabel={t('logbooks.operationLogbook.filter.all')} value={clientId} onChange={setClientId} isDark={isDark}
-          options={clients.map((c) => ({ value: String(c.client_id), label: c.client_name }))}
+          options={clients.map((c) => ({ value: String(c.client_id), label: c.client_name + clientStatusText(t, c.client_active, c.not_activated), disabled: isClientInactive(c.client_active) }))}
         />
         <FilterSelect label={t('logbooks.operationLogbook.filter.droneSystem')} allLabel={t('logbooks.operationLogbook.filter.all')} value={droneId} onChange={setDroneId} isDark={isDark} pageSize={8}
           options={drones.map((d) => ({ value: String(d.tool_id), label: `${d.tool_code} — ${d.tool_desc}` }))}
@@ -248,7 +249,7 @@ function FilterSelect({
   allLabel: string;
   value: string;
   onChange: (v: string) => void;
-  options: { value: string; label: string }[];
+  options: { value: string; label: string; disabled?: boolean }[];
   isDark: boolean;
   noneValue?: string;
   pageSize?: number;
@@ -295,7 +296,7 @@ function FilterSelect({
             {allLabel}
           </SelectItem>
           {visible.map((o) => (
-            <SelectItem key={o.value} value={o.value} className="text-xs">
+            <SelectItem key={o.value} value={o.value} disabled={o.disabled} className="text-xs">
               {o.label}
             </SelectItem>
           ))}
@@ -329,4 +330,4 @@ function FilterSelect({
       </Select>
     </div>
   );
-}
+}

@@ -17,6 +17,7 @@
     "no": "No",
     "active": "Active",
     "inactive": "Inactive",
+    "notActivated": "Not activated",
     "status": "Status",
     "actions": "Actions",
     "name": "Name",
@@ -228,6 +229,10 @@
         "contractEnd": "Contract End",
         "editClient": "Edit Client",
         "updatePassword": "Update Password",
+        "activateEmail": "Activate Account",
+        "emailStatus": "Email",
+        "emailActivated": "Verified",
+        "emailPending": "Not verified",
         "deleteClient": "Delete Client"
       },
       "stats": {
@@ -252,7 +257,9 @@
         "updateError": "Error updating client",
         "passwordUpdated": "Password updated and emailed to the client",
         "passwordUpdateFailed": "Failed to update password",
-        "passwordUpdateError": "Error updating password"
+        "passwordUpdateError": "Error updating password",
+        "activated": "Client account activated",
+        "activateFailed": "Failed to activate client account"
       }
     },
     "personnel": {

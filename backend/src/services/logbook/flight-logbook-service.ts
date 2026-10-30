@@ -224,8 +224,8 @@ export async function getOperationLogbookFilters(owner_id: number) {
         select: { user_id: true, first_name: true, last_name: true },
       }),
       prisma.client.findMany({
-        where:  { fk_owner_id: owner_id, client_active: 'Y' },
-        select: { client_id: true, client_name: true },
+        where:  { fk_owner_id: owner_id },
+        select: { client_id: true, client_name: true, client_active: true },
       }),
       prisma.tool.findMany({
         where:  { fk_owner_id: owner_id, tool_active: 'Y' },
@@ -267,6 +267,7 @@ export async function getOperationLogbookFilters(owner_id: number) {
   const clientOptions: ClientOption[] = clients.map((c) => ({
     client_id: c.client_id,
     client_name: c.client_name,
+    client_active: c.client_active ?? undefined,
   }));
 
   const droneOptions: DroneOption[] = drones

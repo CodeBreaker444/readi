@@ -12,6 +12,14 @@ function clearAuthCookies(cookieStore: Awaited<Awaited<ReturnType<typeof cookies
     path:     '/',
     priority: 'high',
   });
+  cookieStore.set('force_pw_change', '', {
+    httpOnly: false,
+    secure:   process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge:   0,
+    path:     '/',
+    priority: 'high',
+  });
   cookieStore.set('mfa_verified', '', {
     httpOnly: false,
     secure:   process.env.NODE_ENV === 'production',

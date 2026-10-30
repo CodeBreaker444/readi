@@ -58,6 +58,18 @@ export interface UpdateClientInput extends Partial<CreateClientInput> {
   client_active?: string;
 }
 
+/** Prisma select fragment: the client's portal login, used to tell whether its email was activated. */
+export const clientLoginActivation = {
+  users: { where: { user_role: 'CLIENT' as const }, select: { user_active: true }, take: 1 },
+};
+
+/** A client with a portal login that is not yet activated. Clients without a login are not flagged. */
+export function isClientNotActivated(c: { users?: { user_active: string | null }[] }): boolean {
+  const u = c.users?.[0];
+  return !!u && u.user_active?.trim() !== 'Y';
+}
+
+
 // Prisma returns credit_limit as Decimal (serialized to a JSON string); ClientData declares a number.
 function serializeClient<T extends { credit_limit?: { toString(): string } | null }>(row: T): ClientData {
   return { ...row, credit_limit: row.credit_limit != null ? Number(row.credit_limit) : undefined } as unknown as ClientData;
@@ -333,6 +345,36 @@ export async function updateClientPassword(
     }
 
     return { code: 1, message: 'Password updated successfully' };
+  } catch (e: any) {
+    return { code: 0, error: e.message };
+  }
+}
+
+/** Admin override for a client whose portal email was never activated: sets users.user_active = 'Y' and clears the activation key. */
+export async function activateClientUser(
+  client_id: number,
+  ownerId: number,
+  isSuperAdmin = false,
+): Promise<{ code: number; message?: string; error?: string }> {
+  try {
+    const loginUser = await prisma.public_users.findFirst({
+      where: {
+        fk_client_id: client_id,
+        user_role: 'CLIENT',
+        ...(!isSuperAdmin ? { fk_owner_id: ownerId } : {}),
+      },
+      select: { user_id: true, user_active: true },
+    });
+
+    if (!loginUser) return { code: 0, error: 'Client account not found' };
+    if (loginUser.user_active?.trim() === 'Y') return { code: 0, error: 'Client is already activated' };
+
+    await prisma.public_users.update({
+      where: { user_id: loginUser.user_id },
+      data: { user_active: 'Y', key_: null, updated_at: new Date() },
+    });
+
+    return { code: 1, message: 'Client account activated' };
   } catch (e: any) {
     return { code: 0, error: e.message };
   }

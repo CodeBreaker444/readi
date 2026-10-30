@@ -72,6 +72,8 @@ export interface Client {
   client_id: number;
   client_name: string;
   client_code: string;
+  not_activated?: boolean;
+  client_active?: string | null;
 }
 
 export interface LucProcedure {
@@ -142,4 +144,4 @@ export interface SendAssignmentPayload {
 export interface SendAssignmentResult {
   success: boolean;
   message?: string;
-}
+}

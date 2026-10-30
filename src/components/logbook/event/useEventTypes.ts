@@ -8,6 +8,7 @@ import { useCallback, useEffect, useState } from 'react';
 export interface EventTypeClient {
   client_id: number;
   client_name: string;
+  client_active?: string | null;
 }
 
 let cache: EventTypeItem[] | null = null;

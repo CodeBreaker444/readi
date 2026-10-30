@@ -1,5 +1,6 @@
 'use client';
 
+import { ClientStatusTag, isClientInactive } from '@/components/client/ClientStatusTag';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,6 +34,8 @@ interface Props {
 interface ClientOption {
   client_id: number;
   client_name: string;
+  client_active?: string | null;
+  not_activated?: boolean;
 }
 
 interface Contact {
@@ -322,8 +325,8 @@ export function EventNotificationSettings({ open, onOpenChange }: Props) {
                     </SelectTrigger>
                     <SelectContent className="border-slate-200 bg-white text-slate-800 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
                       {clients.map((c) => (
-                        <SelectItem key={c.client_id} value={String(c.client_id)}>
-                          {c.client_name}
+                        <SelectItem key={c.client_id} value={String(c.client_id)} disabled={isClientInactive(c.client_active)}>
+                          {c.client_name}<ClientStatusTag clientActive={c.client_active} notActivated={c.not_activated} />
                           {(defaults[c.client_id]?.length ?? 0) > 0 && ` (${defaults[c.client_id].length})`}
                         </SelectItem>
                       ))}

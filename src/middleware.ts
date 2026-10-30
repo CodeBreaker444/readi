@@ -130,8 +130,14 @@ export async function updateSession(request: NextRequest) {
 
   if (jwtToken) {
     const forcePwChange = request.cookies.get('force_pw_change')?.value === '1'
-    if (forcePwChange && pathname === '/auth/change-password') {
-      return NextResponse.next()
+    if (forcePwChange) {
+      if (pathname === '/auth/change-password') {
+        return NextResponse.next()
+      }
+      if (pathname.startsWith('/api/')) {
+        return NextResponse.json({ error: 'Password change required' }, { status: 403 })
+      }
+      return NextResponse.redirect(new URL('/auth/change-password', request.url))
     }
     if (isPublicRoute || isAuthFlowRoute) {
       const role = decodeJwtRole(jwtToken)

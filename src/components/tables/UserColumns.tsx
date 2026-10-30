@@ -140,15 +140,6 @@ export function getUserColumns({
       ),
     },
     {
-      accessorKey: 'user_unique_code',
-      header: () => <span className={headerClass}>{t('team.code')}</span>,
-      cell: ({ row }) => (
-        <span className={`text-xs font-mono ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-          {row.original.user_unique_code || '—'}
-        </span>
-      ),
-    },
-    {
       accessorKey: 'active',
       header: () => <span className={headerClass}>{t('common.status')}</span>,
       cell: ({ row }) => {
@@ -292,4 +283,4 @@ export function getUserColumns({
       },
     },
   ];
-}
+}

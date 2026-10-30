@@ -386,6 +386,8 @@ export interface Client {
   owner_id: number;
   client_name: string;
   client_code: string | null;
+  client_active?: string | null;
+  is_pending?: boolean;
 }
 
 
@@ -512,4 +514,4 @@ export interface ToolMapRow {
   created_at?: string;
   updated_at?: string;
 
-}
+}

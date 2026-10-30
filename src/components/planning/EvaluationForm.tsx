@@ -1,4 +1,5 @@
 'use client';
+import { ClientStatusTag, isClientInactive } from '@/components/client/ClientStatusTag';
 import {
   Select,
   SelectContent,
@@ -19,6 +20,8 @@ import { Textarea } from "@/components/ui/textarea";
 interface Client {
   id: number;
   name: string;
+  notActivated?: boolean;
+  clientActive?: string | null;
 }
 
 interface LUCProcedure {
@@ -80,6 +83,8 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ onSubmit, isDark }) => 
       const clientList = (response.data.data || []).map((c: any) => ({
         id: c.client_id,
         name: c.client_name,
+        notActivated: !!c.is_pending,
+        clientActive: c.client_active,
       }));
       setClients(clientList);
     } catch (error) {
@@ -147,8 +152,8 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ onSubmit, isDark }) => 
             </SelectTrigger>
             <SelectContent className={isDark ? 'bg-gray-800 border-gray-700 text-gray-100' : ''}>
               {clients.map(client => (
-                <SelectItem key={client.id} value={String(client.id)} className="cursor-pointer">
-                  {client.name}
+                <SelectItem key={client.id} value={String(client.id)} disabled={isClientInactive(client.clientActive)} className="cursor-pointer">
+                  {client.name}<ClientStatusTag clientActive={client.clientActive} notActivated={client.notActivated} />
                 </SelectItem>
               ))}
             </SelectContent>
@@ -290,4 +295,4 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ onSubmit, isDark }) => 
   );
 };
 
-export default EvaluationForm;
+export default EvaluationForm;

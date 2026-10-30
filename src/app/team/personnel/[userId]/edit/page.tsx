@@ -15,7 +15,7 @@ export default function EditUserPage() {
   const userId = Number(params.userId);
   const { isDark } = useTheme();
   const { t } = useTranslation();
-  const [clients, setClients] = useState<{ client_id: number; client_name: string }[]>([]);
+  const [clients, setClients] = useState<{ client_id: number; client_name: string; client_active?: string | null; is_pending?: boolean }[]>([]);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [canEditEmail, setCanEditEmail] = useState(true);
   const [sessionRole, setSessionRole] = useState<string | undefined>(undefined);
