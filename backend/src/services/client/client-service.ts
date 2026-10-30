@@ -322,7 +322,10 @@ export async function updateClientPassword(
 
     const owner = await prisma.owner.findUnique({ where: { owner_id: loginUser.fk_owner_id! }, select: { owner_name: true } });
     const fullname = [loginUser.first_name, loginUser.last_name].filter(Boolean).join(' ') || loginUser.username || '';
-    await sendAdminPasswordChangedEmail(loginUser.email ?? '', fullname, loginUser.username ?? '', newPassword, owner?.owner_name ?? 'ReADI');
+    const mail = await sendAdminPasswordChangedEmail(loginUser.email ?? '', fullname, loginUser.username ?? '', newPassword, owner?.owner_name ?? 'ReADI');
+    if (mail?.error) {
+      return { code: 0, error: 'Password was updated but the email could not be sent. Share the new password manually or reset again.' };
+    }
 
     return { code: 1, message: 'Password updated successfully' };
   } catch (e: any) {
@@ -356,7 +359,7 @@ export async function updatePortalUser(
       },
       select: {
         user_id: true, email: true, username: true, first_name: true, last_name: true,
-        auth_user_id: true, fk_owner_id: true,
+        auth_user_id: true, fk_owner_id: true, password_hash: true,
       },
     });
     if (!loginUser) return { code: 0, error: 'Portal user not found for this client' };
@@ -385,25 +388,40 @@ export async function updatePortalUser(
           .join('')
       : undefined;
 
+    // DB first (single transaction), then Supabase auth; if auth fails, restore the DB so the two never diverge.
+    const passwordHash = newPassword ? await bcrypt.hash(newPassword, 10) : undefined;
+    await prisma.$transaction([
+      prisma.public_users.update({
+        where: { user_id: loginUser.user_id },
+        data: {
+          ...(usernameChanged ? { username } : {}),
+          ...(emailChanged ? { email } : {}),
+          ...(passwordHash ? { password_hash: passwordHash } : {}),
+          updated_at: new Date(),
+        },
+      }),
+      ...(usernameChanged
+        ? [prisma.client.update({ where: { client_id }, data: { username, updated_at: new Date() } })]
+        : []),
+    ]);
+
     if (loginUser.auth_user_id && (emailChanged || newPassword)) {
       const { error: authError } = await supabase.auth.admin.updateUserById(loginUser.auth_user_id, {
         ...(emailChanged ? { email, email_confirm: true } : {}),
         ...(newPassword ? { password: newPassword } : {}),
       });
-      if (authError) return { code: 0, error: authError.message };
-    }
-
-    await prisma.public_users.update({
-      where: { user_id: loginUser.user_id },
-      data: {
-        ...(usernameChanged ? { username } : {}),
-        ...(emailChanged ? { email } : {}),
-        ...(newPassword ? { password_hash: await bcrypt.hash(newPassword, 10) } : {}),
-        updated_at: new Date(),
-      },
-    });
-    if (usernameChanged) {
-      await prisma.client.update({ where: { client_id }, data: { username, updated_at: new Date() } });
+      if (authError) {
+        await prisma.$transaction([
+          prisma.public_users.update({
+            where: { user_id: loginUser.user_id },
+            data: { username: loginUser.username, email: loginUser.email, password_hash: loginUser.password_hash, updated_at: new Date() },
+          }),
+          ...(usernameChanged
+            ? [prisma.client.update({ where: { client_id }, data: { username: loginUser.username, updated_at: new Date() } })]
+            : []),
+        ]);
+        return { code: 0, error: authError.message };
+      }
     }
 
     const finalEmail = emailChanged ? email! : (loginUser.email ?? '');
@@ -411,7 +429,10 @@ export async function updatePortalUser(
     if (newPassword) {
       const owner = await prisma.owner.findUnique({ where: { owner_id: loginUser.fk_owner_id! }, select: { owner_name: true } });
       const fullname = [loginUser.first_name, loginUser.last_name].filter(Boolean).join(' ') || finalUsername;
-      await sendAdminPasswordChangedEmail(finalEmail, fullname, finalUsername, newPassword, owner?.owner_name ?? 'ReADI');
+      const mail = await sendAdminPasswordChangedEmail(finalEmail, fullname, finalUsername, newPassword, owner?.owner_name ?? 'ReADI');
+      if (mail?.error) {
+        return { code: 0, error: 'Password was reset but the email could not be sent. Reset again or share the new password manually.' };
+      }
     }
 
     const changes = [

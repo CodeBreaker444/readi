@@ -169,7 +169,7 @@ export function ClientFormModal({ isOpen, onClose, mode, clientData, onSubmit, i
     setFormData((prev) => ({ ...prev, [key]: value }));
     // Portal user defaults to the contact email until the admin edits it themselves
     if (key === 'client_email' && mode === 'add' && !usernameTouched.current) {
-      const v = value.trim().toLowerCase().replace(USERNAME_STRIP, '');
+      const v = value.trim().toLowerCase().replace(USERNAME_STRIP, '').slice(0, 100);
       setFormData((prev) => ({ ...prev, username: v }));
       checkUsername(v);
     }
@@ -361,6 +361,7 @@ export function ClientFormModal({ isOpen, onClose, mode, clientData, onSubmit, i
                   <Input
                     className={`${inputClass} ${usernameStatus === 'taken' || usernameStatus === 'invalid' ? 'border-rose-500' : usernameStatus === 'available' ? 'border-emerald-500' : ''}`}
                     value={formData.username}
+                    maxLength={100}
                     onChange={(e) => {
                       const v = e.target.value.toLowerCase().replace(USERNAME_STRIP, '');
                       usernameTouched.current = true;
