@@ -73,6 +73,7 @@ export interface AddOwnerPayload {
 }
 
 export interface UpdateOwnerPayload {
+    owner_code?: string;
     owner_name: string;
     owner_legal_name?: string | null;
     owner_type?: string | null;
@@ -303,12 +304,24 @@ export async function updateOwner(id: string, payload: UpdateOwnerPayload) {
 
     const current = await prisma.owner.findUnique({
         where: { owner_id: ownerId },
-        select: { owner_active: true },
+        select: { owner_active: true, owner_code: true },
     });
+
+    if (payload.owner_code && payload.owner_code !== current?.owner_code) {
+        const taken = await prisma.owner.findFirst({
+            where: {
+                owner_code: { equals: payload.owner_code, mode: 'insensitive' },
+                owner_id: { not: ownerId },
+            },
+            select: { owner_id: true },
+        });
+        if (taken) throw new Error('This company code is already in use');
+    }
 
     const updated = await prisma.owner.update({
         where: { owner_id: ownerId },
         data: {
+            ...(payload.owner_code ? { owner_code: payload.owner_code } : {}),
             owner_name: payload.owner_name,
             owner_legal_name: payload.owner_legal_name ?? null,
             owner_type: payload.owner_type ?? null,

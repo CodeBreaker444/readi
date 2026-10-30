@@ -56,6 +56,7 @@ interface OwnerMetrics {
 }
 
 type GeneralForm = {
+    owner_code: string;
     owner_name: string;
     owner_legal_name: string;
     owner_type: string;
@@ -97,6 +98,7 @@ function formatBytes(bytes: number): string {
 
 function buildPayload(general: GeneralForm, security: SecurityForm, features: FeaturesForm) {
     return {
+        owner_code: general.owner_code.trim(),
         owner_name: general.owner_name,
         owner_legal_name: general.owner_legal_name || null,
         owner_type: general.owner_type || null,
@@ -150,7 +152,7 @@ export default function CompanyDetailPage() {
     const [featuresEditing, setFeaturesEditing] = useState(false);
 
     const [generalForm, setGeneralForm] = useState<GeneralForm>({
-        owner_name: '', owner_legal_name: '', owner_type: '', owner_email: '',
+        owner_code: '', owner_name: '', owner_legal_name: '', owner_type: '', owner_email: '',
         owner_phone: '', owner_website: '', owner_address: '', owner_city: '',
         owner_state: '', owner_postal_code: '', tax_id: '', registration_number: '',
         license_number: '', license_expiry: '',
@@ -177,6 +179,7 @@ export default function CompanyDetailPage() {
 
     const populateForms = useCallback((o: OwnerData) => {
         setGeneralForm({
+            owner_code: toStr(o.owner_code),
             owner_name: toStr(o.owner_name), owner_legal_name: toStr(o.owner_legal_name),
             owner_type: toStr(o.owner_type), owner_email: toStr(o.owner_email),
             owner_phone: toStr(o.owner_phone), owner_website: toStr(o.owner_website),
@@ -534,6 +537,7 @@ export default function CompanyDetailPage() {
                                 <p className={`text-xs font-semibold uppercase tracking-wide mb-4 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Basic Details</p>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                                     {[
+                                        { key: 'owner_code', label: 'Company Code', required: true },
                                         { key: 'owner_name', label: 'Company Name', required: true },
                                         { key: 'owner_legal_name', label: 'Legal Name' },
                                         { key: 'owner_type', label: 'Company Type' },

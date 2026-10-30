@@ -229,7 +229,7 @@ export async function getOperationLogbookFilters(owner_id: number) {
       }),
       prisma.tool.findMany({
         where:  { fk_owner_id: owner_id, tool_active: 'Y' },
-        select: { tool_id: true, tool_code: true, tool_name: true },
+        select: { tool_id: true, tool_code: true, tool_name: true, tool_metadata: true },
       }),
       prisma.pilot_mission_type.findMany({
         where:  { fk_owner_id: owner_id, is_active: true },
@@ -269,7 +269,9 @@ export async function getOperationLogbookFilters(owner_id: number) {
     client_name: c.client_name,
   }));
 
-  const droneOptions: DroneOption[] = drones.map((t) => ({
+  const droneOptions: DroneOption[] = drones
+    .filter((t) => (t.tool_metadata as { is_warehouse?: boolean } | null)?.is_warehouse !== true)
+    .map((t) => ({
     tool_id: t.tool_id,
     tool_code: t.tool_code ?? '',
     tool_desc: t.tool_name ?? '',
