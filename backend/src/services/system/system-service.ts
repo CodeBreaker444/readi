@@ -153,7 +153,7 @@ export async function getSystemList(
       const effective = computeEffectiveComponentStatus({
         ...c,
         component_metadata: meta,
-        expiration_date: c.expiration_date ? new Date(c.expiration_date).toISOString().split('T')[0] : null,
+        expiration_date: toDayString(c.expiration_date ? new Date(c.expiration_date) : null),
       });
       if (effective === 'MAINTENANCE') toolsInMaintenance.add(c.fk_tool_id);
     });
@@ -340,7 +340,7 @@ async function findOperationalBlocker(toolId: number): Promise<string | null> {
     return isComponentPartOfSystem(meta) && computeEffectiveComponentStatus({
       ...c,
       component_metadata: meta,
-      expiration_date: c.expiration_date ? new Date(c.expiration_date).toISOString().split('T')[0] : null,
+      expiration_date: toDayString(c.expiration_date ? new Date(c.expiration_date) : null),
     }) === 'MAINTENANCE';
   });
   if (inMaintenance) return `Component "${inMaintenance.component_name}" is still in maintenance.`;
@@ -946,6 +946,13 @@ export async function getComponentList(ownerId: number, toolId?: number, include
   return buildComponentListResult(rawData);
 }
 
+/** YYYY-MM-DD for a Date/string; null when empty or an Invalid Date (toISOString would throw RangeError). */
+function toDayString(value: Date | string | null | undefined): string | null {
+  if (value == null || value === '') return null;
+  if (typeof value === 'string') return value;
+  return Number.isNaN(value.getTime()) ? null : value.toISOString().split('T')[0];
+}
+
 export function computeEffectiveComponentStatus(item: {
   component_metadata: any;
   expiration_date: Date | string | null;
@@ -957,9 +964,7 @@ export function computeEffectiveComponentStatus(item: {
 }, today: string = new Date().toISOString().split('T')[0]): string {
   const expiryType: string = item.expiry_type || 'EXPIRATION_DATE';
   // Callers pass either a Date (Prisma rows) or a YYYY-MM-DD string; a Date compared with a string is never <=, so normalise first.
-  const expiryDay = item.expiration_date instanceof Date
-    ? item.expiration_date.toISOString().split('T')[0]
-    : item.expiration_date;
+  const expiryDay = toDayString(item.expiration_date);
   const isDateExpired = expiryDay && expiryDay <= today;
   const isFlightExpired =
     item.expiration_flights != null &&
@@ -996,7 +1001,7 @@ export function describeExpiryReason(item: {
   current_usage_hours: number | Prisma.Decimal | null;
 }, today: string = new Date().toISOString().split('T')[0]): string {
   const expiryType = item.expiry_type || 'EXPIRATION_DATE';
-  const day = item.expiration_date instanceof Date ? item.expiration_date.toISOString().split('T')[0] : item.expiration_date;
+  const day = toDayString(item.expiration_date);
   const reasons: string[] = [];
   if ((expiryType === 'EXPIRATION_DATE' || expiryType === 'MIXED') && day && day <= today) {
     reasons.push(`its expiry date (${day}) has passed`);
@@ -1276,7 +1281,7 @@ export async function updateComponent(componentId: number, componentData: any, o
   }) => computeEffectiveComponentStatus({ component_metadata: {}, ...limits }) === 'DECOMMISSIONED';
 
   const storedLimits = {
-    expiration_date: existing?.expiration_date ? new Date(existing.expiration_date).toISOString().split('T')[0] : null,
+    expiration_date: toDayString(existing?.expiration_date ? new Date(existing.expiration_date) : null),
     expiry_type: existing?.expiry_type ?? null,
     expiration_flights: existing?.expiration_flights ?? null,
     expiration_flight_hours: existing?.expiration_flight_hours != null ? Number(existing.expiration_flight_hours) : null,

@@ -91,8 +91,8 @@ export function OperationStepDrone({
 
             <div>
                 <Label className={labelCls(isDark)}>{t('operations.newOperation.drone.opTypeLabel')} <span className="text-red-500">*</span></Label>
-                <div className="flex gap-2 mt-1">
-                    {(['OPEN', 'PDRA', 'STS-01', 'STS-02'] as OpType[]).map(type => (
+                <div className="flex flex-wrap gap-2 mt-1">
+                    {(['OPEN', 'PDRA', 'STS-01', 'STS-02', 'NO-STD'] as OpType[]).map(type => (
                         <button
                             key={type}
                             type="button"
@@ -106,7 +106,7 @@ export function OperationStepDrone({
                                         : 'bg-white border-slate-300 text-slate-600 hover:bg-slate-50'
                             )}
                         >
-                            {type}
+                            {type === 'NO-STD' ? 'Specific - NO STD' : type}
                         </button>
                     ))}
                 </div>
@@ -117,7 +117,9 @@ export function OperationStepDrone({
                             ? t('operations.newOperation.drone.opTypeSts01Desc')
                             : opType === 'STS-02'
                                 ? t('operations.newOperation.drone.opTypeSts02Desc')
-                                : t('operations.newOperation.drone.opTypeOpenDesc')}
+                                : opType === 'NO-STD'
+                                    ? t('operations.newOperation.drone.opTypeNoStdDesc')
+                                    : t('operations.newOperation.drone.opTypeOpenDesc')}
                 </p>
             </div>
 

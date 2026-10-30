@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma';
+import { EXCLUDE_SUPPORT_ADMIN } from '../company/support-admin';
 import { sendNotificationEmail } from '../../../../lib/resend/mail';
  
 
@@ -22,6 +23,7 @@ export async function notifyAdminsOnEmailLimitReached(data: EmailLimitReachedNot
       fk_owner_id: ownerId,
       user_role: 'ADMIN',
       user_active: 'Y',
+      ...EXCLUDE_SUPPORT_ADMIN,
     },
     select: {
       email: true,

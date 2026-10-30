@@ -41,6 +41,20 @@ export async function POST(request: NextRequest) {
       department: body.department || null,
     };
 
+    const validationError =
+      !userData.username?.trim() ? 'Username is required'
+      : !userData.fullname?.trim() ? 'Full name is required'
+      : !userData.email?.trim() ? 'Email is required'
+      : Number.isNaN(userData.fk_user_profile_id) ? 'Please select a role for the user'
+      : !userData.owner_id ? 'No company is associated with this user. Please select a company.'
+      : null;
+    if (validationError) {
+      return NextResponse.json(
+        { code: 0, status: 'ERROR', message: validationError, error_list: [validationError] },
+        { status: 400 },
+      );
+    }
+
     const result = await createUser(userData);
 
     logEvent({

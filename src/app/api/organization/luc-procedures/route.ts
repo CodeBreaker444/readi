@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import z from 'zod';
+import { zDateString } from '@/lib/zod-date';
 
 import { createLucProcedure, getLucProcedures } from '@/backend/services/organization/lcu-service';
 import { logEvent } from '@/backend/services/auditLog/audit-log';
@@ -49,8 +50,8 @@ const createSchema = z.object({
     procedure_active: z.enum(['Y', 'N']).optional(),
     procedure_sector: z.string().optional(),
     procedure_steps: z.any().optional(),
-    effective_date: z.string().optional(),
-    review_date: z.string().optional(),
+    effective_date: zDateString().optional(),
+    review_date: zDateString().optional(),
 });
 
 export async function POST(request: NextRequest) {

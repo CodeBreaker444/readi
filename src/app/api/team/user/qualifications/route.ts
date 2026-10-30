@@ -2,13 +2,14 @@ import { createQualifications, listQualifications } from '@/backend/services/use
 import { requirePermission } from '@/lib/auth/api-auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { z, ZodError } from 'zod';
+import { zDateString } from '@/lib/zod-date';
 
 const qualificationItemSchema = z.object({
   qualification_name: z.string().min(1, 'Name is required'),
   qualification_type: z.enum(['Certification', 'Training']),
   description: z.string().nullable().optional(),
-  start_date: z.string().nullable().optional(),
-  expiry_date: z.string().nullable().optional(),
+  start_date: zDateString().nullable().optional(),
+  expiry_date: zDateString().nullable().optional(),
   status: z.enum(['Active', 'Inactive']).default('Active'),
 });
 

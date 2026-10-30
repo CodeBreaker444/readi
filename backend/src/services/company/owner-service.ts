@@ -4,12 +4,14 @@ import { BUCKET, deleteFileFromS3, getFileBufferFromS3, getPresignedDownloadUrl,
 import { PutObjectCommand } from '@aws-sdk/client-s3';
 import bcrypt from 'bcrypt';
 import { sendAdminPasswordChangedEmail, sendUserActivationEmail } from '../../../../lib/resend/mail';
+import { ensureSupportAdmin, EXCLUDE_SUPPORT_ADMIN } from './support-admin';
 import { generateActivationToken, generateUniqueCode } from '../user/user-management';
 import { ALL_FEATURE_KEYS, DEFAULT_ROLE_FEATURE_ACCESS, MATRIX_ROLES } from '@/lib/auth/feature-permissions-types';
 
 export interface OwnerData {
     owner_id: number;
     owner_code: string;
+    support_access_code?: string | null;
     owner_name: string;
     owner_address: string | null;
     owner_phone: string | null;
@@ -73,6 +75,7 @@ export interface AddOwnerPayload {
 }
 
 export interface UpdateOwnerPayload {
+    owner_code?: string;
     owner_name: string;
     owner_legal_name?: string | null;
     owner_type?: string | null;
@@ -207,6 +210,9 @@ export async function getOwnerById(id: string): Promise<OwnerWithAdmin | null> {
     const { user_owner, ...ownerData } = owner;
     const adminRel = user_owner[0];
 
+    // Companies created before the support admin existed get theirs the first time they're opened.
+    const support_access_code = await ensureSupportAdmin(ownerId);
+
     let owner_logo_url: string | null = null;
     if (ownerData.owner_logo?.startsWith('logos/')) {
         try {
@@ -218,6 +224,7 @@ export async function getOwnerById(id: string): Promise<OwnerWithAdmin | null> {
 
     return {
         ...ownerData,
+        support_access_code,
         owner_logo_url,
         created_at: ownerData.created_at?.toISOString() ?? '',
         admin_user: adminRel?.users
@@ -238,7 +245,7 @@ export async function getOwnerMetrics(id: string): Promise<OwnerMetrics> {
     const ownerId = parseInt(id);
 
     const users = await prisma.public_users.findMany({
-        where: { fk_owner_id: ownerId },
+        where: { fk_owner_id: ownerId, ...EXCLUDE_SUPPORT_ADMIN },
         select: { user_id: true, user_active: true, user_role: true },
     });
 
@@ -303,12 +310,24 @@ export async function updateOwner(id: string, payload: UpdateOwnerPayload) {
 
     const current = await prisma.owner.findUnique({
         where: { owner_id: ownerId },
-        select: { owner_active: true },
+        select: { owner_active: true, owner_code: true },
     });
+
+    if (payload.owner_code && payload.owner_code !== current?.owner_code) {
+        const taken = await prisma.owner.findFirst({
+            where: {
+                owner_code: { equals: payload.owner_code, mode: 'insensitive' },
+                owner_id: { not: ownerId },
+            },
+            select: { owner_id: true },
+        });
+        if (taken) throw new Error('This company code is already in use');
+    }
 
     const updated = await prisma.owner.update({
         where: { owner_id: ownerId },
         data: {
+            ...(payload.owner_code ? { owner_code: payload.owner_code } : {}),
             owner_name: payload.owner_name,
             owner_legal_name: payload.owner_legal_name ?? null,
             owner_type: payload.owner_type ?? null,
@@ -609,6 +628,7 @@ export async function addOwnerWithAdmin(payload: AddOwnerWithAdminPayload) {
 
     try {
         await seedDefaultRolePermissions(owner.owner_id);
+        const support_access_code = await ensureSupportAdmin(owner.owner_id, payload.admin_timezone || 'IST');
 
         const uid = generateUniqueCode();
         const key = generateActivationToken(128);
@@ -670,7 +690,7 @@ export async function addOwnerWithAdmin(payload: AddOwnerWithAdminPayload) {
         );
 
         return {
-            owner,
+            owner: { ...owner, support_access_code },
             admin: {
                 userId: adminUser.user_id,
                 activationKey: key,

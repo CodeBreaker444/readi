@@ -2,6 +2,7 @@ import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { updateTool } from '@/backend/services/system/system-service';
 import { requireFeatureAccess, requirePermission } from '@/lib/auth/api-auth';
 import { internalError, zodError } from '@/lib/api-error';
+import { zDateString } from '@/lib/zod-date';
 import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
@@ -15,7 +16,7 @@ const schema = z.object({
   tool_latitude:           z.number().optional().nullable(),
   tool_longitude:          z.number().optional().nullable(),
   location_pseudo_name:    z.string().max(255).optional().nullable(),
-  date_activation:         z.string().optional().nullable(),
+  date_activation:         zDateString().optional().nullable(),
   location:                z.string().optional().nullable(),
   tool_maintenance_logbook: z.string().optional().nullable(),
 });

@@ -14,7 +14,7 @@ export interface PilotOption { user_id: number; first_name: string; last_name: s
 export interface ConflictEvent { id: string; title: string; start: string; end: string }
 export interface UspaceOption { id: string; name: string | null; boundary?: { lat: number; lng: number }[][] | null; maxHBufferM?: number | null }
 
-export type OpType = 'OPEN' | 'PDRA' | 'STS-01' | 'STS-02'
+export type OpType = 'OPEN' | 'PDRA' | 'STS-01' | 'STS-02' | 'NO-STD'
 export type FlightMode = 'RC' | 'DOCK'
 
 export const STEPS = [

@@ -23,6 +23,30 @@ import axios from 'axios';
 import { Award, ArrowLeft, Briefcase, Building2, CheckCircle, ChevronDown, ChevronRight, Eye, EyeOff, House, Link2, Link2Off, Loader2, Pencil, Plus, ShieldCheck, Trash2, User, UserCog, X, XCircle } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
+
+const DEFAULT_TIMEZONE = 'Europe/Berlin';
+// Same options as the Profile modal's timezone selector.
+const TIMEZONE_OPTIONS: { value: string; label: string }[] = [
+  { value: 'Europe/Berlin', label: 'Central Europe (CET/CEST)' },
+  { value: 'Europe/London', label: 'UK / Ireland (GMT/BST)' },
+  { value: 'Europe/Paris', label: 'France / Belgium (CET/CEST)' },
+  { value: 'Europe/Rome', label: 'Italy / Spain (CET/CEST)' },
+  { value: 'Europe/Helsinki', label: 'Finland / Estonia (EET/EEST)' },
+  { value: 'Europe/Moscow', label: 'Moscow (MSK)' },
+  { value: 'UTC', label: 'UTC' },
+  { value: 'America/New_York', label: 'US Eastern (EST/EDT)' },
+  { value: 'America/Chicago', label: 'US Central (CST/CDT)' },
+  { value: 'America/Denver', label: 'US Mountain (MST/MDT)' },
+  { value: 'America/Los_Angeles', label: 'US Pacific (PST/PDT)' },
+  { value: 'America/Sao_Paulo', label: 'Brazil (BRT)' },
+  { value: 'Asia/Kolkata', label: 'India (IST)' },
+  { value: 'Asia/Dubai', label: 'Gulf (GST)' },
+  { value: 'Asia/Tokyo', label: 'Japan (JST)' },
+  { value: 'Asia/Singapore', label: 'Singapore (SGT)' },
+  { value: 'Asia/Shanghai', label: 'China (CST)' },
+  { value: 'Australia/Sydney', label: 'Sydney (AEST/AEDT)' },
+  { value: 'Pacific/Auckland', label: 'New Zealand (NZST/NZDT)' },
+];
 import { DepartmentRow, ManageDepartmentsModal } from '../system/ManageDepartmentsModal';
 import { Skeleton } from '../ui/skeleton';
 
@@ -161,6 +185,7 @@ export function UserForm({
       active: 1,
       flytrelay_access: false,
       department: '',
+      timezone: DEFAULT_TIMEZONE,
     };
     if (!userData) return defaults;
     return {
@@ -175,6 +200,7 @@ export function UserForm({
       active: userData.active ?? 1,
       flytrelay_access: userData.flytrelay_access ?? false,
       department: userData.department || '',
+      timezone: userData.timezone || DEFAULT_TIMEZONE,
     };
   });
 
@@ -806,6 +832,29 @@ export function UserForm({
                 </Select>
               </div>
             </div>
+
+            {(
+              <div>
+                <Label htmlFor="timezone" className="pb-2">Timezone</Label>
+                <Select
+                  value={formData.timezone}
+                  onValueChange={(value) => setFormData({ ...formData, timezone: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select timezone" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {/* keep a legacy stored value selectable so editing doesn't blank it */}
+                    {formData.timezone && !TIMEZONE_OPTIONS.some((o) => o.value === formData.timezone) && (
+                      <SelectItem value={formData.timezone}>{formData.timezone}</SelectItem>
+                    )}
+                    {TIMEZONE_OPTIONS.map((tz) => (
+                      <SelectItem key={tz.value} value={tz.value}>{tz.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             <div className="grid grid-cols-2 gap-4">
               <div>

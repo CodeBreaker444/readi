@@ -5,6 +5,7 @@ import {
   upsertFlightRequestByExternalId,
 } from '@/backend/services/mission/flight-request-service';
 import { internalError, zodError } from '@/lib/api-error';
+import { zDateString } from '@/lib/zod-date';
 import { requireApiKey } from '@/lib/auth/api-key-auth';
 import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
@@ -25,7 +26,7 @@ const WaypointSchema = z.object({
 
 const MissionItemSchema = z.object({
   missionId:     z.string().min(1, 'missionId is required'),
-  startDateTime: z.string().optional(),
+  startDateTime: zDateString().optional(),
   waypoint:      WaypointSchema,
 });
 
@@ -48,7 +49,7 @@ const SingleMissionSchema = z.object({
   target:        z.string().optional(),
   localization:  LocalizationSchema.optional(),
   waypoint:      WaypointSchema.required(),
-  startDateTime: z.string().optional(),
+  startDateTime: zDateString().optional(),
   priority:      z.string().optional(),
   notes:         z.string().optional(),
   operator:      z.string().optional(),

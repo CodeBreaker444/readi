@@ -40,7 +40,11 @@ interface ClientFormModalProps {
   clientData?: ClientData;
   onSubmit: (data: any) => Promise<void>;
   isDark: boolean;
+  onPortalUpdated?: () => void;
 }
+
+const USERNAME_REGEX = /^[a-z0-9_.@+-]+$/;
+const USERNAME_STRIP = /[^a-z0-9_.@+-]/g;
 
 type UsernameStatus = 'idle' | 'checking' | 'available' | 'taken' | 'invalid';
 
@@ -104,7 +108,7 @@ const buildFormState = (clientData?: ClientData): FormState => {
   };
 };
 
-export function ClientFormModal({ isOpen, onClose, mode, clientData, onSubmit, isDark }: ClientFormModalProps) {
+export function ClientFormModal({ isOpen, onClose, mode, clientData, onSubmit, isDark, onPortalUpdated }: ClientFormModalProps) {
   const { t } = useTranslation();
   const [formData, setFormData] = useState<FormState>(buildFormState(clientData));
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -113,6 +117,9 @@ export function ClientFormModal({ isOpen, onClose, mode, clientData, onSubmit, i
   const [showPassword, setShowPassword] = useState(false);
   const [copied, setCopied] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const usernameTouched = useRef(false);
+  const [portalEmail, setPortalEmail] = useState('');
+  const [portalBusy, setPortalBusy] = useState<'save' | 'reset' | null>(null);
 
   const makePassword = () =>
     Array.from(crypto.getRandomValues(new Uint8Array(12)))
@@ -124,6 +131,9 @@ export function ClientFormModal({ isOpen, onClose, mode, clientData, onSubmit, i
     if (isOpen) {
       setFormData(buildFormState(clientData));
       setUsernameStatus('idle');
+      usernameTouched.current = false;
+      setPortalEmail(clientData?.portal_email ?? clientData?.client_email ?? '');
+      setPortalBusy(null);
       setGeneratedPassword(mode === 'add' ? makePassword() : '');
       setShowPassword(false);
       setCopied(false);
@@ -138,7 +148,7 @@ export function ClientFormModal({ isOpen, onClose, mode, clientData, onSubmit, i
       return;
     }
 
-    if (!/^[a-z0-9_]+$/.test(value)) {
+    if (!USERNAME_REGEX.test(value)) {
       setUsernameStatus('invalid');
       return;
     }
@@ -157,8 +167,46 @@ export function ClientFormModal({ isOpen, onClose, mode, clientData, onSubmit, i
   const set = (key: keyof FormState) => (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setFormData((prev) => ({ ...prev, [key]: value }));
-    if (key === 'username' && mode === 'add') {
-      checkUsername(value.toLowerCase());
+    // Portal user defaults to the contact email until the admin edits it themselves
+    if (key === 'client_email' && mode === 'add' && !usernameTouched.current) {
+      const v = value.trim().toLowerCase().replace(USERNAME_STRIP, '').slice(0, 100);
+      setFormData((prev) => ({ ...prev, username: v }));
+      checkUsername(v);
+    }
+  };
+
+  const savePortalUser = async (resetPassword: boolean) => {
+    if (!clientData?.client_id) return;
+    const username = formData.username.trim().toLowerCase();
+    const email = portalEmail.trim().toLowerCase();
+    if (!resetPassword) {
+      if (!USERNAME_REGEX.test(username) || username.length < 3) {
+        toast.error(t('clientFormToast.usernameInvalid'));
+        return;
+      }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        toast.error(t('clientFormToast.emailInvalid'));
+        return;
+      }
+    }
+    setPortalBusy(resetPassword ? 'reset' : 'save');
+    try {
+      const res = await axios.post('/api/client/portal-user', {
+        client_id: clientData.client_id,
+        ...(resetPassword ? { reset_password: true } : { username, email }),
+      });
+      if (res.data.code === 1) {
+        toast.success(resetPassword ? 'New password generated and emailed to the client' : 'Portal user updated');
+        onPortalUpdated?.();
+      } else {
+        toast.error(res.data.error || 'Failed to update portal user');
+      }
+    } catch (err: any) {
+      const d = err?.response?.data;
+      const fieldErr = d?.errors && Object.values(d.errors).flat().find(Boolean);
+      toast.error((fieldErr as string) || d?.error || 'Failed to update portal user');
+    } finally {
+      setPortalBusy(null);
     }
   };
 
@@ -240,7 +288,7 @@ export function ClientFormModal({ isOpen, onClose, mode, clientData, onSubmit, i
     );
     if (usernameStatus === 'invalid') return (
       <span className="flex items-center gap-1 text-amber-500 text-[11px] mt-1">
-        <XCircle size={11} /> Min 3 chars, lowercase / numbers / underscore only
+        <XCircle size={11} /> Min 3 chars, lowercase letters, numbers and . _ @ + - only
       </span>
     );
     return null;
@@ -313,16 +361,21 @@ export function ClientFormModal({ isOpen, onClose, mode, clientData, onSubmit, i
                   <Input
                     className={`${inputClass} ${usernameStatus === 'taken' || usernameStatus === 'invalid' ? 'border-rose-500' : usernameStatus === 'available' ? 'border-emerald-500' : ''}`}
                     value={formData.username}
+                    maxLength={100}
                     onChange={(e) => {
-                      const v = e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '');
+                      const v = e.target.value.toLowerCase().replace(USERNAME_STRIP, '');
+                      usernameTouched.current = true;
                       setFormData((p) => ({ ...p, username: v }));
                       checkUsername(v);
                     }}
-                    placeholder="acme_corp"
+                    placeholder="Defaults to the contact email"
                     required
                     autoComplete="off"
                   />
                   {usernameHint()}
+                  {!usernameTouched.current && formData.username && (
+                    <span className="text-[11px] text-slate-400 mt-1 block">Auto-filled from contact email — edit to override.</span>
+                  )}
                 </div>
                 <div>
                   <label className={labelClass}>Temporary Password</label>
@@ -359,7 +412,49 @@ export function ClientFormModal({ isOpen, onClose, mode, clientData, onSubmit, i
                     </button>
                   </div>
                   {copied && <span className="text-[11px] text-emerald-500 mt-1 block">Copied to clipboard!</span>}
+                  <span className="text-[11px] text-slate-400 mt-1 block">Emailed to the client with their activation link.</span>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* Portal Access — edit mode */}
+          {mode === 'edit' && clientData?.user_id && (
+            <div>
+              <p className={`text-[10px] font-bold uppercase tracking-widest mb-3 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Portal Access</p>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className={labelClass}>Portal User</label>
+                  <Input
+                    className={inputClass}
+                    value={formData.username}
+                    onChange={(e) => setFormData((p) => ({ ...p, username: e.target.value.toLowerCase().replace(USERNAME_STRIP, '') }))}
+                    autoComplete="off"
+                  />
+                </div>
+                <div>
+                  <label className={labelClass}>Portal Login Email</label>
+                  <Input
+                    className={inputClass}
+                    type="email"
+                    value={portalEmail}
+                    onChange={(e) => setPortalEmail(e.target.value)}
+                    autoComplete="off"
+                  />
+                </div>
+              </div>
+              <div className="flex gap-2 mt-3">
+                <Button type="button" variant="outline" size="sm" disabled={portalBusy !== null} onClick={() => savePortalUser(false)}
+                  className={isDark ? 'border-slate-600 text-slate-300 hover:bg-slate-700' : ''}>
+                  {portalBusy === 'save' && <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" />}
+                  Save Portal User
+                </Button>
+                <Button type="button" variant="outline" size="sm" disabled={portalBusy !== null}
+                  onClick={() => { if (window.confirm('Generate a new password and email it to the client?')) savePortalUser(true); }}
+                  className={isDark ? 'border-slate-600 text-slate-300 hover:bg-slate-700' : ''}>
+                  {portalBusy === 'reset' ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : <RefreshCw size={13} className="mr-1" />}
+                  Reset Password
+                </Button>
               </div>
             </div>
           )}

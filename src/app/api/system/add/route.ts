@@ -2,6 +2,7 @@ import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { addSystem } from '@/backend/services/system/system-service';
 import { requireFeatureAccess, requirePermission } from '@/lib/auth/api-auth';
 import { internalError, zodError } from '@/lib/api-error';
+import { zDateString } from '@/lib/zod-date';
 import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
@@ -17,7 +18,7 @@ const toolSchema = z.object({
   latitude: z.number().optional().nullable(),
   longitude: z.number().optional().nullable(),
   locationPseudoName: z.string().max(255).optional().nullable(),
-  activationDate: z.string().optional().nullable(),
+  activationDate: zDateString().optional().nullable(),
 });
 export async function POST(request: NextRequest) {
   try {
