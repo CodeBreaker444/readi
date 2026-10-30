@@ -14,7 +14,7 @@ const schema = z.object({
     .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
     .regex(/[0-9]/, 'Password must contain at least one number')
     .regex(/[!@#$%^&*(),.?":{}|<>]/, 'Password must contain at least one special character'),
-    client_name: z.string()
+    client_name: z.string().max(255)
 });
 
 export async function POST(req: NextRequest) {

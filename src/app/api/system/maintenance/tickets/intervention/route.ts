@@ -9,7 +9,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import z from 'zod';
 
 const interventionSchema = z.object({
-  ticket_id: z.coerce.number(),
+  ticket_id: z.coerce.number().int(),
   action: z.enum(['start', 'end']),
 });
 

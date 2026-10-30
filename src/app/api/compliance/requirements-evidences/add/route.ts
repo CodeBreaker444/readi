@@ -7,8 +7,8 @@ import { E } from '@/lib/error-codes';
 
 const CreateSchema = z.object({
   requirement_code: z.string().min(1).max(50),
-  requirement_title: z.string().min(1).max(300),
-  requirement_type: z.string().min(1).max(100).nullable().optional(),  
+  requirement_title: z.string().min(1).max(255),
+  requirement_type: z.string().min(1).max(50).nullable().optional(),  
   regulatory_body: z.string().max(255).nullable().optional(),           
   requirement_status: z.enum(['COMPLIANT', 'PARTIAL', 'NON_COMPLIANT', 'NOT_APPLICABLE']),
   review_frequency: z.number().int().min(1).max(5).nullable().optional(),  

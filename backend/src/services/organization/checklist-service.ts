@@ -3,6 +3,11 @@ import { prisma } from '@/lib/prisma';
 import type { Checklist, ChecklistCreatePayload, ChecklistUpdatePayload } from '@/config/types/checklist';
 import { logEvent } from '@/backend/services/auditLog/audit-log';
 
+// checklist_ver is a Prisma Decimal (JSON string); the Checklist type declares a number.
+function serializeChecklist<T extends { checklist_ver: { toString(): string } | null }>(row: T): Checklist {
+  return { ...row, checklist_ver: row.checklist_ver != null ? Number(row.checklist_ver) : null } as unknown as Checklist;
+}
+
 export async function getChecklistsByOwner(
   ownerId: number,
 ): Promise<{ code: number; message: string; dataRows: number; data: Checklist[] }> {
@@ -14,7 +19,7 @@ export async function getChecklistsByOwner(
     code: 1,
     message: 'Checklists retrieved successfully',
     dataRows: rows.length,
-    data: rows as unknown as Checklist[],
+    data: rows.map(serializeChecklist),
   };
 }
 
@@ -25,7 +30,7 @@ export async function getChecklistByCode(
   const row = await prisma.checklist.findFirst({
     where: { fk_owner_id: ownerId, checklist_code: checklistCode, checklist_active: 'Y' },
   });
-  return { dataRows: row ? 1 : 0, data: row as unknown as Checklist | null };
+  return { dataRows: row ? 1 : 0, data: row ? serializeChecklist(row) : null };
 }
 
 export async function getChecklistById(
@@ -34,7 +39,7 @@ export async function getChecklistById(
   const row = await prisma.checklist.findUnique({
     where: { checklist_id: checklistId },
   });
-  return { dataRows: row ? 1 : 0, data: row as unknown as Checklist | null };
+  return { dataRows: row ? 1 : 0, data: row ? serializeChecklist(row) : null };
 }
 
 export async function saveChecklistResult(
@@ -113,7 +118,7 @@ export async function createChecklist(
     metadata: { checklistCode: row.checklist_code },
   });
 
-  return { code: 1, dataRows: 1, data: row as unknown as Checklist };
+  return { code: 1, dataRows: 1, data: serializeChecklist(row) };
 }
 
 export async function updateChecklist(
@@ -156,7 +161,7 @@ export async function updateChecklist(
     metadata: { checklistCode: row.checklist_code },
   });
 
-  return { dataRows: 1, data: row as unknown as Checklist };
+  return { dataRows: 1, data: serializeChecklist(row) };
 }
 
 export async function deleteChecklist(

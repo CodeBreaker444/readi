@@ -5,7 +5,7 @@ import { z, ZodError } from 'zod';
 import { zDateString } from '@/lib/zod-date';
 
 const qualificationItemSchema = z.object({
-  qualification_name: z.string().min(1, 'Name is required'),
+  qualification_name: z.string().max(255).min(1, 'Name is required'),
   qualification_type: z.enum(['Certification', 'Training']),
   description: z.string().nullable().optional(),
   start_date: zDateString().nullable().optional(),

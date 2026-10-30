@@ -9,7 +9,7 @@ import { z } from 'zod';
 const schema = z.object({
   drones: z.array(
     z.object({
-      serial_number: z.string().min(1),
+      serial_number: z.string().max(100).min(1),
       drone_registration_code: z.string().min(1),
     }),
   ).min(1),

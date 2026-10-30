@@ -133,7 +133,7 @@ export async function updateAssignment(
     data: {
       assignment_code: payload.assignment_code,
       assignment_desc: payload.assignment_desc,
-      assignment_ver: payload.assignment_ver,
+      assignment_ver: parseFloat(String(payload.assignment_ver)) || 1.0,
       assignment_active: payload.assignment_active,
       assignment_json: parsedJson ?? undefined,
       fk_user_id: payload.fk_user_id,
@@ -187,4 +187,4 @@ export async function deleteAssignment(
   });
 
   return { code: 1, message: 'Assignment deleted', dataRows: 0, data: null };
-}
+}

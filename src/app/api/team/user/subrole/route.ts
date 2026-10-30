@@ -9,7 +9,7 @@ import z from 'zod';
 const MANAGE_SUBROLE_ROLES = ['RM', 'ADMIN', 'SUPERADMIN'];
 
 const subroleSchema = z.object({
-  user_id: z.coerce.number(),
+  user_id: z.coerce.number().int(),
   subrole: z.enum(['PIC_TECHNICIAN']),
   action: z.enum(['grant', 'revoke']),
 });

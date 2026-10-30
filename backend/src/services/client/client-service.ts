@@ -58,6 +58,11 @@ export interface UpdateClientInput extends Partial<CreateClientInput> {
   client_active?: string;
 }
 
+// Prisma returns credit_limit as Decimal (serialized to a JSON string); ClientData declares a number.
+function serializeClient<T extends { credit_limit?: { toString(): string } | null }>(row: T): ClientData {
+  return { ...row, credit_limit: row.credit_limit != null ? Number(row.credit_limit) : undefined } as unknown as ClientData;
+}
+
 export async function listClients(owner_id?: number, activeOnly = true): Promise<{ code: number; data?: ClientData[]; error?: string }> {
   try {
     const rows = await prisma.client.findMany({
@@ -110,7 +115,7 @@ export async function listClients(owner_id?: number, activeOnly = true): Promise
         is_pending: loginUser ? loginUser.user_active !== 'Y' : false,
         contract_start_date: c.contract_start_date?.toISOString().slice(0, 10),
         contract_end_date: c.contract_end_date?.toISOString().slice(0, 10),
-        credit_limit: c.credit_limit ? Number(c.credit_limit) : undefined,
+        credit_limit: c.credit_limit != null ? Number(c.credit_limit) : undefined,
         created_at: c.created_at?.toISOString(),
         updated_at: c.updated_at?.toISOString(),
       };
@@ -266,7 +271,7 @@ export async function addClient(input: CreateClientInput): Promise<{ code: numbe
       loginlink: activationLink,
     }).catch(() => { });
 
-    return { code: 1, data: clientRow as unknown as ClientData, temp_password };
+    return { code: 1, data: serializeClient(clientRow), temp_password };
   } catch (e: any) {
     return { code: 0, error: e.message };
   }
@@ -281,7 +286,7 @@ export async function updateClient(input: UpdateClientInput): Promise<{ code: nu
     if (contract_end_date !== undefined) data.contract_end_date = contract_end_date ? new Date(contract_end_date) : null;
 
     const updated = await prisma.client.update({ where: { client_id }, data });
-    return { code: 1, data: updated as unknown as ClientData };
+    return { code: 1, data: serializeClient(updated) };
   } catch (e: any) {
     return { code: 0, error: e.message };
   }
@@ -499,7 +504,7 @@ export async function getClientById(client_id: number): Promise<{ code: number; 
   try {
     const row = await prisma.client.findUnique({ where: { client_id } });
     if (!row) return { code: 0, error: 'Client not found' };
-    return { code: 1, data: row as unknown as ClientData };
+    return { code: 1, data: serializeClient(row) };
   } catch (e: any) {
     return { code: 0, error: e.message };
   }

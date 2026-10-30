@@ -8,7 +8,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import z from 'zod';
 
 const assignTicketSchema = z.object({
-  ticket_id: z.number(),
+  ticket_id: z.number().int(),
   assigned_to: z.number(),
 });
 

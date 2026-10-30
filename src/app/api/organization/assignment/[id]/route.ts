@@ -29,9 +29,9 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
 
 const updateSchema = z.object({
-  assignment_code: z.string().min(1, 'Code is required'),
+  assignment_code: z.string().max(50).min(1, 'Code is required'),
   assignment_desc: z.string().min(1, 'Description is required'),
-  assignment_ver: z.coerce.number().optional().default(1.0),
+  assignment_ver: z.coerce.number().min(0).max(999.99).optional().default(1.0),
   assignment_active: z.enum(['Y', 'N']),
   assignment_json: z.string().optional().default('{}'),
 })

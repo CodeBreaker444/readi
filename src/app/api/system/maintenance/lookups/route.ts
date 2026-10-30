@@ -7,9 +7,9 @@ import z from 'zod';
 
 const getLookupsSchema = z.object({
   type: z.enum(['drones', 'components', 'users']),
-  tool_id: z.string().nullable().optional(),
+  tool_id: z.string().regex(/^\d*$/, 'must be an integer').nullable().optional(),
   profile: z.string().nullable().optional(),
-  ticket_type: z.string().nullable().optional(),
+  ticket_type: z.string().max(50).nullable().optional(),
 });
 
 export async function GET(req: NextRequest) {

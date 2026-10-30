@@ -7,7 +7,7 @@ import * as z from 'zod';
 
 const evaluationSchema = z.object({
   client_id: z.number().min(1, 'Please select a client'),
-  fk_luc_procedure_id: z.number().min(1, 'Please select a Procedure'),
+  fk_luc_procedure_id: z.number().int().min(1, 'Please select a Procedure'),
   evaluation_status: z.enum(['NEW', 'IN_PROGRESS', 'COMPLETED', 'SUSPENDED', 'DONE']),
   evaluation_request_date: z.string().refine((val) => !isNaN(Date.parse(val)), {
     message: 'Invalid date format',

@@ -8,7 +8,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import z from 'zod';
 
 const uploadSchema = z.object({
-  ticket_id: z.string().min(1),
+  ticket_id: z.string().regex(/^\d+$/, 'must be a positive integer'),
   file: z.instanceof(File),
   attachment_desc: z.string().optional(),
 });

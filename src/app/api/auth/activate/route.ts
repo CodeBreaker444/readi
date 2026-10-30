@@ -7,8 +7,8 @@ import { z } from 'zod';
 
 const validateSchema = z.object({
   id:       z.string().min(1, 'Activation key is required'),
-  email:    z.string().email('Invalid email format'),
-  username: z.string().min(1, 'Username is required'),
+  email:    z.string().max(255).email('Invalid email format'),
+  username: z.string().max(100).min(1, 'Username is required'),
   o:        z.string().optional(),
 });
 

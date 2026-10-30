@@ -33,26 +33,26 @@ const MissionItemSchema = z.object({
 // New batch format: PMVD sends a list of pre-generated mission IDs with their scheduled times
 const BatchMissionSchema = z.object({
   type:          z.string().optional(),
-  target:        z.string().optional(),
+  target:        z.string().max(255).optional(),
   user_timezone: z.string().optional(),
   localization:  LocalizationSchema.optional(),
   missions:      z.array(MissionItemSchema).min(1, 'missions array must not be empty').max(10, 'Maximum 10 missions can be created per request'),
-  priority:      z.string().optional(),
+  priority:      z.string().max(20).optional(),
   notes:         z.string().optional(),
-  operator:      z.string().optional(),
+  operator:      z.string().max(100).optional(),
 });
 
 // Legacy single-mission format
 const SingleMissionSchema = z.object({
   missionId:     z.string().min(1, 'missionId is required'),
   type:          z.string().optional(),
-  target:        z.string().optional(),
+  target:        z.string().max(255).optional(),
   localization:  LocalizationSchema.optional(),
   waypoint:      WaypointSchema.required(),
   startDateTime: zDateString().optional(),
-  priority:      z.string().optional(),
+  priority:      z.string().max(20).optional(),
   notes:         z.string().optional(),
-  operator:      z.string().optional(),
+  operator:      z.string().max(100).optional(),
 });
 
 

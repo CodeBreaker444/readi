@@ -23,9 +23,9 @@ export async function GET() {
 
 
 const createSchema = z.object({
-  assignment_code: z.string().min(1, 'Code is required'),
+  assignment_code: z.string().max(50).min(1, 'Code is required'),
   assignment_desc: z.string().min(1, 'Description is required'),
-  assignment_ver: z.string().optional().default('1.0'),
+  assignment_ver: z.string().refine((v) => v === '' || (Number.isFinite(Number(v)) && Number(v) >= 0 && Number(v) < 1000), 'must be a number between 0 and 999.99').optional().default('1.0'),
   assignment_active: z.enum(['Y', 'N']).optional().default('Y'),
   assignment_json: z.string().optional().default('{}'),
 })

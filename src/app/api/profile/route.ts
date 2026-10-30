@@ -12,7 +12,7 @@ const updateProfileSchema = z.object({
     .string()
     .min(1, 'Full name is required')
     .max(200, 'Full name too long'),
-  email: z.string().email('Invalid email address'),
+  email: z.string().max(255).email('Invalid email address'),
   phone: z.string().max(50, 'Phone number too long').optional().default(''),
   department: z.string().max(100, 'Department too long').optional().default(''),
   timezone: z

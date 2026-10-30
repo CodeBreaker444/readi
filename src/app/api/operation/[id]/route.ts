@@ -19,13 +19,13 @@ const flexibleDatetime = z.string().refine(
 );
 
 const updateOperationSchema = z.object({
-  mission_code: z.string().min(1).optional(),
-  mission_name: z.string().optional(),
+  mission_code: z.string().max(50).min(1).optional(),
+  mission_name: z.string().max(255).optional(),
   mission_description: z.string().nullable().optional(),
   scheduled_start: flexibleDatetime.nullable().optional(),
   actual_start: flexibleDatetime.nullable().optional(),
   actual_end: flexibleDatetime.nullable().optional(),
-  flight_duration: z.number().nonnegative().nullable().optional(),
+  flight_duration: z.number().int().nonnegative().nullable().optional(),
   location: z.string().nullable().optional(),
   location_latitude: z.number().min(-90).max(90).nullable().optional(),
   location_longitude: z.number().min(-180).max(180).nullable().optional(),

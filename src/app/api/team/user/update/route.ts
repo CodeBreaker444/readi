@@ -8,9 +8,9 @@ import z from 'zod';
 const UpdateUserSchema = z.object({
   user_id: z.number().int().positive('Invalid user ID'),
   fullname: z.string().min(1, 'Full name is required').optional(),
-  email: z.string().email('Invalid email address').optional(),
+  email: z.string().max(255).email('Invalid email address').optional(),
   user_phone: z.string().optional().nullable(),
-  phone: z.string().optional().nullable(),
+  phone: z.string().max(50).optional().nullable(),
   fk_user_profile_id: z.number().int().positive().optional(),
   profile_id: z.number().int().positive().optional(),
   fk_territorial_unit: z.number().int().optional().nullable(),

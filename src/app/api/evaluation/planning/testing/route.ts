@@ -6,7 +6,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 const schema = z.object({
-    planning_id: z.number(),
+    planning_id: z.number().int(),
 });
 
 export async function POST(request: Request) {

@@ -736,7 +736,12 @@ export async function uploadOperationAttachment(
   });
 
   const presignedDownloadUrl = await getPresignedDownloadUrl(key);
-  return { attachment: data as unknown as OperationAttachment, presignedDownloadUrl };
+  return { attachment: serializeOperationAttachment(data), presignedDownloadUrl };
+}
+
+// file_size is BigInt in Prisma, which JSON.stringify cannot serialize.
+function serializeOperationAttachment<T extends { file_size: bigint | null }>(row: T): OperationAttachment {
+  return { ...row, file_size: row.file_size != null ? Number(row.file_size) : null } as unknown as OperationAttachment;
 }
 
 export async function listOperationAttachments(
@@ -747,7 +752,7 @@ export async function listOperationAttachments(
     orderBy: { uploaded_at: 'desc' },
   });
 
-  return data as unknown as OperationAttachment[];
+  return data.map(serializeOperationAttachment);
 }
 
 export async function fetchOperationAttachment(attId: number, opId: number) {

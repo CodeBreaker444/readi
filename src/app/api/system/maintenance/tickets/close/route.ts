@@ -9,7 +9,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import z from 'zod';
 
 const closeTicketSchema = z.object({
-  ticket_id: z.coerce.number(),
+  ticket_id: z.coerce.number().int(),
   note: z.string().optional(),
   closed_by: z.string().optional(),
 });
