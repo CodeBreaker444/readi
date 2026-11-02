@@ -124,7 +124,12 @@ export function EventFilterPanel({ filters, onChange, onSearch, onReset, isDark,
         <Input
           type="date"
           value={filters.from}
-          onChange={(ev) => onChange({ ...filters, from: ev.target.value })}
+          max={filters.to || undefined}
+          // Typing a date bypasses `max`, so a "From" after "To" pulls "To" along.
+          onChange={(ev) => {
+            const from = ev.target.value;
+            onChange({ ...filters, from, to: from && filters.to && from > filters.to ? from : filters.to });
+          }}
           className={cn('h-8 text-xs', ui.input)}
         />,
       )}
@@ -133,7 +138,11 @@ export function EventFilterPanel({ filters, onChange, onSearch, onReset, isDark,
         <Input
           type="date"
           value={filters.to}
-          onChange={(ev) => onChange({ ...filters, to: ev.target.value })}
+          min={filters.from || undefined}
+          onChange={(ev) => {
+            const to = ev.target.value;
+            onChange({ ...filters, to, from: to && filters.from && to < filters.from ? to : filters.from });
+          }}
           className={cn('h-8 text-xs', ui.input)}
         />,
       )}

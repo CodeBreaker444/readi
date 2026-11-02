@@ -116,6 +116,9 @@ export default function ApiKeyManager() {
       toast.success(t('settings.security.apiKeys.toast.deleted'));
     } catch {
       toast.error(t('settings.security.apiKeys.toast.deleteFailed'));
+    } finally {
+      // Re-sync only the key list with the server (no page reload)
+      await load();
     }
   }
 
@@ -283,7 +286,7 @@ export default function ApiKeyManager() {
                           <button
                             onClick={() => handleRevoke(k.api_key_id)}
                             title={t('settings.security.apiKeys.revokeKey')}
-                            className="p-1 rounded text-slate-400 hover:text-orange-500 transition-colors"
+                            className="cursor-pointer p-1 rounded text-slate-400 hover:text-orange-500 transition-colors"
                           >
                             <XCircle className="h-3.5 w-3.5" />
                           </button>
@@ -293,7 +296,7 @@ export default function ApiKeyManager() {
                         <button
                           onClick={() => handleDelete(k.api_key_id)}
                           title={t('settings.security.apiKeys.deleteKey')}
-                          className="p-1 rounded text-slate-400 hover:text-red-500 transition-colors"
+                          className="cursor-pointer p-1 rounded text-slate-400 hover:text-red-500 transition-colors"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
                         </button>

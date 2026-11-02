@@ -264,6 +264,81 @@ Notifications are **per event**, not per event type: the **Notify** dropdown in 
 
 When the event is submitted, the selected contacts receive one email with the event type, report and takeoff times, pilot, drone, client, mission, location, notes, a **map snapshot** of the location, a preview of every image, a **Download** link for every attachment (valid for 7 days) and a **View event in ReADI** button. The button opens the event after signing in: access follows the normal permissions, so a recipient needs a ReADI account with access to the event logbook (staff) or the client portal (clients, who are taken to their own Events page). Without access they see the usual "unauthorized" page. Each send counts towards the company's daily email limit; once it is reached, event emails are skipped until the counter resets. Email failures never block the pilot's report.
 
+### AI events
+
+The **AI events** tab shows events detected automatically by the AI model on your video streams, for example an intruder. Pilots do not report these; the model sends them to ReADI as they happen (see [AI Events API](/docs/modules/ai-events-api) for the technical side). The tab sits next to **Reported events** at the top of the page and is visible to admins, OPMs and super admins.
+
+#### Who sees which events
+
+The model is not tied to a company. Every event it sends is **stored**, but a company only **sees** an event once one of its admins has added the event's **stream id** (see below).
+
+| Stream id | What happens to its events |
+|---|---|
+| Added by your company | They appear in your **AI events** tab, including events that arrived before you added the stream id. |
+| Not added by anyone | They are only stored. No company sees them and no email is sent. They appear as soon as a company adds the stream id. |
+| Added by another company | You never see them. |
+
+A stream id belongs to **one company** across the whole platform. If you try to add one that is already in use, you get "This stream id is already in use".
+
+Super admins see **all** events of the platform. The **Company** column shows which company added each event's stream id, or **Unclaimed** when nobody did, and a **Company** dropdown filters the list to *All companies*, *Unclaimed*, or one company.
+
+#### The list
+
+For each event the list shows the time, the event type, the stream, what was detected (for example `person`, with "+2 more" when several objects were in the frame), the confidence, a thumbnail, the client, the **alert link** and the email status. Filters:
+
+| Filter | |
+|---|---|
+| Stream | Text search on the stream id. Part of the name is enough, in any case |
+| Event type | Text search on the event type, for example `intrusion`. Part of the name is enough, in any case, and a space matches the `_` in the code (`intrusion detected` finds `INTRUSION_DETECTED`) |
+| Company | Super admins only: all companies, unclaimed, or one company |
+| From / To | The event time. "To" cannot be before "From" |
+
+The **Client** and **Alert link** columns describe the stream **as it was when the event arrived**, and they never change afterwards:
+
+| Alert link | Meaning |
+|---|---|
+| **Linked** | The stream had alerts set up (a client, at least one contact, or both) when the event arrived. |
+| **Not linked** | The stream had no client and no contact, or nobody had added its stream id yet. No email is sent. |
+
+If you later give a stream a client, or change its client, only the events that arrive **afterwards** carry the new client and show as Linked. Earlier events keep the client name and link status they were received with.
+
+The list shows the **latest received event first**, in the order ReADI stored them, whatever time the model put on each event. It shows 8 events per page; when there are more, the same pager as the Reported events tab appears below it, with a **Rows per page** choice (8, 16, 24, 32, 48 or 56) and first, previous, next and last buttons. Click a row to open the event. The event opens on **Original + predictions**: the untouched camera frame with the detections drawn on top by ReADI, each box labelled with the class and confidence. **Red** marks the object that triggered the event and **amber** the others, and the **Show predictions** switch hides the boxes to see the plain frame. **AI-processed image** shows the model's own picture instead, with its drawing already on it. Below the image you see the details (track, session, frame, frames detected, processing time, model mode, email status and the addresses the alert was sent to) and a table of every object detected in the frame.
+
+#### Adding stream ids (AI streams)
+
+Click the **radio icon** in the page header to open **AI streams**. Click **Add stream id** and type the stream id exactly as the model sends it (it is case-sensitive). That alone is enough to start seeing the stream's events.
+
+Below that, **Email alerts (optional)** decides who is emailed when the stream detects something:
+
+| Setting | Meaning |
+|---|---|
+| **Client** | Optional. Choose a client, or *No client*. |
+| **Email the client's address** | Shown when a client is chosen. When ticked, the client's own email address (shown next to the checkbox) receives the alert. Untick it to alert only the contacts below. |
+| **Additional contacts** | Contacts from the [contact book](#email-notifications) that also receive the alert (up to 20). |
+| **Send email alerts for this stream** | Turn off to pause emails without losing the stream. The events stay visible. |
+
+A stream with no client and no contact only shows events, which are marked **Not linked**, and sends no email. The list shows the latest added stream id first, 8 per page. **Removing** a stream id hides its events from your tab and stops the alerts; the events are kept and appear again if the stream id is added back (by you or another company).
+
+#### Alert emails
+
+When an event arrives for a stream id that has email alerts set up, the recipients get one email with the event type, stream, client, what was detected, the confidence, the time (UTC), the AI-processed and original images and a **View event in ReADI** button that opens the AI events tab. The recipients are the client's address (if ticked) plus the selected contacts, without duplicates. The **Email** column shows what happened:
+
+| Email status | Meaning |
+|---|---|
+| Sent | The email was handed to the mail provider. The event details list the addresses. |
+| Stream not added when received | Nobody had added the stream id when the event arrived, so no email was sent. Adding it later does not send emails for older events. |
+| Alerts paused | Email alerts are switched off for the stream. |
+| No recipients | No usable client address and no contact is set up for the stream. |
+| Daily limit reached | The company's daily email limit was reached; emails resume when the counter resets. |
+| Send failed | The mail provider rejected the email. |
+| Pending | The event is still being processed. |
+
+Every new event sends its own email, even when several arrive for the same stream within seconds. A repeat of an event ReADI already received is never emailed again. Each alert counts towards the company's daily email limit. Email problems never stop an event from being stored.
+
+#### Images
+
+The model uploads its images straight into ReADI's storage and sends only their locations, so there is nothing to download. If the model reports an upload as unfinished, that image is left out and the event shows **Snapshot unavailable** (or the other image, if only one failed). The event and its email are kept either way.
+
 ---
 
 ## Permissions
@@ -273,7 +348,7 @@ Who can read, edit and delete in this area, by role.
 <PermissionsTable section="Logbooks" />
 
 <Note>
-Event Logbook settings (**Event types**, **Email notifications** with the contact book, and **Webhooks**) are not part of the editable permissions. Only ADMIN, OPM and SUPERADMIN can open and change them.
+Event Logbook settings (**Event types**, **Email notifications** with the contact book, **Webhooks**, and the **AI events** tab with **AI streams**; super admins also see the events of every company) are not part of the editable permissions. Only ADMIN, OPM and SUPERADMIN can open and change them.
 </Note>
 
 ---

@@ -57,7 +57,7 @@ export async function updateSession(request: NextRequest) {
   }
 
   // External API endpoints authenticated via X-API-KEY — skip cookie auth entirely
-  const API_KEY_ROUTES = ['/api/missions'];
+  const API_KEY_ROUTES = ['/api/missions', '/api/ai-events/ingest'];
   if (API_KEY_ROUTES.some((r) => pathname === r || pathname.startsWith(r + '/'))) {
     return NextResponse.next();
   }
