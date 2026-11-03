@@ -8,11 +8,12 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
-import type { AiCompanyOption, AiEventItem } from '@/config/types/ai-event';
+import { Textarea } from '@/components/ui/textarea';
+import type { AiCompanyOption, AiEventActionType, AiEventItem, AiEventStatus } from '@/config/types/ai-event';
 import { cn } from '@/lib/utils';
 import { getCoreRowModel, useReactTable, type PaginationState } from '@tanstack/react-table';
 import axios from 'axios';
-import { Eye, ImageOff, Search } from 'lucide-react';
+import { Check, CheckCheck, Eye, ImageOff, Loader2, Search } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -25,6 +26,12 @@ interface Props {
 
 const PAGE_SIZE = 8;
 
+const STATUS_STYLE: Record<AiEventStatus, string> = {
+  open: 'border-amber-500/30 bg-amber-500/10 text-amber-600',
+  acknowledged: 'border-sky-500/30 bg-sky-500/10 text-sky-600',
+  resolved: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-600',
+};
+
 const PAGER_COLUMNS = [{ id: 'search', accessorFn: (e: AiEventItem) => e.ai_event_id }];
 
 export function AiEventsPanel({ isDark, refreshKey }: Props) {
@@ -34,6 +41,7 @@ export function AiEventsPanel({ isDark, refreshKey }: Props) {
 
   const [stream, setStream] = useState('');
   const [eventType, setEventType] = useState('');
+  const [status, setStatus] = useState('all');
   const [company, setCompany] = useState('all');
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
@@ -54,6 +62,7 @@ export function AiEventsPanel({ isDark, refreshKey }: Props) {
           page_size: size,
           stream_id: stream.trim() || undefined,
           event_type: eventType.trim() || undefined,
+          status: status === 'all' ? undefined : status,
           company: company === 'all' || company === 'unclaimed' ? company : Number(company),
           date_start: from ? new Date(`${from}T00:00:00`).toISOString() : undefined,
           date_end: to ? new Date(`${to}T23:59:59.999`).toISOString() : undefined,
@@ -72,7 +81,7 @@ export function AiEventsPanel({ isDark, refreshKey }: Props) {
       }
     },
      
-    [stream, eventType, company, from, to, pagination.pageSize],
+    [stream, eventType, status, company, from, to, pagination.pageSize],
   );
 
   useEffect(() => {
@@ -104,6 +113,12 @@ export function AiEventsPanel({ isDark, refreshKey }: Props) {
       <Badge className="border-amber-500/30 bg-amber-500/10 text-amber-600">{a('unclaimed')}</Badge>
     );
 
+  const statusBadge = (e: AiEventItem) => <Badge className={STATUS_STYLE[e.status]}>{a(`status_${e.status}`)}</Badge>;
+
+  useEffect(() => {
+    setDetail((d) => (d ? (rows.find((r) => r.ai_event_id === d.ai_event_id) ?? d) : d));
+  }, [rows]);
+
   const linkBadge = (e: AiEventItem) =>
     e.linked ? (
       <Badge className="border-emerald-500/30 bg-emerald-500/10 text-emerald-600">{a('linked')}</Badge>
@@ -122,6 +137,7 @@ export function AiEventsPanel({ isDark, refreshKey }: Props) {
     a('client'),
     a('link'),
     a('email'),
+    a('status'),
     '',
   ];
 
@@ -153,6 +169,22 @@ export function AiEventsPanel({ isDark, refreshKey }: Props) {
               className={cn('h-8 pl-8 text-xs', ui.input)}
             />
           </div>
+        </div>
+        <div className="space-y-1">
+          <div className={ui.label}>{a('status')}</div>
+          <Select value={status} onValueChange={setStatus}>
+            <SelectTrigger className={cn('h-8 w-40 text-xs', ui.input)}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className={ui.selectContent}>
+              <SelectItem value="all">{a('statusAll')}</SelectItem>
+              {(['open', 'acknowledged', 'resolved'] as const).map((s) => (
+                <SelectItem key={s} value={s}>
+                  {a(`status_${s}`)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
         {isAll && (
           <div className="space-y-1">
@@ -264,6 +296,7 @@ export function AiEventsPanel({ isDark, refreshKey }: Props) {
                     <td className={cn('px-4 py-2', ui.muted)}>{e.client_name ?? '—'}</td>
                     <td className="px-4 py-2">{linkBadge(e)}</td>
                     <td className={cn('px-4 py-2', ui.muted)}>{a(`notify_${e.notify_status}`)}</td>
+                    <td className="px-4 py-2">{statusBadge(e)}</td>
                     <td className="px-4 py-2">
                       <Eye className={cn('h-4 w-4', ui.muted)} />
                     </td>
@@ -276,7 +309,7 @@ export function AiEventsPanel({ isDark, refreshKey }: Props) {
 
       {!loading && total > PAGE_SIZE && <TablePagination table={table} />}
 
-      <AiEventDetail event={detail} onClose={() => setDetail(null)} isDark={isDark} showCompany={isAll} companyBadge={companyBadge} linkBadge={linkBadge} />
+      <AiEventDetail event={detail} onClose={() => setDetail(null)} isDark={isDark} showCompany={isAll} companyBadge={companyBadge} linkBadge={linkBadge} statusBadge={statusBadge} onActed={() => load(pagination.pageIndex + 1)} />
     </div>
   );
 }
@@ -290,6 +323,8 @@ function AiEventDetail({
   showCompany,
   companyBadge,
   linkBadge,
+  statusBadge,
+  onActed,
 }: {
   event: AiEventItem | null;
   onClose: () => void;
@@ -297,6 +332,8 @@ function AiEventDetail({
   showCompany: boolean;
   companyBadge: (e: AiEventItem) => React.ReactNode;
   linkBadge: (e: AiEventItem) => React.ReactNode;
+  statusBadge: (e: AiEventItem) => React.ReactNode;
+  onActed: () => Promise<void> | void;
 }) {
   const { t } = useTranslation();
   const a = (key: string, opts?: Record<string, unknown>) => t(`logbooks.eventLogbook.ai.${key}`, opts);
@@ -304,13 +341,33 @@ function AiEventDetail({
   const [view, setView] = useState<ImageView>('original');
   const [showPredictions, setShowPredictions] = useState(true);
   const [failedSrc, setFailedSrc] = useState<string | null>(null);
+  const [comment, setComment] = useState('');
+  const [acting, setActing] = useState<AiEventActionType | null>(null);
 
   useEffect(() => {
     if (!event) return;
     setView(event.original_url ? 'original' : 'processed');
     setShowPredictions(true);
     setFailedSrc(null);
+    setComment('');
   }, [event?.ai_event_id]);
+
+  const act = async (action: AiEventActionType) => {
+    if (!event) return;
+    setActing(action);
+    try {
+      await axios.post(`/api/logbooks/event/ai/${event.ai_event_id}/action`, { action, comment: comment.trim() || undefined });
+      toast.success(a(`actionSuccess_${action}`));
+      setComment('');
+      await onActed();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.error ?? a('actionError'));
+      // A conflict means someone else acted first; show their result.
+      if (err?.response?.status === 409) await onActed();
+    } finally {
+      setActing(null);
+    }
+  };
 
   const fields: [string, React.ReactNode][] = event
     ? [
@@ -329,6 +386,7 @@ function AiEventDetail({
         [a('processingTime'), event.processing_time_ms != null ? `${event.processing_time_ms} ms` : '—'],
         [a('modelMode'), event.model_mode ?? '—'],
         [a('email'), a(`notify_${event.notify_status}`)],
+        [a('status'), statusBadge(event)],
         ...(event.notified_emails.length ? ([[a('sentTo'), event.notified_emails.join(', ')]] as [string, React.ReactNode][]) : []),
       ]
     : [];
@@ -431,6 +489,51 @@ function AiEventDetail({
                 </div>
               ))}
             </dl>
+            <div className={cn('space-y-3 rounded-lg border p-3', ui.divider)}>
+              <div className={ui.label}>{a('actionsTitle')}</div>
+              {event.actions.length === 0 ? (
+                <div className={cn('text-xs', ui.faint)}>{a('noHistory')}</div>
+              ) : (
+                <ul className="space-y-2">
+                  {event.actions.map((x) => (
+                    <li key={x.action_id} className="text-xs">
+                      <div className={cn('flex flex-wrap items-center gap-x-2', ui.muted)}>
+                        <Badge className={STATUS_STYLE[x.action]}>{a(`status_${x.action}`)}</Badge>
+                        <span>{a('byUser', { name: x.user_email })}</span>
+                        <span className={ui.faint}>{new Date(x.created_at).toLocaleString()}</span>
+                      </div>
+                      {x.comment && <p className={cn('mt-1 whitespace-pre-wrap break-words', ui.text)}>{x.comment}</p>}
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {event.status !== 'resolved' && (
+                <div className="space-y-2">
+                  <div className={ui.label}>{a('commentLabel')}</div>
+                  <Textarea
+                    value={comment}
+                    maxLength={1000}
+                    rows={2}
+                    disabled={!!acting}
+                    onChange={(ev) => setComment(ev.target.value)}
+                    placeholder={a('commentPlaceholder')}
+                    className={cn('text-xs', ui.input)}
+                  />
+                  <div className="flex justify-end gap-2">
+                    {event.status === 'open' && (
+                      <Button size="sm" variant="outline" className={cn('h-8 gap-1.5 text-xs', ui.outlineBtn)} disabled={!!acting} onClick={() => act('acknowledged')}>
+                        {acting === 'acknowledged' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+                        {a('acknowledge')}
+                      </Button>
+                    )}
+                    <Button size="sm" className="h-8 gap-1.5 bg-violet-600 text-xs text-white hover:bg-violet-700" disabled={!!acting} onClick={() => act('resolved')}>
+                      {acting === 'resolved' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCheck className="h-3.5 w-3.5" />}
+                      {a('resolve')}
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
             {event.detections.length > 0 && (
               <div className="space-y-1.5">
                 <div className={ui.label}>{a('detections')}</div>

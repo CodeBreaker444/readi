@@ -1,12 +1,13 @@
 import 'server-only';
 
-import type { AiCompanyOption, AiDetection, AiEventItem, AiEventListResult, AiStreamMappingItem } from '@/config/types/ai-event';
+import type { AiCompanyOption, AiDetection, AiEventActionType, AiEventItem, AiEventListResult, AiEventStatus, AiStreamMappingItem } from '@/config/types/ai-event';
 import { prisma } from '@/lib/prisma';
 import { getPresignedDownloadUrl } from '@/lib/s3Client';
 import { z } from 'zod';
 import { sendEventReportedEmail } from '../../../../lib/resend/mail';
 import { incrementDailyEmailCount, isDailyEmailLimitReached } from '../email/email-limit-service';
 import { EventLogbookError } from './event-logbook-service';
+import { AiEventActionInput } from '@/app/api/logbooks/event/ai/[id]/action/route';
 
 // The model sends naive local timestamps ("2026-11-02 12:27:18"); they are IST (UTC+5:30) unless configured otherwise.
 const SOURCE_UTC_OFFSET_MINUTES = Number(process.env.AI_EVENTS_TIMEZONE_OFFSET_MINUTES ?? 330);
@@ -270,16 +271,15 @@ export async function processAiEvent(aiEventId: number): Promise<void> {
   }
 }
 
-// ── Reads ────────────────────────────────────────────────────────────────────
 
 export const aiEventFiltersSchema = z.object({
   page: z.number().int().min(1).max(100000).optional(),
   page_size: z.number().int().min(1).max(MAX_PAGE_SIZE).optional(),
   stream_id: z.string().trim().max(200).optional(),
   event_type: z.string().trim().max(50).optional(),
+  status: z.enum(['open', 'acknowledged', 'resolved']).optional(),
   date_start: z.string().datetime().optional(),
   date_end: z.string().datetime().optional(),
-  /** Super admins only: "all", "unclaimed", or the id of one company. Ignored for everyone else. */
   company: z.union([z.literal('all'), z.literal('unclaimed'), z.number().int().positive()]).optional(),
 });
 export type AiEventFilters = z.infer<typeof aiEventFiltersSchema>;
@@ -295,6 +295,8 @@ function parseDetections(raw: unknown): AiDetection[] {
     (d): d is AiDetection => !!d && typeof d.track_id === 'number' && typeof d.class_name === 'string' && typeof d.confidence === 'number' && Array.isArray(d.bounding_box),
   );
 }
+
+const toStatus = (s: string): AiEventStatus => (s === 'acknowledged' || s === 'resolved' ? s : 'open');
 
 const presign = (key: string | null) =>
   key ? getPresignedDownloadUrl(key, LIST_URL_TTL_S, 'snapshot', 'inline').catch(() => null) : Promise.resolve(null);
@@ -328,6 +330,7 @@ export async function listAiEvents(scope: AiEventScope, f: AiEventFilters): Prom
     and.push({ stream_id: { in: mappings.filter((m) => m.fk_owner_id === f.company).map((m) => m.stream_id) } });
   }
   if (f.stream_id) and.push({ stream_id: { contains: f.stream_id, mode: 'insensitive' } });
+  if (f.status) and.push({ status: f.status });
   if (f.event_type) and.push({ event_type: { contains: f.event_type.trim().replace(/\s+/g, '_'), mode: 'insensitive' } });
   if (f.date_start || f.date_end) {
     and.push({ event_time: { ...(f.date_start ? { gte: new Date(f.date_start) } : {}), ...(f.date_end ? { lte: new Date(f.date_end) } : {}) } });
@@ -345,6 +348,7 @@ export async function listAiEvents(scope: AiEventScope, f: AiEventFilters): Prom
       orderBy: { ai_event_id: 'desc' },
       skip: (page - 1) * pageSize,
       take: pageSize,
+      include: { ai_event_action: { orderBy: { action_id: 'asc' } } },
     }),
   ]);
 
@@ -375,6 +379,14 @@ export async function listAiEvents(scope: AiEventScope, f: AiEventFilters): Prom
         notified_emails: r.notified_emails,
         client_name: r.client_name,
         linked: r.alerts_linked,
+        status: toStatus(r.status),
+        actions: r.ai_event_action.map((x) => ({
+          action_id: x.action_id,
+          action: x.action as AiEventActionType,
+          comment: x.comment,
+          user_email: x.user_email,
+          created_at: x.created_at.toISOString(),
+        })),
         company_name: scope.isSuperAdmin && claim ? (ownerName.get(claim.fk_owner_id) ?? null) : null,
         claimed: !!claim,
       };
@@ -385,6 +397,31 @@ export async function listAiEvents(scope: AiEventScope, f: AiEventFilters): Prom
   return { data, total, page, page_size: pageSize, scope: scope.isSuperAdmin ? 'all' : 'company', companies };
 }
 
+// Flytsense acknowledge handling 
+
+/** acknowledged only from open; resolved from open or acknowledged and then final. */
+const ALLOWED_FROM: Record<AiEventActionType, AiEventStatus[]> = {
+  acknowledged: ['open'],
+  resolved: ['open', 'acknowledged'],
+};
+
+export async function actOnAiEvent(scope: AiEventScope, user: { userId: number; email: string }, aiEventId: number, input: AiEventActionInput) {
+  const event = await prisma.ai_event.findUnique({ where: { ai_event_id: aiEventId }, select: { stream_id: true } });
+  // Same visibility as the list: a company only reaches events of the stream ids it added.
+  const visible =
+    !!event && (scope.isSuperAdmin || !!(await prisma.ai_stream_mapping.findFirst({ where: { stream_id: event.stream_id, fk_owner_id: scope.ownerId }, select: { mapping_id: true } })));
+  if (!visible) throw new EventLogbookError('Event not found', 404);
+
+  const allowed = ALLOWED_FROM[input.action];
+  await prisma.$transaction(async (tx) => {
+    // Conditional on the current status so two people acting at once cannot both succeed.
+    const moved = await tx.ai_event.updateMany({ where: { ai_event_id: aiEventId, status: { in: allowed } }, data: { status: input.action } });
+    if (moved.count === 0) throw new EventLogbookError(`This event can no longer be ${input.action}`, 409);
+    await tx.ai_event_action.create({
+      data: { fk_ai_event_id: aiEventId, action: input.action, comment: input.comment, user_id: user.userId, user_email: user.email },
+    });
+  });
+}
 
 export const streamMappingInputSchema = z.object({
   stream_id: z.string().trim().min(1).max(200),
