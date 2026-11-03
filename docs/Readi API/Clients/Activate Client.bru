@@ -1,0 +1,52 @@
+meta {
+  name: Activate Client
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/api/client/activate
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "client_id": 1,
+    "client_name": "Acme Corp"
+  }
+}
+
+settings {
+  encodeUrl: true
+}
+
+docs {
+  **Purpose:** Lets an admin manually activate a client's portal account when the client has not activated it via the emailed link.
+
+  **Two independent statuses (clients only):**
+  - **Admin status** — `client.client_active` (Y/N). Controlled only by an admin (Edit Client form), e.g. to block a client for security reasons.
+  - **Email status** — `users.user_active` (Y/N) on the client's login user (`user_role = CLIENT`). Set to `Y` when the client opens the activation link sent by email (`/api/auth/activate`), or by this endpoint.
+
+  A client can log in only when **both** are `Y` (see `/api/auth/login`).
+
+  **Behaviour:**
+  - The client page shows a "Not activated" badge in the Email column while the email status is pending. The "Activate Account" action (admins only) appears in the client row menu only while the email status is not activated (`is_pending`). Once activated it is hidden.
+  - Sets `user_active = 'Y'` and clears the activation key (`key_`), so the emailed link no longer works.
+  - Does not change `client_active`.
+  - Returns 400 `Client is already activated` if the email status is already `Y`, 404 if no portal user exists for the client.
+  - Writes an audit log entry.
+
+  **Auth:** Session cookie (`readi_auth_token`). Requires `view_client` permission and the `ADMIN` or `SUPERADMIN` role (other roles get 403). Non-superadmins are scoped to their own organization.
+
+  **Body fields:**
+  - `client_id` (required) — ID of the client
+  - `client_name` (required) — used in the audit log description
+
+  **Used in:**
+  - `src/components/team/ClientManagement.tsx` — "Activate Account" row action in the Client Management section
+}

@@ -39,7 +39,7 @@ export async function GET(req: NextRequest) {
 
 const postFlightSchema = z.object({
   mission_id: z.number().int().positive(),
-  flight_duration: z.number().nonnegative().nullable().optional(),
+  flight_duration: z.number().int().nonnegative().nullable().optional(),
   actual_start: zDateString().nullable().optional(),
   actual_end: zDateString().nullable().optional(),
   distance_flown: z.number().nonnegative().nullable().optional(),

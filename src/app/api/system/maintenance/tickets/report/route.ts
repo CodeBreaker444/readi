@@ -10,7 +10,7 @@ import z from 'zod';
 const CLOSE_TICKET_ROLES = ['RM', 'ADMIN', 'SUPERADMIN'];
 
 const addReportSchema = z.object({
-  ticket_id: z.coerce.number(),
+  ticket_id: z.coerce.number().int(),
   report_text: z.string().min(1, "Report text is required"),
   work_start: z.string().optional(),
   work_end: z.string().optional(),

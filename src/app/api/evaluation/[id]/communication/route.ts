@@ -12,7 +12,7 @@ const paramsSchema = z.object({
 const bodySchema = z.object({
     to_user_id: z.number().int().positive('Invalid recipient'),
     message: z.string().min(1, 'Message is required'),
-    subject: z.string().optional(),
+    subject: z.string().max(255).optional(),
 });
 
 export async function POST(

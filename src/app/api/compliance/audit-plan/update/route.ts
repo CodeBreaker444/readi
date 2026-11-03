@@ -11,8 +11,8 @@ import { E } from '@/lib/error-codes';
 const UpdateSchema = z.object({
     requirement_id: z.number().int().positive(),
     requirement_code: z.string().min(1).max(50).optional(),
-    requirement_title: z.string().min(1).max(300).optional(),
-    requirement_type: z.string().min(1).max(100).nullable().optional(),
+    requirement_title: z.string().min(1).max(255).optional(),
+    requirement_type: z.string().min(1).max(50).nullable().optional(),
     regulatory_body: z.string().max(255).nullable().optional(),
     requirement_status: z.enum(['COMPLIANT', 'PARTIAL', 'NON_COMPLIANT', 'NOT_APPLICABLE']).optional(),
     review_frequency: z.number().int().min(1).max(5).nullable().optional(),

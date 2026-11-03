@@ -1,5 +1,6 @@
 'use client';
 
+import { ClientStatusTag, isClientInactive } from '@/components/client/ClientStatusTag';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,11 +34,14 @@ interface Props {
 interface ClientOption {
   client_id: number;
   client_name: string;
+  client_active?: string | null;
+  not_activated?: boolean;
 }
 
 interface Contact {
   contact_id: number;
   name: string;
+  client_id: number | null;
   company: string | null;
   notes: string | null;
   email: string;
@@ -51,18 +55,18 @@ interface DefaultForm {
 interface ContactForm {
   id: number | null;
   name: string;
-  company: string;
+  client_id: string;
   notes: string;
   email: string;
 }
 
 type DeleteTarget = { kind: 'default'; clientId: number; name: string } | { kind: 'contact'; id: number; name: string };
 
-const EMPTY_CONTACT: ContactForm = { id: null, name: '', company: '', notes: '', email: '' };
+const NO_CLIENT = 'none';
+const EMPTY_CONTACT: ContactForm = { id: null, name: '', client_id: NO_CLIENT, notes: '', email: '' };
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MAX_RECIPIENTS = 20;
 const PAGE_SIZE = 8;
-// Fixed height (room for 8 rows) so the modal never resizes when paging; overflow scrolls inside the list only.
 const LIST_CLS = 'h-[34rem] overflow-y-auto pr-1';
 
 const inputCls = 'border-slate-200 bg-white text-slate-800 dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-200';
@@ -123,16 +127,21 @@ export function EventNotificationSettings({ open, onOpenChange }: Props) {
 
   // ── Default notifications ──────────────────────────────────────────────────
 
+  const initialContactIds = (clientId: number) => {
+    const saved = (defaults[clientId] ?? []).filter((id) => contactById.has(id));
+    if (saved.length) return saved;
+    return contacts.filter((c) => c.client_id === clientId).map((c) => c.contact_id).slice(0, MAX_RECIPIENTS);
+  };
+
   const startDefault = (clientId?: number) => {
     setPickerSearch('');
     setDefaultForm({
       client_id: clientId ? String(clientId) : '',
-      contact_ids: clientId ? (defaults[clientId] ?? []).filter((id) => contactById.has(id)) : [],
+      contact_ids: clientId ? initialContactIds(clientId) : [],
     });
   };
 
-  const pickClient = (value: string) =>
-    setDefaultForm({ client_id: value, contact_ids: (defaults[Number(value)] ?? []).filter((id) => contactById.has(id)) });
+  const pickClient = (value: string) => setDefaultForm({ client_id: value, contact_ids: initialContactIds(Number(value)) });
 
   const toggleDefaultContact = (id: number, checked: boolean) => {
     if (!defaultForm) return;
@@ -145,6 +154,7 @@ export function EventNotificationSettings({ open, onOpenChange }: Props) {
 
   const saveDefault = async () => {
     if (!defaultForm?.client_id) return;
+    if (defaultForm.contact_ids.length === 0) return void toast.error(n('selectAtLeastOne'));
     setSaving(true);
     try {
       await axios.put(`/api/logbooks/event/defaults/${defaultForm.client_id}`, { contact_ids: defaultForm.contact_ids });
@@ -167,7 +177,7 @@ export function EventNotificationSettings({ open, onOpenChange }: Props) {
     try {
       const body = {
         name: contactForm.name,
-        company: contactForm.company.trim() || null,
+        client_id: contactForm.client_id === NO_CLIENT ? null : Number(contactForm.client_id),
         notes: contactForm.notes.trim() || null,
         email: contactForm.email,
       };
@@ -322,8 +332,8 @@ export function EventNotificationSettings({ open, onOpenChange }: Props) {
                     </SelectTrigger>
                     <SelectContent className="border-slate-200 bg-white text-slate-800 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
                       {clients.map((c) => (
-                        <SelectItem key={c.client_id} value={String(c.client_id)}>
-                          {c.client_name}
+                        <SelectItem key={c.client_id} value={String(c.client_id)} disabled={isClientInactive(c.client_active)}>
+                          {c.client_name}<ClientStatusTag clientActive={c.client_active} notActivated={c.not_activated} />
                           {(defaults[c.client_id]?.length ?? 0) > 0 && ` (${defaults[c.client_id].length})`}
                         </SelectItem>
                       ))}
@@ -361,7 +371,7 @@ export function EventNotificationSettings({ open, onOpenChange }: Props) {
                   <Button variant="outline" onClick={() => setDefaultForm(null)} disabled={saving}>
                     {n('cancel')}
                   </Button>
-                  <Button className="bg-violet-600 text-white hover:bg-violet-700" disabled={saving || !defaultForm.client_id} onClick={saveDefault}>
+                  <Button className="bg-violet-600 text-white hover:bg-violet-700" disabled={saving || !defaultForm.client_id || defaultForm.contact_ids.length === 0} onClick={saveDefault}>
                     {saving && <Loader2 className="mr-1 h-4 w-4 animate-spin" />}
                     {n('save')}
                   </Button>
@@ -431,7 +441,19 @@ export function EventNotificationSettings({ open, onOpenChange }: Props) {
                   <Label>
                     {n('contactCompany')} <span className={hintCls}>({n('optional')})</span>
                   </Label>
-                  <Input className={inputCls} value={contactForm.company} maxLength={150} onChange={(e) => setContactForm({ ...contactForm, company: e.target.value })} />
+                  <Select value={contactForm.client_id} onValueChange={(v) => setContactForm({ ...contactForm, client_id: v })}>
+                    <SelectTrigger className={inputCls}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={NO_CLIENT}>{n('noClient')}</SelectItem>
+                      {clients.map((c) => (
+                        <SelectItem key={c.client_id} value={String(c.client_id)}>
+                          {c.client_name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-1.5">
                   <Label>
@@ -473,7 +495,11 @@ export function EventNotificationSettings({ open, onOpenChange }: Props) {
                           <div className="min-w-0 flex-1 text-left">
                             <p className="text-sm font-medium">
                               {c.name}
-                              {c.company && <span className="font-normal text-slate-500 dark:text-slate-400"> · {c.company}</span>}
+                              {c.client_id && c.company ? (
+                                <span className="ml-2 rounded-full border border-violet-500/30 bg-violet-500/10 px-2 py-0.5 text-[11px] font-medium text-violet-600">{c.company}</span>
+                              ) : (
+                                c.company && <span className="font-normal text-slate-500 dark:text-slate-400"> · {c.company}</span>
+                              )}
                             </p>
                             <p className={`truncate ${hintCls}`}>{c.email}</p>
                             {c.notes && (
@@ -491,7 +517,7 @@ export function EventNotificationSettings({ open, onOpenChange }: Props) {
                               variant="ghost"
                               title={n('edit')}
                               aria-label={n('edit')}
-                              onClick={() => setContactForm({ id: c.contact_id, name: c.name, company: c.company ?? '', notes: c.notes ?? '', email: c.email })}
+                              onClick={() => setContactForm({ id: c.contact_id, name: c.name, client_id: c.client_id ? String(c.client_id) : NO_CLIENT, notes: c.notes ?? '', email: c.email })}
                             >
                               <Pencil className="h-4 w-4" />
                             </Button>

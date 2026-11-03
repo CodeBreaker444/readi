@@ -8,8 +8,8 @@ import { z } from "zod";
 const schema = z.object({
     pic_id: z.number().default(0),
     client_id: z.number(),
-    planning_id: z.number(),
-    evaluation_id: z.number(),
+    planning_id: z.number().int(),
+    evaluation_id: z.number().int(),
 });
 
 export async function POST(request: Request) {

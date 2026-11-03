@@ -12,7 +12,7 @@ const schema = z.object({
   tool_desc:               z.string().optional().nullable(),
   tool_status:             z.string().optional().nullable(),
   tool_active:             z.string().default('Y'),
-  fk_client_id:            z.number().positive(),
+  fk_client_id:            z.number().int().positive(),
   tool_latitude:           z.number().optional().nullable(),
   tool_longitude:          z.number().optional().nullable(),
   location_pseudo_name:    z.string().max(255).optional().nullable(),

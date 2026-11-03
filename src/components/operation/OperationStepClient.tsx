@@ -37,8 +37,8 @@ export function OperationStepClient({ clients, clientId, onClientChange, loading
                         </SelectTrigger>
                         <SelectContent className={scCls(isDark)} position="popper" align="start" sideOffset={4}>
                             {pagedClients.map(c => (
-                                <SelectItem key={c.client_id} value={String(c.client_id)} className={siCls(isDark)}>
-                                    [{c.client_code}] {c.client_name}
+                                <SelectItem key={c.client_id} value={String(c.client_id)} disabled={c.client_active === 'N'} className={siCls(isDark)}>
+                                    [{c.client_code}] {c.client_name}{c.client_active === 'N' && <span className="ml-2 text-xs text-rose-500">({t("common.inactive")})</span>}{c.not_activated && <span className="ml-2 text-xs text-amber-500">({t("common.notActivated")})</span>}
                                 </SelectItem>
                             ))}
                             {showPagination && (

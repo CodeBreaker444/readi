@@ -1,5 +1,6 @@
 'use client';
 
+import { ClientStatusTag, isClientInactive } from '@/components/client/ClientStatusTag';
 import AddModelModal from '@/components/system/AddModelModal';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -362,7 +363,7 @@ export default function ImportDroneModal({ open, onClose, onImported, drone, mod
                       <SelectTrigger className="w-full"><SelectValue placeholder={t('systems.components.common.select')} /></SelectTrigger>
                       <SelectContent>
                         {clients.map((c: any) => (
-                          <SelectItem key={c.client_id} value={c.client_id.toString()}>{c.client_name}</SelectItem>
+                          <SelectItem key={c.client_id} value={c.client_id.toString()} disabled={isClientInactive(c.client_active)}>{c.client_name}<ClientStatusTag clientActive={c.client_active} notActivated={c.is_pending} /></SelectItem>
                         ))}
                       </SelectContent>
                     </Select>

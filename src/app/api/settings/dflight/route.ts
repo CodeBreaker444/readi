@@ -12,7 +12,7 @@ const SaveSchema = z.object({
   client_id: z.string().min(1, 'Client ID is required').max(255),
   easa_operator_code: z.string().max(255).nullable().optional(),
   pfx_content: z.string().nullable().optional(),
-  pfx_password: z.string().nullable().optional(),
+  pfx_password: z.string().max(500).nullable().optional(),
 });
 
 const KEEP_SENTINEL = '__KEEP__';

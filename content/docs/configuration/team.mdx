@@ -66,7 +66,7 @@ Open **Clients** in the Team menu to manage the companies you fly for. It shows 
 
 - **Add New Client:** enter the contact details, location, website, payment terms and contract end date.
 - **Search** by name, email, code or city, and filter by status.
-- Each row has **Edit Client**, **Update Password** (the new password is emailed to the client) and **Delete Client**.
+- Each row has **Edit Client**, **Update Password** (the new password is emailed to the client), **Activate Account** (admins only, see [Client status and activation](#client-status-and-activation)) and **Delete Client**.
 
 ### Portal access
 
@@ -80,6 +80,26 @@ Every client gets a portal login when you add them.
 Changes to a portal user are recorded in the audit log.
 
 Clients you add here can then be chosen on missions and in the [Client Portal](/docs/modules/client-portal).
+
+### Client status and activation
+
+A client has two separate statuses:
+
+| Status | Who controls it | Meaning |
+|---|---|---|
+| **Status** (Active / Inactive) | An admin, in **Edit Client** | Use it to block a client for security reasons |
+| **Email** (Verified / Not activated) | The client, through the activation link emailed to them | Shows whether the client has activated their account |
+
+A client can log in only when both are active.
+
+If a client has not activated their account, the row shows **Not activated**. Admins (Admin and Super Admin) can then choose **Activate Account** in the row menu to activate it manually. The activation link then stops working, and the action disappears once the client is activated. It does not change the admin-controlled **Status**, and it is recorded in the audit log.
+
+Everywhere clients are listed in a dropdown or filter, clients are labeled by their status. This covers creating and importing missions, evaluations, systems, personnel, the operations, logbook and mission template filters, the systems map, and the event logbook settings:
+
+- **Inactive:** the admin-controlled **Status** is Inactive. The client is listed but greyed out and cannot be selected.
+- **Not activated:** the client has not activated their account by email. The label is only informational: the client can still be selected.
+
+Inactive clients are always listed, so you can see them, but they are never selectable.
 
 ---
 

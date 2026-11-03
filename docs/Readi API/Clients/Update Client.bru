@@ -35,6 +35,8 @@ docs {
   - `client_id` (required) — ID of the client to update
   - Any other client fields (same as Add Client) are optional
 
+  **Note:** `client_active` here is the admin-controlled status. It is separate from the email activation status (`users.user_active`); see Activate Client.
+
   **Used in:**
   - `src/components/team/ClientManagement.tsx` — "Edit Client" form in the Client Management section
 }

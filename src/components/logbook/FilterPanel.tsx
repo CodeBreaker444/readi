@@ -1,5 +1,6 @@
 "use client";
 
+import { clientStatusText, isClientInactive } from '@/components/client/ClientStatusTag';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -134,7 +135,7 @@ export function FilterPanel({
           value={clientId}
           onChange={setClientId}
           isDark={isDark}
-          options={clients.map((c) => ({ value: String(c.client_id), label: c.client_name }))}
+          options={clients.map((c) => ({ value: String(c.client_id), label: c.client_name + clientStatusText(t, c.client_active, c.not_activated), disabled: isClientInactive(c.client_active) }))}
         />
 
         <FilterSelect
@@ -225,7 +226,7 @@ function FilterSelect({
   allLabel: string;
   value: string;
   onChange: (v: string) => void;
-  options: { value: string; label: string }[];
+  options: { value: string; label: string; disabled?: boolean }[];
   isDark: boolean;
   pageSize?: number;
 }) {
@@ -268,7 +269,7 @@ function FilterSelect({
             {allLabel}
           </SelectItem>
           {visible.map((o) => (
-            <SelectItem key={o.value} value={o.value} className="text-xs">
+            <SelectItem key={o.value} value={o.value} disabled={o.disabled} className="text-xs">
               {o.label}
             </SelectItem>
           ))}

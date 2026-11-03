@@ -11,7 +11,7 @@ import { z } from "zod";
 
 const insertSchema = z.object({
   fk_tool_id: z.number().int().positive().nullable().optional(),
-  declaration_type: z.string().min(1),
+  declaration_type: z.string().max(50).min(1),
   declaration_data: z.record(z.string(), z.unknown()),
 });
 

@@ -17,6 +17,11 @@ export interface SafetyTargetProposal {
   created_at: string | null;
 }
 
+// proposed_target is a Prisma Decimal (JSON string); SafetyTargetProposal declares a number.
+function serializeProposal<T extends { proposed_target: { toString(): string } | null }>(row: T): SafetyTargetProposal {
+  return { ...row, proposed_target: row.proposed_target != null ? Number(row.proposed_target) : null } as unknown as SafetyTargetProposal;
+}
+
 export interface EnrichedTargetProposal {
   proposal_id: number;
   fk_definition_id: number;
@@ -193,7 +198,7 @@ export async function createTargetProposal(
       proposal_status: 'PENDING',
     },
   });
-  return row as unknown as SafetyTargetProposal;
+  return serializeProposal(row);
 }
 
 export async function listTargetProposals(filters?: {
@@ -210,7 +215,7 @@ export async function listTargetProposals(filters?: {
     where,
     orderBy: { created_at: 'desc' },
   });
-  return rows as unknown as SafetyTargetProposal[];
+  return rows.map(serializeProposal);
 }
 
 export async function getTargetProposalById(
@@ -219,7 +224,7 @@ export async function getTargetProposalById(
   const row = await prisma.spi_kpi_target_proposal.findUnique({
     where: { proposal_id: proposalId },
   });
-  return row ? (row as unknown as SafetyTargetProposal) : null;
+  return row ? serializeProposal(row) : null;
 }
 
 export async function approveTargetProposal(
@@ -265,7 +270,7 @@ export async function approveTargetProposal(
     metadata: { action, definitionId: proposal.fk_definition_id, proposedTarget: proposal.proposed_target, justification },
   });
 
-  return updated as unknown as SafetyTargetProposal;
+  return serializeProposal(updated);
 }
 
 export async function deleteTargetProposal(proposalId: number): Promise<void> {

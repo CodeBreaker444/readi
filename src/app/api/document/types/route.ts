@@ -7,7 +7,7 @@ import z from 'zod';
 
 const schema = z.object({
   doc_type_name: z.string().min(2, 'Name must be at least 2 characters').max(100),
-  doc_type_category: z.string().min(1, 'Area is required'),
+  doc_type_category: z.string().max(100).min(1, 'Area is required'),
 });
 
 export async function POST(req: NextRequest) {

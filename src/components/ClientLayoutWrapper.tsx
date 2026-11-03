@@ -14,6 +14,7 @@ import { RouteLoadingOverlay, RouteLoadingProvider } from './RouteLoading';
 import Sidebar from './Sidebar';
 import TopBar from './TopBar';
 import { useTheme } from './useTheme';
+import { enrichApiErrorBody } from '@/lib/api-error-message';
 
 interface ClientLayoutWrapperProps {
   children: React.ReactNode;
@@ -76,6 +77,7 @@ const ClientLayoutWrapper: React.FC<ClientLayoutWrapperProps> = ({
         if (error?.response?.status === 401 && !isAuthPage) {
           handleExpiredSession();
         }
+        enrichApiErrorBody(error?.response?.data);
         return Promise.reject(error);
       }
     );

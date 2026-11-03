@@ -23,10 +23,10 @@ const GET = async () => {
 }
 
 const ownerValidation = z.object({
-    owner_code: z.string().min(2, "Organization code must be at least 2 characters"),
-    owner_name: z.string().min(2, "Organization name must be at least 2 characters"),
-    owner_email: z.string().email("Invalid email format"),
-    owner_website: z.string().url("Invalid website URL"),   
+    owner_code: z.string().max(50).min(2, "Organization code must be at least 2 characters"),
+    owner_name: z.string().max(255).min(2, "Organization name must be at least 2 characters"),
+    owner_email: z.string().max(255).email("Invalid email format"),
+    owner_website: z.string().max(255).url("Invalid website URL"),   
 });
 
 const POST = async (req: Request) => {

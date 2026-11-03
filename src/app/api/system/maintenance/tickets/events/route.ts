@@ -6,7 +6,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import z from 'zod';
 
 const getEventsSchema = z.object({
-  ticket_id: z.string(),
+  ticket_id: z.string().regex(/^\d+$/, 'must be a positive integer'),
 });
 
 export async function GET(req: NextRequest) {

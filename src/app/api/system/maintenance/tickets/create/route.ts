@@ -10,12 +10,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import z from 'zod';
 
 const createTicketSchema = z.object({
-  fk_tool_id: z.number(),
+  fk_tool_id: z.number().int(),
   components: z.array(z.number()).optional(),
   issue_description: z.string().optional(),
   latitude:  z.number().min(-90).max(90).optional().nullable(),
   longitude: z.number().min(-180).max(180).optional().nullable(),
-  location_pseudo_name: z.string().max(255).optional().nullable(),
+  location_pseudo_name: z.string().max(50).optional().nullable(),
 });
 
 export async function POST(req: NextRequest) {

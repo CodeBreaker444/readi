@@ -667,7 +667,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                     .join('\n')
                 : undefined
 
-            const title = data?.error || err.message || fallback
+            const title = data?.errorTitle || data?.error || err.message || fallback
 
             const errorMessage = fieldDescription ? `${title}\n\n${fieldDescription}` : title
 

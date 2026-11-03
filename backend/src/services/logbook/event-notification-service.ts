@@ -18,7 +18,7 @@ const emailSchema = z.string().trim().toLowerCase().email().max(255);
 
 export const contactInputSchema = z.object({
   name: z.string().trim().min(1).max(100),
-  company: z.string().trim().max(150).nullable().optional(),
+  client_id: z.number().int().positive().nullable().optional(),
   notes: z.string().trim().max(1000).nullable().optional(),
   email: emailSchema,
 });
@@ -36,7 +36,22 @@ const blank = (v: string | null | undefined) => (v && v.trim() ? v.trim() : null
 
 export async function listContacts(ownerId: number) {
   const rows = await prisma.event_contact.findMany({ where: { fk_owner_id: ownerId }, orderBy: { name: 'asc' } });
-  return rows.map((r) => ({ contact_id: r.contact_id, name: r.name, company: r.company, notes: r.notes, email: r.email }));
+  const clientIds = [...new Set(rows.map((r) => r.fk_client_id).filter((v): v is number => v != null))];
+  const clients = clientIds.length
+    ? await prisma.client.findMany({ where: { fk_owner_id: ownerId, client_id: { in: clientIds } }, select: { client_id: true, client_name: true } })
+    : [];
+  const names = new Map(clients.map((c) => [c.client_id, c.client_name]));
+  return rows.map((r) => {
+    const clientName = r.fk_client_id ? (names.get(r.fk_client_id) ?? null) : null;
+    // `company` is what the pickers display: the client's name, or the old free-text value for contacts not yet linked.
+    return { contact_id: r.contact_id, name: r.name, client_id: clientName ? r.fk_client_id : null, company: clientName ?? r.company, notes: r.notes, email: r.email };
+  });
+}
+
+async function assertOwnedClient(ownerId: number, clientId: number | null | undefined) {
+  if (!clientId) return;
+  const client = await prisma.client.findFirst({ where: { client_id: clientId, fk_owner_id: ownerId }, select: { client_id: true } });
+  if (!client) throw new EventLogbookError('Client not found', 404);
 }
 
 async function assertEmailFree(ownerId: number, email: string, exceptId?: number) {
@@ -49,11 +64,12 @@ async function assertEmailFree(ownerId: number, email: string, exceptId?: number
 
 export async function createContact(ownerId: number, userId: number, input: ContactInput) {
   await assertEmailFree(ownerId, input.email);
+  await assertOwnedClient(ownerId, input.client_id);
   const row = await prisma.event_contact.create({
     data: {
       fk_owner_id: ownerId,
       name: input.name,
-      company: blank(input.company),
+      fk_client_id: input.client_id ?? null,
       notes: blank(input.notes),
       email: input.email,
       created_by: userId,
@@ -72,11 +88,12 @@ async function getOwnedContact(ownerId: number, contactId: number) {
 export async function updateContact(ownerId: number, contactId: number, input: Partial<ContactInput>) {
   await getOwnedContact(ownerId, contactId);
   if (input.email) await assertEmailFree(ownerId, input.email, contactId);
+  await assertOwnedClient(ownerId, input.client_id);
   await prisma.event_contact.update({
     where: { contact_id: contactId },
     data: {
       ...(input.name !== undefined ? { name: input.name } : {}),
-      ...(input.company !== undefined ? { company: blank(input.company) } : {}),
+      ...(input.client_id !== undefined ? { fk_client_id: input.client_id, company: null } : {}),
       ...(input.notes !== undefined ? { notes: blank(input.notes) } : {}),
       ...(input.email !== undefined ? { email: input.email } : {}),
       updated_at: new Date(),

@@ -8,7 +8,7 @@ import { z } from "zod";
 const schema = z.object({
     client_id: z.number(),
     active: z.string().default("ALL"),
-    status: z.string().default("ALL"),
+    status: z.string().max(50).default("ALL"),
 });
 
 export async function POST(request: Request) {
