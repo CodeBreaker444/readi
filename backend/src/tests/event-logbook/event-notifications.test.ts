@@ -7,7 +7,7 @@
 
 jest.mock('@/lib/prisma', () => ({
   prisma: {
-    client: { findFirst: jest.fn(), findUnique: jest.fn() },
+    client: { findFirst: jest.fn(), findUnique: jest.fn(), findMany: jest.fn() },
     public_users: { findUnique: jest.fn() },
     tool: { findUnique: jest.fn() },
     pilot_mission: { findUnique: jest.fn() },
@@ -84,7 +84,7 @@ describe('contactInputSchema', () => {
     ['blank name', { name: ' ', email: 'a@x.com' }],
     ['invalid email', { name: 'A', email: 'nope' }],
     ['long notes', { name: 'A', email: 'a@x.com', notes: 'x'.repeat(1001) }],
-    ['long company', { name: 'A', email: 'a@x.com', company: 'x'.repeat(151) }],
+    ['invalid client id', { name: 'A', email: 'a@x.com', client_id: 0 }],
   ])('rejects %s', (_n, input) => {
     expect(contactInputSchema.safeParse(input).success).toBe(false);
   });
@@ -102,8 +102,8 @@ describe('defaultContactsInputSchema', () => {
 
 describe('contacts', () => {
   it('listContacts returns only the public fields', async () => {
-    db.event_contact.findMany.mockResolvedValue([{ contact_id: 1, name: 'A', company: null, notes: null, email: 'a@x.com', fk_owner_id: 1, created_by: 3 }]);
-    expect(await listContacts(1)).toEqual([{ contact_id: 1, name: 'A', company: null, notes: null, email: 'a@x.com' }]);
+    db.event_contact.findMany.mockResolvedValue([{ contact_id: 1, name: 'A', company: null, fk_client_id: null, notes: null, email: 'a@x.com', fk_owner_id: 1, created_by: 3 }]);
+    expect(await listContacts(1)).toEqual([{ contact_id: 1, name: 'A', client_id: null, company: null, notes: null, email: 'a@x.com' }]);
     expect(db.event_contact.findMany.mock.calls[0][0].where).toEqual({ fk_owner_id: 1 });
   });
 
@@ -111,11 +111,25 @@ describe('contacts', () => {
     it('stores blank optional fields as null and returns the id', async () => {
       db.event_contact.findFirst.mockResolvedValue(null);
       db.event_contact.create.mockResolvedValue({ contact_id: 8 });
-      const id = await createContact(1, 2, { name: 'A', email: 'a@x.com', company: '  ', notes: ' hi ' });
+      const id = await createContact(1, 2, { name: 'A', email: 'a@x.com', client_id: null, notes: ' hi ' });
       expect(id).toBe(8);
       expect(db.event_contact.create.mock.calls[0][0].data).toMatchObject({
-        fk_owner_id: 1, name: 'A', company: null, notes: 'hi', email: 'a@x.com', created_by: 2,
+        fk_owner_id: 1, name: 'A', fk_client_id: null, notes: 'hi', email: 'a@x.com', created_by: 2,
       });
+    });
+    it('links the contact to one of the company clients', async () => {
+      db.event_contact.findFirst.mockResolvedValue(null);
+      db.client.findFirst.mockResolvedValue({ client_id: 3 });
+      db.event_contact.create.mockResolvedValue({ contact_id: 9 });
+      await createContact(1, 2, { name: 'A', email: 'a@x.com', client_id: 3 });
+      expect(db.client.findFirst.mock.calls[0][0].where).toEqual({ client_id: 3, fk_owner_id: 1 });
+      expect(db.event_contact.create.mock.calls[0][0].data.fk_client_id).toBe(3);
+    });
+    it('404s for a client of another company', async () => {
+      db.event_contact.findFirst.mockResolvedValue(null);
+      db.client.findFirst.mockResolvedValue(null);
+      await expect(createContact(1, 2, { name: 'A', email: 'a@x.com', client_id: 99 })).rejects.toMatchObject({ status: 404 });
+      expect(db.event_contact.create).not.toHaveBeenCalled();
     });
     it('409s on a duplicate email within the company (case-insensitive)', async () => {
       db.event_contact.findFirst.mockResolvedValue({ contact_id: 1 });
@@ -136,10 +150,11 @@ describe('contacts', () => {
       await expect(updateContact(1, 4, { name: 'B' })).rejects.toMatchObject({ status: 404 });
       expect(db.event_contact.update).not.toHaveBeenCalled();
     });
-    it('writes only provided fields and clears blank ones', async () => {
-      await updateContact(1, 4, { company: ' ', name: 'B' });
+    it('writes only provided fields and clears the old company when the client is cleared', async () => {
+      await updateContact(1, 4, { client_id: null, name: 'B' });
       const data = db.event_contact.update.mock.calls[0][0].data;
-      expect(Object.keys(data).sort()).toEqual(['company', 'name', 'updated_at']);
+      expect(Object.keys(data).sort()).toEqual(['company', 'fk_client_id', 'name', 'updated_at']);
+      expect(data.fk_client_id).toBeNull();
       expect(data.company).toBeNull();
     });
     it('409s when the new email belongs to another contact, excluding itself', async () => {
