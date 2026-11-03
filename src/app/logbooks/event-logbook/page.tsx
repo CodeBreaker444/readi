@@ -22,7 +22,7 @@ import { useTheme } from '@/components/useTheme';
 import type { EventDroneOption, EventLogbookItem, EventMissionOption, EventNotifyContact } from '@/config/types/event-logbook';
 import { cn } from '@/lib/utils';
 import axios from 'axios';
-import { Loader2, Mail, Plus, Radio, RefreshCw, Settings, SlidersHorizontal, Tags } from 'lucide-react';
+import { Loader2, Mail, Plus, Radio, RefreshCw, Settings, SlidersHorizontal, Sparkles, Tags } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -214,11 +214,12 @@ export default function EventLogbookPage() {
                 type="button"
                 onClick={() => setView(v)}
                 className={cn(
-                  '-mb-px border-b-2 px-3 py-2 text-xs font-medium transition-colors',
+                  '-mb-px inline-flex items-center gap-1.5 border-b-2 px-3 py-2 text-xs font-medium transition-colors',
                   view === v ? 'border-violet-600 text-violet-600' : cn('border-transparent', ui.muted),
                 )}
               >
                 {e(v === 'pilot' ? 'ai.tabPilot' : 'ai.tabAi')}
+                {v === 'ai' && <Sparkles className="h-3 w-3" aria-hidden />}
               </button>
             ))}
           </div>

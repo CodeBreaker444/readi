@@ -2912,7 +2912,7 @@
       "webhookSettings": "Webhook settings",
       "ai": {
         "tabPilot": "Reported events",
-        "tabAi": "AI events",
+        "tabAi": "FlytSense events",
         "time": "Time",
         "event": "Event",
         "stream": "Stream",

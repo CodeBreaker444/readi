@@ -2902,7 +2902,7 @@
       "webhookSettings": "Webhook-Einstellungen",
       "ai": {
         "tabPilot": "Gemeldete Ereignisse",
-        "tabAi": "KI-Ereignisse",
+        "tabAi": "FlytSense-Ereignisse",
         "time": "Zeit",
         "event": "Ereignis",
         "stream": "Stream",

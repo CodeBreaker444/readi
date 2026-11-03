@@ -2908,7 +2908,7 @@
       "webhookSettings": "Impostazioni webhook",
       "ai": {
         "tabPilot": "Eventi segnalati",
-        "tabAi": "Eventi AI",
+        "tabAi": "Eventi FlytSense",
         "time": "Ora",
         "event": "Evento",
         "stream": "Stream",
