@@ -103,6 +103,9 @@ export default function EventLogbookPage() {
     if (new URLSearchParams(window.location.search).get('tab') === 'ai') setView('ai');
   }, []);
 
+  // The tabs (and so the AI view) are only offered to users who can configure.
+  const onAiTab = view === 'ai' && canConfigure;
+
   const search = () => fetchData(filters);
   const reset = () => {
     setFilters(EMPTY_EVENT_FILTERS);
@@ -148,7 +151,7 @@ export default function EventLogbookPage() {
                 <Mail className="h-4 w-4" />
               </Button>
             )}
-            {canConfigure && (
+            {canConfigure && !onAiTab && (
               <Button
                 variant="outline"
                 size="icon"
@@ -174,7 +177,13 @@ export default function EventLogbookPage() {
               {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
               {e('refresh')}
             </Button>
-            {canReport && (
+            {onAiTab && (
+              <Button size="sm" className="h-8 gap-1.5 bg-violet-600 text-xs text-white hover:bg-violet-700" onClick={() => setStreamsOpen(true)}>
+                <Radio className="h-3.5 w-3.5" />
+                {e('ai.settings.add')}
+              </Button>
+            )}
+            {canReport && !onAiTab && (
               <Button
                 variant="outline"
                 size="sm"
@@ -188,7 +197,7 @@ export default function EventLogbookPage() {
                 {t('logbooks.eventLogbook.wizard.setupTitle')}
               </Button>
             )}
-            {canReport && (
+            {canReport && !onAiTab && (
               <Button
                 size="sm"
                 className="h-8 gap-1.5 bg-violet-600 text-xs text-white hover:bg-violet-700"

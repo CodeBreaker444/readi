@@ -2,7 +2,7 @@ import 'server-only';
 
 import type { AiCompanyOption, AiDetection, AiEventActionType, AiEventItem, AiEventListResult, AiEventStatus, AiStreamMappingItem } from '@/config/types/ai-event';
 import { prisma } from '@/lib/prisma';
-import { getPresignedDownloadUrl } from '@/lib/s3Client';
+import { getPresignedDownloadUrl, s3ObjectExists } from '@/lib/s3Client';
 import { z } from 'zod';
 import { sendEventReportedEmail } from '../../../../lib/resend/mail';
 import { incrementDailyEmailCount, isDailyEmailLimitReached } from '../email/email-limit-service';
@@ -240,10 +240,14 @@ export async function processAiEvent(aiEventId: number): Promise<void> {
       { label: 'Time', value: `${event.event_time.toISOString().slice(0, 16).replace('T', ' ')} UTC` },
     ];
 
-    const imageKeys = [
-      { key: event.ai_img_key ?? event.snapshot_key, name: 'ai-processed' },
-      { key: event.org_img_key, name: 'original' },
-    ].filter((i): i is { key: string; name: string } => !!i.key);
+    // The snapshot only stands in for the AI image when that one is missing, and is labelled as what it is.
+    const candidates = [
+      event.ai_img_key ? { key: event.ai_img_key, name: 'ai-processed' } : event.snapshot_key ? { key: event.snapshot_key, name: 'snapshot' } : null,
+      event.org_img_key ? { key: event.org_img_key, name: 'original' } : null,
+    ].filter((i): i is { key: string; name: string } => !!i);
+    // Only link objects that really are in the bucket, so the email never carries a broken image.
+    const present = await Promise.all(candidates.map((i) => s3ObjectExists(i.key)));
+    const imageKeys = candidates.filter((_, idx) => present[idx]);
     const attachments = await Promise.all(
       imageKeys.map(async (i) => ({
         name: i.name,
