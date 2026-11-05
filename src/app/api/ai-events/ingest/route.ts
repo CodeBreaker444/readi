@@ -45,10 +45,15 @@ export async function POST(request: NextRequest) {
       return apiError(E.VL001, 400, errors);
     }
 
-    const { aiEventId, duplicate, claimed } = await ingestAiEvent(parsed.data);
+    const { aiEventId, duplicate, claimed, imageIssues } = await ingestAiEvent(parsed.data);
     if (!duplicate) after(() => processAiEvent(aiEventId));
 
-    return NextResponse.json({ code: 200, ai_event_id: aiEventId, duplicate, claimed }, { status: duplicate ? 200 : 201 });
+    // The event is kept even when an image is missing (the detection data is still valuable); the
+    // sender is told exactly which image is missing and why so it can fix its upload.
+    return NextResponse.json(
+      { code: 200, ai_event_id: aiEventId, duplicate, claimed, ...(imageIssues.length ? { image_warnings: imageIssues } : {}) },
+      { status: duplicate ? 200 : 201 },
+    );
   } catch (err) {
     // The full error stays in the server log under a reference; the sender gets a message it can act on.
     const reference = randomUUID().slice(0, 8);

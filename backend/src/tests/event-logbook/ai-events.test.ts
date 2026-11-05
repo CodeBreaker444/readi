@@ -22,6 +22,7 @@ jest.mock('@/lib/s3Client', () => ({
   putBufferToS3: jest.fn(),
   deleteFileFromS3: jest.fn(),
   getPresignedUploadUrl: jest.fn(),
+  s3ObjectExists: jest.fn(async () => true),
 }));
 jest.mock('@/lib/auth/feature-permissions', () => ({ getSessionEffectivePermissions: jest.fn() }));
 jest.mock('../../../../lib/resend/mail', () => ({ sendEventReportedEmail: jest.fn(), sendNotificationEmail: jest.fn() }));
@@ -46,8 +47,10 @@ import {
 import { sendEventReportedEmail } from '../../../../lib/resend/mail';
 import { incrementDailyEmailCount, isDailyEmailLimitReached } from '@/backend/services/email/email-limit-service';
 import { prisma } from '@/lib/prisma';
+import { s3ObjectExists } from '@/lib/s3Client';
 
 const p = prisma as any;
+const s3Exists = s3ObjectExists as jest.Mock;
 
 const IMG = (name: string) => ({
   local_path: `intrusions/test_video_1/${name}.jpg`,
@@ -91,6 +94,7 @@ const withNested = (key: 'snapshot' | 'org_img' | 'ai_processed_img' | 'ai_proce
 beforeEach(() => {
   jest.clearAllMocks();
   (isDailyEmailLimitReached as jest.Mock).mockResolvedValue(false);
+  s3Exists.mockResolvedValue(true);
 });
 
 describe('parseAiTimestamp', () => {
@@ -188,7 +192,7 @@ describe('ingestAiEvent', () => {
 
   it('stores the event without any owner, in UTC, with the image keys, sizes and detections', async () => {
     const r = await run();
-    expect(r).toEqual({ aiEventId: 7, duplicate: false, claimed: false });
+    expect(r).toEqual({ aiEventId: 7, duplicate: false, claimed: false, imageIssues: [] });
     expect(created()).not.toHaveProperty('fk_owner_id');
     expect(created()).toMatchObject({
       event_type: 'INTRUSION_DETECTED',
@@ -254,6 +258,32 @@ describe('ingestAiEvent', () => {
       ai_processed_img: { ...IMG('ai'), upload_status: 'failed' },
     });
     expect(created()).toMatchObject({ snapshot_key: null, ai_img_key: null, org_img_key: null, snapshot_status: 'failed' });
+  });
+
+  it('drops a key whose file is not in our bucket even though the sender said "uploaded", and says so', async () => {
+    s3Exists.mockImplementation(async (k: string) => !k.endsWith('/org.jpg'));
+    const r = await run();
+    expect(created()).toMatchObject({ org_img_key: null, ai_img_key: PAYLOAD.ai_processed_img.s3_key, snapshot_status: 'stored' });
+    expect(r.imageIssues).toHaveLength(1);
+    expect(r.imageIssues[0]).toMatch(/org_img: .*does not exist in our storage/);
+  });
+
+  it('marks the snapshot failed when none of the reported files exist, and still stores the event', async () => {
+    s3Exists.mockResolvedValue(false);
+    const r = await run();
+    expect(created()).toMatchObject({ snapshot_key: null, ai_img_key: null, org_img_key: null, snapshot_status: 'failed' });
+    expect(r.aiEventId).toBe(7);
+    expect(r.imageIssues).toHaveLength(3);
+  });
+
+  it('reports why the sender says an image was not uploaded', async () => {
+    const r = await run({ org_img: { ...IMG('org'), upload_status: 'failed', error: 'timeout' } });
+    expect(r.imageIssues).toEqual([expect.stringContaining('org_img: not stored (sender reported upload_status "failed": timeout)')]);
+  });
+
+  it('checks each distinct key once', async () => {
+    await run({ snapshot: { ...PAYLOAD.snapshot, s3_key: PAYLOAD.ai_processed_img.s3_key } });
+    expect(s3Exists).toHaveBeenCalledTimes(2);
   });
 
   it('treats a retry (unique violation) as a duplicate and returns the existing id', async () => {
@@ -414,7 +444,7 @@ describe('listAiEvents', () => {
     frame_number: 1, bounding_box: [1, 2, 3, 4], frames_detected: 1, processing_time_ms: 0, model_mode: 'REGULAR', snapshot_key: 'ai_alerts/a.jpg', snapshot_status: 'stored',
     notify_status: 'sent', notified_emails: [], ai_img_key: 'ai_alerts/ai.jpg', org_img_key: 'ai_alerts/org.jpg', org_img_width: 1280, org_img_height: 720,
     detections: [{ track_id: 1, class_name: 'person', confidence: 0.9, bounding_box: [1, 2, 3, 4] }, { bad: true }],
-    client_name: 'Jhon Doe', alerts_linked: true,
+    client_name: 'Jhon Doe', alerts_linked: true, status: 'open', ai_event_action: [],
   };
   const MAPS = [
     { stream_id: 'cam_a', fk_owner_id: 5, fk_client_id: 19 },
@@ -531,6 +561,13 @@ describe('listAiEvents', () => {
     expect(e.original_url).toBe('https://signed.example/ai_alerts/org.jpg');
     expect(e.original_size).toEqual({ width: 1280, height: 720 });
     expect(e.detections).toHaveLength(1);
+  });
+
+  it('gives no URL for a file that is missing from the bucket, and reports the event as having no image', async () => {
+    s3Exists.mockResolvedValue(false);
+    p.ai_event.findMany.mockResolvedValue([{ ...ROW, stream_id: 'cam_a' }]);
+    const e = (await listAiEvents({ ownerId: 1, isSuperAdmin: true }, {})).data[0];
+    expect(e).toMatchObject({ snapshot_url: null, original_url: null, snapshot_status: 'failed' });
   });
 
   it('shows rows stored before the new payload: -1 track, copy kept in snapshot_key, no original', async () => {

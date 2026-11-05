@@ -2938,7 +2938,7 @@
         "snapshot_none": "No snapshot",
         "snapshot_pending": "Processing",
         "snapshot_stored": "Stored",
-        "snapshot_failed": "Snapshot unavailable",
+        "snapshot_failed": "No image",
         "notify_pending": "Pending",
         "notify_sent": "Sent",
         "notify_not_linked": "Stream not added when received",

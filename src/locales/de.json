@@ -2928,7 +2928,7 @@
         "snapshot_none": "Kein Bild",
         "snapshot_pending": "Wird verarbeitet",
         "snapshot_stored": "Gespeichert",
-        "snapshot_failed": "Bild nicht verfügbar",
+        "snapshot_failed": "Kein Bild",
         "notify_pending": "Ausstehend",
         "notify_sent": "Gesendet",
         "notify_not_linked": "Stream beim Empfang nicht hinzugefügt",

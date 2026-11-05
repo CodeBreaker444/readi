@@ -9,8 +9,7 @@ import { incrementDailyEmailCount, isDailyEmailLimitReached } from '../email/ema
 import { EventLogbookError } from './event-logbook-service';
 import { AiEventActionInput } from '@/app/api/logbooks/event/ai/[id]/action/route';
 
-// The model sends naive local timestamps ("2026-11-02 12:27:18"); they are IST (UTC+5:30) unless configured otherwise.
-const SOURCE_UTC_OFFSET_MINUTES = Number(process.env.AI_EVENTS_TIMEZONE_OFFSET_MINUTES ?? 330);
+const SOURCE_UTC_OFFSET_MINUTES =  330;
 const LINK_TTL_S = 7 * 24 * 60 * 60;
 const LIST_URL_TTL_S = 15 * 60;
 // Same page sizes as the Reported events table; 8 is the default.
@@ -117,10 +116,47 @@ export async function ingestAiEvent(p: AiEventPayload) {
   if (!eventTime) throw new EventLogbookError('Invalid timestamp. Expected "YYYY-MM-DD HH:mm:ss" or an ISO-8601 value with a zone');
 
   // An image is only usable once the model says its upload finished.
+  // Whatever is wrong is returned to the sender so it can fix its side instead of us linking to a broken image.
   const done = (status: string) => status === 'uploaded';
-  const snapshotKey = done(p.s3_upload_status) && done(p.snapshot.s3_upload_status) ? p.snapshot.s3_key : null;
-  const aiKey = done(p.ai_processed_img.upload_status) ? p.ai_processed_img.s3_key : null;
-  const orgKey = done(p.org_img.upload_status) ? p.org_img.s3_key : null;
+  const imageIssues: string[] = [];
+  const claimed = (label: string, key: string, ok: boolean, why: string) => {
+    if (ok) return key;
+    imageIssues.push(`${label}: not stored (${why})`);
+    return null;
+  };
+  let snapshotKey = claimed(
+    'snapshot',
+    p.snapshot.s3_key,
+    done(p.s3_upload_status) && done(p.snapshot.s3_upload_status),
+    `sender reported s3_upload_status "${p.s3_upload_status}" / snapshot.s3_upload_status "${p.snapshot.s3_upload_status}"`,
+  );
+  let aiKey = claimed(
+    'ai_processed_img',
+    p.ai_processed_img.s3_key,
+    done(p.ai_processed_img.upload_status),
+    `sender reported upload_status "${p.ai_processed_img.upload_status}"${p.ai_processed_img.error ? `: ${p.ai_processed_img.error}` : ''}`,
+  );
+  let orgKey = claimed(
+    'org_img',
+    p.org_img.s3_key,
+    done(p.org_img.upload_status),
+    `sender reported upload_status "${p.org_img.upload_status}"${p.org_img.error ? `: ${p.org_img.error}` : ''}`,
+  );
+
+  // The sender says "uploaded"; confirm it. A key whose file is not in the bucket is dropped, so the UI shows "No image".
+  const toCheck = [...new Set([snapshotKey, aiKey, orgKey].filter((k): k is string => !!k))];
+  const exists = new Map(await Promise.all(toCheck.map(async (k) => [k, await s3ObjectExists(k)] as const)));
+  const verified = (label: string, key: string | null) => {
+    if (!key || exists.get(key)) return key;
+    imageIssues.push(`${label}: sender reported it as uploaded but "${key}" does not exist in our storage`);
+    return null;
+  };
+  snapshotKey = verified('snapshot', snapshotKey);
+  aiKey = verified('ai_processed_img', aiKey);
+  orgKey = verified('org_img', orgKey);
+  if (imageIssues.length) {
+    console.warn(`[ai-events] image problems for ${p.stream_id}/${p.session_id} track ${p.track_id}:`, imageIssues);
+  }
 
   const key = {
     event_type: p.event_type.toUpperCase(),
@@ -180,7 +216,7 @@ export async function ingestAiEvent(p: AiEventPayload) {
     duplicate = true;
   }
 
-  return { aiEventId: id, duplicate, claimed: !!claim };
+  return { aiEventId: id, duplicate, claimed: !!claim, imageIssues };
 }
 
 // ── Post-ingest processing ───────────────────────────────────────────────────
@@ -302,8 +338,25 @@ function parseDetections(raw: unknown): AiDetection[] {
 
 const toStatus = (s: string): AiEventStatus => (s === 'acknowledged' || s === 'resolved' ? s : 'open');
 
-const presign = (key: string | null) =>
-  key ? getPresignedDownloadUrl(key, LIST_URL_TTL_S, 'snapshot', 'inline').catch(() => null) : Promise.resolve(null);
+/**
+ * Signing never contacts S3, so a missing object still gets a URL that leads to a broken image.
+ * Only objects that exist are signed; the result is shared per key within one list (the AI image
+ * and the snapshot are usually the same object).
+ */
+const makePresigner = () => {
+  const cache = new Map<string, Promise<string | null>>();
+  return (key: string | null): Promise<string | null> => {
+    if (!key) return Promise.resolve(null);
+    let url = cache.get(key);
+    if (!url) {
+      url = s3ObjectExists(key)
+        .then((ok) => (ok ? getPresignedDownloadUrl(key, LIST_URL_TTL_S, 'snapshot', 'inline') : null))
+        .catch(() => null);
+      cache.set(key, url);
+    }
+    return url;
+  };
+};
 
 /**
  * Company users see the events of the stream ids their company added. Super admins see every
@@ -356,9 +409,11 @@ export async function listAiEvents(scope: AiEventScope, f: AiEventFilters): Prom
     }),
   ]);
 
+  const presign = makePresigner();
   const data: AiEventItem[] = await Promise.all(
     rows.map(async (r) => {
       const claim = byStream.get(r.stream_id);
+      const [snapshotUrl, originalUrl] = await Promise.all([presign(r.ai_img_key ?? r.snapshot_key), presign(r.org_img_key)]);
       return {
         ai_event_id: r.ai_event_id,
         event_type: r.event_type,
@@ -374,9 +429,10 @@ export async function listAiEvents(scope: AiEventScope, f: AiEventFilters): Prom
         frames_detected: r.frames_detected,
         processing_time_ms: r.processing_time_ms,
         model_mode: r.model_mode,
-        snapshot_status: r.snapshot_status,
-        snapshot_url: await presign(r.ai_img_key ?? r.snapshot_key),
-        original_url: await presign(r.org_img_key),
+        // "stored" with nothing to show means the file has gone missing since: report it as unavailable.
+        snapshot_status: r.snapshot_status === 'stored' && !snapshotUrl && !originalUrl ? 'failed' : r.snapshot_status,
+        snapshot_url: snapshotUrl,
+        original_url: originalUrl,
         original_size: r.org_img_width && r.org_img_height ? { width: r.org_img_width, height: r.org_img_height } : null,
         detections: parseDetections(r.detections),
         notify_status: r.notify_status,

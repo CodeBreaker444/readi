@@ -282,15 +282,15 @@ export function AiEventsPanel({ isDark, refreshKey }: Props) {
                     </td>
                     <td className={cn('px-4 py-2', ui.muted)}>{e.confidence != null ? `${Math.round(e.confidence * 100)}%` : '—'}</td>
                     <td className="px-4 py-2">
-                      {e.snapshot_url ? (
-                         
-                        <img src={e.snapshot_url} alt="" className="h-10 w-16 rounded object-cover" />
-                      ) : (
-                        <span className={cn('inline-flex items-center gap-1', ui.faint)}>
-                          <ImageOff className="h-3.5 w-3.5" />
-                          {a(`snapshot_${e.snapshot_status}`)}
-                        </span>
-                      )}
+                      <Thumb
+                        url={e.snapshot_url}
+                        fallback={
+                          <span className={cn('inline-flex items-center gap-1', ui.faint)}>
+                            <ImageOff className="h-3.5 w-3.5" />
+                            {a(`snapshot_${e.snapshot_url ? 'failed' : e.snapshot_status}`)}
+                          </span>
+                        }
+                      />
                     </td>
                     {isAll && <td className="px-4 py-2">{companyBadge(e)}</td>}
                     <td className={cn('px-4 py-2', ui.muted)}>{e.client_name ?? '—'}</td>
@@ -315,6 +315,14 @@ export function AiEventsPanel({ isDark, refreshKey }: Props) {
 }
 
 type ImageView = 'processed' | 'original';
+
+/** Table thumbnail: shows the fallback when there is no link or the link fails to load. */
+function Thumb({ url, fallback }: { url: string | null; fallback: React.ReactNode }) {
+  const [failed, setFailed] = useState(false);
+  useEffect(() => setFailed(false), [url]);
+  if (!url || failed) return <>{fallback}</>;
+  return <img src={url} alt="" className="h-10 w-16 rounded object-cover" onError={() => setFailed(true)} />;
+}
 
 function AiEventDetail({
   event,
@@ -394,7 +402,9 @@ function AiEventDetail({
   // The original frame has nothing drawn on it, so the boxes are drawn here from the detections.
   // The AI-processed image already carries the model's own drawing.
   const showOriginal = view === 'original' && !!event?.original_url;
-  const src = showOriginal ? event?.original_url : (event?.snapshot_url ?? event?.original_url);
+  const wantedSrc = showOriginal ? event?.original_url : (event?.snapshot_url ?? event?.original_url);
+  // A link that fails to load is treated like no image, never shown as a broken icon.
+  const src = wantedSrc && failedSrc !== wantedSrc ? wantedSrc : null;
   const size = event?.original_size;
   const drawBoxes = showOriginal && showPredictions && !!size && (event?.detections.length ?? 0) > 0;
 
@@ -433,7 +443,7 @@ function AiEventDetail({
               <div className="space-y-1.5">
                 <div className="relative overflow-hidden rounded-lg border">
                   {}
-                  <img src={src} alt="" className="block w-full" />
+                  <img src={src} alt="" className="block w-full" onError={() => setFailedSrc(src)} />
                   {drawBoxes && size && (
                     <svg className="absolute inset-0 h-full w-full" viewBox={`0 0 ${size.width} ${size.height}`} preserveAspectRatio="none">
                       {event.detections.map((d, i) => {
@@ -478,7 +488,7 @@ function AiEventDetail({
             ) : (
               <div className={cn('flex items-center gap-2 rounded-lg border p-4 text-xs', ui.panel, ui.muted)}>
                 <ImageOff className="h-4 w-4" />
-                {a(`snapshot_${event.snapshot_status}`)}
+                {a(`snapshot_${wantedSrc ? 'failed' : event.snapshot_status}`)}
               </div>
             )}
             <dl className="grid grid-cols-1 gap-x-6 gap-y-2 text-xs sm:grid-cols-2">
