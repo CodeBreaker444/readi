@@ -2,8 +2,9 @@ import 'server-only';
 
 import type { AiCompanyOption, AiDetection, AiEventActionType, AiEventItem, AiEventListResult, AiEventStatus, AiStreamMappingItem } from '@/config/types/ai-event';
 import { prisma } from '@/lib/prisma';
-import { getPresignedDownloadUrl, s3ObjectExists } from '@/lib/s3Client';
+import { getPresignedDownloadUrl, putBufferToS3, s3ObjectExists } from '@/lib/s3Client';
 import { z } from 'zod';
+import { downloadImage, ImageFetchError } from './ai-event-image';
 import { sendEventReportedEmail } from '../../../../lib/resend/mail';
 import { incrementDailyEmailCount, isDailyEmailLimitReached } from '../email/email-limit-service';
 import { EventLogbookError } from './event-logbook-service';
@@ -12,7 +13,6 @@ import { AiEventActionInput } from '@/app/api/logbooks/event/ai/[id]/action/rout
 const SOURCE_UTC_OFFSET_MINUTES =  330;
 const LINK_TTL_S = 7 * 24 * 60 * 60;
 const LIST_URL_TTL_S = 15 * 60;
-// Same page sizes as the Reported events table; 8 is the default.
 export const AI_EVENT_PAGE_SIZE = 8;
 const MAX_PAGE_SIZE = 100;
 const MAX_MAPPING_CONTACTS = 20;
@@ -22,7 +22,8 @@ const emailRe = z.string().email();
 
 // ── Payload ──────────────────────────────────────────────────────────────────
 
-// The model uploads the images straight into our bucket under ai_alerts/ and only sends their keys.
+// Each image comes with the key it must have in OUR bucket (under ai_alerts/) and a presigned URL to
+// download it from. We download it and keep our own copy at that key; nothing is served from the sender's bucket.
 const s3Key = z
   .string()
   .trim()
@@ -35,12 +36,15 @@ const text = (max: number) => z.string().trim().min(1).max(max);
 const size = z.object({ width: z.number().int().positive(), height: z.number().int().positive() });
 const box = z.array(z.number()).length(4);
 
+// Optional and not validated as a URL here: a bad link must not reject the whole event, it is reported per image.
+const presignedUrl = z.string().trim().max(4000).optional().nullable();
+
 const imageSchema = z.object({
   local_path: text(500),
   s3_key: s3Key,
+  s3_presigned_url: presignedUrl,
   upload_status: text(50),
   resolution: size,
-  // Always present; null when the upload went fine.
   error: z.string().max(1000).nullable(),
 });
 
@@ -62,6 +66,7 @@ export const aiEventPayloadSchema = z.object({
   snapshot: z.object({
     local_path: text(500),
     s3_key: s3Key,
+    s3_presigned_url: presignedUrl,
     s3_upload_status: text(50),
   }),
   org_img: imageSchema,
@@ -108,6 +113,29 @@ export function aiEventLabel(eventType: string): string {
 // ── Ingest ───────────────────────────────────────────────────────────────────
 
 /**
+ * Makes sure the image is in our bucket at `key`. Returns what went wrong, or null when it is there.
+ * A file already in the bucket is left alone (a retry of the same event does not download again).
+ */
+async function storeImage(key: string, presignedUrl: string | undefined): Promise<string | null> {
+  if (await s3ObjectExists(key)) return null;
+  if (!presignedUrl) return `"${key}" is not in our storage and no s3_presigned_url was sent for it`;
+
+  let image: Awaited<ReturnType<typeof downloadImage>>;
+  try {
+    image = await downloadImage(presignedUrl);
+  } catch (err) {
+    if (err instanceof ImageFetchError) return `could not download from the presigned URL: ${err.message}`;
+    return `could not download from the presigned URL: ${err instanceof Error ? err.message : 'unexpected error'}`;
+  }
+  try {
+    await putBufferToS3(key, image.buffer, image.contentType);
+  } catch (err) {
+    return `downloaded, but saving to our storage failed: ${err instanceof Error ? err.message : 'unexpected error'}`;
+  }
+  return null;
+}
+
+/**
  * Stores an event. Events belong to the platform, not to a company: a company sees one only
  * once an admin has added its stream id (see stream mappings below).
  */
@@ -115,45 +143,61 @@ export async function ingestAiEvent(p: AiEventPayload) {
   const eventTime = parseAiTimestamp(p.timestamp);
   if (!eventTime) throw new EventLogbookError('Invalid timestamp. Expected "YYYY-MM-DD HH:mm:ss" or an ISO-8601 value with a zone');
 
-  // An image is only usable once the model says its upload finished.
-  // Whatever is wrong is returned to the sender so it can fix its side instead of us linking to a broken image.
+  // The sender's images are downloaded from their presigned URLs and kept in our own bucket. An image is
+  // only linked when it really is in our bucket; whatever went wrong is returned to the sender (and logged)
+  // so it can fix its side, and the UI shows "No image" instead of a broken link.
   const done = (status: string) => status === 'uploaded';
   const imageIssues: string[] = [];
-  const claimed = (label: string, key: string, ok: boolean, why: string) => {
-    if (ok) return key;
-    imageIssues.push(`${label}: not stored (${why})`);
-    return null;
-  };
-  let snapshotKey = claimed(
-    'snapshot',
-    p.snapshot.s3_key,
-    done(p.s3_upload_status) && done(p.snapshot.s3_upload_status),
-    `sender reported s3_upload_status "${p.s3_upload_status}" / snapshot.s3_upload_status "${p.snapshot.s3_upload_status}"`,
-  );
-  let aiKey = claimed(
-    'ai_processed_img',
-    p.ai_processed_img.s3_key,
-    done(p.ai_processed_img.upload_status),
-    `sender reported upload_status "${p.ai_processed_img.upload_status}"${p.ai_processed_img.error ? `: ${p.ai_processed_img.error}` : ''}`,
-  );
-  let orgKey = claimed(
-    'org_img',
-    p.org_img.s3_key,
-    done(p.org_img.upload_status),
-    `sender reported upload_status "${p.org_img.upload_status}"${p.org_img.error ? `: ${p.org_img.error}` : ''}`,
-  );
+  const images = [
+    {
+      label: 'snapshot',
+      key: p.snapshot.s3_key,
+      url: p.snapshot.s3_presigned_url,
+      ok: done(p.s3_upload_status) && done(p.snapshot.s3_upload_status),
+      why: `sender reported s3_upload_status "${p.s3_upload_status}" / snapshot.s3_upload_status "${p.snapshot.s3_upload_status}"`,
+    },
+    {
+      label: 'ai_processed_img',
+      key: p.ai_processed_img.s3_key,
+      url: p.ai_processed_img.s3_presigned_url,
+      ok: done(p.ai_processed_img.upload_status),
+      why: `sender reported upload_status "${p.ai_processed_img.upload_status}"${p.ai_processed_img.error ? `: ${p.ai_processed_img.error}` : ''}`,
+    },
+    {
+      label: 'org_img',
+      key: p.org_img.s3_key,
+      url: p.org_img.s3_presigned_url,
+      ok: done(p.org_img.upload_status),
+      why: `sender reported upload_status "${p.org_img.upload_status}"${p.org_img.error ? `: ${p.org_img.error}` : ''}`,
+    },
+  ];
 
-  // The sender says "uploaded"; confirm it. A key whose file is not in the bucket is dropped, so the UI shows "No image".
-  const toCheck = [...new Set([snapshotKey, aiKey, orgKey].filter((k): k is string => !!k))];
-  const exists = new Map(await Promise.all(toCheck.map(async (k) => [k, await s3ObjectExists(k)] as const)));
-  const verified = (label: string, key: string | null) => {
-    if (!key || exists.get(key)) return key;
-    imageIssues.push(`${label}: sender reported it as uploaded but "${key}" does not exist in our storage`);
-    return null;
+  // The snapshot and the AI image are the same file: it is fetched once, with whichever URL was sent.
+  const urlFor = new Map<string, string>();
+  for (const i of images) if (i.ok && i.url && !urlFor.has(i.key)) urlFor.set(i.key, i.url);
+  const inBucket = new Map<string, Promise<string | null>>(); // key → what went wrong, or null when the file is in our bucket
+  const ensureInBucket = (key: string) => {
+    let r = inBucket.get(key);
+    if (!r) {
+      r = storeImage(key, urlFor.get(key));
+      inBucket.set(key, r);
+    }
+    return r;
   };
-  snapshotKey = verified('snapshot', snapshotKey);
-  aiKey = verified('ai_processed_img', aiKey);
-  orgKey = verified('org_img', orgKey);
+  const [snapshotKey, aiKey, orgKey] = await Promise.all(
+    images.map(async (i) => {
+      if (!i.ok) {
+        imageIssues.push(`${i.label}: not stored (${i.why})`);
+        return null;
+      }
+      const problem = await ensureInBucket(i.key);
+      if (problem) {
+        imageIssues.push(`${i.label}: ${problem}`);
+        return null;
+      }
+      return i.key;
+    }),
+  );
   if (imageIssues.length) {
     console.warn(`[ai-events] image problems for ${p.stream_id}/${p.session_id} track ${p.track_id}:`, imageIssues);
   }

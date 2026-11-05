@@ -24,6 +24,10 @@ jest.mock('@/lib/s3Client', () => ({
   getPresignedUploadUrl: jest.fn(),
   s3ObjectExists: jest.fn(async () => true),
 }));
+jest.mock('@/backend/services/logbook/ai-event-image', () => ({
+  ...jest.requireActual('@/backend/services/logbook/ai-event-image'),
+  downloadImage: jest.fn(),
+}));
 jest.mock('@/lib/auth/feature-permissions', () => ({ getSessionEffectivePermissions: jest.fn() }));
 jest.mock('../../../../lib/resend/mail', () => ({ sendEventReportedEmail: jest.fn(), sendNotificationEmail: jest.fn() }));
 jest.mock('@/backend/services/email/email-limit-service', () => ({
@@ -47,7 +51,8 @@ import {
 import { sendEventReportedEmail } from '../../../../lib/resend/mail';
 import { incrementDailyEmailCount, isDailyEmailLimitReached } from '@/backend/services/email/email-limit-service';
 import { prisma } from '@/lib/prisma';
-import { s3ObjectExists } from '@/lib/s3Client';
+import { putBufferToS3, s3ObjectExists } from '@/lib/s3Client';
+import { downloadImage, ImageFetchError } from '@/backend/services/logbook/ai-event-image';
 
 const p = prisma as any;
 const s3Exists = s3ObjectExists as jest.Mock;
@@ -265,7 +270,69 @@ describe('ingestAiEvent', () => {
     const r = await run();
     expect(created()).toMatchObject({ org_img_key: null, ai_img_key: PAYLOAD.ai_processed_img.s3_key, snapshot_status: 'stored' });
     expect(r.imageIssues).toHaveLength(1);
-    expect(r.imageIssues[0]).toMatch(/org_img: .*does not exist in our storage/);
+    expect(r.imageIssues[0]).toMatch(/org_img: .*not in our storage and no s3_presigned_url was sent/);
+  });
+
+  describe('downloading from the presigned URLs', () => {
+    const URL_ORG = 'https://bucket.s3.amazonaws.com/org.jpg?X-Amz-Signature=aaa';
+    const URL_AI = 'https://bucket.s3.amazonaws.com/ai.jpg?X-Amz-Signature=bbb';
+    const jpeg = { buffer: Buffer.from([0xff, 0xd8, 0xff, 0xe0]), contentType: 'image/jpeg' };
+    const withUrls = () => ({
+      snapshot: { ...PAYLOAD.snapshot, s3_presigned_url: URL_AI },
+      org_img: { ...IMG('org'), s3_presigned_url: URL_ORG },
+      ai_processed_img: { ...IMG('ai_processed'), s3_key: PAYLOAD.snapshot.s3_key, s3_presigned_url: URL_AI },
+    });
+
+    beforeEach(() => {
+      s3Exists.mockResolvedValue(false); // nothing in our bucket yet
+      (downloadImage as jest.Mock).mockResolvedValue(jpeg);
+      (putBufferToS3 as jest.Mock).mockResolvedValue(undefined);
+    });
+
+    it('downloads each image and keeps its own copy at the key the sender gave', async () => {
+      const r = await run(withUrls());
+      expect(putBufferToS3).toHaveBeenCalledWith(PAYLOAD.org_img.s3_key, jpeg.buffer, 'image/jpeg');
+      expect(putBufferToS3).toHaveBeenCalledWith(PAYLOAD.snapshot.s3_key, jpeg.buffer, 'image/jpeg');
+      expect(r.imageIssues).toEqual([]);
+      expect(created()).toMatchObject({ org_img_key: PAYLOAD.org_img.s3_key, ai_img_key: PAYLOAD.snapshot.s3_key, snapshot_key: PAYLOAD.snapshot.s3_key, snapshot_status: 'stored' });
+    });
+
+    it('fetches the snapshot and the AI image once when they are the same file', async () => {
+      await run(withUrls());
+      expect(downloadImage).toHaveBeenCalledTimes(2);
+      expect(putBufferToS3).toHaveBeenCalledTimes(2);
+    });
+
+    it('does not download again for a file that is already in our bucket (a retried event)', async () => {
+      s3Exists.mockResolvedValue(true);
+      await run(withUrls());
+      expect(downloadImage).not.toHaveBeenCalled();
+      expect(putBufferToS3).not.toHaveBeenCalled();
+    });
+
+    it('reports a rejected URL, stores no key for that image, and still stores the event', async () => {
+      (downloadImage as jest.Mock).mockImplementation(async (u: string) => {
+        if (u === URL_ORG) throw new ImageFetchError('HTTP 403 SignatureDoesNotMatch – rejected');
+        return jpeg;
+      });
+      const r = await run(withUrls());
+      expect(created()).toMatchObject({ org_img_key: null, ai_img_key: PAYLOAD.snapshot.s3_key, snapshot_status: 'stored' });
+      expect(r.aiEventId).toBe(7);
+      expect(r.imageIssues).toEqual([expect.stringMatching(/org_img: could not download from the presigned URL: HTTP 403 SignatureDoesNotMatch/)]);
+      expect(putBufferToS3).not.toHaveBeenCalledWith(PAYLOAD.org_img.s3_key, expect.anything(), expect.anything());
+    });
+
+    it('reports when saving to our own bucket fails', async () => {
+      (putBufferToS3 as jest.Mock).mockRejectedValue(new Error('AccessDenied'));
+      const r = await run(withUrls());
+      expect(created()).toMatchObject({ org_img_key: null, ai_img_key: null, snapshot_key: null, snapshot_status: 'failed' });
+      expect(r.imageIssues.join('|')).toMatch(/saving to our storage failed: AccessDenied/);
+    });
+
+    it('does not fetch a URL for an image the sender says it failed to upload', async () => {
+      await run({ ...withUrls(), org_img: { ...IMG('org'), s3_presigned_url: URL_ORG, upload_status: 'failed', error: 'timeout' } });
+      expect(downloadImage).not.toHaveBeenCalledWith(URL_ORG);
+    });
   });
 
   it('marks the snapshot failed when none of the reported files exist, and still stores the event', async () => {
