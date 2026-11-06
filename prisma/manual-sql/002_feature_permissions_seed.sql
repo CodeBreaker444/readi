@@ -213,6 +213,7 @@ VALUES
 ('PIC', 'logbook_planned_mission', 'R'),
 ('PIC', 'logbook_flight', 'R'),
 ('PIC', 'logbook_battery', 'R'),
+('PIC', 'control_center_recent_flights', 'A'),
 ('PIC', 'drone_atc', 'R'),
 ('PIC', 'notifications', 'A'),
 ('PIC', 'systems_maintenance_dashboard', 'R'),

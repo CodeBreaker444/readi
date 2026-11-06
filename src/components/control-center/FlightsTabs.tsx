@@ -48,9 +48,6 @@ export function FlightsTabs({ flytrelayAccess }: { flytrelayAccess: boolean }) {
         orgId: o.orgId ?? o.org_id,
       }));
       setOrganizations(mapped);
-      if (mapped.length > 0) {
-        setSelectedOrganization(mapped[0]);
-      }
     } catch (err: any) {
       console.error('Failed to fetch organizations:', err);
     } finally {
