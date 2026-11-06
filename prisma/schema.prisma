@@ -497,40 +497,41 @@ model webauthn_credentials {
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model ai_event {
-  ai_event_id        Int               @id @default(autoincrement())
+  ai_event_id        Int                @id @default(autoincrement())
   fk_owner_id        Int?
-  event_type         String            @db.VarChar(50)
-  stream_id          String            @db.VarChar(200)
-  session_id         String            @db.VarChar(100)
-  track_id           Int               @default(-1)
-  class_name         String?           @db.VarChar(100)
+  event_type         String             @db.VarChar(50)
+  stream_id          String             @db.VarChar(200)
+  session_id         String             @db.VarChar(100)
+  track_id           Int                @default(-1)
+  class_name         String?            @db.VarChar(100)
   confidence         Float?
-  event_time         DateTime          @db.Timestamptz(6)
+  event_time         DateTime           @db.Timestamptz(6)
   frame_number       Int?
-  bounding_box       Float[]           @default([])
+  bounding_box       Float[]            @default([])
   frames_detected    Int?
   processing_time_ms Float?
-  model_mode         String?           @db.VarChar(50)
-  snapshot_key       String?           @db.VarChar(500)
-  snapshot_status    String            @default("none") @db.VarChar(20)
-  notify_status      String            @default("pending") @db.VarChar(30)
-  notified_emails    String[]          @default([])
-  created_at         DateTime          @default(now()) @db.Timestamp(6)
-  org_img_key        String?           @db.VarChar(500)
+  model_mode         String?            @db.VarChar(50)
+  snapshot_key       String?            @db.VarChar(500)
+  snapshot_status    String             @default("none") @db.VarChar(20)
+  notify_status      String             @default("pending") @db.VarChar(30)
+  notified_emails    String[]           @default([])
+  created_at         DateTime           @default(now()) @db.Timestamp(6)
+  org_img_key        String?            @db.VarChar(500)
   org_img_width      Int?
   org_img_height     Int?
-  ai_img_key         String?           @db.VarChar(500)
+  ai_img_key         String?            @db.VarChar(500)
   ai_img_width       Int?
   ai_img_height      Int?
   ai_res_width       Int?
   ai_res_height      Int?
-  detections         Json              @default("[]")
+  detections         Json               @default("[]")
   client_id          Int?
-  client_name        String?           @db.VarChar(255)
-  alerts_linked      Boolean           @default(false)
-  status             String            @default("open") @db.VarChar(20)
-  owner              owner?            @relation(fields: [fk_owner_id], references: [owner_id], onDelete: Cascade, onUpdate: NoAction)
+  client_name        String?            @db.VarChar(255)
+  alerts_linked      Boolean            @default(false)
+  status             String             @default("open") @db.VarChar(20)
+  owner              owner?             @relation(fields: [fk_owner_id], references: [owner_id], onDelete: Cascade, onUpdate: NoAction)
   ai_event_action    ai_event_action[]
+  ai_event_feedback  ai_event_feedback?
 
   @@unique([stream_id, session_id, track_id, event_type, event_time], map: "ai_event_dedupe_key")
   @@index([stream_id], map: "idx_ai_event_stream")
@@ -550,6 +551,23 @@ model ai_event_action {
   ai_event       ai_event @relation(fields: [fk_ai_event_id], references: [ai_event_id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([fk_ai_event_id, action_id], map: "idx_ai_event_action_event")
+  @@schema("public")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model ai_event_feedback {
+  feedback_id    Int      @id @default(autoincrement())
+  fk_ai_event_id Int      @unique
+  feedback_type  String   @db.VarChar(20)
+  comment        String?  @db.VarChar(1000)
+  attachments    Json     @default("[]")
+  user_id        Int?
+  user_email     String   @db.VarChar(255)
+  created_at     DateTime @default(now()) @db.Timestamp(6)
+  updated_at     DateTime @default(now()) @db.Timestamp(6)
+  ai_event       ai_event @relation(fields: [fk_ai_event_id], references: [ai_event_id], onDelete: Cascade, onUpdate: NoAction)
+
   @@schema("public")
 }
 

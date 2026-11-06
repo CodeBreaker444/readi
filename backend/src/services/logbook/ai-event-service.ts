@@ -1,8 +1,8 @@
 import 'server-only';
 
-import type { AiCompanyOption, AiDetection, AiEventActionType, AiEventItem, AiEventListResult, AiEventStatus, AiStreamMappingItem } from '@/config/types/ai-event';
+import type { AiCompanyOption, AiDetection, AiEventActionType, AiEventItem, AiEventListResult, AiEventStatus, AiFeedbackType, AiStreamMappingItem } from '@/config/types/ai-event';
 import { prisma } from '@/lib/prisma';
-import { getPresignedDownloadUrl, putBufferToS3, s3ObjectExists } from '@/lib/s3Client';
+import { deleteFileFromS3, getPresignedDownloadUrl, putBufferToS3, s3ObjectExists } from '@/lib/s3Client';
 import { z } from 'zod';
 import { downloadImage, ImageFetchError } from './ai-event-image';
 import { sendEventReportedEmail } from '../../../../lib/resend/mail';
@@ -380,6 +380,13 @@ function parseDetections(raw: unknown): AiDetection[] {
   );
 }
 
+type StoredAttachment = { key: string; name: string; type: string; size: number };
+
+function parseAttachments(raw: unknown): StoredAttachment[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.filter((a): a is StoredAttachment => !!a && typeof a.key === 'string' && typeof a.name === 'string');
+}
+
 const toStatus = (s: string): AiEventStatus => (s === 'acknowledged' || s === 'resolved' ? s : 'open');
 
 /**
@@ -449,7 +456,7 @@ export async function listAiEvents(scope: AiEventScope, f: AiEventFilters): Prom
       orderBy: { ai_event_id: 'desc' },
       skip: (page - 1) * pageSize,
       take: pageSize,
-      include: { ai_event_action: { orderBy: { action_id: 'asc' } } },
+      include: { ai_event_action: { orderBy: { action_id: 'asc' } }, ai_event_feedback: true },
     }),
   ]);
 
@@ -491,6 +498,23 @@ export async function listAiEvents(scope: AiEventScope, f: AiEventFilters): Prom
           user_email: x.user_email,
           created_at: x.created_at.toISOString(),
         })),
+        feedback: r.ai_event_feedback
+          ? {
+              feedback_type: r.ai_event_feedback.feedback_type as AiFeedbackType,
+              comment: r.ai_event_feedback.comment,
+              attachments: await Promise.all(
+                parseAttachments(r.ai_event_feedback.attachments).map(async (a) => {
+                  const [url, download_url] = await Promise.all([
+                    getPresignedDownloadUrl(a.key, LIST_URL_TTL_S, a.name, 'inline').catch(() => null),
+                    getPresignedDownloadUrl(a.key, LIST_URL_TTL_S, a.name, 'attachment').catch(() => null),
+                  ]);
+                  return { ...a, url, download_url };
+                }),
+              ),
+              user_email: r.ai_event_feedback.user_email,
+              updated_at: r.ai_event_feedback.updated_at.toISOString(),
+            }
+          : null,
         company_name: scope.isSuperAdmin && claim ? (ownerName.get(claim.fk_owner_id) ?? null) : null,
         claimed: !!claim,
       };
@@ -509,12 +533,113 @@ const ALLOWED_FROM: Record<AiEventActionType, AiEventStatus[]> = {
   resolved: ['open', 'acknowledged'],
 };
 
-export async function actOnAiEvent(scope: AiEventScope, user: { userId: number; email: string }, aiEventId: number, input: AiEventActionInput) {
-  const event = await prisma.ai_event.findUnique({ where: { ai_event_id: aiEventId }, select: { stream_id: true } });
-  // Same visibility as the list: a company only reaches events of the stream ids it added.
+/** Same visibility as the list: a company only reaches events of the stream ids it added. */
+async function getVisibleAiEvent(scope: AiEventScope, aiEventId: number) {
+  const event = await prisma.ai_event.findUnique({
+    where: { ai_event_id: aiEventId },
+    select: { stream_id: true, event_type: true, event_time: true, class_name: true, snapshot_key: true, ai_img_key: true, org_img_key: true },
+  });
   const visible =
     !!event && (scope.isSuperAdmin || !!(await prisma.ai_stream_mapping.findFirst({ where: { stream_id: event.stream_id, fk_owner_id: scope.ownerId }, select: { mapping_id: true } })));
-  if (!visible) throw new EventLogbookError('Event not found', 404);
+  if (!event || !visible) throw new EventLogbookError('Event not found', 404);
+  return event;
+}
+
+/** Deletes the event with its review history and feedback, then its stored files (best effort). */
+export async function deleteAiEvent(scope: AiEventScope, aiEventId: number) {
+  const event = await getVisibleAiEvent(scope, aiEventId);
+  const feedback = await prisma.ai_event_feedback.findUnique({ where: { fk_ai_event_id: aiEventId }, select: { attachments: true } });
+  await prisma.ai_event.delete({ where: { ai_event_id: aiEventId } });
+
+  // Image files can be shared with another event (a retried event reuses the same keys): keep those.
+  const imageKeys = [...new Set([event.snapshot_key, event.ai_img_key, event.org_img_key].filter((k): k is string => !!k))];
+  const stillUsed = imageKeys.length
+    ? await prisma.ai_event.findMany({
+        where: { OR: [{ snapshot_key: { in: imageKeys } }, { ai_img_key: { in: imageKeys } }, { org_img_key: { in: imageKeys } }] },
+        select: { snapshot_key: true, ai_img_key: true, org_img_key: true },
+      })
+    : [];
+  const used = new Set(stillUsed.flatMap((r) => [r.snapshot_key, r.ai_img_key, r.org_img_key]));
+  const keys = [...imageKeys.filter((k) => !used.has(k)), ...parseAttachments(feedback?.attachments).map((a) => a.key)];
+  await Promise.all(keys.map((k) => deleteFileFromS3(k).catch((err) => console.error(`[ai-event] #${aiEventId} could not delete ${k}`, err))));
+
+  // What was deleted, for the audit log.
+  return { eventType: event.event_type, eventLabel: aiEventLabel(event.event_type), eventTime: event.event_time, streamId: event.stream_id, className: event.class_name };
+}
+
+// ── Detection feedback ───────────────────────────────────────────────────────
+
+export const FEEDBACK_MAX_FILES = 2;
+export const FEEDBACK_MAX_FILE_BYTES = 5 * 1024 * 1024;
+const FEEDBACK_TYPES: Record<string, (b: Buffer) => boolean> = {
+  'application/pdf': (b) => b.subarray(0, 4).toString('latin1') === '%PDF',
+  'image/png': (b) => b.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])),
+  'image/jpeg': (b) => b[0] === 0xff && b[1] === 0xd8,
+  'image/webp': (b) => b.subarray(0, 4).toString('latin1') === 'RIFF' && b.subarray(8, 12).toString('latin1') === 'WEBP',
+};
+const EXT: Record<string, string> = { 'application/pdf': 'pdf', 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp' };
+
+export const aiFeedbackSchema = z.object({
+  feedback_type: z.enum(['false_positive', 'false_negative']),
+  comment: z
+    .string()
+    .trim()
+    .max(1000)
+    .optional()
+    .transform((c) => c || null),
+});
+export type AiFeedbackInput = z.infer<typeof aiFeedbackSchema>;
+
+/**
+ * Saves the feedback for an event (one per event; sending again replaces it). New files replace the
+ * old ones; with no new files the existing ones are kept.
+ */
+export async function submitAiFeedback(scope: AiEventScope, user: { userId: number; email: string }, aiEventId: number, input: AiFeedbackInput, files: File[]) {
+  await getVisibleAiEvent(scope, aiEventId);
+  if (files.length > FEEDBACK_MAX_FILES) throw new EventLogbookError(`You can attach at most ${FEEDBACK_MAX_FILES} files`);
+
+  const prepared: { buffer: Buffer; type: string; name: string }[] = [];
+  for (const f of files) {
+    if (f.size === 0) throw new EventLogbookError('Empty file');
+    if (f.size > FEEDBACK_MAX_FILE_BYTES) throw new EventLogbookError('Each file must be under 5 MB');
+    const check = FEEDBACK_TYPES[f.type];
+    if (!check) throw new EventLogbookError('Only PDF, JPEG, PNG or WebP files are allowed');
+    const buffer = Buffer.from(await f.arrayBuffer());
+    if (!check(buffer)) throw new EventLogbookError(`"${f.name}" is not a valid ${EXT[f.type].toUpperCase()} file`);
+    prepared.push({ buffer, type: f.type, name: f.name.replace(/[^a-zA-Z0-9._-]/g, '_').slice(-100) || `file.${EXT[f.type]}` });
+  }
+
+  const stamp = Date.now();
+  const uploaded: StoredAttachment[] = [];
+  try {
+    for (const [i, p] of prepared.entries()) {
+      const key = `ai_alerts/feedback/${aiEventId}/${stamp}_${i}_${p.name}`;
+      await putBufferToS3(key, p.buffer, p.type);
+      uploaded.push({ key, name: p.name, type: p.type, size: p.buffer.length });
+    }
+  } catch (err) {
+    await Promise.all(uploaded.map((u) => deleteFileFromS3(u.key).catch(() => {})));
+    throw err;
+  }
+
+  const existing = await prisma.ai_event_feedback.findUnique({ where: { fk_ai_event_id: aiEventId }, select: { attachments: true } });
+  const previous = parseAttachments(existing?.attachments);
+  const attachments = uploaded.length ? uploaded : previous;
+  try {
+    await prisma.ai_event_feedback.upsert({
+      where: { fk_ai_event_id: aiEventId },
+      create: { fk_ai_event_id: aiEventId, feedback_type: input.feedback_type, comment: input.comment, attachments, user_id: user.userId, user_email: user.email },
+      update: { feedback_type: input.feedback_type, comment: input.comment, attachments, user_id: user.userId, user_email: user.email, updated_at: new Date() },
+    });
+  } catch (err) {
+    await Promise.all(uploaded.map((u) => deleteFileFromS3(u.key).catch(() => {})));
+    throw err;
+  }
+  if (uploaded.length) await Promise.all(previous.map((a) => deleteFileFromS3(a.key).catch(() => {})));
+}
+
+export async function actOnAiEvent(scope: AiEventScope, user: { userId: number; email: string }, aiEventId: number, input: AiEventActionInput) {
+  await getVisibleAiEvent(scope, aiEventId);
 
   const allowed = ALLOWED_FROM[input.action];
   await prisma.$transaction(async (tx) => {
