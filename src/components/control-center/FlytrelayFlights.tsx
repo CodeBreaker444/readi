@@ -99,6 +99,8 @@ export function FlytrelayFlights({
     if (isActive && selectedOrganization) {
       setPage(1);
       fetchFlights(1);
+    } else if (!selectedOrganization) {
+      setLoading(false);
     }
   }, [fetchFlights, isActive, selectedOrganization]);
 

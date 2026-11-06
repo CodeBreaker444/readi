@@ -182,6 +182,14 @@ Every new event is sent as an HTTPS `POST` with `event.created`:
     "drone": { "id": 4, "name": "Lito X1", "code": "LX1" },
     "mission": { "id": 88, "name": "Survey-12", "code": "M-88" },
     "client": { "id": 3, "name": "Acme" },
+    "system": {
+      "name": "Lito X1",
+      "code": "LX1",
+      "components": [
+        { "name": "Matrice 4TD", "code": "DR-01", "drone_type": "DRONE", "serial_number": "1581F5BKD00A" },
+        { "name": "Dock 3", "code": "DK-01", "drone_type": "DOCK", "serial_number": "8UUXN4R00A0B" }
+      ]
+    },
     "attachments": [{ "attachment_id": 28, "is_supporting": false, "file_name": "screenshot.png", "file_type": "image/png", "file_size": 120394, "url": "https://…", "url_expires_in_seconds": 604800 }]
   }
 }
@@ -201,6 +209,7 @@ Every new event is sent as an HTTPS `POST` with `event.created`:
 | `data.location` | `latitude`, `longitude` and a `label` (when a place was searched). |
 | `data.notes` | The pilot's notes. |
 | `data.pilot`, `data.drone`, `data.mission`, `data.client` | The reporting pilot, the system, the mission (`null` if none) and the client, each with its `id` and `name` (drone and mission also have a `code`). |
+| `data.system` | The system selected in the mission setup (the mission plan's system), so receivers can identify the exact hardware. It is an **empty object `{}` when the event has no mission**. Otherwise: `name`, `code` and `components[]` – every active component of the system with `name`, `code`, `drone_type` (the component type, e.g. `DRONE`, `DOCK`, `BATTERY`) and `serial_number` (`null` if not set). This key was added later; the other keys are unchanged. |
 | `data.attachments[]` | All files of the event. Each has `attachment_id` (id of the file), `is_supporting` (`false` = attached when reporting, `true` = supporting media), `file_name`, `file_type`, `file_size` (bytes), `url` (download link) and `url_expires_in_seconds` (links stay valid for 7 days). |
 
 #### Supporting media updates (`event.updated`)
@@ -226,6 +235,14 @@ When supporting media is added to an event that was already reported, the same w
     "drone": { "id": 4, "name": "Lito X1", "code": "LX1" },
     "mission": { "id": 88, "name": "Survey-12", "code": "M-88" },
     "client": { "id": 3, "name": "Acme" },
+    "system": {
+      "name": "Lito X1",
+      "code": "LX1",
+      "components": [
+        { "name": "Matrice 4TD", "code": "DR-01", "drone_type": "DRONE", "serial_number": "1581F5BKD00A" },
+        { "name": "Dock 3", "code": "DK-01", "drone_type": "DOCK", "serial_number": "8UUXN4R00A0B" }
+      ]
+    },
     "new_media": [
       {
         "attachment_id": 29,
@@ -247,7 +264,7 @@ When supporting media is added to an event that was already reported, the same w
 | `data.update_type` | What changed. Currently only `support_media`: supporting media was added. |
 | `data.event_id` | **The id of the event the media belongs to** – the same `event_id` that was sent in `event.created`. Match on this to attach the new media to the right event. |
 | `data.new_media[]` | Only the files added by this update (not the whole list). Each has `attachment_id`, `is_supporting` (always `true`), `file_name`, `file_type` (image or video), `file_size`, `url` and `url_expires_in_seconds`. |
-| Other `data` fields | The same event details as in `event.created` (type, times, location, notes, pilot, drone, mission, client). `attachments` is not included. |
+| Other `data` fields | The same event details as in `event.created` (type, times, location, notes, pilot, drone, mission, client, system). `attachments` is not included. |
 
 Supporting media added while the event is being reported is part of `event.created` (flagged with `is_supporting: true`), so no separate update is sent for it. The signature, retry and delivery-log rules below apply to both notifications.
 

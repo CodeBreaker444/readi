@@ -254,6 +254,36 @@ async function deliver(
   return { success, status, error };
 }
 
+/**
+ * The system (tool) selected in the mission setup, with all its active components.
+ * Returns an empty object when the event has no mission.
+ */
+async function buildSystemPayload(mission: { pilot_mission_id: number; fk_tool_id: number | null } | null, fallbackToolId: number) {
+  if (!mission) return {};
+  const toolId = mission.fk_tool_id ?? fallbackToolId;
+  const [tool, components] = await Promise.all([
+    prisma.tool.findUnique({ where: { tool_id: toolId }, select: { tool_id: true, tool_name: true, tool_code: true } }),
+    prisma.tool_component.findMany({
+      where: { fk_tool_id: toolId, component_active: 'Y' },
+      orderBy: { component_id: 'asc' },
+      select: { component_id: true, component_name: true, component_code: true, component_type: true, serial_number: true, uas_serial_number: true },
+    }),
+  ]);
+
+  const serialOf = (c: (typeof components)[number]) => c.serial_number?.trim() || c.uas_serial_number?.trim() || null;
+
+  return {
+    name: tool?.tool_name ?? null,
+    code: tool?.tool_code ?? null,
+    components: components.map((c) => ({
+      name: c.component_name,
+      code: c.component_code ?? null,
+      drone_type: c.component_type ?? null,
+      serial_number: serialOf(c),
+    })),
+  };
+}
+
 async function buildEventPayload(eventId: number) {
   const event = await prisma.pilot_event.findUnique({ where: { event_id: eventId }, include: { pilot_event_attachment: true } });
   if (!event) return null;
@@ -262,12 +292,14 @@ async function buildEventPayload(eventId: number) {
     prisma.public_users.findUnique({ where: { user_id: event.fk_pilot_user_id }, select: { first_name: true, last_name: true } }),
     prisma.tool.findUnique({ where: { tool_id: event.fk_tool_id }, select: { tool_name: true, tool_code: true } }),
     event.fk_mission_id
-      ? prisma.pilot_mission.findUnique({ where: { pilot_mission_id: event.fk_mission_id }, select: { mission_name: true, mission_code: true } })
+      ? prisma.pilot_mission.findUnique({ where: { pilot_mission_id: event.fk_mission_id }, select: { pilot_mission_id: true, fk_tool_id: true, mission_name: true, mission_code: true } })
       : null,
     event.fk_client_id
       ? prisma.client.findUnique({ where: { client_id: event.fk_client_id }, select: { client_name: true } })
       : null,
   ]);
+
+  const system = await buildSystemPayload(mission, event.fk_tool_id);
 
   const attachments = await Promise.all(
     event.pilot_event_attachment.map(async (a) => ({
@@ -303,6 +335,8 @@ async function buildEventPayload(eventId: number) {
         ? { id: event.fk_mission_id, name: mission?.mission_name?.trim() || null, code: mission?.mission_code?.trim() || null }
         : null,
       client: event.fk_client_id ? { id: event.fk_client_id, name: client?.client_name ?? null } : null,
+      // New key: `{}` when the event has no mission.
+      system,
       attachments,
     },
   };

@@ -151,7 +151,7 @@ export default function EventLogbookPage() {
                 <Mail className="h-4 w-4" />
               </Button>
             )}
-            {canConfigure && !onAiTab && (
+            {canConfigure && (
               <Button
                 variant="outline"
                 size="icon"
@@ -177,12 +177,6 @@ export default function EventLogbookPage() {
               {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
               {e('refresh')}
             </Button>
-            {onAiTab && (
-              <Button size="sm" className="h-8 gap-1.5 bg-violet-600 text-xs text-white hover:bg-violet-700" onClick={() => setStreamsOpen(true)}>
-                <Radio className="h-3.5 w-3.5" />
-                {e('ai.settings.add')}
-              </Button>
-            )}
             {canReport && !onAiTab && (
               <Button
                 variant="outline"
