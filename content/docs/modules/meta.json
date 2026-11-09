@@ -3,6 +3,7 @@
   "pages": [
     "dashboard",
     "operations",
+    "slot-booking",
     "planning",
     "systems",
     "maintenance",
