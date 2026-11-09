@@ -57,7 +57,7 @@ export async function updateSession(request: NextRequest) {
   }
 
   // External API endpoints authenticated via X-API-KEY — skip cookie auth entirely
-  const API_KEY_ROUTES = ['/api/missions'];
+  const API_KEY_ROUTES = ['/api/missions', '/api/ai-events/ingest'];
   if (API_KEY_ROUTES.some((r) => pathname === r || pathname.startsWith(r + '/'))) {
     return NextResponse.next();
   }
@@ -130,8 +130,14 @@ export async function updateSession(request: NextRequest) {
 
   if (jwtToken) {
     const forcePwChange = request.cookies.get('force_pw_change')?.value === '1'
-    if (forcePwChange && pathname === '/auth/change-password') {
-      return NextResponse.next()
+    if (forcePwChange) {
+      if (pathname === '/auth/change-password') {
+        return NextResponse.next()
+      }
+      if (pathname.startsWith('/api/')) {
+        return NextResponse.json({ error: 'Password change required' }, { status: 403 })
+      }
+      return NextResponse.redirect(new URL('/auth/change-password', request.url))
     }
     if (isPublicRoute || isAuthFlowRoute) {
       const role = decodeJwtRole(jwtToken)

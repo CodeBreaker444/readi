@@ -17,7 +17,7 @@ const schema = z.object({
     client_state: z.string().max(100).optional(),
     client_postal_code: z.string().max(20).optional(),
     client_phone: z.string().max(50).optional(),
-    client_email: z.string().email('Invalid email'),
+    client_email: z.string().max(255).email('Invalid email'),
     client_website: z.string().url('Invalid URL').optional().or(z.literal('')),
     username: z.string().min(3, 'Username must be at least 3 characters').max(100).regex(/^[a-z0-9_.@+-]+$/, 'Username can only contain lowercase letters, numbers, and . _ @ + -'),
     password: z.string().min(6).max(128).optional(),

@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useTheme } from '@/components/useTheme';
 import type { Checklist } from '@/config/types/checklist';
+import { getApiErrorMessage } from '@/lib/api-error-message';
 import { flexRender, getCoreRowModel, getFilteredRowModel, getPaginationRowModel, useReactTable } from '@tanstack/react-table';
 import axios from 'axios';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -95,7 +96,7 @@ export default function ChecklistPage() {
     try {
       const res = await axios.post('/api/organization/checklist', form)
       if (res.status === 201) { setAddOpen(false); load(); toast.success(t('organization.checklist.toasts.created')) }
-    } catch { toast.error(t('organization.checklist.toasts.createFailed')) }
+    } catch (err) { toast.error(getApiErrorMessage(axios.isAxiosError(err) ? err.response?.data : undefined, t('organization.checklist.toasts.createFailed'))) }
     setSubmitting(false)
   }
 
@@ -105,7 +106,7 @@ export default function ChecklistPage() {
     try {
       const res = await axios.put(`/api/organization/checklist/${editItem.checklist_id}`, form)
       if (res.status === 200) { setEditItem(null); load(); toast.success(t('organization.checklist.toasts.updated')) }
-    } catch { toast.error(t('organization.checklist.toasts.updateFailed')) }
+    } catch (err) { toast.error(getApiErrorMessage(axios.isAxiosError(err) ? err.response?.data : undefined, t('organization.checklist.toasts.updateFailed'))) }
     setSubmitting(false)
   }
 

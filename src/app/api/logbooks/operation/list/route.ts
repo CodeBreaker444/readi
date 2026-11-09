@@ -17,7 +17,7 @@ const schema = z.object({
   mission_group_label: z.string().optional(),
   date_start: z.string().optional(),
   date_end: z.string().optional(),
-  user_timezone: z.string().optional().default('UTC'),
+  user_timezone: z.string().max(64).optional().default('UTC'),
 });
 
 export async function POST(request: NextRequest) {

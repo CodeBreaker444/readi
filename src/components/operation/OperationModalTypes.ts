@@ -1,7 +1,7 @@
 import React from 'react';
 import { CalendarClock, Settings, User } from 'lucide-react';
 
-export interface Client { client_id: number; client_name: string; client_code: string }
+export interface Client { client_id: number; client_name: string; client_code: string; not_activated?: boolean; client_active?: string | null }
 export interface DroneComponent { component_name: string; component_code?: string | null; serial_number: string }
 export interface Drone { tool_id: number; tool_code: string; tool_name: string; in_maintenance?: boolean; maintenance_due?: boolean; is_non_operational?: boolean; is_dismissed?: boolean; drone_serial_numbers?: string[]; drone_components?: DroneComponent[]; tool_latitude?: number | null; tool_longitude?: number | null; tool_location_name?: string | null }
 export interface PlanningOption { planning_id: number; planning_name: string; fk_client_id: number; client_name: string; planning_active?: 'Y' | 'N' }

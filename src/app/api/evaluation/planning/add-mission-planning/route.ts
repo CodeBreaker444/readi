@@ -16,10 +16,10 @@ function buildPlanningLogbookS3Key(
 }
 
 const schema = z.object({
-  fk_planning_id: z.coerce.number(),
-  fk_evaluation_id: z.coerce.number(),
-  fk_client_id: z.coerce.number(),
-  mission_planning_code: z.string().min(1, "Mission code is required"),
+  fk_planning_id: z.coerce.number().int(),
+  fk_evaluation_id: z.coerce.number().int(),
+  fk_client_id: z.coerce.number().int(),
+  mission_planning_code: z.string().max(50).min(1, "Mission code is required"),
   mission_planning_desc: z.string().default(""),
   mission_planning_limit_json: z.string().default(""),
   mission_planning_active: z.string().default("N"),

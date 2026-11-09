@@ -1,6 +1,8 @@
 'use client';
 
 import '@/lib/i18n/config';
+import { AiEventsPanel } from '@/components/logbook/event/AiEventsPanel';
+import { AiStreamSettings } from '@/components/logbook/event/AiStreamSettings';
 import { AddEventWizard } from '@/components/logbook/event/AddEventWizard';
 import {
   EMPTY_EVENT_FILTERS,
@@ -20,7 +22,7 @@ import { useTheme } from '@/components/useTheme';
 import type { EventDroneOption, EventLogbookItem, EventMissionOption, EventNotifyContact } from '@/config/types/event-logbook';
 import { cn } from '@/lib/utils';
 import axios from 'axios';
-import { Loader2, Mail, Plus, RefreshCw, Settings, SlidersHorizontal, Tags } from 'lucide-react';
+import { Loader2, Mail, Plus, Radio, RefreshCw, Settings, SlidersHorizontal, Sparkles, Tags } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -52,6 +54,9 @@ export default function EventLogbookPage() {
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [typesOpen, setTypesOpen] = useState(false);
   const [highlightId, setHighlightId] = useState<number | null>(null);
+  const [view, setView] = useState<'pilot' | 'ai'>('pilot');
+  const [streamsOpen, setStreamsOpen] = useState(false);
+  const [aiRefresh, setAiRefresh] = useState(0);
 
   const fetchData = useCallback(
     async (f: EventFilters) => {
@@ -94,7 +99,12 @@ export default function EventLogbookPage() {
   useEffect(() => {
     fetchOptions();
     fetchData(EMPTY_EVENT_FILTERS);
+    // Links in alert emails open this page on the AI events tab.
+    if (new URLSearchParams(window.location.search).get('tab') === 'ai') setView('ai');
   }, []);
+
+  // The tabs (and so the AI view) are only offered to users who can configure.
+  const onAiTab = view === 'ai' && canConfigure;
 
   const search = () => fetchData(filters);
   const reset = () => {
@@ -146,17 +156,28 @@ export default function EventLogbookPage() {
                 variant="outline"
                 size="icon"
                 className={cn('h-8 w-8', ui.outlineBtn)}
+                title={e('ai.settings.title')}
+                onClick={() => setStreamsOpen(true)}
+              >
+                <Radio className="h-4 w-4" />
+              </Button>
+            )}
+            {canConfigure && (
+              <Button
+                variant="outline"
+                size="icon"
+                className={cn('h-8 w-8', ui.outlineBtn)}
                 title={e('webhookSettings')}
                 onClick={() => setWebhooksOpen(true)}
               >
                 <Settings className="h-4 w-4" />
               </Button>
             )}
-            <Button variant="outline" size="sm" className={cn('h-8 gap-1.5 text-xs', ui.outlineBtn)} disabled={loading} onClick={search}>
+            <Button variant="outline" size="sm" className={cn('h-8 gap-1.5 text-xs', ui.outlineBtn)} disabled={loading} onClick={() => (view === 'ai' ? setAiRefresh((k) => k + 1) : search())}>
               {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
               {e('refresh')}
             </Button>
-            {canReport && (
+            {canReport && !onAiTab && (
               <Button
                 variant="outline"
                 size="sm"
@@ -170,7 +191,7 @@ export default function EventLogbookPage() {
                 {t('logbooks.eventLogbook.wizard.setupTitle')}
               </Button>
             )}
-            {canReport && (
+            {canReport && !onAiTab && (
               <Button
                 size="sm"
                 className="h-8 gap-1.5 bg-violet-600 text-xs text-white hover:bg-violet-700"
@@ -188,6 +209,28 @@ export default function EventLogbookPage() {
       </div>
 
       <div className="mx-auto max-w-[1800px] space-y-4 px-6 py-5">
+        {canConfigure && (
+          <div className={cn('flex gap-1 border-b', ui.divider)}>
+            {(['pilot', 'ai'] as const).map((v) => (
+              <button
+                key={v}
+                type="button"
+                onClick={() => setView(v)}
+                className={cn(
+                  '-mb-px inline-flex items-center gap-1.5 border-b-2 px-3 py-2 text-xs font-medium transition-colors',
+                  view === v ? 'border-violet-600 text-violet-600' : cn('border-transparent', ui.muted),
+                )}
+              >
+                {e(v === 'pilot' ? 'ai.tabPilot' : 'ai.tabAi')}
+                {v === 'ai' && <Sparkles className="h-3 w-3" aria-hidden />}
+              </button>
+            ))}
+          </div>
+        )}
+        {view === 'ai' && canConfigure ? (
+          <AiEventsPanel isDark={isDark} refreshKey={aiRefresh} />
+        ) : (
+        <>
         <EventFilterPanel
           filters={filters}
           onChange={setFilters}
@@ -198,6 +241,8 @@ export default function EventLogbookPage() {
           missions={missions}
         />
         <EventLogbookTable data={data} loading={loading} showPilot={!scoped} isDark={isDark} highlightId={highlightId} onView={openEvent} canAddMedia={canReport} onMediaAdded={() => fetchData(filters)} />
+        </>
+        )}
       </div>
 
       <EventDetailDialog eventId={eventId} onClose={closeEvent} onChanged={() => fetchData(filters)} isDark={isDark} detailUrl={staffDetailUrl} canAddMedia={canReport} />
@@ -220,6 +265,17 @@ export default function EventLogbookPage() {
       />
 
       {canConfigure && <EventWebhookSettings open={webhooksOpen} onOpenChange={setWebhooksOpen} />}
+      {canConfigure && (
+        <AiStreamSettings
+          open={streamsOpen}
+          isDark={isDark}
+          onOpenChange={(v) => {
+            setStreamsOpen(v);
+            // Linked / Not linked is derived from the mappings.
+            if (!v) setAiRefresh((k) => k + 1);
+          }}
+        />
+      )}
       {canConfigure && (
         <EventTypeSettings
           open={typesOpen}

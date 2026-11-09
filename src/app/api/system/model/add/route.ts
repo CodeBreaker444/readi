@@ -8,9 +8,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
 const ModelSchema = z.object({
-  model_code: z.string().min(1, "Model code is required"),
-  model_name: z.string().min(1, "Model name is required"),
-  manufacturer: z.string().min(1, "Manufacturer is required"),
+  model_code: z.string().max(50).min(1, "Model code is required"),
+  model_name: z.string().max(255).min(1, "Model name is required"),
+  manufacturer: z.string().max(255).min(1, "Manufacturer is required"),
   model_type: z.string().optional().nullable(),
   specifications: z.string().optional(),
   max_flight_time: z.number().nonnegative("Max flight time cannot be negative").optional(),

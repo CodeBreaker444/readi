@@ -33,7 +33,9 @@ export interface FilterParams {
 export interface ClientOption {
   client_id: number;
   client_name: string;
-  client_code?: string;  
+  client_code?: string;
+  not_activated?: boolean;
+  client_active?: string | null;
 }
 
 export interface PilotOption {
@@ -203,4 +205,4 @@ export interface BatterySystemOption {
   tool_id: number;
   tool_code: string;
   tool_desc: string;
-}
+}

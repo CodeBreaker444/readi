@@ -31,8 +31,8 @@ const listOperationsQuerySchema = z.object({
   group_label: z.string().optional(),
 });
 const createOperationSchema = z.object({
-  mission_name: z.string().nullable().optional(),
-  mission_code: z.string().min(1),
+  mission_name: z.string().max(255).nullable().optional(),
+  mission_code: z.string().max(50).min(1),
   status_name: z.enum(['PLANNED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'ABORTED']),
   mission_description: z.string().nullable().optional(),
   scheduled_start: z.string().refine(

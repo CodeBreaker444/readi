@@ -1,5 +1,6 @@
 'use client';
 
+import { clientStatusText, isClientInactive } from '@/components/client/ClientStatusTag';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -45,7 +46,7 @@ export function EventTypeSettings({ open, onOpenChange, isDark = false }: Props)
   const { t } = useTranslation();
   const n = (key: string, opts?: Record<string, unknown>) => t(`logbooks.eventLogbook.typeSettings.${key}`, opts);
   const { types, clients, loading } = useEventTypes();
-  const clientItems = useMemo<PagedSelectItem[]>(() => clients.map((c) => ({ value: String(c.client_id), label: c.client_name })), [clients]);
+  const clientItems = useMemo<PagedSelectItem[]>(() => clients.map((c) => ({ value: String(c.client_id), label: c.client_name + clientStatusText(t, c.client_active), disabled: isClientInactive(c.client_active) })), [clients]);
 
   const [form, setForm] = useState<FormState | null>(null);
   const [search, setSearch] = useState('');

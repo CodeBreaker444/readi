@@ -1,5 +1,15 @@
 'use client';
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -120,6 +130,7 @@ export function ClientFormModal({ isOpen, onClose, mode, clientData, onSubmit, i
   const usernameTouched = useRef(false);
   const [portalEmail, setPortalEmail] = useState('');
   const [portalBusy, setPortalBusy] = useState<'save' | 'reset' | null>(null);
+  const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
 
   const makePassword = () =>
     Array.from(crypto.getRandomValues(new Uint8Array(12)))
@@ -450,12 +461,26 @@ export function ClientFormModal({ isOpen, onClose, mode, clientData, onSubmit, i
                   Save Portal User
                 </Button>
                 <Button type="button" variant="outline" size="sm" disabled={portalBusy !== null}
-                  onClick={() => { if (window.confirm('Generate a new password and email it to the client?')) savePortalUser(true); }}
+                  onClick={() => setResetConfirmOpen(true)}
                   className={isDark ? 'border-slate-600 text-slate-300 hover:bg-slate-700' : ''}>
                   {portalBusy === 'reset' ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : <RefreshCw size={13} className="mr-1" />}
                   Reset Password
                 </Button>
               </div>
+              <AlertDialog open={resetConfirmOpen} onOpenChange={setResetConfirmOpen}>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Reset password?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      A new password will be generated and emailed to the client.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={() => savePortalUser(true)}>Reset Password</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </div>
           )}
 

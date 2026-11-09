@@ -7,7 +7,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import z from 'zod'
 
 const locationSchema = z.object({
-  name: z.string().min(1),
+  name: z.string().max(255).min(1),
   lat: z.number().nullable().optional(),
   lng: z.number().nullable().optional(),
 })

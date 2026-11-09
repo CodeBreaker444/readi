@@ -6,7 +6,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
 const postSchema = z.object({
-  checklist_code: z.string().min(1),
+  checklist_code: z.string().max(50).min(1),
   checklist_data: z.record(z.string(), z.unknown()),
   evaluation_id: z.coerce.number().int().positive(),
   task_id: z.coerce.number().int().positive(),

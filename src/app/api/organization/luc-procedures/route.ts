@@ -42,13 +42,13 @@ export async function GET(request: NextRequest) {
 }
 
 const createSchema = z.object({
-    procedure_code: z.string().min(1, 'Code is required'),
-    procedure_name: z.string().min(1, 'Name is required'),
+    procedure_code: z.string().max(50).min(1, 'Code is required'),
+    procedure_name: z.string().max(255).min(1, 'Name is required'),
     procedure_status: z.enum(['EVALUATION', 'PLANNING', 'MISSION']),
     procedure_description: z.string().optional(),
-    procedure_version: z.string().optional(),
+    procedure_version: z.string().max(20).optional(),
     procedure_active: z.enum(['Y', 'N']).optional(),
-    procedure_sector: z.string().optional(),
+    procedure_sector: z.string().max(50).optional(),
     procedure_steps: z.any().optional(),
     effective_date: zDateString().optional(),
     review_date: zDateString().optional(),

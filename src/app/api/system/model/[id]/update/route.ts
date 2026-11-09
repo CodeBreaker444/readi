@@ -7,9 +7,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
 const schema = z.object({
-  manufacturer:    z.string().min(1),
-  model_code:      z.string().min(1),
-  model_name:      z.string().min(1),
+  manufacturer:    z.string().max(255).min(1),
+  model_code:      z.string().max(50).min(1),
+  model_name:      z.string().max(255).min(1),
   model_type:      z.string().optional().nullable(),
   max_flight_time: z.number().nonnegative("Max flight time cannot be negative").optional().nullable(),
   max_speed:       z.number().nonnegative("Max speed cannot be negative").optional().nullable(),

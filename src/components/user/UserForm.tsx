@@ -1,5 +1,6 @@
 'use client';
 
+import { ClientStatusTag, isClientInactive } from '@/components/client/ClientStatusTag';
 import { useAuthorization } from '@/components/authorization/AuthorizationProvider';
 import {
   Breadcrumb,
@@ -140,7 +141,7 @@ function SectionCard({
 }
 
 interface UserFormProps {
-  clients: { client_id: number; client_name: string }[];
+  clients: { client_id: number; client_name: string; client_active?: string | null; is_pending?: boolean }[];
   owners?: { owner_id: number; owner_name: string }[];
   isSuperAdmin?: boolean;
   mode: 'add' | 'edit';
@@ -719,8 +720,8 @@ export function UserForm({
                   <SelectContent>
                     <SelectItem value="0">Select a Client</SelectItem>
                     {clients.map((client) => (
-                      <SelectItem key={client.client_id} value={client.client_id.toString()}>
-                        {client.client_name}
+                      <SelectItem key={client.client_id} value={client.client_id.toString()} disabled={isClientInactive(client.client_active)}>
+                        {client.client_name}<ClientStatusTag clientActive={client.client_active} notActivated={client.is_pending} />
                       </SelectItem>
                     ))}
                   </SelectContent>

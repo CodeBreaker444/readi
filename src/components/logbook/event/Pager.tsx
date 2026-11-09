@@ -11,12 +11,13 @@ interface Props {
   count: number;
   total: number;
   onPage: (page: number) => void;
+  pageSize?: number;
 }
 
 /** Previous / next pager; renders nothing when everything fits on one page. */
-export function Pager({ page, count, total, onPage }: Props) {
+export function Pager({ page, count, total, onPage, pageSize = EVENT_TYPE_PAGE_SIZE }: Props) {
   const { t } = useTranslation();
-  if (total <= EVENT_TYPE_PAGE_SIZE) return null;
+  if (total <= pageSize) return null;
   return (
     <div className="flex items-center justify-between gap-2 border-t border-slate-200 pt-2 text-xs text-slate-500 dark:border-slate-700 dark:text-slate-400">
       <Button type="button" size="sm" variant="ghost" className="h-7 gap-1 px-2" disabled={page === 0} onClick={() => onPage(page - 1)}>

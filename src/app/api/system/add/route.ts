@@ -9,7 +9,7 @@ import { z } from 'zod';
 
 const toolSchema = z.object({
   tool_code: z.string({ error: 'System code is required' }).trim().min(1, 'System code is required').max(50),
-  tool_name: z.string().optional(),
+  tool_name: z.string().max(255).optional(),
   tool_description: z.string().optional().nullable(),
   tool_active: z.string().default('Y'),
   tool_status: z.enum(['OPERATIONAL', 'NOT_OPERATIONAL', 'MAINTENANCE', 'DISMISSED']).default('OPERATIONAL'),

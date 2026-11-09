@@ -7,14 +7,14 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 const schema = z.object({
-    planning_id: z.number(),
-    fk_evaluation_id: z.number(),
-    fk_client_id: z.number().optional(),
-    planning_status: z.string(),
-    planning_result: z.string().optional(),
+    planning_id: z.number().int(),
+    fk_evaluation_id: z.number().int(),
+    fk_client_id: z.number().int().optional(),
+    planning_status: z.string().max(50),
+    planning_result: z.string().max(50).optional(),
     planning_request_date: z.string().default(""),
     planning_desc: z.string().default(""),
-    planning_type: z.string().default(""),
+    planning_type: z.string().max(50).default(""),
     planning_year: z.union([z.string(), z.number()]).optional(),
     planning_active: z.string().optional(),
 });

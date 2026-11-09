@@ -46,6 +46,7 @@ interface FilterOption {
     id: number;
     name: string;
     active: boolean;
+    not_activated?: boolean;
 }
 
 interface Filters {
@@ -440,4 +441,4 @@ const MissionTemplateDashboard: React.FC<MissionTemplateDashboardProps> = ({
     );
 };
 
-export default MissionTemplateDashboard;
+export default MissionTemplateDashboard;

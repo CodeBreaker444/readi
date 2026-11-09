@@ -1,3 +1,4 @@
+import { clientLoginActivation, isClientNotActivated } from '@/backend/services/client/client-service';
 import { seedLucProcedureProgressFromSteps } from '@/backend/services/operation/luc-procedure-progress';
 import { assertMissionEditable, assertDFlightAuthorized, assertOpmApproved } from '@/backend/services/operation/mission-lock';
 import { AttachmentUploadResponse, CreateOperationSchema, ListOperationsQuerySchema, Operation, OperationAttachment, OperationsListResponse, UpdateOperationSchema } from '@/config/types/operation';
@@ -736,7 +737,12 @@ export async function uploadOperationAttachment(
   });
 
   const presignedDownloadUrl = await getPresignedDownloadUrl(key);
-  return { attachment: data as unknown as OperationAttachment, presignedDownloadUrl };
+  return { attachment: serializeOperationAttachment(data), presignedDownloadUrl };
+}
+
+// file_size is BigInt in Prisma, which JSON.stringify cannot serialize.
+function serializeOperationAttachment<T extends { file_size: bigint | null }>(row: T): OperationAttachment {
+  return { ...row, file_size: row.file_size != null ? Number(row.file_size) : null } as unknown as OperationAttachment;
 }
 
 export async function listOperationAttachments(
@@ -747,7 +753,7 @@ export async function listOperationAttachments(
     orderBy: { uploaded_at: 'desc' },
   });
 
-  return data as unknown as OperationAttachment[];
+  return data.map(serializeOperationAttachment);
 }
 
 export async function fetchOperationAttachment(attId: number, opId: number) {
@@ -1024,11 +1030,12 @@ export async function getMissionGroupLabelOptions(ownerId: number) {
 }
 
 export async function getClientOptions(ownerId: number) {
-  return prisma.client.findMany({
-    where: { fk_owner_id: ownerId, client_active: 'Y' },
+  const rows = await prisma.client.findMany({
+    where: { fk_owner_id: ownerId },
     orderBy: { client_name: 'asc' },
-    select: { client_id: true, client_name: true },
+    select: { client_id: true, client_name: true, client_active: true, ...clientLoginActivation },
   });
+  return rows.map(({ users, ...c }) => ({ ...c, not_activated: isClientNotActivated({ users }) }));
 }
 
 export async function getPlanningOptions(ownerId: number) {
@@ -1059,4 +1066,4 @@ export async function getLucProcedureOptions(ownerId: number) {
     orderBy: { procedure_name: 'asc' },
     select: { procedure_id: true, procedure_name: true, procedure_code: true, procedure_steps: true },
   });
-}
+}

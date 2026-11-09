@@ -1,3 +1,4 @@
+import { clientLoginActivation, isClientNotActivated } from '@/backend/services/client/client-service';
 import { prisma } from '@/lib/prisma';
 import { Client, Evaluation, EvaluationFile, LucProcedure } from '@/config/types/evaluation';
 import { deleteFileFromS3 } from '@/lib/s3Client';
@@ -126,12 +127,12 @@ export async function deleteEvaluationFile(
 
 export async function getClientList(ownerId: number): Promise<Client[]> {
   const data = await prisma.client.findMany({
-    where: { fk_owner_id: ownerId, client_active: 'Y' },
+    where: { fk_owner_id: ownerId },
     orderBy: { client_name: 'asc' },
-    select: { client_id: true, client_name: true, client_code: true },
+    select: { client_id: true, client_name: true, client_code: true, client_active: true, ...clientLoginActivation },
   });
 
-  return data as unknown as Client[];
+  return data.map(({ users, ...c }) => ({ ...c, not_activated: isClientNotActivated({ users }) })) as unknown as Client[];
 }
 
 export async function getLucProcedureList(

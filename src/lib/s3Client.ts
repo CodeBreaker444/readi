@@ -2,6 +2,7 @@ import { env } from '@/backend/config/env';
 import {
   DeleteObjectCommand,
   GetObjectCommand,
+  HeadObjectCommand,
   PutObjectCommand,
   S3Client,
 } from '@aws-sdk/client-s3';
@@ -130,6 +131,17 @@ export async function putBufferToS3(key: string, body: Buffer, contentType: stri
 
 export async function deleteFileFromS3(key: string): Promise<void> {
   await getS3().send(new DeleteObjectCommand({ Bucket: BUCKET, Key: key }));
+}
+
+
+/** False only when S3 says the object is missing  */
+export async function s3ObjectExists(key: string): Promise<boolean> {
+  try {
+    await getS3().send(new HeadObjectCommand({ Bucket: BUCKET, Key: key }));
+    return true;
+  } catch (err: any) {
+    return !(err?.name === 'NotFound' || err?.$metadata?.httpStatusCode === 404);
+  }
 }
 
 

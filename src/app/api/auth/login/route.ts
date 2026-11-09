@@ -115,6 +115,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: true, redirect: '/auth/change-password' });
     }
 
+    cookieStore.delete('force_pw_change');
+
     return NextResponse.json({
       success: true,
       message: 'Login successful',

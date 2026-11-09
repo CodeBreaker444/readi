@@ -25,7 +25,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
-interface Client        { client_id: number; client_name: string; client_code: string }
+interface Client        { client_id: number; client_name: string; client_code: string; not_activated?: boolean; client_active?: string | null }
 interface DroneSystem   {
     tool_id: number; tool_code: string; tool_name: string;
     in_maintenance?: boolean; maintenance_due?: boolean;

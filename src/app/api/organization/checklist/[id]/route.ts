@@ -3,6 +3,8 @@ import type { ChecklistUpdatePayload } from '@/config/types/checklist'
 import { requireFeatureAccess, requirePermission } from '@/lib/auth/api-auth'
 import { NextRequest, NextResponse } from 'next/server'
 import z from 'zod'
+import { zodError } from '@/lib/api-error'
+import { E } from '@/lib/error-codes'
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
@@ -21,9 +23,9 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
 }
 
 const checklistSchema = z.object({
-    checklist_code: z.string().min(1, 'Checklist code is required'),
+    checklist_code: z.string().max(50).min(1, 'Checklist code is required'),
     checklist_desc: z.string().min(1, 'Checklist description is required'),
-    checklist_ver: z.string().optional(),
+    checklist_ver: z.string().refine((v) => v === '' || (Number.isFinite(Number(v)) && Number(v) >= 0 && Number(v) < 1000), 'must be a number between 0 and 999.99').optional(),
     checklist_active: z.enum(['Y', 'N']).optional(),
     checklist_json: z.string().optional(),
 })
@@ -51,10 +53,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
         const validatedBody = checklistSchema.safeParse(body)
         if (!validatedBody.success) {
-            return NextResponse.json(
-                { code: 0, message: 'Invalid checklist data', dataRows: 0, data: null },
-                { status: 400 }
-            )
+            return zodError(E.VL001, validatedBody.error)
         }
 
         const result = await updateChecklist(

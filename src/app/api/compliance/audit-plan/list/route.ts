@@ -8,7 +8,7 @@ import { apiError, internalError, zodError } from '@/lib/api-error';
 import { E } from '@/lib/error-codes';
 
 const QuerySchema = z.object({
-    requirement_type: z.string().optional(),
+    requirement_type: z.string().max(50).optional(),
     requirement_status: z
         .enum(['COMPLIANT', 'PARTIAL', 'NON_COMPLIANT', 'NOT_APPLICABLE'])
         .optional(),

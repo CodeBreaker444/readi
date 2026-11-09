@@ -130,6 +130,8 @@ export function FlytbaseFlights({ isActive = true, selectedOrganization, listCon
     if (isActive && selectedOrganization) {
       setPage(1);
       fetchFlights(window, filterMode, 1);
+    } else if (!selectedOrganization) {
+      setLoading(false);
     }
   }, [fetchFlights, window, filterMode, isActive, selectedOrganization]);
 

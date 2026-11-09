@@ -1,3 +1,4 @@
+import { clientLoginActivation, isClientNotActivated } from '@/backend/services/client/client-service';
 import { parseGutmaFlightData } from '@/backend/services/integrations/gutma-parser';
 import { readToolLocation } from '@/lib/btf/location';
 import { prisma } from '@/lib/prisma';
@@ -527,11 +528,12 @@ export async function importMissionFromLog(
 
 
 export async function importClinets(ownerId: number) {
-  return prisma.client.findMany({
-    where: { fk_owner_id: ownerId, client_active: 'Y' },
+  const rows = await prisma.client.findMany({
+    where: { fk_owner_id: ownerId },
     orderBy: { client_name: 'asc' },
-    select: { client_id: true, client_name: true, client_code: true },
+    select: { client_id: true, client_name: true, client_code: true, client_active: true, ...clientLoginActivation },
   });
+  return rows.map(({ users, ...c }) => ({ ...c, not_activated: isClientNotActivated({ users }) }));
 }
 
 export async function importDrones(ownerId: number, clientId?: number) {
@@ -672,4 +674,4 @@ export async function importPilots(ownerId: number) {
     orderBy: { first_name: 'asc' },
     select: { user_id: true, first_name: true, last_name: true, department: true },
   });
-}
+}
