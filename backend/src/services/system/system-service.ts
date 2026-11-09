@@ -753,20 +753,7 @@ export async function addModel(modelData: any) {
   const negativeSpec = findNegativeModelSpec(modelData.technical_specs);
   if (negativeSpec) return { code: 0, message: negativeSpec };
 
-  const normalizedCode = typeof modelData.factory_serie === 'string'
-    ? modelData.factory_serie.trim()
-    : '';
-
-  if (normalizedCode) {
-    const duplicate = await prisma.tool_model.findFirst({
-      where: { model_code: { equals: normalizedCode, mode: 'insensitive' } },
-      select: { model_id: true },
-    });
-
-    if (duplicate) {
-      return { code: 0, message: `Model code "${normalizedCode}" already exists.` };
-    }
-  }
+ 
 
   const specsWithOwner = {
     ...(modelData.technical_specs || {}),
@@ -792,23 +779,6 @@ export async function updateModel(modelId: number, modelData: any) {
   const negativeSpec = findNegativeModelSpec(modelData);
   if (negativeSpec) return { code: 0, message: negativeSpec };
 
-  const normalizedCode = typeof modelData.model_code === 'string'
-    ? modelData.model_code.trim()
-    : '';
-
-  if (normalizedCode) {
-    const duplicate = await prisma.tool_model.findFirst({
-      where: {
-        model_code: { equals: normalizedCode, mode: 'insensitive' },
-        model_id: { not: modelId },
-      },
-      select: { model_id: true },
-    });
-
-    if (duplicate) {
-      return { code: 0, message: `Model code "${normalizedCode}" already exists.` };
-    }
-  }
 
   const existing = await prisma.tool_model.findUnique({
     where: { model_id: modelId },
