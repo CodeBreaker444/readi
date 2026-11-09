@@ -1133,24 +1133,6 @@ export async function addComponent(componentData: any, ownerId: number) {
     }
   }
 
-  const normalizedCode = typeof componentData.component_code === 'string'
-    ? componentData.component_code.trim()
-    : '';
-
-  if (normalizedCode) {
-    const duplicateCode = await prisma.tool_component.findFirst({
-      where: {
-        component_code: { equals: normalizedCode, mode: 'insensitive' },
-        tool: { fk_owner_id: ownerId },
-      },
-      select: { component_id: true },
-    });
-
-    if (duplicateCode) {
-      return { code: 0, message: `Component code "${normalizedCode}" already exists.` };
-    }
-  }
-
   let maintenanceCycle: string | null = null;
   let maintenanceCycleHour: number | null = null;
   let maintenanceCycleDay: number | null = null;
@@ -1357,25 +1339,6 @@ export async function updateComponent(componentId: number, componentData: any, o
 
     if (duplicate) {
       return { code: 0, message: `Component serial number "${normalizedSerial}" already exists.` };
-    }
-  }
-
-  const normalizedCode = typeof componentData.component_code === 'string'
-    ? componentData.component_code.trim()
-    : '';
-
-  if (normalizedCode) {
-    const duplicateCode = await prisma.tool_component.findFirst({
-      where: {
-        component_code: { equals: normalizedCode, mode: 'insensitive' },
-        component_id: { not: componentId },
-        tool: { fk_owner_id: ownerId },
-      },
-      select: { component_id: true },
-    });
-
-    if (duplicateCode) {
-      return { code: 0, message: `Component code "${normalizedCode}" already exists.` };
     }
   }
 
