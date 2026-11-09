@@ -1,0 +1,208 @@
+---
+title: "Slot Booking"
+description: "Open time slots for pilots, let them request a slot, and approve one pilot per slot with an optional PDF."
+---
+
+Slot Booking lets the **Operations Manager (OPM)** open time slots and lets **pilots (PIC)** request them. The OPM then decides which pilot gets each slot. It is in the sidebar under **Operations → Slot Booking**.
+
+| Page | Who sees it | Purpose |
+|---|---|---|
+| **Slot Booking** | Everyone | OPM: create and manage slot groups. Pilot: browse groups and request slots |
+| **Approved Slots** | Everyone | Approved jobs and the PDF the OPM attached. Pilots see their own, the OPM sees all |
+| **Audit Log** | OPM, Admin, Super Admin | Every change to groups, slots and bookings |
+
+---
+
+## Who can do what
+
+| Role | What they can do |
+|---|---|
+| **OPM, Admin, Super Admin** | Create and delete slot groups, edit slots, approve or reject requests, set the company defaults, see every pilot's requests and the audit log |
+| **PIC (pilot)** | Browse slot groups, request and cancel their own slots, see their own approved slots |
+| **Other roles with Operations access** | Browse the calendars only. They cannot request slots |
+
+---
+
+## Key terms
+
+- **Slot group:** the container the OPM creates. It holds the rules (hours, dates, blocking, approval days) and all the slots made from them.
+- **Slot:** one time block inside a group, for example `06:00–14:00`.
+- **Request:** a pilot asking for a slot. It starts as **Pending Approval**.
+
+---
+
+## For the OPM
+
+### Create a slot group
+
+Click **New Slot Group**. The form is pre-filled from **Slot Settings** (your company defaults) and you can change anything for this group.
+
+| Setting | Options |
+|---|---|
+| **Slot hours** | **Hourly blocks** (1-hour slots inside a start/end window you choose) or **Shift blocks** (`06:00–14:00`, `14:00–22:00`, `22:00–06:00`) |
+| **Date range** | A single day, a full week, or two weeks, from a start date that is today or later |
+| **Slot blocking** | Off (default): several pilots can request the same slot and you choose one. On: only one pilot per slot, the first request locks it |
+| **Approval day(s)** | The weekdays on which you review requests for this group |
+
+**Group names must be unique.** A new group cannot reuse the name of an existing group in your company. Upper and lower case and extra spaces are ignored, so `Week 1` and ` week 1 ` count as the same name. If the name is taken, the form shows *A slot group with this name already exists* and **Next: Calendar** stays disabled. The system also refuses it on publish, even if someone else creates the same name at the same moment.
+
+Click **Next: Calendar**. Every slot starts active. Click a slot, or **Deactivate day**, to switch things off, then **Publish calendar**. Pilots can request the slots as soon as it is published.
+
+### Duplicate slot warning
+
+When you publish, Readi checks whether any selected date already has slots (from any of your groups). If so, you see:
+
+> Warning: Slots already exist for one or more selected dates in this range. Do you wish to merge, overwrite, or cancel?
+
+| Choice | Result |
+|---|---|
+| **Merge** | Keeps the existing slots and adds only time blocks that do not exist yet on those dates |
+| **Overwrite** | Deletes the existing slots on those dates. Their bookings are cancelled and the pilots receive a [warning](#warnings) |
+| **Cancel** | Nothing is published |
+
+### Watch the bookings
+
+Open a group's calendar. Each slot shows a live indicator:
+
+- **Open:** no requests yet
+- **2 PICs Booked:** requests waiting for your decision
+- **Approved:** a pilot has been chosen
+
+On an approval day of a group with waiting requests, the page also shows a **Today is an approval day** banner.
+
+### Approve or reject
+
+Click a slot to see the pilots who requested it.
+
+- **Approve:** optionally attach a **PDF** (clearance sheet, dispatch brief, authorization form; PDF only, up to 10 MB), then confirm. The slot becomes Approved, the pilot is emailed with the PDF attached, and it appears on the pilot's **Approved Slots** page.
+- **Reject:** add an optional reason. The pilot is told by email and in-app.
+
+You can decide on any day. If today is not one of the group's approval days, the dialog only reminds you of the scheduled days.
+
+### Edit a published slot
+
+Click **Edit slot** to change its start and end time, or close it for booking. A **reason is required**. The change is written to the audit log and pilots who already requested that slot are notified. Two slots on the same date cannot share the same time window.
+
+### Delete a slot group
+
+Click the bin icon on a group card. A confirmation dialog appears; if pilots have pending or approved requests in the group, it tells you how many requests will be cancelled. Confirm with **Delete group**. This removes the group, all its slots and all requests made in it, and cannot be undone.
+
+If pilots had **pending or approved** requests in the group, each of them gets a **Slot group deleted** [warning](#warnings) listing the slots that were cancelled, for example:
+
+> The slot group “Week 46 — Field Ops” was deleted by the OPM. Your 2 slot requests in it were cancelled: Tue, 10 Nov 2026 06:00–14:00; Wed, 11 Nov 2026 14:00–22:00 (approved).
+
+- A pilot gets **one** warning for the whole group, however many slots they had requested.
+- Approved slots are marked *(approved)* in the list, so the pilot knows an assignment they were counting on is gone.
+- Requests that were already rejected are not mentioned, and pilots who never requested a slot in the group are not notified.
+- The deletion is written to the [audit log](#audit-log) with the number of requests removed and the pilots who were warned.
+
+### Slot Settings
+
+**Slot Settings** holds your company defaults: slot hours, date range, blocking and approval days. They only pre-fill new groups. Existing groups are not changed.
+
+---
+
+## For pilots
+
+1. Open **Slot Booking**. All slot groups of your company are listed, and you can search them by name.
+2. Click a group to see its calendar of open slots.
+3. Click an open slot and confirm **Request slot**.
+4. Your request is **Pending Approval**. A message confirms it, for example: *Booking requested. Please wait for OPM approval. Scheduled review day: Thursday.*
+
+On the calendar your own slots show as **Pending** (amber) or **Approved** (green). Slots that are closed, in the past, or already given to someone else are greyed out.
+
+### My requests
+
+Below the group list, **My requests** shows every slot you have asked for, in a table with filters for **date**, **slot group** and **status**, a search box and pagination (8 per page). You can **cancel** a request while it is still pending: a confirmation dialog asks you to confirm first (**Cancel request**, or **Keep request** to leave it as it is). For approved requests the attached PDF is a link in the **Details** column. For rejected requests the OPM's reason is shown there.
+
+---
+
+## When two pilots request the same slot
+
+What happens depends on the group's **blocking** setting.
+
+### Unblocked group (default)
+
+Both requests are accepted and both are **Pending Approval**. Neither pilot is told they are competing: each one sees only their own request, and the slot stays **Open** for others.
+
+1. The OPM sees **2 PICs Booked** on the slot and opens it to compare the requests.
+2. The OPM approves **one** pilot (optionally with a PDF).
+3. The slot becomes Approved and **every other pending request on that slot is declined automatically**, with the note *Another pilot was selected*. Those pilots receive a "Slot request declined" notification and email.
+4. For everyone else the slot now shows **Taken**. Nobody can approve a second pilot for it, and nobody can request it any more.
+
+### Blocked group
+
+The **first request wins**. As soon as one pilot has a live request on the slot, it shows **Taken** for everyone else and the second pilot cannot request it.
+
+- If both click at the very same moment, the system handles the requests one after the other, so exactly one succeeds. The other pilot sees *This slot is already taken* and the calendar refreshes.
+- The slot becomes free again if the first request is **rejected** by the OPM or **cancelled** by the pilot.
+
+### Other cases
+
+| Situation | What the pilot sees |
+|---|---|
+| The same pilot requests the slot twice | *You already requested this slot* |
+| A pilot requests a slot after the OPM approved someone else | *This slot has already been assigned* |
+| A pilot requests a slot the OPM has just closed | *This slot is not open* |
+| A pilot requests a slot from a past date | *This slot is in the past* |
+
+If the calendar was open and out of date when the pilot clicked, the request is refused with one of these messages and the calendar reloads with the current state.
+
+---
+
+## Notifications
+
+Every notification is created **in-app** (the bell icon) and sent **by email**.
+
+| When | Who is notified |
+|---|---|
+| A pilot requests a slot | The OPM (*New slot request*) and the pilot (*Booking requested, pending approval*, with the review day) |
+| The OPM approves | The pilot (*Slot approved*, with the PDF attached if there is one) |
+| The OPM approves someone else | The other pilots on that slot (*Slot request declined*) |
+| The OPM rejects | The pilot (*Slot request rejected*, with the reason) |
+| The OPM edits a slot | Pilots with a live request on it |
+| A group is deleted | Pilots with pending or approved requests in it (**warning**: *Slot group deleted*) |
+| A group's dates are overwritten | Pilots whose requests were cancelled by it (**warning**: *Slot booking cancelled*) |
+| It is an approval day and requests are waiting | The OPM (*Slot approval day reminder*) |
+
+### Warnings
+
+Notifications that tell a pilot something they were counting on has been cancelled, such as a deleted group, are sent as **warnings**. They are shown like the maintenance alerts, so they are hard to miss:
+
+- **Pop-up at the top right.** Within about 10 seconds, while the pilot is using Readi, an amber card appears in the top right corner: *New Slot Warning alert*, with the start of the message. It disappears after 5 seconds, or when dismissed. Clicking it opens the Notifications page on the **Slot Booking** tab.
+- **In the notification bell.** The entry has an amber **Slot Warning** label and the full message, and counts as unread until opened. Clicking it opens Slot Booking.
+- **On the Notifications page.** Warnings are listed in the **Slot Booking** tab together with the other slot notifications (they use the type `SLOT_WARNING`; normal slot notifications use `SLOT_BOOKING`).
+- **By email**, with the same text, unless the company's daily email limit has been reached.
+
+A pilot who is not logged in when the group is deleted sees the warning, still unread, the next time they open Readi.
+
+Notes:
+
+- The approval-day reminder is sent by a daily job at 06:00 UTC, only for groups that have an approval day matching today and at least one pending request. See [Cron Jobs](/docs/business-logic/cron-jobs).
+- Emails count toward the company's **daily email limit**. When the limit is reached, the email is skipped but the in-app notification is still created. See [Email Notifications](/docs/business-logic/email-notifications).
+- Notification texts are sent in English.
+
+---
+
+## Audit log
+
+Every change is recorded: groups created or deleted, slots edited, requests made or cancelled, and approvals and rejections (with the reason, the attached file name and the pilots who were declined automatically).
+
+- **Slot Booking → Audit Log** shows these entries in a table with filters for event, section and date. Click a row to see the details, such as the before and after values of an edit. Each group's calendar page also shows the log filtered to that group.
+- The same entries appear on the main [Audit Logs](/docs/records/audit-logs) page under the sections **slot group**, **slot** and **slot booking**.
+
+---
+
+## Language
+
+The Slot Booking screens follow the language you choose in Readi (English, German or Italian), including dates and weekday names. Notification emails and the descriptions stored in the audit log stay in English.
+
+---
+
+## Related
+
+- [Operations](/docs/modules/operations)
+- [Notifications](/docs/modules/notifications)
+- [Email Notifications](/docs/business-logic/email-notifications)
+- [Cron Jobs](/docs/business-logic/cron-jobs)
+- [Audit Logs](/docs/records/audit-logs)

@@ -23,6 +23,7 @@ Scheduled background jobs are defined in `vercel.json` and run as Vercel Cron Jo
 | `check-insurance-expiration` | `0 */6 * * *` | Every 6 hours (00:00, 06:00, 12:00, 18:00) |
 | `reset-email-counters` | `0 0 * * *` | Daily at 00:00 |
 | `check-training-expiration` | `0 6 * * *` | Daily at 06:00 |
+| `slot-approval-reminder` | `0 6 * * *` | Daily at 06:00 |
 
 Schedules are defined in `vercel.json` at the project root and are evaluated in UTC by Vercel Cron.
 
@@ -65,6 +66,12 @@ Schedules are defined in `vercel.json` at the project root and are evaluated in 
 - **Schedule:** `0 6 * * *` (daily, 06:00)
 - **Purpose:** Finds training/course certifications expiring within the configured reminder thresholds (30/14/7/3/1 days) per owner and sends training certification expiring emails.
 - **Sends email:** Yes, subject to `training_email_enabled` and the `training_certification_expiring` event config. As of the `trainer_user_id`/course-owner change, the course owner (`training.trainer_user_id`) is also notified in addition to the configured roles/users.
+
+### slot-approval-reminder
+
+- **Schedule:** `0 6 * * *` (daily, 06:00)
+- **Purpose:** Finds slot groups whose **approval days** include today's weekday (UTC) and that still have pending slot requests. For each company it sends one reminder listing the groups and the number of waiting requests to the company's OPMs (or to its admins if there is no OPM). Groups with no pending requests are skipped.
+- **Sends email:** Yes, and an in-app notification. The email is subject to the company's daily email limit; when the limit is reached the email is skipped but the in-app notification is still created. See [Slot Booking](/docs/modules/slot-booking).
 
 ---
 

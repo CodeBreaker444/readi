@@ -12,6 +12,8 @@ import { useTranslation } from 'react-i18next';
 import {
   HiOutlineAdjustments,
   HiOutlineBell,
+  HiOutlineCalendar,
+  HiOutlineExclamation,
   HiOutlineInformationCircle,
   HiOutlinePaperAirplane,
   HiOutlineUsers,
@@ -32,12 +34,15 @@ const CATEGORY_CONFIG: Record<string, CatConfig> = {
   MISSION:     { label: 'Mission',     icon: HiOutlinePaperAirplane,   bg: 'bg-blue-500/10',   text: 'text-blue-600',   dot: 'bg-blue-500',   tabKey: 'mission'      },
   GENERAL:     { label: 'General',     icon: HiOutlineBell,            bg: 'bg-slate-500/10',  text: 'text-slate-500',  dot: 'bg-slate-400',  tabKey: 'general'      },
   ASSIGNMENT:  { label: 'Assignment',  icon: HiOutlineUsers,           bg: 'bg-violet-500/10', text: 'text-violet-600', dot: 'bg-violet-500', tabKey: 'assignment'   },
+  SLOT_BOOKING: { label: 'Slot Booking', icon: HiOutlineCalendar,         bg: 'bg-sky-500/10',    text: 'text-sky-600',    dot: 'bg-sky-500',    tabKey: 'slot'         },
+  SLOT_WARNING: { label: 'Slot Warning', icon: HiOutlineExclamation,      bg: 'bg-amber-500/10',  text: 'text-amber-600',  dot: 'bg-amber-500',  tabKey: 'slot'         },
   OTHER:       { label: 'Other',       icon: HiOutlineInformationCircle, bg: 'bg-gray-500/10', text: 'text-gray-500',   dot: 'bg-gray-400',   tabKey: 'other'        },
 };
 
 function normalizeCategory(procedureName?: string): string {
   if (!procedureName) return 'GENERAL';
   const u = procedureName.toUpperCase().replace(/[\s\-]/g, '_');
+  if (u.includes('SLOT')) return u.includes('WARNING') ? 'SLOT_WARNING' : 'SLOT_BOOKING';
   if (u.includes('MAINTENANCE')) return 'MAINTENANCE';
   if (u.includes('MISSION'))     return 'MISSION';
   if (u.includes('ASSIGNMENT') || u.includes('ASSIGN')) return 'ASSIGNMENT';
