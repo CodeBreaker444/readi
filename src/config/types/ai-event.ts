@@ -17,6 +17,25 @@ export interface AiEventAction {
   created_at: string;
 }
 
+export type AiFeedbackType = 'false_positive' | 'false_negative';
+
+export interface AiFeedbackAttachment {
+  key: string;
+  name: string;
+  type: string;
+  size: number;
+  url: string | null;
+  download_url: string | null;
+}
+
+export interface AiEventFeedback {
+  feedback_type: AiFeedbackType;
+  comment: string | null;
+  attachments: AiFeedbackAttachment[];
+  user_email: string;
+  updated_at: string;
+}
+
 export interface AiEventItem {
   ai_event_id: number;
   event_type: string;
@@ -44,6 +63,8 @@ export interface AiEventItem {
   status: AiEventStatus;
   /** Acknowledge / resolve history, oldest first. */
   actions: AiEventAction[];
+  /** Detection feedback  */
+  feedback: AiEventFeedback | null;
   /** Super admin view only: the company that added this event's stream id; null when unclaimed. */
   company_name: string | null;
   /** Super admin view only. */
