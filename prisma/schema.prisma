@@ -3527,3 +3527,19 @@ enum one_time_token_type {
 
   @@schema("auth")
 }
+
+/// Cached OpenWeatherMap map tiles. Served to all users; refreshed by the refresh-weather-tiles cron.
+model weather_tile {
+  tile_id           Int      @id @default(autoincrement())
+  layer             String   @db.VarChar(20)
+  z                 Int      @db.SmallInt
+  x                 Int
+  y                 Int
+  data              Bytes
+  fetched_at        DateTime @default(now()) @db.Timestamptz(6)
+  last_requested_at DateTime @default(now()) @db.Timestamptz(6)
+
+  @@unique([layer, z, x, y], map: "uq_weather_tile")
+  @@index([last_requested_at], map: "idx_weather_tile_last_requested")
+  @@schema("public")
+}

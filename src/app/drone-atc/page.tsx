@@ -41,7 +41,8 @@ interface StreamingResponse {
 }
 
 const FLIGHT_REFRESH_MS = 12000;
-const OWM_API_KEY = process.env.NEXT_PUBLIC_OWM_API_KEY ?? '';
+// tiles are served via our cached proxy.
+const OWM_ENABLED = process.env.NEXT_PUBLIC_OWM_ENABLED !== 'false';
 const COVERAGE_BOUNDS = { latMin: 35.5, lonMin: -9.5, latMax: 47.5, lonMax: 18.6 } as const;
 
 
@@ -371,7 +372,7 @@ export default function DroneATCPage() {
               layers={layers}
               onDroneClick={setSelectedDroneId}
               isDark={isDark}
-              owmApiKey={OWM_API_KEY}
+              owmEnabled={OWM_ENABLED}
               onBoundsChange={handleBoundsChange}
             />
           </div>
@@ -383,7 +384,7 @@ export default function DroneATCPage() {
             droneCount={droneList.length}
             dockCount={Object.keys(docks).length}
             aircraftCount={aircraft.length}
-            hasOwmKey={!!OWM_API_KEY}
+            hasOwmKey={OWM_ENABLED}
           />
 
           {layers.flights && (

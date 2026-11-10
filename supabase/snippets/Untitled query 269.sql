@@ -1,23 +1,13 @@
-
-ALTER TABLE public.maintenance_ticket_item
-  DROP CONSTRAINT IF EXISTS maintenance_ticket_item_fk_component_id_fkey,
-  ADD CONSTRAINT maintenance_ticket_item_fk_component_id_fkey
-    FOREIGN KEY (fk_component_id) REFERENCES public.tool_component (component_id)
-    ON DELETE SET NULL ON UPDATE NO ACTION;
-
--- Same problem would hit next on the ticket itself.
-DO $$
-DECLARE c text;
-BEGIN
-  SELECT conname INTO c FROM pg_constraint
-   WHERE conrelid = 'public.maintenance_ticket'::regclass
-     AND contype = 'f'
-     AND confrelid = 'public.tool_component'::regclass;
-  IF c IS NOT NULL THEN
-    EXECUTE format('ALTER TABLE public.maintenance_ticket DROP CONSTRAINT %I', c);
-  END IF;
-  ALTER TABLE public.maintenance_ticket
-    ADD CONSTRAINT maintenance_ticket_fk_component_id_fkey
-    FOREIGN KEY (fk_component_id) REFERENCES public.tool_component (component_id)
-    ON DELETE SET NULL ON UPDATE NO ACTION;
-END $$;
+CREATE TABLE IF NOT EXISTS public.weather_tile (
+  tile_id           SERIAL PRIMARY KEY,
+  layer             VARCHAR(20) NOT NULL,
+  z                 SMALLINT NOT NULL,
+  x                 INTEGER NOT NULL,
+  y                 INTEGER NOT NULL,
+  data              BYTEA NOT NULL,
+  fetched_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
+  last_requested_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  CONSTRAINT uq_weather_tile UNIQUE (layer, z, x, y)
+);
+CREATE INDEX IF NOT EXISTS idx_weather_tile_last_requested ON public.weather_tile (last_requested_at);
+ALTER TABLE public.weather_tile ENABLE ROW LEVEL SECURITY;
