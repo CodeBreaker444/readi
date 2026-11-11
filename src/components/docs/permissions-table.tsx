@@ -50,6 +50,36 @@ function accessFor(role: Role, key: FeatureKey): AccessLevel | null {
 const th = 'border border-fd-border px-2 py-1.5 text-center text-xs font-semibold whitespace-nowrap';
 const td = 'border border-fd-border px-2 py-1.5 text-center text-xs whitespace-nowrap';
 
+/** Plain-text version of the permissions table, used by the docs export (PDF / Markdown). */
+export function getPermissionsTableData(section: string | string[]): { headers: string[]; rows: string[][] } | null {
+  const names = Array.isArray(section) ? section : [section];
+  const features = FEATURE_SECTIONS.filter((s) => names.includes(s.section)).flatMap((s) => s.features);
+  if (features.length === 0) return null;
+  const headers = [
+    'Feature',
+    `${FULL_ACCESS_LABEL} †`,
+    ...MATRIX_ROLES.map(String),
+    ...LEGACY_ROLES.map((r) => `${r} †`),
+    'CLIENT †',
+    'Customisable',
+  ];
+  const rows = features.map((f) => [
+    f.label,
+    'R · W · D*',
+    ...MATRIX_ROLES.map((r) => cellFor(accessFor(r, f.key), f.key)),
+    ...LEGACY_ROLES.map((r) => cellFor(accessFor(r, f.key), f.key)),
+    '–',
+    MATRIX_ROLES.some((r) => accessFor(r, f.key)) ? 'Yes' : 'No',
+  ]);
+  return { headers, rows };
+}
+
+export const PERMISSIONS_LEGEND_TEXT = [
+  'R = read, W = write / edit, D = delete. – = no access.',
+  "* Delete also requires the user's Manager flag. ¹ Can add new records but cannot edit existing ones.",
+  '† Fixed, not editable: ADMIN, OPM and SUPERADMIN always have full access; RM and SLA follow built-in rules; CLIENT only uses the Client Portal. For the other roles, "Yes" means the access level can be switched in Team → Roles & Permissions.',
+];
+
 /**
  * Default read / write-edit / delete access per role for one or more permission sections.
  * Built from the same tables the platform enforces, so it cannot drift from the code.
