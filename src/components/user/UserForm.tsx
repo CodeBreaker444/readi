@@ -219,6 +219,8 @@ export function UserForm({
   const [ccExpanded, setCcExpanded] = useState(false);
   const [ccHasToken, setCcHasToken] = useState<boolean | null>(null);
   const [ccTokenName, setCcTokenName] = useState<string | null>(null);
+  const [ccOrgs, setCcOrgs] = useState<{ id: number; name: string; org_id: string }[]>([]);
+  const [ccRemovingOrgId, setCcRemovingOrgId] = useState<number | null>(null);
   const [ccTokenInput, setCcTokenInput] = useState('');
   const [ccOrgIdInput, setCcOrgIdInput] = useState('');
   const [ccNameInput, setCcNameInput] = useState('');
@@ -349,10 +351,38 @@ export function UserForm({
       const res = await axios.get(`/api/team/user/control-center-token?user_id=${userData.user_id}`);
       setCcHasToken(res.data.hasToken ?? false);
       setCcTokenName(res.data.tokenName ?? null);
+      setCcOrgs(res.data.organizations ?? []);
     } catch {
       setCcHasToken(false);
     }
   }, [mode, userData?.user_id]);
+
+  const handleCcOrgRemove = async (org: { id: number; name: string }) => {
+    if (!userData?.user_id) return;
+    try {
+      await requireAuthorization({
+        actionType: 'delete',
+        entityType: 'control_center_token',
+        entityId: `${userData.user_id}:${org.id}`,
+        label: `Remove Control Center org "${org.name}" from ${userData.fullname ?? `#${userData.user_id}`}`,
+      });
+    } catch {
+      return;
+    }
+
+    setCcRemovingOrgId(org.id);
+    try {
+      await axios.delete('/api/team/user/control-center-token', {
+        data: { user_id: userData.user_id, organization_id: org.id },
+      });
+      toast.success(`Removed ${org.name}`);
+      setCcOrgs((prev) => prev.filter((o) => o.id !== org.id));
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message ?? 'Failed to remove organization');
+    } finally {
+      setCcRemovingOrgId(null);
+    }
+  };
 
   useEffect(() => {
     if (ccExpanded) fetchCcStatus();
@@ -1067,6 +1097,43 @@ export function UserForm({
                     </div>
                   )}
 
+                  {ccHasToken !== null && (
+                    <div className="pt-3 space-y-2">
+                      <p className={`text-xs font-medium ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
+                        Assigned organizations ({ccOrgs.length})
+                      </p>
+                      {ccOrgs.length === 0 ? (
+                        <p className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                          No organization tokens assigned to this user.
+                        </p>
+                      ) : (
+                        <ul className="space-y-1.5">
+                          {ccOrgs.map((org) => (
+                            <li
+                              key={org.id}
+                              className={`flex items-center justify-between gap-2 rounded-md border px-3 py-2 text-xs ${isDark ? 'border-slate-700 bg-slate-800/40' : 'border-slate-200 bg-white'}`}
+                            >
+                              <div className="min-w-0">
+                                <div className={`font-medium truncate ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>{org.name}</div>
+                                <div className={`truncate ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{org.org_id}</div>
+                              </div>
+                              {['SUPERADMIN', 'ADMIN', 'OPM'].includes(sessionRole ?? '') && (
+                                <Button
+                                  type="button" variant="outline" size="sm"
+                                  disabled={ccRemovingOrgId === org.id}
+                                  className="h-7 text-xs shrink-0 border-red-400/40 text-red-500 hover:bg-red-500/10"
+                                  onClick={() => handleCcOrgRemove(org)}
+                                >
+                                  {ccRemovingOrgId === org.id ? 'Removing…' : 'Remove'}
+                                </Button>
+                              )}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  )}
+
                   {ccHasToken === true && !ccShowForm && (
                     <div className="pt-3 space-y-3">
                       <div className={`flex items-center gap-2 text-xs rounded-md px-3 py-2 ${isDark ? 'bg-emerald-900/20 text-emerald-400' : 'bg-emerald-50 text-emerald-700'}`}>
@@ -1074,9 +1141,6 @@ export function UserForm({
                         <span>Control Center token is linked{ccTokenName ? ` — ${ccTokenName}` : ''}</span>
                       </div>
                       <div className="flex gap-2">
-                        <Button type="button" variant="outline" size="sm" className="h-7 text-xs" onClick={() => setCcShowForm(true)}>
-                          Replace token
-                        </Button>
                         <Button
                           type="button" variant="outline" size="sm"
                           disabled={ccRemoving}
@@ -1084,96 +1148,6 @@ export function UserForm({
                           onClick={handleCcRemove}
                         >
                           {ccRemoving ? 'Removing…' : 'Remove'}
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-
-                  {(ccHasToken === false || ccShowForm) && ccStep !== 'confirmed' && ccStep !== 'saving' && (
-                    <div className="pt-3 space-y-3">
-                      <div className="space-y-1.5">
-                        <Label className="text-xs">Token Name <span className={`font-normal ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>(optional)</span></Label>
-                        <Input
-                          value={ccNameInput}
-                          onChange={(e) => setCcNameInput(e.target.value)}
-                          placeholder="e.g. Production"
-                          disabled={ccStep === 'verifying'}
-                          className={`h-8 text-sm ${isDark ? 'bg-slate-800 border-slate-700' : ''}`}
-                        />
-                      </div>
-                      <div className="space-y-1.5">
-                        <Label className="text-xs">API Token</Label>
-                        <div className="relative">
-                          <Input
-                            type={ccShowToken ? 'text' : 'password'}
-                            value={ccTokenInput}
-                            onChange={(e) => setCcTokenInput(e.target.value.trim())}
-                            placeholder="Paste Control Center long-lived API key"
-                            disabled={ccStep === 'verifying'}
-                            className={`h-8 text-sm pr-9 font-mono ${isDark ? 'bg-slate-800 border-slate-700' : ''}`}
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setCcShowToken((v) => !v)}
-                            className={`cursor-pointer absolute right-2.5 top-1/2 -translate-y-1/2 transition-colors hover:text-violet-500 ${isDark ? 'text-slate-400' : 'text-slate-400'}`}
-                          >
-                            {ccShowToken ? <EyeOff size={14} /> : <Eye size={14} />}
-                          </button>
-                        </div>
-                      </div>
-                      <div className="space-y-1.5">
-                        <Label className="text-xs">Organization ID</Label>
-                        <Input
-                          value={ccOrgIdInput}
-                          onChange={(e) => setCcOrgIdInput(e.target.value.trim())}
-                          placeholder="e.g. 684fbfd4c264f8f677beb444"
-                          disabled={ccStep === 'verifying'}
-                          className={`h-8 text-sm font-mono ${isDark ? 'bg-slate-800 border-slate-700' : ''}`}
-                        />
-                      </div>
-                      <div className="flex gap-2 pt-1">
-                        <Button
-                          type="button" size="sm"
-                          onClick={handleCcVerify}
-                          disabled={ccStep === 'verifying' || !ccTokenInput.trim() || !ccOrgIdInput.trim()}
-                          className="h-7 text-xs bg-violet-600 hover:bg-violet-500 text-white"
-                        >
-                          {ccStep === 'verifying'
-                            ? <><Loader2 size={12} className="animate-spin mr-1.5" />Verifying…</>
-                            : 'Verify token'}
-                        </Button>
-                        {ccShowForm && (
-                          <Button type="button" variant="outline" size="sm" className="h-7 text-xs" onClick={handleCcCancel}>
-                            Cancel
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                  {(ccStep === 'confirmed' || ccStep === 'saving') && ccVerifiedUser && (
-                    <div className="pt-3 space-y-3">
-                      <div className={`rounded-md border px-3 py-2.5 text-xs space-y-1 ${isDark ? 'bg-slate-800/60 border-slate-700' : 'bg-slate-100 border-slate-200'}`}>
-                        <p className={`font-medium flex items-center gap-1.5 ${isDark ? 'text-emerald-400' : 'text-emerald-700'}`}>
-                          <CheckCircle size={13} /> Token verified
-                        </p>
-                        {ccVerifiedUser.name && <p className={isDark ? 'text-slate-300' : 'text-slate-600'}>{ccVerifiedUser.name}</p>}
-                        {ccVerifiedUser.email && <p className={isDark ? 'text-slate-400' : 'text-slate-500'}>{ccVerifiedUser.email}</p>}
-                        {ccVerifiedUser.organization && <p className={isDark ? 'text-slate-400' : 'text-slate-500'}>{ccVerifiedUser.organization}</p>}
-                      </div>
-                      <div className="flex gap-2">
-                        <Button
-                          type="button" size="sm"
-                          onClick={handleCcSave}
-                          disabled={ccStep === 'saving'}
-                          className="h-7 text-xs bg-emerald-600 hover:bg-emerald-500 text-white"
-                        >
-                          {ccStep === 'saving'
-                            ? <><Loader2 size={12} className="animate-spin mr-1.5" />Saving…</>
-                            : 'Save token'}
-                        </Button>
-                        <Button type="button" variant="outline" size="sm" className="h-7 text-xs" onClick={handleCcCancel} disabled={ccStep === 'saving'}>
-                          Cancel
                         </Button>
                       </div>
                     </div>
