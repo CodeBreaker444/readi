@@ -2,6 +2,7 @@
 
 import {
   CircleCheckIcon,
+  CopyIcon,
   InfoIcon,
   Loader2Icon,
   OctagonXIcon,
@@ -28,8 +29,6 @@ async function copyText(text: string) {
   }
 }
 
-// Add a "Copy" action to every toast.error so users can paste the message to
-// support instead of taking a screenshot. Patched once, app-wide.
 const PATCH_FLAG = "__copyErrorPatched"
 if (typeof window !== "undefined" && !(toast as any)[PATCH_FLAG]) {
   const originalError = toast.error.bind(toast)
@@ -42,8 +41,18 @@ if (typeof window !== "undefined" && !(toast as any)[PATCH_FLAG]) {
     if (!body) return originalError(message, data)
     return originalError(message, {
       ...data,
+      classNames: {
+        ...data?.classNames,
+        actionButton:
+          "bg-transparent! text-foreground! border! border-gray-300! dark:border-gray-600! rounded-md! px-2.5! h-7! text-xs! font-medium! shadow-none! transition-colors hover:bg-gray-100! dark:hover:bg-gray-800!",
+      },
       action: {
-        label: "Copy",
+        label: (
+          <span className="inline-flex items-center gap-1.5">
+            <CopyIcon className="size-3.5" />
+            Copy
+          </span>
+        ),
         onClick: (e: React.MouseEvent) => {
           e.preventDefault() // keep the toast open
           void copyText(`${body}\n\nPage: ${window.location.href}\nTime: ${new Date().toISOString()}`)

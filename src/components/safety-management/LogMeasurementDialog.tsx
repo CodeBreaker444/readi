@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import {
     Dialog,
     DialogContent,
+    DialogDescription,
     DialogFooter,
     DialogHeader,
     DialogTitle,
@@ -12,6 +13,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { SpiKpiDefinition } from '@/config/types/safetyMng'
 import { computeIndicatorStatus } from '@/lib/spiKpi'
+import { Loader2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
@@ -92,9 +94,12 @@ export function LogMeasurementDialog({ open, onClose, onSubmit, indicator, loadi
         })
     }
 
-    const bgClass = isDark ? 'bg-slate-900 border-slate-700 text-white' : 'bg-white border-slate-200 text-gray-900'
-    const inputClass = isDark ? 'bg-slate-800 border-slate-700 text-white placeholder:text-slate-500' : 'bg-slate-50 border-slate-200 text-gray-900'
-    const labelClass = isDark ? 'text-slate-400' : 'text-slate-500'
+    const inputClass = isDark ? 'bg-gray-800 border-gray-700 text-gray-100 placeholder:text-gray-500' : ''
+    const labelClass = isDark ? 'text-gray-300' : 'text-gray-700'
+    const hintClass = `text-[11px] ${isDark ? 'text-gray-500' : 'text-gray-400'}`
+    const contentClass = isDark
+        ? 'bg-[#0f1320] border-white/[0.08] text-white shadow-[0_25px_60px_rgba(0,0,0,0.5)]'
+        : 'bg-white border-gray-200 shadow-2xl'
 
     const STATUS_META: Record<'GREEN' | 'YELLOW' | 'RED', { label: string; dot: string }> = {
         GREEN: { label: t('safety.spiKpi.log.statusGreen'), dot: 'bg-green-500' },
@@ -104,102 +109,101 @@ export function LogMeasurementDialog({ open, onClose, onSubmit, indicator, loadi
 
     return (
         <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-            <DialogContent className={`max-w-md transition-colors duration-300 flex flex-col overflow-hidden p-0 gap-0 ${bgClass}`}>
-                <DialogHeader className="px-6 pt-6 pb-4 shrink-0">
-                    <DialogTitle className="text-lg font-bold tracking-tight">
-                     {t('safety.spiKpi.log.title')}
+            <DialogContent className={`w-[95vw] sm:w-full sm:max-w-md flex flex-col overflow-hidden rounded-xl p-0 gap-0 ${contentClass}`}>
+                <DialogHeader className={`px-6 pt-5 pb-4 shrink-0 border-b ${isDark ? 'border-white/[0.06]' : 'border-gray-100'}`}>
+                    <DialogTitle className={`text-base font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                        {t('safety.spiKpi.log.title')}
                     </DialogTitle>
                     {indicator && (
-                        <p className={`text-xs mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                        <DialogDescription className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
                             <span className="font-mono">{indicator.indicator_code}</span>
                             {' · '}{indicator.indicator_name}
-                        </p>
+                        </DialogDescription>
                     )}
                 </DialogHeader>
 
                 <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
-                <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+                    <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
 
-                    <div className="space-y-1.5">
-                        <Label className={`text-[10px] uppercase tracking-widest font-bold ${labelClass}`}>
-                          {t('safety.spiKpi.log.measurementDate')}
-                        </Label>
-                        <Input
-                            type="date"
-                            value={form.measurement_date}
-                            onChange={(e) => set('measurement_date', e.target.value)}
-                            className={`h-10 ${inputClass}`}
-                        />
-                        {errors.measurement_date && (
-                            <p className="text-red-500 text-xs font-medium">{errors.measurement_date}</p>
-                        )}
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-1.5">
-                            <Label className={`text-[10px] uppercase tracking-widest font-bold ${labelClass}`}>
-                           {t('safety.spiKpi.log.actualValue')} ({indicator?.unit || '—'})
+                            <Label className={labelClass}>
+                                {t('safety.spiKpi.log.measurementDate')} <span className="text-red-500">*</span>
                             </Label>
                             <Input
-                                type="number"
-                                step="0.01"
-                                value={form.actual_value}
-                                onChange={(e) => set('actual_value', e.target.value)}
-                                placeholder={t('safety.spiKpi.log.actualPlaceholder')}
-                                className={`h-10 font-mono ${inputClass}`}
+                                type="date"
+                                value={form.measurement_date}
+                                onChange={(e) => set('measurement_date', e.target.value)}
+                                className={inputClass}
                             />
-                            {errors.actual_value && (
-                                <p className="text-red-500 text-xs font-medium">{errors.actual_value}</p>
+                            {errors.measurement_date && (
+                                <p className="text-red-500 text-xs">{errors.measurement_date}</p>
                             )}
                         </div>
 
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="space-y-1.5">
+                                <Label className={labelClass}>
+                                    {t('safety.spiKpi.log.actualValue')} ({indicator?.unit || '—'}) <span className="text-red-500">*</span>
+                                </Label>
+                                <Input
+                                    type="number"
+                                    step="0.01"
+                                    value={form.actual_value}
+                                    onChange={(e) => set('actual_value', e.target.value)}
+                                    placeholder={t('safety.spiKpi.log.actualPlaceholder')}
+                                    className={`font-mono ${inputClass}`}
+                                />
+                                {errors.actual_value && (
+                                    <p className="text-red-500 text-xs">{errors.actual_value}</p>
+                                )}
+                            </div>
+
+                            <div className="space-y-1.5">
+                                <Label className={labelClass}>
+                                    {t('safety.spiKpi.log.targetValue')} ({indicator?.unit || '—'})
+                                </Label>
+                                <Input
+                                    type="number"
+                                    step="0.01"
+                                    value={form.target_value}
+                                    onChange={(e) => set('target_value', e.target.value)}
+                                    className={`font-mono ${inputClass}`}
+                                />
+                            </div>
+                        </div>
+
                         <div className="space-y-1.5">
-                            <Label className={`text-[10px] uppercase tracking-widest font-bold ${labelClass}`}>
-                         {t('safety.spiKpi.log.targetValue')} ({indicator?.unit || '—'})
-                            </Label>
-                            <Input
-                                type="number"
-                                step="0.01"
-                                value={form.target_value}
-                                onChange={(e) => set('target_value', e.target.value)}
-                                className={`h-10 font-mono ${inputClass}`}
-                            />
+                            <Label className={labelClass}>{t('safety.spiKpi.log.status')}</Label>
+                            <div className={`h-9 flex items-center gap-2 px-3 rounded-md border text-sm ${isDark ? 'bg-gray-800 border-gray-700' : 'border-input'}`}>
+                                {previewStatus ? (
+                                    <>
+                                        <span className={`w-2 h-2 rounded-full ${STATUS_META[previewStatus].dot}`} />
+                                        <span>{STATUS_META[previewStatus].label}</span>
+                                    </>
+                                ) : (
+                                    <span className={isDark ? 'text-gray-500' : 'text-gray-400'}>—</span>
+                                )}
+                            </div>
+                            <p className={hintClass}>{t('safety.spiKpi.log.statusHint')}</p>
                         </div>
-                    </div>
 
-                    <div className="space-y-1.5">
-                        <Label className={`text-[10px] uppercase tracking-widest font-bold ${labelClass}`}>
-                        {t('safety.spiKpi.log.status')}
-                        </Label>
-                        <div className={`h-10 flex items-center gap-2 px-3 rounded-md border ${inputClass}`}>
-                            {previewStatus ? (
-                                <>
-                                    <span className={`w-2 h-2 rounded-full ${STATUS_META[previewStatus].dot}`} />
-                                    <span className="text-sm">{STATUS_META[previewStatus].label}</span>
-                                </>
-                            ) : (
-                                <span className={`text-sm ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>—</span>
-                            )}
-                        </div>
-                        <p className="text-slate-500 text-[10px] italic">{t('safety.spiKpi.log.statusHint')}</p>
                     </div>
-
-                </div>
-                    <DialogFooter className="shrink-0 px-6 py-4 border-t">
+                    <DialogFooter className={`shrink-0 px-6 py-4 border-t flex-col-reverse sm:flex-row gap-2 ${isDark ? 'border-white/[0.06]' : 'border-gray-100'}`}>
                         <Button
                             type="button"
-                            variant="ghost"
+                            variant="outline"
                             onClick={onClose}
-                            className={`${isDark ? 'text-slate-400 hover:text-white hover:bg-slate-800' : 'text-slate-500 hover:bg-slate-100'}`}
+                            className={`w-full sm:w-auto cursor-pointer ${isDark ? 'bg-transparent border-gray-700 text-gray-200 hover:bg-white/[0.04]' : ''}`}
                         >
-                           {t('safety.spiKpi.log.cancel')}
+                            {t('safety.spiKpi.log.cancel')}
                         </Button>
                         <Button
                             type="submit"
                             disabled={loading}
-                            className="bg-violet-600 hover:bg-violet-500 text-white px-8 shadow-lg shadow-violet-500/20"
+                            className="w-full sm:w-auto cursor-pointer bg-violet-600 hover:bg-violet-700 text-white font-semibold gap-2"
                         >
-                           {loading ? t('safety.spiKpi.log.saving') : t('safety.spiKpi.log.saveMeasurement')}
+                            {loading && <Loader2 size={14} className="animate-spin" />}
+                            {loading ? t('safety.spiKpi.log.saving') : t('safety.spiKpi.log.saveMeasurement')}
                         </Button>
                     </DialogFooter>
                 </form>
