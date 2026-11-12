@@ -97,9 +97,11 @@ export function CreateGroupDialog({
       resolution,
     };
     try {
-      await axios.post(`${BASE}/groups`, input);
+      const res = await axios.post(`${BASE}/groups`, input);
+      // On merge, existing time windows are skipped, so report what was actually created.
+      const created = res.data?.data?.created;
       toast.success(t('slotBooking.create.published', { name: input.name }), {
-        description: t('slotBooking.create.publishedDesc', { count: input.slots.length }),
+        description: t('slotBooking.create.publishedDesc', { count: typeof created === 'number' ? created : input.slots.length }),
       });
       setConflicts(null);
       onOpenChange(false);

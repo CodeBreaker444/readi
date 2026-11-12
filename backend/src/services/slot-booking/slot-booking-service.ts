@@ -266,16 +266,21 @@ export async function saveSettings(user: SessionUser, input: SlotDefaults): Prom
 export async function listGroups(user: SessionUser): Promise<SlotGroup[]> {
   const groups = await prisma.slot_group.findMany({
     where: { fk_owner_id: user.ownerId },
-    orderBy: [{ start_date: 'desc' }, { slot_group_id: 'desc' }],
+    orderBy: [{ created_at: 'desc' }, { slot_group_id: 'desc' }],
   });
   if (!groups.length) return [];
   const ids = groups.map((g) => g.slot_group_id);
   const today = toDate(todayIso());
 
-  const [openSlots, bookingCounts, names] = await Promise.all([
+  const [activeSlots, approvedUpcoming, bookingCounts, names] = await Promise.all([
     prisma.slot.groupBy({
       by: ['fk_slot_group_id'],
       where: { fk_slot_group_id: { in: ids }, is_active: true, slot_date: { gte: today } },
+      _count: { _all: true },
+    }),
+    prisma.slot_booking.groupBy({
+      by: ['fk_slot_group_id'],
+      where: { fk_slot_group_id: { in: ids }, status: 'APPROVED', slot: { is_active: true, slot_date: { gte: today } } },
       _count: { _all: true },
     }),
     prisma.slot_booking.groupBy({
@@ -290,7 +295,11 @@ export async function listGroups(user: SessionUser): Promise<SlotGroup[]> {
     const count = (status: string) =>
       bookingCounts.find((b) => b.fk_slot_group_id === g.slot_group_id && b.status === status)?._count._all ?? 0;
     return mapGroup(g, g.created_by ? (names.get(g.created_by) ?? null) : null, {
-      openSlots: openSlots.find((o) => o.fk_slot_group_id === g.slot_group_id)?._count._all ?? 0,
+      openSlots: Math.max(
+        0,
+        (activeSlots.find((o) => o.fk_slot_group_id === g.slot_group_id)?._count._all ?? 0) -
+          (approvedUpcoming.find((o) => o.fk_slot_group_id === g.slot_group_id)?._count._all ?? 0),
+      ),
       pending: count('PENDING'),
       approved: count('APPROVED'),
     });
