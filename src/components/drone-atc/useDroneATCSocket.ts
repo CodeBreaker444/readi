@@ -111,7 +111,6 @@ export function useDroneATCSocket(): UseDroneATCSocketReturn {
         const fleetRes = await fetch('/api/drone-atc/fleet');
         if (fleetRes.ok) {
           const fleetData = await fleetRes.json();
-          console.log('fleet response:', fleetData);
           setUserRole(fleetData.role ?? null);
 
           const items: TelemetryData[] = fleetData.items ?? [];
@@ -132,7 +131,12 @@ export function useDroneATCSocket(): UseDroneATCSocketReturn {
       }
 
       const { wsUrl, topic, token } = credsRef.current;
-console.log('ws url:',wsUrl,'topic:',topic,'token present:',!!token);
+
+      // Drop any half-open socket from a previous attempt so we never hold two.
+      const stale = socketRef.current;
+      socketRef.current = null;
+      stale?.disconnect();
+
       const socket = io(wsUrl, {
         path: '/socket.io/',
         transports: ['websocket'],
@@ -140,19 +144,21 @@ console.log('ws url:',wsUrl,'topic:',topic,'token present:',!!token);
         auth: { token },
       });
 
-      console.log('socket created:', socket);
-
       socketRef.current = socket;
+      // Events from a socket that is no longer the active one (replaced by
+      // reconnect(), or torn down on unmount) must not touch state or retry.
+      const isCurrent = () => socketRef.current === socket;
 
       socket.on('connect', () => {
+        if (!isCurrent()) return;
         retryCountRef.current = 0;
         setStatus('connected');
         socket.emit('subscribe', { droneId: topic });
       });
 
       socket.on('telemetry', (payload: { droneId: string; data: TelemetryData; timestamp: number }) => {
+        if (!isCurrent()) return;
         const incoming = payload.data ?? (payload as unknown as TelemetryData);
-        console.log('tele:',incoming);
 
         const id = incoming.drone_id ?? payload.droneId;
         if (!id) return;
@@ -183,12 +189,14 @@ console.log('ws url:',wsUrl,'topic:',topic,'token present:',!!token);
       });
 
       socket.on('disconnect', () => {
+        if (!isCurrent()) return;
         credsRef.current = null;
         setStatus('error');
         scheduleRetry();
       });
 
       socket.on('connect_error', (err) => {
+        if (!isCurrent()) return;
         credsRef.current = null;
         setStatus('error');
         setErrorMessage(err.message);
@@ -205,9 +213,10 @@ console.log('ws url:',wsUrl,'topic:',topic,'token present:',!!token);
 
   function scheduleRetry() {
     if (retryRef.current !== null) return;
-    if (retryCountRef.current >= 5) return;
+    // Keep retrying indefinitely with exponential backoff capped at 30s, so a
+    // FlytRelay restart or network drop recovers without a manual Reconnect.
     const delay = Math.min(1000 * 2 ** retryCountRef.current, 30000);
-    retryCountRef.current += 1;
+    retryCountRef.current = Math.min(retryCountRef.current + 1, 10);
     retryRef.current = setTimeout(() => {
       retryRef.current = null;
       connect();
@@ -216,10 +225,11 @@ console.log('ws url:',wsUrl,'topic:',topic,'token present:',!!token);
 
   const reconnect = useCallback(() => {
     retryCountRef.current = 0;
-    credsRef.current = null; 
+    credsRef.current = null;
     if (retryRef.current) { clearTimeout(retryRef.current); retryRef.current = null; }
-    socketRef.current?.disconnect();
-    socketRef.current = null;
+    const old = socketRef.current;
+    socketRef.current = null; 
+    old?.disconnect();
     setDrones({});
     setDocks({});
     connect();
@@ -229,8 +239,9 @@ console.log('ws url:',wsUrl,'topic:',topic,'token present:',!!token);
     connect();
     return () => {
       if (retryRef.current) { clearTimeout(retryRef.current); retryRef.current = null; }
-      socketRef.current?.disconnect();
-      socketRef.current = null;
+      const old = socketRef.current;
+      socketRef.current = null; // detach first so its disconnect event can't schedule a retry
+      old?.disconnect();
     };
   }, [connect]);
 
