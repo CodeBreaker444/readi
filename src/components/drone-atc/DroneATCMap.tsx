@@ -17,7 +17,7 @@ interface DroneATCMapProps {
   layers: LayerVisibility;
   onDroneClick: (droneId: string) => void;
   isDark: boolean;
-  owmApiKey: string;
+  owmEnabled: boolean;
   onBoundsChange?: (bounds: { latMin: number; lonMin: number; latMax: number; lonMax: number }) => void;
 }
 
@@ -36,8 +36,18 @@ const OWM_OPACITY: Record<string, number> = {
   wind: 0.6, temp: 0.6, clouds: 0.5, precip: 0.7, pressure: 0.5,
 };
 
-function owmTileUrl(layer: string, apiKey: string) {
-  return `https://tile.openweathermap.org/map/${layer}/{z}/{x}/{y}.png?appid=${apiKey}`;
+/** refTime of the wind-grid payload = Open-Meteo's observation time. */
+function parseWindRefTime(data: unknown): Date | null {
+  const t = (data as Array<{ header?: { refTime?: string } }> | null)?.[0]?.header?.refTime;
+  const d = t ? new Date(t) : null;
+  return d && !isNaN(d.getTime()) ? d : null;
+}
+
+// Tiles go through our own cached proxy (DB-backed, refreshed every 5 min by
+// cron) — the browser never calls OpenWeatherMap or sees its API key.
+const WEATHER_STATUS_POLL_MS = 60_000;
+function owmTileUrl(layer: string) {
+  return `/api/drone-atc/weather-tiles/${layer}/{z}/{x}/{y}`;
 }
 
 function altColor(alt: number | null): string {
@@ -233,8 +243,10 @@ type WeatherLayerKey = 'wind' | 'temp' | 'clouds' | 'precip' | 'pressure';
 const WEATHER_KEYS: WeatherLayerKey[] = ['wind', 'temp', 'clouds', 'precip', 'pressure'];
 
 export default function DroneATCMap({
-  drones, docks, aircraft, selectedDroneId, layers, onDroneClick, isDark, owmApiKey, onBoundsChange,
+  drones, docks, aircraft, selectedDroneId, layers, onDroneClick, isDark, owmEnabled, onBoundsChange,
 }: DroneATCMapProps) {
+  const [weatherUpdatedAt, setWeatherUpdatedAt] = useState<Date | null>(null);
+  const [windUpdatedAt, setWindUpdatedAt] = useState<Date | null>(null);
   const [airspaceZones, setAirspaceZones] = useState<AirspaceZone[]>([]);
   const lastAirspaceFetchRef = useRef<L.LatLngBounds | null>(null);
   const airspaceFetchAbortRef = useRef<AbortController | null>(null);
@@ -448,6 +460,7 @@ export default function DroneATCMap({
     fetchWindGrid(s, w, n, e, ctrl.signal).then(data => {
       if (ctrl.signal.aborted || !data) return;
       windLayerRef.current?.setData(data);
+      setWindUpdatedAt(parseWindRefTime(data));
     });
   }, [fetchWindGrid]);
 
@@ -542,9 +555,9 @@ export default function DroneATCMap({
       if (key === 'wind') return; // handled by the leaflet-velocity layer below, not an OWM tile
       const visible = layers[key];
       const existing = weatherRefs.current[key];
-      if (visible && owmApiKey) {
+      if (visible && owmEnabled) {
         if (!existing) {
-          const layer = L.tileLayer(owmTileUrl(OWM_LAYERS[key], owmApiKey), {
+          const layer = L.tileLayer(owmTileUrl(OWM_LAYERS[key]), {
             opacity: OWM_OPACITY[key], maxZoom: 18, attribution: '© OpenWeatherMap', zIndex: 300,
           }).addTo(map);
           weatherRefs.current[key] = layer;
@@ -554,7 +567,28 @@ export default function DroneATCMap({
         delete weatherRefs.current[key];
       }
     });
-  }, [layers.wind, layers.temp, layers.clouds, layers.precip, layers.pressure, owmApiKey]);
+  }, [layers.wind, layers.temp, layers.clouds, layers.precip, layers.pressure, owmEnabled]);
+
+  // "Last updated" for the cached weather tiles; polled only while a tile layer is on.
+  const anyTileLayerOn = owmEnabled && (layers.temp || layers.clouds || layers.precip || layers.pressure);
+  useEffect(() => {
+    if (!anyTileLayerOn) return;
+    let cancelled = false;
+    const load = () =>
+      fetch('/api/drone-atc/weather-tiles/status')
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d) => {
+          if (!cancelled && d?.updatedAt) setWeatherUpdatedAt(new Date(d.updatedAt));
+        })
+        .catch(() => {});
+    const first = setTimeout(load, 1500); // let the first tiles populate the cache
+    const id = setInterval(load, WEATHER_STATUS_POLL_MS);
+    return () => {
+      cancelled = true;
+      clearTimeout(first);
+      clearInterval(id);
+    };
+  }, [anyTileLayerOn]);
 
   // Animated wind particle layer (leaflet-velocity), driven by a gridded
   // U/V field fetched for the current viewport.
@@ -611,6 +645,7 @@ export default function DroneATCMap({
         opacity: 0.92,
       });
       windLayerRef.current.addTo(mapRef.current);
+      setWindUpdatedAt(parseWindRefTime(data));
     })();
 
     return () => { cancelled = true; };
@@ -772,6 +807,18 @@ export default function DroneATCMap({
       <style>{`#drone-atc-map-root .leaflet-top.leaflet-left { margin-top: 44px; }`}</style>
       <div ref={containerRef} className="w-full h-full z-0" />
 
+      {/* One label for all weather layers: the oldest data among the layers currently on. */}
+      {(() => {
+        const times = [layers.wind ? windUpdatedAt : null, anyTileLayerOn ? weatherUpdatedAt : null]
+          .filter((d): d is Date => d !== null);
+        if (times.length === 0) return null;
+        const oldest = new Date(Math.min(...times.map((d) => d.getTime())));
+        return (
+          <div className={`absolute left-2.5 z-[1000] pointer-events-none select-none text-[10px] font-medium px-2 py-0.5 rounded bg-black/40 backdrop-blur-sm text-white/70 whitespace-nowrap ${layers.wind ? 'bottom-12' : 'bottom-2'}`}>
+            Weather updated {oldest.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          </div>
+        );
+      })()}
       <div className="absolute bottom-2 left-1/2 -translate-x-1/2 z-[1000] pointer-events-auto select-none group">
         <div className="text-[10px] font-medium tracking-wide px-2 py-0.5 rounded bg-black/40 backdrop-blur-sm text-white/60 flex items-center whitespace-nowrap transition-all">
           <span>Powered by&nbsp;</span>

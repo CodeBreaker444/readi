@@ -6,6 +6,7 @@ import {
 } from '@/backend/services/integrations/flytbase-organization-service';
 import { requirePermission } from '@/lib/auth/api-auth';
 import { internalError, zodError } from '@/lib/api-error';
+import { prisma } from '@/lib/prisma';
 import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
@@ -19,6 +20,17 @@ const revokeSchema = z.object({
   userId: z.string().regex(/^\d+$/, 'userId must be a valid number string'),
   organizationId: z.string().regex(/^\d+$/, 'organizationId must be a valid number string'),
 });
+
+async function describeAccessTarget(userId: number, organizationId: number) {
+  const [user, org] = await Promise.all([
+    prisma.public_users.findUnique({ where: { user_id: userId }, select: { email: true } }),
+    prisma.flytbase_organizations.findUnique({ where: { id: organizationId }, select: { name: true } }),
+  ]);
+  return {
+    userLabel: user?.email ?? `user ID ${userId}`,
+    orgLabel: org?.name ?? `ID ${organizationId}`,
+  };
+}
 
 export async function GET() {
   try {
@@ -63,11 +75,12 @@ export async function POST(req: NextRequest) {
     }
 
     const access = await grantUserFlytbaseAccess(userId, organizationId);
+    const { userLabel, orgLabel } = await describeAccessTarget(userId, organizationId);
 
     logEvent({
       eventType: 'CREATE',
       entityType: 'flytbase_user_access',
-      description: `FlytBase access granted to user ID ${parsed.data.userId} for organization ID ${parsed.data.organizationId}`,
+      description: `FlytBase access granted to ${userLabel} for organization ${orgLabel}`,
       userId: session!.user.userId,
       userName: session!.user.fullname,
       userEmail: session!.user.email,
@@ -106,12 +119,14 @@ export async function DELETE(req: NextRequest) {
       );
     }
 
+    // Resolve labels before revoking so the names are still readable afterwards.
+    const { userLabel, orgLabel } = await describeAccessTarget(userId, organizationId);
     await revokeUserFlytbaseAccess(userId, organizationId);
 
     logEvent({
       eventType: 'DELETE',
       entityType: 'flytbase_user_access',
-      description: `FlytBase access revoked for user ID ${parsed.data.userId} from organization ID ${parsed.data.organizationId}`,
+      description: `FlytBase access revoked for ${userLabel} from organization ${orgLabel}`,
       userId: session!.user.userId,
       userName: session!.user.fullname,
       userEmail: session!.user.email,

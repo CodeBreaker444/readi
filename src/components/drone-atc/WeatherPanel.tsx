@@ -5,6 +5,8 @@ import { MdAir } from 'react-icons/md';
 import { WiDayCloudy, WiDaySunny, WiRain, WiSnow, WiThunderstorm } from 'react-icons/wi';
 
 interface WeatherData {
+  /** Observation time from the API, local to the requested location (e.g. "2026-11-10T14:15"). */
+  time?: string;
   temperature_2m: number;
   wind_speed_10m: number;
   wind_direction_10m: number;
@@ -118,6 +120,11 @@ export default function WeatherPanel({ lat, lon, isDark }: WeatherPanelProps) {
             </span>
           </div>
         </div>
+        {weather.time && (
+          <p className={`mt-1.5 text-[10px] ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+            Updated {weather.time.slice(11, 16)}
+          </p>
+        )}
       </div>
     </div>
   );
