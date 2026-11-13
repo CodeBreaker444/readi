@@ -8,13 +8,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import type { NewSlotGroupInput, RangeMode, SlotDefaults, SlotMode } from '@/config/types/slot-booking';
+import type { NewSlotGroupInput, PilotGroup, RangeMode, SlotClient, SlotDefaults, SlotMode } from '@/config/types/slot-booking';
 import { addDaysIso, groupDates, timeBlocks, todayIso } from '@/lib/slot-booking-utils';
 import { cn } from '@/lib/utils';
 import axios from 'axios';
 import { AlertTriangle } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import { HourSelect } from './HourSelect';
+import { AudiencePicker, ClientPicker } from './CreateGroupPickers';
 import { apiMsg, Btn, dialogSurface, GroupCalendar, heading, inputCls, Legend, muted, useSlotI18n, type CalSlot } from './ui';
 
 const BASE = '/api/operation/slot-booking';
@@ -50,6 +52,12 @@ export function CreateGroupDialog({
   const [slots, setSlots] = useState<CalSlot[]>([]);
   const [conflicts, setConflicts] = useState<string[] | null>(null);
   const [busy, setBusy] = useState(false);
+  const [clients, setClients] = useState<SlotClient[]>([]);
+  const [pilotGroups, setPilotGroups] = useState<PilotGroup[]>([]);
+  const [clientId, setClientId] = useState('');
+  const [audience, setAudience] = useState<number[]>([]);
+  const [scheduled, setScheduled] = useState(false);
+  const [publishLocal, setPublishLocal] = useState('');
 
   // Re-prefill from the company's Slot Settings each time the dialog opens.
   useEffect(() => {
@@ -66,13 +74,29 @@ export function CreateGroupDialog({
     setApprovalDays(defaults.approvalDays);
     setSlots([]);
     setConflicts(null);
+    setClientId('');
+    setAudience([]);
+    setScheduled(false);
+    setPublishLocal('');
+    // Choices for the client and audience pickers; the dialog still works without them.
+    Promise.allSettled([axios.get(`${BASE}/clients`), axios.get(`${BASE}/pilot-groups`)]).then(([c, g]) => {
+      if (c.status === 'fulfilled') setClients(c.value.data.data);
+      if (g.status === 'fulfilled') setPilotGroups(g.value.data.data);
+    });
   }, [open]);
 
   const dates = useMemo(() => groupDates(startDate, rangeMode), [startDate, rangeMode]);
   const hourlyInvalid = mode === 'HOURLY' && hourEnd <= hourStart;
   const pastStart = startDate < todayIso();
   const nameTaken = existingNames.some((n) => n.trim().toLowerCase() === name.trim().toLowerCase()) && name.trim().length > 0;
-  const valid = name.trim().length > 0 && !nameTaken && !!startDate && !pastStart && approvalDays.length > 0 && !hourlyInvalid;
+  // A scheduled group needs a publish time at least a minute ahead, and not after its last slot day.
+  const publishMs = publishLocal ? new Date(publishLocal).getTime() : NaN;
+  const lastDate = dates[dates.length - 1];
+  const publishPast = scheduled && (Number.isNaN(publishMs) || publishMs < Date.now() + 60_000);
+  const publishTooLate = scheduled && !publishPast && publishLocal.slice(0, 10) > lastDate;
+  const scheduleInvalid = publishPast || publishTooLate;
+  const valid =
+    name.trim().length > 0 && !nameTaken && !!startDate && !pastStart && !!clientId && approvalDays.length > 0 && !hourlyInvalid && !scheduleInvalid;
   const activeSlots = slots.filter((x) => x.active);
 
   const goPreview = () => {
@@ -95,6 +119,9 @@ export function CreateGroupDialog({
       approvalDays,
       slots: activeSlots.map(({ date, start, end }) => ({ date, start, end })),
       resolution,
+      clientId: clientId ? Number(clientId) : null,
+      publishAt: scheduled && publishLocal ? new Date(publishLocal).toISOString() : null,
+      pilotGroupIds: audience,
     };
     try {
       const res = await axios.post(`${BASE}/groups`, input);
@@ -184,13 +211,9 @@ export function CreateGroupDialog({
                 </p>
                 {mode === 'HOURLY' && (
                   <div className="flex items-center gap-2 mt-2">
-                    <select className={inputCls(isDark)} value={hourStart} onChange={(e) => setHourStart(+e.target.value)}>
-                      {Array.from({ length: 24 }, (_, h) => <option key={h} value={h}>{String(h).padStart(2, '0')}:00</option>)}
-                    </select>
+                    <HourSelect isDark={isDark} value={hourStart} onChange={setHourStart} />
                     <span className={muted(isDark)}>{t('slotBooking.create.to')}</span>
-                    <select className={inputCls(isDark)} value={hourEnd} onChange={(e) => setHourEnd(+e.target.value)}>
-                      {Array.from({ length: 24 }, (_, h) => h + 1).map((h) => <option key={h} value={h}>{String(h % 24).padStart(2, '0')}:00</option>)}
-                    </select>
+                    <HourSelect isDark={isDark} value={hourEnd} min={1} max={24} invalid={hourlyInvalid} onChange={setHourEnd} />
                   </div>
                 )}
                 {hourlyInvalid && <p className="text-[11px] text-red-500 mt-1">{t('slotBooking.create.endAfterStart')}</p>}
@@ -252,6 +275,53 @@ export function CreateGroupDialog({
                   })}
                 </div>
                 <p className={cn('text-[11px] mt-1', muted(isDark))}>{t('slotBooking.create.approvalHint')}</p>
+              </div>
+
+              <div>
+                <label className={label}>{t('slotBooking.create.client')} *</label>
+                <ClientPicker isDark={isDark} clients={clients} value={clientId} onChange={setClientId} />
+                <p className={cn('text-[11px] mt-1', muted(isDark))}>{t('slotBooking.create.clientHint')}</p>
+              </div>
+
+              <div>
+                <label className={label}>{t('slotBooking.create.publishing')}</label>
+                <div className="flex gap-2">
+                  <button type="button" className={seg(!scheduled)} onClick={() => setScheduled(false)}>{t('slotBooking.create.publishNow')}</button>
+                  <button type="button" className={seg(scheduled)} onClick={() => setScheduled(true)}>{t('slotBooking.create.schedule')}</button>
+                </div>
+                {scheduled ? (
+                  <>
+                    <input
+                      type="datetime-local"
+                      className={cn(inputCls(isDark), 'mt-2', scheduleInvalid && 'border-red-400')}
+                      value={publishLocal}
+                      min={new Date(Date.now() - new Date().getTimezoneOffset() * 60_000 + 60_000).toISOString().slice(0, 16)}
+                      onChange={(e) => setPublishLocal(e.target.value)}
+                      aria-invalid={scheduleInvalid}
+                    />
+                    <p className={cn('text-[11px] mt-1 h-4', scheduleInvalid ? 'text-red-500' : muted(isDark))}>
+                      {publishPast
+                        ? t('slotBooking.create.publishPast')
+                        : publishTooLate
+                          ? t('slotBooking.create.publishTooLate')
+                          : t('slotBooking.create.scheduleHint')}
+                    </p>
+                  </>
+                ) : (
+                  <p className={cn('text-[11px] mt-1', muted(isDark))}>{t('slotBooking.create.publishNowHint')}</p>
+                )}
+              </div>
+
+              <div className="md:col-span-2">
+                <label className={label}>{t('slotBooking.create.audience')}</label>
+                {pilotGroups.length === 0 ? (
+                  <p className={cn('text-[11px]', muted(isDark))}>{t('slotBooking.create.noPilotGroups')}</p>
+                ) : (
+                  <AudiencePicker isDark={isDark} groups={pilotGroups} value={audience} onChange={setAudience} />
+                )}
+                <p className={cn('text-[11px] mt-1', muted(isDark))}>
+                  {audience.length ? t('slotBooking.create.audienceOnly') : t('slotBooking.create.audienceAll')}
+                </p>
               </div>
             </div>
           ) : (

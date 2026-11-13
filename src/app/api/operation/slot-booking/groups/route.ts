@@ -22,6 +22,9 @@ const schema = z.object({
     .min(1)
     .max(500),
   resolution: z.enum(['none', 'merge', 'overwrite']),
+  clientId: z.number().int().positive().nullable().optional(),
+  publishAt: z.string().datetime({ offset: true }).nullable().optional(),
+  pilotGroupIds: z.array(z.number().int().positive()).max(50).optional(),
 });
 
 export async function POST(request: NextRequest) {

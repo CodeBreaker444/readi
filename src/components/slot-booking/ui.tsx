@@ -2,12 +2,12 @@
 
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
-import type { Booking } from '@/config/types/slot-booking';
+import type { Booking, SlotWeather } from '@/config/types/slot-booking';
 import { getApiErrorMessage } from '@/lib/api-error-message';
 import { nextApprovalDay, shortSlotLabel, weekdayOf } from '@/lib/slot-booking-utils';
 import { cn } from '@/lib/utils';
 import axios from 'axios';
-import { Ban, Check, Clock, Loader2, Lock, Search } from 'lucide-react';
+import { Ban, Check, Clock, Loader2, Lock, Search, Wind } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -135,6 +135,36 @@ export function Pill({
 export const statusTone = (s: Booking['status']) =>
   s === 'APPROVED' ? 'green' : s === 'REJECTED' ? 'red' : 'amber';
 
+const WEATHER_DOT = { calm: 'bg-emerald-500', moderate: 'bg-amber-500', tough: 'bg-red-500' } as const;
+
+/** Readable one-line forecast for tooltips and badges. */
+export function useWeatherText() {
+  const { t } = useTranslation();
+  return (w: SlotWeather) =>
+    t('slotBooking.weather.detail', { level: t(`slotBooking.weather.level.${w.level}`), wind: w.avgWindMs, gust: w.maxGustMs, rain: w.rainMm });
+}
+
+/** Coloured dot: green calm, amber moderate, red tough. */
+export function WeatherDot({ weather }: { weather: SlotWeather }) {
+  const text = useWeatherText()(weather);
+  return (
+    <span title={text} className="inline-flex items-center" aria-label={text}>
+      <span className={cn('w-2 h-2 rounded-full', WEATHER_DOT[weather.level])} />
+    </span>
+  );
+}
+
+/** Forecast pill with the numbers, for the places that have room. */
+export function WeatherBadge({ weather, isDark }: { weather: SlotWeather; isDark: boolean }) {
+  const { t } = useTranslation();
+  const tone = weather.level === 'tough' ? 'red' : weather.level === 'moderate' ? 'amber' : 'green';
+  return (
+    <Pill isDark={isDark} tone={tone}>
+      <Wind size={10} /> {t(`slotBooking.weather.level.${weather.level}`)} · {weather.avgWindMs} m/s
+    </Pill>
+  );
+}
+
 /** Loading / error / empty placeholders so every screen handles the three states the same way. */
 export function LoadingBlock({ isDark, rows = 3 }: { isDark: boolean; rows?: number }) {
   return (
@@ -214,6 +244,8 @@ interface CalendarProps<S extends CalSlot> {
   onDayToggle?: (date: string, activate: boolean) => void;
   /** More padding / taller cells (used in the publish modal). */
   roomy?: boolean;
+  /** Forecast per slot id (OPM view, next 7 days). */
+  weather?: Record<number, SlotWeather>;
 }
 
 export function GroupCalendar<S extends CalSlot>({
@@ -227,6 +259,7 @@ export function GroupCalendar<S extends CalSlot>({
   onSlotClick,
   onDayToggle,
   roomy,
+  weather,
 }: CalendarProps<S>) {
   const s = useSlotI18n();
   const today = new Date().toISOString().slice(0, 10);
@@ -272,6 +305,7 @@ export function GroupCalendar<S extends CalSlot>({
                   bookings={bookings.filter((b) => b.slotId === slot.id)}
                   meId={meId}
                   past={date < today}
+                  weather={typeof slot.id === 'number' ? weather?.[slot.id] : undefined}
                   onClick={() => onSlotClick?.(slot)}
                 />
               ))}
@@ -291,6 +325,7 @@ function SlotChip({
   bookings,
   meId,
   past,
+  weather,
   onClick,
 }: {
   isDark: boolean;
@@ -300,6 +335,7 @@ function SlotChip({
   bookings: Booking[];
   meId?: number;
   past: boolean;
+  weather?: SlotWeather;
   onClick: () => void;
 }) {
   const { t } = useTranslation();
@@ -355,10 +391,13 @@ function SlotChip({
           : 'border-gray-200 text-gray-600 hover:bg-gray-50';
     return (
       <button type="button" onClick={onClick} className={cn(base, 'cursor-pointer', tone)}>
-        <span className="font-medium">{label}</span>
-        <span className="text-[10px] whitespace-nowrap">
+        <span className="font-medium flex items-center gap-1">
+          {weather && <WeatherDot weather={weather} />}
+          {label}
+        </span>
+        <span className="text-[10px] whitespace-nowrap truncate max-w-[90px]" title={approved?.picName}>
           {approved
-            ? t('slotBooking.calendar.approved')
+            ? approved.picName
             : pending.length
               ? t('slotBooking.calendar.picsBooked', { count: pending.length })
               : t('slotBooking.calendar.open')}
@@ -396,8 +435,8 @@ function SlotChip({
     return (
       <div className={cn(base, 'opacity-70', dim)}>
         <span>{label}</span>
-        <span className="flex items-center gap-0.5 text-[10px]">
-          <Lock size={10} /> {t('slotBooking.calendar.taken')}
+        <span className="flex items-center gap-0.5 text-[10px] truncate max-w-[90px]" title={approved?.picName}>
+          <Lock size={10} /> {approved ? approved.picName : t('slotBooking.calendar.taken')}
         </span>
       </div>
     );

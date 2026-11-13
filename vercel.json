@@ -29,6 +29,10 @@
       "schedule": "0 6 * * *"
     },
     {
+      "path": "/api/cron/slot-publish",
+      "schedule": "*/5 * * * *"
+    },
+    {
       "path": "/api/cron/refresh-weather-tiles",
       "schedule": "*/5 * * * *"
     }

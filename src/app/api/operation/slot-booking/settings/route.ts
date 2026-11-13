@@ -14,8 +14,15 @@ const schema = z
     rangeMode: z.enum(['DAY', 'WEEK', 'TWO_WEEKS']),
     blocked: z.boolean(),
     approvalDays: z.array(z.number().int().min(0).max(6)).min(1).max(7),
+    modifyLockHours: z.union([z.literal(0), z.literal(24), z.literal(48)]),
+    baseLatitude: z.number().min(-90).max(90).nullable(),
+    baseLongitude: z.number().min(-180).max(180).nullable(),
   })
-  .refine((v) => v.mode !== 'HOURLY' || v.hourEnd > v.hourStart, { message: 'End must be after start', path: ['hourEnd'] });
+  .refine((v) => v.mode !== 'HOURLY' || v.hourEnd > v.hourStart, { message: 'End must be after start', path: ['hourEnd'] })
+  .refine((v) => (v.baseLatitude === null) === (v.baseLongitude === null), {
+    message: 'Enter both latitude and longitude, or neither',
+    path: ['baseLongitude'],
+  });
 
 export async function GET() {
   try {

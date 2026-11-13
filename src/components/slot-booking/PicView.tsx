@@ -19,12 +19,13 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Skeleton } from '@/components/ui/skeleton';
-import type { GroupDetail, MyBookingRow, SlotGroup, SlotMe } from '@/config/types/slot-booking';
+import type { GroupDetail, MyBookingRow, MyStats, SlotGroup, SlotMe } from '@/config/types/slot-booking';
 import { groupDates, slotLabel } from '@/lib/slot-booking-utils';
 import { cn } from '@/lib/utils';
 import axios from 'axios';
-import { ArrowLeft, CheckCircle2, Info } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Info, Trophy } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { MyRequestsTable } from './MyRequestsTable';
 import { apiMsg, Btn, card, dialogSurface, EmptyBlock, GroupCalendar, heading, Legend, LoadingBlock, muted, Pill, SearchBox, useSlotI18n } from './ui';
@@ -43,6 +44,21 @@ export function PicView({ isDark, me, groups }: { isDark: boolean; me: SlotMe; g
   const [busy, setBusy] = useState(false);
   const [cancelTarget, setCancelTarget] = useState<MyBookingRow | null>(null);
   const [cancelling, setCancelling] = useState(false);
+  const [stats, setStats] = useState<MyStats | null>(null);
+  // The pending request being moved to another slot of its group.
+  const [moveFrom, setMoveFrom] = useState<MyBookingRow | null>(null);
+
+  const loadStats = useCallback(async () => {
+    try {
+      setStats((await axios.get(`${BASE}/my-stats`)).data.data);
+    } catch {
+      setStats(null); // the numbers are a nicety; the booking screens work without them
+    }
+  }, []);
+
+  useEffect(() => {
+    if (me.canBook) loadStats();
+  }, [me.canBook, loadStats]);
 
   const loadMyBookings = useCallback(async () => {
     try {
@@ -59,6 +75,7 @@ export function PicView({ isDark, me, groups }: { isDark: boolean; me: SlotMe; g
   }, [me.canBook, loadMyBookings]);
 
   const [search, setSearch] = useState('');
+  const [listTab, setListTab] = useState<'groups' | 'requests'>('groups');
   const query = search.trim().toLowerCase();
   const visibleGroups = query ? groups.filter((g) => [g.name, g.description].some((v) => v?.toLowerCase().includes(query))) : groups;
 
@@ -92,12 +109,18 @@ export function PicView({ isDark, me, groups }: { isDark: boolean; me: SlotMe; g
     if (!slot || !detail) return;
     setBusy(true);
     try {
-      await axios.post(`${BASE}/slots/${slot.id}/book`);
-      const msg = t('slotBooking.pic.requestedBanner', { day: s.reviewDay(detail.group.approvalDays) });
-      setBanner(msg);
-      toast.success(t('slotBooking.pic.requestedToast'), { description: msg });
+      if (moveFrom) {
+        await axios.post(`${BASE}/bookings/${moveFrom.bookingId}/move`, { slotId: slot.id });
+        toast.success(t('slotBooking.pic.moved'));
+        setMoveFrom(null);
+      } else {
+        await axios.post(`${BASE}/slots/${slot.id}/book`);
+        const msg = t('slotBooking.pic.requestedBanner', { day: s.reviewDay(detail.group.approvalDays) });
+        setBanner(msg);
+        toast.success(t('slotBooking.pic.requestedToast'), { description: msg });
+      }
       setSlotId(null);
-      await Promise.all([reloadDetail(), loadMyBookings()]);
+      await Promise.all([reloadDetail(), loadMyBookings(), loadStats()]);
     } catch (e) {
       toast.error(apiMsg(e, t('slotBooking.errors.requestSlot')));
       setSlotId(null);
@@ -107,6 +130,13 @@ export function PicView({ isDark, me, groups }: { isDark: boolean; me: SlotMe; g
     }
   };
 
+  const startMove = async (bookingId: number) => {
+    const row = myBookings?.find((b) => b.bookingId === bookingId) ?? null;
+    if (!row) return;
+    setMoveFrom(row);
+    await openGroup(row.groupId);
+  };
+
   const confirmCancel = async () => {
     if (!cancelTarget) return;
     setCancelling(true);
@@ -114,9 +144,11 @@ export function PicView({ isDark, me, groups }: { isDark: boolean; me: SlotMe; g
       await axios.delete(`${BASE}/bookings/${cancelTarget.bookingId}`);
       toast.success(t('slotBooking.pic.cancelled'));
       setCancelTarget(null);
-      await Promise.all([reloadDetail(), loadMyBookings()]);
+      await Promise.all([reloadDetail(), loadMyBookings(), loadStats()]);
     } catch (e) {
       toast.error(apiMsg(e, t('slotBooking.errors.cancelRequest')));
+      await loadMyBookings(); // it may have just become locked
+      setCancelTarget(null);
     } finally {
       setCancelling(false);
     }
@@ -130,6 +162,8 @@ export function PicView({ isDark, me, groups }: { isDark: boolean; me: SlotMe; g
         </div>
       )}
 
+      {me.canBook && stats && !detail && <StatsCard isDark={isDark} stats={stats} />}
+
       {banner && (
         <div className={cn('rounded-xl border p-4 flex items-start gap-3 text-xs', isDark ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-200' : 'bg-emerald-50 border-emerald-200 text-emerald-900')}>
           <CheckCircle2 size={16} className="shrink-0 mt-0.5" />
@@ -141,12 +175,19 @@ export function PicView({ isDark, me, groups }: { isDark: boolean; me: SlotMe; g
       {detail ? (
         <div className="space-y-4">
           <div className="flex items-center gap-3">
-            <Btn isDark={isDark} onClick={() => setDetail(null)}><ArrowLeft size={13} /> {t('slotBooking.common.allGroups')}</Btn>
+            <Btn isDark={isDark} onClick={() => { setDetail(null); setMoveFrom(null); }}><ArrowLeft size={13} /> {t('slotBooking.common.allGroups')}</Btn>
             <div>
               <h2 className={cn('text-sm font-semibold', heading(isDark))}>{detail.group.name}</h2>
               <p className={cn('text-[11px]', muted(isDark))}>{t('slotBooking.pic.reviewDay', { days: s.daysLabel(detail.group.approvalDays) })}</p>
             </div>
           </div>
+          {moveFrom && (
+            <div className={cn('rounded-xl border p-3 text-xs flex items-center gap-2', isDark ? 'bg-violet-500/10 border-violet-500/30 text-violet-200' : 'bg-violet-50 border-violet-200 text-violet-900')}>
+              <Info size={14} className="shrink-0" />
+              <span className="flex-1">{t('slotBooking.pic.moveBanner', { slot: slotLabel(moveFrom), date: s.date(moveFrom.date) })}</span>
+              <button type="button" className="cursor-pointer underline" onClick={() => setMoveFrom(null)}>{t('slotBooking.common.cancel')}</button>
+            </div>
+          )}
           <div className={cn('rounded-xl border p-4 space-y-3', card(isDark))}>
             <div className="flex items-center justify-between flex-wrap gap-2">
               <Legend isDark={isDark} mode="pic" />
@@ -168,11 +209,30 @@ export function PicView({ isDark, me, groups }: { isDark: boolean; me: SlotMe; g
         <LoadingBlock isDark={isDark} rows={1} />
       ) : (
         <>
-          <div className="flex items-center justify-between gap-3 flex-wrap">
-            <h2 className={cn('text-sm font-semibold', heading(isDark))}>{t('slotBooking.pic.availableGroups')}</h2>
-            <SearchBox isDark={isDark} value={search} onChange={setSearch} placeholder={t('slotBooking.search.groups')} className="w-full max-w-sm" />
+          <div className={cn('flex items-center gap-1 border-b', isDark ? 'border-white/[0.08]' : 'border-gray-200')}>
+            {(me.canBook ? (['groups', 'requests'] as const) : (['groups'] as const)).map((k) => (
+              <button
+                key={k}
+                type="button"
+                onClick={() => setListTab(k)}
+                className={cn(
+                  'cursor-pointer px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors',
+                  listTab === k ? 'border-violet-600 text-violet-600' : cn('border-transparent', muted(isDark)),
+                )}
+              >
+                {k === 'groups'
+                  ? t('slotBooking.pic.availableGroups')
+                  : `${t('slotBooking.pic.myRequests')}${myBookings && myBookings.length > 0 ? ` (${myBookings.length})` : ''}`}
+              </button>
+            ))}
           </div>
-          {groups.length === 0 ? (
+          {listTab === 'groups' && (
+            <div className="flex items-center justify-end">
+              <SearchBox isDark={isDark} value={search} onChange={setSearch} placeholder={t('slotBooking.search.groups')} className="w-full max-w-sm" />
+            </div>
+          )}
+          {listTab === 'groups' &&
+          (groups.length === 0 ? (
             <EmptyBlock isDark={isDark}>{t('slotBooking.pic.noGroups')}</EmptyBlock>
           ) : visibleGroups.length === 0 ? (
             <EmptyBlock isDark={isDark}>{t('slotBooking.search.noMatch')}</EmptyBlock>
@@ -193,6 +253,7 @@ export function PicView({ isDark, me, groups }: { isDark: boolean; me: SlotMe; g
                       <Pill isDark={isDark} tone="violet">{s.mode(g.mode)}</Pill>
                       <Pill isDark={isDark} tone={g.blocked ? 'red' : 'blue'}>{g.blocked ? t('slotBooking.pic.singlePilot') : t('slotBooking.pic.multiPilot')}</Pill>
                       <Pill isDark={isDark}>{s.range(g.rangeMode)}</Pill>
+                      {g.clientName && <Pill isDark={isDark} tone="green">{t('slotBooking.opm.client', { name: g.clientName })}</Pill>}
                     </div>
                     <div className={cn('text-[11px]', muted(isDark))}>
                       {t('slotBooking.pic.datesRange', { from: s.date(dates[0]), to: s.date(dates[dates.length - 1]), count: g.stats?.openSlots ?? 0 })}
@@ -205,16 +266,16 @@ export function PicView({ isDark, me, groups }: { isDark: boolean; me: SlotMe; g
                 );
               })}
             </div>
-          )}
+          ))}
 
-          {me.canBook && (
+          {listTab === 'requests' && me.canBook && (
             <div className="space-y-3">
               {myBookings === null ? (
                 <Skeleton className={cn('h-40 rounded-xl', isDark && 'bg-white/[0.06]')} />
               ) : myBookings.length === 0 ? (
                 <EmptyBlock isDark={isDark}>{t('slotBooking.pic.noRequests')}</EmptyBlock>
               ) : (
-                <MyRequestsTable rows={myBookings} groups={groups} isDark={isDark} onCancel={(id) => setCancelTarget(myBookings.find((b) => b.bookingId === id) ?? null)} />
+                <MyRequestsTable rows={myBookings} groups={groups} isDark={isDark} onCancel={(id) => setCancelTarget(myBookings.find((b) => b.bookingId === id) ?? null)} onMove={startMove} />
               )}
             </div>
           )}
@@ -249,21 +310,53 @@ export function PicView({ isDark, me, groups }: { isDark: boolean; me: SlotMe; g
       <Dialog open={!!slot} onOpenChange={(o) => !o && !busy && setSlotId(null)}>
         <DialogContent className={cn('sm:max-w-md', dialogSurface(isDark))}>
           <DialogHeader>
-            <DialogTitle>{t('slotBooking.pic.confirmTitle')}</DialogTitle>
+            <DialogTitle>{moveFrom ? t('slotBooking.pic.moveTitle') : t('slotBooking.pic.confirmTitle')}</DialogTitle>
             <DialogDescription>
               {slot && `${s.date(slot.date)} · ${slotLabel(slot)}`}
               {detail && ` — ${detail.group.name}`}
             </DialogDescription>
           </DialogHeader>
           <p className={cn('text-xs', muted(isDark))}>
-            {t('slotBooking.pic.confirmBody', { days: detail ? s.daysLabel(detail.group.approvalDays) : '—' })}
+            {moveFrom
+              ? t('slotBooking.pic.moveBody', { slot: slotLabel(moveFrom), date: s.date(moveFrom.date) })
+              : t('slotBooking.pic.confirmBody', { days: detail ? s.daysLabel(detail.group.approvalDays) : '—' })}
           </p>
           <DialogFooter>
             <Btn isDark={isDark} disabled={busy} onClick={() => setSlotId(null)}>{t('slotBooking.common.cancel')}</Btn>
-            <Btn isDark={isDark} variant="primary" loading={busy} onClick={requestSlot}>{t('slotBooking.pic.requestSlot')}</Btn>
+            <Btn isDark={isDark} variant="primary" loading={busy} onClick={requestSlot}>{moveFrom ? t('slotBooking.pic.moveSlot') : t('slotBooking.pic.requestSlot')}</Btn>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+/** The pilot's own flight hours, availability and rank, so they can see what the OPM sees. */
+function StatsCard({ isDark, stats }: { isDark: boolean; stats: MyStats }) {
+  const { t } = useTranslation();
+  const tiles: Array<[string, string, string?]> = [
+    [t('slotBooking.stats.hours', { days: stats.windowDays }), `${stats.hours90} h`, t('slotBooking.stats.hoursTotal', { hours: stats.hoursTotal })],
+    [t('slotBooking.stats.weekend'), String(stats.weekendRequests90)],
+    [t('slotBooking.stats.availability'), String(stats.requests90)],
+    [t('slotBooking.stats.approved'), String(stats.approved90)],
+    [t('slotBooking.stats.score'), stats.rank ? `${stats.score}` : '—', stats.rank ? t('slotBooking.stats.rank', { rank: stats.rank, total: stats.pilots }) : undefined],
+  ];
+  return (
+    <div className={cn('rounded-xl border p-4 space-y-3', card(isDark))}>
+      <div className="flex items-center gap-2">
+        <Trophy size={14} className="text-violet-500" />
+        <h2 className={cn('text-sm font-semibold', heading(isDark))}>{t('slotBooking.stats.title')}</h2>
+      </div>
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-2 text-center">
+        {tiles.map(([label, value, sub]) => (
+          <div key={label} className={cn('rounded-lg py-2 px-1', isDark ? 'bg-white/[0.04]' : 'bg-gray-50')}>
+            <div className={cn('text-base font-semibold', heading(isDark))}>{value}</div>
+            <div className={cn('text-[10px]', muted(isDark))}>{label}</div>
+            {sub && <div className={cn('text-[10px]', muted(isDark))}>{sub}</div>}
+          </div>
+        ))}
+      </div>
+      <p className={cn('text-[11px]', muted(isDark))}>{t('slotBooking.stats.how')}</p>
     </div>
   );
 }

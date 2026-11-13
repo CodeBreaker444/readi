@@ -11,6 +11,11 @@ const prismaMock: Record<string, any> = {
   slot_booking: { findMany: jest.fn(), findFirst: jest.fn() },
   public_users: { findMany: jest.fn(), findUnique: jest.fn() },
   notification: { createMany: jest.fn() },
+  client: { findFirst: jest.fn(), findMany: jest.fn() },
+  pilot_group: { findMany: jest.fn() },
+  pilot_group_member: { findMany: jest.fn() },
+  slot_group_pilot_group: { findMany: jest.fn() },
+  slot_settings: { findUnique: jest.fn() },
   $transaction: jest.fn(),
 };
 jest.mock('@/lib/prisma', () => ({ prisma: prismaMock }));
@@ -67,7 +72,19 @@ const validInput = (over: Partial<NewSlotGroupInput> = {}): NewSlotGroupInput =>
   ...over,
 });
 
-beforeEach(() => jest.clearAllMocks());
+jest.mock('@/backend/services/slot-booking/slot-weather-service', () => ({
+  ...jest.requireActual('@/backend/services/slot-booking/slot-weather-service'),
+  getWeatherForSlots: jest.fn().mockResolvedValue({ weather: {}, note: null }),
+}));
+
+beforeEach(() => {
+  jest.clearAllMocks();
+  // Quiet defaults for the lookups every booking now does: nobody is assigned elsewhere, no audience restrictions.
+  prismaMock.slot_booking.findMany.mockResolvedValue([]);
+  prismaMock.slot_group_pilot_group.findMany.mockResolvedValue([]);
+  prismaMock.pilot_group_member.findMany.mockResolvedValue([]);
+  prismaMock.slot_settings.findUnique.mockResolvedValue(null);
+});
 
 describe('slot-booking helpers', () => {
   it('builds the date range for a day, a week and two weeks', () => {

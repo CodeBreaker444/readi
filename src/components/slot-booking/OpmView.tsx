@@ -4,7 +4,7 @@ import type { GroupDetail, SlotDefaults, SlotGroup } from '@/config/types/slot-b
 import { groupDates, nextApprovalDay, todayIso, weekdayOf } from '@/lib/slot-booking-utils';
 import { cn } from '@/lib/utils';
 import axios from 'axios';
-import { ArrowLeft, BellRing, Plus, Settings2, Trash2 } from 'lucide-react';
+import { ArrowLeft, BellRing, CalendarClock, Plus, Settings2, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import {
@@ -45,6 +45,7 @@ export function OpmView({
   const [deleteTarget, setDeleteTarget] = useState<SlotGroup | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [opening, setOpening] = useState<number | null>(null);
+  const [publishing, setPublishing] = useState<number | null>(null);
 
   const [search, setSearch] = useState('');
   const query = search.trim().toLowerCase();
@@ -77,6 +78,19 @@ export function OpmView({
       setDetail(res.data.data);
     } catch (e) {
       toast.error(apiMsg(e, t('slotBooking.errors.refresh')));
+    }
+  };
+
+  const publishNow = async (g: SlotGroup) => {
+    setPublishing(g.id);
+    try {
+      await axios.post(`${BASE}/groups/${g.id}/publish`);
+      toast.success(t('slotBooking.opm.publishedNow', { name: g.name }));
+      await reload();
+    } catch (e) {
+      toast.error(apiMsg(e, t('slotBooking.errors.publishNow')));
+    } finally {
+      setPublishing(null);
     }
   };
 
@@ -154,8 +168,15 @@ export function OpmView({
               slots={detail.slots}
               blocked={detail.group.blocked}
               bookings={detail.bookings}
+              weather={detail.weather}
               onSlotClick={(sl) => setSlotId(sl.id)}
             />
+            {detail.weatherNote === 'no_location' && (
+              <p className={cn('text-[11px]', muted(isDark))}>{t('slotBooking.weather.noLocation')}</p>
+            )}
+            {detail.weatherNote === 'unavailable' && (
+              <p className={cn('text-[11px]', muted(isDark))}>{t('slotBooking.weather.unavailable')}</p>
+            )}
           </div>
 
           <SlotAuditTable isDark={isDark} groupId={detail.group.id} compact />
@@ -191,6 +212,17 @@ export function OpmView({
                   <Pill isDark={isDark} tone="violet">{s.mode(g.mode)}</Pill>
                   <Pill isDark={isDark} tone={g.blocked ? 'red' : 'blue'}>{g.blocked ? t('slotBooking.opm.blocked') : t('slotBooking.opm.unblocked')}</Pill>
                   <Pill isDark={isDark}>{s.range(g.rangeMode)}</Pill>
+                  {g.clientName && <Pill isDark={isDark} tone="green">{t('slotBooking.opm.client', { name: g.clientName })}</Pill>}
+                  {!g.published && g.publishAt && (
+                    <Pill isDark={isDark} tone="amber"><CalendarClock size={10} /> {t('slotBooking.opm.scheduledFor', { when: s.dateTime(g.publishAt) })}</Pill>
+                  )}
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {g.audience.length === 0 ? (
+                    <Pill isDark={isDark}>{t('slotBooking.opm.allPilots')}</Pill>
+                  ) : (
+                    g.audience.map((a) => <Pill key={a.id} isDark={isDark} tone="violet">{a.name}</Pill>)
+                  )}
                 </div>
                 <div className={cn('text-[11px] space-y-0.5', muted(isDark))}>
                   <div>
@@ -214,7 +246,12 @@ export function OpmView({
                     </div>
                   ))}
                 </div>
-                <Btn isDark={isDark} variant="primary" className="mt-auto" loading={opening === g.id} onClick={() => openGroup(g.id)}>
+                {!g.published && (
+                  <Btn isDark={isDark} className="mt-auto" loading={publishing === g.id} onClick={() => publishNow(g)}>
+                    {t('slotBooking.opm.publishNow')}
+                  </Btn>
+                )}
+                <Btn isDark={isDark} variant="primary" className={g.published ? 'mt-auto' : ''} loading={opening === g.id} onClick={() => openGroup(g.id)}>
                   {t('slotBooking.opm.openCalendar')}
                 </Btn>
               </div>

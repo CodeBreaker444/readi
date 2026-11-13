@@ -20,61 +20,17 @@ import {
 } from '@/lib/pilot-group-validation';
 import { cn } from '@/lib/utils';
 import axios from 'axios';
-import { Check, Plus, Trash2, UsersRound } from 'lucide-react';
+import { Check, Plus, Star, Trash2, UsersRound } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
+import { Avatar } from './Avatar';
 import { apiMsg, Btn, card, dialogSurface, EmptyBlock, ErrorBlock, heading, inputCls, LoadingBlock, muted, Pill, SearchBox } from './ui';
 
 const BASE = '/api/operation/slot-booking/pilot-groups';
 const EXAMPLES = ['Experts', 'Newbies', 'External'];
 
 type FieldErrors = { name?: string; description?: string; members?: string };
-const AVATAR_TONES = [
-  'bg-violet-500/15 text-violet-600',
-  'bg-sky-500/15 text-sky-600',
-  'bg-emerald-500/15 text-emerald-600',
-  'bg-amber-500/15 text-amber-600',
-  'bg-rose-500/15 text-rose-600',
-  'bg-indigo-500/15 text-indigo-600',
-];
-
-const initials = (name: string) =>
-  name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((p) => p[0]!.toUpperCase())
-    .join('') || '?';
-
-function Avatar({ person, size = 28 }: { person: { userId: number; name: string; avatarUrl?: string | null }; size?: number }) {
-  const [failed, setFailed] = useState(false);
-  // A new URL (e.g. after a refresh) deserves a new attempt.
-  useEffect(() => setFailed(false), [person.avatarUrl]);
-
-  if (person.avatarUrl && !failed) {
-    return (
-      <img
-        src={person.avatarUrl}
-        alt={person.name}
-        width={size}
-        height={size}
-        style={{ width: size, height: size }}
-        className="shrink-0 rounded-full object-cover"
-        onError={() => setFailed(true)}
-      />
-    );
-  }
-  return (
-    <span
-      style={{ width: size, height: size }}
-      className={cn('shrink-0 rounded-full inline-flex items-center justify-center text-[10px] font-semibold', AVATAR_TONES[person.userId % AVATAR_TONES.length])}
-    >
-      {initials(person.name)}
-    </span>
-  );
-}
-
 /** Fixed-height slot under a field so showing/hiding a message never changes the modal's height. */
 function FieldError({ message }: { message?: string }) {
   return <p className="h-4 text-[11px] leading-4 font-light text-red-500 truncate">{message ?? ''}</p>;
@@ -188,6 +144,7 @@ function GroupFormDialog({
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [selected, setSelected] = useState<Set<number>>(new Set());
+  const [isExpert, setIsExpert] = useState(false);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [busy, setBusy] = useState(false);
 
@@ -196,6 +153,7 @@ function GroupFormDialog({
     setName(editing?.name ?? presetName);
     setDescription(editing?.description ?? '');
     setSelected(new Set(editing?.members.map((m) => m.userId) ?? []));
+    setIsExpert(editing?.isExpert ?? false);
     setErrors({});
   }, [open, editing, presetName]);
 
@@ -231,7 +189,7 @@ function GroupFormDialog({
 
   const submit = async () => {
     if (!validate()) return;
-    const body = { name: name.trim(), description: description.trim(), memberIds: [...selected] };
+    const body = { name: name.trim(), description: description.trim(), memberIds: [...selected], isExpert };
     // Duplicate names are reported as a toast after the click, not by disabling the button.
     if (groups.some((g) => g.id !== editing?.id && g.name.trim().toLowerCase() === body.name.toLowerCase())) {
       toast.error(t('slotBooking.pilotGroups.errors.nameTaken'));
@@ -292,6 +250,14 @@ function GroupFormDialog({
             />
             <FieldError message={errors.description} />
           </div>
+
+          <label className={cn('flex items-start gap-2 rounded-lg border p-3 mb-3 cursor-pointer', isDark ? 'border-white/[0.1]' : 'border-gray-200')}>
+            <input type="checkbox" className="mt-0.5 accent-violet-600" checked={isExpert} onChange={(e) => setIsExpert(e.target.checked)} />
+            <span>
+              <span className={cn('text-xs font-medium block', heading(isDark))}>{t('slotBooking.pilotGroups.expert')}</span>
+              <span className={cn('text-[11px]', muted(isDark))}>{t('slotBooking.pilotGroups.expertHint')}</span>
+            </span>
+          </label>
 
           <div>
             <div className="flex items-center justify-between">
@@ -415,7 +381,10 @@ export function PilotGroupsView({ isDark }: { isDark: boolean }) {
               <div key={g.id} className={cn('rounded-xl border p-4 flex flex-col gap-3', card(isDark))}>
                 <div>
                   <div className="flex items-start justify-between gap-2">
-                    <h3 className={cn('text-sm font-semibold truncate', heading(isDark))}>{g.name}</h3>
+                    <h3 className={cn('text-sm font-semibold truncate flex items-center gap-1.5', heading(isDark))}>
+                      {g.name}
+                      {g.isExpert && <Pill isDark={isDark} tone="green"><Star size={9} /> {t('slotBooking.pilotGroups.expertTag')}</Pill>}
+                    </h3>
                     <button
                       type="button"
                       title={t('slotBooking.pilotGroups.delete')}

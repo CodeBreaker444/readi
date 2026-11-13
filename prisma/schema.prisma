@@ -2122,6 +2122,7 @@ model pilot_group {
   created_by         Int?
   created_at         DateTime             @default(now()) @db.Timestamp(6)
   updated_at         DateTime             @default(now()) @db.Timestamp(6)
+  is_expert          Boolean              @default(false)
   users              public_users?        @relation(fields: [created_by], references: [user_id], onUpdate: NoAction)
   owner              owner                @relation(fields: [fk_owner_id], references: [owner_id], onDelete: Cascade, onUpdate: NoAction)
   pilot_group_member pilot_group_member[]
@@ -2695,6 +2696,9 @@ model slot_group {
   created_by    Int?
   created_at    DateTime       @default(now()) @db.Timestamp(6)
   updated_at    DateTime       @default(now()) @db.Timestamp(6)
+  fk_client_id          Int?
+  publish_at            DateTime?      @db.Timestamp(6)
+  published_notified_at DateTime?      @db.Timestamp(6)
   slot          slot[]
   slot_booking  slot_booking[]
   users         public_users?  @relation(fields: [created_by], references: [user_id], onUpdate: NoAction)
@@ -2715,8 +2719,21 @@ model slot_settings {
   is_blocked    Boolean  @default(false)
   approval_days Int[]    @default([1, 4]) @db.SmallInt
   updated_at    DateTime @default(now()) @db.Timestamp(6)
+  modify_lock_hours Int  @default(24) @db.SmallInt
+  base_latitude  Float?
+  base_longitude Float?
   owner         owner    @relation(fields: [fk_owner_id], references: [owner_id], onDelete: Cascade, onUpdate: NoAction)
 
+  @@schema("public")
+}
+
+/// Which pilot groups a slot group is offered to (no rows = every pilot). Scalar-only on purpose: the service joins by id.
+model slot_group_pilot_group {
+  fk_slot_group_id  Int
+  fk_pilot_group_id Int
+
+  @@id([fk_slot_group_id, fk_pilot_group_id])
+  @@index([fk_pilot_group_id], map: "idx_slot_group_pilot_group_pg")
   @@schema("public")
 }
 

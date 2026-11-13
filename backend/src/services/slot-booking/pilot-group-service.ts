@@ -12,7 +12,7 @@ function assertManager(user: SessionUser) {
   if (!canManageSlots(user)) throw new SlotBookingError('Only the Operations Manager can manage pilot groups', 403);
 }
 
-const fullName = (u: { first_name: string | null; last_name: string | null; username: string | null; user_id: number }) =>
+export const fullName = (u: { first_name: string | null; last_name: string | null; username: string | null; user_id: number }) =>
   [u.first_name, u.last_name].filter(Boolean).join(' ') || u.username || `User #${u.user_id}`;
 
 const userSelect = {
@@ -25,7 +25,7 @@ const userSelect = {
   users_profile: { select: { profile_picture: true } },
 } as const;
 
-async function avatarUrl(picture: string | null | undefined): Promise<string | null> {
+export async function avatarUrl(picture: string | null | undefined): Promise<string | null> {
   if (!picture) return null;
   if (picture.startsWith('avatars/') || picture.startsWith('profiles/')) {
     try {
@@ -62,6 +62,7 @@ async function mapGroup(g: GroupWithMembers): Promise<PilotGroup> {
     description: g.description ?? '',
     memberCount: members.length,
     members,
+    isExpert: g.is_expert,
     createdAt: g.created_at.toISOString(),
     createdByName: g.users ? fullName(g.users) : null,
   };
@@ -162,6 +163,7 @@ export async function createPilotGroup(user: SessionUser, input: PilotGroupInput
         fk_owner_id: user.ownerId,
         name,
         description: input.description?.trim() || null,
+        is_expert: input.isExpert ?? false,
         created_by: user.userId,
         pilot_group_member: { create: memberIds.map((fk_user_id) => ({ fk_user_id })) },
       },
@@ -192,7 +194,7 @@ export async function updatePilotGroup(user: SessionUser, id: number, input: Pil
     await prisma.$transaction([
       prisma.pilot_group.update({
         where: { pilot_group_id: id },
-        data: { name, description: input.description?.trim() || null, updated_at: new Date() },
+        data: { name, description: input.description?.trim() || null, is_expert: input.isExpert ?? existing.is_expert, updated_at: new Date() },
       }),
       prisma.pilot_group_member.deleteMany({ where: { fk_pilot_group_id: id, fk_user_id: { notIn: memberIds } } }),
       prisma.pilot_group_member.createMany({

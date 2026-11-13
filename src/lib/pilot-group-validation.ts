@@ -22,4 +22,6 @@ export const pilotGroupSchema = z.object({
     .array(z.number().int().positive())
     .max(PILOT_GROUP_MEMBERS_MAX, `A group can have at most ${PILOT_GROUP_MEMBERS_MAX} members`)
     .refine((ids) => new Set(ids).size === ids.length, 'Duplicate members'),
+  /** Recommended for tough-weather slots. */
+  isExpert: z.boolean().optional(),
 });

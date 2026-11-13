@@ -10,3 +10,9 @@ export function slotBookingErrorResponse(err: unknown) {
   }
   return internalError(E.SV001, err);
 }
+
+/** Positive integer route id, or null when the segment is not one */
+export function parseRouteId(raw: string): number | null {
+  const id = /^\d+$/.test(raw) ? Number(raw) : NaN;
+  return Number.isSafeInteger(id) && id > 0 ? id : null;
+}

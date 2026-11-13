@@ -6007,7 +6007,9 @@
       "approved": "Genehmigte Slots",
       "myApproved": "Meine genehmigten Slots",
       "audit": "Audit-Protokoll",
-      "pilotGroups": "Pilotengruppen"
+      "pilotGroups": "Pilotengruppen",
+      "dayPreview": "Tagesvorschau",
+      "merits": "Pilotenverdienste"
     },
     "common": {
       "cancel": "Abbrechen",
@@ -6098,7 +6100,8 @@
       "requestSlot": "Der Slot konnte nicht angefragt werden",
       "cancelRequest": "Die Anfrage konnte nicht storniert werden",
       "loadApproved": "Genehmigte Slots konnten nicht geladen werden",
-      "loadAudit": "Das Audit-Protokoll konnte nicht geladen werden"
+      "loadAudit": "Das Audit-Protokoll konnte nicht geladen werden",
+      "publishNow": "Die Gruppe konnte nicht veröffentlicht werden"
     },
     "opm": {
       "slotSettings": "Slot-Einstellungen",
@@ -6125,7 +6128,12 @@
       "deleteWithRequests_one": "{{count}} ausstehende oder genehmigte Anfrage wird storniert und der Pilot erhält eine Warnung.",
       "deleteWithRequests_other": "{{count}} ausstehende oder genehmigte Anfragen werden storniert und die Piloten erhalten eine Warnung.",
       "deleteAction": "Gruppe löschen",
-      "deleting": "Wird gelöscht…"
+      "deleting": "Wird gelöscht…",
+      "client": "Kunde: {{name}}",
+      "scheduledFor": "Öffnet {{when}}",
+      "allPilots": "Alle Piloten",
+      "publishNow": "Jetzt veröffentlichen",
+      "publishedNow": "„{{name}}“ ist jetzt für Piloten geöffnet"
     },
     "slotDialog": {
       "blockedLong": "Gesperrt (ein Pilot)",
@@ -6134,6 +6142,8 @@
       "requests": "Pilotenanfragen ({{count}})",
       "noBookings": "Für diesen Slot gibt es noch keine Buchungen.",
       "requestedAt": "Angefragt {{when}}",
+      "assignedAt": "Zugewiesen {{when}}",
+      "assignedByOpm": "Vom OPM zugewiesen",
       "noDocument": "Kein Dokument angehängt",
       "reasonLine": "Grund: {{note}}",
       "approve": "Genehmigen",
@@ -6160,7 +6170,8 @@
       "rejectedToast": "{{name}} abgelehnt",
       "rejectedDesc": "Ablehnung per E-Mail und In-App mitgeteilt.",
       "updatedToast": "Slot aktualisiert",
-      "updatedDesc": "Änderung im Audit-Protokoll erfasst."
+      "updatedDesc": "Änderung im Audit-Protokoll erfasst.",
+      "collision": "Bereits einem überlappenden Slot zugewiesen: {{slot}}. Diese Anfrage kann nicht genehmigt werden."
     },
     "settings": {
       "title": "Slot-Einstellungen — Unternehmensstandards",
@@ -6170,7 +6181,16 @@
       "blockDefault": "Slot nach der ersten Buchung sperren (Standard: nicht gesperrt)",
       "defaultApprovalDays": "Standard-Freigabetag(e)",
       "save": "Standards speichern",
-      "saved": "Slot-Einstellungen gespeichert"
+      "saved": "Slot-Einstellungen gespeichert",
+      "lockHours": "Änderungen vor dem Genehmigungstag sperren",
+      "lockNone": "Nie sperren",
+      "lock24": "24 Stunden vorher",
+      "lock48": "48 Stunden vorher",
+      "lockHint": "In diesem Zeitraum können Piloten offene Anfragen nicht mehr stornieren oder verschieben.",
+      "latitude": "Breitengrad (Standort)",
+      "longitude": "Längengrad (Standort)",
+      "locationHint": "Für das 7-Tage-Wetter je Slot. Leer lassen, um das erste System mit Standort zu verwenden.",
+      "locationInvalid": "Beide Werte angeben: Breitengrad −90 bis 90, Längengrad −180 bis 180 (oder beide leer lassen)."
     },
     "create": {
       "titleParams": "Neue Slot-Gruppe — Parameter",
@@ -6200,7 +6220,30 @@
       "publishedDesc_one": "{{count}} Slot ist jetzt für PIC-Buchungen geöffnet.",
       "publishedDesc_other": "{{count}} Slots sind jetzt für PIC-Buchungen geöffnet.",
       "activateOne": "Aktivieren Sie vor dem Veröffentlichen mindestens einen Slot.",
-      "nameTaken": "Eine Slot-Gruppe mit diesem Namen existiert bereits. Bitte wählen Sie einen anderen Namen."
+      "nameTaken": "Eine Slot-Gruppe mit diesem Namen existiert bereits. Bitte wählen Sie einen anderen Namen.",
+      "client": "Kunde",
+      "noClient": "Kein Kunde",
+      "clientHint": "Der Kunde, für den diese Slots geflogen werden. Wird im Tagesplan angezeigt.",
+      "publishing": "Veröffentlichung",
+      "publishNow": "Jetzt veröffentlichen",
+      "schedule": "Planen",
+      "publishPast": "Wählen Sie einen Zeitpunkt in der Zukunft",
+      "publishTooLate": "Der Veröffentlichungszeitpunkt muss am oder vor dem letzten Slot-Tag liegen",
+      "scheduleHint": "Piloten sehen diese Gruppe erst dann.",
+      "publishNowHint": "Piloten können diese Slots sofort sehen und anfragen.",
+      "audience": "Angeboten an",
+      "noPilotGroups": "Noch keine Pilotengruppen. Erstellen Sie welche im Tab Pilotengruppen, um die Sichtbarkeit einzuschränken.",
+      "audienceOnly": "Nur Mitglieder der gewählten Pilotengruppen können diese Slots sehen und anfragen.",
+      "audienceAll": "Keine Gruppe gewählt: Alle Piloten können diese Slots sehen und anfragen.",
+      "searchClient": "Kunden suchen…",
+      "noClientMatch": "Keine Kunden gefunden.",
+      "clientRequired": "Bitte wählen Sie einen Kunden aus.",
+      "searchGroups": "Pilotengruppen suchen…",
+      "noGroupMatch": "Keine Pilotengruppen gefunden.",
+      "memberCount_one": "{{count}} Mitglied",
+      "memberCount_other": "{{count}} Mitglieder",
+      "noMembers": "Keine Mitglieder in dieser Gruppe.",
+      "clearSelection": "Leeren ({{count}})"
     },
     "conflict": {
       "title": "Doppelte Slots erkannt",
@@ -6233,7 +6276,12 @@
       "cancelBody": "Ihre Anfrage für {{slot}} am {{date}} in „{{group}}“ wird zurückgezogen.",
       "cancelKeep": "Anfrage behalten",
       "cancelConfirm": "Anfrage stornieren",
-      "cancelling": "Wird storniert…"
+      "cancelling": "Wird storniert…",
+      "moved": "Anfrage verschoben",
+      "moveBanner": "Wählen Sie einen neuen Slot für Ihre Anfrage am {{date}} ({{slot}}).",
+      "moveTitle": "Anfrage verschieben?",
+      "moveBody": "Ihre offene Anfrage für {{slot}} am {{date}} wird auf diesen Slot verschoben.",
+      "moveSlot": "Anfrage verschieben"
     },
     "requestsTable": {
       "date": "Datum",
@@ -6250,7 +6298,10 @@
       "clear": "Zurücksetzen",
       "noMatch": "Keine Anfragen entsprechen diesen Filtern.",
       "fromDate": "Slot-Datum von",
-      "toDate": "Slot-Datum bis"
+      "toDate": "Slot-Datum bis",
+      "locked": "Gesperrt",
+      "lockedHint": "Gesperrt: Der Genehmigungstag beginnt {{when}}",
+      "change": "Ändern"
     },
     "approvedTable": {
       "date": "Datum",
@@ -6326,7 +6377,7 @@
     },
     "pilotGroups": {
       "title": "Pilotengruppen",
-      "subtitle": "Eigene Gruppen (z. B. Experten, Neulinge, Extern) erstellen und Benutzer des Unternehmens zuordnen",
+      "subtitle": "Eigene Gruppen erstellen und Benutzer des Unternehmens zuordnen",
       "opmOnly": "Nur der Operations Manager kann Pilotengruppen verwalten.",
       "search": "Gruppen oder Mitglieder suchen",
       "new": "Neue Gruppe",
@@ -6379,7 +6430,102 @@
       "noEmail": "Keine E-Mail",
       "remove": "{{name}} entfernen",
       "createdBy": "Erstellt von {{name}}",
-      "rolesLabel": "Rollen"
+      "rolesLabel": "Rollen",
+      "expert": "Expertengruppe",
+      "expertHint": "Mitglieder werden bei Slots mit schwierigem Wetter zuerst empfohlen.",
+      "expertTag": "Experte"
+    },
+    "opmOnly": "Nur der Operations Manager kann diese Seite sehen.",
+    "weather": {
+      "level": {
+        "calm": "Ruhig",
+        "moderate": "Mäßig",
+        "tough": "Schwierig"
+      },
+      "detail": "{{level}}es Wetter · Wind {{wind}} m/s, Böen {{gust}} m/s, Regen {{rain}} mm",
+      "noLocation": "Legen Sie in den Slot-Einstellungen einen Standort fest, um das 7-Tage-Wetter je Slot zu sehen.",
+      "unavailable": "Die Wettervorhersage ist derzeit nicht verfügbar.",
+      "outOfRange": "Vorhersagen gibt es nur für die nächsten 7 Tage."
+    },
+    "assign": {
+      "title": "Pilot zuweisen",
+      "hoursShort": "{{hours}} Std.",
+      "scoreShort": "Punkte {{score}}",
+      "errors": {
+        "load": "Piloten konnten nicht geladen werden",
+        "assign": "Pilot konnte nicht zugewiesen werden",
+        "unassign": "Pilot konnte nicht entfernt werden"
+      },
+      "assigned": "{{name}} zugewiesen",
+      "pilot": "Pilot",
+      "currentlyAssigned": "Diesem Slot zugewiesen",
+      "unassign": "Zuweisung aufheben",
+      "unassigned": "Pilot vom Slot entfernt",
+      "toughHint": "Schwieriges Wetter: Ziehen Sie einen erfahrenen Piloten (★) in Betracht.",
+      "none": "Keine Piloten für diesen Slot verfügbar.",
+      "choose": "Pilot auswählen…",
+      "groupRequested": "Hat diesen Slot angefragt",
+      "groupAvailable": "Verfügbar",
+      "groupBlocked": "Nicht verfügbar (überlappende Zuweisung)",
+      "requested": "Angefragt",
+      "hours90": "{{hours}} Std. in den letzten 90 Tagen geflogen",
+      "score": "Punkte {{score}}",
+      "confirmTough": "Das Wetter ist schwierig und dieser Pilot gehört keiner Expertengruppe an. Trotzdem zuweisen?",
+      "assignAnyway": "Trotzdem zuweisen",
+      "assign": "Zuweisen",
+      "blockedNote": "{{count}} Pilot(en) sind bereits einem überlappenden Slot zugewiesen und können nicht gewählt werden."
+    },
+    "stats": {
+      "title": "Meine Flüge",
+      "hours": "Flugstunden ({{days}} Tage)",
+      "hoursTotal": "{{hours}} Std. insgesamt",
+      "weekend": "Wochenend-Anfragen",
+      "availability": "Angefragte Slots",
+      "approved": "Genehmigt",
+      "score": "Punkte",
+      "rank": "Platz {{rank}} von {{total}}",
+      "how": "Der OPM vergibt die Slots. Mehr Verfügbarkeit (Wochenenden zählen am meisten) und mehr Flugstunden erhöhen Ihre Punkte."
+    },
+    "dayPreview": {
+      "title": "Tagesvorschau",
+      "subtitle": "Alle Slots eines Tages mit Kunde und zugewiesenem Piloten",
+      "date": "Datum",
+      "errors": {
+        "load": "Der Tag konnte nicht geladen werden"
+      },
+      "empty": "An diesem Tag gibt es keine Slots.",
+      "allAssigned": "Alle Slots sind zugewiesen",
+      "someUnassigned": "{{count}} Slot(s) ohne Pilot",
+      "summary": "{{assigned}} von {{total}} Slots zugewiesen",
+      "slot": "Slot",
+      "client": "Kunde",
+      "group": "Slot-Gruppe",
+      "pilot": "Zugewiesener Pilot",
+      "weather": "Wetter",
+      "unassigned": "Nicht zugewiesen",
+      "requests": "{{count}} Anfrage(n)",
+      "assign": "Zuweisen",
+      "change": "Ändern"
+    },
+    "merits": {
+      "title": "Pilotenverdienste",
+      "subtitle": "Stunden, Verfügbarkeit und Punkte aller Piloten",
+      "howTitle": "So funktioniert die Punktzahl",
+      "how": "In den letzten {{days}} Tagen, relativ zum besten Piloten: Wochenend-Verfügbarkeit {{weekend}} %, allgemeine Verfügbarkeit {{availability}} %, Flugstunden {{hours}} %. Verfügbarkeit zählt die Slots, die ein Pilot angefragt hat.",
+      "search": "Piloten suchen",
+      "empty": "Noch keine Piloten.",
+      "noMatch": "Keine Piloten entsprechen Ihrer Suche.",
+      "pilot": "Pilot",
+      "groups": "Pilotengruppen",
+      "hours": "Stunden ({{days}} T.)",
+      "hoursTotal": "Stunden gesamt",
+      "availability": "Angefragte Slots",
+      "weekend": "Wochenende",
+      "approved": "Genehmigt",
+      "score": "Punkte",
+      "errors": {
+        "load": "Pilotenverdienste konnten nicht geladen werden"
+      }
     }
   }
 }

@@ -1,6 +1,6 @@
 ---
 title: "Slot Booking"
-description: "Open time slots for pilots, let them request a slot, and approve one pilot per slot with an optional PDF."
+description: "Open time slots for pilots, let them request a slot, and assign one pilot per slot, with pilot groups, scheduled publishing, collision checks, a day sheet, weather and pilot merits."
 ---
 
 Slot Booking lets the **Operations Manager (OPM)** open time slots and lets **pilots (PIC)** request them. The OPM then decides which pilot gets each slot. It is in the sidebar under **Operations → Slot Booking**.
@@ -9,7 +9,10 @@ Slot Booking lets the **Operations Manager (OPM)** open time slots and lets **pi
 |---|---|---|
 | **Slot Booking** | Everyone | OPM: create and manage slot groups. Pilot: browse groups and request slots |
 | **Approved Slots** | Everyone | Approved jobs and the PDF the OPM attached. Pilots see their own, the OPM sees all |
-| **Audit Log** | OPM, Admin, Super Admin | Every change to groups, slots and bookings |
+| **Day Preview** | OPM, Admin, Super Admin | Every slot of one day with its client and assigned pilot. Unassigned slots are red |
+| **Pilot Groups** | OPM, Admin, Super Admin | Custom groups of pilots (for example Experts, Newbies, External) |
+| **Pilot Merits** | OPM, Admin, Super Admin | Hours flown, availability and score of every pilot |
+| **Audit Log** | OPM, Admin, Super Admin | Every change to groups, slots, bookings and pilot groups |
 
 ---
 
@@ -17,8 +20,8 @@ Slot Booking lets the **Operations Manager (OPM)** open time slots and lets **pi
 
 | Role | What they can do |
 |---|---|
-| **OPM, Admin, Super Admin** | Create and delete slot groups, edit slots, approve or reject requests, set the company defaults, see every pilot's requests and the audit log |
-| **PIC (pilot)** | Browse slot groups, request and cancel their own slots, see their own approved slots |
+| **OPM, Admin, Super Admin** | Create and delete slot groups, schedule publishing, edit slots, approve or reject requests, assign and unassign pilots, manage pilot groups, see the day preview and pilot merits, set the company defaults, see every pilot's requests and the audit log |
+| **PIC (pilot)** | Browse the slot groups offered to them, request, move and cancel their own slots (until the lock window), see their own approved slots and their own hours and rank |
 | **Other roles with Operations access** | Browse the calendars only. They cannot request slots |
 
 ---
@@ -28,6 +31,11 @@ Slot Booking lets the **Operations Manager (OPM)** open time slots and lets **pi
 - **Slot group:** the container the OPM creates. It holds the rules (hours, dates, blocking, approval days) and all the slots made from them.
 - **Slot:** one time block inside a group, for example `06:00–14:00`.
 - **Request:** a pilot asking for a slot. It starts as **Pending Approval**.
+- **Pilot group:** a custom group of company users, such as *Experts*, *Newbies* or *External*. See [Pilot groups](#pilot-groups).
+- **Client:** the client a slot group is flown for. It is shown on the day sheet.
+- **Audience:** the pilot groups a slot group is offered to. No audience means every pilot.
+- **Collision:** a pilot already holds an approved slot whose time overlaps another slot. See [Collisions](#collisions).
+- **Lock window:** the last 24 or 48 hours before a group's approval day, when pilots can no longer change their requests.
 
 ---
 
@@ -43,10 +51,13 @@ Click **New Slot Group**. The form is pre-filled from **Slot Settings** (your co
 | **Date range** | A single day, a full week, or two weeks, from a start date that is today or later |
 | **Slot blocking** | Off (default): several pilots can request the same slot and you choose one. On: only one pilot per slot, the first request locks it |
 | **Approval day(s)** | The weekdays on which you review requests for this group |
+| **Client** | **Required.** The client these slots are flown for. Only active clients of your company are listed. Use the search box to find one in a long list; the list scrolls. **Next: Calendar** stays disabled until a client is picked |
+| **Publishing** | **Publish now** (default) or **Schedule** a date and time. See [Scheduled publishing](#scheduled-publishing) |
+| **Offered to** | Optional. One or more [pilot groups](#pilot-groups). Leave empty to offer the slots to every pilot. Search groups by name; the list scrolls when there are many. Each card shows the member count and the first members' pictures, and an expert star. **Hover** over a card to see the group's description and all its members with picture, name, role and email. **Clear** removes the selection |
 
 **Group names must be unique.** A new group cannot reuse the name of an existing group in your company. Upper and lower case and extra spaces are ignored, so `Week 1` and ` week 1 ` count as the same name. If the name is taken, the form shows *A slot group with this name already exists* and **Next: Calendar** stays disabled. The system also refuses it on publish, even if someone else creates the same name at the same moment.
 
-Click **Next: Calendar**. Every slot starts active. Click a slot, or **Deactivate day**, to switch things off, then **Publish calendar**. Pilots can request the slots as soon as it is published.
+Click **Next: Calendar**. Every slot starts active. Click a slot, or **Deactivate day**, to switch things off, then **Publish calendar**. Pilots who can see the group can request the slots as soon as it is published.
 
 ### Duplicate slot warning
 
@@ -66,7 +77,9 @@ Open a group's calendar. Each slot shows a live indicator:
 
 - **Open:** no requests yet
 - **2 PICs Booked:** requests waiting for your decision
-- **Approved:** a pilot has been chosen
+- **The pilot's name:** a pilot has been chosen (approved or assigned). Other pilots see this name on the calendar too, instead of "Taken"
+
+Slots in the next 7 days also show a small coloured **weather dot**. See [Weather](#weather).
 
 On an approval day of a group with waiting requests, the page also shows a **Today is an approval day** banner.
 
@@ -78,6 +91,8 @@ Click a slot to see the pilots who requested it.
 - **Reject:** add an optional reason. The pilot is told by email and in-app.
 
 You can decide on any day. If today is not one of the group's approval days, the dialog only reminds you of the scheduled days.
+
+If the pilot is already assigned to another slot that overlaps this one, the request shows a red warning and **Approve** is disabled. See [Collisions](#collisions).
 
 ### Edit a published slot
 
@@ -98,22 +113,145 @@ If pilots had **pending or approved** requests in the group, each of them gets a
 
 ### Slot Settings
 
-**Slot Settings** holds your company defaults: slot hours, date range, blocking and approval days. They only pre-fill new groups. Existing groups are not changed.
+**Slot Settings** holds your company defaults: slot hours, date range, blocking and approval days. They only pre-fill new groups. Existing groups are not changed. For hourly slots, the start and end hour are chosen from a grid of hours (the end can be up to 24:00, shown as 00:00); a red border means the end is not after the start.
+
+Two settings apply to the whole company straight away:
+
+| Setting | What it does |
+|---|---|
+| **Lock changes before the approval day** | Choose **Never lock**, **24 hours before** or **48 hours before** with the buttons (default 24). Inside this window pilots cannot cancel or move pending requests. See [Changing a request](#changing-a-request) |
+| **Base latitude / longitude** | The place used for the 7-day slot weather. Enter both or neither. Latitude is −90 to 90 and longitude −180 to 180. If empty, the first system with a saved location is used |
+
+---
+
+## Pilot groups
+
+Open **Pilot Groups** (OPM only) to organise pilots into your own groups. Typical examples are *Experts*, *Newbies* and *External*. Groups are custom: create as many as you like.
+
+- **New group:** enter a name (required, up to 100 characters), an optional description (up to 500) and choose the members. You can search the member list by name, email or role and select everyone shown with one click. The list shows each user's profile picture (or initials), name, email and role.
+- **Members** can be any **active user of your company**, not only pilots, for example an external pilot with another role. A user can be in several groups.
+- **Group names must be unique** in your company. Case and extra spaces are ignored. If the name is taken you see an error message after you click **Create group**.
+- **Expert group:** tick this on groups of experienced pilots. Their members are recommended first for tough-weather slots. See [Weather](#weather).
+- **Edit** a group to change its name, members or expert flag. Delete it with the bin icon. Deleting a group never deletes its users, and slot groups offered to it are not deleted.
+
+---
+
+## Scheduled publishing
+
+A slot group can open to pilots later. In **New Slot Group**, choose **Schedule** and pick a date and time.
+
+- The time must be at least a minute ahead, no more than a year ahead, and **on or before the last slot day** of the group. The form and the server both check this.
+- Until then pilots **do not see the group at all**. If they open it by link they get *Slot group not found*. The OPM sees it with an amber **Opens …** label.
+- When the time passes, the group becomes visible and requestable automatically.
+- Pilots who can see the group get a **Slot group open for requests** notification within a few minutes (see [Cron Jobs](/docs/business-logic/cron-jobs)). It is sent once per group.
+- **Publish now** on the group card opens a scheduled group straight away.
+
+### Who sees a group
+
+A pilot sees a slot group only when it is **published** and either has **no audience**, or the pilot is a member of at least one of the **pilot groups** it is offered to. The OPM, Admin and Super Admin see every group.
+
+---
+
+## Collisions
+
+A pilot cannot be in two places at once. Readi treats it as a collision when a pilot is **approved** for a slot whose time overlaps another slot, even in a different slot group.
+
+- Overlap is checked on the real time window, so a night shift (22:00–06:00) overlaps the early hours of the next day. Slots that only touch, such as 06:00–14:00 and 14:00–22:00, do **not** collide.
+- A pilot who requests a slot that overlaps one they already hold gets *You are already assigned to an overlapping slot*.
+- The OPM cannot approve or assign such a pilot: *… is already assigned to an overlapping slot*. On the slot's request list the warning is shown in red and **Approve** is disabled.
+- In the [assign dropdown](#assign-a-pilot) pilots with a collision are listed last and cannot be selected.
+
+---
+
+## Assign a pilot
+
+Besides approving requests, the OPM can pick a pilot directly. Open a slot (from the calendar or from the [Day Preview](#day-preview)) and use **Assign pilot**. The panel is hidden once a pilot's own request for that slot has been approved. After a direct assignment it stays, so you can unassign.
+
+The dropdown lists pilots in this order:
+
+1. **Requested this slot**
+2. **Available** (no collision)
+3. **Unavailable** (overlapping assignment, greyed out)
+
+Inside each part, pilots with the higher [score](#pilot-merits) come first. For a tough-weather slot, members of **expert groups** come first. Each option shows the pilot's hours in the last 90 days and their score, and an expert star. Selecting one shows their picture, email, role, groups and numbers.
+
+- If the slot group has an audience, only members of those pilot groups are listed and accepted.
+- If the weather is tough and the pilot is not in an expert group, you are asked to confirm: **Assign anyway**.
+- Assigning approves the pilot's own request if they made one, otherwise it creates an approved booking. Other pending requests for that slot are declined automatically. The pilot gets an in-app notification and an email (*Slot assigned*).
+- A booking created by a direct assignment is shown as **Assigned** (not *Requested*) in the slot's request list, and as *Assigned by OPM* in the pilot's **My requests** table.
+- **Unassign** removes the pilot from the slot so someone else can be picked. The pilot receives a warning notification and an email (*Slot assignment removed*), and the booking appears as rejected in their **My requests**.
+- Only future, open slots can be assigned, and only one pilot per slot.
+
+---
+
+## Day Preview
+
+**Day Preview** (OPM only) is the day sheet: pick a date, and you see every active slot of that day across all slot groups.
+
+| Column | Meaning |
+|---|---|
+| **Slot** | The time window |
+| **Client** | The client of the slot group |
+| **Slot group** | Which group the slot belongs to |
+| **Pilot assigned** | The approved pilot, or a red **Unassigned** label with the number of waiting requests |
+| **Weather** | The forecast badge, for dates in the next 7 days |
+
+A bar at the top shows how many slots are assigned, in red while any slot has no pilot and in green when all are assigned. Unassigned rows are red. Click **Assign** (or **Change**) on a row to open the [assign dropdown](#assign-a-pilot). Use the arrows or the date field to move between days.
+
+---
+
+## Weather
+
+For slots in the **next 7 days** (today and the six days after) the OPM sees the forecast, so tough weather can go to experienced pilots.
+
+- A **coloured dot** appears on each slot of the calendar: green = calm, amber = moderate, red = tough. Open the slot, or the Day Preview, for the details: average wind, gusts and rain during the slot's hours.
+- The verdict uses the same limits as the flight-weather feature. **Darkness is ignored**: night shifts are judged on the weather only.
+- The forecast comes from the base location in [Slot Settings](#slot-settings). Without one, Readi uses the first system that has a location. If there is none, the screens say to set a base location.
+- Slots further away than 7 days, or in the past, have no forecast. If the weather service is unavailable, slot booking keeps working without it.
+
+---
+
+## Pilot merits
+
+**Pilot Merits** (OPM only) shows how each pilot has performed, so better availability and experience can lead to more slots. Allotting slots is always the OPM's decision: the score only helps you decide.
+
+Over the last **90 days**, each measure is compared with the best pilot of the company:
+
+| Measure | Weight |
+|---|---|
+| **Weekend availability:** slots on a Saturday or Sunday the pilot asked for | 40% |
+| **Overall availability:** slots the pilot asked for | 30% |
+| **Flight hours:** hours flown on missions in the last 90 days | 30% |
+
+The score is 0 to 100. Equal scores share a rank. Because each measure is compared with the best pilot, the score is relative: when the top pilot's numbers change, everyone else's score can change too.
+
+Availability counts every slot request made in the window, whatever its status (pending, approved or rejected). A slot the OPM assigned directly also creates a booking, so it is counted as well. Missions without a pilot or a duration add no hours. The table also shows the all-time hours, the number of approved slots and the pilot's groups. Hours come from the flight duration of the pilot's missions. Anyone with the pilot role, and anyone in a pilot group, is listed.
+
+Pilots see their own numbers on the **Slot Booking** page, in **My flying**: hours flown, weekend requests, slots requested, approved slots, score and rank.
 
 ---
 
 ## For pilots
 
-1. Open **Slot Booking**. All slot groups of your company are listed, and you can search them by name.
+1. Open **Slot Booking**. The slot groups offered to you are listed (published, and open to everyone or to a pilot group you belong to). You can search them by name.
 2. Click a group to see its calendar of open slots.
 3. Click an open slot and confirm **Request slot**.
 4. Your request is **Pending Approval**. A message confirms it, for example: *Booking requested. Please wait for OPM approval. Scheduled review day: Thursday.*
 
-On the calendar your own slots show as **Pending** (amber) or **Approved** (green). Slots that are closed, in the past, or already given to someone else are greyed out.
+On the calendar your own slots show as **Pending** (amber) or **Approved** (green). Slots that are closed, in the past, or already given to someone else are greyed out, and show the name of the pilot who has them.
 
 ### My requests
 
-Below the group list, **My requests** shows every slot you have asked for, in a table with filters for **date**, **slot group** and **status**, a search box and pagination (8 per page). You can **cancel** a request while it is still pending: a confirmation dialog asks you to confirm first (**Cancel request**, or **Keep request** to leave it as it is). For approved requests the attached PDF is a link in the **Details** column. For rejected requests the OPM's reason is shown there.
+The **My requests** tab, next to **Available slot groups**, shows the number of requests in its label. It lists every slot you have asked for, in a table with filters for **date**, **slot group** and **status**, a search box and pagination (8 per page). You can **change** or **cancel** a request while it is still pending and not locked. A confirmation dialog asks you to confirm cancelling first (**Cancel request**, or **Keep request** to leave it as it is). For approved requests the attached PDF is a link in the **Details** column. For rejected requests the OPM's reason is shown there.
+
+### Changing a request
+
+- **Change** moves a pending request to another open slot of the **same group**. Pick the new slot on the calendar and confirm **Move request**. The OPM is told.
+- **Cancel** withdraws a pending request.
+- **Lock window:** inside the last **24 or 48 hours** before the group's next approval day (company setting, see [Slot Settings](#slot-settings)) a pending request shows **Locked** and cannot be moved or cancelled. The approval day itself counts from midnight UTC, so on the approval day everything is locked. With the lock set to *Never lock*, requests can be changed until they are decided.
+- Making a **new** request is not blocked by the lock.
+- The server enforces this too: a locked change answers *Requests can no longer be changed*.
+- Approved requests cannot be changed by the pilot. Ask the OPM.
 
 ---
 
@@ -164,6 +302,10 @@ Every notification is created **in-app** (the bell icon) and sent **by email**.
 | A group is deleted | Pilots with pending or approved requests in it (**warning**: *Slot group deleted*) |
 | A group's dates are overwritten | Pilots whose requests were cancelled by it (**warning**: *Slot booking cancelled*) |
 | It is an approval day and requests are waiting | The OPM (*Slot approval day reminder*) |
+| A scheduled group opens | The pilots who can see it (*Slot group open for requests*), once |
+| The OPM assigns a pilot directly | The pilot (*Slot assigned*) and the pilots whose requests were declined |
+| The OPM unassigns a pilot | The pilot (**warning**: *Slot assignment removed*) |
+| A pilot moves a request | The OPM (*Slot request moved*) |
 
 ### Warnings
 
@@ -178,6 +320,7 @@ A pilot who is not logged in when the group is deleted sees the warning, still u
 
 Notes:
 
+- The "group open" notification is sent by a job that runs every 5 minutes, so it can arrive a few minutes after the group opens. Pilots see the group the moment its time passes, whether or not the notification has been sent.
 - The approval-day reminder is sent by a daily job at 06:00 UTC, only for groups that have an approval day matching today and at least one pending request. See [Cron Jobs](/docs/business-logic/cron-jobs).
 - Emails count toward the company's **daily email limit**. When the limit is reached, the email is skipped but the in-app notification is still created. See [Email Notifications](/docs/business-logic/email-notifications).
 - Notification texts are sent in English.
@@ -186,10 +329,10 @@ Notes:
 
 ## Audit log
 
-Every change is recorded: groups created or deleted, slots edited, requests made or cancelled, and approvals and rejections (with the reason, the attached file name and the pilots who were declined automatically).
+Every change is recorded: groups created, published early or deleted, slots edited, requests made, moved or cancelled, approvals and rejections (with the reason, the attached file name and the pilots who were declined automatically), direct assignments and unassignments, and pilot groups created, changed or deleted.
 
 - **Slot Booking → Audit Log** shows these entries in a table with filters for event, section and date. Click a row to see the details, such as the before and after values of an edit. Each group's calendar page also shows the log filtered to that group.
-- The same entries appear on the main [Audit Logs](/docs/records/audit-logs) page under the sections **slot group**, **slot** and **slot booking**.
+- The same entries appear on the main [Audit Logs](/docs/records/audit-logs) page under the sections **slot group**, **slot**, **slot booking** and **pilot group**.
 
 ---
 

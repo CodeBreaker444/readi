@@ -10,7 +10,7 @@ import { slotLabel } from '@/lib/slot-booking-utils';
 import { cn } from '@/lib/utils';
 import { ColumnDef, flexRender, getCoreRowModel, getPaginationRowModel, useReactTable } from '@tanstack/react-table';
 import axios from 'axios';
-import { FileText, FilterX, Search } from 'lucide-react';
+import { FileText, FilterX, Lock, Search } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { apiMsg, muted, Pill, statusTone, useSlotI18n } from './ui';
@@ -23,11 +23,14 @@ export function MyRequestsTable({
   groups = [],
   isDark,
   onCancel,
+  onMove,
 }: {
   rows: MyBookingRow[];
   groups?: { id: number; name: string }[];
   isDark: boolean;
   onCancel: (bookingId: number) => void;
+  /** Start moving a pending request to another slot of its group. */
+  onMove: (bookingId: number) => void;
 }) {
   const s = useSlotI18n();
   const { t, locale } = s;
@@ -102,7 +105,12 @@ export function MyRequestsTable({
       {
         id: 'requested',
         header: t('slotBooking.requestsTable.requested'),
-        cell: ({ row }) => <span className="text-gray-500">{s.dateTime(row.original.requestedAt)}</span>,
+        cell: ({ row }) => (
+          <span className="text-gray-500">
+            {s.dateTime(row.original.requestedAt)}
+            {row.original.assignedByOpm && <span className="block text-[11px] text-violet-500">{t('slotBooking.slotDialog.assignedByOpm')}</span>}
+          </span>
+        ),
       },
       {
         id: 'status',
@@ -136,24 +144,47 @@ export function MyRequestsTable({
       {
         id: 'actions',
         header: '',
-        cell: ({ row }) =>
-          row.original.status === 'PENDING' ? (
-            <button
-              type="button"
-              onClick={() => onCancel(row.original.bookingId)}
-              className={`text-[10px] font-medium px-2.5 py-1 rounded-md border transition-colors cursor-pointer ${
-                isDark
-                  ? 'border-red-500/30 text-red-400 hover:bg-red-500/10'
-                  : 'border-red-200 text-red-500 hover:bg-red-50'
-              }`}
-            >
-              {t('slotBooking.common.cancel')}
-            </button>
-          ) : null,
+        cell: ({ row }) => {
+          const b = row.original;
+          if (b.status !== 'PENDING') return null;
+          // Inside the 24/48 h window before the approval day nothing can be changed any more.
+          if (b.locked) {
+            return (
+              <span
+                className="inline-flex items-center gap-1 text-[10px] text-gray-500 whitespace-nowrap"
+                title={b.approvalAt ? t('slotBooking.requestsTable.lockedHint', { when: s.dateTime(b.approvalAt) }) : undefined}
+              >
+                <Lock size={11} /> {t('slotBooking.requestsTable.locked')}
+              </span>
+            );
+          }
+          return (
+            <div className="flex gap-1.5">
+              <button
+                type="button"
+                onClick={() => onMove(b.bookingId)}
+                className={`text-[10px] font-medium px-2.5 py-1 rounded-md border transition-colors cursor-pointer ${
+                  isDark ? 'border-violet-500/30 text-violet-300 hover:bg-violet-500/10' : 'border-violet-200 text-violet-600 hover:bg-violet-50'
+                }`}
+              >
+                {t('slotBooking.requestsTable.change')}
+              </button>
+              <button
+                type="button"
+                onClick={() => onCancel(b.bookingId)}
+                className={`text-[10px] font-medium px-2.5 py-1 rounded-md border transition-colors cursor-pointer ${
+                  isDark ? 'border-red-500/30 text-red-400 hover:bg-red-500/10' : 'border-red-200 text-red-500 hover:bg-red-50'
+                }`}
+              >
+                {t('slotBooking.common.cancel')}
+              </button>
+            </div>
+          );
+        },
       },
     ],
      
-    [isDark, onCancel, locale],
+    [isDark, onCancel, onMove, locale],
   );
 
   const table = useReactTable({

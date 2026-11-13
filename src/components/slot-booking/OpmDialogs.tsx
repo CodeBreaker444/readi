@@ -9,13 +9,15 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import type { GroupDetail, RangeMode, SlotDefaults, SlotMode } from '@/config/types/slot-booking';
-import { slotLabel, todayIso, weekdayOf } from '@/lib/slot-booking-utils';
+import { addDaysIso, slotLabel, todayIso, weekdayOf } from '@/lib/slot-booking-utils';
 import { cn } from '@/lib/utils';
 import axios from 'axios';
-import { FileText, Paperclip, Upload } from 'lucide-react';
+import { AlertTriangle, FileText, Paperclip, Upload } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { apiMsg, Btn, dialogSurface, heading, inputCls, muted, Pill, statusTone, useSlotI18n } from './ui';
+import { AssignPicker } from './AssignPicker';
+import { HourSelect } from './HourSelect';
+import { apiMsg, Btn, dialogSurface, heading, inputCls, muted, Pill, statusTone, useSlotI18n, useWeatherText, WeatherBadge } from './ui';
 
 const BASE = '/api/operation/slot-booking';
 const PDF_MAX = 10 * 1024 * 1024;
@@ -39,6 +41,7 @@ export function SlotDetailDialog({
 }) {
   const s = useSlotI18n();
   const { t } = s;
+  const weatherText = useWeatherText();
   const group = detail?.group;
   const slot = detail?.slots.find((x) => x.id === slotId);
   const bookings = (detail?.bookings ?? []).filter((b) => b.slotId === slotId);
@@ -72,6 +75,11 @@ export function SlotDetailDialog({
   if (!slot || !group) return null;
   const isApprovalDay = group.approvalDays.includes(weekdayOf(todayIso()));
   const alreadyApproved = bookings.some((b) => b.status === 'APPROVED');
+  const forecast = detail?.weather?.[slot.id];
+  const inForecastRange = slot.date >= todayIso() && slot.date <= addDaysIso(todayIso(), 6);
+  // A pilot's approved request settles the slot; only a direct OPM assignment keeps the panel (to unassign).
+  const approvedFromRequest = bookings.some((b) => b.status === 'APPROVED' && !b.assignedByOpm);
+  const canAssign = slot.active && slot.date >= todayIso() && !approvedFromRequest;
 
   const confirmApprove = async (bookingId: number, pilotName: string) => {
     setBusy(true);
@@ -148,6 +156,24 @@ export function SlotDetailDialog({
           </DialogDescription>
         </DialogHeader>
 
+        {forecast ? (
+          <div
+            className={cn(
+              'rounded-lg border px-3 py-2 text-[11px] flex items-center gap-2',
+              forecast.level === 'tough'
+                ? isDark ? 'border-red-500/30 bg-red-500/10 text-red-200' : 'border-red-200 bg-red-50 text-red-800'
+                : isDark ? 'border-white/[0.08] text-gray-300' : 'border-gray-200 text-gray-600',
+            )}
+          >
+            <WeatherBadge weather={forecast} isDark={isDark} />
+            <span>{weatherText(forecast)}</span>
+          </div>
+        ) : (
+          inForecastRange && detail?.weatherNote === 'no_location' && (
+            <p className={cn('text-[11px]', muted(isDark))}>{t('slotBooking.weather.noLocation')}</p>
+          )
+        )}
+
         {!isApprovalDay && (
           <div className={cn('text-[11px] rounded-lg px-3 py-2', isDark ? 'bg-amber-500/10 text-amber-300' : 'bg-amber-50 text-amber-800')}>
             {t('slotBooking.slotDialog.notApprovalDay', { days: s.daysLabel(group.approvalDays) })}
@@ -162,7 +188,7 @@ export function SlotDetailDialog({
               <div className="flex items-center justify-between gap-2">
                 <div>
                   <div className={cn('text-sm font-medium', heading(isDark))}>{b.picName}</div>
-                  <div className={cn('text-[11px]', muted(isDark))}>{t('slotBooking.slotDialog.requestedAt', { when: s.dateTime(b.requestedAt) })}</div>
+                  <div className={cn('text-[11px]', muted(isDark))}>{t(b.assignedByOpm ? 'slotBooking.slotDialog.assignedAt' : 'slotBooking.slotDialog.requestedAt', { when: s.dateTime(b.requestedAt) })}</div>
                 </div>
                 <Pill isDark={isDark} tone={statusTone(b.status)}>{s.status(b.status)}</Pill>
               </div>
@@ -185,10 +211,15 @@ export function SlotDetailDialog({
               {b.status === 'REJECTED' && b.note && (
                 <div className={cn('mt-2 text-[11px]', muted(isDark))}>{t('slotBooking.slotDialog.reasonLine', { note: b.note })}</div>
               )}
+              {b.status === 'PENDING' && b.collision && (
+                <div className="mt-2 flex items-start gap-1.5 text-[11px] text-red-500">
+                  <AlertTriangle size={13} className="shrink-0 mt-0.5" /> {t('slotBooking.slotDialog.collision', { slot: b.collision })}
+                </div>
+              )}
 
               {b.status === 'PENDING' && approving !== b.id && rejecting !== b.id && (
                 <div className="mt-3 flex gap-2">
-                  <Btn isDark={isDark} variant="success" disabled={alreadyApproved} onClick={() => { setApproving(b.id); setRejecting(null); }}>{t('slotBooking.slotDialog.approve')}</Btn>
+                  <Btn isDark={isDark} variant="success" disabled={alreadyApproved || !!b.collision} onClick={() => { setApproving(b.id); setRejecting(null); }}>{t('slotBooking.slotDialog.approve')}</Btn>
                   <Btn isDark={isDark} variant="danger" onClick={() => { setRejecting(b.id); setApproving(null); }}>{t('slotBooking.slotDialog.reject')}</Btn>
                 </div>
               )}
@@ -236,6 +267,13 @@ export function SlotDetailDialog({
             </div>
           ))}
         </div>
+
+        {canAssign && (
+          <div className={cn('border-t pt-3 space-y-2', isDark ? 'border-white/[0.08]' : 'border-gray-200')}>
+            <h4 className={cn('text-xs font-semibold', heading(isDark))}>{t('slotBooking.assign.title')}</h4>
+            <AssignPicker slotId={slot.id} isDark={isDark} onChanged={onChanged} />
+          </div>
+        )}
 
         <div className={cn('border-t pt-3', isDark ? 'border-white/[0.08]' : 'border-gray-200')}>
           {!editOpen ? (
@@ -292,18 +330,32 @@ export function SlotSettingsDialog({
   const s = useSlotI18n();
   const { t } = s;
   const [d, setD] = useState<SlotDefaults>(defaults);
+  const [lat, setLat] = useState('');
+  const [lon, setLon] = useState('');
   const [busy, setBusy] = useState(false);
   useEffect(() => {
-    if (open) setD(defaults);
+    if (!open) return;
+    setD(defaults);
+    setLat(defaults.baseLatitude?.toString() ?? '');
+    setLon(defaults.baseLongitude?.toString() ?? '');
   }, [open]);
 
   const label = cn('text-xs font-medium mb-1 block', heading(isDark));
-  const invalid = (d.mode === 'HOURLY' && d.hourEnd <= d.hourStart) || d.approvalDays.length === 0;
+  // Empty = not set; otherwise a number in range ('bad' blocks saving).
+  const coord = (v: string, min: number, max: number): number | null | 'bad' => {
+    if (!v.trim()) return null;
+    const n = Number(v);
+    return Number.isFinite(n) && n >= min && n <= max ? n : 'bad';
+  };
+  const latNum = coord(lat, -90, 90);
+  const lonNum = coord(lon, -180, 180);
+  const locationInvalid = latNum === 'bad' || lonNum === 'bad' || (latNum === null) !== (lonNum === null);
+  const invalid = (d.mode === 'HOURLY' && d.hourEnd <= d.hourStart) || d.approvalDays.length === 0 || locationInvalid;
 
   const save = async () => {
     setBusy(true);
     try {
-      await axios.put(`${BASE}/settings`, d);
+      await axios.put(`${BASE}/settings`, { ...d, baseLatitude: latNum === 'bad' ? null : latNum, baseLongitude: lonNum === 'bad' ? null : lonNum });
       toast.success(t('slotBooking.settings.saved'));
       onOpenChange(false);
       await onSaved();
@@ -339,15 +391,11 @@ export function SlotSettingsDialog({
             <>
               <div>
                 <label className={label}>{t('slotBooking.settings.hourStart')}</label>
-                <select className={inputCls(isDark)} value={d.hourStart} onChange={(e) => setD({ ...d, hourStart: +e.target.value })}>
-                  {Array.from({ length: 24 }, (_, h) => <option key={h} value={h}>{String(h).padStart(2, '0')}:00</option>)}
-                </select>
+                <HourSelect isDark={isDark} value={d.hourStart} onChange={(h) => setD({ ...d, hourStart: h })} />
               </div>
               <div>
                 <label className={label}>{t('slotBooking.settings.hourEnd')}</label>
-                <select className={inputCls(isDark)} value={d.hourEnd} onChange={(e) => setD({ ...d, hourEnd: +e.target.value })}>
-                  {Array.from({ length: 24 }, (_, h) => h + 1).map((h) => <option key={h} value={h}>{String(h % 24).padStart(2, '0')}:00</option>)}
-                </select>
+                <HourSelect isDark={isDark} value={d.hourEnd} min={1} max={24} invalid={d.hourEnd <= d.hourStart} onChange={(h) => setD({ ...d, hourEnd: h })} />
               </div>
             </>
           )}
@@ -355,6 +403,43 @@ export function SlotSettingsDialog({
             <input type="checkbox" className="accent-violet-600" checked={d.blocked} onChange={(e) => setD({ ...d, blocked: e.target.checked })} />
             {t('slotBooking.settings.blockDefault')}
           </label>
+          <div className="col-span-2">
+            <label className={label}>{t('slotBooking.settings.lockHours')}</label>
+            <div className="grid grid-cols-3 gap-2">
+              {([[0, 'slotBooking.settings.lockNone'], [24, 'slotBooking.settings.lock24'], [48, 'slotBooking.settings.lock48']] as const).map(([v, key]) => {
+                const on = d.modifyLockHours === v;
+                return (
+                  <button
+                    key={v}
+                    type="button"
+                    onClick={() => setD({ ...d, modifyLockHours: v })}
+                    className={cn(
+                      'cursor-pointer rounded-lg border px-3 py-2 text-xs font-medium text-center transition-colors',
+                      on
+                        ? 'bg-violet-600 border-violet-600 text-white'
+                        : isDark
+                          ? 'border-white/[0.1] text-gray-300 hover:bg-white/[0.05]'
+                          : 'border-gray-200 text-gray-600 hover:bg-gray-50',
+                    )}
+                  >
+                    {t(key)}
+                  </button>
+                );
+              })}
+            </div>
+            <p className={cn('text-[11px] mt-1', muted(isDark))}>{t('slotBooking.settings.lockHint')}</p>
+          </div>
+          <div>
+            <label className={label}>{t('slotBooking.settings.latitude')}</label>
+            <input className={cn(inputCls(isDark), (latNum === 'bad' || (latNum === null) !== (lonNum === null)) && 'border-red-400')} inputMode="decimal" placeholder="e.g. 41.9028" value={lat} onChange={(e) => setLat(e.target.value)} />
+          </div>
+          <div>
+            <label className={label}>{t('slotBooking.settings.longitude')}</label>
+            <input className={cn(inputCls(isDark), (lonNum === 'bad' || (latNum === null) !== (lonNum === null)) && 'border-red-400')} inputMode="decimal" placeholder="e.g. 12.4964" value={lon} onChange={(e) => setLon(e.target.value)} />
+          </div>
+          <p className={cn('col-span-2 text-[11px] -mt-1 h-4', locationInvalid ? 'text-red-500' : muted(isDark))}>
+            {locationInvalid ? t('slotBooking.settings.locationInvalid') : t('slotBooking.settings.locationHint')}
+          </p>
           <div className="col-span-2">
             <label className={label}>{t('slotBooking.settings.defaultApprovalDays')}</label>
             <div className="flex gap-1.5 flex-wrap">
