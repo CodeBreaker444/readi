@@ -114,3 +114,36 @@ export interface NewSlotGroupInput {
   /** What to do when slots already exist on the selected dates. */
   resolution: 'none' | 'merge' | 'overwrite';
 }
+
+export interface PilotGroupMember {
+  userId: number;
+  name: string;
+  email: string | null;
+  avatarUrl: string | null;
+  role: string | null;
+}
+
+export interface PilotGroup {
+  id: number;
+  name: string;
+  description: string;
+  memberCount: number;
+  members: PilotGroupMember[];
+  createdAt: string;
+  createdByName: string | null;
+}
+
+/** A company user who can be placed in a pilot group. */
+export interface PilotGroupCandidate {
+  userId: number;
+  name: string;
+  email: string | null;
+  avatarUrl: string | null;
+  role: string | null;
+}
+
+export interface PilotGroupInput {
+  name: string;
+  description?: string;
+  memberIds: number[];
+}

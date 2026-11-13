@@ -50,7 +50,7 @@ const ACTION_URL = '/operations/slot-booking';
 const NOTIFICATION_TYPE = 'SLOT_BOOKING';
 const NOTIFICATION_TYPE_WARNING = 'SLOT_WARNING';
 const PDF_MAX_BYTES = 10 * 1024 * 1024;
-export const SLOT_AUDIT_ENTITIES = ['slot_group', 'slot', 'slot_booking'] as const;
+export const SLOT_AUDIT_ENTITIES = ['slot_group', 'slot', 'slot_booking', 'pilot_group'] as const;
 
 
 export const canManageSlots = (user: SessionUser) => (SLOT_MANAGER_ROLES as readonly string[]).includes(user.role);

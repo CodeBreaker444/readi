@@ -6148,7 +6148,8 @@
       "slotBooking": "Prenotazione slot",
       "approved": "Slot approvati",
       "myApproved": "I miei slot approvati",
-      "audit": "Registro di audit"
+      "audit": "Registro di audit",
+      "pilotGroups": "Gruppi piloti"
     },
     "common": {
       "cancel": "Annulla",
@@ -6432,7 +6433,8 @@
       "sections": {
         "slot_group": "Gruppo di slot",
         "slot": "Slot",
-        "slot_booking": "Prenotazione"
+        "slot_booking": "Prenotazione",
+        "pilot_group": "Gruppo piloti"
       },
       "meta": {
         "group_id": "ID gruppo",
@@ -6463,6 +6465,63 @@
     "search": {
       "groups": "Cerca gruppi di slot…",
       "noMatch": "Nessun gruppo di slot corrisponde alla ricerca."
+    },
+    "pilotGroups": {
+      "title": "Gruppi piloti",
+      "subtitle": "Crea gruppi personalizzati (es. Esperti, Nuovi, Esterni) e assegna gli utenti dell'azienda",
+      "opmOnly": "Solo l'Operations Manager può gestire i gruppi piloti.",
+      "search": "Cerca gruppi o membri",
+      "new": "Nuovo gruppo",
+      "noMatch": "Nessun gruppo corrisponde alla ricerca.",
+      "noMembers": "Ancora nessun membro",
+      "edit": "Modifica gruppo",
+      "delete": "Elimina",
+      "deleting": "Eliminazione…",
+      "createTitle": "Nuovo gruppo piloti",
+      "editTitle": "Modifica gruppo piloti",
+      "formHint": "Dai un nome al gruppo e scegli gli utenti che ne fanno parte.",
+      "name": "Nome del gruppo",
+      "namePlaceholder": "es. Esperti",
+      "description": "Descrizione",
+      "members": "Membri",
+      "selected": "{{count}} selezionati",
+      "searchUsers": "Cerca utenti",
+      "noUsers": "Nessun utente trovato.",
+      "create": "Crea gruppo",
+      "save": "Salva modifiche",
+      "created": "Gruppo piloti “{{name}}” creato",
+      "updated": "Gruppo piloti “{{name}}” aggiornato",
+      "deleted": "Gruppo piloti “{{name}}” eliminato",
+      "deleteTitle": "Eliminare il gruppo piloti?",
+      "deleteBody": "Il gruppo “{{name}}” verrà eliminato. Gli utenti non vengono modificati.",
+      "errors": {
+        "load": "Impossibile caricare i gruppi piloti",
+        "save": "Impossibile salvare il gruppo piloti",
+        "delete": "Impossibile eliminare il gruppo piloti",
+        "nameRequired": "Il nome del gruppo è obbligatorio",
+        "nameInvalid": "Il nome deve avere 1–{{max}} caratteri senza caratteri di controllo",
+        "nameTaken": "Esiste già un gruppo piloti con questo nome",
+        "descTooLong": "La descrizione può avere al massimo {{max}} caratteri",
+        "tooManyMembers": "Un gruppo può avere al massimo {{max}} membri"
+      },
+      "emptyTitle": "Nessun gruppo piloti",
+      "emptyBody": "Raggruppa i piloti per esperienza o tipo, come Esperti, Nuovi o Esterni, per assegnare gli slot alle persone giuste più velocemente.",
+      "emptyCta": "Crea il primo gruppo",
+      "emptyTry": "Avvio rapido:",
+      "summary": "{{groups}} gruppi · {{users}} piloti raggruppati",
+      "noDescription": "Nessuna descrizione",
+      "optional": "facoltativo",
+      "descPlaceholder": "A cosa serve questo gruppo?",
+      "selectMembers": "Seleziona membri",
+      "noneSelected": "Nessun membro selezionato",
+      "companyUsers": "{{count}} utenti aziendali",
+      "usersCount": "{{count}} utenti",
+      "selectVisible": "Seleziona tutti",
+      "clearVisible": "Deseleziona tutti",
+      "noEmail": "Nessuna email",
+      "remove": "Rimuovi {{name}}",
+      "createdBy": "Creato da {{name}}",
+      "rolesLabel": "Ruoli"
     }
   }
 }

@@ -6006,7 +6006,8 @@
       "slotBooking": "Slot-Buchung",
       "approved": "Genehmigte Slots",
       "myApproved": "Meine genehmigten Slots",
-      "audit": "Audit-Protokoll"
+      "audit": "Audit-Protokoll",
+      "pilotGroups": "Pilotengruppen"
     },
     "common": {
       "cancel": "Abbrechen",
@@ -6290,7 +6291,8 @@
       "sections": {
         "slot_group": "Slot-Gruppe",
         "slot": "Slot",
-        "slot_booking": "Buchung"
+        "slot_booking": "Buchung",
+        "pilot_group": "Pilotengruppe"
       },
       "meta": {
         "group_id": "Gruppen-ID",
@@ -6321,6 +6323,63 @@
     "search": {
       "groups": "Slot-Gruppen suchen…",
       "noMatch": "Keine Slot-Gruppen entsprechen Ihrer Suche."
+    },
+    "pilotGroups": {
+      "title": "Pilotengruppen",
+      "subtitle": "Eigene Gruppen (z. B. Experten, Neulinge, Extern) erstellen und Benutzer des Unternehmens zuordnen",
+      "opmOnly": "Nur der Operations Manager kann Pilotengruppen verwalten.",
+      "search": "Gruppen oder Mitglieder suchen",
+      "new": "Neue Gruppe",
+      "noMatch": "Keine Gruppen entsprechen Ihrer Suche.",
+      "noMembers": "Noch keine Mitglieder",
+      "edit": "Gruppe bearbeiten",
+      "delete": "Löschen",
+      "deleting": "Wird gelöscht…",
+      "createTitle": "Neue Pilotengruppe",
+      "editTitle": "Pilotengruppe bearbeiten",
+      "formHint": "Benennen Sie die Gruppe und wählen Sie die zugehörigen Benutzer.",
+      "name": "Gruppenname",
+      "namePlaceholder": "z. B. Experten",
+      "description": "Beschreibung",
+      "members": "Mitglieder",
+      "selected": "{{count}} ausgewählt",
+      "searchUsers": "Benutzer suchen",
+      "noUsers": "Keine Benutzer gefunden.",
+      "create": "Gruppe erstellen",
+      "save": "Änderungen speichern",
+      "created": "Pilotengruppe „{{name}}“ erstellt",
+      "updated": "Pilotengruppe „{{name}}“ aktualisiert",
+      "deleted": "Pilotengruppe „{{name}}“ gelöscht",
+      "deleteTitle": "Pilotengruppe löschen?",
+      "deleteBody": "Die Gruppe „{{name}}“ wird gelöscht. Die Benutzer bleiben unberührt.",
+      "errors": {
+        "load": "Pilotengruppen konnten nicht geladen werden",
+        "save": "Pilotengruppe konnte nicht gespeichert werden",
+        "delete": "Pilotengruppe konnte nicht gelöscht werden",
+        "nameRequired": "Gruppenname ist erforderlich",
+        "nameInvalid": "Der Name muss 1–{{max}} Zeichen lang sein und darf keine Steuerzeichen enthalten",
+        "nameTaken": "Eine Pilotengruppe mit diesem Namen existiert bereits",
+        "descTooLong": "Die Beschreibung darf höchstens {{max}} Zeichen lang sein",
+        "tooManyMembers": "Eine Gruppe kann höchstens {{max}} Mitglieder haben"
+      },
+      "emptyTitle": "Noch keine Pilotengruppen",
+      "emptyBody": "Gruppieren Sie Ihre Piloten nach Erfahrung oder Typ, z. B. Experten, Neulinge oder Extern, um Slots schneller an die richtigen Personen zu vergeben.",
+      "emptyCta": "Erste Gruppe erstellen",
+      "emptyTry": "Schnellstart:",
+      "summary": "{{groups}} Gruppen · {{users}} Piloten zugeordnet",
+      "noDescription": "Keine Beschreibung",
+      "optional": "optional",
+      "descPlaceholder": "Wofür ist diese Gruppe?",
+      "selectMembers": "Mitglieder auswählen",
+      "noneSelected": "Noch keine Mitglieder ausgewählt",
+      "companyUsers": "{{count}} Benutzer im Unternehmen",
+      "usersCount": "{{count}} Benutzer",
+      "selectVisible": "Alle auswählen",
+      "clearVisible": "Alle abwählen",
+      "noEmail": "Keine E-Mail",
+      "remove": "{{name}} entfernen",
+      "createdBy": "Erstellt von {{name}}",
+      "rolesLabel": "Rollen"
     }
   }
 }

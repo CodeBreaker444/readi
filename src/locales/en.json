@@ -6165,7 +6165,8 @@
       "slotBooking": "Slot Booking",
       "approved": "Approved Slots",
       "myApproved": "My Approved Slots",
-      "audit": "Audit Log"
+      "audit": "Audit Log",
+      "pilotGroups": "Pilot Groups"
     },
     "common": {
       "cancel": "Cancel",
@@ -6449,7 +6450,8 @@
       "sections": {
         "slot_group": "Slot group",
         "slot": "Slot",
-        "slot_booking": "Booking"
+        "slot_booking": "Booking",
+        "pilot_group": "Pilot group"
       },
       "meta": {
         "group_id": "Group ID",
@@ -6480,6 +6482,63 @@
     "search": {
       "groups": "Search slot groups…",
       "noMatch": "No slot groups match your search."
+    },
+    "pilotGroups": {
+      "title": "Pilot groups",
+      "subtitle": "Create custom groups (e.g. Experts, Newbies, External) and assign company users to them",
+      "opmOnly": "Only the Operations Manager can manage pilot groups.",
+      "search": "Search groups or members",
+      "new": "New group",
+      "noMatch": "No groups match your search.",
+      "noMembers": "No members yet",
+      "edit": "Edit group",
+      "delete": "Delete",
+      "deleting": "Deleting…",
+      "createTitle": "New pilot group",
+      "editTitle": "Edit pilot group",
+      "formHint": "Name the group and choose which company users belong to it.",
+      "name": "Group name",
+      "namePlaceholder": "e.g. Experts",
+      "description": "Description",
+      "members": "Members",
+      "selected": "{{count}} selected",
+      "searchUsers": "Search users",
+      "noUsers": "No users found.",
+      "create": "Create group",
+      "save": "Save changes",
+      "created": "Pilot group “{{name}}” created",
+      "updated": "Pilot group “{{name}}” updated",
+      "deleted": "Pilot group “{{name}}” deleted",
+      "deleteTitle": "Delete pilot group?",
+      "deleteBody": "The group “{{name}}” will be deleted. Its users are not affected.",
+      "errors": {
+        "load": "Could not load pilot groups",
+        "save": "Could not save the pilot group",
+        "delete": "Could not delete the pilot group",
+        "nameRequired": "Group name is required",
+        "nameInvalid": "Name must be 1–{{max}} characters with no control characters",
+        "nameTaken": "A pilot group with this name already exists",
+        "descTooLong": "Description must be at most {{max}} characters",
+        "tooManyMembers": "A group can have at most {{max}} members"
+      },
+      "emptyTitle": "No pilot groups yet",
+      "emptyBody": "Group your pilots by skill or type, such as Experts, Newbies or External, so you can allot slots to the right people faster.",
+      "emptyCta": "Create your first group",
+      "emptyTry": "Quick start:",
+      "summary": "{{groups}} groups · {{users}} pilots grouped",
+      "noDescription": "No description",
+      "optional": "optional",
+      "descPlaceholder": "What is this group for?",
+      "selectMembers": "Select members",
+      "noneSelected": "No members selected yet",
+      "companyUsers": "{{count}} company users",
+      "usersCount": "{{count}} users",
+      "selectVisible": "Select all",
+      "clearVisible": "Clear all",
+      "noEmail": "No email",
+      "remove": "Remove {{name}}",
+      "createdBy": "Created by {{name}}",
+      "rolesLabel": "Roles"
     }
   }
 }
