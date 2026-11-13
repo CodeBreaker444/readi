@@ -17,7 +17,7 @@ import type {
   SlotWeather,
 } from '@/config/types/slot-booking';
 import type { SessionUser } from '@/lib/auth/server-session';
-import { readToolLocation } from '@/lib/btf/location';
+import { DRONE_SITE_SELECT, resolveSystemLocation } from '@/lib/btf/location';
 import { prisma } from '@/lib/prisma';
 import { getFileBufferFromS3, getPresignedDownloadUrl, getPresignedUploadUrl } from '@/lib/s3Client';
 import {
@@ -1236,7 +1236,7 @@ export async function listSystems(user: SessionUser): Promise<SlotSystem[]> {
   assertManager(user);
   const rows = await prisma.tool.findMany({
     where: { fk_owner_id: user.ownerId, tool_active: 'Y' },
-    select: { tool_id: true, tool_name: true, tool_code: true, tool_metadata: true, location: true, assigned_client_id: true },
+    select: { tool_id: true, tool_name: true, tool_code: true, tool_metadata: true, location: true, assigned_client_id: true, tool_component: DRONE_SITE_SELECT },
     orderBy: { tool_name: 'asc' },
   });
   return rows
@@ -1244,7 +1244,7 @@ export async function listSystems(user: SessionUser): Promise<SlotSystem[]> {
       id: t.tool_id,
       name: t.tool_name || t.tool_code || `System #${t.tool_id}`,
       clientId: toolClientId(t),
-      hasLocation: readToolLocation(t.tool_metadata, t.location) !== null,
+      hasLocation: resolveSystemLocation(t, t.tool_component ?? []) !== null,
     }))
     .filter((t) => t.clientId !== null);
 }

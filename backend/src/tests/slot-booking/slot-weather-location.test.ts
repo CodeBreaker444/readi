@@ -50,6 +50,31 @@ describe('getWeatherForSlots', () => {
     expect((await getWeatherForSlots(7, [slot(1, 3)])).note).toBe('no_location');
   });
 
+  it('falls back to the primary drone, then the first drone with a location', async () => {
+    prismaMock.slot_group.findMany.mockResolvedValue([
+      { slot_group_id: 3, fk_tool_id: 9 },
+      { slot_group_id: 4, fk_tool_id: 10 },
+      { slot_group_id: 5, fk_tool_id: 11 },
+    ]);
+    prismaMock.tool.findMany.mockResolvedValue([
+      { tool_id: 9, tool_metadata: {}, location: null, tool_component: [
+        { component_id: 1, component_metadata: { latitude: 10, longitude: 10 } },
+        { component_id: 2, component_metadata: { latitude: 41.9, longitude: 12.5, is_primary: true } },
+      ] },
+      { tool_id: 10, tool_metadata: {}, location: null, tool_component: [
+        { component_id: 4, component_metadata: {} },
+        { component_id: 6, component_metadata: { latitude: 20, longitude: 20 } },
+        { component_id: 5, component_metadata: { latitude: 45.4, longitude: 9.2 } },
+      ] },
+      { tool_id: 11, tool_metadata: { latitude: 1.5, longitude: 2.5 }, location: null, tool_component: [{ component_id: 1, component_metadata: { latitude: 9, longitude: 9, is_primary: true } }] },
+    ]);
+    await getWeatherForSlots(7, [slot(1, 3), slot(2, 4), slot(3, 5)]);
+    expect(getCachedForecast).toHaveBeenCalledWith(41.9, 12.5); // primary drone beats the lower id
+    expect(getCachedForecast).toHaveBeenCalledWith(45.4, 9.2); // no primary: lowest id with a location
+    expect(getCachedForecast).toHaveBeenCalledWith(1.5, 2.5); // the system's own location wins
+    expect(getCachedForecast).toHaveBeenCalledTimes(3);
+  });
+
   it('forecasts each group at its own system and skips groups without one', async () => {
     prismaMock.slot_group.findMany.mockResolvedValue([
       { slot_group_id: 3, fk_tool_id: 9 },

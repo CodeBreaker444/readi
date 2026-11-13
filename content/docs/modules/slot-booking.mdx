@@ -53,7 +53,7 @@ Click **New Slot Group**. The form is pre-filled from **Slot Settings** (your co
 | **Slot blocking** | Off (default): several pilots can request the same slot and you choose one. On: only one pilot per slot, the first request locks it |
 | **Approval day(s)** | The weekdays on which you review requests for this group |
 | **Client** | **Required.** The client these slots are flown for. Only active clients of your company are listed. Use the search box to find one in a long list; the list scrolls. **Next: Calendar** stays disabled until a client is picked |
-| **System** | Optional. Pick the system the slots are flown with to get the 7-day weather at that system's location (see [Weather location](#weather-location)). Only the chosen client's active systems are listed, and the list resets when you change the client. Systems **without a saved location are greyed out** and cannot be selected. **No system** keeps the group without weather, and an amber warning says so |
+| **System** | Optional. Pick the system the slots are flown with to get the 7-day weather at that system's location (see [Weather location](#weather-location)). Only the chosen client's active systems are listed, and the list resets when you change the client. Systems **with no location at all (neither on the system nor on a drone) are greyed out** and cannot be selected. **No system** keeps the group without weather, and an amber warning says so |
 | **Publishing** | **Publish now** (default) or **Schedule** a date and time. See [Scheduled publishing](#scheduled-publishing) |
 | **Offered to** | Optional. One or more [pilot groups](#pilot-groups). Leave empty to offer the slots to every pilot. Search groups by name; the list scrolls when there are many. Each card shows the member count and the first members' pictures, and an expert star. **Hover** over a card to see the group's description and all its members with picture, name, role and email. **Clear** removes the selection |
 
@@ -249,6 +249,8 @@ There is no company-wide base location. Each slot group takes its weather locati
 
 1. When you create a slot group, pick a **client** and then one of that client's **systems**.
 2. Readi reads the system's saved coordinates (the latitude and longitude on the system's page) and forecasts the weather for the group's slots at that point. Nearby systems share one cached forecast.
+   - **No location on the system?** Readi uses the location of its **primary drone**. If the primary drone has none, it uses the **first drone** (the one added first) that has a location. Inactive drones and drones without coordinates are skipped.
+   - The system's own location always wins when it has one.
 3. The Calendar, Day Preview, slot details and the assign dropdown all use the location of the slot's own group.
 
 What you see when something is missing:
@@ -256,7 +258,7 @@ What you see when something is missing:
 | Situation | What happens |
 |---|---|
 | No system selected | An amber warning in the form. The group is created, but its slots show no weather |
-| System has no location | The system is greyed out in the list and cannot be chosen. Add its location on the system first |
+| Neither the system nor any of its drones has a location | The system is greyed out in the list and cannot be chosen. Add a location on the system or on a drone first |
 | Calendar or Day Preview where no slot has a system with a location | A note asks you to choose a system for the slot group |
 | Some groups have a system and some do not | Only the groups with a system show weather |
 

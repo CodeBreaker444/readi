@@ -2,7 +2,7 @@ import 'server-only';
 
 import type { SlotWeather } from '@/config/types/slot-booking';
 import { GENERIC_LIMITS, scoreHour, summariseWindow, type HourWeather } from '@/lib/btf/scoring';
-import { readToolLocation } from '@/lib/btf/location';
+import { DRONE_SITE_SELECT, resolveSystemLocation } from '@/lib/btf/location';
 import { prisma } from '@/lib/prisma';
 import { WEATHER_DAYS, weatherLevel } from '@/lib/slot-booking-logic';
 import { addDaysIso, todayIso } from '@/lib/slot-booking-utils';
@@ -36,11 +36,11 @@ async function getGroupLocations(ownerId: number, groupIds: number[]): Promise<M
   if (!toolIds.length) return out;
   const tools = await prisma.tool.findMany({
     where: { tool_id: { in: toolIds }, fk_owner_id: ownerId },
-    select: { tool_id: true, tool_metadata: true, location: true },
+    select: { tool_id: true, tool_metadata: true, location: true, tool_component: DRONE_SITE_SELECT },
   });
   const byTool = new Map<number, { lat: number; lon: number }>();
   for (const t of tools) {
-    const site = readToolLocation(t.tool_metadata, t.location);
+    const site = resolveSystemLocation(t, t.tool_component ?? []);
     if (site) byTool.set(t.tool_id, { lat: site.latitude, lon: site.longitude });
   }
   for (const g of groups) {
