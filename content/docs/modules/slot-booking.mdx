@@ -9,6 +9,7 @@ Slot Booking lets the **Operations Manager (OPM)** open time slots and lets **pi
 |---|---|---|
 | **Slot Booking** | Everyone | OPM: create and manage slot groups. Pilot: browse groups and request slots |
 | **Approved Slots** | Everyone | Approved jobs and the PDF the OPM attached. Pilots see their own, the OPM sees all |
+| **Calendar** | OPM, Admin, Super Admin | Seven days of every slot with group, client, assigned pilot, flying hours and weather in one view |
 | **Day Preview** | OPM, Admin, Super Admin | Every slot of one day with its client and assigned pilot. Unassigned slots are red |
 | **Pilot Groups** | OPM, Admin, Super Admin | Custom groups of pilots (for example Experts, Newbies, External) |
 | **Pilot Merits** | OPM, Admin, Super Admin | Hours flown, availability and score of every pilot |
@@ -85,7 +86,19 @@ On an approval day of a group with waiting requests, the page also shows a **Tod
 
 ### Approve or reject
 
-Click a slot to see the pilots who requested it.
+Click a slot to see the pilots who requested it. Under each pilot's name you see what you need to decide:
+
+| Detail | Meaning |
+|---|---|
+| **Flight chip** | Hours flown this cycle against the monthly limit (see [Flight limits](#flight-limits)) |
+| **Total flights** | Missions the pilot has flown, all time |
+| **Last 7 days** | Missions flown in the last 7 days, shown as *weekend / total* (weekend = Saturday or Sunday) |
+| **Merit score** | The pilot's 0 to 100 [merit score](#pilot-merits) and rank among the company's pilots (*#2 of 14*). *Not ranked* if the pilot is not in the ranking |
+| **Asked for in this group** | How many slots of **this slot group** the pilot requested, in any status. Slots you assigned directly are not counted |
+| **Weekend slots** | A green tag *Asked for weekend slots (n)* when the pilot requested Saturday or Sunday slots in this group, otherwise grey *No weekend slots asked for* |
+| **Pilot groups** | The pilot groups the pilot belongs to; expert groups have a star |
+
+The details are shown for pending and approved requests, to the OPM, Admin and Super Admin only. A "flight" is a mission with an actual start time. The weekend of a flight is taken from its start time in UTC.
 
 - **Approve:** optionally attach a **PDF** (clearance sheet, dispatch brief, authorization form; PDF only, up to 10 MB), then confirm. The slot becomes Approved, the pilot is emailed with the PDF attached, and it appears on the pilot's **Approved Slots** page.
 - **Reject:** add an optional reason. The pilot is told by email and in-app.
@@ -120,6 +133,7 @@ Two settings apply to the whole company straight away:
 | Setting | What it does |
 |---|---|
 | **Lock changes before the approval day** | Choose **Never lock**, **24 hours before** or **48 hours before** with the buttons (default 24). Inside this window pilots cannot cancel or move pending requests. See [Changing a request](#changing-a-request) |
+| **Flying-hours cycle starts on** | Day 1 to 28 of the month (default 1). Monthly flight limits are counted from that day of one month to the day before the same day of the next, for example the 10th to the 9th. See [Flight limits](#flight-limits) |
 | **Base latitude / longitude** | The place used for the 7-day slot weather. Enter both or neither. Latitude is −90 to 90 and longitude −180 to 180. If empty, the first system with a saved location is used |
 
 ---
@@ -184,6 +198,20 @@ Inside each part, pilots with the higher [score](#pilot-merits) come first. For 
 
 ---
 
+## Calendar
+
+**Calendar** (OPM only) shows **seven days at once** for all slot groups, starting from today. Use the arrows to move a week, the date field to jump, or **Today** to return.
+
+- **Summary tiles:** slots, assigned, unassigned, waiting requests and tough-weather slots for the seven days shown.
+- **Day columns:** each shows the date, how many slots are assigned (with a progress bar that turns green when the day is full) and the worst weather of the day. Today is outlined and weekends are tinted. Click a day header to open a list of that day's slots.
+- **Slot cards:** time, slot group (with a colour stripe per group), client, the assigned pilot with picture, the pilot's [flight limit](#flight-limits) chip, the number of waiting requests and a weather chip (calm, moderate or tough, with temperature and wind). A slot without a pilot is red with a **Needs pilot** label.
+- **Search and filter:** search by group, client, pilot or requester, and filter by **All**, **Unassigned** or **Assigned**. Filters change the cards only; the tiles keep counting the whole week.
+- **Slot details:** click a card to see the pilot (picture, role, email, when approved and whether the OPM assigned them directly), the waiting requests with their flight chips, the full weather (level, average wind, gusts, rain, temperature and main concern), the slot group's details, and the [assign dropdown](#assign-a-pilot) for slots that can still change.
+
+Below the calendar the time the weather was last fetched is shown, for example *Weather last updated 13 Nov, 15:42*. Weather only exists for the next 7 days; see [Weather](#weather).
+
+---
+
 ## Day Preview
 
 **Day Preview** (OPM only) is the day sheet: pick a date, and you see every active slot of that day across all slot groups.
@@ -207,7 +235,29 @@ For slots in the **next 7 days** (today and the six days after) the OPM sees the
 - A **coloured dot** appears on each slot of the calendar: green = calm, amber = moderate, red = tough. Open the slot, or the Day Preview, for the details: average wind, gusts and rain during the slot's hours.
 - The verdict uses the same limits as the flight-weather feature. **Darkness is ignored**: night shifts are judged on the weather only.
 - The forecast comes from the base location in [Slot Settings](#slot-settings). Without one, Readi uses the first system that has a location. If there is none, the screens say to set a base location.
+- **Cached forecast:** the forecast is stored in the database and shared by every screen, like the weather map layers of Drone ATC. It is refreshed from the weather service when it is older than **30 minutes**, and a job keeps recently viewed locations fresh (see [Cron Jobs](/docs/business-logic/cron-jobs)). If the weather service is down, a copy up to 6 hours old is still used. The Calendar and Day Preview show when the forecast was last fetched.
 - Slots further away than 7 days, or in the past, have no forecast. If the weather service is unavailable, slot booking keeps working without it.
+
+---
+
+## Flight limits
+
+Each pilot can have a **monthly flight limit** (hours per flying-hours cycle). It warns the OPM before a pilot is given more slots than they may fly.
+
+- **Setting a limit:** open **Pilot Groups**, create or edit a group and use the **Flight limits** tab. It lists the members selected on the first tab; enter hours for each one, or leave blank for no limit. A limit belongs to the user and applies in every group they are in.
+- **Cycle:** chosen in [Slot Settings](#slot-settings) (**Flying-hours cycle starts on**).
+- **Hours flown:** the flight duration of the pilot's missions that started inside the current cycle.
+
+The pilot's hours are shown as `flown / limit` and coloured:
+
+| Colour | When |
+|---|---|
+| **Green** | Below 90% of the limit |
+| **Yellow** | 90% or more of the limit |
+| **Red** | 100% or more of the limit |
+| **Grey** | No limit assigned, shown as `12 / NA` |
+
+The tooltip shows the cycle dates, the limit and the pilot's all-time hours. The chip appears next to each request in the slot dialog, in the assign dropdown, and on the pilot's slot cards in the Calendar tab. When you approve or assign a pilot who is yellow or red, a warning is shown. It is a warning only: the OPM can still approve.
 
 ---
 

@@ -6,6 +6,7 @@ import { prisma } from '@/lib/prisma';
 import { getPresignedDownloadUrl } from '@/lib/s3Client';
 import { Prisma } from '@prisma/client';
 import { logEvent } from '../auditLog/audit-log';
+import { getFlightLimits, saveFlightLimits } from './flight-limits-service';
 import { canManageSlots, SlotBookingError } from './slot-booking-service';
 
 function assertManager(user: SessionUser) {
@@ -45,6 +46,7 @@ const groupInclude = {
 type GroupWithMembers = Prisma.pilot_groupGetPayload<{ include: typeof groupInclude }>;
 
 async function mapGroup(g: GroupWithMembers): Promise<PilotGroup> {
+  const limits = await getFlightLimits(g.fk_owner_id, g.pilot_group_member.map((m) => m.fk_user_id));
   const members: PilotGroupMember[] = (
     await Promise.all(
       g.pilot_group_member.map(async (m) => ({
@@ -53,6 +55,7 @@ async function mapGroup(g: GroupWithMembers): Promise<PilotGroup> {
         email: m.users.email ?? null,
         role: m.users.user_role,
         avatarUrl: await avatarUrl(m.users.users_profile?.profile_picture),
+        monthlyLimitHours: limits.get(m.users.user_id) ?? null,
       })),
     )
   ).sort((a, b) => a.name.localeCompare(b.name));
@@ -137,6 +140,7 @@ export async function listCandidates(user: SessionUser): Promise<PilotGroupCandi
     where: { fk_owner_id: user.ownerId, user_active: 'Y' },
     select: userSelect,
   });
+  const limits = await getFlightLimits(user.ownerId, rows.map((u) => u.user_id));
   const list = await Promise.all(
     rows.map(async (u) => ({
       userId: u.user_id,
@@ -144,6 +148,7 @@ export async function listCandidates(user: SessionUser): Promise<PilotGroupCandi
       email: u.email ?? null,
       role: u.user_role,
       avatarUrl: await avatarUrl(u.users_profile?.profile_picture),
+      monthlyLimitHours: limits.get(u.user_id) ?? null,
     })),
   );
   return list.sort((a, b) => a.name.localeCompare(b.name));
@@ -174,6 +179,7 @@ export async function createPilotGroup(user: SessionUser, input: PilotGroupInput
     if (isUniqueViolation(e)) throw nameTaken(); // two simultaneous creates
     throw e;
   }
+  await saveFlightLimits(user.ownerId, input.flightLimits ?? []);
   audit(user, 'CREATE', id, `Created pilot group “${name}” (${memberIds.length} members)`, {
     group_id: id,
     group_name: name,
@@ -207,12 +213,14 @@ export async function updatePilotGroup(user: SessionUser, id: number, input: Pil
     throw e;
   }
 
+  await saveFlightLimits(user.ownerId, input.flightLimits ?? []);
   const before = new Set(existing.pilot_group_member.map((m) => m.fk_user_id));
   const after = new Set(memberIds);
   audit(user, 'UPDATE', id, `Updated pilot group “${name}”`, {
     group_id: id,
     previous_name: existing.name,
     group_name: name,
+    flight_limits_changed: (input.flightLimits ?? []).map((l) => ({ user_id: l.userId, hours: l.hours })),
     added: memberIds.filter((m) => !before.has(m)),
     removed: [...before].filter((m) => !after.has(m)),
   });

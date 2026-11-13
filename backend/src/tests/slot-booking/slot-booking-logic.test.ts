@@ -11,6 +11,8 @@ import { summariseSlotWeather } from '@/backend/services/slot-booking/slot-weath
 import type { HourWeather } from '@/lib/btf/scoring';
 import {
   computeMerits,
+  cycleWindow,
+  flightLevel,
   intervalsOverlap,
   isPublished,
   isWeekend,
@@ -188,5 +190,50 @@ describe('slot weather', () => {
 
   it('has no forecast for a slot the data does not cover', () => {
     expect(summariseSlotWeather(day('2026-06-01'), { ...slot, date: '2026-06-20' })).toBeNull();
+  });
+});
+
+describe('flying-hours cycle', () => {
+  it('starts on day 1 by default and covers the calendar month', () => {
+    expect(cycleWindow(1, '2026-11-13')).toEqual({ start: '2026-11-01', end: '2026-12-01' });
+  });
+
+  it('uses the previous month when today is before the cycle day', () => {
+    expect(cycleWindow(10, '2026-11-05')).toEqual({ start: '2026-10-10', end: '2026-11-10' });
+  });
+
+  it('starts today on the cycle day itself', () => {
+    expect(cycleWindow(10, '2026-11-10')).toEqual({ start: '2026-11-10', end: '2026-12-10' });
+  });
+
+  it('rolls over the year in both directions', () => {
+    expect(cycleWindow(15, '2026-01-03')).toEqual({ start: '2025-12-15', end: '2026-01-15' });
+    expect(cycleWindow(15, '2026-12-20')).toEqual({ start: '2026-12-15', end: '2027-01-15' });
+  });
+
+  it('clamps an invalid day into 1–28', () => {
+    expect(cycleWindow(31, '2026-11-30').start).toBe('2026-11-28');
+    expect(cycleWindow(0, '2026-11-30').start).toBe('2026-11-01');
+  });
+});
+
+describe('flight limit level', () => {
+  it('is grey without a limit', () => {
+    expect(flightLevel(120, null)).toBe('none');
+    expect(flightLevel(5, 0)).toBe('none');
+  });
+
+  it('is green below 90%', () => {
+    expect(flightLevel(35.9, 40)).toBe('ok');
+  });
+
+  it('turns yellow from 90% up to the limit', () => {
+    expect(flightLevel(36, 40)).toBe('warn');
+    expect(flightLevel(39.9, 40)).toBe('warn');
+  });
+
+  it('turns red at 100% and above', () => {
+    expect(flightLevel(40, 40)).toBe('over');
+    expect(flightLevel(55, 40)).toBe('over');
   });
 });

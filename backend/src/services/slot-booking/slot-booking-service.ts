@@ -12,6 +12,7 @@ import type {
   SlotDefaults,
   SlotGroup,
   SlotMe,
+  PilotFlight,
   SlotWeather,
 } from '@/config/types/slot-booking';
 import type { SessionUser } from '@/lib/auth/server-session';
@@ -35,7 +36,7 @@ import { Prisma } from '@prisma/client';
 import { sendNotificationEmailWithAttachments } from '../../../../lib/resend/mail';
 import { incrementDailyEmailCount, isDailyEmailLimitReached } from '../email/email-limit-service';
 import { logEvent, type AuditEventType } from '../auditLog/audit-log';
-import { isPublished, modificationLock, scheduleError } from '@/lib/slot-booking-logic';
+import { isPublished, isWeekend, modificationLock, scheduleError } from '@/lib/slot-booking-logic';
 import {
   collisionKey,
   dateStr,
@@ -46,6 +47,8 @@ import {
   getMembershipIds,
   toDate,
 } from './slot-booking-rules';
+import { getPilotFlights } from './flight-limits-service';
+import { getPilotProfiles, type PilotProfileBase } from './pilot-stats-service';
 import { getWeatherForSlots } from './slot-weather-service';
 
 export class SlotBookingError extends Error {
@@ -307,6 +310,7 @@ const FALLBACK_DEFAULTS: SlotDefaults = {
   modifyLockHours: 24,
   baseLatitude: null,
   baseLongitude: null,
+  cycleStartDay: 1,
 };
 
 export async function getSettings(ownerId: number): Promise<SlotDefaults> {
@@ -322,6 +326,7 @@ export async function getSettings(ownerId: number): Promise<SlotDefaults> {
     modifyLockHours: ([0, 24, 48].includes(row.modify_lock_hours) ? row.modify_lock_hours : 24) as SlotDefaults['modifyLockHours'],
     baseLatitude: row.base_latitude ?? null,
     baseLongitude: row.base_longitude ?? null,
+    cycleStartDay: row.cycle_start_day,
   };
 }
 
@@ -337,6 +342,7 @@ export async function saveSettings(user: SessionUser, input: SlotDefaults): Prom
     modify_lock_hours: input.modifyLockHours,
     base_latitude: input.baseLatitude,
     base_longitude: input.baseLongitude,
+    cycle_start_day: input.cycleStartDay,
     updated_at: new Date(),
   };
   await prisma.slot_settings.upsert({
@@ -413,7 +419,7 @@ export async function getGroupDetail(user: SessionUser, groupId: number): Promis
   const slotDto = (x: (typeof slots)[number]) => ({ slotId: x.slot_id, date: dateStr(x.slot_date), start: x.start_time, end: x.end_time });
   const slotById = new Map(slots.map((x) => [x.slot_id, x]));
   // Manager extras: overlapping assignments of pilots with pending requests, and the 7-day forecast per slot.
-  const [collisions, forecast] = manager
+  const [collisions, forecast, flights, profiles] = manager
     ? await Promise.all([
         findCollisions(
           user.ownerId,
@@ -422,8 +428,23 @@ export async function getGroupDetail(user: SessionUser, groupId: number): Promis
             .map((b) => ({ pilotId: b.fk_pilot_user_id, slot: slotDto(slotById.get(b.fk_slot_id)!) })),
         ),
         getWeatherForSlots(user.ownerId, slots.filter((x) => x.is_active).map((x) => ({ id: x.slot_id, date: dateStr(x.slot_date), start: x.start_time, end: x.end_time }))),
+        getPilotFlights(user.ownerId, bookings.filter((b) => b.status !== 'REJECTED').map((b) => b.fk_pilot_user_id)),
+        getPilotProfiles(user.ownerId, bookings.filter((b) => b.status !== 'REJECTED').map((b) => b.fk_pilot_user_id)),
       ])
-    : [new Map<string, string>(), null];
+    : [new Map<string, string>(), null, new Map<number, PilotFlight>(), new Map<number, PilotProfileBase>()];
+
+  // What each pilot asked for in this slot group: every request except slots the OPM assigned directly.
+  const applied = new Map<number, { all: number; weekend: number }>();
+  if (manager) {
+    for (const b of bookings) {
+      const slot = slotById.get(b.fk_slot_id);
+      if (!slot || b.decision_note === ASSIGNED_NOTE) continue;
+      const a = applied.get(b.fk_pilot_user_id) ?? { all: 0, weekend: 0 };
+      a.all++;
+      if (isWeekend(dateStr(slot.slot_date))) a.weekend++;
+      applied.set(b.fk_pilot_user_id, a);
+    }
+  }
 
   const mappedBookings: Booking[] = bookings.map((b) => {
     const own = b.fk_pilot_user_id === user.userId;
@@ -444,6 +465,16 @@ export async function getGroupDetail(user: SessionUser, groupId: number): Promis
       decidedAt: visible ? (b.decided_at?.toISOString() ?? null) : null,
       note: visible ? b.decision_note : null,
       pdfName: visible ? b.pdf_file_name : null,
+      ...(manager && flights.has(b.fk_pilot_user_id) ? { flight: flights.get(b.fk_pilot_user_id) } : {}),
+      ...(manager && profiles.has(b.fk_pilot_user_id)
+        ? {
+            profile: {
+              ...profiles.get(b.fk_pilot_user_id)!,
+              appliedInGroup: applied.get(b.fk_pilot_user_id)?.all ?? 0,
+              appliedWeekendInGroup: applied.get(b.fk_pilot_user_id)?.weekend ?? 0,
+            },
+          }
+        : {}),
       ...(manager && b.status === 'PENDING' ? { collision: collisions.get(collisionKey(b.fk_pilot_user_id, b.fk_slot_id)) ?? null } : {}),
     };
   });

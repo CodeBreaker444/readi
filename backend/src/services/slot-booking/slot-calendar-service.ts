@@ -4,6 +4,7 @@ import type { CalendarSlot, SlotMode, WeekCalendar } from '@/config/types/slot-b
 import type { SessionUser } from '@/lib/auth/server-session';
 import { prisma } from '@/lib/prisma';
 import { addDaysIso, SLOT_DATE_RE } from '@/lib/slot-booking-utils';
+import { getPilotFlights } from './flight-limits-service';
 import { avatarUrl, fullName } from './pilot-group-service';
 import { dateStr, toDate } from './slot-booking-rules';
 import { ASSIGNED_NOTE, assertManager, SlotBookingError } from './slot-booking-service';
@@ -49,6 +50,7 @@ export async function getWeekCalendar(user: SessionUser, start: string): Promise
         select: { user_id: true, first_name: true, last_name: true, username: true, user_role: true, email: true, users_profile: { select: { profile_picture: true } } },
       })
     : [];
+  const flights = await getPilotFlights(user.ownerId, userIds);
   const approvedIds = new Set(bookings.filter((b) => b.status === 'APPROVED').map((b) => b.fk_pilot_user_id));
   const avatars = new Map(
     await Promise.all(users.filter((u) => approvedIds.has(u.user_id)).map(async (u) => [u.user_id, await avatarUrl(u.users_profile?.profile_picture)] as const)),
@@ -82,13 +84,14 @@ export async function getWeekCalendar(user: SessionUser, start: string): Promise
               avatarUrl: avatars.get(pilot.user_id) ?? null,
               approvedAt: approved.decided_at?.toISOString() ?? null,
               assignedByOpm: approved.decision_note === ASSIGNED_NOTE,
+              flight: flights.get(pilot.user_id)!,
             }
           : null,
       pending: mine
         .filter((b) => b.status === 'PENDING')
         .map((b) => {
           const u = byId.get(b.fk_pilot_user_id);
-          return { userId: b.fk_pilot_user_id, name: u ? fullName(u) : 'Pilot', requestedAt: b.requested_at.toISOString() };
+          return { userId: b.fk_pilot_user_id, name: u ? fullName(u) : 'Pilot', requestedAt: b.requested_at.toISOString(), flight: flights.get(b.fk_pilot_user_id)! };
         }),
       weather: wx.weather[s.slot_id] ?? null,
     };

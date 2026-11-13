@@ -4,6 +4,7 @@ import type { MeritRow, Merits, MyStats } from '@/config/types/slot-booking';
 import type { SessionUser } from '@/lib/auth/server-session';
 import { prisma } from '@/lib/prisma';
 import { computeMerits, isWeekend, MERIT_WEIGHTS, MERIT_WINDOW_DAYS } from '@/lib/slot-booking-logic';
+import type { PilotProfile } from '@/config/types/slot-booking';
 import { SLOT_BOOKER_ROLES } from '@/lib/slot-booking-utils';
 import { avatarUrl, fullName } from './pilot-group-service';
 import { dateStr } from './slot-booking-rules';
@@ -102,6 +103,46 @@ export async function buildMerits(ownerId: number, now = new Date()): Promise<Me
       rank: scores.get(u.user_id)!.rank,
     }))
     .sort((a, b) => a.rank - b.rank || a.name.localeCompare(b.name));
+}
+
+export type PilotProfileBase = Omit<PilotProfile, 'appliedInGroup' | 'appliedWeekendInGroup'>;
+
+/**
+ * What the OPM sees about a pilot when deciding on a request: missions flown (all time and the last 7 days, with
+ * the weekend ones), merit score and rank, and pilot groups. Every requested id gets an entry.
+ */
+export async function getPilotProfiles(ownerId: number, userIds: number[], now = new Date()): Promise<Map<number, PilotProfileBase>> {
+  const ids = [...new Set(userIds)];
+  const out = new Map<number, PilotProfileBase>();
+  if (!ids.length) return out;
+
+  const weekAgo = new Date(now.getTime() - 7 * 86_400_000);
+  const flown = { fk_owner_id: ownerId, fk_pilot_user_id: { in: ids }, actual_start: { not: null } };
+  const [totals, recent, merits] = await Promise.all([
+    prisma.pilot_mission.groupBy({ by: ['fk_pilot_user_id'], where: flown, _count: { _all: true } }),
+    prisma.pilot_mission.findMany({
+      where: { ...flown, actual_start: { gte: weekAgo, lte: now } },
+      select: { fk_pilot_user_id: true, actual_start: true },
+    }),
+    buildMerits(ownerId, now),
+  ]);
+
+  const totalBy = new Map(totals.map((r) => [r.fk_pilot_user_id, r._count._all]));
+  const meritBy = new Map(merits.map((m) => [m.userId, m]));
+  for (const id of ids) {
+    const mine = recent.filter((r) => r.fk_pilot_user_id === id && r.actual_start);
+    const merit = meritBy.get(id);
+    out.set(id, {
+      totalFlights: totalBy.get(id) ?? 0,
+      weekFlights: mine.length,
+      weekWeekendFlights: mine.filter((r) => isWeekend(dateStr(r.actual_start!))).length,
+      score: merit?.score ?? null,
+      rank: merit?.rank ?? null,
+      rankedPilots: merits.length,
+      groups: merit?.groups ?? [],
+    });
+  }
+  return out;
 }
 
 export async function getMerits(user: SessionUser): Promise<Merits> {

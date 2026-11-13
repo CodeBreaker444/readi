@@ -10,7 +10,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AssignPicker } from './AssignPicker';
 import { Avatar } from './Avatar';
-import { apiMsg, Btn, card, dialogSurface, EmptyBlock, ErrorBlock, heading, inputCls, LoadingBlock, muted, Pill, useSlotI18n, WeatherBadge, WeatherDot } from './ui';
+import { apiMsg, Btn, card, FlightChip, FlightWarning, dialogSurface, EmptyBlock, ErrorBlock, heading, inputCls, LoadingBlock, muted, Pill, useSlotI18n, WeatherBadge, WeatherDot } from './ui';
 
 const BASE = '/api/operation/slot-booking';
 const GROUP_TONES = ['bg-violet-500', 'bg-sky-500', 'bg-amber-500', 'bg-rose-500', 'bg-teal-500', 'bg-indigo-500'] as const;
@@ -26,7 +26,7 @@ function WeatherChip({ weather, isDark }: { weather: SlotWeather; isDark: boolea
   const Icon = weather.level === 'calm' ? Sun : weather.level === 'moderate' ? Cloud : CloudLightning;
   const tone = weather.level === 'calm' ? 'text-emerald-500' : weather.level === 'moderate' ? 'text-amber-500' : 'text-red-500';
   return (
-    <span className={cn('inline-flex items-center gap-1 text-[10px] tabular-nums', isDark ? 'text-gray-400' : 'text-gray-500')}>
+    <span className={cn('inline-flex items-center gap-1 text-[10px] tabular-nums shrink-0', isDark ? 'text-gray-400' : 'text-gray-500')}>
       <Icon size={12} className={tone} />
       {weather.tempC != null && <span>{weather.tempC}°</span>}
       <span>· {weather.avgWindMs} m/s</span>
@@ -119,19 +119,24 @@ export function CalendarView({ isDark }: { isDark: boolean }) {
               </span>
             )}
           </span>
-          <span className={cn('block text-[11px] font-medium truncate', isDark ? 'text-gray-200' : 'text-gray-700')}>{x.groupName}</span>
+          <span className="flex items-center justify-between gap-1.5">
+            <span className={cn('min-w-0 text-[11px] font-medium truncate', isDark ? 'text-gray-200' : 'text-gray-700')}>{x.groupName}</span>
+            {x.weather && <WeatherChip weather={x.weather} isDark={isDark} />}
+          </span>
           {x.clientName && <span className={cn('block text-[10px] truncate -mt-1', muted(isDark))}>{x.clientName}</span>}
           {x.pilot ? (
-            <span className="flex items-center gap-1.5">
-              <Avatar person={x.pilot} size={18} />
-              <span className={cn('text-[11px] font-medium truncate', heading(isDark))}>{x.pilot.name}</span>
+            <span className="block space-y-1">
+              <span className="flex items-center gap-1.5">
+                <Avatar person={x.pilot} size={18} />
+                <span className={cn('text-[11px] font-medium truncate', heading(isDark))}>{x.pilot.name}</span>
+              </span>
+              <FlightChip flight={x.pilot.flight} isDark={isDark} />
             </span>
           ) : (
             <span className="inline-flex items-center gap-1 rounded-full bg-red-500/15 text-red-600 px-2 py-0.5 text-[10px] font-semibold">
               <CircleAlert size={10} /> {t('slotBooking.calendar.needsPilot')}
             </span>
           )}
-          {x.weather && <WeatherChip weather={x.weather} isDark={isDark} />}
         </span>
       </button>
     );
@@ -287,6 +292,7 @@ export function CalendarView({ isDark }: { isDark: boolean }) {
                         {slot.pilot.role && <span className="inline-flex items-center gap-1"><UserRound size={11} /> {slot.pilot.role}</span>}
                         {slot.pilot.email && <span className="inline-flex items-center gap-1"><Mail size={11} /> {slot.pilot.email}</span>}
                       </div>
+                      <div className="mt-1"><FlightChip flight={slot.pilot.flight} isDark={isDark} /></div>
                       {slot.pilot.approvedAt && <div className={cn('text-[11px] mt-0.5', muted(isDark))}>{t('slotBooking.calendar.approvedAt', { when: s.dateTime(slot.pilot.approvedAt) })}</div>}
                     </div>
                     {slot.pilot.assignedByOpm && <Pill isDark={isDark} tone="violet">{t('slotBooking.slotDialog.assignedByOpm')}</Pill>}
@@ -296,6 +302,8 @@ export function CalendarView({ isDark }: { isDark: boolean }) {
                 )}
               </Section>
 
+              {slot.pilot && <FlightWarning flight={slot.pilot.flight} name={slot.pilot.name} isDark={isDark} />}
+
               <Section isDark={isDark} title={t('slotBooking.calendar.waiting', { count: slot.pending.length })}>
                 {slot.pending.length === 0 ? (
                   <p className={cn('text-xs', muted(isDark))}>{t('slotBooking.calendar.noWaiting')}</p>
@@ -303,7 +311,7 @@ export function CalendarView({ isDark }: { isDark: boolean }) {
                   <ul className="space-y-1">
                     {slot.pending.map((p) => (
                       <li key={p.userId} className="flex items-center justify-between gap-2 text-xs">
-                        <span className={cn('inline-flex items-center gap-1.5 font-medium', heading(isDark))}><Users size={12} /> {p.name}</span>
+                        <span className={cn('inline-flex items-center gap-1.5 font-medium', heading(isDark))}><Users size={12} /> {p.name} <FlightChip flight={p.flight} isDark={isDark} /></span>
                         <span className={muted(isDark)}>{t('slotBooking.slotDialog.requestedAt', { when: s.dateTime(p.requestedAt) })}</span>
                       </li>
                     ))}

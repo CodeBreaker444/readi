@@ -16,8 +16,10 @@ import { AlertTriangle, FileText, Paperclip, Upload } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { AssignPicker } from './AssignPicker';
+import { DaySelect } from './DaySelect';
 import { HourSelect } from './HourSelect';
-import { apiMsg, Btn, dialogSurface, heading, inputCls, muted, Pill, statusTone, useSlotI18n, useWeatherText, WeatherBadge } from './ui';
+import { PilotProfileCard } from './PilotProfileCard';
+import { apiMsg, Btn, FlightChip, FlightWarning, dialogSurface, heading, inputCls, muted, Pill, statusTone, useSlotI18n, useWeatherText, WeatherBadge } from './ui';
 
 const BASE = '/api/operation/slot-booking';
 const PDF_MAX = 10 * 1024 * 1024;
@@ -183,15 +185,19 @@ export function SlotDetailDialog({
         <div className="space-y-2">
           <h4 className={cn('text-xs font-semibold', heading(isDark))}>{t('slotBooking.slotDialog.requests', { count: bookings.length })}</h4>
           {bookings.length === 0 && <p className={cn('text-xs', muted(isDark))}>{t('slotBooking.slotDialog.noBookings')}</p>}
+          {/* With more than two requests the list scrolls on its own, so the dialog stays a manageable height. */}
+          <div className={cn('space-y-2', bookings.length > 2 && 'max-h-[28rem] overflow-y-auto pr-1')}>
           {bookings.map((b) => (
             <div key={b.id} className={cn('rounded-lg border p-3', isDark ? 'border-white/[0.08]' : 'border-gray-200')}>
               <div className="flex items-center justify-between gap-2">
                 <div>
-                  <div className={cn('text-sm font-medium', heading(isDark))}>{b.picName}</div>
+                  <div className={cn('text-sm font-medium flex items-center gap-2 flex-wrap', heading(isDark))}>{b.picName}{b.flight && <FlightChip flight={b.flight} isDark={isDark} />}</div>
                   <div className={cn('text-[11px]', muted(isDark))}>{t(b.assignedByOpm ? 'slotBooking.slotDialog.assignedAt' : 'slotBooking.slotDialog.requestedAt', { when: s.dateTime(b.requestedAt) })}</div>
                 </div>
                 <Pill isDark={isDark} tone={statusTone(b.status)}>{s.status(b.status)}</Pill>
               </div>
+
+              {b.profile && b.status !== 'REJECTED' && <PilotProfileCard profile={b.profile} isDark={isDark} />}
 
               {b.status === 'APPROVED' && (
                 <div className="mt-2">
@@ -226,6 +232,7 @@ export function SlotDetailDialog({
 
               {approving === b.id && (
                 <div className={cn('mt-3 rounded-lg border border-dashed p-3 space-y-2', isDark ? 'border-white/[0.15]' : 'border-gray-300')}>
+                  <FlightWarning flight={b.flight} name={b.picName} isDark={isDark} />
                   <div className={cn('text-xs font-medium', heading(isDark))}>{t('slotBooking.slotDialog.attachTitle')}</div>
                   <p className={cn('text-[11px]', muted(isDark))}>{t('slotBooking.slotDialog.attachHint')}</p>
                   <input
@@ -266,6 +273,7 @@ export function SlotDetailDialog({
               )}
             </div>
           ))}
+          </div>
         </div>
 
         {canAssign && (
@@ -403,6 +411,11 @@ export function SlotSettingsDialog({
             <input type="checkbox" className="accent-violet-600" checked={d.blocked} onChange={(e) => setD({ ...d, blocked: e.target.checked })} />
             {t('slotBooking.settings.blockDefault')}
           </label>
+          <div className="col-span-2">
+            <label className={label}>{t('slotBooking.settings.cycleDay')}</label>
+            <DaySelect isDark={isDark} value={d.cycleStartDay} onChange={(v) => setD({ ...d, cycleStartDay: v })} format={(v) => t('slotBooking.settings.cycleDayValue', { day: v })} />
+            <p className={cn('text-[11px] mt-1', muted(isDark))}>{t('slotBooking.settings.cycleDayHint', { day: d.cycleStartDay })}</p>
+          </div>
           <div className="col-span-2">
             <label className={label}>{t('slotBooking.settings.lockHours')}</label>
             <div className="grid grid-cols-3 gap-2">

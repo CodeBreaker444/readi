@@ -24,4 +24,9 @@ export const pilotGroupSchema = z.object({
     .refine((ids) => new Set(ids).size === ids.length, 'Duplicate members'),
   /** Recommended for tough-weather slots. */
   isExpert: z.boolean().optional(),
+  /** Monthly flight limit per user in hours; null clears it. */
+  flightLimits: z
+    .array(z.object({ userId: z.number().int().positive(), hours: z.number().positive().max(744).nullable() }))
+    .max(PILOT_GROUP_MEMBERS_MAX)
+    .optional(),
 });

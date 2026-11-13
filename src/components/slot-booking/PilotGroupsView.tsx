@@ -20,7 +20,7 @@ import {
 } from '@/lib/pilot-group-validation';
 import { cn } from '@/lib/utils';
 import axios from 'axios';
-import { Check, Plus, Star, Trash2, UsersRound } from 'lucide-react';
+import { Check, Plane, Plus, Star, Trash2, UsersRound } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -121,6 +121,54 @@ function MemberPicker({
   );
 }
 
+/** Monthly flight limit of each selected member. Blank = not assigned (shown grey to the OPM). */
+function FlightLimitsTab({
+  isDark,
+  candidates,
+  limits,
+  onChange,
+  bad,
+}: {
+  isDark: boolean;
+  candidates: PilotGroupCandidate[];
+  limits: Record<number, string>;
+  onChange: (id: number, v: string) => void;
+  bad: (id: number) => boolean;
+}) {
+  const { t } = useTranslation();
+  return (
+    <div className="space-y-2">
+      <p className={cn('text-[11px]', muted(isDark))}>{t('slotBooking.pilotGroups.limits.hint')}</p>
+      {candidates.length === 0 ? (
+        <p className={cn('rounded-lg border border-dashed py-8 text-center text-xs', isDark ? 'border-white/[0.1]' : 'border-gray-300', muted(isDark))}>{t('slotBooking.pilotGroups.limits.noMembers')}</p>
+      ) : (
+        <div className={cn('rounded-lg border max-h-80 overflow-y-auto divide-y', isDark ? 'border-white/[0.1] divide-white/[0.05]' : 'border-gray-200 divide-gray-100')}>
+          {candidates.map((c) => (
+            <div key={c.userId} className="flex items-center gap-3 px-3 py-2">
+              <Avatar person={c} />
+              <span className="min-w-0 flex-1">
+                <span className={cn('block text-xs font-medium truncate', heading(isDark))}>{c.name}</span>
+                <span className={cn('block text-[11px] font-light truncate', muted(isDark))}>{c.email ?? t('slotBooking.pilotGroups.noEmail')}</span>
+              </span>
+              <div className="flex items-center gap-1.5 shrink-0">
+                <input
+                  inputMode="decimal"
+                  className={cn(inputCls(isDark), 'w-24 text-right', bad(c.userId) && 'border-red-400')}
+                  value={limits[c.userId] ?? ''}
+                  placeholder={t('slotBooking.flight.na')}
+                  onChange={(e) => onChange(c.userId, e.target.value)}
+                  aria-label={t('slotBooking.pilotGroups.limits.label', { name: c.name })}
+                />
+                <span className={cn('text-[11px]', muted(isDark))}>{t('slotBooking.pilotGroups.limits.perMonth')}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function GroupFormDialog({
   open,
   onOpenChange,
@@ -145,6 +193,9 @@ function GroupFormDialog({
   const [description, setDescription] = useState('');
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [isExpert, setIsExpert] = useState(false);
+  const [tab, setTab] = useState<'details' | 'limits'>('details');
+  /** Monthly flight limit per user as typed (blank = not assigned). */
+  const [limits, setLimits] = useState<Record<number, string>>({});
   const [errors, setErrors] = useState<FieldErrors>({});
   const [busy, setBusy] = useState(false);
 
@@ -154,6 +205,8 @@ function GroupFormDialog({
     setDescription(editing?.description ?? '');
     setSelected(new Set(editing?.members.map((m) => m.userId) ?? []));
     setIsExpert(editing?.isExpert ?? false);
+    setTab('details');
+    setLimits(Object.fromEntries(candidates.filter((c) => c.monthlyLimitHours !== null).map((c) => [c.userId, String(c.monthlyLimitHours)])));
     setErrors({});
   }, [open, editing, presetName]);
 
@@ -187,9 +240,27 @@ function GroupFormDialog({
     return Object.keys(out).length === 0;
   };
 
+  const parseLimit = (v: string | undefined): number | null | 'bad' => {
+    const x = (v ?? '').trim().replace(',', '.');
+    if (!x) return null;
+    const n = Number(x);
+    return Number.isFinite(n) && n > 0 && n <= 744 ? Math.round(n * 10) / 10 : 'bad';
+  };
+  const limitBad = (id: number) => parseLimit(limits[id]) === 'bad';
+
   const submit = async () => {
     if (!validate()) return;
-    const body = { name: name.trim(), description: description.trim(), memberIds: [...selected], isExpert };
+    if ([...selected].some(limitBad)) {
+      setTab('limits');
+      toast.error(t('slotBooking.pilotGroups.limits.invalid'));
+      return;
+    }
+    // Only limits that changed are sent; a limit belongs to the user, so it applies in every group they are in.
+    const flightLimits = candidates
+      .filter((c) => selected.has(c.userId))
+      .map((c) => ({ userId: c.userId, hours: parseLimit(limits[c.userId]) as number | null }))
+      .filter((l) => l.hours !== (candidates.find((c) => c.userId === l.userId)?.monthlyLimitHours ?? null));
+    const body = { name: name.trim(), description: description.trim(), memberIds: [...selected], isExpert, flightLimits };
     // Duplicate names are reported as a toast after the click, not by disabling the button.
     if (groups.some((g) => g.id !== editing?.id && g.name.trim().toLowerCase() === body.name.toLowerCase())) {
       toast.error(t('slotBooking.pilotGroups.errors.nameTaken'));
@@ -223,7 +294,28 @@ function GroupFormDialog({
           <DialogDescription>{t('slotBooking.pilotGroups.formHint')}</DialogDescription>
         </DialogHeader>
 
-        <div>
+        <div className={cn('flex gap-1 border-b -mt-1', isDark ? 'border-white/[0.08]' : 'border-gray-200')}>
+          {(['details', 'limits'] as const).map((k) => (
+            <button
+              key={k}
+              type="button"
+              onClick={() => setTab(k)}
+              className={cn(
+                'cursor-pointer px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors inline-flex items-center gap-1.5',
+                tab === k ? 'border-violet-600 text-violet-600' : cn('border-transparent', muted(isDark)),
+              )}
+            >
+              {k === 'limits' && <Plane size={13} />}
+              {t(k === 'details' ? 'slotBooking.pilotGroups.tabDetails' : 'slotBooking.pilotGroups.tabLimits')}
+            </button>
+          ))}
+        </div>
+
+        {tab === 'limits' && (
+          <FlightLimitsTab isDark={isDark} candidates={candidates.filter((c) => selected.has(c.userId))} limits={limits} onChange={(id, v) => setLimits((p) => ({ ...p, [id]: v }))} bad={limitBad} />
+        )}
+
+        <div className={tab === 'limits' ? 'hidden' : undefined}>
           <div>
             <label className={label} htmlFor="pg-name">{t('slotBooking.pilotGroups.name')} *</label>
             <input

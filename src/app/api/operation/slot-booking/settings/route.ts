@@ -17,6 +17,7 @@ const schema = z
     modifyLockHours: z.union([z.literal(0), z.literal(24), z.literal(48)]),
     baseLatitude: z.number().min(-90).max(90).nullable(),
     baseLongitude: z.number().min(-180).max(180).nullable(),
+    cycleStartDay: z.number().int().min(1).max(28),
   })
   .refine((v) => v.mode !== 'HOURLY' || v.hourEnd > v.hourStart, { message: 'End must be after start', path: ['hourEnd'] })
   .refine((v) => (v.baseLatitude === null) === (v.baseLongitude === null), {

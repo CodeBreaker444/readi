@@ -39,7 +39,9 @@ Company
 | **Pilot group** | A custom group of company users (for example Experts or External), with an expert flag. A slot group can be offered to chosen pilot groups |
 | **Slot** | One time block of a slot group on a date, open or closed |
 | **Slot booking** | A pilot's request for a slot, with its status (pending, approved, rejected) and the PDF attached on approval |
-| **Slot settings** | The company's defaults that pre-fill every new slot group, plus the lock window for changing requests and the base location for slot weather |
+| **Slot settings** | The company's defaults that pre-fill every new slot group, plus the lock window for changing requests, the base location for slot weather and the day the flying-hours cycle starts |
+| **Weather forecast** | A stored 7-day hourly forecast per location (about 1 km), used by slot booking. Refreshed when older than 30 minutes and by a cron job |
+| **Pilot flight limit** | A pilot's monthly flight limit in hours (no row = no limit). Slot booking compares it with the hours flown this cycle |
 | **System** | A drone setup made of components. Has a model, a status and an optional client |
 | **Component** | One part of a system, with serial number, usage hours, maintenance counters, insurance and D-Flight ID |
 | **Model** | The manufacturer and model definition, including maintenance cycle limits |

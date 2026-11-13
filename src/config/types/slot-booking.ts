@@ -15,6 +15,41 @@ export interface SlotDefaults {
   /** Base location for the 7-day slot weather. */
   baseLatitude: number | null;
   baseLongitude: number | null;
+  /** Day of the month (1–28) on which each flying-hours cycle starts, e.g. 10 = the 10th of every month. */
+  cycleStartDay: number;
+}
+
+/** About a pilot who asked for a slot: experience, recent flying, ranking, groups and what they asked for in this slot group. */
+export interface PilotProfile {
+  /** Missions flown, all time. */
+  totalFlights: number;
+  /** Missions flown in the last 7 days, and how many of those on a Saturday or Sunday. */
+  weekFlights: number;
+  weekWeekendFlights: number;
+  /** Merit score (0–100) and rank among the company's pilots; null when the pilot is not ranked. */
+  score: number | null;
+  rank: number | null;
+  rankedPilots: number;
+  groups: Array<{ id: number; name: string; expert: boolean }>;
+  /** Slots of this slot group the pilot asked for (any status; slots assigned directly by the OPM do not count). */
+  appliedInGroup: number;
+  /** Of those, slots on a Saturday or Sunday. */
+  appliedWeekendInGroup: number;
+}
+
+/** Hours a pilot flew in the current cycle against their monthly limit. */
+export interface PilotFlight {
+  /** Hours flown (from missions) in the current cycle. */
+  cycleHours: number;
+  /** All-time hours flown. */
+  totalHours: number;
+  /** Monthly limit, null while none is assigned. */
+  limitHours: number | null;
+  /** none = no limit (grey), ok, warn = 90% or more (yellow), over = 100% or more (red). */
+  level: 'none' | 'ok' | 'warn' | 'over';
+  /** First day of the current cycle (yyyy-MM-dd) and the day the next one starts. */
+  cycleStart: string;
+  cycleEnd: string;
 }
 
 export type WeatherLevel = 'calm' | 'moderate' | 'tough';
@@ -85,6 +120,10 @@ export interface Booking {
   pdfName: string | null;
   /** OPM only, pending requests: the pilot's other approved slot that overlaps this one. */
   collision?: string | null;
+  /** OPM only: the pilot's flying hours this cycle against their monthly limit. */
+  flight?: PilotFlight;
+  /** OPM only: what the OPM needs to know about the pilot when deciding. */
+  profile?: PilotProfile;
 }
 
 export interface GroupDetail {
@@ -172,6 +211,8 @@ export interface PilotGroupMember {
   email: string | null;
   avatarUrl: string | null;
   role: string | null;
+  /** Monthly flight limit in hours, null = not assigned. */
+  monthlyLimitHours: number | null;
 }
 
 export interface PilotGroup {
@@ -193,6 +234,8 @@ export interface PilotGroupCandidate {
   email: string | null;
   avatarUrl: string | null;
   role: string | null;
+  /** Monthly flight limit in hours, null = not assigned. */
+  monthlyLimitHours: number | null;
 }
 
 export interface PilotGroupInput {
@@ -200,6 +243,8 @@ export interface PilotGroupInput {
   description?: string;
   memberIds: number[];
   isExpert?: boolean;
+  /** Monthly flight limits to save for users (null removes the limit). */
+  flightLimits?: Array<{ userId: number; hours: number | null }>;
 }
 
 // ───────────────────────── Assignment, day preview, merits ─────────────────────────
@@ -219,6 +264,7 @@ export interface SlotCandidate {
   requested: boolean;
   /** Their overlapping approved slot, when they are not available. */
   collision: string | null;
+  flight: PilotFlight;
 }
 
 export interface SlotCandidates {
@@ -303,12 +349,14 @@ export interface CalendarPilot {
   approvedAt: string | null;
   /** Placed directly by the OPM, not requested by the pilot. */
   assignedByOpm: boolean;
+  flight: PilotFlight;
 }
 
 export interface CalendarPending {
   userId: number;
   name: string;
   requestedAt: string;
+  flight: PilotFlight;
 }
 
 /** One slot of the week calendar with everything the detail modal shows. */

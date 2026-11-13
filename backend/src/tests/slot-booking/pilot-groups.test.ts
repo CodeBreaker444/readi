@@ -9,6 +9,7 @@ const prismaMock: Record<string, any> = {
   pilot_group: { findFirst: jest.fn(), findMany: jest.fn(), create: jest.fn(), update: jest.fn(), delete: jest.fn() },
   pilot_group_member: { deleteMany: jest.fn(), createMany: jest.fn() },
   public_users: { findMany: jest.fn() },
+  pilot_flight_limit: { findMany: jest.fn(), deleteMany: jest.fn(), upsert: jest.fn() },
   $transaction: jest.fn(),
 };
 jest.mock('@/lib/prisma', () => ({ prisma: prismaMock }));
@@ -58,6 +59,7 @@ const rejects = async (p: Promise<unknown>, status: number) => {
 
 beforeEach(() => {
   jest.clearAllMocks();
+  prismaMock.pilot_flight_limit.findMany.mockResolvedValue([]);
   prismaMock.pilot_group.findMany.mockResolvedValue([]);
   prismaMock.$transaction.mockResolvedValue([]);
 });

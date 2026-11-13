@@ -25,6 +25,7 @@ Scheduled background jobs are defined in `vercel.json` and run as Vercel Cron Jo
 | `check-training-expiration` | `0 6 * * *` | Daily at 06:00 |
 | `slot-approval-reminder` | `0 6 * * *` | Daily at 06:00 |
 | `slot-publish` | `*/5 * * * *` | Every 5 minutes |
+| `refresh-weather-forecasts` | `*/30 * * * *` | Every 30 minutes |
 
 Schedules are defined in `vercel.json` at the project root and are evaluated in UTC by Vercel Cron.
 
@@ -79,6 +80,12 @@ Schedules are defined in `vercel.json` at the project root and are evaluated in 
 - **Schedule:** `*/5 * * * *` (every 5 minutes)
 - **Purpose:** Finds slot groups whose scheduled **publish time** has passed and whose pilots have not been told yet. It claims each group first, so two overlapping runs never notify twice, then notifies the pilots who can see the group: the members of its audience pilot groups, or all active pilots of the company when it has no audience. Visibility itself does not depend on this job: pilots see a group as soon as its time passes.
 - **Sends email:** Yes, and an in-app notification, subject to the company's daily email limit. See [Slot Booking](/docs/modules/slot-booking).
+
+### refresh-weather-forecasts
+
+- **Schedule:** `*/30 * * * *` (every 30 minutes)
+- **Purpose:** Keeps the stored slot-booking weather forecast fresh. It re-fetches the locations that someone viewed in the last 6 hours and whose copy is older than 30 minutes (up to 20 per run), and deletes locations nobody has viewed for 24 hours. Screens read the stored forecast and only call the weather service when a location has no copy or the copy is stale. See [Slot Booking](/docs/modules/slot-booking#weather).
+- **Sends email:** No.
 
 ---
 

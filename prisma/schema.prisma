@@ -2728,8 +2728,21 @@ model slot_settings {
   modify_lock_hours Int      @default(24) @db.SmallInt
   base_latitude     Float?
   base_longitude    Float?
+  cycle_start_day   Int      @default(1) @db.SmallInt
   owner             owner    @relation(fields: [fk_owner_id], references: [owner_id], onDelete: Cascade, onUpdate: NoAction)
 
+  @@schema("public")
+}
+
+/// Monthly flight limit of one pilot (hours per flying-hours cycle). No row = no limit assigned.
+model pilot_flight_limit {
+  fk_owner_id   Int
+  fk_user_id    Int
+  monthly_hours Decimal  @db.Decimal(6, 1)
+  updated_at    DateTime @default(now()) @db.Timestamp(6)
+
+  @@id([fk_owner_id, fk_user_id])
+  @@index([fk_user_id], map: "idx_pilot_flight_limit_user")
   @@schema("public")
 }
 

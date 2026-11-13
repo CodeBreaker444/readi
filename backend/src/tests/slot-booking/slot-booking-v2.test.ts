@@ -17,7 +17,8 @@ const prismaMock: Record<string, any> = {
   pilot_group_member: { findMany: jest.fn() },
   slot_group_pilot_group: { findMany: jest.fn() },
   slot_settings: { findUnique: jest.fn() },
-  pilot_mission: { groupBy: jest.fn() },
+  pilot_mission: { groupBy: jest.fn(), findMany: jest.fn() },
+  pilot_flight_limit: { findMany: jest.fn(), deleteMany: jest.fn(), upsert: jest.fn() },
   $transaction: jest.fn(),
 };
 jest.mock('@/lib/prisma', () => ({ prisma: prismaMock }));
@@ -97,6 +98,9 @@ beforeEach(() => {
   prismaMock.public_users.findMany.mockResolvedValue([]);
   prismaMock.public_users.findUnique.mockResolvedValue(null);
   prismaMock.client.findMany.mockResolvedValue([]);
+  prismaMock.pilot_flight_limit.findMany.mockResolvedValue([]);
+  prismaMock.pilot_mission.groupBy.mockResolvedValue([]);
+  prismaMock.pilot_mission.findMany.mockResolvedValue([]);
   prismaMock.notification.createMany.mockResolvedValue({ count: 1 });
   getWeatherForSlots.mockResolvedValue({ weather: {}, note: null });
 });
@@ -264,6 +268,51 @@ describe('what pilots can see', () => {
     const detail = await getGroupDetail(OPM, 3);
     expect(detail.bookings[0].collision).toMatch(/08:00–10:00 in “Other”/);
     expect(detail.weather).toEqual({ 5: { level: 'tough' } });
+  });
+
+  it("gives the manager each pilot's profile: flights, recent weekend flying, merit and what they asked for in this group", async () => {
+    const sat = '2030-06-01';
+    const mon = '2030-06-03';
+    prismaMock.slot_group.findFirst.mockResolvedValue(groupRow(3));
+    prismaMock.slot.findMany.mockResolvedValue([
+      { slot_id: 5, fk_slot_group_id: 3, slot_date: d(sat), start_time: '06:00', end_time: '14:00', is_active: true },
+      { slot_id: 6, fk_slot_group_id: 3, slot_date: d(mon), start_time: '06:00', end_time: '14:00', is_active: true },
+      { slot_id: 7, fk_slot_group_id: 3, slot_date: d(mon), start_time: '14:00', end_time: '22:00', is_active: true },
+    ]);
+    const base = { fk_slot_group_id: 3, fk_pilot_user_id: 9, requested_at: new Date(), decided_at: null, pdf_file_name: null };
+    prismaMock.slot_booking.findMany
+      .mockResolvedValueOnce([
+        { ...base, booking_id: 1, fk_slot_id: 5, status: 'PENDING', decision_note: null },
+        { ...base, booking_id: 2, fk_slot_id: 6, status: 'REJECTED', decision_note: 'No' },
+        // placed by the OPM: not something the pilot asked for
+        { ...base, booking_id: 3, fk_slot_id: 7, status: 'APPROVED', decision_note: 'Assigned by OPM' },
+      ])
+      .mockResolvedValue([]);
+    prismaMock.public_users.findMany.mockResolvedValue([{ user_id: 9, first_name: 'Bob', last_name: 'B', username: 'bob', user_role: 'PIC', email: null, users_profile: null }]);
+    prismaMock.pilot_mission.groupBy.mockResolvedValue([{ fk_pilot_user_id: 9, _count: { _all: 42 }, _sum: { flight_duration: 600 } }]);
+    // two flights in the last week: one on a Saturday, one on a Monday
+    prismaMock.pilot_mission.findMany.mockResolvedValue([
+      { fk_pilot_user_id: 9, actual_start: new Date('2030-05-25T09:00:00.000Z') },
+      { fk_pilot_user_id: 9, actual_start: new Date('2030-05-27T09:00:00.000Z') },
+    ]);
+
+    const { bookings } = await getGroupDetail(OPM, 3);
+    const profile = bookings.find((b) => b.id === 1)!.profile!;
+    expect(profile.totalFlights).toBe(42);
+    expect(profile.appliedInGroup).toBe(2);
+    expect(profile.appliedWeekendInGroup).toBe(1);
+    expect(profile).toEqual(expect.objectContaining({ weekFlights: expect.any(Number), weekWeekendFlights: expect.any(Number), groups: expect.any(Array) }));
+  });
+
+  it("does not give pilots anyone's profile", async () => {
+    prismaMock.slot_group.findFirst.mockResolvedValue(groupRow(3));
+    prismaMock.slot.findMany.mockResolvedValue([{ slot_id: 5, fk_slot_group_id: 3, slot_date: d(day(2)), start_time: '06:00', end_time: '14:00', is_active: true }]);
+    prismaMock.slot_booking.findMany.mockResolvedValueOnce([
+      { booking_id: 1, fk_slot_id: 5, fk_slot_group_id: 3, fk_pilot_user_id: 2, status: 'PENDING', requested_at: new Date(), decided_at: null, decision_note: null, pdf_file_name: null },
+    ]);
+    prismaMock.public_users.findMany.mockResolvedValue([{ user_id: 2, first_name: 'Pia', last_name: 'P', username: 'pia' }]);
+    const { bookings } = await getGroupDetail(PIC, 3);
+    expect(bookings[0].profile).toBeUndefined();
   });
 });
 
@@ -681,5 +730,48 @@ describe('scheduled group opening', () => {
     prismaMock.slot_group.findFirst.mockResolvedValue({ slot_group_id: 3, name: 'Week 9', publish_at: null });
     await rejects(publishGroupNow(OPM, 3), 409, /already published/);
     await rejects(publishGroupNow(PIC, 3), 403);
+  });
+});
+
+describe('monthly flight limits', () => {
+  const { getPilotFlights, saveFlightLimits } = jest.requireActual('@/backend/services/slot-booking/flight-limits-service');
+
+  it('is grey with the hours flown when no limit is assigned', async () => {
+    prismaMock.slot_settings.findUnique.mockResolvedValue({ cycle_start_day: 10 });
+    prismaMock.pilot_mission.groupBy.mockResolvedValue([{ fk_pilot_user_id: 5, _sum: { flight_duration: 7200 } }]);
+    const flights = await getPilotFlights(7, [5], '2026-11-13');
+    expect(flights.get(5)).toMatchObject({ cycleHours: 120, limitHours: null, level: 'none', cycleStart: '2026-11-10', cycleEnd: '2026-12-10' });
+  });
+
+  it('turns yellow at 90% and red at 100% of the limit', async () => {
+    prismaMock.pilot_flight_limit.findMany.mockResolvedValue([
+      { fk_user_id: 1, monthly_hours: 40 },
+      { fk_user_id: 2, monthly_hours: 40 },
+      { fk_user_id: 3, monthly_hours: 40 },
+    ]);
+    prismaMock.pilot_mission.groupBy.mockResolvedValue([
+      { fk_pilot_user_id: 1, _sum: { flight_duration: 30 * 60 } },
+      { fk_pilot_user_id: 2, _sum: { flight_duration: 36 * 60 } },
+      { fk_pilot_user_id: 3, _sum: { flight_duration: 40 * 60 } },
+    ]);
+    const flights = await getPilotFlights(7, [1, 2, 3], '2026-11-13');
+    expect([1, 2, 3].map((id) => flights.get(id).level)).toEqual(['ok', 'warn', 'over']);
+  });
+
+  it('counts only missions inside the current cycle', async () => {
+    prismaMock.slot_settings.findUnique.mockResolvedValue({ cycle_start_day: 10 });
+    await getPilotFlights(7, [5], '2026-11-05');
+    const cycleCall = prismaMock.pilot_mission.groupBy.mock.calls.map((c: any) => c[0]).find((a: any) => a.where.actual_start);
+    expect(cycleCall.where.actual_start.gte.toISOString()).toBe('2026-10-10T00:00:00.000Z');
+    expect(cycleCall.where.actual_start.lt.toISOString()).toBe('2026-11-10T00:00:00.000Z');
+  });
+
+  it('saves limits and removes a limit when hours is null', async () => {
+    prismaMock.public_users.findMany.mockResolvedValue([{ user_id: 1 }, { user_id: 2 }]);
+    prismaMock.$transaction.mockImplementation(async (ops: unknown[]) => ops);
+    await saveFlightLimits(7, [{ userId: 1, hours: 45 }, { userId: 2, hours: null }, { userId: 99, hours: 10 }]);
+    expect(prismaMock.pilot_flight_limit.upsert).toHaveBeenCalledTimes(1);
+    expect(prismaMock.pilot_flight_limit.upsert.mock.calls[0][0].create).toMatchObject({ fk_user_id: 1, monthly_hours: 45 });
+    expect(prismaMock.pilot_flight_limit.deleteMany).toHaveBeenCalledWith({ where: { fk_owner_id: 7, fk_user_id: 2 } });
   });
 });

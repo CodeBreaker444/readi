@@ -2,12 +2,12 @@
 
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
-import type { Booking, SlotWeather } from '@/config/types/slot-booking';
+import type { Booking, PilotFlight, SlotWeather } from '@/config/types/slot-booking';
 import { getApiErrorMessage } from '@/lib/api-error-message';
-import { nextApprovalDay, shortSlotLabel, weekdayOf } from '@/lib/slot-booking-utils';
+import { addDaysIso, nextApprovalDay, shortSlotLabel, weekdayOf } from '@/lib/slot-booking-utils';
 import { cn } from '@/lib/utils';
 import axios from 'axios';
-import { Ban, Check, Clock, Loader2, Lock, Search, Wind } from 'lucide-react';
+import { Ban, Check, Clock, Loader2, Lock, Plane, Search, Wind } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -493,6 +493,54 @@ export function Legend({ isDark, mode }: { isDark: boolean; mode: CalendarMode }
           <span className={cn('text-[11px]', muted(isDark))}>{t(`slotBooking.legend.${key}`)}</span>
         </div>
       ))}
+    </div>
+  );
+}
+
+// ───────────────────────── Monthly flight limits ─────────────────────────
+
+const FLIGHT_TONE = {
+  none: { dark: 'bg-white/[0.06] text-gray-400 border-white/[0.1]', light: 'bg-gray-100 text-gray-500 border-gray-200' },
+  ok: { dark: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30', light: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+  warn: { dark: 'bg-amber-500/15 text-amber-300 border-amber-500/40', light: 'bg-amber-50 text-amber-700 border-amber-300' },
+  over: { dark: 'bg-red-500/15 text-red-300 border-red-500/40', light: 'bg-red-50 text-red-700 border-red-300' },
+} as const;
+
+/**
+ * Hours flown this cycle against the monthly limit: grey "12 / NA" without a limit, green below 90%,
+ * yellow from 90%, red from 100%. The tooltip explains the numbers.
+ */
+export function FlightChip({ flight, isDark, className }: { flight: PilotFlight; isDark: boolean; className?: string }) {
+  const { t } = useTranslation();
+  const s = useSlotI18n();
+  const tone = FLIGHT_TONE[flight.level][isDark ? 'dark' : 'light'];
+  const title = [
+    t('slotBooking.flight.tooltipCycle', { hours: flight.cycleHours, from: s.date(flight.cycleStart), to: s.date(addDaysIso(flight.cycleEnd, -1)) }),
+    flight.limitHours === null ? t('slotBooking.flight.noLimit') : t('slotBooking.flight.limitIs', { limit: flight.limitHours }),
+    t('slotBooking.flight.totalIs', { hours: flight.totalHours }),
+  ].join(' · ');
+  return (
+    <span title={title} className={cn('inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold tabular-nums whitespace-nowrap', tone, className)}>
+      <Plane size={10} /> {flight.cycleHours} / {flight.limitHours ?? t('slotBooking.flight.na')}
+      {flight.limitHours !== null && ' h'}
+    </span>
+  );
+}
+
+/** Warning line for the OPM when approving or assigning a pilot who is close to, or over, their limit. */
+export function FlightWarning({ flight, name, isDark }: { flight?: PilotFlight; name: string; isDark: boolean }) {
+  const { t } = useTranslation();
+  if (!flight || (flight.level !== 'warn' && flight.level !== 'over')) return null;
+  const over = flight.level === 'over';
+  return (
+    <div
+      className={cn(
+        'rounded-lg border px-3 py-2 text-xs flex items-start gap-2',
+        over ? (isDark ? 'bg-red-500/10 border-red-500/30 text-red-300' : 'bg-red-50 border-red-200 text-red-800') : isDark ? 'bg-amber-500/10 border-amber-500/30 text-amber-300' : 'bg-amber-50 border-amber-200 text-amber-800',
+      )}
+    >
+      <Plane size={13} className="mt-0.5 shrink-0" />
+      <span>{t(over ? 'slotBooking.flight.overWarning' : 'slotBooking.flight.nearWarning', { name, hours: flight.cycleHours, limit: flight.limitHours })}</span>
     </div>
   );
 }

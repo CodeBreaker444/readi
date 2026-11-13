@@ -124,3 +124,35 @@ export const weatherLevel = (status: 'go' | 'marginal' | 'nogo'): WeatherLevel =
 
 /** Forecast covers today plus the next six days. */
 export const WEATHER_DAYS = 7;
+
+// ───────────────────────── Monthly flight limits ─────────────────────────
+
+/** Share of the monthly limit at which the OPM is warned (yellow). 100% is red. */
+export const FLIGHT_WARN_RATIO = 0.9;
+
+export type FlightLevel = 'none' | 'ok' | 'warn' | 'over';
+
+/**
+ * The flying-hours cycle that contains `today`, for a cycle that starts on `startDay` (1–28) of every month.
+ * Example: startDay 10, today 2026-11-05 → 2026-10-10 up to (not including) 2026-11-10.
+ * Returns yyyy-MM-dd dates; the end is exclusive.
+ */
+export function cycleWindow(startDay: number, today: string): { start: string; end: string } {
+  const day = Math.min(28, Math.max(1, Math.trunc(startDay) || 1));
+  const [y, m, d] = today.split('-').map(Number);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const at = (year: number, month: number) => {
+    const date = new Date(Date.UTC(year, month - 1, 1));
+    return `${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(day)}`;
+  };
+  const startMonth = d >= day ? m : m - 1;
+  return { start: at(y, startMonth), end: at(y, startMonth + 1) };
+}
+
+/** Where a pilot stands against their monthly limit. No limit assigned → 'none' (grey). */
+export function flightLevel(hours: number, limit: number | null): FlightLevel {
+  if (limit === null || limit <= 0) return 'none';
+  if (hours >= limit) return 'over';
+  if (hours >= limit * FLIGHT_WARN_RATIO) return 'warn';
+  return 'ok';
+}

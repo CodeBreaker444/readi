@@ -9,12 +9,12 @@ import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Avatar } from './Avatar';
-import { apiMsg, Btn, ErrorBlock, heading, inputCls, muted, Pill, useWeatherText, WeatherBadge } from './ui';
+import { apiMsg, Btn, ErrorBlock, FlightChip, FlightWarning, heading, inputCls, muted, Pill, useWeatherText, WeatherBadge } from './ui';
 
 const BASE = '/api/operation/slot-booking';
 
 const optionText = (c: SlotCandidate, t: (k: string, o?: Record<string, unknown>) => string) =>
-  `${c.name}${c.expert ? ' ★' : ''} · ${t('slotBooking.assign.hoursShort', { hours: c.hours90 })} · ${t('slotBooking.assign.scoreShort', { score: c.score })}`;
+  `${c.name}${c.expert ? ' ★' : ''} · ${t('slotBooking.assign.hoursShort', { hours: c.hours90 })} · ${t('slotBooking.assign.scoreShort', { score: c.score })} · ${c.flight.cycleHours}/${c.flight.limitHours ?? t('slotBooking.flight.na')}${c.flight.level === 'over' ? ' ⚠' : c.flight.level === 'warn' ? ' !' : ''}`;
 
 /**
  * "Assign pilot" dropdown for one slot: pilots who asked for it come first, then free pilots (experts first when the
@@ -158,6 +158,7 @@ export function AssignPicker({ slotId, isDark, onChanged }: { slotId: number; is
                     <Pill key={g.id} isDark={isDark} tone={g.expert ? 'green' : 'gray'}>{g.expert && <Star size={9} />} {g.name}</Pill>
                   ))}
                   {chosen.requested && <Pill isDark={isDark} tone="amber">{t('slotBooking.assign.requested')}</Pill>}
+                  <FlightChip flight={chosen.flight} isDark={isDark} />
                 </div>
                 <div className={cn('text-[11px]', muted(isDark))}>
                   {t('slotBooking.assign.hours90', { hours: chosen.hours90 })} · {t('slotBooking.assign.score', { score: chosen.score })}
@@ -165,6 +166,8 @@ export function AssignPicker({ slotId, isDark, onChanged }: { slotId: number; is
               </div>
             </div>
           )}
+
+          {chosen && <FlightWarning flight={chosen.flight} name={chosen.name} isDark={isDark} />}
 
           {confirmTough && (
             <p className="text-[11px] text-amber-600 flex items-start gap-1.5">

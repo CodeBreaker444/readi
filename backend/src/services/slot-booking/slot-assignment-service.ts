@@ -4,6 +4,7 @@ import type { DayPreview, DayPreviewRow, SlotCandidate, SlotCandidates } from '@
 import type { SessionUser } from '@/lib/auth/server-session';
 import { prisma } from '@/lib/prisma';
 import { prettyDate, SLOT_DATE_RE, slotLabel, todayIso } from '@/lib/slot-booking-utils';
+import { getPilotFlights } from './flight-limits-service';
 import { buildMerits } from './pilot-stats-service';
 import { collisionKey, dateStr, findCollisions, getAudiences, getMemberIds, toDate } from './slot-booking-rules';
 import { ASSIGNED_NOTE, assertManager, audit, getOwnedSlot, notify, pilotTarget, SlotBookingError, userNames } from './slot-booking-service';
@@ -41,6 +42,7 @@ export async function getSlotCandidates(user: SessionUser, slotId: number): Prom
     pool.map((m) => ({ pilotId: m.userId, slot: { slotId, date, start: slot.start_time, end: slot.end_time } })),
   );
   const requested = new Set(live.map((l) => l.fk_pilot_user_id));
+  const flights = await getPilotFlights(user.ownerId, pool.map((m) => m.userId));
   const weather = wx.weather[slotId] ?? null;
 
   const candidates = pool
@@ -56,6 +58,7 @@ export async function getSlotCandidates(user: SessionUser, slotId: number): Prom
       score: m.score,
       requested: requested.has(m.userId),
       collision: collisions.get(collisionKey(m.userId, slotId)) ?? null,
+      flight: flights.get(m.userId)!,
     }))
     .sort((a, b) => {
       const rank = (c: SlotCandidate) => (c.collision ? 3 : c.requested ? 0 : 1);
