@@ -2,10 +2,10 @@
 
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import type { CalendarDay, CalendarSlot, SlotWeather, WeekCalendar } from '@/config/types/slot-booking';
-import { addDaysIso, slotLabel, todayIso } from '@/lib/slot-booking-utils';
+import { addDaysIso, slotLabel, todayIso, weekdayOf } from '@/lib/slot-booking-utils';
 import { cn } from '@/lib/utils';
 import axios from 'axios';
-import { CalendarDays, ChevronLeft, ChevronRight, CircleAlert, CircleCheck, Clock, Mail, UserRound, Users, Wind } from 'lucide-react';
+import { CalendarDays, ChevronLeft, ChevronRight, CircleAlert, CircleCheck, Clock, Cloud, CloudLightning, Mail, Search, Sun, UserRound, Users, Wind } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AssignPicker } from './AssignPicker';
@@ -13,11 +13,25 @@ import { Avatar } from './Avatar';
 import { apiMsg, Btn, card, dialogSurface, EmptyBlock, ErrorBlock, heading, inputCls, LoadingBlock, muted, Pill, useSlotI18n, WeatherBadge, WeatherDot } from './ui';
 
 const BASE = '/api/operation/slot-booking';
+const GROUP_TONES = ['bg-violet-500', 'bg-sky-500', 'bg-amber-500', 'bg-rose-500', 'bg-teal-500', 'bg-indigo-500'] as const;
 const LEVEL_RANK = { calm: 0, moderate: 1, tough: 2 } as const;
 
 /** The worst forecast of a day's slots, for the day header. */
 function worstWeather(slots: CalendarSlot[]): SlotWeather | null {
   return slots.reduce<SlotWeather | null>((worst, s) => (s.weather && (!worst || LEVEL_RANK[s.weather.level] > LEVEL_RANK[worst.level]) ? s.weather : worst), null);
+}
+
+/** Compact forecast chip for a slot card: level icon, temperature and wind. */
+function WeatherChip({ weather, isDark }: { weather: SlotWeather; isDark: boolean }) {
+  const Icon = weather.level === 'calm' ? Sun : weather.level === 'moderate' ? Cloud : CloudLightning;
+  const tone = weather.level === 'calm' ? 'text-emerald-500' : weather.level === 'moderate' ? 'text-amber-500' : 'text-red-500';
+  return (
+    <span className={cn('inline-flex items-center gap-1 text-[10px] tabular-nums', isDark ? 'text-gray-400' : 'text-gray-500')}>
+      <Icon size={12} className={tone} />
+      {weather.tempC != null && <span>{weather.tempC}°</span>}
+      <span>· {weather.avgWindMs} m/s</span>
+    </span>
+  );
 }
 
 function Fact({ isDark, label, children }: { isDark: boolean; label: string; children: React.ReactNode }) {
@@ -47,6 +61,8 @@ export function CalendarView({ isDark }: { isDark: boolean }) {
   const [error, setError] = useState<string | null>(null);
   const [slotId, setSlotId] = useState<number | null>(null);
   const [dayDate, setDayDate] = useState<string | null>(null);
+  const [query, setQuery] = useState('');
+  const [status, setStatus] = useState<'all' | 'unassigned' | 'assigned'>('all');
 
   const load = useCallback(async () => {
     try {
@@ -67,8 +83,17 @@ export function CalendarView({ isDark }: { isDark: boolean }) {
   const slot = all.find((x) => x.slotId === slotId) ?? null;
   const day = data?.days.find((d) => d.date === dayDate) ?? null;
   const today = todayIso();
-  const pct = data && data.total ? Math.round((data.assigned / data.total) * 100) : 0;
-  const allDone = !!data && data.total > 0 && data.unassigned === 0;
+
+  const q = query.trim().toLowerCase();
+  const matches = (x: CalendarSlot) => {
+    if (status === 'unassigned' && x.pilot) return false;
+    if (status === 'assigned' && !x.pilot) return false;
+    if (!q) return true;
+    return [x.groupName, x.clientName, x.pilot?.name, ...x.pending.map((p) => p.name)].some((v) => v?.toLowerCase().includes(q));
+  };
+  const filtering = status !== 'all' || q !== '';
+  const requests = all.reduce((n, x) => n + x.pending.length, 0);
+  const tough = all.filter((x) => x.weather?.level === 'tough').length;
 
   const renderSlotCard = (x: CalendarSlot) => {
     const open = !x.pilot;
@@ -78,64 +103,137 @@ export function CalendarView({ isDark }: { isDark: boolean }) {
         type="button"
         onClick={() => setSlotId(x.slotId)}
         className={cn(
-          'cursor-pointer w-full text-left rounded-lg border border-l-4 p-2 space-y-1 transition-shadow hover:shadow-md',
-          open
-            ? cn('border-l-red-500', isDark ? 'bg-red-500/10 border-white/[0.06]' : 'bg-red-50 border-red-100')
-            : cn('border-l-emerald-500', isDark ? 'bg-emerald-500/10 border-white/[0.06]' : 'bg-emerald-50 border-emerald-100'),
+          'group cursor-pointer w-full text-left rounded-lg border overflow-hidden flex transition-all hover:shadow-md hover:-translate-y-px',
+          open ? (isDark ? 'bg-red-500/[0.08] border-red-500/25' : 'bg-red-50/70 border-red-200') : isDark ? 'bg-white/[0.03] border-white/[0.08]' : 'bg-white border-gray-200',
         )}
       >
-        <div className="flex items-center justify-between gap-1">
-          <span className={cn('text-[12px] font-semibold', heading(isDark))}>{slotLabel(x)}</span>
-          {x.weather && <WeatherDot weather={x.weather} />}
-        </div>
-        <div className={cn('text-[11px] truncate', isDark ? 'text-gray-300' : 'text-gray-600')}>{x.groupName}</div>
-        {x.clientName && <div className={cn('text-[10px] truncate', muted(isDark))}>{x.clientName}</div>}
-        {x.pilot ? (
-          <div className="flex items-center gap-1.5 pt-0.5">
-            <Avatar person={x.pilot} size={16} />
-            <span className={cn('text-[11px] font-medium truncate', heading(isDark))}>{x.pilot.name}</span>
-          </div>
-        ) : (
-          <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
-            <span className="text-[11px] font-semibold text-red-500">{t('slotBooking.dayPreview.unassigned')}</span>
-            {x.pending.length > 0 && <span className={cn('text-[10px]', muted(isDark))}>{t('slotBooking.dayPreview.requests', { count: x.pending.length })}</span>}
-          </div>
-        )}
+        <span className={cn('w-1 shrink-0', GROUP_TONES[x.groupId % GROUP_TONES.length])} />
+        <span className="flex-1 min-w-0 p-2 space-y-1.5">
+          <span className="flex items-center justify-between gap-1">
+            <span className={cn('inline-flex items-center gap-1 text-[12px] font-semibold tabular-nums', heading(isDark))}>
+              <Clock size={11} className={muted(isDark)} /> {slotLabel(x)}
+            </span>
+            {x.pending.length > 0 && (
+              <span className="inline-flex items-center gap-0.5 rounded-full bg-amber-500/15 text-amber-600 px-1.5 py-px text-[10px] font-semibold" title={t('slotBooking.dayPreview.requests', { count: x.pending.length })}>
+                <Users size={10} /> {x.pending.length}
+              </span>
+            )}
+          </span>
+          <span className={cn('block text-[11px] font-medium truncate', isDark ? 'text-gray-200' : 'text-gray-700')}>{x.groupName}</span>
+          {x.clientName && <span className={cn('block text-[10px] truncate -mt-1', muted(isDark))}>{x.clientName}</span>}
+          {x.pilot ? (
+            <span className="flex items-center gap-1.5">
+              <Avatar person={x.pilot} size={18} />
+              <span className={cn('text-[11px] font-medium truncate', heading(isDark))}>{x.pilot.name}</span>
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1 rounded-full bg-red-500/15 text-red-600 px-2 py-0.5 text-[10px] font-semibold">
+              <CircleAlert size={10} /> {t('slotBooking.calendar.needsPilot')}
+            </span>
+          )}
+          {x.weather && <WeatherChip weather={x.weather} isDark={isDark} />}
+        </span>
       </button>
     );
   };
 
   const renderDay = (d: CalendarDay) => {
     const worst = worstWeather(d.slots);
-    const unassigned = d.slots.filter((x) => !x.pilot).length;
+    const assigned = d.slots.filter((x) => x.pilot).length;
+    const shown = d.slots.filter(matches);
+    const isToday = d.date === today;
+    const weekend = weekdayOf(d.date) === 0 || weekdayOf(d.date) === 6;
+    const full = d.slots.length > 0 && assigned === d.slots.length;
     return (
-      <div key={d.date} className={cn('rounded-xl border flex flex-col min-w-0', card(isDark), d.date === today && 'ring-2 ring-violet-500/50')}>
+      <div
+        key={d.date}
+        className={cn(
+          'rounded-xl border flex flex-col min-w-0 overflow-hidden',
+          card(isDark),
+          weekend && (isDark ? 'bg-white/[0.015]' : 'bg-gray-50/60'),
+          isToday && 'ring-2 ring-violet-500/60',
+        )}
+      >
         <button
           type="button"
           onClick={() => setDayDate(d.date)}
-          className={cn('cursor-pointer text-left px-3 py-2 border-b rounded-t-xl', isDark ? 'border-white/[0.06] hover:bg-white/[0.04]' : 'border-gray-100 hover:bg-gray-50')}
+          className={cn('cursor-pointer text-left px-3 py-2.5 border-b transition-colors', isDark ? 'border-white/[0.06] hover:bg-white/[0.04]' : 'border-gray-100 hover:bg-gray-50')}
         >
-          <div className="flex items-center justify-between gap-1">
-            <span className={cn('text-xs font-semibold', d.date === today ? 'text-violet-500' : heading(isDark))}>{s.date(d.date)}</span>
-            {worst && <WeatherDot weather={worst} />}
-          </div>
-          <div className={cn('text-[10px] mt-0.5', unassigned ? 'text-red-500' : muted(isDark))}>
-            {d.slots.length ? t('slotBooking.calendar.dayCount', { assigned: d.slots.length - unassigned, total: d.slots.length }) : t('slotBooking.calendar.noSlots')}
-          </div>
+          <span className="flex items-center justify-between gap-2">
+            <span className="flex items-baseline gap-2">
+              <span className={cn('text-xl font-semibold tabular-nums leading-none', isToday ? 'text-violet-500' : heading(isDark))}>{d.date.slice(8)}</span>
+              <span className={cn('text-[11px] uppercase tracking-wider font-medium', muted(isDark))}>{s.weekdayShort(weekdayOf(d.date))}</span>
+            </span>
+            <span className="flex items-center gap-1.5">
+              {isToday && <span className="rounded-full bg-violet-600 text-white text-[9px] font-semibold uppercase px-1.5 py-0.5">{t('slotBooking.today')}</span>}
+              {worst && <WeatherDot weather={worst} />}
+            </span>
+          </span>
+          {d.slots.length > 0 ? (
+            <span className="block mt-2">
+              <span className={cn('flex justify-between text-[10px]', full ? 'text-emerald-500' : muted(isDark))}>
+                <span>{t('slotBooking.calendar.dayCount', { assigned, total: d.slots.length })}</span>
+              </span>
+              <span className={cn('block mt-1 h-1 rounded-full overflow-hidden', isDark ? 'bg-white/[0.08]' : 'bg-black/[0.07]')}>
+                <span className={cn('block h-full rounded-full', full ? 'bg-emerald-500' : 'bg-violet-500')} style={{ width: `${(assigned / d.slots.length) * 100}%` }} />
+              </span>
+            </span>
+          ) : (
+            <span className={cn('block mt-2 text-[10px]', muted(isDark))}>{t('slotBooking.calendar.noSlots')}</span>
+          )}
         </button>
-        <div className="p-2 space-y-1.5 max-h-[60vh] overflow-y-auto">{d.slots.map(renderSlotCard)}</div>
+        <div className="p-2 space-y-1.5 flex-1 max-h-[65vh] overflow-y-auto">
+          {shown.map(renderSlotCard)}
+          {d.slots.length === 0 && <div className={cn('rounded-lg border border-dashed py-6 text-center text-[11px]', isDark ? 'border-white/[0.08]' : 'border-gray-200', muted(isDark))}>—</div>}
+          {d.slots.length > 0 && shown.length === 0 && <div className={cn('py-4 text-center text-[11px]', muted(isDark))}>{t('slotBooking.calendar.noMatch')}</div>}
+        </div>
       </div>
     );
   };
 
+  const kpi = (icon: React.ReactNode, label: string, value: number | string, tone: string) => (
+    <div className={cn('rounded-xl border p-3 flex items-center gap-3', card(isDark))}>
+      <span className={cn('h-9 w-9 rounded-lg flex items-center justify-center shrink-0', tone)}>{icon}</span>
+      <span className="min-w-0">
+        <span className={cn('block text-lg font-semibold leading-tight tabular-nums', heading(isDark))}>{value}</span>
+        <span className={cn('block text-[11px] truncate', muted(isDark))}>{label}</span>
+      </span>
+    </div>
+  );
+
+  const seg = (on: boolean) =>
+    cn(
+      'cursor-pointer h-8 px-3 text-xs font-medium transition-colors',
+      on ? 'bg-violet-600 text-white' : isDark ? 'text-gray-300 hover:bg-white/[0.06]' : 'text-gray-600 hover:bg-gray-100',
+    );
+
   return (
-    <div className="space-y-5">
-      <div className="flex flex-wrap items-center gap-2">
-        <Btn isDark={isDark} onClick={() => setStart((d) => addDaysIso(d, -7))}><ChevronLeft size={14} /></Btn>
-        <input type="date" className={cn(inputCls(isDark), 'w-44')} value={start} onChange={(e) => e.target.value && setStart(e.target.value)} aria-label={t('slotBooking.dayPreview.date')} />
-        <Btn isDark={isDark} onClick={() => setStart((d) => addDaysIso(d, 7))}><ChevronRight size={14} /></Btn>
-        <Btn isDark={isDark} onClick={() => setStart(todayIso())} disabled={start === today}>{t('slotBooking.today')}</Btn>
-        <span className={cn('text-sm font-medium ml-2', heading(isDark))}>{s.date(start)} → {s.date(addDaysIso(start, 6))}</span>
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <div className={cn('inline-flex items-center rounded-lg border overflow-hidden', isDark ? 'border-white/[0.1]' : 'border-gray-200')}>
+            <button type="button" className={cn(seg(false), 'px-2')} onClick={() => setStart((d) => addDaysIso(d, -7))} aria-label="-7"><ChevronLeft size={15} /></button>
+            <button type="button" className={cn(seg(false), 'border-x', isDark ? 'border-white/[0.1]' : 'border-gray-200')} onClick={() => setStart(todayIso())} disabled={start === today}>
+              {t('slotBooking.today')}
+            </button>
+            <button type="button" className={cn(seg(false), 'px-2')} onClick={() => setStart((d) => addDaysIso(d, 7))} aria-label="+7"><ChevronRight size={15} /></button>
+          </div>
+          <input type="date" className={cn(inputCls(isDark), 'w-40')} value={start} onChange={(e) => e.target.value && setStart(e.target.value)} aria-label={t('slotBooking.dayPreview.date')} />
+          <span className={cn('text-sm font-semibold', heading(isDark))}>{s.date(start)} → {s.date(addDaysIso(start, 6))}</span>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="relative">
+            <Search size={13} className={cn('absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none', muted(isDark))} />
+            <input className={cn(inputCls(isDark), 'pl-8 w-52')} value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t('slotBooking.calendar.search')} />
+          </div>
+          <div className={cn('inline-flex rounded-lg border overflow-hidden', isDark ? 'border-white/[0.1]' : 'border-gray-200')}>
+            {(['all', 'unassigned', 'assigned'] as const).map((k) => (
+              <button key={k} type="button" className={seg(status === k)} onClick={() => setStatus(k)}>
+                {k === 'all' ? t('slotBooking.calendar.filterAll') : k === 'unassigned' ? t('slotBooking.dayPreview.unassigned') : t('slotBooking.calendar.legendAssigned')}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
       {error ? (
@@ -149,31 +247,16 @@ export function CalendarView({ isDark }: { isDark: boolean }) {
         </EmptyBlock>
       ) : (
         <>
-          <div
-            className={cn(
-              'rounded-xl border p-4 flex items-center gap-4',
-              allDone ? (isDark ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-emerald-50 border-emerald-200') : isDark ? 'bg-red-500/10 border-red-500/30' : 'bg-red-50 border-red-200',
-            )}
-          >
-            {allDone ? <CircleCheck className="text-emerald-500 shrink-0" size={22} /> : <CircleAlert className="text-red-500 shrink-0" size={22} />}
-            <div className="flex-1 min-w-0">
-              <div className={cn('text-sm font-semibold', heading(isDark))}>
-                {allDone ? t('slotBooking.dayPreview.allAssigned') : t('slotBooking.dayPreview.someUnassigned', { count: data.unassigned })}
-              </div>
-              <div className={cn('text-xs', muted(isDark))}>{t('slotBooking.dayPreview.summary', { assigned: data.assigned, total: data.total })}</div>
-              <div className={cn('mt-2 h-1.5 rounded-full overflow-hidden', isDark ? 'bg-white/[0.08]' : 'bg-black/[0.08]')}>
-                <div className={cn('h-full rounded-full', allDone ? 'bg-emerald-500' : 'bg-red-500')} style={{ width: `${pct}%` }} />
-              </div>
-            </div>
-            <div className={cn('hidden md:flex flex-col gap-1 text-[11px]', muted(isDark))}>
-              <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-emerald-500" /> {t('slotBooking.calendar.legendAssigned')}</span>
-              <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-red-500" /> {t('slotBooking.dayPreview.unassigned')}</span>
-            </div>
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+            {kpi(<CalendarDays size={17} />, t('slotBooking.calendar.kpiSlots'), data.total, 'bg-violet-500/15 text-violet-500')}
+            {kpi(<CircleCheck size={17} />, t('slotBooking.calendar.legendAssigned'), data.assigned, 'bg-emerald-500/15 text-emerald-500')}
+            {kpi(<CircleAlert size={17} />, t('slotBooking.dayPreview.unassigned'), data.unassigned, data.unassigned ? 'bg-red-500/15 text-red-500' : 'bg-gray-500/15 text-gray-500')}
+            {kpi(<Users size={17} />, t('slotBooking.calendar.kpiRequests'), requests, 'bg-amber-500/15 text-amber-500')}
+            {kpi(<Wind size={17} />, t('slotBooking.calendar.kpiTough'), tough, tough ? 'bg-red-500/15 text-red-500' : 'bg-sky-500/15 text-sky-500')}
           </div>
 
-          <div className="overflow-x-auto pb-2">
-            <div className="grid grid-cols-7 gap-3 min-w-[1100px]">{data.days.map(renderDay)}</div>
-          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-7 gap-3 items-start">{data.days.map(renderDay)}</div>
+          {filtering && <p className={cn('text-[11px]', muted(isDark))}>{t('slotBooking.calendar.filtered')}</p>}
 
           {data.weatherNote === 'no_location' && <p className={cn('text-[11px]', muted(isDark))}>{t('slotBooking.weather.noLocation')}</p>}
           {data.weatherNote === 'unavailable' && <p className={cn('text-[11px]', muted(isDark))}>{t('slotBooking.weather.unavailable')}</p>}

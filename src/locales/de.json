@@ -6509,7 +6509,15 @@
       "temp": "Temperatur",
       "limiting": "Hauptproblem",
       "noWeather": "Keine Vorhersage für diesen Slot (Vorhersagen gelten für die nächsten 7 Tage und benötigen einen Basisstandort).",
-      "groupSection": "Slot-Gruppe"
+      "groupSection": "Slot-Gruppe",
+      "search": "Gruppe, Kunde oder Pilot suchen",
+      "filterAll": "Alle",
+      "kpiSlots": "Slots",
+      "kpiRequests": "Wartende Anfragen",
+      "kpiTough": "Schlechtes Wetter",
+      "needsPilot": "Pilot gesucht",
+      "noMatch": "Keine passenden Slots",
+      "filtered": "Filter gelten nur für die Slot-Karten; die Zahlen oben zählen die ganze Woche."
     },
     "dayPreview": {
       "title": "Tagesvorschau",

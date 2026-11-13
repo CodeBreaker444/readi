@@ -6651,7 +6651,15 @@
       "temp": "Temperatura",
       "limiting": "Problema principale",
       "noWeather": "Nessuna previsione per questo slot (le previsioni coprono i prossimi 7 giorni e richiedono una posizione base).",
-      "groupSection": "Gruppo di slot"
+      "groupSection": "Gruppo di slot",
+      "search": "Cerca gruppo, cliente o pilota",
+      "filterAll": "Tutti",
+      "kpiSlots": "Slot",
+      "kpiRequests": "Richieste in attesa",
+      "kpiTough": "Meteo difficile",
+      "needsPilot": "Serve un pilota",
+      "noMatch": "Nessuno slot corrispondente",
+      "filtered": "I filtri valgono solo per le schede degli slot; i numeri sopra contano l'intera settimana."
     },
     "dayPreview": {
       "title": "Anteprima giorno",
