@@ -218,5 +218,6 @@ export async function getDayPreview(user: SessionUser, date: string): Promise<Da
     assigned,
     unassigned: rows.length - assigned,
     weatherNote: !isInForecastRange(date) ? 'out_of_range' : wx.note,
+    weatherFetchedAt: wx.fetchedAt ?? null,
   };
 }

@@ -6008,6 +6008,7 @@
       "myApproved": "Meine genehmigten Slots",
       "audit": "Audit-Protokoll",
       "pilotGroups": "Pilotengruppen",
+      "calendar": "Kalender",
       "dayPreview": "Tagesvorschau",
       "merits": "Pilotenverdienste"
     },
@@ -6445,7 +6446,8 @@
       "detail": "{{level}}es Wetter · Wind {{wind}} m/s, Böen {{gust}} m/s, Regen {{rain}} mm",
       "noLocation": "Legen Sie in den Slot-Einstellungen einen Standort fest, um das 7-Tage-Wetter je Slot zu sehen.",
       "unavailable": "Die Wettervorhersage ist derzeit nicht verfügbar.",
-      "outOfRange": "Vorhersagen gibt es nur für die nächsten 7 Tage."
+      "outOfRange": "Vorhersagen gibt es nur für die nächsten 7 Tage.",
+      "updatedAt": "Wetter zuletzt aktualisiert {{when}}"
     },
     "assign": {
       "title": "Pilot zuweisen",
@@ -6485,6 +6487,29 @@
       "score": "Punkte",
       "rank": "Platz {{rank}} von {{total}}",
       "how": "Der OPM vergibt die Slots. Mehr Verfügbarkeit (Wochenenden zählen am meisten) und mehr Flugstunden erhöhen Ihre Punkte."
+    },
+    "calendar": {
+      "title": "Kalender",
+      "subtitle": "Sieben Tage mit Slots, Piloten und Wetter in einer Ansicht",
+      "errors": {
+        "load": "Kalender konnte nicht geladen werden"
+      },
+      "empty": "Keine Slots in diesen 7 Tagen.",
+      "noSlots": "Keine Slots",
+      "dayCount": "{{assigned}}/{{total}} zugewiesen",
+      "legendAssigned": "Pilot zugewiesen",
+      "pilotSection": "Zugewiesener Pilot",
+      "approvedAt": "Genehmigt {{when}}",
+      "waiting": "Wartende Anfragen ({{count}})",
+      "noWaiting": "Keine wartenden Anfragen.",
+      "weatherSection": "Wetter",
+      "avgWind": "Durchschnittswind",
+      "gusts": "Böen",
+      "rain": "Regen",
+      "temp": "Temperatur",
+      "limiting": "Hauptproblem",
+      "noWeather": "Keine Vorhersage für diesen Slot (Vorhersagen gelten für die nächsten 7 Tage und benötigen einen Basisstandort).",
+      "groupSection": "Slot-Gruppe"
     },
     "dayPreview": {
       "title": "Tagesvorschau",

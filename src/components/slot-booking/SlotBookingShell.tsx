@@ -28,6 +28,7 @@ export function SlotBookingShell({
   const tabs = [
     { href: '/operations/slot-booking', label: t('slotBooking.tabs.slotBooking') },
     { href: '/operations/slot-booking/approved', label: canManage ? t('slotBooking.tabs.approved') : t('slotBooking.tabs.myApproved') },
+    ...(canManage ? [{ href: '/operations/slot-booking/calendar', label: t('slotBooking.tabs.calendar') }] : []),
     ...(canManage ? [{ href: '/operations/slot-booking/day-preview', label: t('slotBooking.tabs.dayPreview') }] : []),
     ...(canManage ? [{ href: '/operations/slot-booking/pilot-groups', label: t('slotBooking.tabs.pilotGroups') }] : []),
     ...(canManage ? [{ href: '/operations/slot-booking/merits', label: t('slotBooking.tabs.merits') }] : []),

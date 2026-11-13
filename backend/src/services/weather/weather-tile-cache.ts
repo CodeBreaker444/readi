@@ -1,10 +1,6 @@
 /**
  * DB-backed cache for OpenWeatherMap map tiles.
  *
- * Browsers never talk to OWM directly (that burned the 60 rpm free quota: one
- * request per tile per user). They hit our tile route, which serves the stored
- * PNG; OWM is only called when a tile is missing/stale, or by the cron that
- * keeps recently-viewed ("hot") tiles fresh.
  */
 import { prisma } from '@/lib/prisma';
 
@@ -33,7 +29,6 @@ export function isValidTileCoord(z: number, x: number, y: number): boolean {
   return x < max && y < max;
 }
 
-// ---- upstream (OWM) with a per-instance rolling-minute budget ----
 const upstreamCalls: number[] = [];
 function takeUpstreamBudget(): boolean {
   const cutoff = Date.now() - 60_000;

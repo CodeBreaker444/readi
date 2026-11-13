@@ -6167,6 +6167,7 @@
       "myApproved": "My Approved Slots",
       "audit": "Audit Log",
       "pilotGroups": "Pilot Groups",
+      "calendar": "Calendar",
       "dayPreview": "Day Preview",
       "merits": "Pilot Merits"
     },
@@ -6604,7 +6605,8 @@
       "detail": "{{level}} weather · wind {{wind}} m/s, gusts {{gust}} m/s, rain {{rain}} mm",
       "noLocation": "Set a base location in Slot Settings to see the 7-day weather for each slot.",
       "unavailable": "The weather forecast is not available right now.",
-      "outOfRange": "Forecasts are only available for the next 7 days."
+      "outOfRange": "Forecasts are only available for the next 7 days.",
+      "updatedAt": "Weather last updated {{when}}"
     },
     "assign": {
       "title": "Assign pilot",
@@ -6644,6 +6646,29 @@
       "score": "Score",
       "rank": "#{{rank}} of {{total}}",
       "how": "The OPM assigns slots. More availability (weekends count most) and more flight hours raise your score."
+    },
+    "calendar": {
+      "title": "Calendar",
+      "subtitle": "Seven days of slots, pilots and weather in one view",
+      "errors": {
+        "load": "Could not load the calendar"
+      },
+      "empty": "No slots in these 7 days.",
+      "noSlots": "No slots",
+      "dayCount": "{{assigned}}/{{total}} assigned",
+      "legendAssigned": "Pilot assigned",
+      "pilotSection": "Assigned pilot",
+      "approvedAt": "Approved {{when}}",
+      "waiting": "Waiting requests ({{count}})",
+      "noWaiting": "No waiting requests.",
+      "weatherSection": "Weather",
+      "avgWind": "Average wind",
+      "gusts": "Gusts",
+      "rain": "Rain",
+      "temp": "Temperature",
+      "limiting": "Main concern",
+      "noWeather": "No forecast for this slot (forecasts cover the next 7 days and need a base location).",
+      "groupSection": "Slot group"
     },
     "dayPreview": {
       "title": "Day preview",

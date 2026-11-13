@@ -821,6 +821,7 @@ model client {
   pilot_mission         pilot_mission[]
   planning              planning[]
   planning_logbook      planning_logbook[]
+  slot_group            slot_group[]
   tool                  tool[]
   users                 public_users[]
 
@@ -2115,17 +2116,18 @@ model pilot_event_type {
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 /// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
 model pilot_group {
-  pilot_group_id     Int                  @id @default(autoincrement())
-  fk_owner_id        Int
-  name               String               @db.VarChar(100)
-  description        String?              @db.VarChar(500)
-  created_by         Int?
-  created_at         DateTime             @default(now()) @db.Timestamp(6)
-  updated_at         DateTime             @default(now()) @db.Timestamp(6)
-  is_expert          Boolean              @default(false)
-  users              public_users?        @relation(fields: [created_by], references: [user_id], onUpdate: NoAction)
-  owner              owner                @relation(fields: [fk_owner_id], references: [owner_id], onDelete: Cascade, onUpdate: NoAction)
-  pilot_group_member pilot_group_member[]
+  pilot_group_id         Int                      @id @default(autoincrement())
+  fk_owner_id            Int
+  name                   String                   @db.VarChar(100)
+  description            String?                  @db.VarChar(500)
+  created_by             Int?
+  created_at             DateTime                 @default(now()) @db.Timestamp(6)
+  updated_at             DateTime                 @default(now()) @db.Timestamp(6)
+  is_expert              Boolean                  @default(false)
+  users                  public_users?            @relation(fields: [created_by], references: [user_id], onUpdate: NoAction)
+  owner                  owner                    @relation(fields: [fk_owner_id], references: [owner_id], onDelete: Cascade, onUpdate: NoAction)
+  pilot_group_member     pilot_group_member[]
+  slot_group_pilot_group slot_group_pilot_group[]
 
   @@schema("public")
 }
@@ -2682,47 +2684,51 @@ model slot_booking {
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model slot_group {
-  slot_group_id Int            @id @default(autoincrement())
-  fk_owner_id   Int
-  name          String         @db.VarChar(150)
-  description   String?        @db.VarChar(500)
-  slot_mode     String         @db.VarChar(10)
-  hour_start    Int            @default(6) @db.SmallInt
-  hour_end      Int            @default(22) @db.SmallInt
-  range_mode    String         @db.VarChar(10)
-  start_date    DateTime       @db.Date
-  is_blocked    Boolean        @default(false)
-  approval_days Int[]          @default([]) @db.SmallInt
-  created_by    Int?
-  created_at    DateTime       @default(now()) @db.Timestamp(6)
-  updated_at    DateTime       @default(now()) @db.Timestamp(6)
-  fk_client_id          Int?
-  publish_at            DateTime?      @db.Timestamp(6)
-  published_notified_at DateTime?      @db.Timestamp(6)
-  slot          slot[]
-  slot_booking  slot_booking[]
-  users         public_users?  @relation(fields: [created_by], references: [user_id], onUpdate: NoAction)
-  owner         owner          @relation(fields: [fk_owner_id], references: [owner_id], onDelete: Cascade, onUpdate: NoAction)
+  slot_group_id          Int                      @id @default(autoincrement())
+  fk_owner_id            Int
+  name                   String                   @db.VarChar(150)
+  description            String?                  @db.VarChar(500)
+  slot_mode              String                   @db.VarChar(10)
+  hour_start             Int                      @default(6) @db.SmallInt
+  hour_end               Int                      @default(22) @db.SmallInt
+  range_mode             String                   @db.VarChar(10)
+  start_date             DateTime                 @db.Date
+  is_blocked             Boolean                  @default(false)
+  approval_days          Int[]                    @default([]) @db.SmallInt
+  created_by             Int?
+  created_at             DateTime                 @default(now()) @db.Timestamp(6)
+  updated_at             DateTime                 @default(now()) @db.Timestamp(6)
+  fk_client_id           Int?
+  publish_at             DateTime?                @db.Timestamp(6)
+  published_notified_at  DateTime?                @db.Timestamp(6)
+  slot                   slot[]
+  slot_booking           slot_booking[]
+  users                  public_users?            @relation(fields: [created_by], references: [user_id], onUpdate: NoAction)
+  client                 client?                  @relation(fields: [fk_client_id], references: [client_id], onUpdate: NoAction)
+  owner                  owner                    @relation(fields: [fk_owner_id], references: [owner_id], onDelete: Cascade, onUpdate: NoAction)
+  slot_group_pilot_group slot_group_pilot_group[]
 
   @@index([fk_owner_id, start_date(sort: Desc)], map: "idx_slot_group_owner")
+  @@index([fk_client_id], map: "idx_slot_group_client")
+  @@index([publish_at], map: "idx_slot_group_publish", where: raw("(publish_at IS NOT NULL)"))
   @@schema("public")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model slot_settings {
-  fk_owner_id   Int      @id
-  slot_mode     String   @default("SHIFT") @db.VarChar(10)
-  hour_start    Int      @default(6) @db.SmallInt
-  hour_end      Int      @default(22) @db.SmallInt
-  range_mode    String   @default("WEEK") @db.VarChar(10)
-  is_blocked    Boolean  @default(false)
-  approval_days Int[]    @default([1, 4]) @db.SmallInt
-  updated_at    DateTime @default(now()) @db.Timestamp(6)
-  modify_lock_hours Int  @default(24) @db.SmallInt
-  base_latitude  Float?
-  base_longitude Float?
-  owner         owner    @relation(fields: [fk_owner_id], references: [owner_id], onDelete: Cascade, onUpdate: NoAction)
+  fk_owner_id       Int      @id
+  slot_mode         String   @default("SHIFT") @db.VarChar(10)
+  hour_start        Int      @default(6) @db.SmallInt
+  hour_end          Int      @default(22) @db.SmallInt
+  range_mode        String   @default("WEEK") @db.VarChar(10)
+  is_blocked        Boolean  @default(false)
+  approval_days     Int[]    @default([1, 4]) @db.SmallInt
+  updated_at        DateTime @default(now()) @db.Timestamp(6)
+  modify_lock_hours Int      @default(24) @db.SmallInt
+  base_latitude     Float?
+  base_longitude    Float?
+  owner             owner    @relation(fields: [fk_owner_id], references: [owner_id], onDelete: Cascade, onUpdate: NoAction)
 
   @@schema("public")
 }
@@ -2731,6 +2737,8 @@ model slot_settings {
 model slot_group_pilot_group {
   fk_slot_group_id  Int
   fk_pilot_group_id Int
+  pilot_group       pilot_group @relation(fields: [fk_pilot_group_id], references: [pilot_group_id], onDelete: Cascade, onUpdate: NoAction)
+  slot_group        slot_group  @relation(fields: [fk_slot_group_id], references: [slot_group_id], onDelete: Cascade, onUpdate: NoAction)
 
   @@id([fk_slot_group_id, fk_pilot_group_id])
   @@index([fk_pilot_group_id], map: "idx_slot_group_pilot_group_pg")
@@ -3522,6 +3530,20 @@ model weather_tile {
 
   @@unique([layer, z, x, y], map: "uq_weather_tile")
   @@index([last_requested_at], map: "idx_weather_tile_last_requested")
+  @@schema("public")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model weather_forecast {
+  forecast_id       Int      @id @default(autoincrement())
+  cache_key         String   @unique(map: "uq_weather_forecast_key") @db.VarChar(40)
+  latitude          Float
+  longitude         Float
+  data              Json
+  fetched_at        DateTime @default(now()) @db.Timestamptz(6)
+  last_requested_at DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([last_requested_at], map: "idx_weather_forecast_last_requested")
   @@schema("public")
 }
 

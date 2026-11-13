@@ -6,7 +6,7 @@ import { readToolLocation } from '@/lib/btf/location';
 import { prisma } from '@/lib/prisma';
 import { WEATHER_DAYS, weatherLevel } from '@/lib/slot-booking-logic';
 import { addDaysIso, todayIso } from '@/lib/slot-booking-utils';
-import { fetchBtfForecast } from '../operation/btf-service';
+import { getCachedForecast } from '../weather/forecast-cache';
 
 export type WeatherNote = 'no_location' | 'unavailable' | null;
 
@@ -76,20 +76,20 @@ export function summariseSlotWeather(hours: HourWeather[], slot: WeatherSlot): S
 export async function getWeatherForSlots(
   ownerId: number,
   slots: WeatherSlot[],
-): Promise<{ weather: Record<number, SlotWeather>; note: WeatherNote }> {
+): Promise<{ weather: Record<number, SlotWeather>; note: WeatherNote; fetchedAt?: string | null }> {
   const inRange = slots.filter((s) => isInForecastRange(s.date));
   if (!inRange.length) return { weather: {}, note: null };
   try {
     const where = await getBaseLocation(ownerId);
     if (!where) return { weather: {}, note: 'no_location' };
-    const forecast = await fetchBtfForecast(where.lat, where.lon, WEATHER_DAYS);
+    const forecast = await getCachedForecast(where.lat, where.lon);
     if (!forecast) return { weather: {}, note: 'unavailable' };
     const weather: Record<number, SlotWeather> = {};
     for (const s of inRange) {
       const w = summariseSlotWeather(forecast.hours, s);
       if (w) weather[s.id] = w;
     }
-    return { weather, note: null };
+    return { weather, note: null, fetchedAt: new Date(forecast.retrievedAt).toISOString() };
   } catch (err) {
     console.error('[slot-booking] weather lookup failed', err);
     return { weather: {}, note: 'unavailable' };

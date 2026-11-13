@@ -146,6 +146,7 @@ export function DayPreviewView({ isDark }: { isDark: boolean }) {
           {data.weatherNote === 'no_location' && <p className={cn('text-[11px]', muted(isDark))}>{t('slotBooking.weather.noLocation')}</p>}
           {data.weatherNote === 'unavailable' && <p className={cn('text-[11px]', muted(isDark))}>{t('slotBooking.weather.unavailable')}</p>}
           {data.weatherNote === 'out_of_range' && <p className={cn('text-[11px]', muted(isDark))}>{t('slotBooking.weather.outOfRange')}</p>}
+          {data.weatherFetchedAt && <p className={cn('text-[11px]', muted(isDark))}>{t('slotBooking.weather.updatedAt', { when: s.dateTime(data.weatherFetchedAt) })}</p>}
         </>
       )}
 

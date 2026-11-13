@@ -254,6 +254,8 @@ export interface DayPreview {
   assigned: number;
   unassigned: number;
   weatherNote: 'no_location' | 'unavailable' | 'out_of_range' | null;
+  /** When the forecast behind the weather was last fetched. */
+  weatherFetchedAt: string | null;
 }
 
 export interface MeritRow {
@@ -289,4 +291,56 @@ export interface MyStats {
   score: number;
   rank: number;
   pilots: number;
+}
+
+/** The pilot flying a calendar slot, with what the OPM may want to know about them. */
+export interface CalendarPilot {
+  userId: number;
+  name: string;
+  email: string | null;
+  role: string | null;
+  avatarUrl: string | null;
+  approvedAt: string | null;
+  /** Placed directly by the OPM, not requested by the pilot. */
+  assignedByOpm: boolean;
+}
+
+export interface CalendarPending {
+  userId: number;
+  name: string;
+  requestedAt: string;
+}
+
+/** One slot of the week calendar with everything the detail modal shows. */
+export interface CalendarSlot {
+  slotId: number;
+  date: string;
+  start: string;
+  end: string;
+  groupId: number;
+  groupName: string;
+  groupDescription: string;
+  mode: SlotMode;
+  blocked: boolean;
+  approvalDays: number[];
+  clientName: string | null;
+  pilot: CalendarPilot | null;
+  pending: CalendarPending[];
+  weather: SlotWeather | null;
+}
+
+export interface CalendarDay {
+  date: string;
+  slots: CalendarSlot[];
+}
+
+export interface WeekCalendar {
+  start: string;
+  days: CalendarDay[];
+  total: number;
+  assigned: number;
+  unassigned: number;
+  weatherNote: 'no_location' | 'unavailable' | 'out_of_range' | null;
+  /** When the forecast behind the weather was last fetched. */
+  weatherFetchedAt: string | null;
 }

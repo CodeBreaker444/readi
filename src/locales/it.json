@@ -6150,6 +6150,7 @@
       "myApproved": "I miei slot approvati",
       "audit": "Registro di audit",
       "pilotGroups": "Gruppi piloti",
+      "calendar": "Calendario",
       "dayPreview": "Anteprima giorno",
       "merits": "Meriti piloti"
     },
@@ -6587,7 +6588,8 @@
       "detail": "Meteo: {{level}} · vento {{wind}} m/s, raffiche {{gust}} m/s, pioggia {{rain}} mm",
       "noLocation": "Imposta una posizione base nelle Impostazioni slot per vedere il meteo a 7 giorni di ogni slot.",
       "unavailable": "Le previsioni meteo non sono disponibili al momento.",
-      "outOfRange": "Le previsioni sono disponibili solo per i prossimi 7 giorni."
+      "outOfRange": "Le previsioni sono disponibili solo per i prossimi 7 giorni.",
+      "updatedAt": "Meteo aggiornato l'ultima volta {{when}}"
     },
     "assign": {
       "title": "Assegna pilota",
@@ -6627,6 +6629,29 @@
       "score": "Punteggio",
       "rank": "#{{rank}} di {{total}}",
       "how": "Gli slot li assegna l'OPM. Più disponibilità (i weekend contano di più) e più ore di volo alzano il tuo punteggio."
+    },
+    "calendar": {
+      "title": "Calendario",
+      "subtitle": "Sette giorni di slot, piloti e meteo in una sola vista",
+      "errors": {
+        "load": "Impossibile caricare il calendario"
+      },
+      "empty": "Nessuno slot in questi 7 giorni.",
+      "noSlots": "Nessuno slot",
+      "dayCount": "{{assigned}}/{{total}} assegnati",
+      "legendAssigned": "Pilota assegnato",
+      "pilotSection": "Pilota assegnato",
+      "approvedAt": "Approvato {{when}}",
+      "waiting": "Richieste in attesa ({{count}})",
+      "noWaiting": "Nessuna richiesta in attesa.",
+      "weatherSection": "Meteo",
+      "avgWind": "Vento medio",
+      "gusts": "Raffiche",
+      "rain": "Pioggia",
+      "temp": "Temperatura",
+      "limiting": "Problema principale",
+      "noWeather": "Nessuna previsione per questo slot (le previsioni coprono i prossimi 7 giorni e richiedono una posizione base).",
+      "groupSection": "Gruppo di slot"
     },
     "dayPreview": {
       "title": "Anteprima giorno",
