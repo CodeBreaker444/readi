@@ -3,6 +3,7 @@ import 'server-only';
 import type { CalendarSlot, SlotMode, WeekCalendar } from '@/config/types/slot-booking';
 import type { SessionUser } from '@/lib/auth/server-session';
 import { prisma } from '@/lib/prisma';
+import { intervalsOverlap, slotInterval } from '@/lib/slot-booking-logic';
 import { addDaysIso, SLOT_DATE_RE } from '@/lib/slot-booking-utils';
 import { getPilotFlights } from './flight-limits-service';
 import { avatarUrl, fullName } from './pilot-group-service';
@@ -40,7 +41,7 @@ export async function getWeekCalendar(user: SessionUser, start: string): Promise
         })
       : Promise.resolve([]),
     clientIds.length ? prisma.client.findMany({ where: { client_id: { in: clientIds } }, select: { client_id: true, client_name: true } }) : Promise.resolve([]),
-    getWeatherForSlots(user.ownerId, slots.map((s) => ({ id: s.slot_id, date: dateStr(s.slot_date), start: s.start_time, end: s.end_time }))),
+    getWeatherForSlots(user.ownerId, slots.map((s) => ({ id: s.slot_id, groupId: s.slot_group.slot_group_id, date: dateStr(s.slot_date), start: s.start_time, end: s.end_time }))),
   ]);
 
   const userIds = [...new Set(bookings.map((b) => b.fk_pilot_user_id))];
@@ -94,8 +95,37 @@ export async function getWeekCalendar(user: SessionUser, start: string): Promise
           return { userId: b.fk_pilot_user_id, name: u ? fullName(u) : 'Pilot', requestedAt: b.requested_at.toISOString(), flight: flights.get(b.fk_pilot_user_id)! };
         }),
       weather: wx.weather[s.slot_id] ?? null,
+      alerts: [],
     };
   });
+
+  // Overlaps: the same pilot approved or requested on two slots whose times overlap (other group, other client).
+  const rowBySlot = new Map(rows.map((r) => [r.slotId, r]));
+  const byPilot = new Map<number, Array<{ row: CalendarSlot; status: 'APPROVED' | 'PENDING' }>>();
+  for (const b of bookings) {
+    const row = rowBySlot.get(b.fk_slot_id);
+    if (!row) continue;
+    const list = byPilot.get(b.fk_pilot_user_id) ?? [];
+    list.push({ row, status: b.status as 'APPROVED' | 'PENDING' });
+    byPilot.set(b.fk_pilot_user_id, list);
+  }
+  for (const [pilotId, list] of byPilot) {
+    const u = byId.get(pilotId);
+    const pilotName = u ? fullName(u) : 'Pilot';
+    for (const a of list) {
+      for (const o of list) {
+        if (a.row.slotId === o.row.slotId) continue;
+        if (!intervalsOverlap(slotInterval(a.row.date, a.row.start, a.row.end), slotInterval(o.row.date, o.row.start, o.row.end))) continue;
+        a.row.alerts.push({
+          severity: a.status === 'APPROVED' && o.status === 'APPROVED' ? 'conflict' : 'risk',
+          pilotId,
+          pilotName,
+          status: a.status,
+          other: { slotId: o.row.slotId, date: o.row.date, start: o.row.start, end: o.row.end, groupName: o.row.groupName, clientName: o.row.clientName, status: o.status },
+        });
+      }
+    }
+  }
 
   const assigned = rows.filter((r) => r.pilot).length;
   return {

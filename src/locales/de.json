@@ -6064,18 +6064,6 @@
       "myApproved": "Mein Slot — genehmigt",
       "taken": "Vergeben / geschlossen"
     },
-    "calendar": {
-      "activateDay": "Tag aktivieren",
-      "deactivateDay": "Tag deaktivieren",
-      "noSlots": "Keine Slots",
-      "open": "Offen",
-      "approved": "Genehmigt",
-      "pending": "Ausstehend",
-      "taken": "Vergeben",
-      "closed": "Geschlossen",
-      "picsBooked_one": "{{count}} PIC gebucht",
-      "picsBooked_other": "{{count}} PICs gebucht"
-    },
     "approvedPage": {
       "title": "Genehmigte Slots",
       "subtitle": "Genehmigte Einsätze und die vom OPM angehängten Dokumente"
@@ -6190,11 +6178,7 @@
       "lockHint": "In diesem Zeitraum können Piloten offene Anfragen nicht mehr stornieren oder verschieben.",
       "cycleDay": "Der Flugstunden-Zyklus beginnt am",
       "cycleDayValue": "Tag {{day}} jedes Monats",
-      "cycleDayHint": "Monatliche Flugstundenlimits zählen vom Tag {{day}} eines Monats bis zum Tag vor dem Tag {{day}} des nächsten.",
-      "latitude": "Breitengrad (Standort)",
-      "longitude": "Längengrad (Standort)",
-      "locationHint": "Für das 7-Tage-Wetter je Slot. Leer lassen, um das erste System mit Standort zu verwenden.",
-      "locationInvalid": "Beide Werte angeben: Breitengrad −90 bis 90, Längengrad −180 bis 180 (oder beide leer lassen)."
+      "cycleDayHint": "Monatliche Flugstundenlimits zählen vom Tag {{day}} eines Monats bis zum Tag vor dem Tag {{day}} des nächsten."
     },
     "create": {
       "titleParams": "Neue Slot-Gruppe — Parameter",
@@ -6228,6 +6212,14 @@
       "client": "Kunde",
       "noClient": "Kein Kunde",
       "clientHint": "Der Kunde, für den diese Slots geflogen werden. Wird im Tagesplan angezeigt.",
+      "system": "System",
+      "systemHint": "Das Wetter der Slots wird für den Standort dieses Systems vorhergesagt.",
+      "systemNone": "Kein System – kein Wetter",
+      "systemPickClient": "Wählen Sie zuerst einen Kunden, um ein System auszuwählen.",
+      "systemEmpty": "Dieser Kunde hat keine aktiven Systeme.",
+      "systemWarnNone": "Kein System ausgewählt – für diese Slots ist kein Wetter verfügbar.",
+      "systemWarnLocation": "Für dieses System ist kein Standort hinterlegt – für diese Slots ist kein Wetter verfügbar.",
+      "systemNoLocation": "kein Standort",
       "publishing": "Veröffentlichung",
       "publishNow": "Jetzt veröffentlichen",
       "schedule": "Planen",
@@ -6450,7 +6442,7 @@
         "tough": "Schwierig"
       },
       "detail": "{{level}}es Wetter · Wind {{wind}} m/s, Böen {{gust}} m/s, Regen {{rain}} mm",
-      "noLocation": "Legen Sie in den Slot-Einstellungen einen Standort fest, um das 7-Tage-Wetter je Slot zu sehen.",
+      "noLocation": "Wählen Sie für die Slot-Gruppe ein System aus, um das 7-Tage-Wetter zu sehen. Slot-Gruppen ohne System haben kein Wetter.",
       "unavailable": "Die Wettervorhersage ist derzeit nicht verfügbar.",
       "outOfRange": "Vorhersagen gibt es nur für die nächsten 7 Tage.",
       "updatedAt": "Wetter zuletzt aktualisiert {{when}}"
@@ -6537,8 +6529,21 @@
       "rain": "Regen",
       "temp": "Temperatur",
       "limiting": "Hauptproblem",
-      "noWeather": "Keine Vorhersage für diesen Slot (Vorhersagen gelten für die nächsten 7 Tage und benötigen einen Basisstandort).",
+      "noWeather": "Keine Vorhersage für diesen Slot (Vorhersagen gelten für die nächsten 7 Tage und benötigen ein System mit Standort in der Slot-Gruppe).",
       "groupSection": "Slot-Gruppe",
+      "allClients": "Alle Kunden",
+      "allGroups": "Alle Slot-Gruppen",
+      "clearFilters": "Filter zurücksetzen",
+      "kpiCollisions": "Kollisionen",
+      "collisionsTitle_one": "{{count}} Zeitkollision",
+      "collisionsTitle_other": "{{count}} Zeitkollisionen",
+      "showAll": "Alle {{count}} anzeigen",
+      "showLess": "Weniger anzeigen",
+      "conflictBadge": "Beiden zugewiesen",
+      "riskBadge": "Würde überlappen",
+      "collisionTitle": "Zeitkollision",
+      "alertConflict": "{{pilot}} ist auch am {{when}} in {{where}} zugewiesen.",
+      "alertRisk": "{{pilot}} hat auch eine Anfrage oder Zuweisung am {{when}} in {{where}}; beide zu genehmigen würde überlappen.",
       "search": "Gruppe, Kunde oder Pilot suchen",
       "filterAll": "Alle",
       "kpiSlots": "Slots",

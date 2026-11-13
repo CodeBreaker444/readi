@@ -33,7 +33,7 @@ export async function getSlotCandidates(user: SessionUser, slotId: number): Prom
     buildMerits(user.ownerId),
     eligibleIds(slot.fk_slot_group_id),
     prisma.slot_booking.findMany({ where: { fk_slot_id: slotId, status: { not: 'REJECTED' } }, select: { fk_pilot_user_id: true, status: true } }),
-    getWeatherForSlots(user.ownerId, [{ id: slotId, date, start: slot.start_time, end: slot.end_time }]),
+    getWeatherForSlots(user.ownerId, [{ id: slotId, groupId: slot.fk_slot_group_id, date, start: slot.start_time, end: slot.end_time }]),
   ]);
 
   const pool = merits.filter((m) => !eligible || eligible.has(m.userId));
@@ -193,7 +193,7 @@ export async function getDayPreview(user: SessionUser, date: string): Promise<Da
       ? prisma.slot_booking.findMany({ where: { fk_slot_id: { in: ids }, status: { in: ['APPROVED', 'PENDING'] } }, select: { fk_slot_id: true, fk_pilot_user_id: true, status: true } })
       : Promise.resolve([]),
     clientIds.length ? prisma.client.findMany({ where: { client_id: { in: clientIds } }, select: { client_id: true, client_name: true } }) : Promise.resolve([]),
-    getWeatherForSlots(user.ownerId, slots.map((s) => ({ id: s.slot_id, date, start: s.start_time, end: s.end_time }))),
+    getWeatherForSlots(user.ownerId, slots.map((s) => ({ id: s.slot_id, groupId: s.slot_group.slot_group_id, date, start: s.start_time, end: s.end_time }))),
   ]);
   const names = await userNames(bookings.filter((b) => b.status === 'APPROVED').map((b) => b.fk_pilot_user_id));
   const clientName = new Map(clients.map((c) => [c.client_id, c.client_name]));

@@ -12,9 +12,6 @@ export interface SlotDefaults {
   approvalDays: number[];
   /** Hours before the approval day during which pilots cannot cancel or move a request (0 = never locked). */
   modifyLockHours: 0 | 24 | 48;
-  /** Base location for the 7-day slot weather. */
-  baseLatitude: number | null;
-  baseLongitude: number | null;
   /** Day of the month (1–28) on which each flying-hours cycle starts, e.g. 10 = the 10th of every month. */
   cycleStartDay: number;
 }
@@ -88,6 +85,9 @@ export interface SlotGroup {
   stats?: { openSlots: number; pending: number; approved: number };
   clientId: number | null;
   clientName: string | null;
+  /** System the slot weather is forecast for; null = no weather. */
+  systemId: number | null;
+  systemName: string | null;
   /** When pilots get to see the group; null = published immediately. */
   publishAt: string | null;
   /** False while a scheduled group is still hidden from pilots. */
@@ -199,6 +199,8 @@ export interface NewSlotGroupInput {
   /** What to do when slots already exist on the selected dates. */
   resolution: 'none' | 'merge' | 'overwrite';
   clientId?: number | null;
+  /** System (of the client) whose location drives the slot weather. */
+  systemId?: number | null;
   /** ISO time to open the group to pilots; omit to publish now. */
   publishAt?: string | null;
   /** Pilot groups the slots are offered to; omit/empty for every pilot. */
@@ -375,6 +377,29 @@ export interface CalendarSlot {
   pilot: CalendarPilot | null;
   pending: CalendarPending[];
   weather: SlotWeather | null;
+  /** Overlaps with other slots for the pilots on this slot. */
+  alerts: CalendarAlert[];
+}
+
+/**
+ * The same pilot on two overlapping slots, usually of different slot groups or clients.
+ * conflict = assigned to both (red); risk = at least one is still a request, so approving it would clash (amber).
+ */
+export interface CalendarAlert {
+  severity: 'conflict' | 'risk';
+  pilotId: number;
+  pilotName: string;
+  /** The pilot's status on this slot. */
+  status: 'APPROVED' | 'PENDING';
+  other: {
+    slotId: number;
+    date: string;
+    start: string;
+    end: string;
+    groupName: string;
+    clientName: string | null;
+    status: 'APPROVED' | 'PENDING';
+  };
 }
 
 export interface CalendarDay {
@@ -391,4 +416,14 @@ export interface WeekCalendar {
   weatherNote: 'no_location' | 'unavailable' | 'out_of_range' | null;
   /** When the forecast behind the weather was last fetched. */
   weatherFetchedAt: string | null;
+}
+
+/** An active system (drone) that can be chosen for a slot group; its location drives the slot weather. */
+export interface SlotSystem {
+  id: number;
+  name: string;
+  /** Client the system is assigned to. */
+  clientId: number | null;
+  /** False when the system has no coordinates, so no weather can be shown. */
+  hasLocation: boolean;
 }

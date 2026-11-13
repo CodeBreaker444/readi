@@ -1,11 +1,12 @@
 'use client';
 
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import type { CalendarDay, CalendarSlot, SlotWeather, WeekCalendar } from '@/config/types/slot-booking';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import type { CalendarAlert, CalendarDay, CalendarSlot, SlotWeather, WeekCalendar } from '@/config/types/slot-booking';
 import { addDaysIso, slotLabel, todayIso, weekdayOf } from '@/lib/slot-booking-utils';
 import { cn } from '@/lib/utils';
 import axios from 'axios';
-import { CalendarDays, ChevronLeft, ChevronRight, CircleAlert, CircleCheck, Clock, Cloud, CloudLightning, Mail, Search, Sun, UserRound, Users, Wind } from 'lucide-react';
+import { AlertTriangle, Building2, Check, ChevronDown, CalendarDays, Layers, ChevronLeft, ChevronRight, CircleAlert, CircleCheck, Clock, Cloud, CloudLightning, Mail, Search, Sun, UserRound, Users, Wind } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AssignPicker } from './AssignPicker';
@@ -31,6 +32,66 @@ function WeatherChip({ weather, isDark }: { weather: SlotWeather; isDark: boolea
       {weather.tempC != null && <span>{weather.tempC}°</span>}
       <span>· {weather.avgWindMs} m/s</span>
     </span>
+  );
+}
+
+/** Compact dropdown (popover list) used for the client and slot group filters. */
+function FilterSelect({
+  isDark,
+  icon,
+  label,
+  value,
+  options,
+  onChange,
+}: {
+  isDark: boolean;
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  options: Array<{ value: string; label: string }>;
+  onChange: (v: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const current = options.find((o) => o.value === value);
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          className={cn(
+            'cursor-pointer h-9 min-w-44 max-w-64 rounded-lg border px-3 text-xs font-medium inline-flex items-center justify-between gap-2 transition-colors',
+            value ? 'border-violet-500 text-violet-600 bg-violet-500/10' : isDark ? 'border-white/[0.1] text-gray-200 hover:bg-white/[0.05]' : 'border-gray-300 text-gray-700 hover:bg-gray-50',
+          )}
+        >
+          <span className="inline-flex items-center gap-2 min-w-0">
+            {icon}
+            <span className="truncate">{current && value ? current.label : label}</span>
+          </span>
+          <ChevronDown size={13} className={cn('shrink-0 opacity-60 transition-transform', open && 'rotate-180')} />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent align="start" className={cn('w-64 p-1.5', isDark && 'bg-[#0f1320] border-white/[0.1] text-white')}>
+        <div className="max-h-64 overflow-y-auto space-y-0.5">
+          {[{ value: '', label }, ...options].map((o) => (
+            <button
+              key={o.value || 'all'}
+              type="button"
+              onClick={() => {
+                onChange(o.value);
+                setOpen(false);
+              }}
+              className={cn(
+                'cursor-pointer w-full flex items-center justify-between gap-2 rounded-md px-2.5 py-1.5 text-xs text-left transition-colors',
+                o.value === value ? 'bg-violet-600 text-white' : isDark ? 'text-gray-200 hover:bg-white/[0.08]' : 'text-gray-700 hover:bg-violet-50',
+              )}
+            >
+              <span className="truncate">{o.label}</span>
+              {o.value === value && <Check size={12} className="shrink-0" />}
+            </button>
+          ))}
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 }
 
@@ -63,6 +124,8 @@ export function CalendarView({ isDark }: { isDark: boolean }) {
   const [dayDate, setDayDate] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [status, setStatus] = useState<'all' | 'unassigned' | 'assigned'>('all');
+  const [clientFilter, setClientFilter] = useState('');
+  const [groupFilter, setGroupFilter] = useState('');
 
   const load = useCallback(async () => {
     try {
@@ -80,6 +143,40 @@ export function CalendarView({ isDark }: { isDark: boolean }) {
   }, [load]);
 
   const all = useMemo(() => data?.days.flatMap((d) => d.slots) ?? [], [data]);
+  const NO_CLIENT = '__none__';
+  const clientOptions = useMemo(() => {
+    const names = [...new Set(all.map((x) => x.clientName).filter((v): v is string => !!v))].sort((a, b) => a.localeCompare(b));
+    return [...names.map((n) => ({ value: n, label: n })), ...(all.some((x) => !x.clientName) ? [{ value: NO_CLIENT, label: t('slotBooking.create.noClient') }] : [])];
+  }, [all, t]);
+  const groupOptions = useMemo(
+    () => [...new Map(all.map((x) => [x.groupId, x.groupName])).entries()].sort((a, b) => a[1].localeCompare(b[1])).map(([id, name]) => ({ value: String(id), label: name })),
+    [all],
+  );
+  // Client and slot group filters scope the whole view (tiles, day counts, cards, collisions).
+  const view = useMemo(() => {
+    if (!data) return null;
+    const keep = (x: CalendarSlot) =>
+      (!clientFilter || (clientFilter === NO_CLIENT ? !x.clientName : x.clientName === clientFilter)) && (!groupFilter || String(x.groupId) === groupFilter);
+    const days = data.days.map((d) => ({ ...d, slots: d.slots.filter(keep) }));
+    const flat = days.flatMap((d) => d.slots);
+    const assigned = flat.filter((x) => x.pilot).length;
+    return { days, flat, total: flat.length, assigned, unassigned: flat.length - assigned };
+  }, [data, clientFilter, groupFilter]);
+
+  // One entry per pilot and pair of overlapping slots, with the worst severity.
+  const collisions = useMemo(() => {
+    const seen = new Map<string, { alert: CalendarAlert; slot: CalendarSlot }>();
+    for (const x of view?.flat ?? []) {
+      for (const a of x.alerts) {
+        const key = `${a.pilotId}:${Math.min(x.slotId, a.other.slotId)}-${Math.max(x.slotId, a.other.slotId)}`;
+        const prev = seen.get(key);
+        if (!prev || (a.severity === 'conflict' && prev.alert.severity !== 'conflict')) seen.set(key, { alert: a, slot: x });
+      }
+    }
+    return [...seen.values()].sort((a, b) => (a.alert.severity === b.alert.severity ? a.slot.date.localeCompare(b.slot.date) : a.alert.severity === 'conflict' ? -1 : 1));
+  }, [view]);
+  const conflicts = collisions.filter((c) => c.alert.severity === 'conflict').length;
+  const [showAllCollisions, setShowAllCollisions] = useState(false);
   const slot = all.find((x) => x.slotId === slotId) ?? null;
   const day = data?.days.find((d) => d.date === dayDate) ?? null;
   const today = todayIso();
@@ -92,8 +189,8 @@ export function CalendarView({ isDark }: { isDark: boolean }) {
     return [x.groupName, x.clientName, x.pilot?.name, ...x.pending.map((p) => p.name)].some((v) => v?.toLowerCase().includes(q));
   };
   const filtering = status !== 'all' || q !== '';
-  const requests = all.reduce((n, x) => n + x.pending.length, 0);
-  const tough = all.filter((x) => x.weather?.level === 'tough').length;
+  const requests = (view?.flat ?? []).reduce((n, x) => n + x.pending.length, 0);
+  const tough = (view?.flat ?? []).filter((x) => x.weather?.level === 'tough').length;
 
   const renderSlotCard = (x: CalendarSlot) => {
     const open = !x.pilot;
@@ -105,6 +202,7 @@ export function CalendarView({ isDark }: { isDark: boolean }) {
         className={cn(
           'group cursor-pointer w-full text-left rounded-lg border overflow-hidden flex transition-all hover:shadow-md hover:-translate-y-px',
           open ? (isDark ? 'bg-red-500/[0.08] border-red-500/25' : 'bg-red-50/70 border-red-200') : isDark ? 'bg-white/[0.03] border-white/[0.08]' : 'bg-white border-gray-200',
+          x.alerts.some((a) => a.severity === 'conflict') ? 'ring-2 ring-red-500/70' : x.alerts.length > 0 && 'ring-1 ring-amber-500/70',
         )}
       >
         <span className={cn('w-1 shrink-0', GROUP_TONES[x.groupId % GROUP_TONES.length])} />
@@ -113,6 +211,14 @@ export function CalendarView({ isDark }: { isDark: boolean }) {
             <span className={cn('inline-flex items-center gap-1 text-[12px] font-semibold tabular-nums', heading(isDark))}>
               <Clock size={11} className={muted(isDark)} /> {slotLabel(x)}
             </span>
+            {x.alerts.length > 0 && (
+              <span
+                className={cn('inline-flex items-center gap-0.5 rounded-full px-1.5 py-px text-[10px] font-semibold', x.alerts.some((a) => a.severity === 'conflict') ? 'bg-red-500/15 text-red-600' : 'bg-amber-500/15 text-amber-600')}
+                title={t('slotBooking.calendar.collisionTitle')}
+              >
+                <AlertTriangle size={10} /> {x.alerts.length}
+              </span>
+            )}
             {x.pending.length > 0 && (
               <span className="inline-flex items-center gap-0.5 rounded-full bg-amber-500/15 text-amber-600 px-1.5 py-px text-[10px] font-semibold" title={t('slotBooking.dayPreview.requests', { count: x.pending.length })}>
                 <Users size={10} /> {x.pending.length}
@@ -241,6 +347,18 @@ export function CalendarView({ isDark }: { isDark: boolean }) {
         </div>
       </div>
 
+      {data && data.total > 0 && (
+        <div className="flex flex-wrap items-center gap-2">
+          <FilterSelect isDark={isDark} icon={<Building2 size={13} />} label={t('slotBooking.calendar.allClients')} value={clientFilter} options={clientOptions} onChange={setClientFilter} />
+          <FilterSelect isDark={isDark} icon={<Layers size={13} />} label={t('slotBooking.calendar.allGroups')} value={groupFilter} options={groupOptions} onChange={setGroupFilter} />
+          {(clientFilter || groupFilter) && (
+            <button type="button" className="cursor-pointer text-xs text-violet-500 hover:underline" onClick={() => { setClientFilter(''); setGroupFilter(''); }}>
+              {t('slotBooking.calendar.clearFilters')}
+            </button>
+          )}
+        </div>
+      )}
+
       {error ? (
         <ErrorBlock isDark={isDark} message={error} onRetry={load} />
       ) : !data ? (
@@ -252,15 +370,52 @@ export function CalendarView({ isDark }: { isDark: boolean }) {
         </EmptyBlock>
       ) : (
         <>
-          <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
-            {kpi(<CalendarDays size={17} />, t('slotBooking.calendar.kpiSlots'), data.total, 'bg-violet-500/15 text-violet-500')}
-            {kpi(<CircleCheck size={17} />, t('slotBooking.calendar.legendAssigned'), data.assigned, 'bg-emerald-500/15 text-emerald-500')}
-            {kpi(<CircleAlert size={17} />, t('slotBooking.dayPreview.unassigned'), data.unassigned, data.unassigned ? 'bg-red-500/15 text-red-500' : 'bg-gray-500/15 text-gray-500')}
+          <div className="grid grid-cols-2 lg:grid-cols-6 gap-3">
+            {kpi(<CalendarDays size={17} />, t('slotBooking.calendar.kpiSlots'), view?.total ?? 0, 'bg-violet-500/15 text-violet-500')}
+            {kpi(<CircleCheck size={17} />, t('slotBooking.calendar.legendAssigned'), view?.assigned ?? 0, 'bg-emerald-500/15 text-emerald-500')}
+            {kpi(<CircleAlert size={17} />, t('slotBooking.dayPreview.unassigned'), view?.unassigned ?? 0, view?.unassigned ? 'bg-red-500/15 text-red-500' : 'bg-gray-500/15 text-gray-500')}
+            {kpi(<AlertTriangle size={17} />, t('slotBooking.calendar.kpiCollisions'), collisions.length, conflicts ? 'bg-red-500/15 text-red-500' : collisions.length ? 'bg-amber-500/15 text-amber-500' : 'bg-gray-500/15 text-gray-500')}
             {kpi(<Users size={17} />, t('slotBooking.calendar.kpiRequests'), requests, 'bg-amber-500/15 text-amber-500')}
             {kpi(<Wind size={17} />, t('slotBooking.calendar.kpiTough'), tough, tough ? 'bg-red-500/15 text-red-500' : 'bg-sky-500/15 text-sky-500')}
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-7 gap-3 items-start">{data.days.map(renderDay)}</div>
+          {collisions.length > 0 && (
+            <div className={cn('rounded-xl border p-3 space-y-2', conflicts ? (isDark ? 'bg-red-500/10 border-red-500/30' : 'bg-red-50 border-red-200') : isDark ? 'bg-amber-500/10 border-amber-500/30' : 'bg-amber-50 border-amber-200')}>
+              <div className="flex items-center justify-between gap-2">
+                <div className={cn('text-sm font-semibold inline-flex items-center gap-2', conflicts ? 'text-red-600' : 'text-amber-600')}>
+                  <AlertTriangle size={15} /> {t('slotBooking.calendar.collisionsTitle', { count: collisions.length })}
+                </div>
+                {collisions.length > 3 && (
+                  <button type="button" className="cursor-pointer text-xs text-violet-500 hover:underline" onClick={() => setShowAllCollisions((v) => !v)}>
+                    {showAllCollisions ? t('slotBooking.calendar.showLess') : t('slotBooking.calendar.showAll', { count: collisions.length })}
+                  </button>
+                )}
+              </div>
+              <ul className={cn('space-y-1', showAllCollisions && 'max-h-60 overflow-y-auto pr-1')}>
+                {(showAllCollisions ? collisions : collisions.slice(0, 3)).map(({ alert, slot: x }) => (
+                  <li key={`${alert.pilotId}-${x.slotId}-${alert.other.slotId}`}>
+                    <button
+                      type="button"
+                      onClick={() => setSlotId(x.slotId)}
+                      className={cn('cursor-pointer w-full text-left rounded-lg px-2.5 py-1.5 text-xs flex flex-wrap items-center gap-x-2 gap-y-0.5 transition-colors', isDark ? 'hover:bg-white/[0.06]' : 'hover:bg-white/70')}
+                    >
+                      <Pill isDark={isDark} tone={alert.severity === 'conflict' ? 'red' : 'amber'}>
+                        {t(alert.severity === 'conflict' ? 'slotBooking.calendar.conflictBadge' : 'slotBooking.calendar.riskBadge')}
+                      </Pill>
+                      <span className={cn('font-semibold', heading(isDark))}>{alert.pilotName}</span>
+                      <span className={muted(isDark)}>
+                        {s.date(x.date)} {slotLabel(x)} · {x.groupName}{x.clientName ? ` (${x.clientName})` : ''}
+                        {'  ↔  '}
+                        {s.date(alert.other.date)} {slotLabel(alert.other)} · {alert.other.groupName}{alert.other.clientName ? ` (${alert.other.clientName})` : ''}
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-7 gap-3 items-start">{(view?.days ?? []).map(renderDay)}</div>
           {filtering && <p className={cn('text-[11px]', muted(isDark))}>{t('slotBooking.calendar.filtered')}</p>}
 
           {data.weatherNote === 'no_location' && <p className={cn('text-[11px]', muted(isDark))}>{t('slotBooking.weather.noLocation')}</p>}
@@ -303,6 +458,25 @@ export function CalendarView({ isDark }: { isDark: boolean }) {
               </Section>
 
               {slot.pilot && <FlightWarning flight={slot.pilot.flight} name={slot.pilot.name} isDark={isDark} />}
+
+              {slot.alerts.length > 0 && (
+                <Section isDark={isDark} title={t('slotBooking.calendar.collisionTitle')}>
+                  <ul className="space-y-1.5">
+                    {slot.alerts.map((a) => (
+                      <li key={`${a.pilotId}-${a.other.slotId}`} className="flex items-start gap-2 text-xs">
+                        <AlertTriangle size={13} className={cn('mt-0.5 shrink-0', a.severity === 'conflict' ? 'text-red-500' : 'text-amber-500')} />
+                        <span className={heading(isDark)}>
+                          {t(a.severity === 'conflict' ? 'slotBooking.calendar.alertConflict' : 'slotBooking.calendar.alertRisk', {
+                            pilot: a.pilotName,
+                            when: `${s.date(a.other.date)} ${slotLabel(a.other)}`,
+                            where: `${a.other.groupName}${a.other.clientName ? ` (${a.other.clientName})` : ''}`,
+                          })}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </Section>
+              )}
 
               <Section isDark={isDark} title={t('slotBooking.calendar.waiting', { count: slot.pending.length })}>
                 {slot.pending.length === 0 ? (

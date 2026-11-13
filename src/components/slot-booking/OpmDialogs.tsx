@@ -18,6 +18,7 @@ import { toast } from 'sonner';
 import { AssignPicker } from './AssignPicker';
 import { DaySelect } from './DaySelect';
 import { HourSelect } from './HourSelect';
+import { OptionSelect } from './OptionSelect';
 import { PilotProfileCard } from './PilotProfileCard';
 import { apiMsg, Btn, FlightChip, FlightWarning, dialogSurface, heading, inputCls, muted, Pill, statusTone, useSlotI18n, useWeatherText, WeatherBadge } from './ui';
 
@@ -338,32 +339,19 @@ export function SlotSettingsDialog({
   const s = useSlotI18n();
   const { t } = s;
   const [d, setD] = useState<SlotDefaults>(defaults);
-  const [lat, setLat] = useState('');
-  const [lon, setLon] = useState('');
   const [busy, setBusy] = useState(false);
   useEffect(() => {
     if (!open) return;
     setD(defaults);
-    setLat(defaults.baseLatitude?.toString() ?? '');
-    setLon(defaults.baseLongitude?.toString() ?? '');
   }, [open]);
 
   const label = cn('text-xs font-medium mb-1 block', heading(isDark));
-  // Empty = not set; otherwise a number in range ('bad' blocks saving).
-  const coord = (v: string, min: number, max: number): number | null | 'bad' => {
-    if (!v.trim()) return null;
-    const n = Number(v);
-    return Number.isFinite(n) && n >= min && n <= max ? n : 'bad';
-  };
-  const latNum = coord(lat, -90, 90);
-  const lonNum = coord(lon, -180, 180);
-  const locationInvalid = latNum === 'bad' || lonNum === 'bad' || (latNum === null) !== (lonNum === null);
-  const invalid = (d.mode === 'HOURLY' && d.hourEnd <= d.hourStart) || d.approvalDays.length === 0 || locationInvalid;
+  const invalid = (d.mode === 'HOURLY' && d.hourEnd <= d.hourStart) || d.approvalDays.length === 0;
 
   const save = async () => {
     setBusy(true);
     try {
-      await axios.put(`${BASE}/settings`, { ...d, baseLatitude: latNum === 'bad' ? null : latNum, baseLongitude: lonNum === 'bad' ? null : lonNum });
+      await axios.put(`${BASE}/settings`, d);
       toast.success(t('slotBooking.settings.saved'));
       onOpenChange(false);
       await onSaved();
@@ -384,16 +372,21 @@ export function SlotSettingsDialog({
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className={label}>{t('slotBooking.create.slotHours')}</label>
-            <select className={inputCls(isDark)} value={d.mode} onChange={(e) => setD({ ...d, mode: e.target.value as SlotMode })}>
-              <option value="SHIFT">{s.mode('SHIFT')}</option>
-              <option value="HOURLY">{s.mode('HOURLY')}</option>
-            </select>
+            <OptionSelect
+              isDark={isDark}
+              value={d.mode}
+              options={(['SHIFT', 'HOURLY'] as SlotMode[]).map((m) => ({ value: m, label: s.mode(m) }))}
+              onChange={(m) => setD({ ...d, mode: m })}
+            />
           </div>
           <div>
             <label className={label}>{t('slotBooking.create.dateRange')}</label>
-            <select className={inputCls(isDark)} value={d.rangeMode} onChange={(e) => setD({ ...d, rangeMode: e.target.value as RangeMode })}>
-              {RANGES.map((r) => <option key={r} value={r}>{s.range(r)}</option>)}
-            </select>
+            <OptionSelect
+              isDark={isDark}
+              value={d.rangeMode}
+              options={RANGES.map((r) => ({ value: r, label: s.range(r) }))}
+              onChange={(r: RangeMode) => setD({ ...d, rangeMode: r })}
+            />
           </div>
           {d.mode === 'HOURLY' && (
             <>
@@ -442,17 +435,6 @@ export function SlotSettingsDialog({
             </div>
             <p className={cn('text-[11px] mt-1', muted(isDark))}>{t('slotBooking.settings.lockHint')}</p>
           </div>
-          <div>
-            <label className={label}>{t('slotBooking.settings.latitude')}</label>
-            <input className={cn(inputCls(isDark), (latNum === 'bad' || (latNum === null) !== (lonNum === null)) && 'border-red-400')} inputMode="decimal" placeholder="e.g. 41.9028" value={lat} onChange={(e) => setLat(e.target.value)} />
-          </div>
-          <div>
-            <label className={label}>{t('slotBooking.settings.longitude')}</label>
-            <input className={cn(inputCls(isDark), (lonNum === 'bad' || (latNum === null) !== (lonNum === null)) && 'border-red-400')} inputMode="decimal" placeholder="e.g. 12.4964" value={lon} onChange={(e) => setLon(e.target.value)} />
-          </div>
-          <p className={cn('col-span-2 text-[11px] -mt-1 h-4', locationInvalid ? 'text-red-500' : muted(isDark))}>
-            {locationInvalid ? t('slotBooking.settings.locationInvalid') : t('slotBooking.settings.locationHint')}
-          </p>
           <div className="col-span-2">
             <label className={label}>{t('slotBooking.settings.defaultApprovalDays')}</label>
             <div className="flex gap-1.5 flex-wrap">

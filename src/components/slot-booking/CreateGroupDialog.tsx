@@ -8,7 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import type { NewSlotGroupInput, PilotGroup, RangeMode, SlotClient, SlotDefaults, SlotMode } from '@/config/types/slot-booking';
+import type { NewSlotGroupInput, PilotGroup, RangeMode, SlotClient, SlotDefaults, SlotMode, SlotSystem } from '@/config/types/slot-booking';
 import { addDaysIso, groupDates, timeBlocks, todayIso } from '@/lib/slot-booking-utils';
 import { cn } from '@/lib/utils';
 import axios from 'axios';
@@ -16,6 +16,7 @@ import { AlertTriangle } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { HourSelect } from './HourSelect';
+import { OptionSelect } from './OptionSelect';
 import { AudiencePicker, ClientPicker } from './CreateGroupPickers';
 import { apiMsg, Btn, dialogSurface, GroupCalendar, heading, inputCls, Legend, muted, useSlotI18n, type CalSlot } from './ui';
 
@@ -55,6 +56,8 @@ export function CreateGroupDialog({
   const [clients, setClients] = useState<SlotClient[]>([]);
   const [pilotGroups, setPilotGroups] = useState<PilotGroup[]>([]);
   const [clientId, setClientId] = useState('');
+  const [systems, setSystems] = useState<SlotSystem[]>([]);
+  const [systemId, setSystemId] = useState('');
   const [audience, setAudience] = useState<number[]>([]);
   const [scheduled, setScheduled] = useState(false);
   const [publishLocal, setPublishLocal] = useState('');
@@ -75,15 +78,21 @@ export function CreateGroupDialog({
     setSlots([]);
     setConflicts(null);
     setClientId('');
+    setSystemId('');
     setAudience([]);
     setScheduled(false);
     setPublishLocal('');
     // Choices for the client and audience pickers; the dialog still works without them.
-    Promise.allSettled([axios.get(`${BASE}/clients`), axios.get(`${BASE}/pilot-groups`)]).then(([c, g]) => {
+    Promise.allSettled([axios.get(`${BASE}/clients`), axios.get(`${BASE}/pilot-groups`), axios.get(`${BASE}/systems`)]).then(([c, g, sy]) => {
       if (c.status === 'fulfilled') setClients(c.value.data.data);
       if (g.status === 'fulfilled') setPilotGroups(g.value.data.data);
+      if (sy.status === 'fulfilled') setSystems(sy.value.data.data);
     });
   }, [open]);
+
+  // Systems of the chosen client; the chosen system's location decides where the slot weather is forecast.
+  const clientSystems = useMemo(() => systems.filter((x) => String(x.clientId) === clientId), [systems, clientId]);
+  const chosenSystem = clientSystems.find((x) => String(x.id) === systemId);
 
   const dates = useMemo(() => groupDates(startDate, rangeMode), [startDate, rangeMode]);
   const hourlyInvalid = mode === 'HOURLY' && hourEnd <= hourStart;
@@ -120,6 +129,7 @@ export function CreateGroupDialog({
       slots: activeSlots.map(({ date, start, end }) => ({ date, start, end })),
       resolution,
       clientId: clientId ? Number(clientId) : null,
+      systemId: systemId ? Number(systemId) : null,
       publishAt: scheduled && publishLocal ? new Date(publishLocal).toISOString() : null,
       pilotGroupIds: audience,
     };
@@ -149,7 +159,7 @@ export function CreateGroupDialog({
     if (!activeSlots.length) return void toast.error(t('slotBooking.create.activateOne'));
     setBusy(true);
     try {
-      const res = await axios.post(`${BASE}/conflicts`, { dates: [...new Set(activeSlots.map((x) => x.date))] });
+      const res = await axios.post(`${BASE}/conflicts`, { dates: [...new Set(activeSlots.map((x) => x.date))], clientId: clientId ? Number(clientId) : null });
       const found = res.data.data.conflicts as string[];
       if (found.length) {
         setConflicts(found);
@@ -279,8 +289,51 @@ export function CreateGroupDialog({
 
               <div>
                 <label className={label}>{t('slotBooking.create.client')} *</label>
-                <ClientPicker isDark={isDark} clients={clients} value={clientId} onChange={setClientId} />
+                <ClientPicker
+                  isDark={isDark}
+                  clients={clients}
+                  value={clientId}
+                  onChange={(id) => {
+                    setClientId(id);
+                    setSystemId('');
+                  }}
+                />
                 <p className={cn('text-[11px] mt-1', muted(isDark))}>{t('slotBooking.create.clientHint')}</p>
+              </div>
+
+              <div>
+                <label className={label}>{t('slotBooking.create.system')}</label>
+                <OptionSelect
+                  isDark={isDark}
+                  value={systemId}
+                  disabled={!clientId || clientSystems.length === 0}
+                  placeholder={t('slotBooking.create.systemNone')}
+                  options={[
+                    { value: '', label: t('slotBooking.create.systemNone') },
+                    ...clientSystems.map((x) => ({
+                      value: String(x.id),
+                      label: x.name,
+                      disabled: !x.hasLocation,
+                      note: x.hasLocation ? undefined : t('slotBooking.create.systemNoLocation'),
+                    })),
+                  ]}
+                  onChange={setSystemId}
+                />
+                {!clientId ? (
+                  <p className={cn('text-[11px] mt-1', muted(isDark))}>{t('slotBooking.create.systemPickClient')}</p>
+                ) : clientSystems.length === 0 ? (
+                  <p className={cn('text-[11px] mt-1', muted(isDark))}>{t('slotBooking.create.systemEmpty')}</p>
+                ) : !chosenSystem ? (
+                  <p className="flex items-start gap-1 text-[11px] mt-1 text-amber-500">
+                    <AlertTriangle size={12} className="mt-0.5 shrink-0" /> {t('slotBooking.create.systemWarnNone')}
+                  </p>
+                ) : !chosenSystem.hasLocation ? (
+                  <p className="flex items-start gap-1 text-[11px] mt-1 text-amber-500">
+                    <AlertTriangle size={12} className="mt-0.5 shrink-0" /> {t('slotBooking.create.systemWarnLocation')}
+                  </p>
+                ) : (
+                  <p className={cn('text-[11px] mt-1', muted(isDark))}>{t('slotBooking.create.systemHint')}</p>
+                )}
               </div>
 
               <div>

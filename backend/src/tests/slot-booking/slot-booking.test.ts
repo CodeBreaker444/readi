@@ -148,6 +148,31 @@ describe('createGroup', () => {
     expect(err.extra).toEqual({ conflicts: [tomorrow] });
     expect(prismaMock.$transaction).not.toHaveBeenCalled();
   });
+
+  it("only compares slot groups of the same client when looking for duplicate dates", async () => {
+    prismaMock.client.findFirst.mockResolvedValue({ client_id: 5 });
+    prismaMock.slot.findMany.mockResolvedValue([]);
+    prismaMock.$transaction.mockRejectedValue(new Error('stop'));
+    await createGroup(OPM, validInput({ clientId: 5 })).catch(() => undefined);
+    expect(prismaMock.slot.findMany.mock.calls[0][0].where.slot_group).toEqual({ fk_owner_id: 7, fk_client_id: 5 });
+  });
+
+  it('compares groups without a client only with each other', async () => {
+    prismaMock.slot.findMany.mockResolvedValue([]);
+    prismaMock.$transaction.mockRejectedValue(new Error('stop'));
+    await createGroup(OPM, validInput({ clientId: null })).catch(() => undefined);
+    expect(prismaMock.slot.findMany.mock.calls[0][0].where.slot_group).toEqual({ fk_owner_id: 7, fk_client_id: null });
+  });
+
+  it("does not warn when only another client's group uses the same dates", async () => {
+    // The duplicate lookup is scoped to the client, so another client's slots never come back.
+    prismaMock.client.findFirst.mockResolvedValue({ client_id: 6 });
+    prismaMock.slot.findMany.mockResolvedValue([]);
+    prismaMock.$transaction.mockRejectedValue(new Error('stop'));
+    const err = await createGroup(OPM, validInput({ clientId: 6 })).catch((e) => e);
+    expect(err).not.toBeInstanceOf(SlotBookingError);
+    expect(prismaMock.$transaction).toHaveBeenCalled();
+  });
 });
 
 describe('requestBooking', () => {

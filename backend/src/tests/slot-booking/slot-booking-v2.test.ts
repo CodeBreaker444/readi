@@ -13,6 +13,7 @@ const prismaMock: Record<string, any> = {
   public_users: { findMany: jest.fn(), findUnique: jest.fn(), findFirst: jest.fn() },
   notification: { createMany: jest.fn() },
   client: { findFirst: jest.fn(), findMany: jest.fn() },
+  tool: { findFirst: jest.fn(), findMany: jest.fn() },
   pilot_group: { findMany: jest.fn() },
   pilot_group_member: { findMany: jest.fn() },
   slot_group_pilot_group: { findMany: jest.fn() },
@@ -167,12 +168,34 @@ describe('createGroup: client, scheduled publishing and audience', () => {
     });
   });
 
+  it('stores the system of the client and rejects one that is not the client’s', async () => {
+    prismaMock.client.findFirst.mockResolvedValue({ client_id: 4 });
+    prismaMock.tool.findFirst.mockResolvedValueOnce(null);
+    const e = await rejects(createGroup(OPM, input({ clientId: 4, systemId: 12 })), 400, /system/);
+    expect(e.extra).toMatchObject({ field: 'systemId' });
+    expect(prismaMock.tool.findFirst).toHaveBeenCalledWith(expect.objectContaining({ where: expect.objectContaining({ tool_id: 12, fk_owner_id: 7 }) }));
+    // a system of another client is refused too
+    prismaMock.tool.findFirst.mockResolvedValueOnce({ tool_id: 12, assigned_client_id: 9, tool_metadata: null });
+    await rejects(createGroup(OPM, input({ clientId: 4, systemId: 12 })), 400, /system/);
+
+    prismaMock.tool.findFirst.mockResolvedValueOnce({ tool_id: 12, assigned_client_id: null, tool_metadata: { clientId: '4' } });
+    const groupCreate = jest.fn().mockResolvedValue({ slot_group_id: 32 });
+    txOver({ slot_group: { create: groupCreate }, slot_group_pilot_group: { createMany: jest.fn() }, slot: { createMany: jest.fn() } });
+    await createGroup(OPM, input({ clientId: 4, systemId: 12 }));
+    expect(groupCreate.mock.calls[0][0].data).toMatchObject({ fk_client_id: 4, fk_tool_id: 12 });
+  });
+
+  it('refuses a system without a client', async () => {
+    prismaMock.tool.findFirst.mockResolvedValue(null);
+    await rejects(createGroup(OPM, input({ systemId: 12 })), 400, /system/);
+  });
+
   it('publishes immediately without a client or audience by default', async () => {
     const groupCreate = jest.fn().mockResolvedValue({ slot_group_id: 31 });
     const audience = jest.fn();
     txOver({ slot_group: { create: groupCreate }, slot_group_pilot_group: { createMany: audience }, slot: { createMany: jest.fn() } });
     await createGroup(OPM, input());
-    expect(groupCreate.mock.calls[0][0].data).toMatchObject({ fk_client_id: null, publish_at: null });
+    expect(groupCreate.mock.calls[0][0].data).toMatchObject({ fk_client_id: null, fk_tool_id: null, publish_at: null });
     expect(audience).not.toHaveBeenCalled();
   });
 });
@@ -773,5 +796,63 @@ describe('monthly flight limits', () => {
     expect(prismaMock.pilot_flight_limit.upsert).toHaveBeenCalledTimes(1);
     expect(prismaMock.pilot_flight_limit.upsert.mock.calls[0][0].create).toMatchObject({ fk_user_id: 1, monthly_hours: 45 });
     expect(prismaMock.pilot_flight_limit.deleteMany).toHaveBeenCalledWith({ where: { fk_owner_id: 7, fk_user_id: 2 } });
+  });
+});
+
+describe('week calendar', () => {
+  const { getWeekCalendar } = jest.requireActual('@/backend/services/slot-booking/slot-calendar-service');
+  const monday = '2030-06-03';
+  const groupOf = (id: number, name: string, client: number) => ({ slot_group_id: id, name, description: null, slot_mode: 'SHIFT', is_blocked: false, approval_days: [1], fk_client_id: client });
+  const slot = (id: number, g: ReturnType<typeof groupOf>, start: string, end: string) => ({
+    slot_id: id, slot_date: d(monday), start_time: start, end_time: end, is_active: true, slot_group: g,
+  });
+  const booking = (slotId: number, pilot: number, status: string) => ({
+    fk_slot_id: slotId, fk_pilot_user_id: pilot, status, requested_at: new Date(), decided_at: null, decision_note: null,
+  });
+  const bob = { user_id: 9, first_name: 'Bob', last_name: 'B', username: 'bob', user_role: 'PIC', email: null, users_profile: null };
+
+  beforeEach(() => {
+    prismaMock.client.findMany.mockResolvedValue([{ client_id: 1, client_name: 'Acme' }, { client_id: 2, client_name: 'Globex' }]);
+    prismaMock.public_users.findMany.mockResolvedValue([bob]);
+  });
+
+  it('lists the same time window of two slot groups and clients side by side', async () => {
+    prismaMock.slot.findMany.mockResolvedValue([slot(1, groupOf(10, 'A', 1), '06:00', '14:00'), slot(2, groupOf(11, 'B', 2), '06:00', '14:00')]);
+    prismaMock.slot_booking.findMany.mockResolvedValue([]);
+    const cal = await getWeekCalendar(OPM, monday);
+    const slots = cal.days[0].slots;
+    expect(slots.map((x: any) => [x.groupName, x.clientName, x.start])).toEqual([['A', 'Acme', '06:00'], ['B', 'Globex', '06:00']]);
+    expect(slots.every((x: any) => x.alerts.length === 0)).toBe(true);
+  });
+
+  it('flags a pilot assigned to the same time in two slot groups as a conflict on both slots', async () => {
+    prismaMock.slot.findMany.mockResolvedValue([slot(1, groupOf(10, 'A', 1), '06:00', '14:00'), slot(2, groupOf(11, 'B', 2), '06:00', '14:00')]);
+    prismaMock.slot_booking.findMany.mockResolvedValue([booking(1, 9, 'APPROVED'), booking(2, 9, 'APPROVED')]);
+    const [a, b] = (await getWeekCalendar(OPM, monday)).days[0].slots;
+    expect(a.alerts).toHaveLength(1);
+    expect(a.alerts[0]).toMatchObject({ severity: 'conflict', pilotId: 9, pilotName: 'Bob B', other: { slotId: 2, groupName: 'B', clientName: 'Globex' } });
+    expect(b.alerts[0]).toMatchObject({ severity: 'conflict', other: { slotId: 1, groupName: 'A', clientName: 'Acme' } });
+  });
+
+  it('warns (risk) when a request overlaps a slot the pilot already holds, and ignores slots that only touch', async () => {
+    prismaMock.slot.findMany.mockResolvedValue([
+      slot(1, groupOf(10, 'A', 1), '06:00', '14:00'),
+      slot(2, groupOf(11, 'B', 2), '10:00', '18:00'),
+      slot(3, groupOf(12, 'C', 1), '14:00', '22:00'),
+    ]);
+    prismaMock.slot_booking.findMany.mockResolvedValue([booking(1, 9, 'APPROVED'), booking(2, 9, 'PENDING'), booking(3, 9, 'PENDING')]);
+    const [one, two, three] = (await getWeekCalendar(OPM, monday)).days[0].slots;
+    expect(one.alerts.map((x: any) => x.severity)).toEqual(['risk']);
+    expect(two.alerts.map((x: any) => x.other.slotId).sort()).toEqual([1, 3]);
+    // 06:00–14:00 and 14:00–22:00 only touch, so they do not collide
+    expect(three.alerts.map((x: any) => x.other.slotId)).toEqual([2]);
+  });
+
+  it('does not collide different pilots on the same time', async () => {
+    prismaMock.slot.findMany.mockResolvedValue([slot(1, groupOf(10, 'A', 1), '06:00', '14:00'), slot(2, groupOf(11, 'B', 2), '06:00', '14:00')]);
+    prismaMock.slot_booking.findMany.mockResolvedValue([booking(1, 9, 'APPROVED'), booking(2, 8, 'APPROVED')]);
+    prismaMock.public_users.findMany.mockResolvedValue([bob, { ...bob, user_id: 8, first_name: 'Ada', username: 'ada' }]);
+    const slots = (await getWeekCalendar(OPM, monday)).days[0].slots;
+    expect(slots.every((x: any) => x.alerts.length === 0)).toBe(true);
   });
 });

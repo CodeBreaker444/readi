@@ -6206,18 +6206,6 @@
       "myApproved": "Il mio slot — approvato",
       "taken": "Occupato / chiuso"
     },
-    "calendar": {
-      "activateDay": "Attiva giorno",
-      "deactivateDay": "Disattiva giorno",
-      "noSlots": "Nessuno slot",
-      "open": "Libero",
-      "approved": "Approvato",
-      "pending": "In attesa",
-      "taken": "Occupato",
-      "closed": "Chiuso",
-      "picsBooked_one": "{{count}} PIC prenotato",
-      "picsBooked_other": "{{count}} PIC prenotati"
-    },
     "approvedPage": {
       "title": "Slot approvati",
       "subtitle": "Incarichi approvati e documenti allegati dall’OPM"
@@ -6332,11 +6320,7 @@
       "lockHint": "In questo periodo i piloti non possono più annullare o spostare le richieste in attesa.",
       "cycleDay": "Il ciclo delle ore di volo inizia il",
       "cycleDayValue": "Giorno {{day}} di ogni mese",
-      "cycleDayHint": "I limiti mensili di volo contano dal giorno {{day}} di un mese al giorno prima del giorno {{day}} del successivo.",
-      "latitude": "Latitudine base",
-      "longitude": "Longitudine base",
-      "locationHint": "Usata per il meteo a 7 giorni di ogni slot. Lascia vuoto per usare il primo sistema con una posizione.",
-      "locationInvalid": "Inserisci entrambi i valori: latitudine da −90 a 90, longitudine da −180 a 180 (o lascia entrambi vuoti)."
+      "cycleDayHint": "I limiti mensili di volo contano dal giorno {{day}} di un mese al giorno prima del giorno {{day}} del successivo."
     },
     "create": {
       "titleParams": "Nuovo gruppo di slot — Parametri",
@@ -6370,6 +6354,14 @@
       "client": "Cliente",
       "noClient": "Nessun cliente",
       "clientHint": "Il cliente per cui si volano questi slot. Mostrato nel foglio giornaliero.",
+      "system": "Sistema",
+      "systemHint": "Il meteo degli slot viene previsto per la posizione di questo sistema.",
+      "systemNone": "Nessun sistema — nessun meteo",
+      "systemPickClient": "Seleziona prima un cliente per scegliere un sistema.",
+      "systemEmpty": "Questo cliente non ha sistemi attivi.",
+      "systemWarnNone": "Nessun sistema selezionato — il meteo non sarà disponibile per questi slot.",
+      "systemWarnLocation": "Questo sistema non ha una posizione — il meteo non sarà disponibile per questi slot.",
+      "systemNoLocation": "nessuna posizione",
       "publishing": "Pubblicazione",
       "publishNow": "Pubblica ora",
       "schedule": "Programma",
@@ -6592,7 +6584,7 @@
         "tough": "Difficile"
       },
       "detail": "Meteo: {{level}} · vento {{wind}} m/s, raffiche {{gust}} m/s, pioggia {{rain}} mm",
-      "noLocation": "Imposta una posizione base nelle Impostazioni slot per vedere il meteo a 7 giorni di ogni slot.",
+      "noLocation": "Scegli un sistema per il gruppo di slot per vedere il meteo a 7 giorni. I gruppi di slot senza sistema non hanno meteo.",
       "unavailable": "Le previsioni meteo non sono disponibili al momento.",
       "outOfRange": "Le previsioni sono disponibili solo per i prossimi 7 giorni.",
       "updatedAt": "Meteo aggiornato l'ultima volta {{when}}"
@@ -6679,8 +6671,21 @@
       "rain": "Pioggia",
       "temp": "Temperatura",
       "limiting": "Problema principale",
-      "noWeather": "Nessuna previsione per questo slot (le previsioni coprono i prossimi 7 giorni e richiedono una posizione base).",
+      "noWeather": "Nessuna previsione per questo slot (le previsioni coprono i prossimi 7 giorni e richiedono un sistema con posizione nel gruppo di slot).",
       "groupSection": "Gruppo di slot",
+      "allClients": "Tutti i clienti",
+      "allGroups": "Tutti i gruppi di slot",
+      "clearFilters": "Cancella filtri",
+      "kpiCollisions": "Collisioni",
+      "collisionsTitle_one": "{{count}} collisione di orario",
+      "collisionsTitle_other": "{{count}} collisioni di orario",
+      "showAll": "Mostra tutte ({{count}})",
+      "showLess": "Mostra meno",
+      "conflictBadge": "Assegnato a entrambi",
+      "riskBadge": "Si sovrapporrebbe",
+      "collisionTitle": "Collisione di orario",
+      "alertConflict": "{{pilot}} è assegnato anche il {{when}} in {{where}}.",
+      "alertRisk": "{{pilot}} ha anche una richiesta o assegnazione il {{when}} in {{where}}; approvarle entrambe si sovrapporrebbe.",
       "search": "Cerca gruppo, cliente o pilota",
       "filterAll": "Tutti",
       "kpiSlots": "Slot",

@@ -13,9 +13,11 @@ import type {
   SlotGroup,
   SlotMe,
   PilotFlight,
+  SlotSystem,
   SlotWeather,
 } from '@/config/types/slot-booking';
 import type { SessionUser } from '@/lib/auth/server-session';
+import { readToolLocation } from '@/lib/btf/location';
 import { prisma } from '@/lib/prisma';
 import { getFileBufferFromS3, getPresignedDownloadUrl, getPresignedUploadUrl } from '@/lib/s3Client';
 import {
@@ -100,6 +102,7 @@ export async function userNames(ids: Array<number | null | undefined>): Promise<
 
 interface GroupMeta {
   clientName: string | null;
+  systemName: string | null;
   audience: Array<{ id: number; name: string }>;
 }
 
@@ -108,12 +111,17 @@ async function loadGroupMeta(rows: GroupRow[]): Promise<Map<number, GroupMeta>> 
   const out = new Map<number, GroupMeta>();
   if (!rows.length) return out;
   const clientIds = [...new Set(rows.map((r) => r.fk_client_id).filter((v): v is number => v != null))];
-  const [clients, audiences] = await Promise.all([
+  const toolIds = [...new Set(rows.map((r) => r.fk_tool_id).filter((v): v is number => v != null))];
+  const [clients, audiences, tools] = await Promise.all([
     clientIds.length
       ? prisma.client.findMany({ where: { client_id: { in: clientIds } }, select: { client_id: true, client_name: true } })
       : Promise.resolve([]),
     getAudiences(rows.map((r) => r.slot_group_id)),
+    toolIds.length
+      ? prisma.tool.findMany({ where: { tool_id: { in: toolIds } }, select: { tool_id: true, tool_name: true, tool_code: true } })
+      : Promise.resolve([]),
   ]);
+  const toolName = new Map(tools.map((t) => [t.tool_id, t.tool_name || t.tool_code || `System #${t.tool_id}`]));
   const pgIds = [...new Set([...audiences.values()].flat())];
   const pgs = pgIds.length
     ? await prisma.pilot_group.findMany({ where: { pilot_group_id: { in: pgIds } }, select: { pilot_group_id: true, name: true } })
@@ -123,6 +131,7 @@ async function loadGroupMeta(rows: GroupRow[]): Promise<Map<number, GroupMeta>> 
   for (const r of rows) {
     out.set(r.slot_group_id, {
       clientName: r.fk_client_id != null ? (clientName.get(r.fk_client_id) ?? null) : null,
+      systemName: r.fk_tool_id != null ? (toolName.get(r.fk_tool_id) ?? null) : null,
       audience: (audiences.get(r.slot_group_id) ?? [])
         .map((id) => ({ id, name: pgName.get(id) ?? `Group #${id}` }))
         .sort((a, b) => a.name.localeCompare(b.name)),
@@ -167,6 +176,8 @@ function mapGroup(g: GroupRow, createdByName: string | null, stats?: SlotGroup['
     ...(stats ? { stats } : {}),
     clientId: g.fk_client_id ?? null,
     clientName: meta?.clientName ?? null,
+    systemId: g.fk_tool_id ?? null,
+    systemName: meta?.systemName ?? null,
     publishAt: g.publish_at?.toISOString() ?? null,
     published: isPublished(g.publish_at),
     audience: meta?.audience ?? [],
@@ -308,8 +319,6 @@ const FALLBACK_DEFAULTS: SlotDefaults = {
   blocked: false,
   approvalDays: [1, 4],
   modifyLockHours: 24,
-  baseLatitude: null,
-  baseLongitude: null,
   cycleStartDay: 1,
 };
 
@@ -324,8 +333,6 @@ export async function getSettings(ownerId: number): Promise<SlotDefaults> {
     blocked: row.is_blocked,
     approvalDays: row.approval_days,
     modifyLockHours: ([0, 24, 48].includes(row.modify_lock_hours) ? row.modify_lock_hours : 24) as SlotDefaults['modifyLockHours'],
-    baseLatitude: row.base_latitude ?? null,
-    baseLongitude: row.base_longitude ?? null,
     cycleStartDay: row.cycle_start_day,
   };
 }
@@ -340,8 +347,6 @@ export async function saveSettings(user: SessionUser, input: SlotDefaults): Prom
     is_blocked: input.blocked,
     approval_days: [...new Set(input.approvalDays)].sort(),
     modify_lock_hours: input.modifyLockHours,
-    base_latitude: input.baseLatitude,
-    base_longitude: input.baseLongitude,
     cycle_start_day: input.cycleStartDay,
     updated_at: new Date(),
   };
@@ -427,7 +432,7 @@ export async function getGroupDetail(user: SessionUser, groupId: number): Promis
             .filter((b) => b.status === 'PENDING' && slotById.has(b.fk_slot_id))
             .map((b) => ({ pilotId: b.fk_pilot_user_id, slot: slotDto(slotById.get(b.fk_slot_id)!) })),
         ),
-        getWeatherForSlots(user.ownerId, slots.filter((x) => x.is_active).map((x) => ({ id: x.slot_id, date: dateStr(x.slot_date), start: x.start_time, end: x.end_time }))),
+        getWeatherForSlots(user.ownerId, slots.filter((x) => x.is_active).map((x) => ({ id: x.slot_id, groupId: x.fk_slot_group_id, date: dateStr(x.slot_date), start: x.start_time, end: x.end_time }))),
         getPilotFlights(user.ownerId, bookings.filter((b) => b.status !== 'REJECTED').map((b) => b.fk_pilot_user_id)),
         getPilotProfiles(user.ownerId, bookings.filter((b) => b.status !== 'REJECTED').map((b) => b.fk_pilot_user_id)),
       ])
@@ -497,10 +502,10 @@ export async function getGroupDetail(user: SessionUser, groupId: number): Promis
 }
 
 /** Dates (yyyy-MM-dd) among `dates` that already contain slots in any of the company's groups. */
-export async function findConflictDates(ownerId: number, dates: string[]): Promise<string[]> {
+export async function findConflictDates(ownerId: number, dates: string[], clientId: number | null = null): Promise<string[]> {
   if (!dates.length) return [];
   const rows = await prisma.slot.findMany({
-    where: { slot_date: { in: dates.map(toDate) }, slot_group: { fk_owner_id: ownerId } },
+    where: { slot_date: { in: dates.map(toDate) }, slot_group: { fk_owner_id: ownerId, fk_client_id: clientId } },
     select: { slot_date: true },
     distinct: ['slot_date'],
     orderBy: { slot_date: 'asc' },
@@ -551,6 +556,14 @@ export async function createGroup(user: SessionUser, input: NewSlotGroupInput): 
     const client = await prisma.client.findFirst({ where: { client_id: input.clientId, fk_owner_id: user.ownerId }, select: { client_id: true } });
     if (!client) throw new SlotBookingError('The selected client was not found', 400, { field: 'clientId' });
   }
+  // The system belongs to the chosen client; its location is where the slot weather is forecast.
+  if (input.systemId != null) {
+    const tool = await prisma.tool.findFirst({
+      where: { tool_id: input.systemId, fk_owner_id: user.ownerId, tool_active: 'Y' },
+      select: { tool_id: true, assigned_client_id: true, tool_metadata: true },
+    });
+    if (!tool || input.clientId == null || toolClientId(tool) !== input.clientId) throw new SlotBookingError('The selected system was not found for this client', 400, { field: 'systemId' });
+  }
   const pilotGroupIds = [...new Set(input.pilotGroupIds ?? [])];
   if (pilotGroupIds.length) {
     const found = await prisma.pilot_group.findMany({
@@ -561,7 +574,9 @@ export async function createGroup(user: SessionUser, input: NewSlotGroupInput): 
   }
 
   const slotDates = [...new Set(input.slots.map((s) => s.date))];
-  const conflicts = await findConflictDates(user.ownerId, slotDates);
+  // Duplicates are per client: another client's groups may use the same dates and times.
+  const clientScope = input.clientId ?? null;
+  const conflicts = await findConflictDates(user.ownerId, slotDates, clientScope);
   if (conflicts.length && input.resolution === 'none') {
     throw new SlotBookingError('Slots already exist for one or more selected dates', 409, { conflicts });
   }
@@ -574,7 +589,7 @@ export async function createGroup(user: SessionUser, input: NewSlotGroupInput): 
 
     if (conflicts.length && input.resolution === 'overwrite') {
       const doomed = await tx.slot.findMany({
-        where: { slot_date: { in: conflicts.map(toDate) }, slot_group: { fk_owner_id: user.ownerId } },
+        where: { slot_date: { in: conflicts.map(toDate) }, slot_group: { fk_owner_id: user.ownerId, fk_client_id: clientScope } },
         select: { slot_id: true, slot_date: true, start_time: true, end_time: true },
       });
       // Queried directly: Prisma models slot -> slot_booking as one-to-one (partial unique index), but a slot has many requests.
@@ -590,7 +605,7 @@ export async function createGroup(user: SessionUser, input: NewSlotGroupInput): 
       await tx.slot.deleteMany({ where: { slot_id: { in: doomed.map((s) => s.slot_id) } } });
     } else if (conflicts.length && input.resolution === 'merge') {
       const existing = await tx.slot.findMany({
-        where: { slot_date: { in: conflicts.map(toDate) }, slot_group: { fk_owner_id: user.ownerId } },
+        where: { slot_date: { in: conflicts.map(toDate) }, slot_group: { fk_owner_id: user.ownerId, fk_client_id: clientScope } },
         select: { slot_date: true, start_time: true, end_time: true },
       });
       const taken = new Set(existing.map((s) => `${dateStr(s.slot_date)}|${s.start_time}|${s.end_time}`));
@@ -611,6 +626,7 @@ export async function createGroup(user: SessionUser, input: NewSlotGroupInput): 
         approval_days: [...new Set(input.approvalDays)].sort(),
         created_by: user.userId,
         fk_client_id: input.clientId ?? null,
+        fk_tool_id: input.systemId ?? null,
         publish_at: input.publishAt ? new Date(input.publishAt) : null,
       },
     });
@@ -652,6 +668,7 @@ export async function createGroup(user: SessionUser, input: NewSlotGroupInput): 
       conflict_dates: conflicts,
       resolution: conflicts.length ? input.resolution : null,
       client_id: input.clientId ?? null,
+      system_id: input.systemId ?? null,
       publish_at: input.publishAt ?? null,
       pilot_group_ids: pilotGroupIds,
     });
@@ -1194,7 +1211,6 @@ export async function sendPublishNotifications(now = new Date()): Promise<number
   return sent;
 }
 
-// ───────────────────────── Clients ─────────────────────────
 
 /** Active clients of the company, for the "client" choice of a slot group. */
 export async function listClients(user: SessionUser): Promise<Array<{ id: number; name: string }>> {
@@ -1205,4 +1221,30 @@ export async function listClients(user: SessionUser): Promise<Array<{ id: number
     orderBy: { client_name: 'asc' },
   });
   return rows.map((c) => ({ id: c.client_id, name: c.client_name }));
+}
+
+/** A system's client: the assigned client, otherwise the client id kept in its metadata (same rule as the event logbook). */
+function toolClientId(t: { assigned_client_id: number | null; tool_metadata: unknown }): number | null {
+  if (t.assigned_client_id) return t.assigned_client_id;
+  const raw = (t.tool_metadata as { clientId?: unknown } | null)?.clientId;
+  const id = Number(raw);
+  return raw != null && Number.isInteger(id) && id > 0 ? id : null;
+}
+
+/** Active systems that belong to a client, for the "system" choice of a slot group (its location drives the weather). */
+export async function listSystems(user: SessionUser): Promise<SlotSystem[]> {
+  assertManager(user);
+  const rows = await prisma.tool.findMany({
+    where: { fk_owner_id: user.ownerId, tool_active: 'Y' },
+    select: { tool_id: true, tool_name: true, tool_code: true, tool_metadata: true, location: true, assigned_client_id: true },
+    orderBy: { tool_name: 'asc' },
+  });
+  return rows
+    .map((t) => ({
+      id: t.tool_id,
+      name: t.tool_name || t.tool_code || `System #${t.tool_id}`,
+      clientId: toolClientId(t),
+      hasLocation: readToolLocation(t.tool_metadata, t.location) !== null,
+    }))
+    .filter((t) => t.clientId !== null);
 }

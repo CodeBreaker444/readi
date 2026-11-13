@@ -53,6 +53,7 @@ Click **New Slot Group**. The form is pre-filled from **Slot Settings** (your co
 | **Slot blocking** | Off (default): several pilots can request the same slot and you choose one. On: only one pilot per slot, the first request locks it |
 | **Approval day(s)** | The weekdays on which you review requests for this group |
 | **Client** | **Required.** The client these slots are flown for. Only active clients of your company are listed. Use the search box to find one in a long list; the list scrolls. **Next: Calendar** stays disabled until a client is picked |
+| **System** | Optional. Pick the system the slots are flown with to get the 7-day weather at that system's location (see [Weather location](#weather-location)). Only the chosen client's active systems are listed, and the list resets when you change the client. Systems **without a saved location are greyed out** and cannot be selected. **No system** keeps the group without weather, and an amber warning says so |
 | **Publishing** | **Publish now** (default) or **Schedule** a date and time. See [Scheduled publishing](#scheduled-publishing) |
 | **Offered to** | Optional. One or more [pilot groups](#pilot-groups). Leave empty to offer the slots to every pilot. Search groups by name; the list scrolls when there are many. Each card shows the member count and the first members' pictures, and an expert star. **Hover** over a card to see the group's description and all its members with picture, name, role and email. **Clear** removes the selection |
 
@@ -62,15 +63,17 @@ Click **Next: Calendar**. Every slot starts active. Click a slot, or **Deactivat
 
 ### Duplicate slot warning
 
-When you publish, Readi checks whether any selected date already has slots (from any of your groups). If so, you see:
+When you publish, Readi checks whether any selected date already has slots in another slot group **of the same client** (groups without a client are compared with each other). If so, you see:
 
 > Warning: Slots already exist for one or more selected dates in this range. Do you wish to merge, overwrite, or cancel?
 
 | Choice | Result |
 |---|---|
 | **Merge** | Keeps the existing slots and adds only time blocks that do not exist yet on those dates |
-| **Overwrite** | Deletes the existing slots on those dates. Their bookings are cancelled and the pilots receive a [warning](#warnings) |
+| **Overwrite** | Deletes the existing slots of **that client** on those dates. Their bookings are cancelled and the pilots receive a [warning](#warnings) |
 | **Cancel** | Nothing is published |
+
+**Different clients never trigger this warning.** Two slot groups for different clients can use the same dates and the same time windows, for example 06:00–14:00 twice on one day, each with its own pilots. Merge and Overwrite only look at, and only change, the slots of the client you are publishing for, so they never touch another client's slots. The [Calendar](#calendar) shows both side by side with their own group colour and client name. Pilots are still protected from being booked on both at once: see [Collisions](#collisions) and the Calendar's time collisions.
 
 ### Watch the bookings
 
@@ -134,7 +137,6 @@ Two settings apply to the whole company straight away:
 |---|---|
 | **Lock changes before the approval day** | Choose **Never lock**, **24 hours before** or **48 hours before** with the buttons (default 24). Inside this window pilots cannot cancel or move pending requests. See [Changing a request](#changing-a-request) |
 | **Flying-hours cycle starts on** | Day 1 to 28 of the month (default 1). Monthly flight limits are counted from that day of one month to the day before the same day of the next, for example the 10th to the 9th. See [Flight limits](#flight-limits) |
-| **Base latitude / longitude** | The place used for the 7-day slot weather. Enter both or neither. Latitude is −90 to 90 and longitude −180 to 180. If empty, the first system with a saved location is used |
 
 ---
 
@@ -205,6 +207,9 @@ Inside each part, pilots with the higher [score](#pilot-merits) come first. For 
 - **Summary tiles:** slots, assigned, unassigned, waiting requests and tough-weather slots for the seven days shown.
 - **Day columns:** each shows the date, how many slots are assigned (with a progress bar that turns green when the day is full) and the worst weather of the day. Today is outlined and weekends are tinted. Click a day header to open a list of that day's slots.
 - **Slot cards:** time, slot group (with a colour stripe per group), client, the assigned pilot with picture, the pilot's [flight limit](#flight-limits) chip, the number of waiting requests and a weather chip (calm, moderate or tough, with temperature and wind). A slot without a pilot is red with a **Needs pilot** label.
+- **All slot groups together:** the Calendar lists the slots of every slot group. Two groups, for example for different clients, can have the same time window on the same day (such as 06:00–14:00 twice); both appear, each with its own group colour, client and pilot.
+- **Client and slot group filters:** two dropdowns above the summary pick one **client** (or *No client*) and/or one **slot group**. They scope the whole view: tiles, day counts, cards and collisions. **Clear filters** resets them.
+- **Time collisions:** the same pilot on two overlapping slots, typically in different slot groups or for different clients. A red **Assigned to both** collision means the pilot is approved on both. An amber **Would overlap** means at least one is still a request, so approving both would overlap. They are shown in a banner above the days (click one to open the slot), as a **Collisions** tile, and as a red or amber badge and outline on the affected slot cards; the slot details list them. Slots that only touch (06:00–14:00 and 14:00–22:00) are not collisions. Approving or assigning an overlapping pilot is still blocked, see [Collisions](#collisions).
 - **Search and filter:** search by group, client, pilot or requester, and filter by **All**, **Unassigned** or **Assigned**. Filters change the cards only; the tiles keep counting the whole week.
 - **Slot details:** click a card to see the pilot (picture, role, email, when approved and whether the OPM assigned them directly), the waiting requests with their flight chips, the full weather (level, average wind, gusts, rain, temperature and main concern), the slot group's details, and the [assign dropdown](#assign-a-pilot) for slots that can still change.
 
@@ -234,9 +239,28 @@ For slots in the **next 7 days** (today and the six days after) the OPM sees the
 
 - A **coloured dot** appears on each slot of the calendar: green = calm, amber = moderate, red = tough. Open the slot, or the Day Preview, for the details: average wind, gusts and rain during the slot's hours.
 - The verdict uses the same limits as the flight-weather feature. **Darkness is ignored**: night shifts are judged on the weather only.
-- The forecast comes from the base location in [Slot Settings](#slot-settings). Without one, Readi uses the first system that has a location. If there is none, the screens say to set a base location.
+- The forecast is taken at the location of the **system chosen for the slot group** (see [Weather location](#weather-location)), so groups of different clients can have different weather. Slot groups without a system show no weather.
 - **Cached forecast:** the forecast is stored in the database and shared by every screen, like the weather map layers of Drone ATC. It is refreshed from the weather service when it is older than **30 minutes**, and a job keeps recently viewed locations fresh (see [Cron Jobs](/docs/business-logic/cron-jobs)). If the weather service is down, a copy up to 6 hours old is still used. The Calendar and Day Preview show when the forecast was last fetched.
 - Slots further away than 7 days, or in the past, have no forecast. If the weather service is unavailable, slot booking keeps working without it.
+
+### Weather location
+
+There is no company-wide base location. Each slot group takes its weather location from a **system**:
+
+1. When you create a slot group, pick a **client** and then one of that client's **systems**.
+2. Readi reads the system's saved coordinates (the latitude and longitude on the system's page) and forecasts the weather for the group's slots at that point. Nearby systems share one cached forecast.
+3. The Calendar, Day Preview, slot details and the assign dropdown all use the location of the slot's own group.
+
+What you see when something is missing:
+
+| Situation | What happens |
+|---|---|
+| No system selected | An amber warning in the form. The group is created, but its slots show no weather |
+| System has no location | The system is greyed out in the list and cannot be chosen. Add its location on the system first |
+| Calendar or Day Preview where no slot has a system with a location | A note asks you to choose a system for the slot group |
+| Some groups have a system and some do not | Only the groups with a system show weather |
+
+The system is set when the group is created. A system that is later deactivated or loses its location stops giving weather for that group.
 
 ---
 

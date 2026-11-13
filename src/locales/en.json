@@ -6223,18 +6223,6 @@
       "myApproved": "My slot — approved",
       "taken": "Taken / closed"
     },
-    "calendar": {
-      "activateDay": "Activate day",
-      "deactivateDay": "Deactivate day",
-      "noSlots": "No slots",
-      "open": "Open",
-      "approved": "Approved",
-      "pending": "Pending",
-      "taken": "Taken",
-      "closed": "Closed",
-      "picsBooked_one": "{{count}} PIC Booked",
-      "picsBooked_other": "{{count}} PICs Booked"
-    },
     "approvedPage": {
       "title": "Approved Slots",
       "subtitle": "Approved jobs and the documents attached by the OPM"
@@ -6349,11 +6337,7 @@
       "lockHint": "Inside this window pilots can no longer cancel or move their pending requests.",
       "cycleDay": "Flying-hours cycle starts on",
       "cycleDayValue": "Day {{day}} of every month",
-      "cycleDayHint": "Monthly flight limits count from day {{day}} of one month to the day before day {{day}} of the next.",
-      "latitude": "Base latitude",
-      "longitude": "Base longitude",
-      "locationHint": "Used for the 7-day weather on each slot. Leave empty to use the first system with a location.",
-      "locationInvalid": "Enter both values: latitude −90 to 90, longitude −180 to 180 (or leave both empty)."
+      "cycleDayHint": "Monthly flight limits count from day {{day}} of one month to the day before day {{day}} of the next."
     },
     "create": {
       "titleParams": "New Slot Group — Parameters",
@@ -6387,6 +6371,14 @@
       "client": "Client",
       "noClient": "No client",
       "clientHint": "The client these slots are flown for. Shown on the day sheet.",
+      "system": "System",
+      "systemHint": "Weather for the slots is forecast at this system's location.",
+      "systemNone": "No system — no weather",
+      "systemPickClient": "Select a client first to choose a system.",
+      "systemEmpty": "This client has no active systems.",
+      "systemWarnNone": "No system selected — weather will not be available for these slots.",
+      "systemWarnLocation": "This system has no location set — weather will not be available for these slots.",
+      "systemNoLocation": "no location",
       "publishing": "Publishing",
       "publishNow": "Publish now",
       "schedule": "Schedule",
@@ -6609,7 +6601,7 @@
         "tough": "Tough"
       },
       "detail": "{{level}} weather · wind {{wind}} m/s, gusts {{gust}} m/s, rain {{rain}} mm",
-      "noLocation": "Set a base location in Slot Settings to see the 7-day weather for each slot.",
+      "noLocation": "Choose a system for the slot group to see the 7-day weather. Slot groups without a system have no weather.",
       "unavailable": "The weather forecast is not available right now.",
       "outOfRange": "Forecasts are only available for the next 7 days.",
       "updatedAt": "Weather last updated {{when}}"
@@ -6696,8 +6688,21 @@
       "rain": "Rain",
       "temp": "Temperature",
       "limiting": "Main concern",
-      "noWeather": "No forecast for this slot (forecasts cover the next 7 days and need a base location).",
+      "noWeather": "No forecast for this slot (forecasts cover the next 7 days and need a system with a location on the slot group).",
       "groupSection": "Slot group",
+      "allClients": "All clients",
+      "allGroups": "All slot groups",
+      "clearFilters": "Clear filters",
+      "kpiCollisions": "Collisions",
+      "collisionsTitle_one": "{{count}} time collision",
+      "collisionsTitle_other": "{{count}} time collisions",
+      "showAll": "Show all {{count}}",
+      "showLess": "Show less",
+      "conflictBadge": "Assigned to both",
+      "riskBadge": "Would overlap",
+      "collisionTitle": "Time collision",
+      "alertConflict": "{{pilot}} is also assigned on {{when}} in {{where}}.",
+      "alertRisk": "{{pilot}} also has a request or assignment on {{when}} in {{where}}; approving both would overlap.",
       "search": "Search group, client or pilot",
       "filterAll": "All",
       "kpiSlots": "Slots",
