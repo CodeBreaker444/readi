@@ -27,3 +27,34 @@ export function readToolLocation(meta: unknown, locationText?: string | null): S
   const pseudo = typeof m.pseudo_name === 'string' ? m.pseudo_name.trim() : ''
   return { latitude, longitude, name: pseudo || locationText?.trim() || null }
 }
+
+/** The drones of a system, as far as their location goes. */
+export interface DroneSite {
+  component_id: number
+  component_metadata: unknown
+}
+
+/**
+ * Where a system is: its own location, otherwise the location of its primary drone, otherwise the first drone
+ * (lowest id) that has one. Drones without usable coordinates are skipped.
+ */
+export function resolveSystemLocation(
+  tool: { tool_metadata: unknown; location?: string | null },
+  drones: DroneSite[] = [],
+): SiteLocation | null {
+  const own = readToolLocation(tool.tool_metadata, tool.location)
+  if (own) return own
+  const located = [...drones]
+    .sort((a, b) => a.component_id - b.component_id)
+    .map((d) => ({ d, site: readToolLocation(d.component_metadata, tool.location) }))
+    .filter((x): x is { d: DroneSite; site: SiteLocation } => x.site !== null)
+  const primary = located.find((x) => (x.d.component_metadata as { is_primary?: boolean } | null)?.is_primary === true)
+  return (primary ?? located[0])?.site ?? null
+}
+
+/** Prisma filter/select for the active drones of a system (used with resolveSystemLocation). */
+export const DRONE_SITE_SELECT = {
+  where: { component_type: { equals: 'DRONE', mode: 'insensitive' as const }, component_active: 'Y' },
+  select: { component_id: true, component_metadata: true },
+  orderBy: { component_id: 'asc' as const },
+}

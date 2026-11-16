@@ -11,7 +11,7 @@ import { ChevronDown, ChevronLeft, ChevronRight, FilterX, RefreshCw } from 'luci
 import { Fragment, useCallback, useEffect, useState } from 'react';
 import { apiMsg, Btn, card, ErrorBlock, heading, muted, useSlotI18n } from './ui';
 
-const ENTITIES = ['slot_group', 'slot', 'slot_booking'];
+const ENTITIES = ['slot_group', 'slot', 'slot_booking', 'pilot_group'];
 const EVENTS = ['CREATE', 'UPDATE', 'DELETE'];
 const PAGE_SIZE = 10;
 
