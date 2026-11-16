@@ -46,6 +46,7 @@ import {
   approveBooking,
   cancelBooking,
   createGroup,
+  editSlot,
   getGroupDetail,
   listGroups,
   listMyBookings,
@@ -367,6 +368,84 @@ describe('collisions', () => {
     const e = await rejects(approveBooking(OPM, 9), 409, /Pia Pilot is already assigned/);
     expect(e.extra?.collision).toMatch(/Group B/);
     expect(prismaMock.$transaction).not.toHaveBeenCalled();
+  });
+});
+
+// ───────────────────────── Closing / editing a slot ─────────────────────────
+
+describe('approving and editing slots', () => {
+  const pendingOn = (slot: ReturnType<typeof slotRow>) => ({
+    booking_id: 9, fk_slot_id: 5, fk_slot_group_id: 3, fk_pilot_user_id: 2, status: 'PENDING', slot,
+  });
+
+  it('does not approve a request on a closed slot', async () => {
+    prismaMock.slot_booking.findFirst.mockResolvedValue(pendingOn(slotRow({ is_active: false })));
+    await rejects(approveBooking(OPM, 9), 409, /not open/);
+    expect(prismaMock.$transaction).not.toHaveBeenCalled();
+  });
+
+  it('does not approve a request on a past slot', async () => {
+    prismaMock.slot_booking.findFirst.mockResolvedValue(pendingOn(slotRow({ slot_date: d(day(-1)) })));
+    await rejects(approveBooking(OPM, 9), 409, /in the past/);
+    expect(prismaMock.$transaction).not.toHaveBeenCalled();
+  });
+
+  it('only counts open slots when looking for collisions', async () => {
+    prismaMock.slot.findFirst.mockResolvedValue(slotRow());
+    prismaMock.slot_booking.findMany.mockResolvedValueOnce([]);
+    txOver({ slot_booking: { findMany: jest.fn().mockResolvedValue([]), create: jest.fn().mockResolvedValue({ booking_id: 1 }) } });
+    await requestBooking(PIC, 5);
+    expect(prismaMock.slot_booking.findMany.mock.calls[0][0].where.slot).toMatchObject({ is_active: true });
+  });
+
+  it('rejects equal start and end times', async () => {
+    await rejects(editSlot(OPM, 5, { start: '06:00', end: '06:00', active: true }, 'why'), 400, /different/);
+    expect(prismaMock.slot.findFirst).not.toHaveBeenCalled();
+  });
+
+  it('refuses a new time that overlaps another approved slot of the assigned pilot', async () => {
+    prismaMock.slot.findFirst.mockResolvedValueOnce(slotRow());
+    prismaMock.slot_booking.findMany
+      .mockResolvedValueOnce([{ fk_pilot_user_id: 2, status: 'APPROVED' }])
+      .mockResolvedValueOnce([{ fk_slot_id: 77, fk_pilot_user_id: 2, slot: { slot_date: d(day(2)), start_time: '14:00', end_time: '22:00', slot_group: { name: 'Group B' } } }]);
+    prismaMock.public_users.findMany.mockResolvedValue([{ user_id: 2, first_name: 'Pia', last_name: 'Pilot', username: 'pia' }]);
+    const e = await rejects(editSlot(OPM, 5, { start: '06:00', end: '16:00', active: true }, 'longer shift'), 409, /Pia Pilot is already assigned/);
+    expect(e.extra?.collision).toMatch(/Group B/);
+    expect(prismaMock.$transaction).not.toHaveBeenCalled();
+  });
+
+  it('closing a slot rejects its pending and approved bookings and warns the assigned pilot', async () => {
+    prismaMock.slot.findFirst.mockResolvedValueOnce(slotRow()).mockResolvedValueOnce(null);
+    prismaMock.slot_booking.findMany.mockResolvedValueOnce([
+      { fk_pilot_user_id: 2, status: 'APPROVED' },
+      { fk_pilot_user_id: 3, status: 'PENDING' },
+    ]);
+    prismaMock.public_users.findUnique.mockResolvedValue({ user_id: 2, email: 'p@example.com' });
+    const slotUpdate = jest.fn();
+    const updateMany = jest.fn();
+    txOver({ slot: { update: slotUpdate }, slot_booking: { updateMany } });
+
+    await editSlot(OPM, 5, { start: '06:00', end: '14:00', active: false }, 'site closed');
+    await flush();
+
+    expect(slotUpdate.mock.calls[0][0].data).toMatchObject({ is_active: false });
+    expect(updateMany).toHaveBeenCalledWith({
+      where: { fk_slot_id: 5, status: { in: ['PENDING', 'APPROVED'] } },
+      data: expect.objectContaining({ status: 'REJECTED', decision_note: 'Slot closed by OPM' }),
+    });
+    const sent = prismaMock.notification.createMany.mock.calls.map((c: any) => c[0].data[0]);
+    expect(sent.map((n: any) => [n.notification_title, n.notification_type])).toEqual(
+      expect.arrayContaining([['Slot closed by OPM', 'SLOT_WARNING'], ['Slot closed by OPM', 'SLOT_BOOKING']]),
+    );
+  });
+
+  it('changing only the time leaves the bookings alone', async () => {
+    prismaMock.slot.findFirst.mockResolvedValueOnce(slotRow()).mockResolvedValueOnce(null);
+    prismaMock.slot_booking.findMany.mockResolvedValueOnce([{ fk_pilot_user_id: 3, status: 'PENDING' }]);
+    const updateMany = jest.fn();
+    txOver({ slot: { update: jest.fn() }, slot_booking: { updateMany } });
+    await editSlot(OPM, 5, { start: '07:00', end: '14:00', active: true }, 'later start');
+    expect(updateMany).not.toHaveBeenCalled();
   });
 });
 

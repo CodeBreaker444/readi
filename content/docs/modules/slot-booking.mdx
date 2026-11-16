@@ -112,7 +112,10 @@ If the pilot is already assigned to another slot that overlaps this one, the req
 
 ### Edit a published slot
 
-Click **Edit slot** to change its start and end time, or close it for booking. A **reason is required**. The change is written to the audit log and pilots who already requested that slot are notified. Two slots on the same date cannot share the same time window.
+Click **Edit slot** to change its start and end time, or close it for booking. A **reason is required**. The change is written to the audit log and pilots who already requested that slot are notified. Two slots on the same date cannot share the same time window, and the start and end time must differ (an end before the start means the slot runs past midnight).
+
+- **Closing a slot** cancels everything booked on it: pending requests and the assigned pilot are set to rejected with the note *Slot closed by OPM*. Pilots are notified, and an assigned pilot gets a warning. A closed slot no longer blocks the pilot from other overlapping slots, and it cannot be approved. Reopening it does not restore the old bookings; pilots must request it again.
+- **Changing the time** keeps the bookings, but is refused if the assigned pilot would then overlap another approved slot.
 
 ### Delete a slot group
 

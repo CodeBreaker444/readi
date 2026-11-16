@@ -30,6 +30,7 @@ export async function findCollisions(ownerId: number, checks: CollisionCheck[]):
       status: 'APPROVED',
       fk_pilot_user_id: { in: [...new Set(checks.map((c) => c.pilotId))] },
       slot: {
+        is_active: true,
         // ±1 day: a 22:00–06:00 slot reaches into the next date.
         slot_date: { gte: toDate(addDaysIso(dates[0], -1)), lte: toDate(addDaysIso(dates[dates.length - 1], 1)) },
         slot_group: { fk_owner_id: ownerId },

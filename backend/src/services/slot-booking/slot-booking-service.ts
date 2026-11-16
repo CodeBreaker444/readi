@@ -229,6 +229,8 @@ export interface NotifyTarget {
 
 /** decision_note stored when an OPM assigns a pilot who never requested the slot. */
 export const ASSIGNED_NOTE = 'Assigned by OPM';
+/** decision_note stored when the OPM closes a slot that had requests or an assignment. */
+export const SLOT_CLOSED_NOTE = 'Slot closed by OPM';
 
 /** In-app notification + email for each target. Never throws: a notification failure must not break the booking. */
 export async function notify(
@@ -727,6 +729,8 @@ export async function editSlot(
   assertManager(user);
   if (!SLOT_TIME_RE.test(patch.start) || !SLOT_TIME_RE.test(patch.end)) throw new SlotBookingError('Invalid time');
   if (!reason.trim()) throw new SlotBookingError('A reason is required for changes');
+  // An end at or before the start means "past midnight", so equal times would silently become a 24-hour slot.
+  if (patch.start === patch.end) throw new SlotBookingError('Start and end time must be different');
 
   const slot = await getOwnedSlot(user, slotId);
   const changes: string[] = [];
@@ -735,6 +739,27 @@ export async function editSlot(
   }
   if (slot.is_active !== patch.active) changes.push(patch.active ? 'enabled' : 'disabled');
   if (!changes.length) return;
+
+  const date = dateStr(slot.slot_date);
+  const timeChanged = slot.start_time !== patch.start || slot.end_time !== patch.end;
+  const closing = slot.is_active && !patch.active;
+
+  // Pilots with a live request or assignment on this slot (read before closing rejects them).
+  const live = await prisma.slot_booking.findMany({
+    where: { fk_slot_id: slotId, status: { not: 'REJECTED' } },
+    select: { fk_pilot_user_id: true, status: true },
+  });
+
+  // A new time must not put the assigned pilot on top of another approved slot.
+  const assigned = live.find((l) => l.status === 'APPROVED');
+  if (assigned && timeChanged && patch.active) {
+    const clash = (await findCollisions(user.ownerId, [{ pilotId: assigned.fk_pilot_user_id, slot: { slotId, date, start: patch.start, end: patch.end } }]))
+      .get(collisionKey(assigned.fk_pilot_user_id, slotId));
+    if (clash) {
+      const who = (await userNames([assigned.fk_pilot_user_id])).get(assigned.fk_pilot_user_id) ?? 'The assigned pilot';
+      throw new SlotBookingError(`${who} is already assigned to an overlapping slot at the new time: ${clash}`, 409, { collision: clash });
+    }
+  }
 
   // Two slots of the same date must not share the same window.
   const clash = await prisma.slot.findFirst({
@@ -749,12 +774,20 @@ export async function editSlot(
   });
   if (clash) throw new SlotBookingError('Another slot on this date already uses that time window', 409);
 
-  await prisma.slot.update({
-    where: { slot_id: slotId },
-    data: { start_time: patch.start, end_time: patch.end, is_active: patch.active, updated_at: new Date() },
+  // Closing a slot also ends the requests and the assignment on it, so nothing stays booked on a closed slot.
+  await prisma.$transaction(async (tx) => {
+    await tx.slot.update({
+      where: { slot_id: slotId },
+      data: { start_time: patch.start, end_time: patch.end, is_active: patch.active, updated_at: new Date() },
+    });
+    if (closing) {
+      await tx.slot_booking.updateMany({
+        where: { fk_slot_id: slotId, status: { in: ['PENDING', 'APPROVED'] } },
+        data: { status: 'REJECTED', decided_at: new Date(), decided_by: user.userId, decision_note: SLOT_CLOSED_NOTE },
+      });
+    }
   });
 
-  const date = dateStr(slot.slot_date);
   audit(user, 'UPDATE', 'slot', slotId,
     `Edited slot ${prettyDate(date)} ${slotLabel({ start: slot.start_time, end: slot.end_time })} in “${slot.slot_group.name}”: ${changes.join(', ')} — “${reason.trim()}”`,
     {
@@ -765,15 +798,16 @@ export async function editSlot(
       before: { start: slot.start_time, end: slot.end_time, active: slot.is_active },
       after: patch,
       reason: reason.trim(),
+      bookings_cancelled: closing ? live.length : 0,
     });
 
-  const live = await prisma.slot_booking.findMany({
-    where: { fk_slot_id: slotId, status: { not: 'REJECTED' } },
-    select: { fk_pilot_user_id: true },
-  });
-  for (const pilotId of live.map((l) => l.fk_pilot_user_id)) {
-    void notify(user.ownerId, await pilotTarget(pilotId), 'Slot changed by OPM',
-      `The slot on ${prettyDate(date)} you requested was changed (${changes.join(', ')}). Reason: ${reason.trim()}`);
+  for (const l of live) {
+    const wasAssigned = l.status === 'APPROVED';
+    void notify(user.ownerId, await pilotTarget(l.fk_pilot_user_id), closing ? 'Slot closed by OPM' : 'Slot changed by OPM',
+      closing
+        ? `The slot on ${prettyDate(date)} ${slotLabel({ start: slot.start_time, end: slot.end_time })} was closed. Your ${wasAssigned ? 'assignment' : 'request'} was cancelled. Reason: ${reason.trim()}`
+        : `The slot on ${prettyDate(date)} you requested was changed (${changes.join(', ')}). Reason: ${reason.trim()}`,
+      { warning: closing && wasAssigned });
   }
 }
 
@@ -914,6 +948,8 @@ export async function approveBooking(
   const b = await getManagedBooking(user, bookingId);
   const date = dateStr(b.slot.slot_date);
   const label = `${slotLabel({ start: b.slot.start_time, end: b.slot.end_time })} on ${prettyDate(date)}`;
+  if (!b.slot.is_active) throw new SlotBookingError('This slot is not open', 409);
+  if (date < todayIso()) throw new SlotBookingError('This slot is in the past', 409);
 
   const clash = (await findCollisions(user.ownerId, [{ pilotId: b.fk_pilot_user_id, slot: { slotId: b.fk_slot_id, date, start: b.slot.start_time, end: b.slot.end_time } }])).get(collisionKey(b.fk_pilot_user_id, b.fk_slot_id));
   if (clash) {
@@ -922,7 +958,9 @@ export async function approveBooking(
   }
 
   const declined = await prisma.$transaction(async (tx) => {
-    await tx.$queryRaw`SELECT slot_id FROM public.slot WHERE slot_id = ${b.fk_slot_id} FOR UPDATE`;
+    // Re-read the state under the lock: the OPM may have closed the slot since the check above.
+    const locked = await tx.$queryRaw<Array<{ is_active: boolean }>>`SELECT is_active FROM public.slot WHERE slot_id = ${b.fk_slot_id} FOR UPDATE`;
+    if (locked?.[0] && locked[0].is_active === false) throw new SlotBookingError('This slot is not open', 409);
     const fresh = await tx.slot_booking.findUnique({ where: { booking_id: bookingId } });
     if (!fresh || fresh.status !== 'PENDING') throw new SlotBookingError('This request is no longer pending', 409);
     const already = await tx.slot_booking.findFirst({ where: { fk_slot_id: b.fk_slot_id, status: 'APPROVED' }, select: { booking_id: true } });
