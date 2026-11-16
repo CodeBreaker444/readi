@@ -53,6 +53,8 @@ export function CreateGroupDialog({
   const [slots, setSlots] = useState<CalSlot[]>([]);
   const [conflicts, setConflicts] = useState<string[] | null>(null);
   const [busy, setBusy] = useState(false);
+  // Which publish action is running, so only that button shows the spinner.
+  const [action, setAction] = useState<NewSlotGroupInput['resolution'] | null>(null);
   const [clients, setClients] = useState<SlotClient[]>([]);
   const [pilotGroups, setPilotGroups] = useState<PilotGroup[]>([]);
   const [clientId, setClientId] = useState('');
@@ -116,6 +118,7 @@ export function CreateGroupDialog({
 
   const submit = async (resolution: NewSlotGroupInput['resolution']) => {
     setBusy(true);
+    setAction(resolution);
     const input: NewSlotGroupInput = {
       name: name.trim(),
       description: description.trim(),
@@ -152,6 +155,7 @@ export function CreateGroupDialog({
       }
     } finally {
       setBusy(false);
+      setAction(null);
     }
   };
 
@@ -396,7 +400,7 @@ export function CreateGroupDialog({
             ) : (
               <>
                 <Btn isDark={isDark} disabled={busy} onClick={() => setStep(1)}>{t('slotBooking.common.back')}</Btn>
-                <Btn isDark={isDark} variant="primary" loading={busy} onClick={publish}>{t('slotBooking.create.publish')}</Btn>
+                <Btn isDark={isDark} variant="primary" loading={busy && (action === null || action === 'none')} disabled={busy} onClick={publish}>{t('slotBooking.create.publish')}</Btn>
               </>
             )}
           </DialogFooter>
@@ -420,8 +424,8 @@ export function CreateGroupDialog({
           </p>
           <DialogFooter>
             <Btn isDark={isDark} disabled={busy} onClick={() => setConflicts(null)}>{t('slotBooking.common.cancel')}</Btn>
-            <Btn isDark={isDark} variant="danger" loading={busy} onClick={() => submit('overwrite')}>{t('slotBooking.conflict.overwrite')}</Btn>
-            <Btn isDark={isDark} variant="primary" loading={busy} onClick={() => submit('merge')}>{t('slotBooking.conflict.merge')}</Btn>
+            <Btn isDark={isDark} variant="danger" loading={busy && action === 'overwrite'} disabled={busy} onClick={() => submit('overwrite')}>{t('slotBooking.conflict.overwrite')}</Btn>
+            <Btn isDark={isDark} variant="primary" loading={busy && action === 'merge'} disabled={busy} onClick={() => submit('merge')}>{t('slotBooking.conflict.merge')}</Btn>
           </DialogFooter>
         </DialogContent>
       </Dialog>

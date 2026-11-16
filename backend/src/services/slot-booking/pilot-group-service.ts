@@ -230,6 +230,27 @@ export async function updatePilotGroup(user: SessionUser, id: number, input: Pil
 export async function deletePilotGroup(user: SessionUser, id: number): Promise<void> {
   assertManager(user);
   const g = await getOwned(user, id);
+
+  // Deleting the link rows would leave a slot group with no audience, which means "offered to every pilot".
+  // Refuse instead of silently making a restricted slot group public.
+  const onlyAudienceOf = await prisma.slot_group.findMany({
+    where: {
+      fk_owner_id: user.ownerId,
+      slot_group_pilot_group: { some: { fk_pilot_group_id: id }, none: { fk_pilot_group_id: { not: id } } },
+    },
+    select: { name: true },
+    orderBy: { name: 'asc' },
+  });
+  if (onlyAudienceOf.length) {
+    const shown = onlyAudienceOf.slice(0, 5).map((s) => `“${s.name}”`).join(', ');
+    const more = onlyAudienceOf.length > 5 ? ` and ${onlyAudienceOf.length - 5} more` : '';
+    throw new SlotBookingError(
+      `This pilot group is the only audience of ${onlyAudienceOf.length === 1 ? 'a slot group' : 'slot groups'} (${shown}${more}). Deleting it would make ${onlyAudienceOf.length === 1 ? 'it' : 'them'} visible to every pilot. Delete or change ${onlyAudienceOf.length === 1 ? 'that slot group' : 'those slot groups'} first.`,
+      409,
+      { slotGroups: onlyAudienceOf.map((s) => s.name) },
+    );
+  }
+
   await prisma.pilot_group.delete({ where: { pilot_group_id: id } });
   audit(user, 'DELETE', id, `Deleted pilot group “${g.name}”`, { group_id: id, group_name: g.name, member_count: g.pilot_group_member.length });
 }

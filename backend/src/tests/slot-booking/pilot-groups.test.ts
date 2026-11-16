@@ -8,6 +8,7 @@
 const prismaMock: Record<string, any> = {
   pilot_group: { findFirst: jest.fn(), findMany: jest.fn(), create: jest.fn(), update: jest.fn(), delete: jest.fn() },
   pilot_group_member: { deleteMany: jest.fn(), createMany: jest.fn() },
+  slot_group: { findMany: jest.fn() },
   public_users: { findMany: jest.fn() },
   pilot_flight_limit: { findMany: jest.fn(), deleteMany: jest.fn(), upsert: jest.fn() },
   $transaction: jest.fn(),
@@ -61,6 +62,7 @@ beforeEach(() => {
   jest.clearAllMocks();
   prismaMock.pilot_flight_limit.findMany.mockResolvedValue([]);
   prismaMock.pilot_group.findMany.mockResolvedValue([]);
+  prismaMock.slot_group.findMany.mockResolvedValue([]);
   prismaMock.$transaction.mockResolvedValue([]);
 });
 
@@ -162,6 +164,18 @@ describe('pilot group service', () => {
     prismaMock.pilot_group.findFirst.mockResolvedValue(dbGroup(10, 'Experts', [2]));
     await deletePilotGroup(OPM, 10);
     expect(prismaMock.pilot_group.delete).toHaveBeenCalledWith({ where: { pilot_group_id: 10 } });
+  });
+
+  it('refuses to delete a group that is the only audience of a slot group', async () => {
+    prismaMock.pilot_group.findFirst.mockResolvedValue(dbGroup(10, 'Experts', [2]));
+    prismaMock.slot_group.findMany.mockResolvedValue([{ name: 'Week 46' }]);
+    const err = await rejects(deletePilotGroup(OPM, 10), 409);
+    expect(err.message).toContain('Week 46');
+    expect(prismaMock.pilot_group.delete).not.toHaveBeenCalled();
+    expect(prismaMock.slot_group.findMany.mock.calls[0][0].where).toMatchObject({
+      fk_owner_id: 7,
+      slot_group_pilot_group: { some: { fk_pilot_group_id: 10 }, none: { fk_pilot_group_id: { not: 10 } } },
+    });
   });
 
   it('signs S3 profile pictures, keeps legacy URLs, and falls back to null', async () => {
