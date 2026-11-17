@@ -9,7 +9,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import type { GroupDetail, RangeMode, SlotDefaults, SlotMode } from '@/config/types/slot-booking';
-import { addDaysIso, slotLabel, todayIso, weekdayOf } from '@/lib/slot-booking-utils';
+import { addDaysIso, slotLabel, todayInZone, weekdayOf } from '@/lib/slot-booking-utils';
 import { cn } from '@/lib/utils';
 import axios from 'axios';
 import { AlertTriangle, FileText, Paperclip, Upload } from 'lucide-react';
@@ -76,13 +76,14 @@ export function SlotDetailDialog({
   }, [slotId]);
 
   if (!slot || !group) return null;
-  const isApprovalDay = group.approvalDays.includes(weekdayOf(todayIso()));
+  const zoneToday = todayInZone(group.timezone);
+  const isApprovalDay = group.approvalDays.includes(weekdayOf(zoneToday));
   const alreadyApproved = bookings.some((b) => b.status === 'APPROVED');
   const forecast = detail?.weather?.[slot.id];
-  const inForecastRange = slot.date >= todayIso() && slot.date <= addDaysIso(todayIso(), 6);
+  const inForecastRange = slot.date >= zoneToday && slot.date <= addDaysIso(zoneToday, 6);
   // A pilot's approved request settles the slot; only a direct OPM assignment keeps the panel (to unassign).
   const approvedFromRequest = bookings.some((b) => b.status === 'APPROVED' && !b.assignedByOpm);
-  const canAssign = slot.active && slot.date >= todayIso() && !approvedFromRequest;
+  const canAssign = slot.active && slot.date >= zoneToday && !approvedFromRequest;
 
   const confirmApprove = async (bookingId: number, pilotName: string) => {
     setBusy(true);

@@ -28,7 +28,7 @@ export default function DayPreviewPage() {
   }, [load]);
 
   return (
-    <SlotBookingShell title={t('slotBooking.dayPreview.title')} subtitle={t('slotBooking.dayPreview.subtitle')} canManage={me?.canManage}>
+    <SlotBookingShell title={t('slotBooking.dayPreview.title')} subtitle={t('slotBooking.dayPreview.subtitle')} canManage={me?.canManage} canBook={me?.canBook}>
       {(isDark) =>
         error ? (
           <ErrorBlock isDark={isDark} message={error} onRetry={load} />

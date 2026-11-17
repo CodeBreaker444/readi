@@ -28,7 +28,7 @@ export default function MeritsPage() {
   }, [load]);
 
   return (
-    <SlotBookingShell title={t('slotBooking.merits.title')} subtitle={t('slotBooking.merits.subtitle')} canManage={me?.canManage}>
+    <SlotBookingShell title={t('slotBooking.merits.title')} subtitle={t('slotBooking.merits.subtitle')} canManage={me?.canManage} canBook={me?.canBook}>
       {(isDark) =>
         error ? (
           <ErrorBlock isDark={isDark} message={error} onRetry={load} />

@@ -9,7 +9,7 @@
 const prismaMock: Record<string, any> = {
   slot: { findMany: jest.fn(), findFirst: jest.fn() },
   slot_group: { findFirst: jest.fn(), findMany: jest.fn(), update: jest.fn(), updateMany: jest.fn() },
-  slot_booking: { findMany: jest.fn(), findFirst: jest.fn(), findUnique: jest.fn(), update: jest.fn(), delete: jest.fn() },
+  slot_booking: { findMany: jest.fn(), findFirst: jest.fn(), findUnique: jest.fn(), update: jest.fn(), updateMany: jest.fn(), delete: jest.fn(), deleteMany: jest.fn() },
   public_users: { findMany: jest.fn(), findUnique: jest.fn(), findFirst: jest.fn() },
   notification: { createMany: jest.fn() },
   client: { findFirst: jest.fn(), findMany: jest.fn() },
@@ -46,6 +46,7 @@ import {
   approveBooking,
   cancelBooking,
   createGroup,
+  editSlot,
   getGroupDetail,
   listGroups,
   listMyBookings,
@@ -120,6 +121,7 @@ describe('createGroup: client, scheduled publishing and audience', () => {
     approvalDays: [1],
     slots: [{ date: day(3), start: '06:00', end: '14:00' }],
     resolution: 'none',
+    timezone: 'Europe/Rome',
     ...over,
   });
   beforeEach(() => {
@@ -154,7 +156,7 @@ describe('createGroup: client, scheduled publishing and audience', () => {
     prismaMock.pilot_group.findMany.mockResolvedValue([{ pilot_group_id: 1 }, { pilot_group_id: 2 }]);
     const groupCreate = jest.fn().mockResolvedValue({ slot_group_id: 30 });
     const audience = jest.fn();
-    txOver({ slot_group: { create: groupCreate }, slot_group_pilot_group: { createMany: audience }, slot: { createMany: jest.fn() } });
+    txOver({ slot_group: { create: groupCreate }, slot_group_pilot_group: { createMany: audience }, slot: { createMany: jest.fn(), findMany: jest.fn().mockResolvedValue([]) } });
     const when = new Date(Date.now() + 3 * 86_400_000).toISOString();
 
     await createGroup(OPM, input({ clientId: 4, publishAt: when, pilotGroupIds: [1, 2, 2] }));
@@ -180,7 +182,7 @@ describe('createGroup: client, scheduled publishing and audience', () => {
 
     prismaMock.tool.findFirst.mockResolvedValueOnce({ tool_id: 12, assigned_client_id: null, tool_metadata: { clientId: '4' } });
     const groupCreate = jest.fn().mockResolvedValue({ slot_group_id: 32 });
-    txOver({ slot_group: { create: groupCreate }, slot_group_pilot_group: { createMany: jest.fn() }, slot: { createMany: jest.fn() } });
+    txOver({ slot_group: { create: groupCreate }, slot_group_pilot_group: { createMany: jest.fn() }, slot: { createMany: jest.fn(), findMany: jest.fn().mockResolvedValue([]) } });
     await createGroup(OPM, input({ clientId: 4, systemId: 12 }));
     expect(groupCreate.mock.calls[0][0].data).toMatchObject({ fk_client_id: 4, fk_tool_id: 12 });
   });
@@ -193,7 +195,7 @@ describe('createGroup: client, scheduled publishing and audience', () => {
   it('publishes immediately without a client or audience by default', async () => {
     const groupCreate = jest.fn().mockResolvedValue({ slot_group_id: 31 });
     const audience = jest.fn();
-    txOver({ slot_group: { create: groupCreate }, slot_group_pilot_group: { createMany: audience }, slot: { createMany: jest.fn() } });
+    txOver({ slot_group: { create: groupCreate }, slot_group_pilot_group: { createMany: audience }, slot: { createMany: jest.fn(), findMany: jest.fn().mockResolvedValue([]) } });
     await createGroup(OPM, input());
     expect(groupCreate.mock.calls[0][0].data).toMatchObject({ fk_client_id: null, fk_tool_id: null, publish_at: null });
     expect(audience).not.toHaveBeenCalled();
@@ -370,6 +372,96 @@ describe('collisions', () => {
   });
 });
 
+// ───────────────────────── Closing / editing a slot ─────────────────────────
+
+describe('approving and editing slots', () => {
+  const pendingOn = (slot: ReturnType<typeof slotRow>) => ({
+    booking_id: 9, fk_slot_id: 5, fk_slot_group_id: 3, fk_pilot_user_id: 2, status: 'PENDING', slot,
+  });
+
+  it('does not approve a request on a closed slot', async () => {
+    prismaMock.slot_booking.findFirst.mockResolvedValue(pendingOn(slotRow({ is_active: false })));
+    await rejects(approveBooking(OPM, 9), 409, /not open/);
+    expect(prismaMock.$transaction).not.toHaveBeenCalled();
+  });
+
+  it('does not approve a request on a past slot', async () => {
+    prismaMock.slot_booking.findFirst.mockResolvedValue(pendingOn(slotRow({ slot_date: d(day(-1)) })));
+    await rejects(approveBooking(OPM, 9), 409, /in the past/);
+    expect(prismaMock.$transaction).not.toHaveBeenCalled();
+  });
+
+  it('only counts open slots when looking for collisions', async () => {
+    prismaMock.slot.findFirst.mockResolvedValue(slotRow());
+    prismaMock.slot_booking.findMany.mockResolvedValueOnce([]);
+    txOver({ slot_booking: { findMany: jest.fn().mockResolvedValue([]), create: jest.fn().mockResolvedValue({ booking_id: 1 }) } });
+    await requestBooking(PIC, 5);
+    expect(prismaMock.slot_booking.findMany.mock.calls[0][0].where.slot).toMatchObject({ is_active: true });
+  });
+
+  it('rejects equal start and end times', async () => {
+    await rejects(editSlot(OPM, 5, { start: '06:00', end: '06:00', active: true }, 'why'), 400, /different/);
+    expect(prismaMock.slot.findFirst).not.toHaveBeenCalled();
+  });
+
+  it('refuses a new time that overlaps another approved slot of the assigned pilot', async () => {
+    prismaMock.slot.findFirst.mockResolvedValueOnce(slotRow());
+    // The collision lookup (findCollisions) runs on the global client; the assignment read runs inside the transaction.
+    prismaMock.slot_booking.findMany
+      .mockResolvedValueOnce([{ fk_slot_id: 77, fk_pilot_user_id: 2, slot: { slot_date: d(day(2)), start_time: '14:00', end_time: '22:00', slot_group: { name: 'Group B' } } }]);
+    prismaMock.public_users.findMany.mockResolvedValue([{ user_id: 2, first_name: 'Pia', last_name: 'Pilot', username: 'pia' }]);
+    const slotUpdate = jest.fn();
+    txOver({
+      slot: { update: slotUpdate, findFirst: jest.fn() },
+      slot_booking: { findMany: jest.fn().mockResolvedValue([{ fk_pilot_user_id: 2, status: 'APPROVED' }]), updateMany: jest.fn() },
+    });
+    const e = await rejects(editSlot(OPM, 5, { start: '06:00', end: '16:00', active: true }, 'longer shift'), 409, /Pia Pilot is already assigned/);
+    expect(e.extra?.collision).toMatch(/Group B/);
+    expect(slotUpdate).not.toHaveBeenCalled();
+  });
+
+  it('closing a slot rejects its pending and approved bookings and warns the assigned pilot', async () => {
+    prismaMock.slot.findFirst.mockResolvedValueOnce(slotRow());
+    prismaMock.public_users.findUnique.mockResolvedValue({ user_id: 2, email: 'p@example.com' });
+    const slotUpdate = jest.fn();
+    const updateMany = jest.fn();
+    txOver({
+      slot: { update: slotUpdate, findFirst: jest.fn().mockResolvedValue(null) },
+      slot_booking: {
+        findMany: jest.fn().mockResolvedValue([
+          { fk_pilot_user_id: 2, status: 'APPROVED' },
+          { fk_pilot_user_id: 3, status: 'PENDING' },
+        ]),
+        updateMany,
+      },
+    });
+
+    await editSlot(OPM, 5, { start: '06:00', end: '14:00', active: false }, 'site closed');
+    await flush();
+
+    expect(slotUpdate.mock.calls[0][0].data).toMatchObject({ is_active: false });
+    expect(updateMany).toHaveBeenCalledWith({
+      where: { fk_slot_id: 5, status: { in: ['PENDING', 'APPROVED'] } },
+      data: expect.objectContaining({ status: 'REJECTED', decision_note: 'Slot closed by OPM' }),
+    });
+    const sent = prismaMock.notification.createMany.mock.calls.map((c: any) => c[0].data[0]);
+    expect(sent.map((n: any) => [n.notification_title, n.notification_type])).toEqual(
+      expect.arrayContaining([['Slot closed by OPM', 'SLOT_WARNING'], ['Slot closed by OPM', 'SLOT_BOOKING']]),
+    );
+  });
+
+  it('changing only the time leaves the bookings alone', async () => {
+    prismaMock.slot.findFirst.mockResolvedValueOnce(slotRow());
+    const updateMany = jest.fn();
+    txOver({
+      slot: { update: jest.fn(), findFirst: jest.fn().mockResolvedValue(null) },
+      slot_booking: { findMany: jest.fn().mockResolvedValue([{ fk_pilot_user_id: 3, status: 'PENDING' }]), updateMany },
+    });
+    await editSlot(OPM, 5, { start: '07:00', end: '14:00', active: true }, 'later start');
+    expect(updateMany).not.toHaveBeenCalled();
+  });
+});
+
 // ───────────────────────── Modification lock ─────────────────────────
 
 describe('pilots changing their requests', () => {
@@ -393,16 +485,22 @@ describe('pilots changing their requests', () => {
     await rejects(cancelBooking(PIC, 9), 409, /locked 48 hours/);
 
     prismaMock.slot_settings.findUnique.mockResolvedValue({ modify_lock_hours: 0 });
-    prismaMock.slot_booking.delete.mockResolvedValue({});
+    prismaMock.slot_booking.deleteMany.mockResolvedValue({ count: 1 });
     await expect(cancelBooking(PIC, 9)).resolves.toBeUndefined();
-    expect(prismaMock.slot_booking.delete).toHaveBeenCalledWith({ where: { booking_id: 9 } });
+    expect(prismaMock.slot_booking.deleteMany).toHaveBeenCalledWith({ where: { booking_id: 9, fk_pilot_user_id: 2, status: 'PENDING' } });
+  });
+
+  it('does not delete a request that was approved after it was read', async () => {
+    prismaMock.slot_booking.findFirst.mockResolvedValue(pending([(new Date(Date.now() + 4 * 86_400_000).getUTCDay())]));
+    prismaMock.slot_booking.deleteMany.mockResolvedValue({ count: 0 });
+    await rejects(cancelBooking(PIC, 9), 409, /no longer pending/);
   });
 
   it('still cancels when the approval day is far away', async () => {
     // Pick the weekday that is 4 days from now: further than 48h whatever today is.
     const far = new Date(Date.now() + 4 * 86_400_000).getUTCDay();
     prismaMock.slot_booking.findFirst.mockResolvedValue(pending([far]));
-    prismaMock.slot_booking.delete.mockResolvedValue({});
+    prismaMock.slot_booking.deleteMany.mockResolvedValue({ count: 1 });
     await expect(cancelBooking(PIC, 9)).resolves.toBeUndefined();
   });
 

@@ -1,5 +1,6 @@
 import { Mission, MissionBoardData, MissionStatusCode, UpdateMissionStatusPayload } from '@/config/types/operation';
 import { prisma } from '@/lib/prisma';
+import { addDaysIso, todayInZone, zonedMidnight } from '@/lib/slot-booking-utils';
 import { autoAbortStaleMissions } from './auto-abort-service';
 import { getToolMaintenanceStatusBatch } from './tool-maintenance-status';
 import { getAdminDecidedMissionIds } from './mission-approval-service';
@@ -119,17 +120,23 @@ async function getLastClosedTicketPerTool(
   return map;
 }
 
+/**
+ * "Today" on the board is the viewer's own calendar day in `timeZone` (their profile zone), not the UTC day, so a
+ * mission planned at 03:00 in India shows on that day and not on the previous one. Defaults to UTC.
+ */
 export async function getMissionBoard(
   ownerId: number,
   userId: number,
-  userProfileCode: string
+  userProfileCode: string,
+  timeZone: string = 'UTC',
+  now: Date = new Date(),
 ): Promise<MissionBoardData> {
-  await autoAbortStaleMissions(ownerId);
+  await autoAbortStaleMissions(ownerId, now);
 
   const pilotFilter = userProfileCode === 'PIC' ? userId : null;
-  const today = new Date();
-  const todayStart = new Date(today.toISOString().split('T')[0] + 'T00:00:00.000Z');
-  const todayEnd = new Date(today.toISOString().split('T')[0] + 'T23:59:59.999Z');
+  const today = todayInZone(timeZone, now);
+  const todayStart = new Date(zonedMidnight(today, timeZone));
+  const todayEnd = new Date(zonedMidnight(addDaysIso(today, 1), timeZone) - 1);
 
   // When the owner has D-Flight enabled, a mission only belongs on the
   // "Scheduled" column once D-Flight has accepted its flight authorization —

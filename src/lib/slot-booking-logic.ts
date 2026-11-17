@@ -1,4 +1,4 @@
-import { addDaysIso, nextApprovalDay, weekdayOf } from './slot-booking-utils';
+import { addDaysIso, DEFAULT_SLOT_TIMEZONE, nextApprovalDay, weekdayOf, zonedMidnight } from './slot-booking-utils';
 
 /**
  * Pure rules of Slot Booking v2, shared by the API and the UI and unit-tested without a database.
@@ -53,12 +53,12 @@ export interface ModificationLock {
 
 /**
  * Pilots may not cancel or move a request during the last `lockHours` before the group's next approval day
- * (the day counts from 00:00 UTC; on the approval day itself the request is locked). 0 disables the lock.
+ * (the day counts from 00:00 in the group's time zone; on the approval day itself the request is locked). 0 disables the lock.
  */
-export function modificationLock(approvalDays: number[], lockHours: number, now = new Date()): ModificationLock {
-  const next = nextApprovalDay(approvalDays, now);
+export function modificationLock(approvalDays: number[], lockHours: number, now = new Date(), timeZone = DEFAULT_SLOT_TIMEZONE): ModificationLock {
+  const next = nextApprovalDay(approvalDays, now, timeZone);
   if (!next) return { locked: false, approvalAt: null };
-  const at = Date.parse(`${next.date}T00:00:00.000Z`);
+  const at = zonedMidnight(next.date, timeZone);
   const locked = lockHours > 0 && at - now.getTime() < lockHours * 3_600_000;
   return { locked, approvalAt: new Date(at).toISOString() };
 }
@@ -155,4 +155,73 @@ export function flightLevel(hours: number, limit: number | null): FlightLevel {
   if (hours >= limit) return 'over';
   if (hours >= limit * FLIGHT_WARN_RATIO) return 'warn';
   return 'ok';
+}
+
+// ───────────────────────── Today tab ─────────────────────────
+
+/** Where a linked mission is on the Daily Board. */
+export type MissionProgress = 'planned' | 'in_progress' | 'completed' | 'aborted';
+
+// Daily Board column ids (see operation-board-service / auto-abort-service); status_name wins when it is set.
+const BOARD_PROGRESS_BY_ID: Record<number, MissionProgress> = { 1: 'planned', 2: 'in_progress', 3: 'completed', 5: 'aborted' };
+const PROGRESS_BY_NAME: Record<string, MissionProgress> = {
+  PLANNED: 'planned',
+  SCHEDULED: 'planned',
+  IN_PROGRESS: 'in_progress',
+  IN_FLIGHT: 'in_progress',
+  'IN ESECUZIONE': 'in_progress',
+  COMPLETED: 'completed',
+  COMPLETATA: 'completed',
+  ABORTED: 'aborted',
+  CANCELLED: 'aborted',
+  CANCELED: 'aborted',
+};
+
+/** Reads a mission's progress the same way the Daily Board moves it: Scheduled → In progress → Done (or Aborted). */
+export function missionProgress(m: {
+  statusName?: string | null;
+  statusId?: number | null;
+  actualStart?: Date | string | null;
+  actualEnd?: Date | string | null;
+}): MissionProgress {
+  const byName = m.statusName ? PROGRESS_BY_NAME[m.statusName.trim().toUpperCase()] : undefined;
+  if (byName) return byName;
+  const byId = m.statusId != null ? BOARD_PROGRESS_BY_ID[m.statusId] : undefined;
+  if (byId) return byId;
+  if (m.actualEnd) return 'completed';
+  if (m.actualStart) return 'in_progress';
+  return 'planned';
+}
+
+export type SlotPhase = 'upcoming' | 'live' | 'ended';
+
+export const slotPhase = (now: number, from: number, to: number): SlotPhase => (now < from ? 'upcoming' : now < to ? 'live' : 'ended');
+
+/** Share (0–1) of the slot's time that has passed. */
+export const slotElapsed = (now: number, from: number, to: number) => (to <= from ? 1 : Math.min(1, Math.max(0, (now - from) / (to - from))));
+
+/**
+ * What a slot of the Today tab shows:
+ * - no_mission: nothing (or only aborted missions) linked yet
+ * - waiting: missions linked, slot not started
+ * - no_progress: slot running or over, but none of its missions was started on the Daily Board
+ * - in_progress: a linked mission is in progress
+ * - partial: slot running, some missions done, the next one not started yet
+ * - completed: every linked mission is done
+ * - incomplete: slot over, some missions done, others never flown
+ */
+export type TodaySlotState = 'no_mission' | 'waiting' | 'no_progress' | 'in_progress' | 'partial' | 'completed' | 'incomplete';
+
+/** States the pilot must act on; shown in red. */
+export const TODAY_ALERT_STATES: readonly TodaySlotState[] = ['no_mission', 'no_progress', 'incomplete'];
+
+export function todaySlotState(phase: SlotPhase, missions: MissionProgress[]): TodaySlotState {
+  if (missions.includes('in_progress')) return 'in_progress';
+  const active = missions.filter((p) => p !== 'aborted');
+  if (!active.length) return 'no_mission';
+  if (active.every((p) => p === 'completed')) return 'completed';
+  const someDone = active.includes('completed');
+  if (phase === 'upcoming') return 'waiting';
+  if (phase === 'live') return someDone ? 'partial' : 'no_progress';
+  return someDone ? 'incomplete' : 'no_progress';
 }

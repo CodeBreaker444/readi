@@ -40,8 +40,8 @@ export function useSlotI18n() {
     weekdayShort,
     weekdayLong,
     daysLabel,
-    reviewDay: (days: number[]) => {
-      const n = nextApprovalDay(days);
+    reviewDay: (days: number[], timeZone?: string) => {
+      const n = nextApprovalDay(days, new Date(), timeZone);
       if (!n) return daysLabel(days);
       return n.label === 'Today' ? t('slotBooking.today') : weekdayLong(weekdayOf(n.date));
     },

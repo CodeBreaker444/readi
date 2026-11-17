@@ -8,6 +8,7 @@ Slot Booking lets the **Operations Manager (OPM)** open time slots and lets **pi
 | Page | Who sees it | Purpose |
 |---|---|---|
 | **Slot Booking** | Everyone | OPM: create and manage slot groups. Pilot: browse groups and request slots |
+| **Today's Schedule** | PIC (pilot) | The pilot's approved slots of today on a timeline, the missions linked to each slot and their live progress from the Daily Board |
 | **Approved Slots** | Everyone | Approved jobs and the PDF the OPM attached. Pilots see their own, the OPM sees all |
 | **Calendar** | OPM, Admin, Super Admin | Seven days of every slot with group, client, assigned pilot, flying hours and weather in one view |
 | **Day Preview** | OPM, Admin, Super Admin | Every slot of one day with its client and assigned pilot. Unassigned slots are red |
@@ -37,6 +38,7 @@ Slot Booking lets the **Operations Manager (OPM)** open time slots and lets **pi
 - **Audience:** the pilot groups a slot group is offered to. No audience means every pilot.
 - **Collision:** a pilot already holds an approved slot whose time overlaps another slot. See [Collisions](#collisions).
 - **Lock window:** the last 24 or 48 hours before a group's approval day, when pilots can no longer change their requests.
+- **Site time zone:** the time zone of the place where a slot group is flown. Slot times are the local time there, so they mean the same to the OPM and to every pilot, wherever each of them is. See [Time zone](#time-zone).
 
 ---
 
@@ -44,7 +46,7 @@ Slot Booking lets the **Operations Manager (OPM)** open time slots and lets **pi
 
 ### Create a slot group
 
-Click **New Slot Group**. The form is pre-filled from **Slot Settings** (your company defaults) and you can change anything for this group.
+Click **New Slot Group**. The form is pre-filled from **Default Slot Settings** (your company defaults) and you can change anything for this group.
 
 | Setting | Options |
 |---|---|
@@ -54,6 +56,7 @@ Click **New Slot Group**. The form is pre-filled from **Slot Settings** (your co
 | **Approval day(s)** | The weekdays on which you review requests for this group |
 | **Client** | **Required.** The client these slots are flown for. Only active clients of your company are listed. Use the search box to find one in a long list; the list scrolls. **Next: Calendar** stays disabled until a client is picked |
 | **System** | Optional. Pick the system the slots are flown with to get the 7-day weather at that system's location (see [Weather location](#weather-location)). Only the chosen client's active systems are listed, and the list resets when you change the client. Systems **with no location at all (neither on the system nor on a drone) are greyed out** and cannot be selected. **No system** keeps the group without weather, and an amber warning says so |
+| **Site time zone** | **Required.** The zone of the place the slots are flown, for example `Asia/Kolkata`. It is filled in automatically from the chosen system's location and you can change it. With **no system** (or a system whose zone cannot be found) there is nothing to fill it from, so you must enter it yourself: it is **not** guessed from your own time zone, because you can be somewhere else than the site. Type to search the list; an invalid name shows a red message and **Next: Calendar** stays disabled. The start date and the slots are checked against this zone. See [Time zone](#time-zone) |
 | **Publishing** | **Publish now** (default) or **Schedule** a date and time. See [Scheduled publishing](#scheduled-publishing) |
 | **Offered to** | Optional. One or more [pilot groups](#pilot-groups). Leave empty to offer the slots to every pilot. Search groups by name; the list scrolls when there are many. Each card shows the member count and the first members' pictures, and an expert star. **Hover** over a card to see the group's description and all its members with picture, name, role and email. **Clear** removes the selection |
 
@@ -80,7 +83,7 @@ When you publish, Readi checks whether any selected date already has slots in an
 Open a group's calendar. Each slot shows a live indicator:
 
 - **Open:** no requests yet
-- **2 PICs Booked:** requests waiting for your decision
+- **2 PICs Requested:** requests waiting for your decision
 - **The pilot's name:** a pilot has been chosen (approved or assigned). Other pilots see this name on the calendar too, instead of "Taken"
 
 Slots in the next 7 days also show a small coloured **weather dot**. See [Weather](#weather).
@@ -112,7 +115,27 @@ If the pilot is already assigned to another slot that overlaps this one, the req
 
 ### Edit a published slot
 
-Click **Edit slot** to change its start and end time, or close it for booking. A **reason is required**. The change is written to the audit log and pilots who already requested that slot are notified. Two slots on the same date cannot share the same time window.
+Click **Edit slot** to change its start and end time, or close it for booking. A **reason is required**. The change is written to the audit log and pilots who already requested that slot are notified. Two slots on the same date cannot share the same time window, and the start and end time must differ (an end before the start means the slot runs past midnight).
+
+- **Closing a slot** cancels everything booked on it: pending requests and the assigned pilot are set to rejected with the note *Slot closed by OPM*. Pilots are notified, and an assigned pilot gets a warning. A closed slot no longer blocks the pilot from other overlapping slots, and it cannot be approved. Reopening it does not restore the old bookings; pilots must request it again.
+- **Changing the time** keeps the bookings, but is refused if the assigned pilot would then overlap another approved slot.
+
+### Time zone
+
+Every slot group stores one **site time zone**. A slot `06:00–14:00` always means 06:00–14:00 **at the site**, for everyone, so an OPM in one country and pilots in other countries all see the same slot and the same rules. The zone is shown next to each group on the OPM's group cards.
+
+Where the zone is used:
+
+| What | How it uses the site zone |
+|---|---|
+| **Slot already started** | Pilots cannot request or move a request to a slot that has started, and the OPM cannot approve or assign a slot that has ended, judged against the current time at the site. New groups cannot be published with a start date in the past or with slots that have already started |
+| **Approval day** | The approval day, the *Today is an approval day* banner and the *Next review* day are the weekday at the site |
+| **Lock window** | The lock counts from 00:00 at the site on the approval day |
+| **Approval-day reminder** | Sent on the approval day at the site, from 08:00 site time. See [Notifications](#notifications) |
+
+**How the zone is chosen.** When you pick a system, its zone is found from the system's coordinates (the same location used for [weather](#weather-location)). You can overwrite it, for example for a site near a zone border. The zone cannot be changed after the group is created.
+
+**Older groups.** Groups created before this feature have no stored zone and are treated as **UTC** (their previous behaviour). To give an old group a zone, create it again.
 
 ### Delete a slot group
 
@@ -127,9 +150,9 @@ If pilots had **pending or approved** requests in the group, each of them gets a
 - Requests that were already rejected are not mentioned, and pilots who never requested a slot in the group are not notified.
 - The deletion is written to the [audit log](#audit-log) with the number of requests removed and the pilots who were warned.
 
-### Slot Settings
+### Default Slot Settings
 
-**Slot Settings** holds your company defaults: slot hours, date range, blocking and approval days. They only pre-fill new groups. Existing groups are not changed. For hourly slots, the start and end hour are chosen from a grid of hours (the end can be up to 24:00, shown as 00:00); a red border means the end is not after the start.
+**Default Slot Settings** holds your company defaults: slot hours, date range, blocking and approval days. They only pre-fill new groups. Existing groups are not changed. For hourly slots, the start and end hour are chosen from a grid of hours (the end can be up to 24:00, shown as 00:00); a red border means the end is not after the start.
 
 Two settings apply to the whole company straight away:
 
@@ -271,7 +294,7 @@ The system is set when the group is created. A system that is later deactivated 
 Each pilot can have a **monthly flight limit** (hours per flying-hours cycle). It warns the OPM before a pilot is given more slots than they may fly.
 
 - **Setting a limit:** open **Pilot Groups**, create or edit a group and use the **Flight limits** tab. It lists the members selected on the first tab; enter hours for each one, or leave blank for no limit. A limit belongs to the user and applies in every group they are in.
-- **Cycle:** chosen in [Slot Settings](#slot-settings) (**Flying-hours cycle starts on**).
+- **Cycle:** chosen in [Default Slot Settings](#default-slot-settings) (**Flying-hours cycle starts on**).
 - **Hours flown:** the flight duration of the pilot's missions that started inside the current cycle.
 
 The pilot's hours are shown as `flown / limit` and coloured:
@@ -324,10 +347,45 @@ The **My requests** tab, next to **Available slot groups**, shows the number of 
 
 - **Change** moves a pending request to another open slot of the **same group**. Pick the new slot on the calendar and confirm **Move request**. The OPM is told.
 - **Cancel** withdraws a pending request.
-- **Lock window:** inside the last **24 or 48 hours** before the group's next approval day (company setting, see [Slot Settings](#slot-settings)) a pending request shows **Locked** and cannot be moved or cancelled. The approval day itself counts from midnight UTC, so on the approval day everything is locked. With the lock set to *Never lock*, requests can be changed until they are decided.
+- **Lock window:** inside the last **24 or 48 hours** before the group's next approval day (company setting, see [Default Slot Settings](#default-slot-settings)) a pending request shows **Locked** and cannot be moved or cancelled. The approval day itself counts from midnight at the group's [site time zone](#time-zone), so on the approval day everything is locked. With the lock set to *Never lock*, requests can be changed until they are decided.
 - Making a **new** request is not blocked by the lock.
 - The server enforces this too: a locked change answers *Requests can no longer be changed*.
 - Approved requests cannot be changed by the pilot. Ask the OPM.
+
+### Today's Schedule
+
+The **Today's Schedule** tab is the pilot's day sheet. It lists every slot the pilot is **approved** for today, in time order, as a timeline. "Today" is the date at each slot group's [site](#time-zone); a night slot from yesterday (for example 22:00–06:00) stays on the list until it ends.
+
+| Part | What it shows |
+|---|---|
+| **Header** | The date, a live clock and when the data was last refreshed, plus **Open Daily Board** |
+| **Tiles** | Slots today, hours on duty, missions done out of linked, missions in progress now, and slots that need attention |
+| **Banner** | Red when a slot needs attention, or when some of today's missions are not linked to a slot yet; green when every slot is on track |
+| **Slot card** | Time, duration, slot group, client, system, site zone, weather, its state, a **timer bar** that fills as the slot's time passes (*Starts in…*, *…left*, *Ended*), and the linked missions |
+
+**Link missions.** Click **Link missions** (or **Link another mission**) on a slot. A dialog lists the pilot's missions for that day with all their details: code and name, status, planned/started/ended time, flight time, drone, client, type, category, planning, mission plan code and description, location, description and notes. Missions planned inside the slot's time are marked **In slot window**, shown first and pre-selected. Pick one or more and confirm.
+
+- Listed missions: the slot pilot's missions planned or started on the slot's day, missions still in progress, and planned missions without a date. Imported missions and missions still waiting for OPM approval are not listed (as on the Daily Board). Aborted or cancelled missions of that day are listed greyed out at the end with a note, so you can see why one is missing; an aborted mission is a closed record and cannot be linked or restored, so plan a new mission instead.
+- A mission can be linked to **one slot only**. A mission linked to another slot is greyed out with *Linked to …*; unlink it there first.
+- A mission for a different client than the slot shows an amber warning, but can be linked.
+- Hover a linked mission and click **×** to unlink it.
+- Only the slot's approved pilot, or the OPM, can link. The OPM, the slot's pilot or the pilot the mission belongs to can unlink, so a link left on a slot that lost its pilot can always be removed. Such a stale link never blocks the mission: linking it to another slot replaces it. If two requests link the same mission at once, one wins and the other is told how many missions were skipped. Each change is written to the [audit log](#audit-log) on the slot.
+
+**Live progress.** The mission status comes straight from the mission, so starting a mission on the **Daily Board** (Scheduled → In progress) or finishing it (→ Done) shows on the Today's Schedule tab at the next refresh. The tab refreshes every 20 seconds and when the browser tab is shown again; **Refresh** reloads it at once. An in-progress mission shows how long it has been in flight.
+
+**Slot states.**
+
+| State | When | Colour |
+|---|---|---|
+| **No mission linked** | No mission (or only aborted ones) is linked | Red |
+| **Ready** | Missions are linked and the slot has not started | Violet |
+| **No progress** | The slot has started (or ended) and none of its missions was started on the Daily Board | Red |
+| **In progress** | One of its missions is in progress | Blue |
+| **Next mission pending** | The slot is running, some missions are done, the next has not started | Amber |
+| **Completed** | Every linked mission is done | Green |
+| **Incomplete** | The slot ended with some missions done and others not flown | Red |
+
+Slot and mission times are shown in the slot group's site time zone. The date and clock in the header show the site's time too, with the zone name; when your own zone differs, your local time is added next to it.
 
 ---
 
@@ -339,9 +397,9 @@ What happens depends on the group's **blocking** setting.
 
 Both requests are accepted and both are **Pending Approval**. Neither pilot is told they are competing: each one sees only their own request, and the slot stays **Open** for others.
 
-1. The OPM sees **2 PICs Booked** on the slot and opens it to compare the requests.
+1. The OPM sees **2 PICs Requested** on the slot and opens it to compare the requests.
 2. The OPM approves **one** pilot (optionally with a PDF).
-3. The slot becomes Approved and **every other pending request on that slot is declined automatically**, with the note *Another pilot was selected*. Those pilots receive a "Slot request declined" notification and email.
+3. The slot becomes Approved and **every other pending request on that slot is declined automatically**, with the note *Another pilot was selected*. Those pilots receive an in-app "Slot completed" notification (no email).
 4. For everyone else the slot now shows **Taken**. Nobody can approve a second pilot for it, and nobody can request it any more.
 
 ### Blocked group
@@ -372,7 +430,7 @@ Every notification is created **in-app** (the bell icon) and sent **by email**.
 |---|---|
 | A pilot requests a slot | The OPM (*New slot request*) and the pilot (*Booking requested, pending approval*, with the review day) |
 | The OPM approves | The pilot (*Slot approved*, with the PDF attached if there is one) |
-| The OPM approves someone else | The other pilots on that slot (*Slot request declined*) |
+| The OPM approves someone else | The other pilots on that slot (*Slot completed*, in-app only, no email) |
 | The OPM rejects | The pilot (*Slot request rejected*, with the reason) |
 | The OPM edits a slot | Pilots with a live request on it |
 | A group is deleted | Pilots with pending or approved requests in it (**warning**: *Slot group deleted*) |
@@ -397,7 +455,7 @@ A pilot who is not logged in when the group is deleted sees the warning, still u
 Notes:
 
 - The "group open" notification is sent by a job that runs every 5 minutes, so it can arrive a few minutes after the group opens. Pilots see the group the moment its time passes, whether or not the notification has been sent.
-- The approval-day reminder is sent by a daily job at 06:00 UTC, only for groups that have an approval day matching today and at least one pending request. See [Cron Jobs](/docs/business-logic/cron-jobs).
+- The approval-day reminder is sent by an hourly job. For each group it uses the group's own [site time zone](#time-zone): it is sent **once per local day**, from **08:00 site time**, only when that local weekday is one of the group's approval days and at least one request is pending. A repeated or overlapping run on the same day never sends it twice. See [Cron Jobs](/docs/business-logic/cron-jobs).
 - Emails count toward the company's **daily email limit**. When the limit is reached, the email is skipped but the in-app notification is still created. See [Email Notifications](/docs/business-logic/email-notifications).
 - Notification texts are sent in English.
 

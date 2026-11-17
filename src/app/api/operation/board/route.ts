@@ -3,6 +3,7 @@ import { getMissionBoard } from "@/backend/services/operation/operation-board-se
 import { requirePermission } from "@/lib/auth/api-auth";
 import { internalError } from "@/lib/api-error";
 import { E } from "@/lib/error-codes";
+import { DEFAULT_SLOT_TIMEZONE, normalizeTimeZone } from "@/lib/slot-booking-utils";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(req: NextRequest) {
@@ -13,7 +14,9 @@ export async function GET(req: NextRequest) {
         const data = await getMissionBoard(
             session!.user.ownerId,
             session!.user.userId,
-            session!.user.role
+            session!.user.role,
+            // The board's "today" follows the viewer's own time zone (profile setting), falling back to UTC.
+            normalizeTimeZone(session!.user.timezone) ?? DEFAULT_SLOT_TIMEZONE
         );
 
         return NextResponse.json({

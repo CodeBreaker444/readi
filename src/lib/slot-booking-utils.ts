@@ -30,6 +30,63 @@ export function addDaysIso(date: string, days: number): string {
 
 export const todayIso = () => new Date().toISOString().slice(0, 10);
 
+// ───────────────────────── Slot time zone ─────────────────────────
+// Slot dates/times are wall-clock values at the site where the slots are flown. Each slot group stores the IANA zone
+// of that site, so "today", "has the slot started" and the approval day mean the same for the OPM and every pilot,
+// wherever they are.
+
+/** Used for groups created before slot groups had a zone. */
+export const DEFAULT_SLOT_TIMEZONE = 'UTC';
+
+export function isValidTimeZone(tz: unknown): tz is string {
+  if (typeof tz !== 'string' || !tz.trim()) return false;
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone: tz });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Users store zones like "IST" as well as IANA names; returns a valid IANA name, or null. */
+export function normalizeTimeZone(raw: unknown): string | null {
+  if (typeof raw !== 'string') return null;
+  const v = raw.trim();
+  if (v.toUpperCase() === 'IST') return 'Asia/Kolkata';
+  return isValidTimeZone(v) ? v : null;
+}
+
+/** The wall-clock time in `timeZone`, as epoch ms on the UTC timeline `slotInterval` uses. */
+export function wallClockNow(timeZone: string, now = new Date()): number {
+  const p = Object.fromEntries(
+    new Intl.DateTimeFormat('en-CA', {
+      timeZone, hourCycle: 'h23',
+      year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit',
+    }).formatToParts(now).map((x) => [x.type, x.value]),
+  );
+  return Date.parse(`${p.year}-${p.month}-${p.day}T${p.hour}:${p.minute}:00.000Z`);
+}
+
+/** Today's date (yyyy-MM-dd) in `timeZone`. */
+export const todayInZone = (timeZone: string, now = new Date()) => new Date(wallClockNow(timeZone, now)).toISOString().slice(0, 10);
+
+/** The real instant (epoch ms) of the wall-clock `date` `time` (HH:mm) in `timeZone`. */
+export function zonedInstant(date: string, time: string, timeZone: string): number {
+  const wall = Date.parse(`${date}T${time}:00.000Z`);
+  let instant = wall - (wallClockNow(timeZone, new Date(wall)) - wall);
+  instant = wall - (wallClockNow(timeZone, new Date(instant)) - instant); // settles DST transitions
+  return instant;
+}
+
+/** The real instant (epoch ms) at which `date` starts (00:00) in `timeZone`. */
+export const zonedMidnight = (date: string, timeZone: string): number => zonedInstant(date, '00:00', timeZone);
+
+/** Real [from, to) instants of a slot at its site; an end at or before the start runs past midnight. */
+export function zonedSlotInterval(date: string, start: string, end: string, timeZone: string): { from: number; to: number } {
+  const endDate = end <= start ? addDaysIso(date, 1) : date;
+  return { from: zonedInstant(date, start, timeZone), to: zonedInstant(endDate, end, timeZone) };
+}
+
 export function groupDates(startDate: string, rangeMode: RangeMode): string[] {
   return Array.from({ length: RANGE_DAYS[rangeMode] }, (_, i) => addDaysIso(startDate, i));
 }
@@ -62,9 +119,9 @@ export const approvalDaysLabel = (days: number[]) =>
   days.length ? [...days].sort().map((d) => WEEKDAYS_LONG[d]).join(', ') : 'Not set';
 
 /** Next weekday (today included) on which the OPM reviews. */
-export function nextApprovalDay(approvalDays: number[], from = new Date()): { date: string; label: string } | null {
+export function nextApprovalDay(approvalDays: number[], from = new Date(), timeZone = DEFAULT_SLOT_TIMEZONE): { date: string; label: string } | null {
   if (!approvalDays.length) return null;
-  const start = from.toISOString().slice(0, 10);
+  const start = todayInZone(timeZone, from);
   for (let i = 0; i < 7; i++) {
     const d = addDaysIso(start, i);
     if (approvalDays.includes(weekdayOf(d))) return { date: d, label: i === 0 ? 'Today' : WEEKDAYS_LONG[weekdayOf(d)] };

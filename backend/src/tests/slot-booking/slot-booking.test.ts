@@ -69,6 +69,7 @@ const validInput = (over: Partial<NewSlotGroupInput> = {}): NewSlotGroupInput =>
   approvalDays: [1],
   slots: [{ date: tomorrow, start: '06:00', end: '14:00' }],
   resolution: 'none',
+  timezone: 'Europe/Rome',
   ...over,
 });
 
@@ -154,14 +155,14 @@ describe('createGroup', () => {
     prismaMock.slot.findMany.mockResolvedValue([]);
     prismaMock.$transaction.mockRejectedValue(new Error('stop'));
     await createGroup(OPM, validInput({ clientId: 5 })).catch(() => undefined);
-    expect(prismaMock.slot.findMany.mock.calls[0][0].where.slot_group).toEqual({ fk_owner_id: 7, fk_client_id: 5 });
+    expect(prismaMock.slot.findMany.mock.calls[0][0].where.slot_group).toEqual({ fk_owner_id: 7, fk_client_id: 5, fk_tool_id: null });
   });
 
   it('compares groups without a client only with each other', async () => {
     prismaMock.slot.findMany.mockResolvedValue([]);
     prismaMock.$transaction.mockRejectedValue(new Error('stop'));
     await createGroup(OPM, validInput({ clientId: null })).catch(() => undefined);
-    expect(prismaMock.slot.findMany.mock.calls[0][0].where.slot_group).toEqual({ fk_owner_id: 7, fk_client_id: null });
+    expect(prismaMock.slot.findMany.mock.calls[0][0].where.slot_group).toEqual({ fk_owner_id: 7, fk_client_id: null, fk_tool_id: null });
   });
 
   it("does not warn when only another client's group uses the same dates", async () => {

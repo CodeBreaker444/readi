@@ -1,3 +1,5 @@
+import type { MissionProgress } from '@/lib/slot-booking-logic';
+
 export type SlotMode = 'HOURLY' | 'SHIFT';
 export type RangeMode = 'DAY' | 'WEEK' | 'TWO_WEEKS';
 export type BookingStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
@@ -88,6 +90,8 @@ export interface SlotGroup {
   /** System the slot weather is forecast for; null = no weather. */
   systemId: number | null;
   systemName: string | null;
+  /** IANA zone of the site the slot times refer to; the same for the OPM and every pilot. */
+  timezone: string;
   /** When pilots get to see the group; null = published immediately. */
   publishAt: string | null;
   /** False while a scheduled group is still hidden from pilots. */
@@ -201,6 +205,8 @@ export interface NewSlotGroupInput {
   clientId?: number | null;
   /** System (of the client) whose location drives the slot weather. */
   systemId?: number | null;
+  /** IANA zone of the site. Defaults to the system's location zone; required when the system has no location. */
+  timezone?: string | null;
   /** ISO time to open the group to pilots; omit to publish now. */
   publishAt?: string | null;
   /** Pilot groups the slots are offered to; omit/empty for every pilot. */
@@ -426,4 +432,71 @@ export interface SlotSystem {
   clientId: number | null;
   /** False when the system has no coordinates, so no weather can be shown. */
   hasLocation: boolean;
+  /** Zone of the system's location; null when it has none. */
+  timezone: string | null;
+}
+
+// ───────────────────────── Today tab ─────────────────────────
+
+/** A mission as shown on the Today tab and in the "link missions" dialog. */
+export interface TodayMission {
+  id: number;
+  code: string | null;
+  name: string | null;
+  description: string | null;
+  progress: MissionProgress;
+  /** The owner's own label for the status (e.g. "In progress"). */
+  statusLabel: string | null;
+  scheduledStart: string | null;
+  actualStart: string | null;
+  actualEnd: string | null;
+  /** Flight duration in minutes. */
+  flightMinutes: number | null;
+  location: string | null;
+  notes: string | null;
+  clientId: number | null;
+  clientName: string | null;
+  droneName: string | null;
+  droneCode: string | null;
+  typeName: string | null;
+  categoryName: string | null;
+  planningName: string | null;
+  planCode: string | null;
+  planDescription: string | null;
+  /** Slot the mission is linked to, if any. */
+  linkedSlotId: number | null;
+  linkedSlotLabel: string | null;
+}
+
+/** One approved slot of the pilot for today, with the missions flown in it. */
+export interface TodaySlot {
+  slotId: number;
+  bookingId: number;
+  groupId: number;
+  groupName: string;
+  clientId: number | null;
+  clientName: string | null;
+  systemName: string | null;
+  timezone: string;
+  /** Site-local date and times. */
+  date: string;
+  start: string;
+  end: string;
+  /** Real instants of the slot window, so the browser can run the timer in any zone. */
+  startAt: string;
+  endAt: string;
+  missions: TodayMission[];
+  weather: SlotWeather | null;
+}
+
+export interface TodayBoard {
+  serverNow: string;
+  slots: TodaySlot[];
+  /** The pilot's missions of today not linked to any slot. */
+  unlinkedMissions: number;
+}
+
+export interface SlotMissionCandidates {
+  slot: Pick<TodaySlot, 'slotId' | 'date' | 'start' | 'end' | 'startAt' | 'endAt' | 'groupName' | 'clientId' | 'clientName'>;
+  missions: TodayMission[];
 }

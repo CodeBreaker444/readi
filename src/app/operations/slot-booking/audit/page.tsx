@@ -28,7 +28,7 @@ export default function SlotBookingAuditPage() {
   }, [load]);
 
   return (
-    <SlotBookingShell title={t('slotBooking.auditPage.title')} subtitle={t('slotBooking.auditPage.subtitle')} canManage={me?.canManage}>
+    <SlotBookingShell title={t('slotBooking.auditPage.title')} subtitle={t('slotBooking.auditPage.subtitle')} canManage={me?.canManage} canBook={me?.canBook}>
       {(isDark) =>
         error ? (
           <ErrorBlock isDark={isDark} message={error} onRetry={load} />

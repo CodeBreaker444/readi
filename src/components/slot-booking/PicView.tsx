@@ -115,7 +115,7 @@ export function PicView({ isDark, me, groups }: { isDark: boolean; me: SlotMe; g
         setMoveFrom(null);
       } else {
         await axios.post(`${BASE}/slots/${slot.id}/book`);
-        const msg = t('slotBooking.pic.requestedBanner', { day: s.reviewDay(detail.group.approvalDays) });
+        const msg = t('slotBooking.pic.requestedBanner', { day: s.reviewDay(detail.group.approvalDays, detail.group.timezone) });
         setBanner(msg);
         toast.success(t('slotBooking.pic.requestedToast'), { description: msg });
       }

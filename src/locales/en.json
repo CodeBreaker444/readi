@@ -6163,6 +6163,7 @@
     "today": "Today",
     "tabs": {
       "slotBooking": "Slot Booking",
+      "today": "Today's Schedule",
       "approved": "Approved Slots",
       "myApproved": "My Approved Slots",
       "audit": "Audit Log",
@@ -6252,7 +6253,7 @@
       "publishNow": "Could not publish the group"
     },
     "opm": {
-      "slotSettings": "Slot Settings",
+      "slotSettings": "Default Slot Settings",
       "newGroup": "New Slot Group",
       "approvalDayTitle": "Today is an approval day",
       "approvalDayBody_one": "{{groups}} — {{count}} request awaiting your decision.",
@@ -6373,6 +6374,10 @@
       "clientHint": "The client these slots are flown for. Shown on the day sheet.",
       "system": "System",
       "systemHint": "Weather for the slots is forecast at this system's location.",
+      "timezone": "Site time zone",
+      "timezoneHint": "Slot times are the local time at the site, for the OPM and every pilot alike. Choose the zone where the flying happens, even if you are elsewhere.",
+      "timezoneFromSystem": "Taken from the system's location. You can change it.",
+      "timezoneInvalid": "Enter a valid time zone, for example Europe/Rome.",
       "systemNone": "No system — no weather",
       "systemPickClient": "Select a client first to choose a system.",
       "systemEmpty": "This client has no active systems.",
@@ -6590,7 +6595,13 @@
       "expertHint": "Members are recommended first for tough-weather slots.",
       "tabDetails": "Details & members",
       "tabLimits": "Flight limits",
-      "limits": {"hint":"Monthly flight limit per user, in hours. Leave blank for no limit (shown grey). A limit belongs to the user and applies in every group. The OPM sees yellow from 90% and red at 100% when approving and on the calendar.","noMembers":"Select members on the first tab to set their limits.","label":"Monthly limit for {{name}}","perMonth":"h / month","invalid":"Enter a flight limit between 0.1 and 744 hours, or leave it blank."},
+      "limits": {
+        "hint": "Monthly flight limit per user, in hours. Leave blank for no limit (shown grey). A limit belongs to the user and applies in every group. The OPM sees yellow from 90% and red at 100% when approving and on the calendar.",
+        "noMembers": "Select members on the first tab to set their limits.",
+        "label": "Monthly limit for {{name}}",
+        "perMonth": "h / month",
+        "invalid": "Enter a flight limit between 0.1 and 744 hours, or leave it blank."
+      },
       "expertTag": "Expert"
     },
     "opmOnly": "Only the Operations Manager can see this page.",
@@ -6716,8 +6727,8 @@
       "closed": "Closed",
       "activateDay": "Activate day",
       "deactivateDay": "Deactivate day",
-      "picsBooked_one": "{{count}} PIC Booked",
-      "picsBooked_other": "{{count}} PICs Booked",
+      "picsBooked_one": "{{count}} PIC Requested",
+      "picsBooked_other": "{{count}} PICs Requested",
       "noMatch": "No matching slots",
       "filtered": "Filters apply to the slot cards only; the numbers above count the whole week."
     },
@@ -6760,6 +6771,104 @@
       "score": "Score",
       "errors": {
         "load": "Could not load the pilot merits"
+      }
+    },
+    "todayTab": {
+      "title": "Today's Schedule",
+      "subtitle": "Your slots of today, the missions in them and their live progress",
+      "onlyPilots": "The Today tab shows a pilot's own approved slots.",
+      "empty": "You have no approved slots today.",
+      "emptyHint": "Approved slots show up here on their day. Request slots in Slot Booking.",
+      "openBoard": "Open Daily Board",
+      "refresh": "Refresh",
+      "live": "Live",
+      "justNow": "updated just now",
+      "secondsAgo": "updated {{count}}s ago",
+      "tiles": {
+        "slots": "Slots today",
+        "duty": "On duty",
+        "missions": "Missions done",
+        "inProgress": "In progress",
+        "attention": "Need attention"
+      },
+      "attentionBanner": "{{count}} slot(s) need your attention",
+      "attentionHint": "Link a mission to every slot and start it on the Daily Board when you fly.",
+      "unlinkedHint": "{{count}} of your missions today are not linked to a slot yet.",
+      "allGood": "All slots are on track",
+      "state": {
+        "no_mission": "No mission linked",
+        "waiting": "Ready",
+        "no_progress": "No progress",
+        "in_progress": "In progress",
+        "partial": "Next mission pending",
+        "completed": "Completed",
+        "incomplete": "Incomplete"
+      },
+      "stateHint": {
+        "no_mission": "Link the mission you fly in this slot.",
+        "no_progress": "The slot has started but none of its missions was started on the Daily Board.",
+        "incomplete": "The slot ended with missions that were not flown."
+      },
+      "phase": {
+        "startsIn": "Starts in {{time}}",
+        "left": "{{time}} left",
+        "ended": "Ended"
+      },
+      "overnight": "Overnight",
+      "siteTime": "Slot times are in the site time zone",
+      "yourTime": "your time {{time}}",
+      "noMissionHint": "No mission linked to this slot yet.",
+      "linkMissions": "Link missions",
+      "addMission": "Link another mission",
+      "unlink": "Unlink mission",
+      "unlinked": "Mission unlinked",
+      "linked": "{{count}} mission(s) linked",
+      "skippedSome": "{{count}} mission(s) were not linked: they were just linked to another slot.",
+      "inFlight": "In flight {{time}} · since {{at}}",
+      "flew": "Flew {{from}}–{{to}}",
+      "plannedAt": "Planned {{time}}",
+      "noTime": "No planned time",
+      "legendNote": "The bar fills as the slot time passes",
+      "progress": {
+        "planned": "Scheduled",
+        "in_progress": "In progress",
+        "completed": "Done",
+        "aborted": "Aborted"
+      },
+      "fields": {
+        "scheduled": "Planned",
+        "started": "Started",
+        "ended": "Ended",
+        "duration": "Flight time",
+        "drone": "Drone",
+        "client": "Client",
+        "type": "Type",
+        "category": "Category",
+        "planning": "Planning",
+        "plan": "Mission plan"
+      },
+      "dialog": {
+        "title": "Link missions",
+        "description": "{{date}} · {{slot}} — {{group}}",
+        "search": "Search code, name, drone, plan…",
+        "filterSuggested": "In this slot",
+        "filterAll": "All of the day",
+        "empty": "You have no missions for this day.",
+        "emptyHint": "Missions planned for you on this day appear here. Plan one in Operations first.",
+        "noMatch": "No mission matches.",
+        "suggested": "In slot window",
+        "linkedHere": "Linked to this slot",
+        "linkedElsewhere": "Linked to {{slot}}",
+        "clientMismatch": "This mission is for a different client than the slot.",
+        "selected": "{{count}} selected",
+        "confirm": "Link {{count}}",
+        "abortedHint": "Aborted missions are closed records and cannot be linked or restored. Plan a new mission if you still need to fly."
+      },
+      "errors": {
+        "load": "Could not load today's slots",
+        "candidates": "Could not load the missions",
+        "link": "Could not link the missions",
+        "unlink": "Could not unlink the mission"
       }
     }
   }

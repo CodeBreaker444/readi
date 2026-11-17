@@ -2703,6 +2703,10 @@ model slot_group {
   fk_tool_id             Int?
   publish_at             DateTime?                @db.Timestamp(6)
   published_notified_at  DateTime?                @db.Timestamp(6)
+  /// IANA zone of the site the slot times refer to; null = created before zones existed (treated as UTC).
+  timezone               String?                  @db.VarChar(64)
+  /// Local date the approval-day reminder was last sent (claimed by the reminder job to avoid duplicates).
+  approval_reminded_on   DateTime?                @db.Date
   slot                   slot[]
   slot_booking           slot_booking[]
   users                  public_users?            @relation(fields: [created_by], references: [user_id], onUpdate: NoAction)
@@ -2743,6 +2747,20 @@ model pilot_flight_limit {
 
   @@id([fk_owner_id, fk_user_id])
   @@index([fk_user_id], map: "idx_pilot_flight_limit_user")
+  @@schema("public")
+}
+
+/// Missions a pilot flies inside an approved slot (Today tab). A mission is linked to at most one slot.
+/// Scalar-only on purpose: the service joins by id; the foreign keys (cascade on slot / mission delete) live in SQL.
+model slot_mission {
+  fk_slot_id          Int
+  fk_pilot_mission_id Int      @unique(map: "uq_slot_mission_mission")
+  fk_owner_id         Int
+  linked_by           Int?
+  linked_at           DateTime @default(now()) @db.Timestamp(6)
+
+  @@id([fk_slot_id, fk_pilot_mission_id])
+  @@index([fk_owner_id], map: "idx_slot_mission_owner")
   @@schema("public")
 }
 

@@ -28,7 +28,7 @@ export default function CalendarPage() {
   }, [load]);
 
   return (
-    <SlotBookingShell title={t('slotBooking.calendar.title')} subtitle={t('slotBooking.calendar.subtitle')} canManage={me?.canManage}>
+    <SlotBookingShell title={t('slotBooking.calendar.title')} subtitle={t('slotBooking.calendar.subtitle')} canManage={me?.canManage} canBook={me?.canBook}>
       {(isDark) =>
         error ? (
           <ErrorBlock isDark={isDark} message={error} onRetry={load} />

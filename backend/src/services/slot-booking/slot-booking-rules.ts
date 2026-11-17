@@ -1,12 +1,24 @@
 import 'server-only';
 
 import { intervalsOverlap, slotInterval } from '@/lib/slot-booking-logic';
-import { addDaysIso, prettyDate, slotLabel } from '@/lib/slot-booking-utils';
+import { addDaysIso, DEFAULT_SLOT_TIMEZONE, normalizeTimeZone, prettyDate, slotLabel, wallClockNow } from '@/lib/slot-booking-utils';
 import { prisma } from '@/lib/prisma';
 
 
 export const dateStr = (d: Date) => d.toISOString().slice(0, 10);
 export const toDate = (s: string) => new Date(`${s}T00:00:00.000Z`);
+
+
+/** True once the slot's start time has passed, in the slot group's time zone. */
+export const slotStarted = (date: string, start: string, timeZone: string, now = new Date()) =>
+  slotInterval(date, start, start).from <= wallClockNow(timeZone, now);
+
+/** True once the slot's end time has passed (overnight slots end the next day), in the slot group's time zone. */
+export const slotEnded = (date: string, start: string, end: string, timeZone: string, now = new Date()) =>
+  slotInterval(date, start, end).to <= wallClockNow(timeZone, now);
+
+/** The zone of a slot group; groups created before zones existed fall back to UTC. */
+export const groupZone = (g: { timezone?: string | null }) => normalizeTimeZone(g.timezone) ?? DEFAULT_SLOT_TIMEZONE;
 
 export interface CollisionCheck {
   pilotId: number;
@@ -30,6 +42,7 @@ export async function findCollisions(ownerId: number, checks: CollisionCheck[]):
       status: 'APPROVED',
       fk_pilot_user_id: { in: [...new Set(checks.map((c) => c.pilotId))] },
       slot: {
+        is_active: true,
         // ±1 day: a 22:00–06:00 slot reaches into the next date.
         slot_date: { gte: toDate(addDaysIso(dates[0], -1)), lte: toDate(addDaysIso(dates[dates.length - 1], 1)) },
         slot_group: { fk_owner_id: ownerId },
@@ -92,4 +105,17 @@ export async function getMemberIds(pilotGroupIds: number[]): Promise<Set<number>
     select: { fk_user_id: true },
   });
   return new Set(rows.map((r) => r.fk_user_id));
+}
+
+/**
+ * Drops the missions linked to a slot (Today's Schedule) once its approved pilot is gone, so the next pilot of the slot
+ * does not inherit them. Best effort: the Today board also only shows the slot pilot's own missions, so a failed
+ * cleanup must never fail the unassign / close that triggered it.
+ */
+export async function clearSlotMissions(slotId: number): Promise<void> {
+  try {
+    await prisma.slot_mission.deleteMany({ where: { fk_slot_id: slotId } });
+  } catch (e) {
+    console.error('[slot-booking] could not clear slot missions', slotId, e);
+  }
 }
