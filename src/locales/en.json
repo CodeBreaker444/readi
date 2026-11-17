@@ -6252,7 +6252,7 @@
       "publishNow": "Could not publish the group"
     },
     "opm": {
-      "slotSettings": "Slot Settings",
+      "slotSettings": "Default Slot Settings",
       "newGroup": "New Slot Group",
       "approvalDayTitle": "Today is an approval day",
       "approvalDayBody_one": "{{groups}} — {{count}} request awaiting your decision.",
@@ -6716,8 +6716,8 @@
       "closed": "Closed",
       "activateDay": "Activate day",
       "deactivateDay": "Deactivate day",
-      "picsBooked_one": "{{count}} PIC Booked",
-      "picsBooked_other": "{{count}} PICs Booked",
+      "picsBooked_one": "{{count}} PIC Requested",
+      "picsBooked_other": "{{count}} PICs Requested",
       "noMatch": "No matching slots",
       "filtered": "Filters apply to the slot cards only; the numbers above count the whole week."
     },

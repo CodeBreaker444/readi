@@ -243,9 +243,10 @@ export async function notify(
     /** Shown as a warning (amber, high priority) in the bell, the top-right popup and the Notifications page. */
     warning?: boolean;
     data?: Record<string, unknown>;
+    skipEmail?: boolean;
   } = {},
 ): Promise<void> {
-  const { attachment, warning = false, data } = opts;
+  const { attachment, warning = false, data, skipEmail = false } = opts;
   const type = warning ? NOTIFICATION_TYPE_WARNING : NOTIFICATION_TYPE;
   try {
     if (!targets.length) return;
@@ -264,6 +265,7 @@ export async function notify(
       })),
     });
 
+    if (skipEmail) return;
     const emails = [...new Set(targets.map((t) => t.email).filter((e): e is string => !!e))];
     if (!emails.length) return;
     if (await isDailyEmailLimitReached(ownerId)) {
@@ -998,7 +1000,8 @@ export async function approveBooking(
   void notify(user.ownerId, await pilotTarget(b.fk_pilot_user_id), 'Slot approved',
     `Your request for ${label} in “${b.slot.slot_group.name}” was approved.${pdf ? ' The approval document is attached.' : ''}`, { attachment: pdf });
   for (const d of declined) {
-    void notify(user.ownerId, await pilotTarget(d.fk_pilot_user_id), 'Slot request declined', `Your request for ${label} was not selected.`);
+    void notify(user.ownerId, await pilotTarget(d.fk_pilot_user_id), 'Slot completed',
+      `The slot ${label} in “${b.slot.slot_group.name}” has been completed and assigned to another pilot, so your request was not selected.`, { skipEmail: true });
   }
 }
 

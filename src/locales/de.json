@@ -6093,7 +6093,7 @@
       "publishNow": "Die Gruppe konnte nicht veröffentlicht werden"
     },
     "opm": {
-      "slotSettings": "Slot-Einstellungen",
+      "slotSettings": "Standard-Slot-Einstellungen",
       "newGroup": "Neue Slot-Gruppe",
       "approvalDayTitle": "Heute ist ein Freigabetag",
       "approvalDayBody_one": "{{groups}} — {{count}} Anfrage wartet auf Ihre Entscheidung.",
@@ -6557,8 +6557,8 @@
       "closed": "Geschlossen",
       "activateDay": "Tag aktivieren",
       "deactivateDay": "Tag deaktivieren",
-      "picsBooked_one": "{{count}} PIC gebucht",
-      "picsBooked_other": "{{count}} PICs gebucht",
+      "picsBooked_one": "{{count}} PIC angefragt",
+      "picsBooked_other": "{{count}} PICs angefragt",
       "noMatch": "Keine passenden Slots",
       "filtered": "Filter gelten nur für die Slot-Karten; die Zahlen oben zählen die ganze Woche."
     },

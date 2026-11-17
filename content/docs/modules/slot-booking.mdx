@@ -44,7 +44,7 @@ Slot Booking lets the **Operations Manager (OPM)** open time slots and lets **pi
 
 ### Create a slot group
 
-Click **New Slot Group**. The form is pre-filled from **Slot Settings** (your company defaults) and you can change anything for this group.
+Click **New Slot Group**. The form is pre-filled from **Default Slot Settings** (your company defaults) and you can change anything for this group.
 
 | Setting | Options |
 |---|---|
@@ -80,7 +80,7 @@ When you publish, Readi checks whether any selected date already has slots in an
 Open a group's calendar. Each slot shows a live indicator:
 
 - **Open:** no requests yet
-- **2 PICs Booked:** requests waiting for your decision
+- **2 PICs Requested:** requests waiting for your decision
 - **The pilot's name:** a pilot has been chosen (approved or assigned). Other pilots see this name on the calendar too, instead of "Taken"
 
 Slots in the next 7 days also show a small coloured **weather dot**. See [Weather](#weather).
@@ -130,9 +130,9 @@ If pilots had **pending or approved** requests in the group, each of them gets a
 - Requests that were already rejected are not mentioned, and pilots who never requested a slot in the group are not notified.
 - The deletion is written to the [audit log](#audit-log) with the number of requests removed and the pilots who were warned.
 
-### Slot Settings
+### Default Slot Settings
 
-**Slot Settings** holds your company defaults: slot hours, date range, blocking and approval days. They only pre-fill new groups. Existing groups are not changed. For hourly slots, the start and end hour are chosen from a grid of hours (the end can be up to 24:00, shown as 00:00); a red border means the end is not after the start.
+**Default Slot Settings** holds your company defaults: slot hours, date range, blocking and approval days. They only pre-fill new groups. Existing groups are not changed. For hourly slots, the start and end hour are chosen from a grid of hours (the end can be up to 24:00, shown as 00:00); a red border means the end is not after the start.
 
 Two settings apply to the whole company straight away:
 
@@ -274,7 +274,7 @@ The system is set when the group is created. A system that is later deactivated 
 Each pilot can have a **monthly flight limit** (hours per flying-hours cycle). It warns the OPM before a pilot is given more slots than they may fly.
 
 - **Setting a limit:** open **Pilot Groups**, create or edit a group and use the **Flight limits** tab. It lists the members selected on the first tab; enter hours for each one, or leave blank for no limit. A limit belongs to the user and applies in every group they are in.
-- **Cycle:** chosen in [Slot Settings](#slot-settings) (**Flying-hours cycle starts on**).
+- **Cycle:** chosen in [Default Slot Settings](#default-slot-settings) (**Flying-hours cycle starts on**).
 - **Hours flown:** the flight duration of the pilot's missions that started inside the current cycle.
 
 The pilot's hours are shown as `flown / limit` and coloured:
@@ -327,7 +327,7 @@ The **My requests** tab, next to **Available slot groups**, shows the number of 
 
 - **Change** moves a pending request to another open slot of the **same group**. Pick the new slot on the calendar and confirm **Move request**. The OPM is told.
 - **Cancel** withdraws a pending request.
-- **Lock window:** inside the last **24 or 48 hours** before the group's next approval day (company setting, see [Slot Settings](#slot-settings)) a pending request shows **Locked** and cannot be moved or cancelled. The approval day itself counts from midnight UTC, so on the approval day everything is locked. With the lock set to *Never lock*, requests can be changed until they are decided.
+- **Lock window:** inside the last **24 or 48 hours** before the group's next approval day (company setting, see [Default Slot Settings](#default-slot-settings)) a pending request shows **Locked** and cannot be moved or cancelled. The approval day itself counts from midnight UTC, so on the approval day everything is locked. With the lock set to *Never lock*, requests can be changed until they are decided.
 - Making a **new** request is not blocked by the lock.
 - The server enforces this too: a locked change answers *Requests can no longer be changed*.
 - Approved requests cannot be changed by the pilot. Ask the OPM.
@@ -342,9 +342,9 @@ What happens depends on the group's **blocking** setting.
 
 Both requests are accepted and both are **Pending Approval**. Neither pilot is told they are competing: each one sees only their own request, and the slot stays **Open** for others.
 
-1. The OPM sees **2 PICs Booked** on the slot and opens it to compare the requests.
+1. The OPM sees **2 PICs Requested** on the slot and opens it to compare the requests.
 2. The OPM approves **one** pilot (optionally with a PDF).
-3. The slot becomes Approved and **every other pending request on that slot is declined automatically**, with the note *Another pilot was selected*. Those pilots receive a "Slot request declined" notification and email.
+3. The slot becomes Approved and **every other pending request on that slot is declined automatically**, with the note *Another pilot was selected*. Those pilots receive an in-app "Slot completed" notification (no email).
 4. For everyone else the slot now shows **Taken**. Nobody can approve a second pilot for it, and nobody can request it any more.
 
 ### Blocked group
@@ -375,7 +375,7 @@ Every notification is created **in-app** (the bell icon) and sent **by email**.
 |---|---|
 | A pilot requests a slot | The OPM (*New slot request*) and the pilot (*Booking requested, pending approval*, with the review day) |
 | The OPM approves | The pilot (*Slot approved*, with the PDF attached if there is one) |
-| The OPM approves someone else | The other pilots on that slot (*Slot request declined*) |
+| The OPM approves someone else | The other pilots on that slot (*Slot completed*, in-app only, no email) |
 | The OPM rejects | The pilot (*Slot request rejected*, with the reason) |
 | The OPM edits a slot | Pilots with a live request on it |
 | A group is deleted | Pilots with pending or approved requests in it (**warning**: *Slot group deleted*) |

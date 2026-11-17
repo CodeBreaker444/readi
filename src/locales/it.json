@@ -6235,7 +6235,7 @@
       "publishNow": "Impossibile pubblicare il gruppo"
     },
     "opm": {
-      "slotSettings": "Impostazioni slot",
+      "slotSettings": "Impostazioni slot predefinite",
       "newGroup": "Nuovo gruppo di slot",
       "approvalDayTitle": "Oggi è un giorno di approvazione",
       "approvalDayBody_one": "{{groups}} — {{count}} richiesta in attesa della tua decisione.",
@@ -6699,8 +6699,8 @@
       "closed": "Chiuso",
       "activateDay": "Attiva giorno",
       "deactivateDay": "Disattiva giorno",
-      "picsBooked_one": "{{count}} PIC prenotato",
-      "picsBooked_other": "{{count}} PIC prenotati",
+      "picsBooked_one": "{{count}} PIC richiesto",
+      "picsBooked_other": "{{count}} PIC richiesti",
       "noMatch": "Nessuno slot corrispondente",
       "filtered": "I filtri valgono solo per le schede degli slot; i numeri sopra contano l'intera settimana."
     },

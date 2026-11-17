@@ -147,7 +147,8 @@ export async function assignPilot(user: SessionUser, slotId: number, pilotId: nu
 
   void notify(user.ownerId, await pilotTarget(pilotId), 'Slot assigned', `You were assigned ${slotText(slot)} in “${slot.slot_group.name}”.`);
   for (const d of declined) {
-    void notify(user.ownerId, await pilotTarget(d.fk_pilot_user_id), 'Slot request declined', `Your request for ${slotText(slot)} was not selected.`);
+    void notify(user.ownerId, await pilotTarget(d.fk_pilot_user_id), 'Slot completed',
+      `The slot ${slotText(slot)} in “${slot.slot_group.name}” has been completed and assigned to another pilot, so your request was not selected.`, { skipEmail: true });
   }
   return { bookingId };
 }
