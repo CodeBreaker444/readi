@@ -9,7 +9,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import type { NewSlotGroupInput, PilotGroup, RangeMode, SlotClient, SlotDefaults, SlotMode, SlotSystem } from '@/config/types/slot-booking';
-import { addDaysIso, groupDates, timeBlocks, todayIso } from '@/lib/slot-booking-utils';
+import { addDaysIso, groupDates, isValidTimeZone, timeBlocks, todayInZone, todayIso } from '@/lib/slot-booking-utils';
 import { cn } from '@/lib/utils';
 import axios from 'axios';
 import { AlertTriangle } from 'lucide-react';
@@ -60,6 +60,8 @@ export function CreateGroupDialog({
   const [clientId, setClientId] = useState('');
   const [systems, setSystems] = useState<SlotSystem[]>([]);
   const [systemId, setSystemId] = useState('');
+  // Zone of the site the slot times refer to (not the OPM's own): taken from the system's location, changeable.
+  const [timezone, setTimezone] = useState(() => Intl.DateTimeFormat().resolvedOptions().timeZone);
   const [audience, setAudience] = useState<number[]>([]);
   const [scheduled, setScheduled] = useState(false);
   const [publishLocal, setPublishLocal] = useState('');
@@ -96,9 +98,22 @@ export function CreateGroupDialog({
   const clientSystems = useMemo(() => systems.filter((x) => String(x.clientId) === clientId), [systems, clientId]);
   const chosenSystem = clientSystems.find((x) => String(x.id) === systemId);
 
+  useEffect(() => {
+    if (chosenSystem?.timezone) setTimezone(chosenSystem.timezone);
+  }, [chosenSystem?.timezone]);
+  const timezoneValid = isValidTimeZone(timezone);
+  const zoneToday = timezoneValid ? todayInZone(timezone) : todayIso();
+  const timezoneOptions = useMemo(() => {
+    try {
+      return (Intl as unknown as { supportedValuesOf?: (k: string) => string[] }).supportedValuesOf?.('timeZone') ?? [];
+    } catch {
+      return [];
+    }
+  }, []);
+
   const dates = useMemo(() => groupDates(startDate, rangeMode), [startDate, rangeMode]);
   const hourlyInvalid = mode === 'HOURLY' && hourEnd <= hourStart;
-  const pastStart = startDate < todayIso();
+  const pastStart = startDate < zoneToday;
   const nameTaken = existingNames.some((n) => n.trim().toLowerCase() === name.trim().toLowerCase()) && name.trim().length > 0;
   // A scheduled group needs a publish time at least a minute ahead, and not after its last slot day.
   const publishMs = publishLocal ? new Date(publishLocal).getTime() : NaN;
@@ -107,7 +122,7 @@ export function CreateGroupDialog({
   const publishTooLate = scheduled && !publishPast && publishLocal.slice(0, 10) > lastDate;
   const scheduleInvalid = publishPast || publishTooLate;
   const valid =
-    name.trim().length > 0 && !nameTaken && !!startDate && !pastStart && !!clientId && approvalDays.length > 0 && !hourlyInvalid && !scheduleInvalid;
+    name.trim().length > 0 && !nameTaken && !!startDate && !pastStart && timezoneValid && !!clientId && approvalDays.length > 0 && !hourlyInvalid && !scheduleInvalid;
   const activeSlots = slots.filter((x) => x.active);
 
   const goPreview = () => {
@@ -133,6 +148,7 @@ export function CreateGroupDialog({
       resolution,
       clientId: clientId ? Number(clientId) : null,
       systemId: systemId ? Number(systemId) : null,
+      timezone,
       publishAt: scheduled && publishLocal ? new Date(publishLocal).toISOString() : null,
       pilotGroupIds: audience,
     };
@@ -242,7 +258,7 @@ export function CreateGroupDialog({
                     </button>
                   ))}
                 </div>
-                <input type="date" className={cn(inputCls(isDark), 'mt-2')} value={startDate} min={todayIso()} onChange={(e) => setStartDate(e.target.value)} />
+                <input type="date" className={cn(inputCls(isDark), 'mt-2')} value={startDate} min={zoneToday} onChange={(e) => setStartDate(e.target.value)} />
                 {pastStart && <p className="text-[11px] text-red-500 mt-1">{t('slotBooking.create.pastStart')}</p>}
                 {!pastStart && startDate && (
                   <p className={cn('text-[11px] mt-1', muted(isDark))}>
@@ -337,6 +353,30 @@ export function CreateGroupDialog({
                   </p>
                 ) : (
                   <p className={cn('text-[11px] mt-1', muted(isDark))}>{t('slotBooking.create.systemHint')}</p>
+                )}
+              </div>
+
+              <div>
+                <label className={label}>{t('slotBooking.create.timezone')}</label>
+                <input
+                  className={inputCls(isDark)}
+                  list="slot-timezones"
+                  value={timezone}
+                  onChange={(e) => setTimezone(e.target.value.trim())}
+                  placeholder="Europe/Rome"
+                  spellCheck={false}
+                />
+                <datalist id="slot-timezones">
+                  {timezoneOptions.map((z) => <option key={z} value={z} />)}
+                </datalist>
+                {!timezoneValid ? (
+                  <p className="flex items-start gap-1 text-[11px] mt-1 text-red-500">
+                    <AlertTriangle size={12} className="mt-0.5 shrink-0" /> {t('slotBooking.create.timezoneInvalid')}
+                  </p>
+                ) : (
+                  <p className={cn('text-[11px] mt-1', muted(isDark))}>
+                    {chosenSystem?.timezone === timezone ? t('slotBooking.create.timezoneFromSystem') : t('slotBooking.create.timezoneHint')}
+                  </p>
                 )}
               </div>
 

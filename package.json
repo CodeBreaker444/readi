@@ -93,6 +93,7 @@
     "survey-react-ui": "^2.5.14",
     "surveyjs-widgets": "^1.12.59",
     "tailwind-merge": "^3.4.0",
+    "tz-lookup": "^6.1.25",
     "undici": "^8.5.0",
     "unpdf": "^1.6.2",
     "uuid": "^13.0.0",

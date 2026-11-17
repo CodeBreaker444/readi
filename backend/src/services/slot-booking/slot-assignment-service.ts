@@ -3,10 +3,10 @@ import 'server-only';
 import type { DayPreview, DayPreviewRow, SlotCandidate, SlotCandidates } from '@/config/types/slot-booking';
 import type { SessionUser } from '@/lib/auth/server-session';
 import { prisma } from '@/lib/prisma';
-import { prettyDate, SLOT_DATE_RE, slotLabel, todayIso } from '@/lib/slot-booking-utils';
+import { prettyDate, SLOT_DATE_RE, slotLabel } from '@/lib/slot-booking-utils';
 import { getPilotFlights } from './flight-limits-service';
 import { buildMerits } from './pilot-stats-service';
-import { collisionKey, dateStr, findCollisions, getAudiences, getMemberIds, toDate } from './slot-booking-rules';
+import { collisionKey, dateStr, findCollisions, getAudiences, getMemberIds, groupZone, slotEnded, toDate } from './slot-booking-rules';
 import { ASSIGNED_NOTE, assertManager, audit, getOwnedSlot, notify, pilotTarget, SlotBookingError, userNames } from './slot-booking-service';
 import { getWeatherForSlots, isInForecastRange } from './slot-weather-service';
 
@@ -85,7 +85,7 @@ export async function assignPilot(user: SessionUser, slotId: number, pilotId: nu
   const slot = await getOwnedSlot(user, slotId);
   const date = dateStr(slot.slot_date);
   if (!slot.is_active) throw new SlotBookingError('This slot is not open', 409);
-  if (date < todayIso()) throw new SlotBookingError('This slot is in the past', 409);
+  if (slotEnded(date, slot.start_time, slot.end_time, groupZone(slot.slot_group))) throw new SlotBookingError('This slot is in the past', 409);
 
   const pilot = await prisma.public_users.findFirst({
     where: { user_id: pilotId, fk_owner_id: user.ownerId, user_active: 'Y' },

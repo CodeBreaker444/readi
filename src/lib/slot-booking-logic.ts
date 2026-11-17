@@ -1,4 +1,4 @@
-import { addDaysIso, nextApprovalDay, weekdayOf } from './slot-booking-utils';
+import { addDaysIso, DEFAULT_SLOT_TIMEZONE, nextApprovalDay, weekdayOf, zonedMidnight } from './slot-booking-utils';
 
 /**
  * Pure rules of Slot Booking v2, shared by the API and the UI and unit-tested without a database.
@@ -53,12 +53,12 @@ export interface ModificationLock {
 
 /**
  * Pilots may not cancel or move a request during the last `lockHours` before the group's next approval day
- * (the day counts from 00:00 UTC; on the approval day itself the request is locked). 0 disables the lock.
+ * (the day counts from 00:00 in the group's time zone; on the approval day itself the request is locked). 0 disables the lock.
  */
-export function modificationLock(approvalDays: number[], lockHours: number, now = new Date()): ModificationLock {
-  const next = nextApprovalDay(approvalDays, now);
+export function modificationLock(approvalDays: number[], lockHours: number, now = new Date(), timeZone = DEFAULT_SLOT_TIMEZONE): ModificationLock {
+  const next = nextApprovalDay(approvalDays, now, timeZone);
   if (!next) return { locked: false, approvalAt: null };
-  const at = Date.parse(`${next.date}T00:00:00.000Z`);
+  const at = zonedMidnight(next.date, timeZone);
   const locked = lockHours > 0 && at - now.getTime() < lockHours * 3_600_000;
   return { locked, approvalAt: new Date(at).toISOString() };
 }

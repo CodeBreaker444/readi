@@ -23,7 +23,7 @@ Scheduled background jobs are defined in `vercel.json` and run as Vercel Cron Jo
 | `check-insurance-expiration` | `0 */6 * * *` | Every 6 hours (00:00, 06:00, 12:00, 18:00) |
 | `reset-email-counters` | `0 0 * * *` | Daily at 00:00 |
 | `check-training-expiration` | `0 6 * * *` | Daily at 06:00 |
-| `slot-approval-reminder` | `0 6 * * *` | Daily at 06:00 |
+| `slot-approval-reminder` | `0 * * * *` | Every hour |
 | `slot-publish` | `*/5 * * * *` | Every 5 minutes |
 | `refresh-weather-forecasts` | `*/30 * * * *` | Every 30 minutes |
 
@@ -71,8 +71,8 @@ Schedules are defined in `vercel.json` at the project root and are evaluated in 
 
 ### slot-approval-reminder
 
-- **Schedule:** `0 6 * * *` (daily, 06:00)
-- **Purpose:** Finds slot groups whose **approval days** include today's weekday (UTC) and that still have pending slot requests. For each company it sends one reminder listing the groups and the number of waiting requests to the company's OPMs (or to its admins if there is no OPM). Groups with no pending requests are skipped.
+- **Schedule:** `0 * * * *` (every hour)
+- **Purpose:** Finds slot groups that still have pending slot requests and whose **approval days** include today's weekday **in the group's own time zone** (the site time zone stored on the slot group; groups without one count as UTC). A group is reminded once per local day, from 08:00 site time: the job first claims the group by writing today's local date to `slot_group.approval_reminded_on`, so a repeated or overlapping run on the same day never sends it twice. For each company it sends one reminder listing the groups and the number of waiting requests to the company's OPMs (or to its admins if there is no OPM). Groups with no pending requests are skipped.
 - **Sends email:** Yes, and an in-app notification. The email is subject to the company's daily email limit; when the limit is reached the email is skipped but the in-app notification is still created. See [Slot Booking](/docs/modules/slot-booking).
 
 ### slot-publish

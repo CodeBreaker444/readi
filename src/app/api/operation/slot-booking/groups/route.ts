@@ -24,6 +24,7 @@ const schema = z.object({
   resolution: z.enum(['none', 'merge', 'overwrite']),
   clientId: z.number().int().positive().nullable().optional(),
   systemId: z.number().int().positive().nullable().optional(),
+  timezone: z.string().trim().max(64).nullable().optional(),
   publishAt: z.string().datetime({ offset: true }).nullable().optional(),
   pilotGroupIds: z.array(z.number().int().positive()).max(50).optional(),
 });

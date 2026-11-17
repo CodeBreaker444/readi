@@ -1,7 +1,7 @@
 'use client';
 
 import type { GroupDetail, SlotDefaults, SlotGroup } from '@/config/types/slot-booking';
-import { groupDates, nextApprovalDay, todayIso, weekdayOf } from '@/lib/slot-booking-utils';
+import { groupDates, nextApprovalDay, todayInZone, weekdayOf } from '@/lib/slot-booking-utils';
 import { cn } from '@/lib/utils';
 import axios from 'axios';
 import { ArrowLeft, BellRing, CalendarClock, Plus, Settings2, Trash2 } from 'lucide-react';
@@ -53,8 +53,8 @@ export function OpmView({
     ? groups.filter((g) => [g.name, g.description, g.createdByName].some((v) => v?.toLowerCase().includes(query)))
     : groups;
 
-  const todayDow = weekdayOf(todayIso());
-  const approvalToday = groups.filter((g) => g.approvalDays.includes(todayDow) && (g.stats?.pending ?? 0) > 0);
+  // "Today" is the day at each group's own site.
+  const approvalToday = groups.filter((g) => g.approvalDays.includes(weekdayOf(todayInZone(g.timezone))) && (g.stats?.pending ?? 0) > 0);
   const pendingToday = approvalToday.reduce((n, g) => n + (g.stats?.pending ?? 0), 0);
 
   const openGroup = async (id: number) => {
@@ -190,7 +190,7 @@ export function OpmView({
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
           {visibleGroups.map((g) => {
-            const next = nextApprovalDay(g.approvalDays);
+            const next = nextApprovalDay(g.approvalDays, new Date(), g.timezone);
             const st = g.stats ?? { openSlots: 0, pending: 0, approved: 0 };
             return (
               <div key={g.id} className={cn('rounded-xl border p-4 flex flex-col gap-3', card(isDark))}>
@@ -228,10 +228,11 @@ export function OpmView({
                   <div>
                     {t('slotBooking.opm.starts', { date: s.dateLong(g.startDate) })}
                     {g.createdByName ? ` · ${t('slotBooking.opm.by', { name: g.createdByName })}` : ''}
+                    {` · ${g.timezone}`}
                   </div>
                   <div>
                     {t('slotBooking.opm.approvalDays')}: {s.daysLabel(g.approvalDays)}
-                    {next ? ` · ${t('slotBooking.opm.next')}: ${s.reviewDay(g.approvalDays)}` : ''}
+                    {next ? ` · ${t('slotBooking.opm.next')}: ${s.reviewDay(g.approvalDays, g.timezone)}` : ''}
                   </div>
                 </div>
                 <div className="grid grid-cols-3 gap-2 text-center">

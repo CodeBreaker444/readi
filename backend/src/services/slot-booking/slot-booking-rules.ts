@@ -1,12 +1,24 @@
 import 'server-only';
 
 import { intervalsOverlap, slotInterval } from '@/lib/slot-booking-logic';
-import { addDaysIso, prettyDate, slotLabel } from '@/lib/slot-booking-utils';
+import { addDaysIso, DEFAULT_SLOT_TIMEZONE, normalizeTimeZone, prettyDate, slotLabel, wallClockNow } from '@/lib/slot-booking-utils';
 import { prisma } from '@/lib/prisma';
 
 
 export const dateStr = (d: Date) => d.toISOString().slice(0, 10);
 export const toDate = (s: string) => new Date(`${s}T00:00:00.000Z`);
+
+
+/** True once the slot's start time has passed, in the slot group's time zone. */
+export const slotStarted = (date: string, start: string, timeZone: string, now = new Date()) =>
+  slotInterval(date, start, start).from <= wallClockNow(timeZone, now);
+
+/** True once the slot's end time has passed (overnight slots end the next day), in the slot group's time zone. */
+export const slotEnded = (date: string, start: string, end: string, timeZone: string, now = new Date()) =>
+  slotInterval(date, start, end).to <= wallClockNow(timeZone, now);
+
+/** The zone of a slot group; groups created before zones existed fall back to UTC. */
+export const groupZone = (g: { timezone?: string | null }) => normalizeTimeZone(g.timezone) ?? DEFAULT_SLOT_TIMEZONE;
 
 export interface CollisionCheck {
   pilotId: number;
