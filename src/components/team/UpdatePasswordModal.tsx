@@ -81,6 +81,8 @@ export function UpdatePasswordModal({ isOpen, onClose, onSubmit, targetLabel, is
                 type={showNewPw ? 'text' : 'password'}
                 value={newPassword}
                 onChange={(e) => { setNewPassword(e.target.value); setError(''); }}
+                name="new-password"
+                autoComplete="new-password"
                 placeholder={t('team.updatePasswordModal.newPasswordPlaceholder')}
                 className={inputClass}
               />
@@ -98,6 +100,8 @@ export function UpdatePasswordModal({ isOpen, onClose, onSubmit, targetLabel, is
                 type={showConfirmPw ? 'text' : 'password'}
                 value={confirmPassword}
                 onChange={(e) => { setConfirmPassword(e.target.value); setError(''); }}
+                name="confirm-new-password"
+                autoComplete="new-password"
                 placeholder={t('team.updatePasswordModal.confirmPasswordPlaceholder')}
                 className={inputClass}
               />

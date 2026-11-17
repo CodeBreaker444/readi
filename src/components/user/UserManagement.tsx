@@ -290,6 +290,9 @@ export default function UserManagement({ session }: UserManagementProps) {
                 placeholder={t('team.personnel.searchPlaceholder')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
+                type="search"
+                name="personnel-search"
+                autoComplete="off"
                 className={`h-8 text-sm ${isDark ? 'bg-gray-900 border-gray-700 text-gray-200 placeholder:text-gray-600' : ''}`}
               />
             </div>
