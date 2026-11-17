@@ -70,12 +70,21 @@ export function wallClockNow(timeZone: string, now = new Date()): number {
 /** Today's date (yyyy-MM-dd) in `timeZone`. */
 export const todayInZone = (timeZone: string, now = new Date()) => new Date(wallClockNow(timeZone, now)).toISOString().slice(0, 10);
 
-/** The real instant (epoch ms) at which `date` starts (00:00) in `timeZone`. */
-export function zonedMidnight(date: string, timeZone: string): number {
-  const wall = Date.parse(`${date}T00:00:00.000Z`);
+/** The real instant (epoch ms) of the wall-clock `date` `time` (HH:mm) in `timeZone`. */
+export function zonedInstant(date: string, time: string, timeZone: string): number {
+  const wall = Date.parse(`${date}T${time}:00.000Z`);
   let instant = wall - (wallClockNow(timeZone, new Date(wall)) - wall);
   instant = wall - (wallClockNow(timeZone, new Date(instant)) - instant); // settles DST transitions
   return instant;
+}
+
+/** The real instant (epoch ms) at which `date` starts (00:00) in `timeZone`. */
+export const zonedMidnight = (date: string, timeZone: string): number => zonedInstant(date, '00:00', timeZone);
+
+/** Real [from, to) instants of a slot at its site; an end at or before the start runs past midnight. */
+export function zonedSlotInterval(date: string, start: string, end: string, timeZone: string): { from: number; to: number } {
+  const endDate = end <= start ? addDaysIso(date, 1) : date;
+  return { from: zonedInstant(date, start, timeZone), to: zonedInstant(endDate, end, timeZone) };
 }
 
 export function groupDates(startDate: string, rangeMode: RangeMode): string[] {

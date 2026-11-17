@@ -1,3 +1,5 @@
+import type { MissionProgress } from '@/lib/slot-booking-logic';
+
 export type SlotMode = 'HOURLY' | 'SHIFT';
 export type RangeMode = 'DAY' | 'WEEK' | 'TWO_WEEKS';
 export type BookingStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
@@ -432,4 +434,69 @@ export interface SlotSystem {
   hasLocation: boolean;
   /** Zone of the system's location; null when it has none. */
   timezone: string | null;
+}
+
+// ───────────────────────── Today tab ─────────────────────────
+
+/** A mission as shown on the Today tab and in the "link missions" dialog. */
+export interface TodayMission {
+  id: number;
+  code: string | null;
+  name: string | null;
+  description: string | null;
+  progress: MissionProgress;
+  /** The owner's own label for the status (e.g. "In progress"). */
+  statusLabel: string | null;
+  scheduledStart: string | null;
+  actualStart: string | null;
+  actualEnd: string | null;
+  /** Flight duration in minutes. */
+  flightMinutes: number | null;
+  location: string | null;
+  notes: string | null;
+  clientId: number | null;
+  clientName: string | null;
+  droneName: string | null;
+  droneCode: string | null;
+  typeName: string | null;
+  categoryName: string | null;
+  planningName: string | null;
+  planCode: string | null;
+  planDescription: string | null;
+  /** Slot the mission is linked to, if any. */
+  linkedSlotId: number | null;
+  linkedSlotLabel: string | null;
+}
+
+/** One approved slot of the pilot for today, with the missions flown in it. */
+export interface TodaySlot {
+  slotId: number;
+  bookingId: number;
+  groupId: number;
+  groupName: string;
+  clientId: number | null;
+  clientName: string | null;
+  systemName: string | null;
+  timezone: string;
+  /** Site-local date and times. */
+  date: string;
+  start: string;
+  end: string;
+  /** Real instants of the slot window, so the browser can run the timer in any zone. */
+  startAt: string;
+  endAt: string;
+  missions: TodayMission[];
+  weather: SlotWeather | null;
+}
+
+export interface TodayBoard {
+  serverNow: string;
+  slots: TodaySlot[];
+  /** The pilot's missions of today not linked to any slot. */
+  unlinkedMissions: number;
+}
+
+export interface SlotMissionCandidates {
+  slot: Pick<TodaySlot, 'slotId' | 'date' | 'start' | 'end' | 'startAt' | 'endAt' | 'groupName' | 'clientId' | 'clientName'>;
+  missions: TodayMission[];
 }

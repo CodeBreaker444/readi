@@ -44,6 +44,7 @@ import { incrementDailyEmailCount, isDailyEmailLimitReached } from '../email/ema
 import { logEvent, type AuditEventType } from '../auditLog/audit-log';
 import { isPublished, isWeekend, modificationLock, scheduleError } from '@/lib/slot-booking-logic';
 import {
+  clearSlotMissions,
   collisionKey,
   dateStr,
   findCollisions,
@@ -636,7 +637,7 @@ export async function createGroup(user: SessionUser, input: NewSlotGroupInput): 
 
     // Serialise group creation per company and re-check conflicts under the lock: the check above ran outside
     // this transaction, so another OPM may have published overlapping slots since.
-    await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext('slot_group_create'), ${user.ownerId}::int)`;
+    await tx.$queryRaw`SELECT 1 AS locked FROM (SELECT pg_advisory_xact_lock(hashtext('slot_group_create'), ${user.ownerId}::int)) AS group_lock`;
     const lockedRows = await tx.slot.findMany({
       where: { slot_date: { in: slotDates.map(toDate) }, slot_group: { fk_owner_id: user.ownerId, fk_client_id: clientScope, fk_tool_id: systemScope } },
       select: { slot_date: true },
@@ -852,6 +853,7 @@ export async function editSlot(
     }
     return live;
   });
+  if (closing) await clearSlotMissions(slotId);
 
   audit(user, 'UPDATE', 'slot', slotId,
     `Edited slot ${prettyDate(date)} ${slotLabel({ start: slot.start_time, end: slot.end_time })} in “${slot.slot_group.name}”: ${changes.join(', ')} — “${reason.trim()}”`,
@@ -1029,7 +1031,7 @@ export async function approveBooking(
   const declined = await prisma.$transaction(async (tx) => {
     // Serialise approvals per pilot so two slots that overlap cannot both be approved concurrently.
     // Taken before the slot lock everywhere, so lock order is consistent.
-    await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext('slot_booking_pilot'), ${b.fk_pilot_user_id}::int)`;
+    await tx.$queryRaw`SELECT 1 AS locked FROM (SELECT pg_advisory_xact_lock(hashtext('slot_booking_pilot'), ${b.fk_pilot_user_id}::int)) AS pilot_lock`;
     // Re-check under the pilot lock: a concurrent approval may have committed since the check above.
     const recheck = (await findCollisions(user.ownerId, [{ pilotId: b.fk_pilot_user_id, slot: { slotId: b.fk_slot_id, date, start: b.slot.start_time, end: b.slot.end_time } }])).get(collisionKey(b.fk_pilot_user_id, b.fk_slot_id));
     if (recheck) {

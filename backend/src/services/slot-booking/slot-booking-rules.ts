@@ -106,3 +106,16 @@ export async function getMemberIds(pilotGroupIds: number[]): Promise<Set<number>
   });
   return new Set(rows.map((r) => r.fk_user_id));
 }
+
+/**
+ * Drops the missions linked to a slot (Today's Schedule) once its approved pilot is gone, so the next pilot of the slot
+ * does not inherit them. Best effort: the Today board also only shows the slot pilot's own missions, so a failed
+ * cleanup must never fail the unassign / close that triggered it.
+ */
+export async function clearSlotMissions(slotId: number): Promise<void> {
+  try {
+    await prisma.slot_mission.deleteMany({ where: { fk_slot_id: slotId } });
+  } catch (e) {
+    console.error('[slot-booking] could not clear slot missions', slotId, e);
+  }
+}

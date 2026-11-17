@@ -6004,6 +6004,7 @@
     "today": "Heute",
     "tabs": {
       "slotBooking": "Slot-Buchung",
+      "today": "Heutiger Einsatzplan",
       "approved": "Genehmigte Slots",
       "myApproved": "Meine genehmigten Slots",
       "audit": "Audit-Protokoll",
@@ -6435,7 +6436,13 @@
       "expertHint": "Mitglieder werden bei Slots mit schwierigem Wetter zuerst empfohlen.",
       "tabDetails": "Details & Mitglieder",
       "tabLimits": "Flugstundenlimits",
-      "limits": {"hint":"Monatliches Flugstundenlimit pro Benutzer in Stunden. Leer lassen für kein Limit (grau). Ein Limit gehört zum Benutzer und gilt in allen Gruppen. Der OPM sieht ab 90 % Gelb und bei 100 % Rot beim Genehmigen und im Kalender.","noMembers":"Wählen Sie im ersten Tab Mitglieder aus, um ihre Limits zu setzen.","label":"Monatslimit für {{name}}","perMonth":"h / Monat","invalid":"Geben Sie ein Limit zwischen 0,1 und 744 Stunden ein oder lassen Sie es leer."},
+      "limits": {
+        "hint": "Monatliches Flugstundenlimit pro Benutzer in Stunden. Leer lassen für kein Limit (grau). Ein Limit gehört zum Benutzer und gilt in allen Gruppen. Der OPM sieht ab 90 % Gelb und bei 100 % Rot beim Genehmigen und im Kalender.",
+        "noMembers": "Wählen Sie im ersten Tab Mitglieder aus, um ihre Limits zu setzen.",
+        "label": "Monatslimit für {{name}}",
+        "perMonth": "h / Monat",
+        "invalid": "Geben Sie ein Limit zwischen 0,1 und 744 Stunden ein oder lassen Sie es leer."
+      },
       "expertTag": "Experte"
     },
     "opmOnly": "Nur der Operations Manager kann diese Seite sehen.",
@@ -6605,6 +6612,104 @@
       "score": "Punkte",
       "errors": {
         "load": "Pilotenverdienste konnten nicht geladen werden"
+      }
+    },
+    "todayTab": {
+      "title": "Heutiger Einsatzplan",
+      "subtitle": "Ihre heutigen Slots, die Missionen darin und ihr Live-Fortschritt",
+      "onlyPilots": "Der Tab „Heute“ zeigt die eigenen genehmigten Slots eines Piloten.",
+      "empty": "Sie haben heute keine genehmigten Slots.",
+      "emptyHint": "Genehmigte Slots erscheinen hier an ihrem Tag. Slots beantragen Sie unter Slot-Buchung.",
+      "openBoard": "Daily Board öffnen",
+      "refresh": "Aktualisieren",
+      "live": "Live",
+      "justNow": "gerade aktualisiert",
+      "secondsAgo": "vor {{count}} s aktualisiert",
+      "tiles": {
+        "slots": "Slots heute",
+        "duty": "Im Dienst",
+        "missions": "Missionen erledigt",
+        "inProgress": "Laufend",
+        "attention": "Handlungsbedarf"
+      },
+      "attentionBanner": "{{count}} Slot(s) brauchen Ihre Aufmerksamkeit",
+      "attentionHint": "Verknüpfen Sie jeden Slot mit einer Mission und starten Sie sie beim Fliegen im Daily Board.",
+      "unlinkedHint": "{{count}} Ihrer heutigen Missionen sind noch keinem Slot zugeordnet.",
+      "allGood": "Alle Slots sind im Plan",
+      "state": {
+        "no_mission": "Keine Mission verknüpft",
+        "waiting": "Bereit",
+        "no_progress": "Kein Fortschritt",
+        "in_progress": "Läuft",
+        "partial": "Nächste Mission offen",
+        "completed": "Abgeschlossen",
+        "incomplete": "Unvollständig"
+      },
+      "stateHint": {
+        "no_mission": "Verknüpfen Sie die Mission, die Sie in diesem Slot fliegen.",
+        "no_progress": "Der Slot hat begonnen, aber keine seiner Missionen wurde im Daily Board gestartet.",
+        "incomplete": "Der Slot ist beendet und Missionen wurden nicht geflogen."
+      },
+      "phase": {
+        "startsIn": "Beginnt in {{time}}",
+        "left": "Noch {{time}}",
+        "ended": "Beendet"
+      },
+      "overnight": "Über Nacht",
+      "siteTime": "Slot-Zeiten sind in der Zeitzone des Einsatzorts",
+      "yourTime": "Ihre Zeit {{time}}",
+      "noMissionHint": "Diesem Slot ist noch keine Mission zugeordnet.",
+      "linkMissions": "Missionen verknüpfen",
+      "addMission": "Weitere Mission verknüpfen",
+      "unlink": "Verknüpfung lösen",
+      "unlinked": "Verknüpfung gelöst",
+      "linked": "{{count}} Mission(en) verknüpft",
+      "skippedSome": "{{count}} Mission(en) wurden nicht verknüpft: sie wurden gerade mit einem anderen Slot verknüpft.",
+      "inFlight": "Im Flug {{time}} · seit {{at}}",
+      "flew": "Geflogen {{from}}–{{to}}",
+      "plannedAt": "Geplant {{time}}",
+      "noTime": "Keine geplante Zeit",
+      "legendNote": "Der Balken füllt sich mit der vergangenen Slot-Zeit",
+      "progress": {
+        "planned": "Geplant",
+        "in_progress": "Läuft",
+        "completed": "Erledigt",
+        "aborted": "Abgebrochen"
+      },
+      "fields": {
+        "scheduled": "Geplant",
+        "started": "Gestartet",
+        "ended": "Beendet",
+        "duration": "Flugzeit",
+        "drone": "Drohne",
+        "client": "Kunde",
+        "type": "Typ",
+        "category": "Kategorie",
+        "planning": "Planung",
+        "plan": "Missionsplan"
+      },
+      "dialog": {
+        "title": "Missionen verknüpfen",
+        "description": "{{date}} · {{slot}} — {{group}}",
+        "search": "Code, Name, Drohne, Plan suchen…",
+        "filterSuggested": "In diesem Slot",
+        "filterAll": "Ganzer Tag",
+        "empty": "Sie haben an diesem Tag keine Missionen.",
+        "emptyHint": "Für Sie geplante Missionen dieses Tages erscheinen hier. Planen Sie zuerst eine unter Operations.",
+        "noMatch": "Keine Mission gefunden.",
+        "suggested": "Im Slot-Zeitraum",
+        "linkedHere": "Mit diesem Slot verknüpft",
+        "linkedElsewhere": "Verknüpft mit {{slot}}",
+        "clientMismatch": "Diese Mission gehört zu einem anderen Kunden als der Slot.",
+        "selected": "{{count}} ausgewählt",
+        "confirm": "{{count}} verknüpfen",
+        "abortedHint": "Abgebrochene Missionen sind abgeschlossene Datensätze und können weder verknüpft noch wiederhergestellt werden. Planen Sie eine neue Mission, falls Sie noch fliegen müssen."
+      },
+      "errors": {
+        "load": "Die heutigen Slots konnten nicht geladen werden",
+        "candidates": "Die Missionen konnten nicht geladen werden",
+        "link": "Die Missionen konnten nicht verknüpft werden",
+        "unlink": "Die Verknüpfung konnte nicht gelöst werden"
       }
     }
   }

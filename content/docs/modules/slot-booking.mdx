@@ -8,6 +8,7 @@ Slot Booking lets the **Operations Manager (OPM)** open time slots and lets **pi
 | Page | Who sees it | Purpose |
 |---|---|---|
 | **Slot Booking** | Everyone | OPM: create and manage slot groups. Pilot: browse groups and request slots |
+| **Today's Schedule** | PIC (pilot) | The pilot's approved slots of today on a timeline, the missions linked to each slot and their live progress from the Daily Board |
 | **Approved Slots** | Everyone | Approved jobs and the PDF the OPM attached. Pilots see their own, the OPM sees all |
 | **Calendar** | OPM, Admin, Super Admin | Seven days of every slot with group, client, assigned pilot, flying hours and weather in one view |
 | **Day Preview** | OPM, Admin, Super Admin | Every slot of one day with its client and assigned pilot. Unassigned slots are red |
@@ -350,6 +351,41 @@ The **My requests** tab, next to **Available slot groups**, shows the number of 
 - Making a **new** request is not blocked by the lock.
 - The server enforces this too: a locked change answers *Requests can no longer be changed*.
 - Approved requests cannot be changed by the pilot. Ask the OPM.
+
+### Today's Schedule
+
+The **Today's Schedule** tab is the pilot's day sheet. It lists every slot the pilot is **approved** for today, in time order, as a timeline. "Today" is the date at each slot group's [site](#time-zone); a night slot from yesterday (for example 22:00–06:00) stays on the list until it ends.
+
+| Part | What it shows |
+|---|---|
+| **Header** | The date, a live clock and when the data was last refreshed, plus **Open Daily Board** |
+| **Tiles** | Slots today, hours on duty, missions done out of linked, missions in progress now, and slots that need attention |
+| **Banner** | Red when a slot needs attention, or when some of today's missions are not linked to a slot yet; green when every slot is on track |
+| **Slot card** | Time, duration, slot group, client, system, site zone, weather, its state, a **timer bar** that fills as the slot's time passes (*Starts in…*, *…left*, *Ended*), and the linked missions |
+
+**Link missions.** Click **Link missions** (or **Link another mission**) on a slot. A dialog lists the pilot's missions for that day with all their details: code and name, status, planned/started/ended time, flight time, drone, client, type, category, planning, mission plan code and description, location, description and notes. Missions planned inside the slot's time are marked **In slot window**, shown first and pre-selected. Pick one or more and confirm.
+
+- Listed missions: the slot pilot's missions planned or started on the slot's day, missions still in progress, and planned missions without a date. Imported missions and missions still waiting for OPM approval are not listed (as on the Daily Board). Aborted or cancelled missions of that day are listed greyed out at the end with a note, so you can see why one is missing; an aborted mission is a closed record and cannot be linked or restored, so plan a new mission instead.
+- A mission can be linked to **one slot only**. A mission linked to another slot is greyed out with *Linked to …*; unlink it there first.
+- A mission for a different client than the slot shows an amber warning, but can be linked.
+- Hover a linked mission and click **×** to unlink it.
+- Only the slot's approved pilot, or the OPM, can link. The OPM, the slot's pilot or the pilot the mission belongs to can unlink, so a link left on a slot that lost its pilot can always be removed. Such a stale link never blocks the mission: linking it to another slot replaces it. If two requests link the same mission at once, one wins and the other is told how many missions were skipped. Each change is written to the [audit log](#audit-log) on the slot.
+
+**Live progress.** The mission status comes straight from the mission, so starting a mission on the **Daily Board** (Scheduled → In progress) or finishing it (→ Done) shows on the Today's Schedule tab at the next refresh. The tab refreshes every 20 seconds and when the browser tab is shown again; **Refresh** reloads it at once. An in-progress mission shows how long it has been in flight.
+
+**Slot states.**
+
+| State | When | Colour |
+|---|---|---|
+| **No mission linked** | No mission (or only aborted ones) is linked | Red |
+| **Ready** | Missions are linked and the slot has not started | Violet |
+| **No progress** | The slot has started (or ended) and none of its missions was started on the Daily Board | Red |
+| **In progress** | One of its missions is in progress | Blue |
+| **Next mission pending** | The slot is running, some missions are done, the next has not started | Amber |
+| **Completed** | Every linked mission is done | Green |
+| **Incomplete** | The slot ended with some missions done and others not flown | Red |
+
+Slot and mission times are shown in the slot group's site time zone. The date and clock in the header show the site's time too, with the zone name; when your own zone differs, your local time is added next to it.
 
 ---
 

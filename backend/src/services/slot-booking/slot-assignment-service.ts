@@ -6,7 +6,7 @@ import { prisma } from '@/lib/prisma';
 import { prettyDate, SLOT_DATE_RE, slotLabel } from '@/lib/slot-booking-utils';
 import { getPilotFlights } from './flight-limits-service';
 import { buildMerits } from './pilot-stats-service';
-import { collisionKey, dateStr, findCollisions, getAudiences, getMemberIds, groupZone, slotEnded, toDate } from './slot-booking-rules';
+import { clearSlotMissions, collisionKey, dateStr, findCollisions, getAudiences, getMemberIds, groupZone, slotEnded, toDate } from './slot-booking-rules';
 import { ASSIGNED_NOTE, assertManager, audit, getOwnedSlot, notify, pilotTarget, SlotBookingError, userNames } from './slot-booking-service';
 import { getWeatherForSlots, isInForecastRange } from './slot-weather-service';
 
@@ -164,6 +164,7 @@ export async function unassignPilot(user: SessionUser, slotId: number): Promise<
     where: { booking_id: booking.booking_id },
     data: { status: 'REJECTED', decided_at: new Date(), decided_by: user.userId, decision_note: 'Unassigned by OPM' },
   });
+  await clearSlotMissions(slotId);
   const pilotName = (await userNames([booking.fk_pilot_user_id])).get(booking.fk_pilot_user_id) ?? 'Pilot';
   const date = dateStr(slot.slot_date);
   audit(user, 'UPDATE', 'slot_booking', booking.booking_id,

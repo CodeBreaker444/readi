@@ -156,3 +156,72 @@ export function flightLevel(hours: number, limit: number | null): FlightLevel {
   if (hours >= limit * FLIGHT_WARN_RATIO) return 'warn';
   return 'ok';
 }
+
+// ───────────────────────── Today tab ─────────────────────────
+
+/** Where a linked mission is on the Daily Board. */
+export type MissionProgress = 'planned' | 'in_progress' | 'completed' | 'aborted';
+
+// Daily Board column ids (see operation-board-service / auto-abort-service); status_name wins when it is set.
+const BOARD_PROGRESS_BY_ID: Record<number, MissionProgress> = { 1: 'planned', 2: 'in_progress', 3: 'completed', 5: 'aborted' };
+const PROGRESS_BY_NAME: Record<string, MissionProgress> = {
+  PLANNED: 'planned',
+  SCHEDULED: 'planned',
+  IN_PROGRESS: 'in_progress',
+  IN_FLIGHT: 'in_progress',
+  'IN ESECUZIONE': 'in_progress',
+  COMPLETED: 'completed',
+  COMPLETATA: 'completed',
+  ABORTED: 'aborted',
+  CANCELLED: 'aborted',
+  CANCELED: 'aborted',
+};
+
+/** Reads a mission's progress the same way the Daily Board moves it: Scheduled → In progress → Done (or Aborted). */
+export function missionProgress(m: {
+  statusName?: string | null;
+  statusId?: number | null;
+  actualStart?: Date | string | null;
+  actualEnd?: Date | string | null;
+}): MissionProgress {
+  const byName = m.statusName ? PROGRESS_BY_NAME[m.statusName.trim().toUpperCase()] : undefined;
+  if (byName) return byName;
+  const byId = m.statusId != null ? BOARD_PROGRESS_BY_ID[m.statusId] : undefined;
+  if (byId) return byId;
+  if (m.actualEnd) return 'completed';
+  if (m.actualStart) return 'in_progress';
+  return 'planned';
+}
+
+export type SlotPhase = 'upcoming' | 'live' | 'ended';
+
+export const slotPhase = (now: number, from: number, to: number): SlotPhase => (now < from ? 'upcoming' : now < to ? 'live' : 'ended');
+
+/** Share (0–1) of the slot's time that has passed. */
+export const slotElapsed = (now: number, from: number, to: number) => (to <= from ? 1 : Math.min(1, Math.max(0, (now - from) / (to - from))));
+
+/**
+ * What a slot of the Today tab shows:
+ * - no_mission: nothing (or only aborted missions) linked yet
+ * - waiting: missions linked, slot not started
+ * - no_progress: slot running or over, but none of its missions was started on the Daily Board
+ * - in_progress: a linked mission is in progress
+ * - partial: slot running, some missions done, the next one not started yet
+ * - completed: every linked mission is done
+ * - incomplete: slot over, some missions done, others never flown
+ */
+export type TodaySlotState = 'no_mission' | 'waiting' | 'no_progress' | 'in_progress' | 'partial' | 'completed' | 'incomplete';
+
+/** States the pilot must act on; shown in red. */
+export const TODAY_ALERT_STATES: readonly TodaySlotState[] = ['no_mission', 'no_progress', 'incomplete'];
+
+export function todaySlotState(phase: SlotPhase, missions: MissionProgress[]): TodaySlotState {
+  if (missions.includes('in_progress')) return 'in_progress';
+  const active = missions.filter((p) => p !== 'aborted');
+  if (!active.length) return 'no_mission';
+  if (active.every((p) => p === 'completed')) return 'completed';
+  const someDone = active.includes('completed');
+  if (phase === 'upcoming') return 'waiting';
+  if (phase === 'live') return someDone ? 'partial' : 'no_progress';
+  return someDone ? 'incomplete' : 'no_progress';
+}

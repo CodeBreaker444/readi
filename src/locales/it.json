@@ -6146,6 +6146,7 @@
     "today": "Oggi",
     "tabs": {
       "slotBooking": "Prenotazione slot",
+      "today": "Programma di oggi",
       "approved": "Slot approvati",
       "myApproved": "I miei slot approvati",
       "audit": "Registro di audit",
@@ -6577,7 +6578,13 @@
       "expertHint": "I membri sono consigliati per primi per gli slot con meteo difficile.",
       "tabDetails": "Dettagli e membri",
       "tabLimits": "Limiti di volo",
-      "limits": {"hint":"Limite mensile di volo per utente, in ore. Lascia vuoto per nessun limite (grigio). Il limite appartiene all'utente e vale in tutti i gruppi. L'OPM vede il giallo dal 90% e il rosso al 100% in fase di approvazione e nel calendario.","noMembers":"Seleziona i membri nella prima scheda per impostare i loro limiti.","label":"Limite mensile per {{name}}","perMonth":"h / mese","invalid":"Inserisci un limite tra 0,1 e 744 ore oppure lascia vuoto."},
+      "limits": {
+        "hint": "Limite mensile di volo per utente, in ore. Lascia vuoto per nessun limite (grigio). Il limite appartiene all'utente e vale in tutti i gruppi. L'OPM vede il giallo dal 90% e il rosso al 100% in fase di approvazione e nel calendario.",
+        "noMembers": "Seleziona i membri nella prima scheda per impostare i loro limiti.",
+        "label": "Limite mensile per {{name}}",
+        "perMonth": "h / mese",
+        "invalid": "Inserisci un limite tra 0,1 e 744 ore oppure lascia vuoto."
+      },
       "expertTag": "Esperto"
     },
     "opmOnly": "Solo l'Operations Manager può vedere questa pagina.",
@@ -6747,6 +6754,104 @@
       "score": "Punteggio",
       "errors": {
         "load": "Impossibile caricare i meriti dei piloti"
+      }
+    },
+    "todayTab": {
+      "title": "Programma di oggi",
+      "subtitle": "I tuoi slot di oggi, le missioni al loro interno e il loro avanzamento in tempo reale",
+      "onlyPilots": "La scheda Oggi mostra gli slot approvati del pilota.",
+      "empty": "Oggi non hai slot approvati.",
+      "emptyHint": "Gli slot approvati compaiono qui nel loro giorno. Richiedi gli slot in Prenotazione slot.",
+      "openBoard": "Apri Daily Board",
+      "refresh": "Aggiorna",
+      "live": "Live",
+      "justNow": "aggiornato ora",
+      "secondsAgo": "aggiornato {{count}} s fa",
+      "tiles": {
+        "slots": "Slot di oggi",
+        "duty": "In servizio",
+        "missions": "Missioni completate",
+        "inProgress": "In corso",
+        "attention": "Da verificare"
+      },
+      "attentionBanner": "{{count}} slot richiedono la tua attenzione",
+      "attentionHint": "Collega una missione a ogni slot e avviala dal Daily Board quando voli.",
+      "unlinkedHint": "{{count}} delle tue missioni di oggi non sono ancora collegate a uno slot.",
+      "allGood": "Tutti gli slot sono in regola",
+      "state": {
+        "no_mission": "Nessuna missione collegata",
+        "waiting": "Pronto",
+        "no_progress": "Nessun avanzamento",
+        "in_progress": "In corso",
+        "partial": "Prossima missione in attesa",
+        "completed": "Completato",
+        "incomplete": "Incompleto"
+      },
+      "stateHint": {
+        "no_mission": "Collega la missione che voli in questo slot.",
+        "no_progress": "Lo slot è iniziato ma nessuna delle sue missioni è stata avviata dal Daily Board.",
+        "incomplete": "Lo slot è terminato con missioni non volate."
+      },
+      "phase": {
+        "startsIn": "Inizia tra {{time}}",
+        "left": "Mancano {{time}}",
+        "ended": "Terminato"
+      },
+      "overnight": "Notturno",
+      "siteTime": "Gli orari degli slot sono nel fuso orario del sito",
+      "yourTime": "la tua ora {{time}}",
+      "noMissionHint": "Nessuna missione collegata a questo slot.",
+      "linkMissions": "Collega missioni",
+      "addMission": "Collega un'altra missione",
+      "unlink": "Scollega missione",
+      "unlinked": "Missione scollegata",
+      "linked": "{{count}} missione/i collegata/e",
+      "skippedSome": "{{count}} missione/i non collegata/e: appena collegata/e a un altro slot.",
+      "inFlight": "In volo {{time}} · dalle {{at}}",
+      "flew": "Volato {{from}}–{{to}}",
+      "plannedAt": "Pianificata {{time}}",
+      "noTime": "Nessun orario pianificato",
+      "legendNote": "La barra si riempie con il passare del tempo dello slot",
+      "progress": {
+        "planned": "Pianificata",
+        "in_progress": "In corso",
+        "completed": "Completata",
+        "aborted": "Annullata"
+      },
+      "fields": {
+        "scheduled": "Pianificata",
+        "started": "Avviata",
+        "ended": "Terminata",
+        "duration": "Tempo di volo",
+        "drone": "Drone",
+        "client": "Cliente",
+        "type": "Tipo",
+        "category": "Categoria",
+        "planning": "Pianificazione",
+        "plan": "Piano missione"
+      },
+      "dialog": {
+        "title": "Collega missioni",
+        "description": "{{date}} · {{slot}} — {{group}}",
+        "search": "Cerca codice, nome, drone, piano…",
+        "filterSuggested": "In questo slot",
+        "filterAll": "Tutto il giorno",
+        "empty": "Non hai missioni per questo giorno.",
+        "emptyHint": "Le missioni pianificate per te in questo giorno compaiono qui. Pianificane una prima in Operations.",
+        "noMatch": "Nessuna missione corrispondente.",
+        "suggested": "Nella finestra dello slot",
+        "linkedHere": "Collegata a questo slot",
+        "linkedElsewhere": "Collegata a {{slot}}",
+        "clientMismatch": "Questa missione è per un cliente diverso da quello dello slot.",
+        "selected": "{{count}} selezionate",
+        "confirm": "Collega {{count}}",
+        "abortedHint": "Le missioni annullate sono record chiusi e non possono essere collegate né ripristinate. Pianifica una nuova missione se devi ancora volare."
+      },
+      "errors": {
+        "load": "Impossibile caricare gli slot di oggi",
+        "candidates": "Impossibile caricare le missioni",
+        "link": "Impossibile collegare le missioni",
+        "unlink": "Impossibile scollegare la missione"
       }
     }
   }

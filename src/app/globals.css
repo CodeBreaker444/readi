@@ -452,3 +452,8 @@
 .checklist-container *::after {
   box-sizing: border-box !important;
 } */
+/* Slot Booking → Today: light sweep across the running part of a live slot. */
+@keyframes slotShimmer {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(100%); }
+}

@@ -28,7 +28,7 @@ export default function PilotGroupsPage() {
   }, [load]);
 
   return (
-    <SlotBookingShell title={t('slotBooking.pilotGroups.title')} subtitle={t('slotBooking.pilotGroups.subtitle')} canManage={me?.canManage}>
+    <SlotBookingShell title={t('slotBooking.pilotGroups.title')} subtitle={t('slotBooking.pilotGroups.subtitle')} canManage={me?.canManage} canBook={me?.canBook}>
       {(isDark) =>
         error ? (
           <ErrorBlock isDark={isDark} message={error} onRetry={load} />
