@@ -25,7 +25,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Avatar } from './Avatar';
-import { apiMsg, Btn, card, dialogSurface, EmptyBlock, ErrorBlock, heading, inputCls, LoadingBlock, muted, Pill, SearchBox } from './ui';
+import { apiMsg, Btn, card, dialogSurface, EmptyBlock, ErrorBlock, heading, inputCls, muted, Pill, SearchBox } from './ui';
+import { PilotGroupsSkeleton } from './skeletons';
 
 const BASE = '/api/operation/slot-booking/pilot-groups';
 const EXAMPLES = ['Experts', 'Newbies', 'External'];
@@ -445,7 +446,7 @@ export function PilotGroupsView({ isDark }: { isDark: boolean }) {
   };
 
   if (error) return <ErrorBlock isDark={isDark} message={error} onRetry={load} />;
-  if (!groups) return <LoadingBlock isDark={isDark} />;
+  if (!groups) return <PilotGroupsSkeleton isDark={isDark} />;
 
   const q = search.trim().toLowerCase();
   const filtered = q

@@ -2,7 +2,8 @@
 
 import { ApprovedSlots } from '@/components/slot-booking/ApprovedSlots';
 import { SlotBookingShell } from '@/components/slot-booking/SlotBookingShell';
-import { apiMsg, ErrorBlock, LoadingBlock } from '@/components/slot-booking/ui';
+import { apiMsg, ErrorBlock } from '@/components/slot-booking/ui';
+import { ApprovedSkeleton } from '@/components/slot-booking/skeletons';
 import type { SlotMe } from '@/config/types/slot-booking';
 import axios from 'axios';
 import { useCallback, useEffect, useState } from 'react';
@@ -33,7 +34,7 @@ export default function ApprovedSlotsPage() {
         error ? (
           <ErrorBlock isDark={isDark} message={error} onRetry={load} />
         ) : !me ? (
-          <LoadingBlock isDark={isDark} rows={1} />
+          <ApprovedSkeleton isDark={isDark} />
         ) : (
           <ApprovedSlots isDark={isDark} me={me} />
         )

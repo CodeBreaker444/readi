@@ -3,7 +3,7 @@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import type { CalendarAlert, CalendarDay, CalendarSlot, SlotWeather, WeekCalendar } from '@/config/types/slot-booking';
-import { addDaysIso, slotLabel, todayIso, weekdayOf } from '@/lib/slot-booking-utils';
+import { addDaysIso, localTodayIso, oldestLiveDate, slotLabel, weekdayOf } from '@/lib/slot-booking-utils';
 import { cn } from '@/lib/utils';
 import axios from 'axios';
 import { AlertTriangle, Building2, Check, ChevronDown, CalendarDays, Layers, ChevronLeft, ChevronRight, CircleAlert, CircleCheck, Clock, Cloud, CloudLightning, Mail, Search, Sun, UserRound, Users, Wind } from 'lucide-react';
@@ -11,7 +11,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AssignPicker } from './AssignPicker';
 import { Avatar } from './Avatar';
-import { apiMsg, Btn, card, FlightChip, FlightWarning, dialogSurface, EmptyBlock, ErrorBlock, heading, inputCls, LoadingBlock, muted, Pill, useSlotI18n, WeatherBadge, WeatherDot } from './ui';
+import { apiMsg, Btn, card, FlightChip, FlightWarning, dialogSurface, EmptyBlock, ErrorBlock, heading, inputCls, muted, Pill, useSlotI18n, WeatherBadge, WeatherDot } from './ui';
+import { CalendarSkeleton } from './skeletons';
 
 const BASE = '/api/operation/slot-booking';
 const GROUP_TONES = ['bg-violet-500', 'bg-sky-500', 'bg-amber-500', 'bg-rose-500', 'bg-teal-500', 'bg-indigo-500'] as const;
@@ -117,7 +118,7 @@ function Section({ isDark, title, children }: { isDark: boolean; title: string; 
 export function CalendarView({ isDark }: { isDark: boolean }) {
   const s = useSlotI18n();
   const { t } = useTranslation();
-  const [start, setStart] = useState(todayIso());
+  const [start, setStart] = useState(localTodayIso());
   const [data, setData] = useState<WeekCalendar | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [slotId, setSlotId] = useState<number | null>(null);
@@ -179,7 +180,8 @@ export function CalendarView({ isDark }: { isDark: boolean }) {
   const [showAllCollisions, setShowAllCollisions] = useState(false);
   const slot = all.find((x) => x.slotId === slotId) ?? null;
   const day = data?.days.find((d) => d.date === dayDate) ?? null;
-  const today = todayIso();
+  const today = localTodayIso();
+  const oldestLive = oldestLiveDate();
 
   const q = query.trim().toLowerCase();
   const matches = (x: CalendarSlot) => {
@@ -324,7 +326,7 @@ export function CalendarView({ isDark }: { isDark: boolean }) {
         <div className="flex flex-wrap items-center gap-2">
           <div className={cn('inline-flex items-center rounded-lg border overflow-hidden', isDark ? 'border-white/[0.1]' : 'border-gray-200')}>
             <button type="button" className={cn(seg(false), 'px-2')} onClick={() => setStart((d) => addDaysIso(d, -7))} aria-label="-7"><ChevronLeft size={15} /></button>
-            <button type="button" className={cn(seg(false), 'border-x', isDark ? 'border-white/[0.1]' : 'border-gray-200')} onClick={() => setStart(todayIso())} disabled={start === today}>
+            <button type="button" className={cn(seg(false), 'border-x', isDark ? 'border-white/[0.1]' : 'border-gray-200')} onClick={() => setStart(localTodayIso())} disabled={start === today}>
               {t('slotBooking.today')}
             </button>
             <button type="button" className={cn(seg(false), 'px-2')} onClick={() => setStart((d) => addDaysIso(d, 7))} aria-label="+7"><ChevronRight size={15} /></button>
@@ -362,7 +364,7 @@ export function CalendarView({ isDark }: { isDark: boolean }) {
       {error ? (
         <ErrorBlock isDark={isDark} message={error} onRetry={load} />
       ) : !data ? (
-        <LoadingBlock isDark={isDark} rows={1} />
+        <CalendarSkeleton isDark={isDark} toolbar={false} />
       ) : data.total === 0 ? (
         <EmptyBlock isDark={isDark}>
           <CalendarDays size={22} className="mx-auto mb-2" />
@@ -523,7 +525,7 @@ export function CalendarView({ isDark }: { isDark: boolean }) {
                 </div>
               </Section>
 
-              {slot.date >= today && !(slot.pilot && !slot.pilot.assignedByOpm) && (
+              {slot.date >= oldestLive && !(slot.pilot && !slot.pilot.assignedByOpm) && (
                 <Section isDark={isDark} title={t('slotBooking.assign.title')}>
                   <AssignPicker slotId={slot.slotId} isDark={isDark} onChanged={load} />
                 </Section>

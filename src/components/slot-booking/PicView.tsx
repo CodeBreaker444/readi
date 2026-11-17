@@ -18,7 +18,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Skeleton } from '@/components/ui/skeleton';
 import type { GroupDetail, MyBookingRow, MyStats, SlotGroup, SlotMe } from '@/config/types/slot-booking';
 import { groupDates, slotLabel } from '@/lib/slot-booking-utils';
 import { cn } from '@/lib/utils';
@@ -28,7 +27,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { MyRequestsTable } from './MyRequestsTable';
-import { apiMsg, Btn, card, dialogSurface, EmptyBlock, GroupCalendar, heading, Legend, LoadingBlock, muted, Pill, SearchBox, useSlotI18n } from './ui';
+import { apiMsg, Btn, card, dialogSurface, EmptyBlock, GroupCalendar, heading, Legend, muted, Pill, SearchBox, useSlotI18n } from './ui';
+import { GroupDetailSkeleton, RequestsSkeleton } from './skeletons';
 
 const BASE = '/api/operation/slot-booking';
 
@@ -206,7 +206,7 @@ export function PicView({ isDark, me, groups }: { isDark: boolean; me: SlotMe; g
           </div>
         </div>
       ) : detailLoading ? (
-        <LoadingBlock isDark={isDark} rows={1} />
+        <GroupDetailSkeleton isDark={isDark} />
       ) : (
         <>
           <div className={cn('flex items-center gap-1 border-b', isDark ? 'border-white/[0.08]' : 'border-gray-200')}>
@@ -271,7 +271,7 @@ export function PicView({ isDark, me, groups }: { isDark: boolean; me: SlotMe; g
           {listTab === 'requests' && me.canBook && (
             <div className="space-y-3">
               {myBookings === null ? (
-                <Skeleton className={cn('h-40 rounded-xl', isDark && 'bg-white/[0.06]')} />
+                <RequestsSkeleton isDark={isDark} />
               ) : myBookings.length === 0 ? (
                 <EmptyBlock isDark={isDark}>{t('slotBooking.pic.noRequests')}</EmptyBlock>
               ) : (

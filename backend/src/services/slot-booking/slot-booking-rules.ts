@@ -1,7 +1,7 @@
 import 'server-only';
 
 import { intervalsOverlap, slotInterval } from '@/lib/slot-booking-logic';
-import { addDaysIso, DEFAULT_SLOT_TIMEZONE, normalizeTimeZone, prettyDate, slotLabel, wallClockNow } from '@/lib/slot-booking-utils';
+import { addDaysIso, DEFAULT_SLOT_TIMEZONE, normalizeTimeZone, prettyDate, slotLabel, wallClockNow, zonedSlotInterval } from '@/lib/slot-booking-utils';
 import { prisma } from '@/lib/prisma';
 
 
@@ -22,7 +22,8 @@ export const groupZone = (g: { timezone?: string | null }) => normalizeTimeZone(
 
 export interface CollisionCheck {
   pilotId: number;
-  slot: { slotId: number; date: string; start: string; end: string };
+  /** `timezone` is the zone of the slot's group: slot times are wall-clock at the site, so slots of groups in different zones are compared as real instants. */
+  slot: { slotId: number; date: string; start: string; end: string; timezone: string };
 }
 
 export const collisionKey = (pilotId: number, slotId: number) => `${pilotId}:${slotId}`;
@@ -43,25 +44,25 @@ export async function findCollisions(ownerId: number, checks: CollisionCheck[]):
       fk_pilot_user_id: { in: [...new Set(checks.map((c) => c.pilotId))] },
       slot: {
         is_active: true,
-        // ±1 day: a 22:00–06:00 slot reaches into the next date.
-        slot_date: { gte: toDate(addDaysIso(dates[0], -1)), lte: toDate(addDaysIso(dates[dates.length - 1], 1)) },
+        // ±2 days: a 22:00–06:00 slot reaches into the next date, and sites up to 26 h apart shift the same slot across dates.
+        slot_date: { gte: toDate(addDaysIso(dates[0], -2)), lte: toDate(addDaysIso(dates[dates.length - 1], 2)) },
         slot_group: { fk_owner_id: ownerId },
       },
     },
     select: {
       fk_slot_id: true,
       fk_pilot_user_id: true,
-      slot: { select: { slot_date: true, start_time: true, end_time: true, slot_group: { select: { name: true } } } },
+      slot: { select: { slot_date: true, start_time: true, end_time: true, slot_group: { select: { name: true, timezone: true } } } },
     },
   });
 
   for (const c of checks) {
-    const mine = slotInterval(c.slot.date, c.slot.start, c.slot.end);
+    const mine = zonedSlotInterval(c.slot.date, c.slot.start, c.slot.end, c.slot.timezone);
     const clash = rows.find(
       (r) =>
         r.fk_pilot_user_id === c.pilotId &&
         r.fk_slot_id !== c.slot.slotId &&
-        intervalsOverlap(mine, slotInterval(dateStr(r.slot.slot_date), r.slot.start_time, r.slot.end_time)),
+        intervalsOverlap(mine, zonedSlotInterval(dateStr(r.slot.slot_date), r.slot.start_time, r.slot.end_time, groupZone(r.slot.slot_group))),
     );
     if (clash) {
       result.set(

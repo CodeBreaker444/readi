@@ -39,7 +39,7 @@ export async function getSlotCandidates(user: SessionUser, slotId: number): Prom
   const pool = merits.filter((m) => !eligible || eligible.has(m.userId));
   const collisions = await findCollisions(
     user.ownerId,
-    pool.map((m) => ({ pilotId: m.userId, slot: { slotId, date, start: slot.start_time, end: slot.end_time } })),
+    pool.map((m) => ({ pilotId: m.userId, slot: { slotId, date, start: slot.start_time, end: slot.end_time, timezone: groupZone(slot.slot_group) } })),
   );
   const requested = new Set(live.map((l) => l.fk_pilot_user_id));
   const flights = await getPilotFlights(user.ownerId, pool.map((m) => m.userId));
@@ -98,7 +98,7 @@ export async function assignPilot(user: SessionUser, slotId: number, pilotId: nu
     throw new SlotBookingError('This pilot is not in the pilot groups this slot group is offered to', 400);
   }
 
-  const clash = (await findCollisions(user.ownerId, [{ pilotId, slot: { slotId, date, start: slot.start_time, end: slot.end_time } }])).get(collisionKey(pilotId, slotId));
+  const clash = (await findCollisions(user.ownerId, [{ pilotId, slot: { slotId, date, start: slot.start_time, end: slot.end_time, timezone: groupZone(slot.slot_group) } }])).get(collisionKey(pilotId, slotId));
   const names = await userNames([pilotId]);
   const pilotName = names.get(pilotId) ?? 'Pilot';
   if (clash) throw new SlotBookingError(`${pilotName} is already assigned to an overlapping slot: ${clash}`, 409, { collision: clash });

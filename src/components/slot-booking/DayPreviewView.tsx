@@ -2,14 +2,15 @@
 
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import type { DayPreview, DayPreviewRow } from '@/config/types/slot-booking';
-import { addDaysIso, slotLabel, todayIso } from '@/lib/slot-booking-utils';
+import { addDaysIso, localTodayIso, oldestLiveDate, slotLabel } from '@/lib/slot-booking-utils';
 import { cn } from '@/lib/utils';
 import axios from 'axios';
 import { CalendarDays, ChevronLeft, ChevronRight, CircleAlert, CircleCheck } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AssignPicker } from './AssignPicker';
-import { apiMsg, Btn, card, dialogSurface, EmptyBlock, ErrorBlock, heading, inputCls, LoadingBlock, muted, Pill, useSlotI18n, WeatherBadge } from './ui';
+import { apiMsg, Btn, card, dialogSurface, EmptyBlock, ErrorBlock, heading, inputCls, muted, Pill, useSlotI18n, WeatherBadge } from './ui';
+import { DayPreviewSkeleton } from './skeletons';
 
 const BASE = '/api/operation/slot-booking';
 
@@ -20,7 +21,7 @@ const BASE = '/api/operation/slot-booking';
 export function DayPreviewView({ isDark }: { isDark: boolean }) {
   const s = useSlotI18n();
   const { t } = useTranslation();
-  const [date, setDate] = useState(todayIso());
+  const [date, setDate] = useState(localTodayIso());
   const [data, setData] = useState<DayPreview | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [assignRow, setAssignRow] = useState<DayPreviewRow | null>(null);
@@ -41,7 +42,8 @@ export function DayPreviewView({ isDark }: { isDark: boolean }) {
   }, [load]);
 
   const shift = (days: number) => setDate((d) => addDaysIso(d, days));
-  const past = date < todayIso();
+  // Slot dates are site dates: only a date that is over everywhere is "past"; the server rejects the rest per slot.
+  const past = date < oldestLiveDate();
   const th = cn('text-left text-[11px] font-semibold uppercase tracking-wider px-4 py-2.5', muted(isDark));
   const pct = data && data.total ? Math.round((data.assigned / data.total) * 100) : 0;
   const allDone = !!data && data.total > 0 && data.unassigned === 0;
@@ -58,14 +60,14 @@ export function DayPreviewView({ isDark }: { isDark: boolean }) {
           aria-label={t('slotBooking.dayPreview.date')}
         />
         <Btn isDark={isDark} onClick={() => shift(1)}><ChevronRight size={14} /></Btn>
-        <Btn isDark={isDark} onClick={() => setDate(todayIso())} disabled={date === todayIso()}>{t('slotBooking.today')}</Btn>
+        <Btn isDark={isDark} onClick={() => setDate(localTodayIso())} disabled={date === localTodayIso()}>{t('slotBooking.today')}</Btn>
         <span className={cn('text-sm font-medium ml-2', heading(isDark))}>{s.date(date)}</span>
       </div>
 
       {error ? (
         <ErrorBlock isDark={isDark} message={error} onRetry={load} />
       ) : !data ? (
-        <LoadingBlock isDark={isDark} rows={1} />
+        <DayPreviewSkeleton isDark={isDark} controls={false} />
       ) : data.total === 0 ? (
         <EmptyBlock isDark={isDark}>
           <CalendarDays size={22} className="mx-auto mb-2" />

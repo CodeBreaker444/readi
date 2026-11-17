@@ -2,7 +2,8 @@
 
 import { DayPreviewView } from '@/components/slot-booking/DayPreviewView';
 import { SlotBookingShell } from '@/components/slot-booking/SlotBookingShell';
-import { apiMsg, EmptyBlock, ErrorBlock, LoadingBlock } from '@/components/slot-booking/ui';
+import { apiMsg, EmptyBlock, ErrorBlock } from '@/components/slot-booking/ui';
+import { DayPreviewSkeleton } from '@/components/slot-booking/skeletons';
 import type { SlotMe } from '@/config/types/slot-booking';
 import axios from 'axios';
 import { useCallback, useEffect, useState } from 'react';
@@ -33,7 +34,7 @@ export default function DayPreviewPage() {
         error ? (
           <ErrorBlock isDark={isDark} message={error} onRetry={load} />
         ) : !me ? (
-          <LoadingBlock isDark={isDark} rows={1} />
+          <DayPreviewSkeleton isDark={isDark} />
         ) : me.canManage ? (
           <DayPreviewView isDark={isDark} />
         ) : (

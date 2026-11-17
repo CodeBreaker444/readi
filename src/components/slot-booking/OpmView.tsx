@@ -20,7 +20,8 @@ import {
 import { CreateGroupDialog } from './CreateGroupDialog';
 import { SlotDetailDialog, SlotSettingsDialog } from './OpmDialogs';
 import { SlotAuditTable } from './SlotAuditTable';
-import { apiMsg, Btn, card, EmptyBlock, GroupCalendar, heading, Legend, LoadingBlock, muted, Pill, SearchBox, useSlotI18n } from './ui';
+import { apiMsg, Btn, card, EmptyBlock, GroupCalendar, heading, Legend, muted, Pill, SearchBox, useSlotI18n } from './ui';
+import { GroupDetailSkeleton } from './skeletons';
 
 const BASE = '/api/operation/slot-booking';
 
@@ -182,7 +183,7 @@ export function OpmView({
           <SlotAuditTable isDark={isDark} groupId={detail.group.id} compact />
         </div>
       ) : detailLoading ? (
-        <LoadingBlock isDark={isDark} rows={1} />
+        <GroupDetailSkeleton isDark={isDark} audit />
       ) : groups.length === 0 ? (
         <EmptyBlock isDark={isDark}>{t('slotBooking.opm.noGroups')}</EmptyBlock>
       ) : visibleGroups.length === 0 ? (

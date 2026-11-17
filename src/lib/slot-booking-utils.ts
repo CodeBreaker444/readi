@@ -30,6 +30,21 @@ export function addDaysIso(date: string, days: number): string {
 
 export const todayIso = () => new Date().toISOString().slice(0, 10);
 
+/**
+ * The viewer's own calendar date. Slot dates belong to the site of their group, so use this only for "today"
+ * highlights and default dates; per-slot "past" checks must use the slot group's zone (`todayInZone`).
+ */
+export function localTodayIso(now = new Date()): string {
+  const p = (n: number) => String(n).padStart(2, '0');
+  return `${now.getFullYear()}-${p(now.getMonth() + 1)}-${p(now.getDate())}`;
+}
+
+/**
+ * The oldest date that can still be "today" at some site (UTC-12). For UI gating where no group zone is at hand:
+ * never blocks an action that is still valid somewhere, the server rejects slots that really are in the past.
+ */
+export const oldestLiveDate = () => addDaysIso(todayIso(), -1);
+
 // ───────────────────────── Slot time zone ─────────────────────────
 // Slot dates/times are wall-clock values at the site where the slots are flown. Each slot group stores the IANA zone
 // of that site, so "today", "has the slot started" and the approval day mean the same for the OPM and every pilot,

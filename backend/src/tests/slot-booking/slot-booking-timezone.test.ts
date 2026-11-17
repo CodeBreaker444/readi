@@ -29,7 +29,7 @@ jest.mock('@/backend/services/auditLog/audit-log', () => ({ logEvent: jest.fn() 
 jest.mock('@/backend/services/slot-booking/slot-weather-service', () => ({ getWeatherForSlots: jest.fn() }));
 
 import { createGroup, sendApprovalDayReminders, timezoneForLocation } from '@/backend/services/slot-booking/slot-booking-service';
-import { groupZone, slotEnded, slotStarted } from '@/backend/services/slot-booking/slot-booking-rules';
+import { collisionKey, findCollisions, groupZone, slotEnded, slotStarted } from '@/backend/services/slot-booking/slot-booking-rules';
 import { modificationLock } from '@/lib/slot-booking-logic';
 import { nextApprovalDay, normalizeTimeZone, todayInZone, wallClockNow, zonedMidnight } from '@/lib/slot-booking-utils';
 import type { NewSlotGroupInput } from '@/config/types/slot-booking';
@@ -206,5 +206,37 @@ describe('approval-day reminder', () => {
   it('does nothing when no request is pending', async () => {
     prismaMock.slot_booking.groupBy.mockResolvedValue([]);
     expect(await sendApprovalDayReminders(new Date('2026-11-18T05:00:00Z'))).toBe(0);
+  });
+});
+
+describe('pilot clashes across groups in different zones', () => {
+  const approved = (date: string, start: string, end: string, timezone: string) => ({
+    fk_slot_id: 99,
+    fk_pilot_user_id: 5,
+    slot: { slot_date: new Date(`${date}T00:00:00.000Z`), start_time: start, end_time: end, slot_group: { name: 'Other', timezone } },
+  });
+  const check = (date: string, start: string, end: string, timezone: string) => ({ pilotId: 5, slot: { slotId: 1, date, start, end, timezone } });
+  const clash = async (existing: ReturnType<typeof approved>, c: ReturnType<typeof check>) => {
+    prismaMock.slot_booking.findMany.mockResolvedValue([existing]);
+    return (await findCollisions(7, [c])).get(collisionKey(5, 1)) ?? null;
+  };
+
+  it('flags slots that overlap in real time although their wall-clock times do not', async () => {
+    // Rome 06:00–14:00 = 05:00–13:00 UTC, Kolkata 14:00–22:00 = 08:30–16:30 UTC.
+    expect(await clash(approved('2026-11-17', '06:00', '14:00', 'Europe/Rome'), check('2026-11-17', '14:00', '22:00', 'Asia/Kolkata'))).not.toBeNull();
+  });
+
+  it('does not flag slots that look the same on the clock but are hours apart', async () => {
+    // Rome 06:00–14:00 = 05:00–13:00 UTC, Kolkata 22:00–06:00 = 16:30–00:30 UTC.
+    expect(await clash(approved('2026-11-17', '06:00', '14:00', 'Europe/Rome'), check('2026-11-17', '22:00', '06:00', 'Asia/Kolkata'))).toBeNull();
+  });
+
+  it('still treats back-to-back slots of one zone as free', async () => {
+    expect(await clash(approved('2026-11-17', '06:00', '14:00', 'Europe/Rome'), check('2026-11-17', '14:00', '22:00', 'Europe/Rome'))).toBeNull();
+  });
+
+  it('catches a slot that the site date puts on the neighbouring day', async () => {
+    // Auckland 2026-11-18 08:00–16:00 = 2026-11-17 19:00–03:00 UTC (+1d), Rome 2026-11-17 22:00–06:00 = 21:00–05:00 UTC.
+    expect(await clash(approved('2026-11-18', '08:00', '16:00', 'Pacific/Auckland'), check('2026-11-17', '22:00', '06:00', 'Europe/Rome'))).not.toBeNull();
   });
 });

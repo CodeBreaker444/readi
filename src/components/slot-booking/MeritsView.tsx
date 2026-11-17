@@ -7,7 +7,8 @@ import { Info, Star } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Avatar } from './Avatar';
-import { apiMsg, card, EmptyBlock, ErrorBlock, heading, LoadingBlock, muted, Pill, SearchBox } from './ui';
+import { apiMsg, card, EmptyBlock, ErrorBlock, heading, muted, Pill, SearchBox } from './ui';
+import { MeritsSkeleton } from './skeletons';
 
 const BASE = '/api/operation/slot-booking';
 
@@ -38,7 +39,7 @@ export function MeritsView({ isDark }: { isDark: boolean }) {
   }, [data, search]);
 
   if (error) return <ErrorBlock isDark={isDark} message={error} onRetry={load} />;
-  if (!data) return <LoadingBlock isDark={isDark} rows={1} />;
+  if (!data) return <MeritsSkeleton isDark={isDark} />;
 
   const th = cn('text-left text-[11px] font-semibold uppercase tracking-wider px-4 py-2.5 whitespace-nowrap', muted(isDark));
   const td = cn('px-4 py-3 text-[13px]', isDark ? 'text-gray-200' : 'text-gray-700');

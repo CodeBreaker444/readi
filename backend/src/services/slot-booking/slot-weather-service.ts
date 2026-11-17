@@ -19,9 +19,13 @@ export interface WeatherSlot {
   end: string;
 }
 
-/** Slots on today..today+6 get a forecast; anything else has none. */
+/**
+ * Slots on today..today+6 get a forecast; anything else has none. "Today" differs by up to a day between sites,
+ * and a slot's date is a site date, so this is one day wider on each side than the UTC range; the forecast itself
+ * decides whether a slot has hours (check summariseSlotWeather).
+ */
 export function isInForecastRange(date: string, today = todayIso()) {
-  return date >= today && date <= addDaysIso(today, WEATHER_DAYS - 1);
+  return date >= addDaysIso(today, -1) && date <= addDaysIso(today, WEATHER_DAYS);
 }
 
 /** Coordinates of the system chosen for each slot group; groups without a system or a usable location are left out. */

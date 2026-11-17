@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { Booking, PilotFlight, SlotWeather } from '@/config/types/slot-booking';
 import { getApiErrorMessage } from '@/lib/api-error-message';
-import { addDaysIso, nextApprovalDay, shortSlotLabel, weekdayOf } from '@/lib/slot-booking-utils';
+import { addDaysIso, localTodayIso, nextApprovalDay, oldestLiveDate, shortSlotLabel, weekdayOf } from '@/lib/slot-booking-utils';
 import { cn } from '@/lib/utils';
 import axios from 'axios';
 import { Ban, Check, Clock, Loader2, Lock, Plane, Search, Wind } from 'lucide-react';
@@ -262,7 +262,7 @@ export function GroupCalendar<S extends CalSlot>({
   weather,
 }: CalendarProps<S>) {
   const s = useSlotI18n();
-  const today = new Date().toISOString().slice(0, 10);
+  const today = localTodayIso();
   return (
     <div className={cn('grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7', roomy ? 'gap-3' : 'gap-2')}>
       {dates.map((date) => {
@@ -304,7 +304,7 @@ export function GroupCalendar<S extends CalSlot>({
                   blocked={blocked}
                   bookings={bookings.filter((b) => b.slotId === slot.id)}
                   meId={meId}
-                  past={date < today}
+                  past={date < oldestLiveDate()}
                   weather={typeof slot.id === 'number' ? weather?.[slot.id] : undefined}
                   onClick={() => onSlotClick?.(slot)}
                 />
