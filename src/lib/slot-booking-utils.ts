@@ -143,3 +143,9 @@ export function nextApprovalDay(approvalDays: number[], from = new Date(), timeZ
   }
   return null;
 }
+
+/** A group is completed once its last date is before today at the group's own site. */
+export function isGroupCompleted(g: { startDate: string; rangeMode: RangeMode; timezone: string }, now = new Date()): boolean {
+  const dates = groupDates(g.startDate, g.rangeMode);
+  return dates[dates.length - 1] < todayInZone(g.timezone, now);
+}

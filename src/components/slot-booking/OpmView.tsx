@@ -1,7 +1,7 @@
 'use client';
 
 import type { GroupDetail, SlotDefaults, SlotGroup } from '@/config/types/slot-booking';
-import { groupDates, nextApprovalDay, todayInZone, weekdayOf } from '@/lib/slot-booking-utils';
+import { groupDates, isGroupCompleted, nextApprovalDay, todayInZone, weekdayOf } from '@/lib/slot-booking-utils';
 import { cn } from '@/lib/utils';
 import axios from 'axios';
 import { ArrowLeft, BellRing, CalendarClock, Plus, Settings2, Trash2 } from 'lucide-react';
@@ -20,7 +20,7 @@ import {
 import { CreateGroupDialog } from './CreateGroupDialog';
 import { SlotDetailDialog, SlotSettingsDialog } from './OpmDialogs';
 import { SlotAuditTable } from './SlotAuditTable';
-import { apiMsg, Btn, card, EmptyBlock, GroupCalendar, heading, Legend, muted, Pill, SearchBox, useSlotI18n } from './ui';
+import { apiMsg, Btn, card, EmptyBlock, GroupCalendar, GroupScopeFilter, type GroupScope, heading, Legend, muted, Pill, SearchBox, useSlotI18n } from './ui';
 import { GroupDetailSkeleton } from './skeletons';
 
 const BASE = '/api/operation/slot-booking';
@@ -50,9 +50,11 @@ export function OpmView({
 
   const [search, setSearch] = useState('');
   const query = search.trim().toLowerCase();
+  const [scope, setScope] = useState<GroupScope>('active');
+  const scoped = scope === 'all' ? groups : groups.filter((g) => !isGroupCompleted(g));
   const visibleGroups = query
-    ? groups.filter((g) => [g.name, g.description, g.createdByName].some((v) => v?.toLowerCase().includes(query)))
-    : groups;
+    ? scoped.filter((g) => [g.name, g.description, g.createdByName].some((v) => v?.toLowerCase().includes(query)))
+    : scoped;
 
   // "Today" is the day at each group's own site.
   const approvalToday = groups.filter((g) => g.approvalDays.includes(weekdayOf(todayInZone(g.timezone))) && (g.stats?.pending ?? 0) > 0);
@@ -123,7 +125,8 @@ export function OpmView({
         ) : (
           <span />
         )}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+        {!detail && <GroupScopeFilter isDark={isDark} value={scope} onChange={setScope} counts={{ active: groups.filter((g) => !isGroupCompleted(g)).length, all: groups.length }} />}
         <Btn isDark={isDark} onClick={() => setSettingsOpen(true)}>
           <Settings2 size={13} /> {t('slotBooking.opm.slotSettings')}
         </Btn>

@@ -6372,6 +6372,11 @@
         "after": "Nachher"
       }
     },
+    "scope": {
+      "label": "Gruppen filtern",
+      "active": "Aktiv",
+      "all": "Alle"
+    },
     "search": {
       "groups": "Slot-Gruppen suchen…",
       "noMatch": "Keine Slot-Gruppen entsprechen Ihrer Suche."

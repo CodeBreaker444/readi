@@ -6514,6 +6514,11 @@
         "after": "Dopo"
       }
     },
+    "scope": {
+      "label": "Filtra gruppi",
+      "active": "Attivi",
+      "all": "Tutti"
+    },
     "search": {
       "groups": "Cerca gruppi di slot…",
       "noMatch": "Nessun gruppo di slot corrisponde alla ricerca."

@@ -544,3 +544,59 @@ export function FlightWarning({ flight, name, isDark }: { flight?: PilotFlight; 
     </div>
   );
 }
+
+export type GroupScope = 'active' | 'all';
+
+/** Segmented toggle that hides completed (past) groups by default; "All" brings them back. */
+export function GroupScopeFilter({
+  value,
+  onChange,
+  isDark,
+  counts,
+}: {
+  value: GroupScope;
+  onChange: (v: GroupScope) => void;
+  isDark: boolean;
+  counts: Record<GroupScope, number>;
+}) {
+  const { t } = useTranslation();
+  const options: GroupScope[] = ['active', 'all'];
+  return (
+    <div
+      role="tablist"
+      aria-label={t('slotBooking.scope.label')}
+      className={cn('inline-flex shrink-0 items-center gap-0.5 rounded-lg border p-0.5', isDark ? 'border-white/[0.08] bg-white/[0.03]' : 'border-gray-200 bg-gray-50')}
+    >
+      {options.map((k) => {
+        const on = value === k;
+        return (
+          <button
+            key={k}
+            type="button"
+            role="tab"
+            aria-selected={on}
+            onClick={() => onChange(k)}
+            className={cn(
+              'cursor-pointer inline-flex items-center gap-1.5 rounded-md px-3 h-7 text-xs font-medium transition-all',
+              on
+                ? 'bg-violet-600 text-white shadow-sm'
+                : isDark
+                  ? 'text-gray-400 hover:text-white hover:bg-white/[0.06]'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-white',
+            )}
+          >
+            {t(`slotBooking.scope.${k}`)}
+            <span
+              className={cn(
+                'min-w-[18px] rounded-full px-1 text-center text-[10px] leading-4 font-semibold',
+                on ? 'bg-white/25 text-white' : isDark ? 'bg-white/[0.08] text-gray-300' : 'bg-gray-200 text-gray-600',
+              )}
+            >
+              {counts[k]}
+            </span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}

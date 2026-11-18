@@ -6531,6 +6531,11 @@
         "after": "After"
       }
     },
+    "scope": {
+      "label": "Filter groups",
+      "active": "Active",
+      "all": "All"
+    },
     "search": {
       "groups": "Search slot groups…",
       "noMatch": "No slot groups match your search."

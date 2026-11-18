@@ -19,7 +19,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import type { GroupDetail, MyBookingRow, MyStats, SlotGroup, SlotMe } from '@/config/types/slot-booking';
-import { groupDates, slotLabel } from '@/lib/slot-booking-utils';
+import { groupDates, isGroupCompleted, slotLabel } from '@/lib/slot-booking-utils';
 import { cn } from '@/lib/utils';
 import axios from 'axios';
 import { ArrowLeft, CheckCircle2, Info, Trophy } from 'lucide-react';
@@ -27,7 +27,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { MyRequestsTable } from './MyRequestsTable';
-import { apiMsg, Btn, card, dialogSurface, EmptyBlock, GroupCalendar, heading, Legend, muted, Pill, SearchBox, useSlotI18n } from './ui';
+import { apiMsg, Btn, card, dialogSurface, EmptyBlock, GroupCalendar, GroupScopeFilter, type GroupScope, heading, Legend, muted, Pill, SearchBox, useSlotI18n } from './ui';
 import { GroupDetailSkeleton, RequestsSkeleton } from './skeletons';
 
 const BASE = '/api/operation/slot-booking';
@@ -77,7 +77,9 @@ export function PicView({ isDark, me, groups }: { isDark: boolean; me: SlotMe; g
   const [search, setSearch] = useState('');
   const [listTab, setListTab] = useState<'groups' | 'requests'>('groups');
   const query = search.trim().toLowerCase();
-  const visibleGroups = query ? groups.filter((g) => [g.name, g.description].some((v) => v?.toLowerCase().includes(query))) : groups;
+  const [scope, setScope] = useState<GroupScope>('active');
+  const scoped = scope === 'all' ? groups : groups.filter((g) => !isGroupCompleted(g));
+  const visibleGroups = query ? scoped.filter((g) => [g.name, g.description].some((v) => v?.toLowerCase().includes(query))) : scoped;
 
   const slot = detail?.slots.find((x) => x.id === slotId);
 
@@ -227,7 +229,8 @@ export function PicView({ isDark, me, groups }: { isDark: boolean; me: SlotMe; g
             ))}
           </div>
           {listTab === 'groups' && (
-            <div className="flex items-center justify-end">
+            <div className="flex items-center justify-end gap-2">
+              <GroupScopeFilter isDark={isDark} value={scope} onChange={setScope} counts={{ active: groups.filter((g) => !isGroupCompleted(g)).length, all: groups.length }} />
               <SearchBox isDark={isDark} value={search} onChange={setSearch} placeholder={t('slotBooking.search.groups')} className="w-full max-w-sm" />
             </div>
           )}
