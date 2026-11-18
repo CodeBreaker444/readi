@@ -42,7 +42,7 @@ Mission Completion
 | Activation Date | `component_activation_date` | **YES** - Reference point for day-based maintenance calculations |
 | Purchase Date | `component_purchase_date` | Warranty tracking |
 | Expiration Type | `expiry_type` | **YES** - Determines if component auto-decommissions (EXPIRATION_DATE/FLIGHTS/FLIGHT_HOURS/MIXED) |
-| Permanent Expiry | `component_metadata.expiry_permanent` | **YES** - `true` (default): expiry decommissions the component. `false`: expiry makes it NOT_OPERATIONAL, opens a ticket automatically (system goes to MAINTENANCE), and it can be renewed |
+| Permanent Expiry | `component_metadata.expiry_permanent` | **YES** - `true` (default): expiry decommissions the component. `false`: expiry makes it NOT_OPERATIONAL (a user creates the ticket); closing that ticket renews its expiry, and the expiry cannot be edited while expired. With `true`, the system stays NOT_OPERATIONAL until the component is removed from it |
 | Expiration Date | `expiration_date` | **YES** - Auto-decommissions component when reached |
 | Expiration Flights | `expiration_flights` | **YES** - Auto-decommissions component when flight limit reached |
 | Expiration Flight Hours | `expiration_flight_hours` | **YES** - Auto-decommissions component when hour limit reached |
@@ -244,5 +244,5 @@ Emails are sent only when:
 8. **Email Limits:** Daily email limit enforced before sending notifications
 9. **Module Enablement:** Both company-level (System Email Enabled) and event-level (Is Enabled) enablement required
 10. **Mission Integration:** Maintenance Hours/Flights updated automatically on mission completion
-11. **Expiration Auto-Decommission:** Components auto-decommission when Expiration Date/Flights/Hours reached. Every expired component (permanent or not) gets one automatic maintenance ticket and its system goes to MAINTENANCE. Exception: with Permanent Expiry unchecked the component becomes NOT_OPERATIONAL instead of decommissioned and can be renewed
+11. **Expiration Auto-Decommission:** Components auto-decommission when Expiration Date/Flights/Hours reached. No ticket is created automatically. Exception: with Permanent Expiry unchecked the component becomes NOT_OPERATIONAL instead of decommissioned, a user can create a ticket for it, and closing that ticket renews its expiry
 12. **Insurance Expiry Alerts:** Insurance expiry triggers email to configured recipients before expiry date

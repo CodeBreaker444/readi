@@ -1,5 +1,4 @@
 import { logEvent } from '@/backend/services/auditLog/audit-log';
-import { raiseExpiryTicketSafely } from '@/backend/services/system/component-expiry-ticket';
 import { addComponent, getOrCreateWarehouseTool, getToolCode } from '@/backend/services/system/system-service';
 import { internalError, zodError } from '@/lib/api-error';
 import { zDateString } from '@/lib/zod-date';
@@ -128,9 +127,6 @@ export async function POST(req: NextRequest) {
     }, session!.user.ownerId);
 
     if (result.code === 1) {
-      // Added already expired with renewable expiry: open its ticket now instead of waiting for the next cron run.
-      if (result.data?.component_id) await raiseExpiryTicketSafely(result.data.component_id);
-
       const systemCode = d.warehouse ? null : await getToolCode(toolId, session!.user.ownerId);
       const label = d.component_code ?? d.component_type;
       const snInfo = d.component_sn ? `, SN: ${d.component_sn}` : '';

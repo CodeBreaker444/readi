@@ -4868,7 +4868,14 @@
           "warningMessage": "La chiusura di questo ticket segnerà il sistema come operativo e registrerà un record di manutenzione.",
           "cancel": "Annulla",
           "closing": "Chiusura…",
-          "closeTicket": "Chiudi Ticket"
+          "closeTicket": "Chiudi Ticket",
+          "expiryRenewal": {
+              "title": "Rinnovo della scadenza",
+              "hint": "Questo ticket riguarda componenti scaduti. Alla chiusura la loro scadenza viene rinnovata come indicato. Potrai modificare i nuovi valori in seguito in Modifica componente.",
+              "date": "Data di scadenza: {{from}} → {{to}}",
+              "flights": "Limite voli: {{from}} → {{to}} voli",
+              "flightHours": "Limite ore di volo: {{from}} → {{to}} h"
+            }
         },
         "assignTicket": {
           "title": "Assegna Ticket",
@@ -4905,6 +4912,7 @@
         "interventionStarted": "Intervento avviato",
         "noCountersReset": "Nessun contatore dei componenti è stato azzerato.",
         "countersReset": "Contatori azzerati per: {{components}}",
+        "expiryRenewed": "Scadenza rinnovata per: {{components}}.",
         "selectDroneSystem": "Per favore seleziona un drone/sistema",
         "ticketCreated": "Ticket creato con successo",
         "ticketExists": "Un ticket aperto copre già questo sistema o i componenti selezionati",
@@ -5248,11 +5256,11 @@
           "flightHoursHint": "Il componente viene dismesso automaticamente al raggiungimento delle ore di volo",
           "mixedHint": "Viene dismesso quando viene raggiunto qualsiasi limite impostato — data, conteggio voli o ore di volo — in base a quale avviene prima",
           "permanentLabel": "Scadenza permanente",
-          "permanentHint": "Alla scadenza il componente viene dismesso automaticamente e non può essere rinnovato.",
-          "renewableHint": "Alla scadenza il componente diventa Non operativo, viene aperto automaticamente un ticket di manutenzione e il suo sistema passa in Manutenzione. Potrai poi rinnovare la scadenza per renderlo di nuovo operativo, oppure dismetterlo.",
+          "permanentHint": "Alla scadenza il componente viene dismesso automaticamente e non può essere rinnovato. Il suo sistema resta Non operativo finché il componente non viene rimosso da esso.",
+          "renewableHint": "Alla scadenza il componente diventa Non operativo e la sua scadenza non può essere modificata. Crea un ticket di manutenzione e chiudilo: la scadenza viene rinnovata alla chiusura (data: +1 mese, voli e ore di volo: +10). Oppure dismettilo.",
           "permanentLocked": "Bloccato finché il componente è scaduto.",
-          "expiredNotice": "Questo componente ha raggiunto la scadenza ed è Non operativo. Per renderlo operativo imposta nuovi limiti di scadenza e salva; oppure imposta lo stato su Dismesso.",
-          "expiredPermanentNotice": "Questo componente è scaduto. Conta come Dismesso e il suo sistema è Non operativo. Per toglierlo dal sistema imposta lo stato su Dismesso, oppure rimuovilo / spostalo in magazzino."
+          "expiredNotice": "Questo componente ha raggiunto la scadenza ed è Non operativo. La sua scadenza non può essere modificata direttamente: crea un ticket di manutenzione e chiudilo, e la scadenza viene rinnovata automaticamente (data: +1 mese, voli e ore di volo: +10). Oppure imposta lo stato su Dismesso.",
+          "expiredPermanentNotice": "Questo componente è scaduto. Conta come Dismesso e il suo sistema resta Non operativo finché il componente non viene rimosso dal sistema o spostato in magazzino."
         },
         "defaultCounters": {
           "label": "Contatori iniziali",
@@ -5391,9 +5399,10 @@
             "generic": "ha raggiunto il limite di scadenza"
           },
           "expiryModeLocked": "Questo componente è scaduto: {{reason}}. L'impostazione «Scadenza permanente» non può essere modificata finché è scaduto.",
-          "expiredPermanentNoRenew": "Questo componente è scaduto: {{reason}}. La scadenza è permanente e non può essere annullata modificando i limiti. Lascialo Dismesso, rimuovilo dal sistema o spostalo in magazzino.",
-          "expiredPermanentStatus": "Questo componente è scaduto: {{reason}}. La scadenza è permanente, quindi non può essere impostato su {{status}}. Lascialo Dismesso, rimuovilo dal sistema o spostalo in magazzino.",
-          "expiredRenewNoOperational": "Questo componente è Non operativo: {{reason}}. Rinnova i limiti di scadenza per renderlo operativo, oppure impostalo su Dismesso."
+          "expiredPermanentNoRenew": "Questo componente è scaduto: {{reason}}. La scadenza è permanente e non può essere annullata modificando i limiti. Rimuovilo dal sistema o spostalo in magazzino.",
+          "expiredPermanentStatus": "Questo componente è scaduto: {{reason}}. La scadenza è permanente, quindi non può essere impostato su {{status}}. Rimuovilo dal sistema o spostalo in magazzino.",
+          "expiredRenewNoOperational": "Questo componente è Non operativo: {{reason}}. Crea un ticket di manutenzione e chiudilo per rinnovare la scadenza, oppure impostalo su Dismesso.",
+          "expiredRenewViaTicket": "Questo componente è scaduto: {{reason}}. La sua scadenza non può essere modificata direttamente. Crea un ticket di manutenzione e chiudilo: la scadenza viene rinnovata alla chiusura del ticket."
         },
       "editComponent": {
         "title": "Modifica Componente",

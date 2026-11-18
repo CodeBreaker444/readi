@@ -84,6 +84,7 @@ When a ticket is closed:
 - A maintenance record is added to the system's history.
 - The **maintenance counters of the components on the ticket are reset to zero**: hours, flights and days since maintenance. Their last maintenance date becomes the day you close the ticket. If the ticket covered the whole system, every component of the system is reset. Components that are dismissed, decommissioned or expired are not reset.
 - A message confirms which components were reset, for example "Counters reset for: Battery 1, Motor 2".
+- **Expired components are renewed.** If the ticket covers a component that has expired and whose expiry is **not permanent**, closing the ticket renews its expiry: the expiry date moves 1 month ahead, and flight or flight-hour limits go up by 10. The **Close Ticket** window lists the new values before you confirm, and the ticket's Events record the renewal. After that you can edit the expiry normally.
 
 ### What is reset and what is kept
 

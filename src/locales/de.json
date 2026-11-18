@@ -4786,7 +4786,14 @@
           "warningMessage": "Das Schließen dieses Tickets markiert das System als einsatzbereit und erstellt einen Wartungseintrag.",
           "cancel": "Abbrechen",
           "closing": "Wird geschlossen…",
-          "closeTicket": "Ticket schließen"
+          "closeTicket": "Ticket schließen",
+          "expiryRenewal": {
+              "title": "Ablaufverlängerung",
+              "hint": "Dieses Ticket betrifft abgelaufene Komponenten. Beim Schließen wird ihr Ablauf wie angezeigt verlängert. Die neuen Werte können Sie danach unter „Komponente bearbeiten“ ändern.",
+              "date": "Ablaufdatum: {{from}} → {{to}}",
+              "flights": "Flug-Limit: {{from}} → {{to}} Flüge",
+              "flightHours": "Flugstunden-Limit: {{from}} → {{to}} h"
+            }
         },
         "assignTicket": {
           "title": "Ticket zuweisen",
@@ -4823,6 +4830,7 @@
         "interventionStarted": "Einsatz gestartet",
         "noCountersReset": "Es wurden keine Komponentenzähler zurückgesetzt.",
         "countersReset": "Zähler zurückgesetzt für: {{components}}",
+        "expiryRenewed": "Ablauf verlängert für: {{components}}.",
         "selectDroneSystem": "Bitte wählen Sie eine Drohne/ein System aus",
         "ticketCreated": "Ticket erfolgreich erstellt",
         "ticketExists": "Ein offenes Ticket deckt dieses System oder die ausgewählten Komponenten bereits ab",
@@ -5166,11 +5174,11 @@
           "flightHoursHint": "Komponente wird automatisch außer Betrieb genommen, wenn die Flugstunden erreicht sind",
           "mixedHint": "Wird außer Betrieb genommen, wenn ein gesetztes Limit erreicht ist — Datum, Fluganzahl oder Flugstunden — je nachdem, was zuerst eintritt",
           "permanentLabel": "Dauerhafter Ablauf",
-          "permanentHint": "Nach Ablauf wird die Komponente automatisch außer Betrieb genommen und kann nicht verlängert werden.",
-          "renewableHint": "Nach Ablauf ist die Komponente nicht betriebsbereit, ein Wartungsticket wird automatisch eröffnet und das System wechselt in Wartung. Sie können den Ablauf dann verlängern, um sie wieder betriebsbereit zu machen, oder sie außer Betrieb nehmen.",
+          "permanentHint": "Nach Ablauf wird die Komponente automatisch außer Betrieb genommen und kann nicht verlängert werden. Ihr System bleibt nicht betriebsbereit, bis die Komponente daraus entfernt wird.",
+          "renewableHint": "Nach Ablauf ist die Komponente nicht betriebsbereit und ihr Ablauf kann nicht bearbeitet werden. Erstellen Sie ein Wartungsticket dafür und schließen Sie es: Der Ablauf wird beim Schließen verlängert (Datum: +1 Monat, Flüge und Flugstunden: +10). Oder nehmen Sie sie außer Betrieb.",
           "permanentLocked": "Gesperrt, solange die Komponente abgelaufen ist.",
-          "expiredNotice": "Diese Komponente hat ihr Ablaufdatum erreicht und ist nicht betriebsbereit. Legen Sie neue Ablauflimits fest und speichern Sie, um sie wieder betriebsbereit zu machen, oder setzen Sie den Status auf Außer Betrieb.",
-          "expiredPermanentNotice": "Diese Komponente ist abgelaufen. Sie gilt als außer Betrieb genommen und ihr System ist nicht betriebsbereit. Um sie aus dem System zu nehmen, setzen Sie den Status auf „Außer Betrieb“ oder entfernen Sie sie / verschieben Sie sie ins Lager."
+          "expiredNotice": "Diese Komponente hat ihren Ablauf erreicht und ist nicht betriebsbereit. Ihr Ablauf kann nicht direkt bearbeitet werden: Erstellen Sie ein Wartungsticket dafür und schließen Sie es, dann wird der Ablauf automatisch verlängert (Datum: +1 Monat, Flüge und Flugstunden: +10). Oder setzen Sie den Status auf Außer Betrieb.",
+          "expiredPermanentNotice": "Diese Komponente ist abgelaufen. Sie gilt als außer Betrieb genommen und ihr System bleibt nicht betriebsbereit, bis die Komponente aus dem System entfernt oder ins Lager verschoben wird."
         },
         "defaultCounters": {
           "label": "Startzähler",
@@ -5308,9 +5316,10 @@
             "generic": "das Ablauflimit ist erreicht"
           },
           "expiryModeLocked": "Diese Komponente ist abgelaufen: {{reason}}. Die Einstellung „Dauerhafter Ablauf“ kann nicht geändert werden, solange sie abgelaufen ist.",
-          "expiredPermanentNoRenew": "Diese Komponente ist abgelaufen: {{reason}}. Der Ablauf ist dauerhaft und kann nicht durch Ändern der Limits rückgängig gemacht werden. Belassen Sie sie auf „Außer Betrieb“, entfernen Sie sie aus dem System oder verschieben Sie sie ins Lager.",
-          "expiredPermanentStatus": "Diese Komponente ist abgelaufen: {{reason}}. Der Ablauf ist dauerhaft, daher kann sie nicht auf {{status}} gesetzt werden. Belassen Sie sie auf „Außer Betrieb“, entfernen Sie sie aus dem System oder verschieben Sie sie ins Lager.",
-          "expiredRenewNoOperational": "Diese Komponente ist nicht betriebsbereit: {{reason}}. Verlängern Sie die Ablauflimits, um sie wieder betriebsbereit zu machen, oder setzen Sie sie auf „Außer Betrieb“."
+          "expiredPermanentNoRenew": "Diese Komponente ist abgelaufen: {{reason}}. Der Ablauf ist dauerhaft und kann nicht durch Ändern der Limits rückgängig gemacht werden. Entfernen Sie sie aus dem System oder verschieben Sie sie ins Lager.",
+          "expiredPermanentStatus": "Diese Komponente ist abgelaufen: {{reason}}. Der Ablauf ist dauerhaft, daher kann sie nicht auf {{status}} gesetzt werden. Entfernen Sie sie aus dem System oder verschieben Sie sie ins Lager.",
+          "expiredRenewNoOperational": "Diese Komponente ist nicht betriebsbereit: {{reason}}. Erstellen Sie ein Wartungsticket dafür und schließen Sie es, um den Ablauf zu verlängern, oder setzen Sie sie auf „Außer Betrieb“.",
+          "expiredRenewViaTicket": "Diese Komponente ist abgelaufen: {{reason}}. Ihr Ablauf kann nicht direkt bearbeitet werden. Erstellen Sie ein Wartungsticket dafür und schließen Sie es: Der Ablauf wird beim Schließen des Tickets verlängert."
         },
       "editComponent": {
         "title": "Komponente bearbeiten",

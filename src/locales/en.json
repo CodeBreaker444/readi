@@ -4874,7 +4874,14 @@
           "warningMessage": "Closing this ticket will mark the system as operational and log a maintenance record.",
           "cancel": "Cancel",
           "closing": "Closing…",
-          "closeTicket": "Close Ticket"
+          "closeTicket": "Close Ticket",
+          "expiryRenewal": {
+              "title": "Expiry renewal",
+              "hint": "This ticket covers expired components. Closing it renews their expiry as shown. You can change the new values afterwards in Edit Component.",
+              "date": "Expiry date: {{from}} → {{to}}",
+              "flights": "Flight limit: {{from}} → {{to}} flights",
+              "flightHours": "Flight-hour limit: {{from}} → {{to}} h"
+            }
         },
         "assignTicket": {
           "title": "Assign Ticket",
@@ -4911,6 +4918,7 @@
         "interventionStarted": "Intervention started",
         "noCountersReset": "No component counters were reset.",
         "countersReset": "Counters reset for: {{components}}",
+        "expiryRenewed": "Expiry renewed for: {{components}}.",
         "selectDroneSystem": "Please select a drone/system",
         "ticketCreated": "Ticket created successfully",
         "ticketExists": "An open ticket already covers this system or the selected components",
@@ -5254,11 +5262,11 @@
           "flightHoursHint": "Component auto-decommissions when flight hours are reached",
           "mixedHint": "Decommissions when any set limit is reached — date, flight count, or flight hours — whichever comes first",
           "permanentLabel": "Permanent expiry",
-          "permanentHint": "On expiry the component is automatically decommissioned and cannot be renewed.",
-          "renewableHint": "On expiry the component becomes Not Operational, a maintenance ticket is opened automatically and its system goes to Maintenance. You can then renew its expiry to make it operational again, or decommission it.",
+          "permanentHint": "On expiry the component is automatically decommissioned and cannot be renewed. Its system stays Not Operational until the component is removed from it.",
+          "renewableHint": "On expiry the component becomes Not Operational and its expiry cannot be edited. Create a maintenance ticket for it and close it: the expiry is renewed when the ticket closes (date: +1 month, flights and flight hours: +10). Or decommission it.",
           "permanentLocked": "Locked while the component is expired.",
-          "expiredNotice": "This component has reached its expiry and is Not Operational. To make it operational, set new expiry limits and save; or set its status to Decommissioned.",
-          "expiredPermanentNotice": "This component has expired. It counts as Decommissioned and its system is Not Operational. To take it out of the system, set its status to Decommissioned, or remove it / move it to the warehouse."
+          "expiredNotice": "This component has reached its expiry and is Not Operational. Its expiry cannot be edited directly: create a maintenance ticket for it and close it, and the expiry is renewed automatically (date: +1 month, flights and flight hours: +10). Or set its status to Decommissioned.",
+          "expiredPermanentNotice": "This component has expired. It counts as Decommissioned and its system stays Not Operational until the component is removed from the system or moved to the warehouse."
         },
         "defaultCounters": {
           "label": "Starting Counters",
@@ -5399,9 +5407,10 @@
             "generic": "it reached its expiry limit"
           },
           "expiryModeLocked": "This component has expired: {{reason}}. The permanent-expiry setting cannot be changed while it is expired.",
-          "expiredPermanentNoRenew": "This component has expired: {{reason}}. Expiry is permanent and cannot be reversed by changing its limits. Keep it Decommissioned, remove it from the system, or move it to the warehouse.",
-          "expiredPermanentStatus": "This component has expired: {{reason}}. Expiry is permanent, so it cannot be set to {{status}}. Keep it Decommissioned, remove it from the system, or move it to the warehouse.",
-          "expiredRenewNoOperational": "This component is Not Operational: {{reason}}. Renew its expiry limits to make it operational, or set it to Decommissioned."
+          "expiredPermanentNoRenew": "This component has expired: {{reason}}. Expiry is permanent and cannot be reversed by changing its limits. Remove it from the system or move it to the warehouse.",
+          "expiredPermanentStatus": "This component has expired: {{reason}}. Expiry is permanent, so it cannot be set to {{status}}. Remove it from the system or move it to the warehouse.",
+          "expiredRenewNoOperational": "This component is Not Operational: {{reason}}. Create a maintenance ticket for it and close it to renew its expiry, or set it to Decommissioned.",
+          "expiredRenewViaTicket": "This component has expired: {{reason}}. Its expiry cannot be edited directly. Create a maintenance ticket for it and close the ticket: the expiry is renewed when the ticket is closed."
         },
       "editComponent": {
         "title": "Edit Component",

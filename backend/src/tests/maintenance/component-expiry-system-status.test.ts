@@ -2,7 +2,8 @@
  * Setting a component's expiry to today / a past date:
  *   - saving without touching the status keeps the STORED status (the form only sends a status the user changed)
  *   - the component then reads as Decommissioned (derived) and its system becomes Not Operational
- *   - only an explicit Decommissioned takes the component out of the system
+ *   - permanent expiry: the system stays Not Operational until the component is REMOVED from it
+ *     (setting it to Decommissioned does not free the system); renewable expiry is also freed by Decommissioned
  */
 const prismaMock = {
   tool_component: { findUnique: jest.fn(), findFirst: jest.fn(), findMany: jest.fn(), update: jest.fn() },
@@ -112,10 +113,31 @@ describe('system status for an expired component', () => {
     await expect(getNonOperationalToolIds([3])).resolves.toEqual(new Set([3]));
   });
 
-  it('only an explicitly Decommissioned (or detached) expired component leaves the system Operational', async () => {
+  it('permanent expiry: setting the expired component to Decommissioned does NOT free the system', async () => {
+    prismaMock.tool_component.findMany.mockResolvedValueOnce([inSystem({ component_status: 'DECOMMISSIONED' })]).mockResolvedValueOnce([]);
+    await expect(getNonOperationalToolIds([3])).resolves.toEqual(new Set([3]));
+    prismaMock.tool_component.findMany.mockResolvedValueOnce([inSystem({ component_status: 'DECOMMISSIONED', expiry_permanent: true })]).mockResolvedValueOnce([]);
+    await expect(getNonOperationalToolIds([3])).resolves.toEqual(new Set([3]));
+  });
+
+  it('permanent expiry: removing the component from the system (moved to the warehouse) frees the system', async () => {
     prismaMock.tool_component.findMany
-      .mockResolvedValueOnce([inSystem({ component_status: 'DECOMMISSIONED' }), inSystem({ system_detached: true })])
+      .mockResolvedValueOnce([inSystem({ system_detached: true }), inSystem({ component_status: 'DECOMMISSIONED', system_detached: true })])
       .mockResolvedValueOnce([]);
     await expect(getNonOperationalToolIds([3])).resolves.toEqual(new Set());
+  });
+
+  it('renewable expiry: Decommissioned frees the system', async () => {
+    prismaMock.tool_component.findMany.mockResolvedValueOnce([inSystem({ expiry_permanent: false, component_status: 'DECOMMISSIONED' })]).mockResolvedValueOnce([]);
+    await expect(getNonOperationalToolIds([3])).resolves.toEqual(new Set());
+  });
+
+  it('flight-limit expiry follows the same rule', async () => {
+    prismaMock.tool_component.findMany
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([
+        { fk_tool_id: 3, component_metadata: { component_status: 'DECOMMISSIONED' }, expiration_flights: 5, current_maintenance_flights: 5, expiration_flight_hours: null, current_usage_hours: 0 },
+      ]);
+    await expect(getNonOperationalToolIds([3])).resolves.toEqual(new Set([3]));
   });
 });

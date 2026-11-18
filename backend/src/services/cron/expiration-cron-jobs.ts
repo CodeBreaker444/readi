@@ -7,7 +7,6 @@
  */
 import { prisma } from '@/lib/prisma';
 import { sendExpirationNotifications } from '@/backend/services/system/expiration-notification';
-import { runExpiryTicketSweep } from '@/backend/services/system/component-expiry-ticket';
 import {
   findExpiringInsurancesForOwner,
   sendInsuranceExpiryNotifications,
@@ -55,15 +54,6 @@ export function groupExpiredComponentsByOwner(
 }
 
 export async function runComponentExpirationJob() {
-  // Renewable-expiry components (any expiry type) get their maintenance ticket. Independent of the e-mails below,
-  // and a failure here must not stop them.
-  let expiryTickets: Awaited<ReturnType<typeof runExpiryTicketSweep>> | null = null;
-  try {
-    expiryTickets = await runExpiryTicketSweep();
-  } catch (error) {
-    console.error('[Cron] Component expiry ticket sweep failed:', error);
-  }
-
   const today = new Date();
   today.setUTCHours(0, 0, 0, 0);
 
@@ -90,7 +80,7 @@ export async function runComponentExpirationJob() {
   });
 
   if (expiredComponents.length === 0) {
-    return { message: 'No expired components found', processed: 0, ...(expiryTickets && { expiryTickets }) };
+    return { message: 'No expired components found', processed: 0 };
   }
 
   const ownerMap = groupExpiredComponentsByOwner(expiredComponents);
@@ -113,7 +103,6 @@ export async function runComponentExpirationJob() {
     expiredComponents: expiredComponents.length,
     processedOwners,
     errors,
-    ...(expiryTickets && { expiryTickets }),
   };
 }
 

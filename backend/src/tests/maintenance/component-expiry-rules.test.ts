@@ -4,7 +4,7 @@ jest.mock('@/lib/s3Client', () => ({}));
 jest.mock('@/backend/utils/refresh-maintenance-days', () => ({}));
 
 import { computeEffectiveComponentStatus, expiryReasonParts } from '@/backend/services/system/system-service';
-import { isComponentExpired, isExpiryPermanent } from '@/backend/services/system/maintenance-rules';
+import { blocksSystemWhenExpired, isComponentExpired, isExpiryPermanent } from '@/backend/services/system/maintenance-rules';
 import { componentErrorMessage } from '@/lib/system/component-error';
 
 const day = (offset: number) => new Date(Date.now() + offset * 86_400_000).toISOString().slice(0, 10);
@@ -28,6 +28,25 @@ describe('isExpiryPermanent', () => {
   });
   it('is renewable only when explicitly false', () => {
     expect(isExpiryPermanent({ expiry_permanent: false })).toBe(false);
+  });
+});
+
+describe('blocksSystemWhenExpired', () => {
+  it('permanent expiry blocks until the component is removed: Decommissioned alone does not free the system', () => {
+    expect(blocksSystemWhenExpired({})).toBe(true);
+    expect(blocksSystemWhenExpired({ expiry_permanent: true, component_status: 'OPERATIONAL' })).toBe(true);
+    expect(blocksSystemWhenExpired({ component_status: 'DECOMMISSIONED' })).toBe(true);
+    expect(blocksSystemWhenExpired({ expiry_permanent: true, component_status: 'DECOMMISSIONED' })).toBe(true);
+  });
+  it('removed from the system (detached / warehouse) never blocks', () => {
+    expect(blocksSystemWhenExpired({ system_detached: true })).toBe(false);
+    expect(blocksSystemWhenExpired({ system_detached: true, component_status: 'DECOMMISSIONED' })).toBe(false);
+    expect(blocksSystemWhenExpired({ expiry_permanent: false, system_detached: true })).toBe(false);
+  });
+  it('renewable expiry blocks until it is renewed or decommissioned', () => {
+    expect(blocksSystemWhenExpired({ expiry_permanent: false })).toBe(true);
+    expect(blocksSystemWhenExpired({ expiry_permanent: false, component_status: 'MAINTENANCE' })).toBe(true);
+    expect(blocksSystemWhenExpired({ expiry_permanent: false, component_status: 'DECOMMISSIONED' })).toBe(false);
   });
 });
 

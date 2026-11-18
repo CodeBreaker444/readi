@@ -3,6 +3,7 @@ import { closeTicket } from '@/backend/services/system/maintenance-ticket';
 import { TicketRuleError } from '@/backend/services/system/maintenance-ticket-guards';
 import { requireAnyPermission, requireFeatureAccess } from '@/lib/auth/api-auth';
 import { forbidden, internalError, zodError } from '@/lib/api-error';
+import { describeRenewal } from '@/lib/system/expiry-renewal';
 import { CLOSE_TICKET_ROLES, type Role } from '@/lib/auth/roles';
 import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
@@ -33,7 +34,7 @@ export async function POST(req: NextRequest) {
       return zodError(E.VL001, validation.error);
     }
 
-    const { resetComponents } = await closeTicket({
+    const { resetComponents, renewedComponents } = await closeTicket({
       ticket_id: validation.data.ticket_id,
       note: validation.data.note,
       closed_by: Number(session!.user.userId),
@@ -44,7 +45,7 @@ export async function POST(req: NextRequest) {
       eventType: 'UPDATE',
       entityType: 'maintenance_ticket',
       entityId: validation.data.ticket_id,
-      description: `Closed maintenance ticket #${validation.data.ticket_id}${validation.data.note ? ` — note: "${validation.data.note.slice(0, 100)}${validation.data.note.length > 100 ? '…' : ''}"` : ''}`,
+      description: `Closed maintenance ticket #${validation.data.ticket_id}${validation.data.note ? ` — note: "${validation.data.note.slice(0, 100)}${validation.data.note.length > 100 ? '…' : ''}"` : ''}${renewedComponents.length ? ` — expiry renewed: ${renewedComponents.map((c) => `${c.component_name ?? `#${c.component_id}`} (${describeRenewal(c.renewal)})`).join('; ')}` : ''}`,
       userId: session!.user.userId,
       userName: session!.user.fullname,
       userEmail: session!.user.email,
@@ -52,7 +53,7 @@ export async function POST(req: NextRequest) {
       ownerId: session!.user.ownerId,
     });
 
-    return NextResponse.json({ status: 'OK', reset_components: resetComponents });
+    return NextResponse.json({ status: 'OK', reset_components: resetComponents, renewed_components: renewedComponents });
   } catch (err) {
     if (err instanceof TicketRuleError) {
       return NextResponse.json({ status: 'ERROR', message: err.message }, { status: 400 });

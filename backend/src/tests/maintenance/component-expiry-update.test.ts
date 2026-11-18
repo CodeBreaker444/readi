@@ -74,19 +74,48 @@ describe('updateComponent — renewable expiry (expiry_permanent = false)', () =
     expect(prismaMock.tool_component.update).not.toHaveBeenCalled();
   });
 
-  it('renewing the limits makes it operational again (the displayed Not Operational is not stored)', async () => {
+  it('an expired component\'s expiry date cannot be edited to a future date: it is renewed by a ticket', async () => {
     prismaMock.tool_component.findUnique.mockResolvedValue(expiredRenewable());
     const res = await updateComponent(7, form({ component_status: 'NOT_OPERATIONAL', expiry_permanent: false, expiration_date: day(60) }), 1);
-    expect(res.code).toBe(1);
-    expect(savedMeta().component_status).toBe('OPERATIONAL');
-    expect(res.statusChange).toEqual({ from: 'NOT_OPERATIONAL', to: 'OPERATIONAL' });
+    expect(res.code).toBe(0);
+    expect(res.errorKey).toBe('expiredRenewViaTicket');
+    expect(res.errorParams?.reasons).toEqual([{ type: 'date', date: day(-2) }]);
+    expect(prismaMock.tool_component.update).not.toHaveBeenCalled();
   });
 
-  it('renewing and explicitly choosing Operational works', async () => {
+  it('renewing together with explicitly choosing Operational is refused too', async () => {
     prismaMock.tool_component.findUnique.mockResolvedValue(expiredRenewable());
     const res = await updateComponent(7, form({ component_status: 'OPERATIONAL', expiry_permanent: false, expiration_date: day(60) }), 1);
+    expect(res.code).toBe(0);
+    expect(res.errorKey).toBe('expiredRenewViaTicket');
+  });
+
+  it('any edit of the expiry values is refused while expired, even one that keeps it expired', async () => {
+    prismaMock.tool_component.findUnique.mockResolvedValue(expiredRenewable());
+    const sooner = await updateComponent(7, form({ component_status: 'NOT_OPERATIONAL', expiry_permanent: false, expiration_date: day(-10) }), 1);
+    expect(sooner.errorKey).toBe('expiredRenewViaTicket');
+    const retyped = await updateComponent(7, form({ component_status: 'NOT_OPERATIONAL', expiry_permanent: false, expiry_type: 'FLIGHTS', expiration_flights: 50 }), 1);
+    expect(retyped.errorKey).toBe('expiredRenewViaTicket');
+    expect(prismaMock.tool_component.update).not.toHaveBeenCalled();
+  });
+
+  it('the counters cannot be used to clear an expired flight limit either', async () => {
+    prismaMock.tool_component.findUnique.mockResolvedValue(
+      stored({ expiry_permanent: false, component_status: 'OPERATIONAL' }, { expiry_type: 'FLIGHTS', expiration_date: null, expiration_flights: 10, current_maintenance_flights: 12 }),
+    );
+    const res = await updateComponent(
+      7,
+      form({ component_status: 'NOT_OPERATIONAL', expiry_permanent: false, expiry_type: 'FLIGHTS', expiration_date: null, expiration_flights: 10, initial_maintenance_flights: 0 }),
+      1,
+    );
+    expect(res.code).toBe(0);
+    expect(res.errorKey).toBe('expiredRenewViaTicket');
+  });
+
+  it('once a ticket has renewed it (no longer expired), the expiry can be edited freely again', async () => {
+    prismaMock.tool_component.findUnique.mockResolvedValue(stored({ expiry_permanent: false, component_status: 'OPERATIONAL' }, { expiration_date: new Date(day(30)) }));
+    const res = await updateComponent(7, form({ component_status: 'OPERATIONAL', expiry_permanent: false, expiration_date: day(90) }), 1);
     expect(res.code).toBe(1);
-    expect(savedMeta().component_status).toBe('OPERATIONAL');
   });
 
   it('decommissioning an expired renewable component is allowed', async () => {

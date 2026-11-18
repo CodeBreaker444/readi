@@ -1,5 +1,4 @@
 import { logEvent } from '@/backend/services/auditLog/audit-log';
-import { raiseExpiryTicketSafely } from '@/backend/services/system/component-expiry-ticket';
 import { getToolCode, updateComponent } from '@/backend/services/system/system-service';
 import { internalError, zodError } from '@/lib/api-error';
 import { zDateString } from '@/lib/zod-date';
@@ -95,9 +94,6 @@ export async function POST(
     }, session!.user.ownerId);
 
     if (result.code === 1) {
-      // Switched to renewable expiry, or its limits moved into the past: open its ticket now, not at the next cron run.
-      await raiseExpiryTicketSafely(Number(id));
-
       const systemCode = await getToolCode(parsed.data.fk_tool_id, session!.user.ownerId);
       const lat = parsed.data.latitude;
       const lng = parsed.data.longitude;

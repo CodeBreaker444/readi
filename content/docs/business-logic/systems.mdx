@@ -51,7 +51,7 @@ See [System Status Rules](/docs/platform-rules/system-status-rules) for the full
 **Automated:** Components decommission automatically when they expire, that is, when they pass their expiry date or reach their flight or flight-hour limit. An expired component shows as Decommissioned and the system becomes Not Operational. The platform also sends expiration notifications to managers.
 
 <Warning>
-**Expiry is permanent by default.** An expired component cannot be made operational again and cannot be put on a maintenance ticket by hand (a ticket is still opened for it automatically, see below). To make the system operational, set the component to Decommissioned, remove it from the system, or move it to the warehouse.
+**Expiry is permanent by default.** An expired component cannot be made operational again and no maintenance ticket can be created for it. The system stays `NOT_OPERATIONAL` until the component is removed from it (removed, or moved to the warehouse). Setting the component to Decommissioned does not free the system.
 </Warning>
 
 ### Renewable expiry (`expiry_permanent = false`)
@@ -61,23 +61,28 @@ The **Permanent expiry** checkbox on a component is stored as `tool_component.co
 | | `expiry_permanent = true` (default) | `expiry_permanent = false` |
 |---|---|---|
 | Effective status when expired | `DECOMMISSIONED` | `NOT_OPERATIONAL` (an explicit stored `MAINTENANCE`, `DECOMMISSIONED` or `DISMISSED` is kept) |
-| System status | `NOT_OPERATIONAL` | `NOT_OPERATIONAL` |
-| Maintenance ticket | Opened automatically, one per expiry (cannot be added by hand) | Opened automatically, one per expiry |
-| Renewing the limits | Refused | Allowed. The component returns to its stored status |
+| System status when expired | `NOT_OPERATIONAL` until the component is removed from the system (detached / warehouse / removed). `DECOMMISSIONED` does not free it | `NOT_OPERATIONAL` until renewed, `DECOMMISSIONED`, or removed |
+| Maintenance ticket | Cannot be created | Created by a user, never automatically |
+| Renewing the limits by editing | Refused | Refused while expired (error `expiredRenewViaTicket`). Renewed when a ticket covering it is closed. Editable again once it is no longer expired |
 | Changing the flag while expired | Refused | Refused |
 
-When a renewable component expires it becomes `NOT_OPERATIONAL` and stays that way until its limits are renewed or it is set to `DECOMMISSIONED`. A maintenance ticket is opened for it automatically:
+When a renewable component expires it becomes `NOT_OPERATIONAL` and stays that way until a ticket covering it is closed (which renews its expiry) or it is set to `DECOMMISSIONED`. **No maintenance ticket is created automatically.**
 
-- The ticket has `ticket_type = STANDARD`, `ticket_priority = HIGH`, `reported_by_user_id = NULL`, and is linked to the component through `maintenance_ticket_item`.
-- It is opened by the `check-component-expiration` cron (every 6 hours, for every expiry type), straight after a component is added or edited with an expired limit, and straight after a mission or flight sync raises a flight or flight-hour counter to its limit.
-- The same applies to **permanent** expiry (`expiry_permanent = true` or missing): a ticket is opened for the system with a note that the component is Decommissioned (expiry is permanent), and the system shows `MAINTENANCE`. The component stays decommissioned and is not added to tickets by hand. A permanent component already stored as `DECOMMISSIONED` (taken out of the system) gets no ticket.
-- It is skipped for decommissioned, dismissed, detached (warehouse) and inactive components, and when an open ticket already covers the component or the whole system. A component added to a system whose open ticket does not list it gets its own ticket.
-- To avoid duplicates, the component stores `expiry_ticket_key` (the expiry limits plus `last_maintenance_date`) in its metadata, and its row is locked while the ticket is created. Renewing the limits, or performing maintenance, starts a new expiry and allows a new ticket. Closing a ticket on a component that is still expired records the key, so no second ticket is opened for the same expiry.
-- The system's stored status is set to `MAINTENANCE` (see below), so it does not show `NOT_OPERATIONAL` while the ticket is open.
+While it is expired, editing its expiry (`expiry_type`, `expiration_date`, `expiration_flights`, `expiration_flight_hours`) or the counters that could clear it is refused with the error `expiredRenewViaTicket`. Other fields can still be edited.
 
-A user can also put it on a maintenance ticket: an expired renewable component is ticketable even though its status is `NOT_OPERATIONAL`. A component with a stored `NOT_OPERATIONAL` (for example from a reported issue), `DECOMMISSIONED` or `DISMISSED` status, or a detached one, is still not ticketable. Closing the ticket resets the component's counters but does not renew an expired date, so renew or decommission it separately.
+**Renewal when the ticket closes.** `closeTicket` renews every component on the ticket (or every component of the system, for a system-level ticket) that has `expiry_permanent = false`, is still in the system (not detached, decommissioned or dismissed) and has reached a limit. The amounts are constants in `src/lib/system/expiry-renewal.ts`:
 
-When a ticket is created (by a user, or automatically for an expired component) for a system whose stored status is `OPERATIONAL` (or empty) but that is `NOT_OPERATIONAL` because of an expired component, the system's stored status is set to `MAINTENANCE`, so the fleet list shows Maintenance. This applies to permanent and renewable expiry. It is set back to `OPERATIONAL` when the last open ticket closes; if an expired component is still in the system, the computed `NOT_OPERATIONAL` shows again. A status set by hand (`NOT_OPERATIONAL`, `DISMISSED`, ...) is never overwritten.
+| Limit | New value |
+|---|---|
+| `expiration_date` | the later of the old date and today, plus 1 month (the day is clamped to the end of a shorter month) |
+| `expiration_flights` | old limit + 10 |
+| `expiration_flight_hours` | the later of the old limit and `current_usage_hours`, plus 10 |
+
+Only the limits that were reached are renewed (a `MIXED` component keeps the others). The renewal is planned before the counters are reset, because the flight counter is part of the check. Each renewal adds an `EXPIRY_RENEWED` event to the ticket timeline and is written to the audit log. `GET /api/system/maintenance/tickets/expiry-renewals?ticket_id=` returns the same plan for the Close Ticket window.
+
+A user can put it on a maintenance ticket: an expired renewable component is ticketable even though its status is `NOT_OPERATIONAL`. A component with a stored `NOT_OPERATIONAL` (for example from a reported issue), `DECOMMISSIONED` or `DISMISSED` status, or a detached one, is still not ticketable. Closing the ticket resets the component's counters and renews its expiry (see below).
+
+When a ticket is created for a system whose stored status is `OPERATIONAL` (or empty) but that is `NOT_OPERATIONAL` because of an expired component, the system's stored status is set to `MAINTENANCE`, so the fleet list shows Maintenance. This applies to permanent and renewable expiry (for a permanent expired component, through a ticket for another component or for the whole system). It is set back to `OPERATIONAL` when the last open ticket closes; if an expired component is still in the system, the computed `NOT_OPERATIONAL` shows again. A status set by hand (`NOT_OPERATIONAL`, `DISMISSED`, ...) is never overwritten.
 
 | State | `tool_active` | In fleet? | Missions? |
 |---|---|---|---|
