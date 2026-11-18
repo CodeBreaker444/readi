@@ -21,6 +21,7 @@ const schema = z.object({
   component_purchase_date: zDateString('Invalid purchase date').optional().nullable(),
   expiration_date: zDateString('Invalid expiration date').optional().nullable(),
   expiry_type: z.enum(['EXPIRATION_DATE', 'FLIGHTS', 'FLIGHT_HOURS', 'MIXED']).optional(),
+  expiry_permanent: z.boolean().optional(),
   expiration_flights: z.number().int().positive().optional().nullable(),
   expiration_flight_hours: z.number().min(0).max(9999).optional().nullable(),
   component_vendor: z.string().optional().nullable(),

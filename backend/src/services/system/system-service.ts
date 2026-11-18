@@ -1,6 +1,6 @@
 import { refreshMaintenanceDaysForOwner, refreshMaintenanceDaysForTool } from '@/backend/utils/refresh-maintenance-days';
 import { prisma } from '@/lib/prisma';
-import { isComponentPartOfSystem, parseComponentMeta } from './maintenance-rules';
+import { isComponentExpired, isComponentPartOfSystem, isExpiryPermanent, parseComponentMeta, toDayString, type ExpiryLimits } from './maintenance-rules';
 import { buildS3Url, getPresignedDownloadUrl, uploadFileToS3 } from '@/lib/s3Client';
 import { Prisma } from '@prisma/client';
 
@@ -331,7 +331,10 @@ async function findOperationalBlocker(toolId: number): Promise<string | null> {
   );
   const expiredComp = dateExpired ?? flightExpired;
   if (expiredComp) {
-    return `Component "${expiredComp.component_name}" has expired: ${describeExpiryReason(expiredComp)}. Set it to Decommissioned, remove it, or move it to the warehouse before putting the system in operation.`;
+    const remedy = isExpiryPermanent(parseComponentMeta(expiredComp.component_metadata))
+      ? 'Set it to Decommissioned, remove it, or move it to the warehouse'
+      : 'Renew its expiry limits, set it to Decommissioned, remove it, or move it to the warehouse';
+    return `Component "${expiredComp.component_name}" has expired: ${describeExpiryReason(expiredComp)}. ${remedy} before putting the system in operation.`;
   }
   if (openTicket) return 'The system has an open maintenance ticket. Close it first.';
 
@@ -916,46 +919,18 @@ export async function getComponentList(ownerId: number, toolId?: number, include
   return buildComponentListResult(rawData);
 }
 
-/** YYYY-MM-DD for a Date/string; null when empty or an Invalid Date (toISOString would throw RangeError). */
-function toDayString(value: Date | string | null | undefined): string | null {
-  if (value == null || value === '') return null;
-  if (typeof value === 'string') return value;
-  return Number.isNaN(value.getTime()) ? null : value.toISOString().split('T')[0];
-}
 
-export function computeEffectiveComponentStatus(item: {
-  component_metadata: any;
-  expiration_date: Date | string | null;
-  expiry_type: string | null;
-  expiration_flights: number | null;
-  expiration_flight_hours: number | Prisma.Decimal | null;
-  current_maintenance_flights: number | Prisma.Decimal | null;
-  current_usage_hours: number | Prisma.Decimal | null;
-}, today: string = new Date().toISOString().split('T')[0]): string {
-  const expiryType: string = item.expiry_type || 'EXPIRATION_DATE';
-  // Callers pass either a Date (Prisma rows) or a YYYY-MM-DD string; a Date compared with a string is never <=, so normalise first.
-  const expiryDay = toDayString(item.expiration_date);
-  const isDateExpired = expiryDay && expiryDay <= today;
-  const isFlightExpired =
-    item.expiration_flights != null &&
-    Number(item.current_maintenance_flights) >= item.expiration_flights;
-  const isFlightHoursExpired =
-    item.expiration_flight_hours != null &&
-    Number(item.current_usage_hours) >= Number(item.expiration_flight_hours);
-  const isExpired =
-    expiryType === 'FLIGHTS'
-      ? isFlightExpired
-      : expiryType === 'FLIGHT_HOURS'
-        ? isFlightHoursExpired
-        : expiryType === 'MIXED'
-          ? isDateExpired || isFlightExpired || isFlightHoursExpired
-          : isDateExpired;
+/**
+ * Status shown for a component. An expired component with permanent expiry (the default) reads as DECOMMISSIONED.
+ * With `expiry_permanent: false` it reads as NOT_OPERATIONAL instead (or keeps an explicit MAINTENANCE /
+ * DECOMMISSIONED / DISMISSED), and becomes operational again once its limits are renewed.
+ */
+export function computeEffectiveComponentStatus(item: ExpiryLimits & { component_metadata: any }, today: string = new Date().toISOString().split('T')[0]): string {
   const storedStatus = item.component_metadata?.component_status;
-  return storedStatus === 'DISMISSED'
-    ? 'DISMISSED'
-    : isExpired
-      ? 'DECOMMISSIONED'
-      : (storedStatus || 'OPERATIONAL');
+  if (storedStatus === 'DISMISSED') return 'DISMISSED';
+  if (!isComponentExpired(item, today)) return storedStatus || 'OPERATIONAL';
+  if (isExpiryPermanent(item.component_metadata)) return 'DECOMMISSIONED';
+  return storedStatus === 'DECOMMISSIONED' || storedStatus === 'MAINTENANCE' ? storedStatus : 'NOT_OPERATIONAL';
 }
 
 /**
@@ -985,6 +960,37 @@ export function describeExpiryReason(item: {
     reasons.push(`it reached its flight-hour limit (${Number(item.current_usage_hours)} of ${Number(item.expiration_flight_hours)} h)`);
   }
   return reasons.join(' and ') || 'it reached its expiry limit';
+}
+
+/** The limits an expired component reached, as data (not words) so the UI can translate them. */
+export type ExpiryReasonPart =
+  | { type: 'date'; date: string }
+  | { type: 'flights'; current: number; limit: number }
+  | { type: 'hours'; current: number; limit: number };
+
+export function expiryReasonParts(item: {
+  expiration_date: Date | string | null;
+  expiry_type: string | null;
+  expiration_flights: number | null;
+  expiration_flight_hours: number | Prisma.Decimal | null;
+  current_maintenance_flights: number | Prisma.Decimal | null;
+  current_usage_hours: number | Prisma.Decimal | null;
+}, today: string = new Date().toISOString().split('T')[0]): ExpiryReasonPart[] {
+  const expiryType = item.expiry_type || 'EXPIRATION_DATE';
+  const day = toDayString(item.expiration_date);
+  const parts: ExpiryReasonPart[] = [];
+  if ((expiryType === 'EXPIRATION_DATE' || expiryType === 'MIXED') && day && day <= today) {
+    parts.push({ type: 'date', date: day });
+  }
+  if ((expiryType === 'FLIGHTS' || expiryType === 'MIXED') && item.expiration_flights != null
+    && Number(item.current_maintenance_flights) >= item.expiration_flights) {
+    parts.push({ type: 'flights', current: Number(item.current_maintenance_flights), limit: item.expiration_flights });
+  }
+  if ((expiryType === 'FLIGHT_HOURS' || expiryType === 'MIXED') && item.expiration_flight_hours != null
+    && Number(item.current_usage_hours) >= Number(item.expiration_flight_hours)) {
+    parts.push({ type: 'hours', current: Number(item.current_usage_hours), limit: Number(item.expiration_flight_hours) });
+  }
+  return parts;
 }
 
 function buildComponentListResult(data: any[]) {
@@ -1043,6 +1049,8 @@ function buildComponentListResult(data: any[]) {
         is_primary: item.component_metadata?.is_primary ?? false,
         expiration_date: item.expiration_date || null,
         expiry_type: item.expiry_type || 'EXPIRATION_DATE',
+        expiry_permanent: isExpiryPermanent(item.component_metadata),
+        expiry_reached: isComponentExpired(item, today),
         expiration_flights: item.expiration_flights ?? null,
         expiration_flight_hours: item.expiration_flight_hours != null ? Number(item.expiration_flight_hours) : null,
         insurance_name: item.component_insurance?.insurance_name ?? null,
@@ -1161,6 +1169,8 @@ export async function addComponent(componentData: any, ownerId: number) {
         // An expired component reads as Decommissioned (computed from its expiry data) but is not stored as such:
         // only an explicit Decommissioned takes it out of the system, so until then it keeps the system Not Operational.
         component_status: componentData.component_status || 'OPERATIONAL',
+        // Permanent (default): expiry decommissions the component. false: expiry makes it Not Operational and it can be renewed.
+        expiry_permanent: componentData.expiry_permanent !== false,
         component_category: componentData.component_category || 'STANDARD',
         fk_tool_model_id: componentData.fk_tool_model_id || null,
         fk_parent_component_id: componentData.fk_parent_component_id ?? null,
@@ -1230,7 +1240,7 @@ export async function updateComponent(componentId: number, componentData: any, o
     expiration_flight_hours: number | null;
     current_maintenance_flights: number | null;
     current_usage_hours: number | null;
-  }) => computeEffectiveComponentStatus({ component_metadata: {}, ...limits }) === 'DECOMMISSIONED';
+  }) => isComponentExpired(limits);
 
   const storedLimits = {
     expiration_date: toDayString(existing?.expiration_date ? new Date(existing.expiration_date) : null),
@@ -1253,13 +1263,26 @@ export async function updateComponent(componentId: number, componentData: any, o
 
   // Before/after values for the audit log: shown status (expiry included) and the expiry limits.
   const prevExistingMeta = (existing?.component_metadata as Record<string, unknown> | null) ?? {};
+  const storedStatus = (prevExistingMeta.component_status as string | undefined) || 'OPERATIONAL';
+  const storedPermanent = isExpiryPermanent(prevExistingMeta);
+  // An omitted flag keeps the stored one (components created before the option existed are permanent).
+  const finalPermanent = componentData.expiry_permanent === undefined ? storedPermanent : componentData.expiry_permanent !== false;
+
+  // For a renewable-expiry component that is expired, the edit form shows the derived Not Operational status.
+  // Sending that back unchanged is not a choice, so it must not overwrite the stored status (it would stay
+  // Not Operational after the limits are renewed).
+  let submittedStatus: string | undefined = componentData.component_status || undefined;
+  if (!storedPermanent && wasExpired && submittedStatus === 'NOT_OPERATIONAL' && storedStatus !== 'NOT_OPERATIONAL') {
+    submittedStatus = storedStatus;
+  }
+
   // An omitted status/expiry type keeps the stored value instead of resetting to the default.
-  const finalStatus: string = componentData.component_status || (prevExistingMeta.component_status as string | undefined) || 'OPERATIONAL';
+  const finalStatus: string = submittedStatus || storedStatus;
   const finalExpiryType: string = componentData.expiry_type || existing?.expiry_type || 'EXPIRATION_DATE';
   const statusChange = {
     from: computeEffectiveComponentStatus({ component_metadata: prevExistingMeta, ...storedLimits }),
     to: computeEffectiveComponentStatus({
-      component_metadata: { component_status: finalStatus },
+      component_metadata: { component_status: finalStatus, expiry_permanent: finalPermanent },
       ...submittedLimits,
     }),
   };
@@ -1272,17 +1295,41 @@ export async function updateComponent(componentId: number, componentData: any, o
     : null;
   let systemStatusChange: { toolId: number; from: string; to: string } | null = null;
 
-  // Expiry is permanent: an expired component cannot be renewed by raising its limits, nor set to any status but Decommissioned.
-  if (wasExpired && !expiredNow) {
+  // Once expired, the expiry mode is fixed: flipping it would turn a permanent decommission into a renewable
+  // one (or the reverse) behind the user's back.
+  if (wasExpired && finalPermanent !== storedPermanent) {
     return {
       code: 0,
-      message: `This component has expired: ${describeExpiryReason(storedLimits)}. Expiry is permanent and cannot be reversed by changing its limits. Keep it Decommissioned, remove it from the system, or move it to the warehouse.`,
+      message: `This component has expired: ${describeExpiryReason(storedLimits)}. The permanent-expiry setting cannot be changed while it is expired.`,
+      errorKey: 'expiryModeLocked',
+      errorParams: { reasons: expiryReasonParts(storedLimits) },
     };
   }
-  if (expiredNow && componentData.component_status && componentData.component_status !== 'DECOMMISSIONED') {
+
+  if (finalPermanent) {
+    // Expiry is permanent: an expired component cannot be renewed by raising its limits, nor set to any status but Decommissioned.
+    if (wasExpired && !expiredNow) {
+      return {
+        code: 0,
+        message: `This component has expired: ${describeExpiryReason(storedLimits)}. Expiry is permanent and cannot be reversed by changing its limits. Keep it Decommissioned, remove it from the system, or move it to the warehouse.`,
+        errorKey: 'expiredPermanentNoRenew',
+        errorParams: { reasons: expiryReasonParts(storedLimits) },
+      };
+    }
+    if (expiredNow && componentData.component_status && componentData.component_status !== 'DECOMMISSIONED') {
+      return {
+        code: 0,
+        message: `This component has expired: ${describeExpiryReason(submittedLimits)}. Expiry is permanent, so it cannot be set to ${componentData.component_status}. Keep it Decommissioned, remove it from the system, or move it to the warehouse.`,
+        errorKey: 'expiredPermanentStatus',
+        errorParams: { reasons: expiryReasonParts(submittedLimits), status: componentData.component_status },
+      };
+    }
+  } else if (wasExpired && expiredNow && componentData.component_status === 'OPERATIONAL') {
     return {
       code: 0,
-      message: `This component has expired: ${describeExpiryReason(submittedLimits)}. Expiry is permanent, so it cannot be set to ${componentData.component_status}. Keep it Decommissioned, remove it from the system, or move it to the warehouse.`,
+      message: `This component is Not Operational: ${describeExpiryReason(submittedLimits)}. Renew its expiry limits to make it operational, or set it to Decommissioned.`,
+      errorKey: 'expiredRenewNoOperational',
+      errorParams: { reasons: expiryReasonParts(submittedLimits) },
     };
   }
 
@@ -1409,6 +1456,7 @@ export async function updateComponent(componentId: number, componentData: any, o
         cc_platform: componentData.cc_platform || null,
         gcs_type: componentData.gcs_type || null,
         component_status: finalStatus,
+        expiry_permanent: finalPermanent,
         component_category: componentData.component_category || 'STANDARD',
         fk_tool_model_id: componentData.fk_tool_model_id || null,
         fk_parent_component_id: componentData.fk_parent_component_id ?? null,

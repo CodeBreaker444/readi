@@ -34,7 +34,7 @@ NOT_OPERATIONAL  >  MAINTENANCE  >  OPERATIONAL
 |---|---|
 | `OPERATIONAL` | No open tickets, no expired components |
 | `MAINTENANCE` | Open maintenance ticket (`ticket_status != CLOSED`) OR component with `component_status = MAINTENANCE` |
-| `NOT_OPERATIONAL` | Active component (`component_active = Y`) has `expiration_date <= today` |
+| `NOT_OPERATIONAL` | Active component (`component_active = Y`) has `expiration_date <= today` (or has reached a flight / flight-hour limit) |
 
 <Warning>
 A system can satisfy both MAINTENANCE and NOT_OPERATIONAL simultaneously. NOT_OPERATIONAL always wins the display.
@@ -51,8 +51,22 @@ See [System Status Rules](/docs/platform-rules/system-status-rules) for the full
 **Automated:** Components decommission automatically when they expire, that is, when they pass their expiry date or reach their flight or flight-hour limit. An expired component shows as Decommissioned and the system becomes Not Operational. The platform also sends expiration notifications to managers.
 
 <Warning>
-**Expiry is permanent.** An expired component cannot be made operational again and no maintenance ticket can be created for it. To make the system operational, set the component to Decommissioned, remove it from the system, or move it to the warehouse.
+**Expiry is permanent by default.** An expired component cannot be made operational again and no maintenance ticket can be created for it. To make the system operational, set the component to Decommissioned, remove it from the system, or move it to the warehouse.
 </Warning>
+
+### Renewable expiry (`expiry_permanent = false`)
+
+The **Permanent expiry** checkbox on a component is stored as `tool_component.component_metadata.expiry_permanent`. A missing value means `true`, so every component created before the option existed is permanent.
+
+| | `expiry_permanent = true` (default) | `expiry_permanent = false` |
+|---|---|---|
+| Effective status when expired | `DECOMMISSIONED` | `NOT_OPERATIONAL` (an explicit stored `MAINTENANCE`, `DECOMMISSIONED` or `DISMISSED` is kept) |
+| System status | `NOT_OPERATIONAL` | `NOT_OPERATIONAL` |
+| Maintenance ticket | Cannot be created | Not created automatically |
+| Renewing the limits | Refused | Allowed. The component returns to its stored status |
+| Changing the flag while expired | Refused | Refused |
+
+No maintenance ticket is created when a renewable component expires. It becomes `NOT_OPERATIONAL` and stays that way until its limits are renewed or it is set to `DECOMMISSIONED`.
 
 | State | `tool_active` | In fleet? | Missions? |
 |---|---|---|---|

@@ -47,8 +47,12 @@ Set `component_active = N` on an expired component to remove it from the status 
 </Note>
 
 <Warning>
-**Expiry is permanent.** An expired component cannot be made Operational again, and no maintenance ticket can be created for it. Do not renew it by editing its expiry date: the change is refused. Set it to **Decommissioned**, remove it from the system, or move it to the warehouse. See [Component statuses](/docs/modules/systems).
+**Expiry is permanent by default.** An expired component cannot be made Operational again, and no maintenance ticket can be created for it. Do not renew it by editing its expiry date: the change is refused. Set it to **Decommissioned**, remove it from the system, or move it to the warehouse. See [Component statuses](/docs/modules/systems).
 </Warning>
+
+<Note>
+**Exception: Permanent expiry unchecked.** A component whose **Permanent expiry** checkbox is unchecked still makes the system `NOT_OPERATIONAL` when it expires, but it shows as Not Operational (not Decommissioned) and it can be renewed by setting new expiry limits. No maintenance ticket is created automatically. See [Permanent expiry option](/docs/modules/systems).
+</Note>
 
 ---
 
@@ -70,5 +74,5 @@ Set `component_active = N` on an expired component to remove it from the status 
 
 | Status | How to clear |
 |---|---|
-| `NOT_OPERATIONAL` | Set the expired component to Decommissioned, remove it from the system, or move it to the warehouse. Expired components cannot be renewed |
+| `NOT_OPERATIONAL` | Set the expired component to Decommissioned, remove it from the system, or move it to the warehouse. Expired components cannot be renewed, unless the component has **Permanent expiry** unchecked: then set new expiry limits to make it operational |
 | `MAINTENANCE` | Close the maintenance ticket (`ticket_status = CLOSED`) |

@@ -3,6 +3,7 @@
 import { ModelSelectPager, usePagedModels } from "./ModelSelectPager";
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -45,6 +46,7 @@ const INITIAL_FORM = {
   component_purchase_date: '',
   expiration_date: '',
   expiry_type: 'EXPIRATION_DATE',
+  expiry_permanent: true,
   expiration_flights: '',
   expiration_flight_hours: '',
   component_vendor: '',
@@ -258,6 +260,7 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
         component_purchase_date: formData.component_purchase_date || null,
         expiration_date: formData.expiration_date || null,
         expiry_type: formData.expiry_type,
+        expiry_permanent: formData.expiry_permanent,
         expiration_flights: formData.expiration_flights ? Number(formData.expiration_flights) : null,
         expiration_flight_hours: formData.expiration_flight_hours ? parseFloat(formData.expiration_flight_hours) : null,
         component_vendor: formData.component_vendor || null,
@@ -719,7 +722,7 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
                 <div className="col-span-1 sm:col-span-3">
                   <Label className="pb-2">{t('systems.components.addComponent.fields.expirationDate')}</Label>
                   <Input type="date" min="1900-01-01" max="2200-12-31" value={formData.expiration_date} onChange={(e) => handleChange('expiration_date', e.target.value)} />
-                  {formData.expiry_type === 'EXPIRATION_DATE' && (
+                  {formData.expiry_type === 'EXPIRATION_DATE' && formData.expiry_permanent && (
                     <p className="text-[10px] text-muted-foreground mt-1">{t('systems.components.common.autoDecommissionHint')}</p>
                   )}
                 </div>
@@ -735,7 +738,7 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
                     value={formData.expiration_flights}
                     onChange={(e) => handleChange('expiration_flights', e.target.value)}
                   />
-                  {formData.expiry_type === 'FLIGHTS' && (
+                  {formData.expiry_type === 'FLIGHTS' && formData.expiry_permanent && (
                     <p className="text-[10px] text-muted-foreground mt-1">{t('systems.components.common.expiryType.flightsHint')}</p>
                   )}
                 </div>
@@ -752,16 +755,33 @@ export default function AddComponentModal({ open, onClose, onSuccess, tools, mod
                     value={formData.expiration_flight_hours}
                     onChange={(e) => handleChange('expiration_flight_hours', e.target.value)}
                   />
-                  {formData.expiry_type === 'FLIGHT_HOURS' && (
+                  {formData.expiry_type === 'FLIGHT_HOURS' && formData.expiry_permanent && (
                     <p className="text-[10px] text-muted-foreground mt-1">{t('systems.components.common.expiryType.flightHoursHint')}</p>
                   )}
                 </div>
               )}
-              {formData.expiry_type === 'MIXED' && (
+              {formData.expiry_type === 'MIXED' && formData.expiry_permanent && (
                 <div className="col-span-1 sm:col-span-12">
                   <p className="text-[10px] text-muted-foreground">{t('systems.components.common.expiryType.mixedHint')}</p>
                 </div>
               )}
+              <div className="col-span-1 sm:col-span-12">
+                <label className="flex items-start gap-2 cursor-pointer w-fit">
+                  <Checkbox
+                    className="mt-0.5"
+                    checked={formData.expiry_permanent}
+                    onCheckedChange={(v) => handleChange('expiry_permanent', v === true)}
+                  />
+                  <span>
+                    <span className="text-xs font-medium">{t('systems.components.common.expiryType.permanentLabel')}</span>
+                    <span className="block text-[10px] text-muted-foreground">
+                      {formData.expiry_permanent
+                        ? t('systems.components.common.expiryType.permanentHint')
+                        : t('systems.components.common.expiryType.renewableHint')}
+                    </span>
+                  </span>
+                </label>
+              </div>
               <div className="col-span-1 sm:col-span-3">
                 <Label className="pb-2">{t('systems.components.addComponent.fields.vendor')}</Label>
                 <Input value={formData.component_vendor} onChange={(e) => handleChange('component_vendor', e.target.value)} />

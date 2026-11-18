@@ -5252,7 +5252,12 @@
           "expirationFlightHours": "Expiration Flight Hours",
           "flightsHint": "Component auto-decommissions when flight count is reached",
           "flightHoursHint": "Component auto-decommissions when flight hours are reached",
-          "mixedHint": "Decommissions when any set limit is reached — date, flight count, or flight hours — whichever comes first"
+          "mixedHint": "Decommissions when any set limit is reached — date, flight count, or flight hours — whichever comes first",
+          "permanentLabel": "Permanent expiry",
+          "permanentHint": "On expiry the component is automatically decommissioned and cannot be renewed.",
+          "renewableHint": "On expiry the component becomes Not Operational. You can then renew its expiry to make it operational again, or decommission it.",
+          "permanentLocked": "Locked while the component is expired.",
+          "expiredNotice": "This component has reached its expiry and is Not Operational. To make it operational, set new expiry limits and save; or set its status to Decommissioned."
         },
         "defaultCounters": {
           "label": "Starting Counters",
@@ -5384,6 +5389,19 @@
           "resetToModel": "Maintenance cycle reset to model defaults"
         }
       },
+      "expiryError": {
+          "and": " and ",
+          "reason": {
+            "date": "its expiry date ({{date}}) has passed",
+            "flights": "it reached its flight limit ({{current}} of {{limit}} flights)",
+            "hours": "it reached its flight-hour limit ({{current}} of {{limit}} h)",
+            "generic": "it reached its expiry limit"
+          },
+          "expiryModeLocked": "This component has expired: {{reason}}. The permanent-expiry setting cannot be changed while it is expired.",
+          "expiredPermanentNoRenew": "This component has expired: {{reason}}. Expiry is permanent and cannot be reversed by changing its limits. Keep it Decommissioned, remove it from the system, or move it to the warehouse.",
+          "expiredPermanentStatus": "This component has expired: {{reason}}. Expiry is permanent, so it cannot be set to {{status}}. Keep it Decommissioned, remove it from the system, or move it to the warehouse.",
+          "expiredRenewNoOperational": "This component is Not Operational: {{reason}}. Renew its expiry limits to make it operational, or set it to Decommissioned."
+        },
       "editComponent": {
         "title": "Edit Component",
         "fields": {
