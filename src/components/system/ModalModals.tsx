@@ -20,6 +20,7 @@ import { cn, formatDateTimeInTz } from '@/lib/utils';
 import { AlertTriangle, CheckCircle2, ChevronLeft, ChevronRight, Loader2, Search } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
+import axios from 'axios';
 import type { NewTicketForm, ReportForm } from './useMaintenance';
 
 const DRONES_PER_PAGE = 8;
@@ -282,7 +283,7 @@ export function NewTicketModal({
               ) : (
                 <div className={`max-h-[160px] overflow-y-auto rounded-lg border divide-y ${isDark ? 'border-slate-600 divide-slate-700' : 'border-slate-200 divide-slate-100'}`}>
                   {components.map((c) => {
-                    const blocked = ['NOT_OPERATIONAL', 'DECOMMISSIONED', 'DISMISSED'].includes(c.component_status);
+                    const blocked = c.ticket_blocked ?? ['NOT_OPERATIONAL', 'DECOMMISSIONED', 'DISMISSED'].includes(c.component_status);
                     const checked = !blocked && form.components.includes(c.tool_component_id);
                     return (
                       <label
@@ -398,9 +399,21 @@ export function NewTicketModal({
   );
 }
 
+interface ExpiryRenewalRow {
+  component_id: number;
+  component_name: string | null;
+  component_code: string | null;
+  renewal: {
+    expiration_date?: { from: string; to: string };
+    expiration_flights?: { from: number; to: number };
+    expiration_flight_hours?: { from: number; to: number };
+  };
+}
+
 export function CloseTicketModal({
-  open, onClose, note, onNoteChange, onSubmit, isDark, loading, isInProgress,
+  open, onClose, note, onNoteChange, onSubmit, isDark, loading, isInProgress, ticketId,
 }: {
+  ticketId?: number | null;
   open: boolean;
   onClose: () => void;
   note: string;
@@ -410,7 +423,19 @@ export function CloseTicketModal({
   loading?: boolean;
   isInProgress?: boolean;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  // Expired components (expiry not permanent) that this ticket renews when it is closed, with their new values.
+  const [renewals, setRenewals] = useState<ExpiryRenewalRow[]>([]);
+  useEffect(() => {
+    if (!open || !ticketId) { setRenewals([]); return; }
+    let cancelled = false;
+    axios
+      .get('/api/system/maintenance/tickets/expiry-renewals', { params: { ticket_id: ticketId } })
+      .then((res) => { if (!cancelled) setRenewals(res.data?.renewals ?? []); })
+      .catch(() => { if (!cancelled) setRenewals([]); }); // the preview is informational; closing still works without it
+    return () => { cancelled = true; };
+  }, [open, ticketId]);
+  const fmtDate = (d: string) => new Date(d + 'T00:00:00').toLocaleDateString(i18n.language);
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
       <DialogContent
@@ -459,6 +484,38 @@ export function CloseTicketModal({
               )}
             />
           </div>
+
+          {renewals.length > 0 && (
+            <div className={cn(
+              'rounded-lg px-3 py-2.5 text-[11px] border',
+              isDark ? 'bg-sky-500/10 text-sky-300 border-sky-500/30' : 'bg-sky-50 text-sky-800 border-sky-200'
+            )}>
+              <p className="font-semibold">{t('systems.maintenanceLogbook.modals.closeTicket.expiryRenewal.title')}</p>
+              <p className="mt-0.5 opacity-90">{t('systems.maintenanceLogbook.modals.closeTicket.expiryRenewal.hint')}</p>
+              <ul className="mt-2 space-y-1.5">
+                {renewals.map((r) => (
+                  <li key={r.component_id}>
+                    <span className="font-medium">{r.component_code || r.component_name || `#${r.component_id}`}</span>
+                    {r.renewal.expiration_date && (
+                      <span className="block">
+                        {t('systems.maintenanceLogbook.modals.closeTicket.expiryRenewal.date', { from: fmtDate(r.renewal.expiration_date.from), to: fmtDate(r.renewal.expiration_date.to) })}
+                      </span>
+                    )}
+                    {r.renewal.expiration_flights && (
+                      <span className="block">
+                        {t('systems.maintenanceLogbook.modals.closeTicket.expiryRenewal.flights', { from: r.renewal.expiration_flights.from, to: r.renewal.expiration_flights.to })}
+                      </span>
+                    )}
+                    {r.renewal.expiration_flight_hours && (
+                      <span className="block">
+                        {t('systems.maintenanceLogbook.modals.closeTicket.expiryRenewal.flightHours', { from: r.renewal.expiration_flight_hours.from, to: r.renewal.expiration_flight_hours.to })}
+                      </span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           {isInProgress && (
             <div className="flex items-start gap-2 rounded-lg px-3 py-2.5 text-[11px] bg-yellow-400/20 border border-yellow-400/40 text-yellow-600 dark:text-yellow-400">

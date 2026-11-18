@@ -65,6 +65,18 @@ export function isComponentPartOfSystem(meta: Record<string, unknown>): boolean 
 }
 
 /**
+ * Whether an EXPIRED component keeps its system Not Operational.
+ *   - detached (moved to the warehouse) components are out of the system: never.
+ *   - permanent expiry: always, until the component is removed from the system. Setting it to Decommissioned does not
+ *     free the system.
+ *   - renewable expiry: unless it was set to Decommissioned (it can also be renewed, which is no longer expired).
+ */
+export function blocksSystemWhenExpired(meta: Record<string, unknown>): boolean {
+  if (meta.system_detached === true) return false;
+  return isExpiryPermanent(meta) || meta.component_status !== 'DECOMMISSIONED';
+}
+
+/**
  * Expiry is permanent by default: an expired component reads as Decommissioned and cannot be renewed.
  * Only an explicit `expiry_permanent: false` selects the alternative flow (Not Operational + maintenance ticket,
  * renewable). A missing flag (every component created before this option existed) stays permanent.

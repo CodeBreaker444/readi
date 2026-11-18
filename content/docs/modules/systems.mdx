@@ -115,9 +115,9 @@ When you add or edit a component, the **Permanent expiry** checkbox sits under t
 | | Permanent expiry (checked) | Not permanent (unchecked) |
 |---|---|---|
 | Status on expiry | **Decommissioned** | **Not Operational** |
-| Maintenance ticket | None. It cannot be created | None is created automatically |
-| Can it be made Operational again? | No | Yes, by renewing its expiry |
-| Other way out | Remove it or move it to the warehouse | Set it to **Decommissioned** |
+| Maintenance ticket | Cannot be created | Created by a user (never automatic) |
+| Can it be made Operational again? | No | Yes, by creating a ticket for it and closing it (its expiry is renewed) |
+| How the system becomes Operational again | Only when the component is **removed from the system** (removed or moved to the warehouse) | Close the ticket (expiry renewed), or set the component to **Decommissioned** |
 
 The checkbox is locked while the component is expired, so an expired component cannot be switched from one mode to the other.
 
@@ -126,11 +126,24 @@ The checkbox is locked while the component is expired, so an expired component c
 When the component expires:
 
 - It shows as **Not Operational** and the system becomes **Not Operational**.
-- **No maintenance ticket is created automatically.** The platform only sends its usual expiration notifications to managers.
+- **No ticket is created automatically.** A user creates the maintenance ticket: the expired component can be selected like any other component (for the component or for the whole system). A component that is Not Operational for any other reason, or that is Decommissioned or Dismissed, cannot be selected.
+- **When the ticket is created, the system shows Maintenance.** If the system was Not Operational only because of the expired component, it switches to **Maintenance** instead of staying Not Operational. A status you set by hand on the system is never changed.
+
+**Its expiry cannot be edited while it is expired.** If you change the expiry date, the flight limit or the flight-hour limit of an expired component and save, you get an error: it can only be done by creating a maintenance ticket and closing it.
 
 To get it working again, choose one:
 
-- **Make it operational:** edit the component, set new expiry limits and save. It becomes Operational again. Choosing **Operational** without renewing the limit that expired is refused.
+- **Make it operational:** create a maintenance ticket for the component (or for the whole system) and close it. **Closing the ticket renews the expiry automatically:**
+
+  | Expiry type | New value |
+  |---|---|
+  | Expiry date | **1 month** after the later of the old expiry date and today |
+  | Flights | the flight limit **+ 10** |
+  | Flight hours | the flight-hour limit **+ 10** (counted from the hours flown if that is higher) |
+  | Mixed | only the limits that were reached are renewed |
+
+  The **Close Ticket** window shows the new values before you confirm. The component becomes Operational again and the ticket timeline records the renewal.
+- **Change the new value:** once the component is no longer expired, you can edit its expiry like any other component.
 - **Decommission it:** set its status to **Decommissioned**. The system no longer counts it.
 
 ### Expiry is permanent (checkbox checked, default)
@@ -139,11 +152,15 @@ When a component passes its expiry date, or reaches its flight or flight-hour li
 
 - It shows as **Decommissioned** and the system becomes **Not Operational**.
 - **It cannot be made Operational again.** Extending its expiry date or limits, or changing its status, is refused.
-- **No maintenance ticket can be created for it.** Expiry means the component is retired for good, not that it is waiting for service.
+- **It cannot be put on a maintenance ticket.** Expiry means the component is retired for good, not waiting for service.
+- **The system stays Not Operational until the component is removed from it.** Setting its status to Decommissioned does not free the system.
 
-To make the system operational again, take the expired component out of the system's count in one of these ways:
+<Note>
+**Setting an expiry date of today or in the past** makes the component read as Decommissioned and its system **Not Operational**. The Status field in the Edit Component dialog shows the status that is saved, and it is only changed if you change it, so saving an expiry date does not decommission the component by itself. It does not free the system either: the system stays Not Operational until the component is removed from it.
+</Note>
 
-- Set its status to **Decommissioned**.
+To make the system operational again, **remove the expired component from the system**, in one of these ways:
+
 - Remove it from the system.
 - Move it to the warehouse.
 

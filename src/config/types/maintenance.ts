@@ -189,6 +189,8 @@ export interface ComponentOption {
   component_type: string;
   component_sn: string;
   component_status: string;
+  /** Cannot go on a new ticket. Not Operational alone does not decide it: an expired renewable component can. */
+  ticket_blocked?: boolean;
 }
 
 export interface UserOption {

@@ -132,6 +132,12 @@ export default function EditComponentModal({
   const [drcSyncedAt, setDrcSyncedAt] = useState<string | null>(null);
   /** The saved component has already reached an expiry limit (the permanent-expiry setting is locked while it has). */
   const [expiryReached, setExpiryReached] = useState(false);
+  /**
+   * The status as saved (not the derived one shown in lists). The status is only sent when the user changes it:
+   * otherwise saving an expired component would store the derived Decommissioned, which takes it out of the system
+   * and leaves the system Operational.
+   */
+  const [originalStatus, setOriginalStatus] = useState('OPERATIONAL');
   const [qrCodeImage, setQrCodeImage] = useState<string | null>(null);
   const [insuranceExpanded, setInsuranceExpanded] = useState(false);
   const [certificationsExpanded, setCertificationsExpanded] = useState(false);
@@ -182,6 +188,7 @@ export default function EditComponentModal({
       setFormData(EMPTY_FORM);
       setOriginalFkToolId(null);
       setExpiryReached(false);
+      setOriginalStatus('OPERATIONAL');
       setDrcSyncedAt(null);
       setQrCodeImage(null);
       setSystemSearch('');
@@ -192,6 +199,7 @@ export default function EditComponentModal({
     setOriginalFkToolId(comp.fk_tool_id ?? null);
     setDrcSyncedAt(comp.drc_synced_at ?? null);
     setExpiryReached(comp.expiry_reached === true);
+    setOriginalStatus(comp.stored_status || comp.component_status || 'OPERATIONAL');
     setQrCodeImage(comp.qr_code_image ?? null);
     setFormData({
       fk_tool_id: (comp.system_detached || !comp.fk_tool_id) ? '_none' : String(comp.fk_tool_id),
@@ -217,7 +225,7 @@ export default function EditComponentModal({
       expiration_flight_hours: comp.expiration_flight_hours != null ? String(comp.expiration_flight_hours) : '',
       component_vendor: comp.component_vendor || '',
       component_guarantee_day: comp.component_guarantee_day ? String(comp.component_guarantee_day) : '',
-      component_status: comp.component_status || 'OPERATIONAL',
+      component_status: comp.stored_status || comp.component_status || 'OPERATIONAL',
       battery_cycle_ratio: comp.battery_cycle_ratio != null ? String(comp.battery_cycle_ratio) : '',
       fk_parent_component_id: comp.fk_parent_component_id ? String(comp.fk_parent_component_id) : '_none',
       latitude: comp.latitude != null ? String(comp.latitude) : '',
@@ -431,7 +439,7 @@ export default function EditComponentModal({
         expiration_flight_hours: formData.expiration_flight_hours ? parseFloat(formData.expiration_flight_hours) : null,
         component_vendor: formData.component_vendor || null,
         component_guarantee_day: formData.component_guarantee_day ? Number(formData.component_guarantee_day) : null,
-        component_status: formData.component_status,
+        component_status: formData.component_status !== originalStatus ? formData.component_status : undefined,
         battery_cycle_ratio: formData.battery_cycle_ratio ? Number(formData.battery_cycle_ratio) : null,
         fk_parent_component_id: formData.fk_parent_component_id && formData.fk_parent_component_id !== '_none' ? Number(formData.fk_parent_component_id) : null,
         latitude: formData.latitude ? Number(formData.latitude) : null,
@@ -1004,6 +1012,11 @@ export default function EditComponentModal({
                         </span>
                       </span>
                     </label>
+                    {expiryReached && formData.expiry_permanent && (
+                      <p className={`mt-2 rounded-md border px-3 py-2 text-[11px] ${isDark ? 'border-amber-500/40 bg-amber-500/10 text-amber-300' : 'border-amber-300 bg-amber-50 text-amber-800'}`}>
+                        {t('systems.components.common.expiryType.expiredPermanentNotice')}
+                      </p>
+                    )}
                     {expiryReached && !formData.expiry_permanent && (
                       <p className={`mt-2 rounded-md border px-3 py-2 text-[11px] ${isDark ? 'border-amber-500/40 bg-amber-500/10 text-amber-300' : 'border-amber-300 bg-amber-50 text-amber-800'}`}>
                         {t('systems.components.common.expiryType.expiredNotice')}

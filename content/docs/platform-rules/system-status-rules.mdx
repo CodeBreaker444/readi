@@ -43,15 +43,19 @@ A component that is only **Alert** or **Due** for maintenance does not change th
 </Note>
 
 <Note>
+**Ticket on a Not Operational system.** When a ticket is created for a system that is Not Operational only because of an expired component, the system's stored status is set to **Maintenance**, so it shows Maintenance while the ticket is open. A status that was set by hand is not changed.
+</Note>
+
+<Note>
 Set `component_active = N` on an expired component to remove it from the status computation without deleting it.
 </Note>
 
 <Warning>
-**Expiry is permanent by default.** An expired component cannot be made Operational again, and no maintenance ticket can be created for it. Do not renew it by editing its expiry date: the change is refused. Set it to **Decommissioned**, remove it from the system, or move it to the warehouse. See [Component statuses](/docs/modules/systems).
+**Expiry is permanent by default.** An expired component cannot be made Operational again, and no maintenance ticket can be created for it. Do not renew it by editing its expiry date: the change is refused. The system stays Not Operational until the component is **removed from the system** (removed, or moved to the warehouse). Setting it to Decommissioned does not free the system. See [Component statuses](/docs/modules/systems).
 </Warning>
 
 <Note>
-**Exception: Permanent expiry unchecked.** A component whose **Permanent expiry** checkbox is unchecked still makes the system `NOT_OPERATIONAL` when it expires, but it shows as Not Operational (not Decommissioned) and it can be renewed by setting new expiry limits. No maintenance ticket is created automatically. See [Permanent expiry option](/docs/modules/systems).
+**Exception: Permanent expiry unchecked.** A component whose **Permanent expiry** checkbox is unchecked still makes the system `NOT_OPERATIONAL` when it expires, but it shows as Not Operational (not Decommissioned) and it is renewed by creating a ticket for it and closing it (its expiry cannot be edited while expired). No maintenance ticket is created automatically; a user can create one, and the system then shows **Maintenance** instead of Not Operational. Setting it to Decommissioned frees the system. See [Permanent expiry option](/docs/modules/systems).
 </Note>
 
 ---
@@ -74,5 +78,5 @@ Set `component_active = N` on an expired component to remove it from the status 
 
 | Status | How to clear |
 |---|---|
-| `NOT_OPERATIONAL` | Set the expired component to Decommissioned, remove it from the system, or move it to the warehouse. Expired components cannot be renewed, unless the component has **Permanent expiry** unchecked: then set new expiry limits to make it operational |
+| `NOT_OPERATIONAL` | Permanent expiry: remove the expired component from the system, or move it to the warehouse (it cannot be renewed, and Decommissioned does not free the system). Permanent expiry unchecked: create a ticket for the component and close it (its expiry is renewed), or set it to Decommissioned |
 | `MAINTENANCE` | Close the maintenance ticket (`ticket_status = CLOSED`) |
