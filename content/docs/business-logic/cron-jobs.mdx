@@ -42,7 +42,7 @@ Schedules are defined in `vercel.json` at the project root and are evaluated in 
 ### check-component-expiration
 
 - **Schedule:** `0 */6 * * *` (every 6 hours)
-- **Purpose:** Finds active tool components whose `expiration_date` has passed and sends expiration notifications, grouped by owner.
+- **Purpose:** Finds active tool components whose `expiration_date` has passed and sends expiration notifications, grouped by owner. It also opens the automatic maintenance ticket (and puts the system in Maintenance) for every expired component (permanent or not), for any expiry type (date, flights or flight hours). One ticket per expiry; components that already have an open covering ticket are skipped. The result includes an `expiryTickets` summary (`checked`, `created`, `errors`). A failure in this step does not stop the notifications.
 - **Sends email:** Yes, subject to the module/event enablement checks described in [Email Notification Business Logic](/docs/business-logic/email-notifications).
 
 ### check-maintenance-alerts

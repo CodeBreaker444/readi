@@ -5167,9 +5167,10 @@
           "mixedHint": "Wird außer Betrieb genommen, wenn ein gesetztes Limit erreicht ist — Datum, Fluganzahl oder Flugstunden — je nachdem, was zuerst eintritt",
           "permanentLabel": "Dauerhafter Ablauf",
           "permanentHint": "Nach Ablauf wird die Komponente automatisch außer Betrieb genommen und kann nicht verlängert werden.",
-          "renewableHint": "Nach Ablauf ist die Komponente nicht betriebsbereit. Sie können den Ablauf dann verlängern, um sie wieder betriebsbereit zu machen, oder sie außer Betrieb nehmen.",
+          "renewableHint": "Nach Ablauf ist die Komponente nicht betriebsbereit, ein Wartungsticket wird automatisch eröffnet und das System wechselt in Wartung. Sie können den Ablauf dann verlängern, um sie wieder betriebsbereit zu machen, oder sie außer Betrieb nehmen.",
           "permanentLocked": "Gesperrt, solange die Komponente abgelaufen ist.",
-          "expiredNotice": "Diese Komponente hat ihr Ablaufdatum erreicht und ist nicht betriebsbereit. Legen Sie neue Ablauflimits fest und speichern Sie, um sie wieder betriebsbereit zu machen, oder setzen Sie den Status auf Außer Betrieb."
+          "expiredNotice": "Diese Komponente hat ihr Ablaufdatum erreicht und ist nicht betriebsbereit. Legen Sie neue Ablauflimits fest und speichern Sie, um sie wieder betriebsbereit zu machen, oder setzen Sie den Status auf Außer Betrieb.",
+          "expiredPermanentNotice": "Diese Komponente ist abgelaufen. Sie gilt als außer Betrieb genommen und ihr System ist nicht betriebsbereit. Um sie aus dem System zu nehmen, setzen Sie den Status auf „Außer Betrieb“ oder entfernen Sie sie / verschieben Sie sie ins Lager."
         },
         "defaultCounters": {
           "label": "Startzähler",

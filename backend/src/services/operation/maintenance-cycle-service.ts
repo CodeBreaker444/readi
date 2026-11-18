@@ -9,6 +9,7 @@
  */
 import { prisma } from '@/lib/prisma';
 import { refreshMaintenanceDaysForTool } from '@/backend/utils/refresh-maintenance-days';
+import { raiseExpiryTicketsSafely } from '@/backend/services/system/component-expiry-ticket';
 import {
   CycleStatus,
   getBatteryCycleRatio,
@@ -199,7 +200,7 @@ export async function updateComponentMaintenanceCycle(
   // One transaction per mission, serialised by a database lock: two simultaneous requests for the
   // same mission cannot both pass the "already applied" check, and a failure half-way rolls back
   // every component instead of leaving some updated and logged.
-  return prisma.$transaction(async (tx) => {
+  const outcome = await prisma.$transaction(async (tx) => {
     await tx.$queryRaw`SELECT 1 AS locked FROM (SELECT pg_advisory_xact_lock(${MISSION_MAINTENANCE_LOCK_NAMESPACE}::int, ${missionId}::int)) AS mission_lock`;
 
     const existingLog = await tx.mission_maintenance_log.findFirst({
@@ -275,4 +276,8 @@ export async function updateComponentMaintenanceCycle(
       alreadyApplied: undefined,
     };
   });
+
+  // The mission may have pushed a flight / flight-hour counter to its expiry limit: open the ticket now, not at the next cron run.
+  if (outcome.code === 1) await raiseExpiryTicketsSafely(updates.map((u) => u.component_id));
+  return outcome;
 }

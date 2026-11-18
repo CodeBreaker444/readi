@@ -5249,9 +5249,10 @@
           "mixedHint": "Viene dismesso quando viene raggiunto qualsiasi limite impostato — data, conteggio voli o ore di volo — in base a quale avviene prima",
           "permanentLabel": "Scadenza permanente",
           "permanentHint": "Alla scadenza il componente viene dismesso automaticamente e non può essere rinnovato.",
-          "renewableHint": "Alla scadenza il componente diventa Non operativo. Potrai poi rinnovare la scadenza per renderlo di nuovo operativo, oppure dismetterlo.",
+          "renewableHint": "Alla scadenza il componente diventa Non operativo, viene aperto automaticamente un ticket di manutenzione e il suo sistema passa in Manutenzione. Potrai poi rinnovare la scadenza per renderlo di nuovo operativo, oppure dismetterlo.",
           "permanentLocked": "Bloccato finché il componente è scaduto.",
-          "expiredNotice": "Questo componente ha raggiunto la scadenza ed è Non operativo. Per renderlo operativo imposta nuovi limiti di scadenza e salva; oppure imposta lo stato su Dismesso."
+          "expiredNotice": "Questo componente ha raggiunto la scadenza ed è Non operativo. Per renderlo operativo imposta nuovi limiti di scadenza e salva; oppure imposta lo stato su Dismesso.",
+          "expiredPermanentNotice": "Questo componente è scaduto. Conta come Dismesso e il suo sistema è Non operativo. Per toglierlo dal sistema imposta lo stato su Dismesso, oppure rimuovilo / spostalo in magazzino."
         },
         "defaultCounters": {
           "label": "Contatori iniziali",

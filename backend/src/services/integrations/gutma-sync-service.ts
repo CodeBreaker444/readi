@@ -1,5 +1,6 @@
 'use server';
 
+import { raiseExpiryTicketsSafely } from '@/backend/services/system/component-expiry-ticket';
 import { prisma } from '@/lib/prisma';
 import { BUCKET, s3 } from '@/lib/s3Client';
 import { PutObjectCommand } from '@aws-sdk/client-s3';
@@ -164,6 +165,7 @@ export async function gutmaArchiveAndSync(
     : now.split('T')[0];
 
   const updatedComponents: Array<{ serial_number: string; component_type: string | null }> = [];
+  const touchedComponentIds: number[] = [];
 
   for (const comp of foundComponents) {
     const prevLifetimeHours = Number(comp.current_usage_hours ?? 0);
@@ -231,7 +233,11 @@ export async function gutmaArchiveAndSync(
       serial_number: comp.serial_number ?? '',
       component_type: comp.component_type ?? null,
     });
+    touchedComponentIds.push(comp.component_id);
   }
+
+  // The flight may have pushed a flight / flight-hour counter to its expiry limit: open the ticket now.
+  await raiseExpiryTicketsSafely(touchedComponentIds);
 
   // if this flight is linked to a pilot_mission, auto-sync flight time + dates
   let missionSynced = false;

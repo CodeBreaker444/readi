@@ -5,8 +5,8 @@
  */
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
-import { parseComponentMeta, isComponentPartOfSystem } from './maintenance-rules';
-import { computeEffectiveComponentStatus } from './system-service';
+import { isComponentExpired, isComponentPartOfSystem, isExpiryPermanent, parseComponentMeta } from './maintenance-rules';
+import { computeEffectiveComponentStatus, getNonOperationalToolIds } from './system-service';
 
 export async function setSystemOperationalStatus(toolId: number, status: string): Promise<void> {
   const tool = await prisma.tool.findUnique({
@@ -25,6 +25,24 @@ export async function setSystemOperationalStatus(toolId: number, status: string)
   });
 }
 
+/**
+ * A system that is Not Operational only because a component expired is put in Maintenance when a ticket is opened
+ * for it, like an operator would do by hand. (Closing such a ticket requires the system to be in Maintenance, and
+ * the list would otherwise keep showing Not Operational while work is under way.) A status the operator set
+ * (Not Operational, Dismissed, ...) is left alone. Returns true when the system was switched.
+ */
+export async function putSystemInMaintenanceIfExpired(toolId: number): Promise<boolean> {
+  const tool = await prisma.tool.findUnique({ where: { tool_id: toolId }, select: { tool_metadata: true } });
+  const stored = (tool?.tool_metadata as Record<string, unknown> | null)?.status;
+  if (stored && stored !== 'OPERATIONAL') return false;
+
+  const nonOperational = await getNonOperationalToolIds([toolId]);
+  if (!nonOperational.has(toolId)) return false;
+
+  await setSystemOperationalStatus(toolId, 'MAINTENANCE');
+  return true;
+}
+
 /** Components in one of these states can never be put on a ticket or flipped back to OPERATIONAL by one. */
 const TICKET_BLOCKED_STATUSES = ['NOT_OPERATIONAL', 'DECOMMISSIONED', 'DISMISSED'];
 const PERMANENT_BLOCKED_STATUSES = ['DECOMMISSIONED', 'DISMISSED'];
@@ -40,11 +58,19 @@ const EFFECTIVE_STATUS_SELECT = {
   current_usage_hours: true,
 } as const;
 
-/** Status as shown in the component list: stored status, overridden by DISMISSED / expiry-based DECOMMISSIONED. */
-async function loadEffectiveStatuses(where: Prisma.tool_componentWhereInput): Promise<Map<number, string>> {
+interface EffectiveRow {
+  component_id: number;
+  status: string;
+  /**
+   * Not Operational only because its renewable expiry was reached (not an explicit status, not a reported issue).
+   * It can still go on a maintenance ticket: that is how it gets looked at before being renewed or decommissioned.
+   */
+  renewableExpired: boolean;
+}
+
+async function loadEffectiveRows(where: Prisma.tool_componentWhereInput): Promise<EffectiveRow[]> {
   const rows = await prisma.tool_component.findMany({ where, select: EFFECTIVE_STATUS_SELECT });
-  const statuses = new Map<number, string>();
-  for (const row of rows) {
+  return rows.map((row) => {
     const meta = parseComponentMeta(row.component_metadata);
     const status = meta.system_detached === true
       ? 'DISMISSED'
@@ -53,9 +79,28 @@ async function loadEffectiveStatuses(where: Prisma.tool_componentWhereInput): Pr
           component_metadata: meta,
           expiration_date: row.expiration_date ?? null, // computeEffectiveComponentStatus normalises Date/invalid values
         });
-    statuses.set(row.component_id, status);
-  }
-  return statuses;
+    const renewableExpired =
+      status === 'NOT_OPERATIONAL' &&
+      !isExpiryPermanent(meta) &&
+      meta.component_status !== 'NOT_OPERATIONAL' &&
+      isComponentExpired({ ...row, expiration_date: row.expiration_date ?? null });
+    return { component_id: row.component_id, status, renewableExpired };
+  });
+}
+
+/** A status that keeps a component off a new ticket (an expired renewable component is the exception). */
+const isTicketBlocked = (row: EffectiveRow) => TICKET_BLOCKED_STATUSES.includes(row.status) && !row.renewableExpired;
+
+/** Status as shown in the component list: stored status, overridden by DISMISSED / expiry-based DECOMMISSIONED. */
+async function loadEffectiveStatuses(where: Prisma.tool_componentWhereInput): Promise<Map<number, string>> {
+  const rows = await loadEffectiveRows(where);
+  return new Map(rows.map((r) => [r.component_id, r.status]));
+}
+
+/** Ids of the active components of a system that cannot be put on a new ticket. */
+export async function getTicketBlockedComponentIds(toolId: number): Promise<Set<number>> {
+  const rows = await loadEffectiveRows({ fk_tool_id: toolId, component_active: 'Y' });
+  return new Set(rows.filter(isTicketBlocked).map((r) => r.component_id));
 }
 
 /** Effective status of every active component of a system, keyed by component id. */
@@ -65,10 +110,10 @@ export async function getComponentStatusesForTool(toolId: number): Promise<Map<n
 
 /** Components of the system that can go on a new ticket right now (operational and still attached). */
 export async function getTicketableComponentIds(toolId: number): Promise<number[]> {
-  const statuses = await getComponentStatusesForTool(toolId);
-  return [...statuses.entries()]
-    .filter(([, status]) => !TICKET_BLOCKED_STATUSES.includes(status))
-    .map(([id]) => id)
+  const rows = await loadEffectiveRows({ fk_tool_id: toolId, component_active: 'Y' });
+  return rows
+    .filter((r) => !isTicketBlocked(r))
+    .map((r) => r.component_id)
     .sort((a, b) => a - b);
 }
 
@@ -89,10 +134,8 @@ export async function findTicketBlockedComponents(
   componentIds: number[],
 ): Promise<{ component_id: number; status: string }[]> {
   if (!componentIds.length) return [];
-  const statuses = await loadEffectiveStatuses({ fk_tool_id: toolId, component_id: { in: componentIds } });
-  return [...statuses.entries()]
-    .filter(([, status]) => TICKET_BLOCKED_STATUSES.includes(status))
-    .map(([component_id, status]) => ({ component_id, status }));
+  const rows = await loadEffectiveRows({ fk_tool_id: toolId, component_id: { in: componentIds } });
+  return rows.filter(isTicketBlocked).map((r) => ({ component_id: r.component_id, status: r.status }));
 }
 
 export async function setComponentsOperationalStatus(componentIds: number[], status: string): Promise<void> {

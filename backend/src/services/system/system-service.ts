@@ -1012,6 +1012,8 @@ function buildComponentListResult(data: any[]) {
         component_sn: item.serial_number,
         component_desc: item.component_description,
         component_status: effectiveStatus,
+        // What is actually saved. An expired component shows as Decommissioned/Not Operational above without being stored as such.
+        stored_status: item.component_metadata?.component_status || 'OPERATIONAL',
         component_category: item.component_metadata?.component_category || 'STANDARD',
         component_activation_date: item.installation_date,
         component_purchase_date: item.component_metadata?.component_purchase_date || null,

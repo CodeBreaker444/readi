@@ -29,6 +29,7 @@ interface ComponentInfo {
   limit_day: number;
   status: "OK" | "ALERT" | "DUE";
   component_status?: string;
+  ticket_blocked?: boolean;
 }
 
 const BLOCKED_STATUSES = ["NOT_OPERATIONAL", "DECOMMISSIONED", "DISMISSED"];
@@ -239,7 +240,7 @@ export function ReportIssueModal({ open, onClose, toolId, toolCode, missionId, i
                   </label>
                   <div className="space-y-1.5">
                     {components.map((comp) => {
-                      const blocked = BLOCKED_STATUSES.includes(comp.component_status ?? "");
+                      const blocked = comp.ticket_blocked ?? BLOCKED_STATUSES.includes(comp.component_status ?? "");
                       const isSelected = !blocked && selectedComponentIds.includes(comp.component_id);
                       return (
                         <button

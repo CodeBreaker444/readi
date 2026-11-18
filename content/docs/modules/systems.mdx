@@ -115,7 +115,7 @@ When you add or edit a component, the **Permanent expiry** checkbox sits under t
 | | Permanent expiry (checked) | Not permanent (unchecked) |
 |---|---|---|
 | Status on expiry | **Decommissioned** | **Not Operational** |
-| Maintenance ticket | None. It cannot be created | None is created automatically |
+| Maintenance ticket | Opened automatically, and the system shows Maintenance | Opened automatically, and the system shows Maintenance |
 | Can it be made Operational again? | No | Yes, by renewing its expiry |
 | Other way out | Remove it or move it to the warehouse | Set it to **Decommissioned** |
 
@@ -126,7 +126,9 @@ The checkbox is locked while the component is expired, so an expired component c
 When the component expires:
 
 - It shows as **Not Operational** and the system becomes **Not Operational**.
-- **No maintenance ticket is created automatically.** The platform only sends its usual expiration notifications to managers.
+- **A maintenance ticket is opened for it automatically**, reported by "System (component expiry)" with priority High. Managers are notified like for any new ticket. It is opened within 6 hours (the expiry check runs every 6 hours), or straight away when the component is added or edited with an expired limit. One ticket is opened per expiry. If an open ticket already lists the component, no second one is opened.
+- **The system shows Maintenance**, not Not Operational, while that ticket is open. A status you set by hand on the system (for example Not Operational) is never changed.
+- You can also add the expired component to a ticket yourself. A component that is Not Operational for any other reason, or that is Decommissioned or Dismissed, cannot be selected.
 
 To get it working again, choose one:
 
@@ -139,7 +141,11 @@ When a component passes its expiry date, or reaches its flight or flight-hour li
 
 - It shows as **Decommissioned** and the system becomes **Not Operational**.
 - **It cannot be made Operational again.** Extending its expiry date or limits, or changing its status, is refused.
-- **No maintenance ticket can be created for it.** Expiry means the component is retired for good, not that it is waiting for service.
+- **A maintenance ticket is opened for the system automatically** when the component expires, the same way as for renewable expiry, and the system shows **Maintenance** while it is open. The ticket is there to flag the expired component. The component itself cannot be added to a ticket by hand, because it is retired for good, not waiting for service.
+
+<Note>
+**Setting an expiry date of today or in the past** makes the component read as Decommissioned and its system **Not Operational**. The Status field in the Edit Component dialog shows the status that is saved, and it is only changed if you change it, so saving an expiry date does not decommission the component by itself. Only choosing **Decommissioned** yourself takes it out of the system.
+</Note>
 
 To make the system operational again, take the expired component out of the system's count in one of these ways:
 

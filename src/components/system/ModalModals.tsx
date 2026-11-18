@@ -282,7 +282,7 @@ export function NewTicketModal({
               ) : (
                 <div className={`max-h-[160px] overflow-y-auto rounded-lg border divide-y ${isDark ? 'border-slate-600 divide-slate-700' : 'border-slate-200 divide-slate-100'}`}>
                   {components.map((c) => {
-                    const blocked = ['NOT_OPERATIONAL', 'DECOMMISSIONED', 'DISMISSED'].includes(c.component_status);
+                    const blocked = c.ticket_blocked ?? ['NOT_OPERATIONAL', 'DECOMMISSIONED', 'DISMISSED'].includes(c.component_status);
                     const checked = !blocked && form.components.includes(c.tool_component_id);
                     return (
                       <label

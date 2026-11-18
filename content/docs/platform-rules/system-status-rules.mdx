@@ -43,15 +43,19 @@ A component that is only **Alert** or **Due** for maintenance does not change th
 </Note>
 
 <Note>
+**Ticket on a Not Operational system.** When a ticket is created (by a user, or automatically for an expired renewable component) for a system that is Not Operational only because of an expired component, the system's stored status is set to **Maintenance**, so it shows Maintenance while the ticket is open. A status that was set by hand is not changed.
+</Note>
+
+<Note>
 Set `component_active = N` on an expired component to remove it from the status computation without deleting it.
 </Note>
 
 <Warning>
-**Expiry is permanent by default.** An expired component cannot be made Operational again, and no maintenance ticket can be created for it. Do not renew it by editing its expiry date: the change is refused. Set it to **Decommissioned**, remove it from the system, or move it to the warehouse. See [Component statuses](/docs/modules/systems).
+**Expiry is permanent by default.** An expired component cannot be made Operational again and cannot be put on a ticket by hand. A maintenance ticket is still opened for it automatically and the system shows **Maintenance** while it is open. Do not renew it by editing its expiry date: the change is refused. Set it to **Decommissioned**, remove it from the system, or move it to the warehouse. See [Component statuses](/docs/modules/systems).
 </Warning>
 
 <Note>
-**Exception: Permanent expiry unchecked.** A component whose **Permanent expiry** checkbox is unchecked still makes the system `NOT_OPERATIONAL` when it expires, but it shows as Not Operational (not Decommissioned) and it can be renewed by setting new expiry limits. No maintenance ticket is created automatically. See [Permanent expiry option](/docs/modules/systems).
+**Exception: Permanent expiry unchecked.** A component whose **Permanent expiry** checkbox is unchecked still makes the system `NOT_OPERATIONAL` when it expires, but it shows as Not Operational (not Decommissioned) and it can be renewed by setting new expiry limits. A maintenance ticket is opened for it automatically, and the system then shows **Maintenance** instead of Not Operational. See [Permanent expiry option](/docs/modules/systems).
 </Note>
 
 ---

@@ -13,7 +13,7 @@ import type {
 } from '@/config/types/maintenance';
 import { prisma } from '@/lib/prisma';
 import { getPresignedDownloadUrl } from '@/lib/s3Client';
-import { getComponentStatusesForTool, getComponentStatusesForTools, isPermanentlyBlockedStatus } from './maintenance-ticket-components';
+import { getComponentStatusesForTool, getComponentStatusesForTools, getTicketBlockedComponentIds, isPermanentlyBlockedStatus } from './maintenance-ticket-components';
 import { getTicketComponentIds } from './maintenance-ticket-rules';
 import { getNonOperationalToolIds } from './system-service';
 
@@ -257,7 +257,10 @@ export async function getComponentList(toolId: number, ticketType?: string): Pro
 
   if (error) throw new Error(`getComponentList: ${error.message}`);
 
-  const statuses = await getComponentStatusesForTool(toolId);
+  const [statuses, ticketBlocked] = await Promise.all([
+    getComponentStatusesForTool(toolId),
+    getTicketBlockedComponentIds(toolId),
+  ]);
 
   return (data ?? []).map((row) => ({
     tool_component_id: row.component_id,
@@ -265,6 +268,7 @@ export async function getComponentList(toolId: number, ticketType?: string): Pro
     component_type:    row.component_type ?? row.component_name ?? '',
     component_sn:      row.serial_number ?? '',
     component_status:  statuses.get(row.component_id) ?? 'OPERATIONAL',
+    ticket_blocked:    ticketBlocked.has(row.component_id),
   }));
 }
 

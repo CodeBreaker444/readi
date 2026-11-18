@@ -26,12 +26,14 @@ import {
   deleteFileFromS3,
   uploadFileToS3,
 } from '@/lib/s3Client';
+import { acknowledgeExpiryEpisodes } from './component-expiry-ticket';
 import { addTicketEvent } from './maintenance-ticket-events';
 import { assertComponentsBelongToTool, assertComponentsTicketable, assertSystemCanCloseTicket } from './maintenance-ticket-guards';
 import {
   excludePermanentlyBlocked,
   getSystemComponentIds,
   getTicketableComponentIds,
+  putSystemInMaintenanceIfExpired,
   resetComponentCounters,
   setComponentsOperationalStatus,
   setSystemOperationalStatus,
@@ -94,6 +96,13 @@ export async function createTicket(payload: CreateTicketPayload): Promise<number
     },
     select: { ticket_id: true },
   });
+
+  // A system held Not Operational by an expired component now has work under way: show it as Maintenance.
+  try {
+    await putSystemInMaintenanceIfExpired(payload.fk_tool_id);
+  } catch (err) {
+    console.error(`[Ticket] Could not set system ${payload.fk_tool_id} to Maintenance:`, err);
+  }
 
   const reporter = payload.reporter_name ?? `User #${payload.fk_user_id}`;
   const issueDetail = payload.note?.trim() ? `${payload.note.trim()}` : 'No description provided.';
@@ -189,6 +198,7 @@ export async function closeTicket(payload: CloseTicketPayload): Promise<{ resetC
   if (stillOpen === 0) await setSystemOperationalStatus(ticket.fk_tool_id!, 'OPERATIONAL');
   await setComponentsOperationalStatus(resetComponentIds, 'OPERATIONAL');
   await settleBlockedMaintenanceComponents(ticket.fk_tool_id!);
+  await acknowledgeExpiryEpisodes(resetComponentIds);
 
   const resetComponents = resetComponentIds.length
     ? await prisma.tool_component.findMany({
