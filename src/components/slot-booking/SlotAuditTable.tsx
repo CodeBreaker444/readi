@@ -129,7 +129,9 @@ export function SlotAuditTable({ isDark, groupId, compact }: { isDark: boolean; 
               {loading && rows.length === 0 &&
                 Array.from({ length: 5 }).map((_, i) => (
                   <tr key={i} className={cn('border-t', isDark ? 'border-white/[0.05]' : 'border-gray-100')}>
-                    <td colSpan={6} className="px-4 py-3"><Skeleton className={cn('h-5 w-full', isDark && 'bg-white/[0.06]')} /></td>
+                    {Array.from({ length: 6 }).map((_, j) => (
+                      <td key={j} className="px-4 py-3"><Skeleton className={cn('h-4', j === 0 ? 'w-4' : 'w-full', isDark && 'bg-white/[0.06]')} /></td>
+                    ))}
                   </tr>
                 ))}
               {!loading && rows.length === 0 && (

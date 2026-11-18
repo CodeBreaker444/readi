@@ -108,7 +108,32 @@ A component has one of five statuses:
 | **Dismissed** | Retired administratively |
 | **Decommissioned** | Permanently out of service. The system no longer counts it |
 
-### Expiry is permanent
+### Permanent expiry option
+
+When you add or edit a component, the **Permanent expiry** checkbox sits under the expiry fields. It is **checked by default**. It decides what happens when the component expires, that is, when it passes its expiry date or reaches its flight or flight-hour limit.
+
+| | Permanent expiry (checked) | Not permanent (unchecked) |
+|---|---|---|
+| Status on expiry | **Decommissioned** | **Not Operational** |
+| Maintenance ticket | None. It cannot be created | None is created automatically |
+| Can it be made Operational again? | No | Yes, by renewing its expiry |
+| Other way out | Remove it or move it to the warehouse | Set it to **Decommissioned** |
+
+The checkbox is locked while the component is expired, so an expired component cannot be switched from one mode to the other.
+
+### Expiry that can be renewed (checkbox unchecked)
+
+When the component expires:
+
+- It shows as **Not Operational** and the system becomes **Not Operational**.
+- **No maintenance ticket is created automatically.** The platform only sends its usual expiration notifications to managers.
+
+To get it working again, choose one:
+
+- **Make it operational:** edit the component, set new expiry limits and save. It becomes Operational again. Choosing **Operational** without renewing the limit that expired is refused.
+- **Decommission it:** set its status to **Decommissioned**. The system no longer counts it.
+
+### Expiry is permanent (checkbox checked, default)
 
 When a component passes its expiry date, or reaches its flight or flight-hour limit, it is **expired**, and expired is final:
 

@@ -3,11 +3,11 @@ import 'server-only';
 import type { CalendarSlot, SlotMode, WeekCalendar } from '@/config/types/slot-booking';
 import type { SessionUser } from '@/lib/auth/server-session';
 import { prisma } from '@/lib/prisma';
-import { intervalsOverlap, slotInterval } from '@/lib/slot-booking-logic';
-import { addDaysIso, SLOT_DATE_RE } from '@/lib/slot-booking-utils';
+import { intervalsOverlap } from '@/lib/slot-booking-logic';
+import { addDaysIso, DEFAULT_SLOT_TIMEZONE, SLOT_DATE_RE, zonedSlotInterval } from '@/lib/slot-booking-utils';
 import { getPilotFlights } from './flight-limits-service';
 import { avatarUrl, fullName } from './pilot-group-service';
-import { dateStr, toDate } from './slot-booking-rules';
+import { dateStr, groupZone, toDate } from './slot-booking-rules';
 import { ASSIGNED_NOTE, assertManager, SlotBookingError } from './slot-booking-service';
 import { getWeatherForSlots, isInForecastRange } from './slot-weather-service';
 
@@ -25,7 +25,7 @@ export async function getWeekCalendar(user: SessionUser, start: string): Promise
   const slots = await prisma.slot.findMany({
     where: { slot_date: { gte: toDate(dates[0]), lte: toDate(dates[CALENDAR_DAYS - 1]) }, is_active: true, slot_group: { fk_owner_id: user.ownerId } },
     include: {
-      slot_group: { select: { slot_group_id: true, name: true, description: true, slot_mode: true, is_blocked: true, approval_days: true, fk_client_id: true } },
+      slot_group: { select: { slot_group_id: true, name: true, description: true, slot_mode: true, is_blocked: true, approval_days: true, fk_client_id: true, timezone: true } },
     },
     orderBy: [{ slot_date: 'asc' }, { start_time: 'asc' }, { slot_id: 'asc' }],
   });
@@ -101,6 +101,9 @@ export async function getWeekCalendar(user: SessionUser, start: string): Promise
 
   // Overlaps: the same pilot approved or requested on two slots whose times overlap (other group, other client).
   const rowBySlot = new Map(rows.map((r) => [r.slotId, r]));
+  // Slot times are wall-clock at each site, so slots of groups in different zones are compared as real instants.
+  const zoneBySlot = new Map(slots.map((s) => [s.slot_id, groupZone(s.slot_group)]));
+  const intervalOf = (r: CalendarSlot) => zonedSlotInterval(r.date, r.start, r.end, zoneBySlot.get(r.slotId) ?? DEFAULT_SLOT_TIMEZONE);
   const byPilot = new Map<number, Array<{ row: CalendarSlot; status: 'APPROVED' | 'PENDING' }>>();
   for (const b of bookings) {
     const row = rowBySlot.get(b.fk_slot_id);
@@ -115,7 +118,7 @@ export async function getWeekCalendar(user: SessionUser, start: string): Promise
     for (const a of list) {
       for (const o of list) {
         if (a.row.slotId === o.row.slotId) continue;
-        if (!intervalsOverlap(slotInterval(a.row.date, a.row.start, a.row.end), slotInterval(o.row.date, o.row.start, o.row.end))) continue;
+        if (!intervalsOverlap(intervalOf(a.row), intervalOf(o.row))) continue;
         a.row.alerts.push({
           severity: a.status === 'APPROVED' && o.status === 'APPROVED' ? 'conflict' : 'risk',
           pilotId,

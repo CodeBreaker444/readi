@@ -5246,7 +5246,12 @@
           "expirationFlightHours": "Ore di volo di scadenza",
           "flightsHint": "Il componente viene dismesso automaticamente al raggiungimento del conteggio voli",
           "flightHoursHint": "Il componente viene dismesso automaticamente al raggiungimento delle ore di volo",
-          "mixedHint": "Viene dismesso quando viene raggiunto qualsiasi limite impostato — data, conteggio voli o ore di volo — in base a quale avviene prima"
+          "mixedHint": "Viene dismesso quando viene raggiunto qualsiasi limite impostato — data, conteggio voli o ore di volo — in base a quale avviene prima",
+          "permanentLabel": "Scadenza permanente",
+          "permanentHint": "Alla scadenza il componente viene dismesso automaticamente e non può essere rinnovato.",
+          "renewableHint": "Alla scadenza il componente diventa Non operativo. Potrai poi rinnovare la scadenza per renderlo di nuovo operativo, oppure dismetterlo.",
+          "permanentLocked": "Bloccato finché il componente è scaduto.",
+          "expiredNotice": "Questo componente ha raggiunto la scadenza ed è Non operativo. Per renderlo operativo imposta nuovi limiti di scadenza e salva; oppure imposta lo stato su Dismesso."
         },
         "defaultCounters": {
           "label": "Contatori iniziali",
@@ -5376,6 +5381,19 @@
           "resetToModel": "Ciclo di manutenzione ripristinato ai valori del modello"
         }
       },
+      "expiryError": {
+          "and": " e ",
+          "reason": {
+            "date": "la data di scadenza ({{date}}) è trascorsa",
+            "flights": "ha raggiunto il limite di voli ({{current}} di {{limit}} voli)",
+            "hours": "ha raggiunto il limite di ore di volo ({{current}} di {{limit}} h)",
+            "generic": "ha raggiunto il limite di scadenza"
+          },
+          "expiryModeLocked": "Questo componente è scaduto: {{reason}}. L'impostazione «Scadenza permanente» non può essere modificata finché è scaduto.",
+          "expiredPermanentNoRenew": "Questo componente è scaduto: {{reason}}. La scadenza è permanente e non può essere annullata modificando i limiti. Lascialo Dismesso, rimuovilo dal sistema o spostalo in magazzino.",
+          "expiredPermanentStatus": "Questo componente è scaduto: {{reason}}. La scadenza è permanente, quindi non può essere impostato su {{status}}. Lascialo Dismesso, rimuovilo dal sistema o spostalo in magazzino.",
+          "expiredRenewNoOperational": "Questo componente è Non operativo: {{reason}}. Rinnova i limiti di scadenza per renderlo operativo, oppure impostalo su Dismesso."
+        },
       "editComponent": {
         "title": "Modifica Componente",
         "fields": {
@@ -6513,6 +6531,11 @@
         "before": "Prima",
         "after": "Dopo"
       }
+    },
+    "scope": {
+      "label": "Filtra gruppi",
+      "active": "Attivi",
+      "all": "Tutti"
     },
     "search": {
       "groups": "Cerca gruppi di slot…",

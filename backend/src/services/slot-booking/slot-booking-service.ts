@@ -29,7 +29,6 @@ import {
   SLOT_TIME_RE,
   slotLabel,
   timeBlocks,
-  todayIso,
   groupDates,
   weekdayOf,
   approvalDaysLabel,
@@ -381,17 +380,21 @@ export async function listGroups(user: SessionUser): Promise<SlotGroup[]> {
   const groups = canManageSlots(user) ? all : await visibleToPilot(user, all);
   if (!groups.length) return [];
   const ids = groups.map((g) => g.slot_group_id);
-  const today = toDate(todayIso());
+  // "Upcoming" starts at today's date at each group's own site, not today's UTC date.
+  const upcoming = groups.map((g) => ({ groupId: g.slot_group_id, from: toDate(todayInZone(groupZone(g))) }));
 
   const [activeSlots, approvedUpcoming, bookingCounts, names, metas] = await Promise.all([
     prisma.slot.groupBy({
       by: ['fk_slot_group_id'],
-      where: { fk_slot_group_id: { in: ids }, is_active: true, slot_date: { gte: today } },
+      where: { is_active: true, OR: upcoming.map((u) => ({ fk_slot_group_id: u.groupId, slot_date: { gte: u.from } })) },
       _count: { _all: true },
     }),
     prisma.slot_booking.groupBy({
       by: ['fk_slot_group_id'],
-      where: { fk_slot_group_id: { in: ids }, status: 'APPROVED', slot: { is_active: true, slot_date: { gte: today } } },
+      where: {
+        status: 'APPROVED',
+        OR: upcoming.map((u) => ({ fk_slot_group_id: u.groupId, slot: { is_active: true, slot_date: { gte: u.from } } })),
+      },
       _count: { _all: true },
     }),
     prisma.slot_booking.groupBy({
@@ -443,7 +446,7 @@ export async function getGroupDetail(user: SessionUser, groupId: number): Promis
           user.ownerId,
           bookings
             .filter((b) => b.status === 'PENDING' && slotById.has(b.fk_slot_id))
-            .map((b) => ({ pilotId: b.fk_pilot_user_id, slot: slotDto(slotById.get(b.fk_slot_id)!) })),
+            .map((b) => ({ pilotId: b.fk_pilot_user_id, slot: { ...slotDto(slotById.get(b.fk_slot_id)!), timezone: groupZone(g) } })),
         ),
         getWeatherForSlots(user.ownerId, slots.filter((x) => x.is_active).map((x) => ({ id: x.slot_id, groupId: x.fk_slot_group_id, date: dateStr(x.slot_date), start: x.start_time, end: x.end_time }))),
         getPilotFlights(user.ownerId, bookings.filter((b) => b.status !== 'REJECTED').map((b) => b.fk_pilot_user_id)),
@@ -819,7 +822,7 @@ export async function editSlot(
     // A new time must not put the assigned pilot on top of another approved slot.
     const assigned = live.find((l) => l.status === 'APPROVED');
     if (assigned && timeChanged && patch.active) {
-      const clash = (await findCollisions(user.ownerId, [{ pilotId: assigned.fk_pilot_user_id, slot: { slotId, date, start: patch.start, end: patch.end } }]))
+      const clash = (await findCollisions(user.ownerId, [{ pilotId: assigned.fk_pilot_user_id, slot: { slotId, date, start: patch.start, end: patch.end, timezone: groupZone(slot.slot_group) } }]))
         .get(collisionKey(assigned.fk_pilot_user_id, slotId));
       if (clash) {
         const who = (await userNames([assigned.fk_pilot_user_id])).get(assigned.fk_pilot_user_id) ?? 'The assigned pilot';
@@ -889,7 +892,7 @@ export async function requestBooking(user: SessionUser, slotId: number): Promise
   if (!slot.is_active) throw new SlotBookingError('This slot is not open', 409);
   if (slotStarted(date, slot.start_time, groupZone(slot.slot_group))) throw new SlotBookingError('This slot is in the past', 409);
 
-  const clash = (await findCollisions(user.ownerId, [{ pilotId: user.userId, slot: { slotId, date, start: slot.start_time, end: slot.end_time } }])).get(collisionKey(user.userId, slotId));
+  const clash = (await findCollisions(user.ownerId, [{ pilotId: user.userId, slot: { slotId, date, start: slot.start_time, end: slot.end_time, timezone: groupZone(slot.slot_group) } }])).get(collisionKey(user.userId, slotId));
   if (clash) throw new SlotBookingError(`You are already assigned to an overlapping slot: ${clash}`, 409, { collision: clash });
 
   const booking = await prisma.$transaction(async (tx) => {
@@ -953,7 +956,7 @@ export async function moveBooking(user: SessionUser, bookingId: number, newSlotI
   const targetDate = dateStr(target.slot_date);
   if (!target.is_active) throw new SlotBookingError('This slot is not open', 409);
   if (slotStarted(targetDate, target.start_time, groupZone(target.slot_group))) throw new SlotBookingError('This slot is in the past', 409);
-  const clash = (await findCollisions(user.ownerId, [{ pilotId: user.userId, slot: { slotId: newSlotId, date: targetDate, start: target.start_time, end: target.end_time } }])).get(collisionKey(user.userId, newSlotId));
+  const clash = (await findCollisions(user.ownerId, [{ pilotId: user.userId, slot: { slotId: newSlotId, date: targetDate, start: target.start_time, end: target.end_time, timezone: groupZone(target.slot_group) } }])).get(collisionKey(user.userId, newSlotId));
   if (clash) throw new SlotBookingError(`You are already assigned to an overlapping slot: ${clash}`, 409, { collision: clash });
 
   await prisma.$transaction(async (tx) => {
@@ -1022,7 +1025,7 @@ export async function approveBooking(
   if (!b.slot.is_active) throw new SlotBookingError('This slot is not open', 409);
   if (slotEnded(date, b.slot.start_time, b.slot.end_time, groupZone(b.slot.slot_group))) throw new SlotBookingError('This slot is in the past', 409);
 
-  const clash = (await findCollisions(user.ownerId, [{ pilotId: b.fk_pilot_user_id, slot: { slotId: b.fk_slot_id, date, start: b.slot.start_time, end: b.slot.end_time } }])).get(collisionKey(b.fk_pilot_user_id, b.fk_slot_id));
+  const clash = (await findCollisions(user.ownerId, [{ pilotId: b.fk_pilot_user_id, slot: { slotId: b.fk_slot_id, date, start: b.slot.start_time, end: b.slot.end_time, timezone: groupZone(b.slot.slot_group) } }])).get(collisionKey(b.fk_pilot_user_id, b.fk_slot_id));
   if (clash) {
     const who = (await userNames([b.fk_pilot_user_id])).get(b.fk_pilot_user_id) ?? 'This pilot';
     throw new SlotBookingError(`${who} is already assigned to an overlapping slot: ${clash}`, 409, { collision: clash });
@@ -1033,7 +1036,7 @@ export async function approveBooking(
     // Taken before the slot lock everywhere, so lock order is consistent.
     await tx.$queryRaw`SELECT 1 AS locked FROM (SELECT pg_advisory_xact_lock(hashtext('slot_booking_pilot'), ${b.fk_pilot_user_id}::int)) AS pilot_lock`;
     // Re-check under the pilot lock: a concurrent approval may have committed since the check above.
-    const recheck = (await findCollisions(user.ownerId, [{ pilotId: b.fk_pilot_user_id, slot: { slotId: b.fk_slot_id, date, start: b.slot.start_time, end: b.slot.end_time } }])).get(collisionKey(b.fk_pilot_user_id, b.fk_slot_id));
+    const recheck = (await findCollisions(user.ownerId, [{ pilotId: b.fk_pilot_user_id, slot: { slotId: b.fk_slot_id, date, start: b.slot.start_time, end: b.slot.end_time, timezone: groupZone(b.slot.slot_group) } }])).get(collisionKey(b.fk_pilot_user_id, b.fk_slot_id));
     if (recheck) {
       const who = (await userNames([b.fk_pilot_user_id])).get(b.fk_pilot_user_id) ?? 'This pilot';
       throw new SlotBookingError(`${who} is already assigned to an overlapping slot: ${recheck}`, 409, { collision: recheck });

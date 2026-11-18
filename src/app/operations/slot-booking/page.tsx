@@ -3,7 +3,8 @@
 import { OpmView } from '@/components/slot-booking/OpmView';
 import { PicView } from '@/components/slot-booking/PicView';
 import { SlotBookingShell } from '@/components/slot-booking/SlotBookingShell';
-import { apiMsg, ErrorBlock, LoadingBlock } from '@/components/slot-booking/ui';
+import { apiMsg, ErrorBlock } from '@/components/slot-booking/ui';
+import { PicSkeleton } from '@/components/slot-booking/skeletons';
 import type { SlotDefaults, SlotGroup, SlotMe } from '@/config/types/slot-booking';
 import axios from 'axios';
 import { useCallback, useEffect, useState } from 'react';
@@ -40,7 +41,7 @@ export default function SlotBookingPage() {
         error ? (
           <ErrorBlock isDark={isDark} message={error} onRetry={load} />
         ) : !data ? (
-          <LoadingBlock isDark={isDark} />
+          <PicSkeleton isDark={isDark} stats={false} />
         ) : data.me.canManage ? (
           <OpmView isDark={isDark} defaults={data.defaults} groups={data.groups} reload={load} />
         ) : (

@@ -5164,7 +5164,12 @@
           "expirationFlightHours": "Ablauf-Flugstunden",
           "flightsHint": "Komponente wird automatisch außer Betrieb genommen, wenn die Fluganzahl erreicht ist",
           "flightHoursHint": "Komponente wird automatisch außer Betrieb genommen, wenn die Flugstunden erreicht sind",
-          "mixedHint": "Wird außer Betrieb genommen, wenn ein gesetztes Limit erreicht ist — Datum, Fluganzahl oder Flugstunden — je nachdem, was zuerst eintritt"
+          "mixedHint": "Wird außer Betrieb genommen, wenn ein gesetztes Limit erreicht ist — Datum, Fluganzahl oder Flugstunden — je nachdem, was zuerst eintritt",
+          "permanentLabel": "Dauerhafter Ablauf",
+          "permanentHint": "Nach Ablauf wird die Komponente automatisch außer Betrieb genommen und kann nicht verlängert werden.",
+          "renewableHint": "Nach Ablauf ist die Komponente nicht betriebsbereit. Sie können den Ablauf dann verlängern, um sie wieder betriebsbereit zu machen, oder sie außer Betrieb nehmen.",
+          "permanentLocked": "Gesperrt, solange die Komponente abgelaufen ist.",
+          "expiredNotice": "Diese Komponente hat ihr Ablaufdatum erreicht und ist nicht betriebsbereit. Legen Sie neue Ablauflimits fest und speichern Sie, um sie wieder betriebsbereit zu machen, oder setzen Sie den Status auf Außer Betrieb."
         },
         "defaultCounters": {
           "label": "Startzähler",
@@ -5293,6 +5298,19 @@
           "resetToModel": "Wartungszyklus auf Modellvorgaben zurückgesetzt"
         }
       },
+      "expiryError": {
+          "and": " und ",
+          "reason": {
+            "date": "das Ablaufdatum ({{date}}) ist überschritten",
+            "flights": "das Flug-Limit ist erreicht ({{current}} von {{limit}} Flügen)",
+            "hours": "das Flugstunden-Limit ist erreicht ({{current}} von {{limit}} h)",
+            "generic": "das Ablauflimit ist erreicht"
+          },
+          "expiryModeLocked": "Diese Komponente ist abgelaufen: {{reason}}. Die Einstellung „Dauerhafter Ablauf“ kann nicht geändert werden, solange sie abgelaufen ist.",
+          "expiredPermanentNoRenew": "Diese Komponente ist abgelaufen: {{reason}}. Der Ablauf ist dauerhaft und kann nicht durch Ändern der Limits rückgängig gemacht werden. Belassen Sie sie auf „Außer Betrieb“, entfernen Sie sie aus dem System oder verschieben Sie sie ins Lager.",
+          "expiredPermanentStatus": "Diese Komponente ist abgelaufen: {{reason}}. Der Ablauf ist dauerhaft, daher kann sie nicht auf {{status}} gesetzt werden. Belassen Sie sie auf „Außer Betrieb“, entfernen Sie sie aus dem System oder verschieben Sie sie ins Lager.",
+          "expiredRenewNoOperational": "Diese Komponente ist nicht betriebsbereit: {{reason}}. Verlängern Sie die Ablauflimits, um sie wieder betriebsbereit zu machen, oder setzen Sie sie auf „Außer Betrieb“."
+        },
       "editComponent": {
         "title": "Komponente bearbeiten",
         "fields": {
@@ -6371,6 +6389,11 @@
         "before": "Vorher",
         "after": "Nachher"
       }
+    },
+    "scope": {
+      "label": "Gruppen filtern",
+      "active": "Aktiv",
+      "all": "Alle"
     },
     "search": {
       "groups": "Slot-Gruppen suchen…",

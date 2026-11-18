@@ -4,9 +4,15 @@ import { useTheme } from '@/components/useTheme';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import type { ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useTranslation } from 'react-i18next';
 import { heading, muted } from './ui';
+
+type Access = { canManage: boolean; canBook: boolean };
+const STORAGE_KEY = 'slot-booking-access';
+/** Survives client-side tab changes, so the tab bar never blanks while a page loads its own data. */
+let lastAccess: Access | null = null;
 
 export function SlotBookingShell({
   title,
@@ -28,15 +34,34 @@ export function SlotBookingShell({
   const { t } = useTranslation();
   const pathname = usePathname();
 
-  const tabs = [
+  const known = canManage !== undefined || canBook !== undefined;
+  const [cached, setCached] = useState<Access | null>(lastAccess);
+
+  useEffect(() => {
+    if (known) {
+      lastAccess = { canManage: !!canManage, canBook: !!canBook };
+      setCached(lastAccess);
+      try { sessionStorage.setItem(STORAGE_KEY, JSON.stringify(lastAccess)); } catch { /* storage unavailable */ }
+    } else if (!lastAccess) {
+      // Full page reload: reuse what this browser tab last saw until the page's own request answers.
+      try {
+        const raw = sessionStorage.getItem(STORAGE_KEY);
+        if (raw) { lastAccess = JSON.parse(raw) as Access; setCached(lastAccess); }
+      } catch { /* ignore */ }
+    }
+  }, [known, canManage, canBook]);
+
+  const access: Access | null = known ? { canManage: !!canManage, canBook: !!canBook } : cached;
+
+  const tabs = !access ? [] : [
     { href: '/operations/slot-booking', label: t('slotBooking.tabs.slotBooking') },
-    ...(canBook ? [{ href: '/operations/slot-booking/today', label: t('slotBooking.tabs.today') }] : []),
-    { href: '/operations/slot-booking/approved', label: canManage ? t('slotBooking.tabs.approved') : t('slotBooking.tabs.myApproved') },
-    ...(canManage ? [{ href: '/operations/slot-booking/calendar', label: t('slotBooking.tabs.calendar') }] : []),
-    ...(canManage ? [{ href: '/operations/slot-booking/day-preview', label: t('slotBooking.tabs.dayPreview') }] : []),
-    ...(canManage ? [{ href: '/operations/slot-booking/pilot-groups', label: t('slotBooking.tabs.pilotGroups') }] : []),
-    ...(canManage ? [{ href: '/operations/slot-booking/merits', label: t('slotBooking.tabs.merits') }] : []),
-    ...(canManage ? [{ href: '/operations/slot-booking/audit', label: t('slotBooking.tabs.audit') }] : []),
+    ...(access.canBook ? [{ href: '/operations/slot-booking/today', label: t('slotBooking.tabs.today') }] : []),
+    { href: '/operations/slot-booking/approved', label: access.canManage ? t('slotBooking.tabs.approved') : t('slotBooking.tabs.myApproved') },
+    ...(access.canManage ? [{ href: '/operations/slot-booking/calendar', label: t('slotBooking.tabs.calendar') }] : []),
+    ...(access.canManage ? [{ href: '/operations/slot-booking/day-preview', label: t('slotBooking.tabs.dayPreview') }] : []),
+    ...(access.canManage ? [{ href: '/operations/slot-booking/pilot-groups', label: t('slotBooking.tabs.pilotGroups') }] : []),
+    ...(access.canManage ? [{ href: '/operations/slot-booking/merits', label: t('slotBooking.tabs.merits') }] : []),
+    ...(access.canManage ? [{ href: '/operations/slot-booking/audit', label: t('slotBooking.tabs.audit') }] : []),
   ];
 
   return (
@@ -59,6 +84,12 @@ export function SlotBookingShell({
         </div>
 
         <div className="px-6 flex gap-1">
+          {!access &&
+            [72, 64, 80].map((w, i) => (
+              <div key={i} className="px-3 py-2.5 border-b-2 border-transparent -mb-px">
+                <Skeleton className={cn('h-3.5', isDark && 'bg-white/[0.06]')} style={{ width: w }} />
+              </div>
+            ))}
           {tabs.map((tab) => (
             <Link
               key={tab.href}

@@ -77,7 +77,9 @@ export function ApprovedSlots({ isDark, me }: { isDark: boolean; me: SlotMe }) {
           {rows === null &&
             Array.from({ length: 4 }).map((_, i) => (
               <tr key={i} className={cn('border-t', isDark ? 'border-white/[0.05]' : 'border-gray-100')}>
-                <td colSpan={cols} className="px-4 py-3"><Skeleton className={cn('h-5 w-full', isDark && 'bg-white/[0.06]')} /></td>
+                {Array.from({ length: cols }).map((_, j) => (
+                  <td key={j} className="px-4 py-5"><Skeleton className={cn('h-4 w-full max-w-[130px]', isDark && 'bg-white/[0.06]')} /></td>
+                ))}
               </tr>
             ))}
           {rows?.length === 0 && (

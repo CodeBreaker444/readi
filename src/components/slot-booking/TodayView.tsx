@@ -35,7 +35,8 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ComponentType, 
 import { toast } from 'sonner';
 import { LinkMissionsDialog } from './LinkMissionsDialog';
 import { fmtCountdown, fmtDuration, PROGRESS_TONE, STATE_TONE, toneCls, useSiteTime, type Tone } from './today-helpers';
-import { apiMsg, Btn, card, EmptyBlock, ErrorBlock, heading, LoadingBlock, muted, Pill, useSlotI18n, WeatherBadge } from './ui';
+import { apiMsg, Btn, card, EmptyBlock, ErrorBlock, heading, muted, Pill, useSlotI18n, WeatherBadge } from './ui';
+import { TodaySkeleton } from './skeletons';
 
 const BASE = '/api/operation/slot-booking';
 const POLL_MS = 20_000;
@@ -138,7 +139,7 @@ export function TodayView({ isDark }: { isDark: boolean }) {
   };
 
   if (!board) {
-    return error ? <ErrorBlock isDark={isDark} message={error} onRetry={() => load(true)} /> : <LoadingBlock isDark={isDark} rows={2} />;
+    return error ? <ErrorBlock isDark={isDark} message={error} onRetry={() => load(true)} /> : <TodaySkeleton isDark={isDark} />;
   }
 
   const missions = board.slots.flatMap((x) => x.missions);

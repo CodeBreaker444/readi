@@ -2,7 +2,8 @@
 
 import { SlotAuditTable } from '@/components/slot-booking/SlotAuditTable';
 import { SlotBookingShell } from '@/components/slot-booking/SlotBookingShell';
-import { apiMsg, EmptyBlock, ErrorBlock, LoadingBlock } from '@/components/slot-booking/ui';
+import { apiMsg, EmptyBlock, ErrorBlock } from '@/components/slot-booking/ui';
+import { AuditSkeleton } from '@/components/slot-booking/skeletons';
 import type { SlotMe } from '@/config/types/slot-booking';
 import axios from 'axios';
 import { useCallback, useEffect, useState } from 'react';
@@ -33,7 +34,7 @@ export default function SlotBookingAuditPage() {
         error ? (
           <ErrorBlock isDark={isDark} message={error} onRetry={load} />
         ) : !me ? (
-          <LoadingBlock isDark={isDark} rows={1} />
+          <AuditSkeleton isDark={isDark} />
         ) : me.canManage ? (
           <SlotAuditTable isDark={isDark} />
         ) : (

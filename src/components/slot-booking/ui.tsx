@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { Booking, PilotFlight, SlotWeather } from '@/config/types/slot-booking';
 import { getApiErrorMessage } from '@/lib/api-error-message';
-import { addDaysIso, nextApprovalDay, shortSlotLabel, weekdayOf } from '@/lib/slot-booking-utils';
+import { addDaysIso, localTodayIso, nextApprovalDay, oldestLiveDate, shortSlotLabel, weekdayOf } from '@/lib/slot-booking-utils';
 import { cn } from '@/lib/utils';
 import axios from 'axios';
 import { Ban, Check, Clock, Loader2, Lock, Plane, Search, Wind } from 'lucide-react';
@@ -262,7 +262,7 @@ export function GroupCalendar<S extends CalSlot>({
   weather,
 }: CalendarProps<S>) {
   const s = useSlotI18n();
-  const today = new Date().toISOString().slice(0, 10);
+  const today = localTodayIso();
   return (
     <div className={cn('grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7', roomy ? 'gap-3' : 'gap-2')}>
       {dates.map((date) => {
@@ -304,7 +304,7 @@ export function GroupCalendar<S extends CalSlot>({
                   blocked={blocked}
                   bookings={bookings.filter((b) => b.slotId === slot.id)}
                   meId={meId}
-                  past={date < today}
+                  past={date < oldestLiveDate()}
                   weather={typeof slot.id === 'number' ? weather?.[slot.id] : undefined}
                   onClick={() => onSlotClick?.(slot)}
                 />
@@ -541,6 +541,62 @@ export function FlightWarning({ flight, name, isDark }: { flight?: PilotFlight; 
     >
       <Plane size={13} className="mt-0.5 shrink-0" />
       <span>{t(over ? 'slotBooking.flight.overWarning' : 'slotBooking.flight.nearWarning', { name, hours: flight.cycleHours, limit: flight.limitHours })}</span>
+    </div>
+  );
+}
+
+export type GroupScope = 'active' | 'all';
+
+/** Segmented toggle that hides completed (past) groups by default; "All" brings them back. */
+export function GroupScopeFilter({
+  value,
+  onChange,
+  isDark,
+  counts,
+}: {
+  value: GroupScope;
+  onChange: (v: GroupScope) => void;
+  isDark: boolean;
+  counts: Record<GroupScope, number>;
+}) {
+  const { t } = useTranslation();
+  const options: GroupScope[] = ['active', 'all'];
+  return (
+    <div
+      role="tablist"
+      aria-label={t('slotBooking.scope.label')}
+      className={cn('inline-flex shrink-0 items-center gap-0.5 rounded-lg border p-0.5', isDark ? 'border-white/[0.08] bg-white/[0.03]' : 'border-gray-200 bg-gray-50')}
+    >
+      {options.map((k) => {
+        const on = value === k;
+        return (
+          <button
+            key={k}
+            type="button"
+            role="tab"
+            aria-selected={on}
+            onClick={() => onChange(k)}
+            className={cn(
+              'cursor-pointer inline-flex items-center gap-1.5 rounded-md px-3 h-7 text-xs font-medium transition-all',
+              on
+                ? 'bg-violet-600 text-white shadow-sm'
+                : isDark
+                  ? 'text-gray-400 hover:text-white hover:bg-white/[0.06]'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-white',
+            )}
+          >
+            {t(`slotBooking.scope.${k}`)}
+            <span
+              className={cn(
+                'min-w-[18px] rounded-full px-1 text-center text-[10px] leading-4 font-semibold',
+                on ? 'bg-white/25 text-white' : isDark ? 'bg-white/[0.08] text-gray-300' : 'bg-gray-200 text-gray-600',
+              )}
+            >
+              {counts[k]}
+            </span>
+          </button>
+        );
+      })}
     </div>
   );
 }
