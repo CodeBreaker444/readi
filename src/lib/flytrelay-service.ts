@@ -111,7 +111,7 @@ async function fetchFlytrelayConnectionWithMultipleOrgs(
   if (!baseUrl) throw new Error('FLYTRELAY_BASE_URL is not configured');
 
   const jwt = signReadiDroneJwtWithMultipleOrgs(userId, organizations, companyId ?? undefined);
-console.log('jwt payload:',jwt);
+
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), CONNECT_TIMEOUT_MS);
 
@@ -155,9 +155,12 @@ export async function connectToFlytrelayWithMultipleOrgs(
   organizations: OrganizationCredentials[],
   companyId?: string,
 ): Promise<FlytrelayConnection> {
+  // Key on the actual org set (not just the count) so removing/swapping an org
+  // never serves a cached connection that still carries the old org's token.
+  const orgKey = organizations.map((o) => o.orgId).sort().join(',');
   const cached = unstable_cache(
     () => fetchFlytrelayConnectionWithMultipleOrgs(userId, organizations, companyId ?? null),
-    [`flytrelay-connect-multi-${userId}-${organizations.length}`],
+    [`flytrelay-connect-multi-${userId}-${companyId ?? ''}-${orgKey}`],
     { revalidate: 30, tags: [`flytrelay-connect-${userId}`] },
   );
   return cached();

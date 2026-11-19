@@ -351,6 +351,39 @@ export const sendNotificationEmail = async (
   }
 };
 
+export const sendNotificationEmailWithAttachments = async (
+  emails: string[],
+  title: string,
+  message: string,
+  notificationType?: string,
+  actionUrl?: string | null,
+  attachments: Array<{ filename: string; content: Buffer }> = [],
+): Promise<boolean> => {
+  if (!emails.length) return false;
+  try {
+    const emailHtml = await render(
+      NotificationEmail({ title, message, notificationType, actionUrl })
+    );
+
+    const { error } = await resend.emails.send({
+      from: 'ReADI <no-reply@readi.theun1t.com>',
+      to: emails,
+      subject: title,
+      html: emailHtml,
+      ...(attachments.length ? { attachments } : {}),
+    });
+
+    if (error) {
+      console.error('sendNotificationEmailWithAttachments error:', error);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error('sendNotificationEmailWithAttachments exception:', err);
+    return false;
+  }
+};
+
 /** Rich email for a newly reported event (details, map snapshot, image previews, download links, link to the event). */
 export const sendEventReportedEmail = async (emails: string[], subject: string, props: EventReportedEmailProps): Promise<boolean> => {
   if (!emails.length) return false;

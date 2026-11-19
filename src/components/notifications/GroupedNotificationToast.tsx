@@ -6,6 +6,8 @@ import { X } from 'lucide-react';
 import {
   HiOutlineAdjustments,
   HiOutlineBell,
+  HiOutlineCalendar,
+  HiOutlineExclamation,
   HiOutlineInformationCircle,
   HiOutlinePaperAirplane,
   HiOutlineUsers,
@@ -68,6 +70,27 @@ const CAT_META: Record<string, {
     iconText:   'text-violet-500',
     badgeBg:    'bg-violet-500',
     bar:        'bg-violet-500',
+  },
+  SLOT_BOOKING: {
+    icon: HiOutlineCalendar,
+    label: 'Slot Booking',
+    accent:     'border-l-sky-500',
+    iconBg:     'bg-sky-50 text-sky-600',
+    iconBgDark: 'bg-sky-500/15 text-sky-400',
+    iconText:   'text-sky-500',
+    badgeBg:    'bg-sky-500',
+    bar:        'bg-sky-500',
+  },
+  // Same amber warning look as Maintenance, for things like a deleted slot group that cancelled a pilot's requests.
+  SLOT_WARNING: {
+    icon: HiOutlineExclamation,
+    label: 'Slot Warning',
+    accent:     'border-l-amber-500',
+    iconBg:     'bg-amber-50 text-amber-600',
+    iconBgDark: 'bg-amber-500/15 text-amber-400',
+    iconText:   'text-amber-500',
+    badgeBg:    'bg-amber-500',
+    bar:        'bg-amber-500',
   },
   OTHER: {
     icon: HiOutlineInformationCircle,

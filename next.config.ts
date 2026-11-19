@@ -14,6 +14,10 @@ const nextConfig: NextConfig = {
       dynamic: 0,
     },
   },
+  // The docs export route reads the raw MDX files at runtime, so make sure they ship with the serverless function.
+  outputFileTracingIncludes: {
+    '/api/docs/export': ['./content/docs/**/*'],
+  },
   compress: true,
   images: {
     formats: ['image/avif', 'image/webp'],

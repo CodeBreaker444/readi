@@ -218,7 +218,7 @@ VALUES
 (YOUR_COMPANY_ID, 'PIC', 'operation_mission_table', 'A'),
 (YOUR_COMPANY_ID, 'PIC', 'operation_daily_board', 'A'),
 (YOUR_COMPANY_ID, 'PIC', 'operation_calendar', 'R'),
-(YOUR_COMPANY_ID, 'PIC', 'logbook_planned_mission', 'R'),
+(YOUR_COMPANY_ID, 'PIC', 'logbook_planned_mission', 'A'),
 (YOUR_COMPANY_ID, 'PIC', 'logbook_flight', 'R'),
 (YOUR_COMPANY_ID, 'PIC', 'logbook_battery', 'R'),
 (YOUR_COMPANY_ID, 'PIC', 'drone_atc', 'R'),

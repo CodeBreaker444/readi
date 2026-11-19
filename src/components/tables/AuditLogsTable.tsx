@@ -48,6 +48,7 @@ export const ENTITY_TYPES = [
   'operation', 'document', 'system', 'maintenance_ticket', 'client',
   'shift', 'organization_procedure', 'checklist', 'assignment', 'communication',
   'spi_kpi', 'company', 'dcc_bug_report',
+  'slot_group', 'slot', 'slot_booking',
 ];
 
 type TFunction = (key: string) => string;

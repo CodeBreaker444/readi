@@ -1,12 +1,23 @@
-CREATE TABLE IF NOT EXISTS public.ai_event_feedback (
-  feedback_id    SERIAL PRIMARY KEY,
-  fk_ai_event_id INTEGER NOT NULL UNIQUE REFERENCES public.ai_event(ai_event_id) ON DELETE CASCADE,
-  feedback_type  VARCHAR(20) NOT NULL CHECK (feedback_type IN ('false_positive', 'false_negative')),
-  comment        VARCHAR(1000),
-  attachments    JSONB NOT NULL DEFAULT '[]',
-  user_id        INTEGER,
-  user_email     VARCHAR(255) NOT NULL,
-  created_at     TIMESTAMP(6) NOT NULL DEFAULT now(),
-  updated_at     TIMESTAMP(6) NOT NULL DEFAULT now()
-);
-ALTER TABLE public.ai_event_feedback ENABLE ROW LEVEL SECURITY;
+
+ALTER TABLE public.maintenance_ticket_item
+  DROP CONSTRAINT IF EXISTS maintenance_ticket_item_fk_component_id_fkey,
+  ADD CONSTRAINT maintenance_ticket_item_fk_component_id_fkey
+    FOREIGN KEY (fk_component_id) REFERENCES public.tool_component (component_id)
+    ON DELETE SET NULL ON UPDATE NO ACTION;
+
+-- Same problem would hit next on the ticket itself.
+DO $$
+DECLARE c text;
+BEGIN
+  SELECT conname INTO c FROM pg_constraint
+   WHERE conrelid = 'public.maintenance_ticket'::regclass
+     AND contype = 'f'
+     AND confrelid = 'public.tool_component'::regclass;
+  IF c IS NOT NULL THEN
+    EXECUTE format('ALTER TABLE public.maintenance_ticket DROP CONSTRAINT %I', c);
+  END IF;
+  ALTER TABLE public.maintenance_ticket
+    ADD CONSTRAINT maintenance_ticket_fk_component_id_fkey
+    FOREIGN KEY (fk_component_id) REFERENCES public.tool_component (component_id)
+    ON DELETE SET NULL ON UPDATE NO ACTION;
+END $$;

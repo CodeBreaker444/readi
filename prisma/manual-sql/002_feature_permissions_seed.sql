@@ -210,7 +210,7 @@ VALUES
 ('PIC', 'operation_mission_table', 'A'),
 ('PIC', 'operation_daily_board', 'A'),
 ('PIC', 'operation_calendar', 'R'),
-('PIC', 'logbook_planned_mission', 'R'),
+('PIC', 'logbook_planned_mission', 'A'),
 ('PIC', 'logbook_flight', 'R'),
 ('PIC', 'logbook_battery', 'R'),
 ('PIC', 'control_center_recent_flights', 'A'),

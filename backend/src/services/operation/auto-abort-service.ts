@@ -6,21 +6,29 @@ const PLANNED_STATUS_ID = 1;
 const ABORTED_STATUS_ID = 5;
 
 /**
+ * How long past its scheduled start a mission must be before it can be a no-show. A "day" differs by time zone
+ * (the same instant is already tomorrow in India and still yesterday in the US), and an aborted mission is a
+ * closed record, so it must be over in EVERY zone before we abort it. A local day lasts at most 25 hours (DST), so a
+ * mission scheduled more than 25 hours ago is past its day wherever its pilot is. The old rule (before UTC midnight)
+ * aborted an early-morning mission in a zone ahead of UTC (03:00 in India) in the middle of its own day.
+ */
+export const AUTO_ABORT_GRACE_HOURS = 25;
+
+/**
  * A mission still PLANNED once its scheduled day has fully elapsed without
  * ever moving to IN_PROGRESS, and with no recorded actual start/end, is a no-show — auto-abort it so it drops off
  * the daily board and reads correctly everywhere else (e.g. the Operations
  * table). Called inline whenever the daily board is fetched, rather than on
  * a fixed schedule, so the correction lands as soon as anyone opens the board.
  */
-export async function autoAbortStaleMissions(ownerId: number): Promise<{ aborted: number }> {
-  const todayStart = new Date();
-  todayStart.setUTCHours(0, 0, 0, 0);
+export async function autoAbortStaleMissions(ownerId: number, now = new Date()): Promise<{ aborted: number }> {
+  const staleBefore = new Date(now.getTime() - AUTO_ABORT_GRACE_HOURS * 3_600_000);
 
   const stale = await prisma.pilot_mission.findMany({
     where: {
       fk_owner_id: ownerId,
       fk_mission_status_id: PLANNED_STATUS_ID,
-      scheduled_start: { lt: todayStart },
+      scheduled_start: { lt: staleBefore },
       // A mission with recorded flight times did fly (e.g. times entered post-flight or imported
       // from logs) even if its status was never advanced, so it is not a no-show.
       actual_start: null,

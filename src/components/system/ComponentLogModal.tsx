@@ -76,6 +76,7 @@ const EVENT_COLORS: Record<string, string> = {
   CREATED: 'bg-emerald-100 text-emerald-700 border-emerald-200',
   CLOSED: 'bg-slate-100 text-slate-700 border-slate-200',
   ASSIGNED: 'bg-violet-100 text-violet-700 border-violet-200',
+  EXPIRY_RENEWED: 'bg-sky-100 text-sky-700 border-sky-200',
   REPORT_ADDED: 'bg-amber-100 text-amber-700 border-amber-200',
   ATTACHMENT_ADDED: 'bg-sky-100 text-sky-700 border-sky-200',
   ATTACHMENT_DELETED: 'bg-red-100 text-red-700 border-red-200',

@@ -4,6 +4,7 @@ import { ModelSelectPager, usePagedModels } from "./ModelSelectPager";
 import LocationPicker from '@/components/system/LocationPicker';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -13,6 +14,7 @@ import { BadgeCheck, ChevronDown, ChevronRight, Loader2, Pencil, Search, Shield,
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
+import { componentErrorMessage } from '@/lib/system/component-error';
 import type { DFlightDroneRow } from '@/types/dflight';
 import { Skeleton } from '../ui/skeleton';
 import { InsuranceAlertRecipients } from './InsuranceAlertRecipients';
@@ -83,6 +85,7 @@ const EMPTY_FORM = {
   component_purchase_date: '',
   expiration_date: '',
   expiry_type: 'EXPIRATION_DATE',
+  expiry_permanent: true,
   expiration_flights: '',
   expiration_flight_hours: '',
   component_vendor: '',
@@ -113,7 +116,7 @@ export default function EditComponentModal({
   open, toolId, onClose, onSuccess, models, clients, tools, initialComponentId, dFlightEnabled = false,
 }: EditComponentModalProps) {
   const { isDark } = useTheme();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [loading, setLoading] = useState<boolean>(false);
   const [fetching, setFetching] = useState<boolean>(false);
   const [systemSearch, setSystemSearch] = useState('');
@@ -127,6 +130,14 @@ export default function EditComponentModal({
   const [loadingParent, setLoadingParent] = useState<boolean>(false);
   const [originalFkToolId, setOriginalFkToolId] = useState<number | null>(null);
   const [drcSyncedAt, setDrcSyncedAt] = useState<string | null>(null);
+  /** The saved component has already reached an expiry limit (the permanent-expiry setting is locked while it has). */
+  const [expiryReached, setExpiryReached] = useState(false);
+  /**
+   * The status as saved (not the derived one shown in lists). The status is only sent when the user changes it:
+   * otherwise saving an expired component would store the derived Decommissioned, which takes it out of the system
+   * and leaves the system Operational.
+   */
+  const [originalStatus, setOriginalStatus] = useState('OPERATIONAL');
   const [qrCodeImage, setQrCodeImage] = useState<string | null>(null);
   const [insuranceExpanded, setInsuranceExpanded] = useState(false);
   const [certificationsExpanded, setCertificationsExpanded] = useState(false);
@@ -176,6 +187,8 @@ export default function EditComponentModal({
       setSelectedComponentId('');
       setFormData(EMPTY_FORM);
       setOriginalFkToolId(null);
+      setExpiryReached(false);
+      setOriginalStatus('OPERATIONAL');
       setDrcSyncedAt(null);
       setQrCodeImage(null);
       setSystemSearch('');
@@ -185,6 +198,8 @@ export default function EditComponentModal({
   const populateForm = (comp: any) => {
     setOriginalFkToolId(comp.fk_tool_id ?? null);
     setDrcSyncedAt(comp.drc_synced_at ?? null);
+    setExpiryReached(comp.expiry_reached === true);
+    setOriginalStatus(comp.stored_status || comp.component_status || 'OPERATIONAL');
     setQrCodeImage(comp.qr_code_image ?? null);
     setFormData({
       fk_tool_id: (comp.system_detached || !comp.fk_tool_id) ? '_none' : String(comp.fk_tool_id),
@@ -205,11 +220,12 @@ export default function EditComponentModal({
       component_purchase_date: comp.component_purchase_date?.split('T')[0] || '',
       expiration_date: comp.expiration_date?.split('T')[0] || '',
       expiry_type: comp.expiry_type || 'EXPIRATION_DATE',
+      expiry_permanent: comp.expiry_permanent !== false,
       expiration_flights: comp.expiration_flights != null ? String(comp.expiration_flights) : '',
       expiration_flight_hours: comp.expiration_flight_hours != null ? String(comp.expiration_flight_hours) : '',
       component_vendor: comp.component_vendor || '',
       component_guarantee_day: comp.component_guarantee_day ? String(comp.component_guarantee_day) : '',
-      component_status: comp.component_status || 'OPERATIONAL',
+      component_status: comp.stored_status || comp.component_status || 'OPERATIONAL',
       battery_cycle_ratio: comp.battery_cycle_ratio != null ? String(comp.battery_cycle_ratio) : '',
       fk_parent_component_id: comp.fk_parent_component_id ? String(comp.fk_parent_component_id) : '_none',
       latitude: comp.latitude != null ? String(comp.latitude) : '',
@@ -418,11 +434,12 @@ export default function EditComponentModal({
         component_purchase_date: formData.component_purchase_date || null,
         expiration_date: formData.expiration_date || null,
         expiry_type: formData.expiry_type,
+        expiry_permanent: formData.expiry_permanent,
         expiration_flights: formData.expiration_flights ? Number(formData.expiration_flights) : null,
         expiration_flight_hours: formData.expiration_flight_hours ? parseFloat(formData.expiration_flight_hours) : null,
         component_vendor: formData.component_vendor || null,
         component_guarantee_day: formData.component_guarantee_day ? Number(formData.component_guarantee_day) : null,
-        component_status: formData.component_status,
+        component_status: formData.component_status !== originalStatus ? formData.component_status : undefined,
         battery_cycle_ratio: formData.battery_cycle_ratio ? Number(formData.battery_cycle_ratio) : null,
         fk_parent_component_id: formData.fk_parent_component_id && formData.fk_parent_component_id !== '_none' ? Number(formData.fk_parent_component_id) : null,
         latitude: formData.latitude ? Number(formData.latitude) : null,
@@ -454,7 +471,7 @@ export default function EditComponentModal({
         toast.success(t('systems.components.editComponent.toasts.success'));
         onSuccess();
       } else {
-        toast.error(result.message || t('systems.components.editComponent.toasts.failed'));
+        toast.error(componentErrorMessage(result, t, t('systems.components.editComponent.toasts.failed'), i18n.language));
       }
     } catch {
       toast.error(t('systems.components.editComponent.toasts.error'));
@@ -931,7 +948,7 @@ export default function EditComponentModal({
                     <div className="col-span-1 sm:col-span-3">
                       <Label className={labelCls}>{t('systems.components.addComponent.fields.expirationDate')}</Label>
                       <Input type="date" className={inputCls} min="1900-01-01" max="2200-12-31" value={formData.expiration_date} onChange={e => handleChange('expiration_date', e.target.value)} />
-                      {formData.expiry_type === 'EXPIRATION_DATE' && (
+                      {formData.expiry_type === 'EXPIRATION_DATE' && formData.expiry_permanent && (
                         <p className={`text-[10px] mt-1 ${isDark ? 'text-slate-500' : 'text-muted-foreground'}`}>{t('systems.components.common.autoDecommissionHint')}</p>
                       )}
                     </div>
@@ -948,7 +965,7 @@ export default function EditComponentModal({
                         value={formData.expiration_flights}
                         onChange={e => handleChange('expiration_flights', e.target.value)}
                       />
-                      {formData.expiry_type === 'FLIGHTS' && (
+                      {formData.expiry_type === 'FLIGHTS' && formData.expiry_permanent && (
                         <p className={`text-[10px] mt-1 ${isDark ? 'text-slate-500' : 'text-muted-foreground'}`}>{t('systems.components.common.expiryType.flightsHint')}</p>
                       )}
                     </div>
@@ -966,16 +983,46 @@ export default function EditComponentModal({
                         value={formData.expiration_flight_hours}
                         onChange={e => handleChange('expiration_flight_hours', e.target.value)}
                       />
-                      {formData.expiry_type === 'FLIGHT_HOURS' && (
+                      {formData.expiry_type === 'FLIGHT_HOURS' && formData.expiry_permanent && (
                         <p className={`text-[10px] mt-1 ${isDark ? 'text-slate-500' : 'text-muted-foreground'}`}>{t('systems.components.common.expiryType.flightHoursHint')}</p>
                       )}
                     </div>
                   )}
-                  {formData.expiry_type === 'MIXED' && (
+                  {formData.expiry_type === 'MIXED' && formData.expiry_permanent && (
                     <div className="col-span-1 sm:col-span-12">
                       <p className={`text-[10px] ${isDark ? 'text-slate-500' : 'text-muted-foreground'}`}>{t('systems.components.common.expiryType.mixedHint')}</p>
                     </div>
                   )}
+                  <div className="col-span-1 sm:col-span-12">
+                    <label className={`flex items-start gap-2 w-fit ${expiryReached ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'}`}>
+                      <Checkbox
+                        className="mt-0.5"
+                        checked={formData.expiry_permanent}
+                        disabled={expiryReached}
+                        onCheckedChange={(v) => setFormData(prev => ({ ...prev, expiry_permanent: v === true }))}
+                      />
+                      <span>
+                        <span className={`text-xs font-medium ${isDark ? 'text-slate-300' : 'text-gray-700'}`}>{t('systems.components.common.expiryType.permanentLabel')}</span>
+                        <span className={`block text-[10px] ${isDark ? 'text-slate-500' : 'text-muted-foreground'}`}>
+                          {expiryReached
+                            ? t('systems.components.common.expiryType.permanentLocked')
+                            : formData.expiry_permanent
+                              ? t('systems.components.common.expiryType.permanentHint')
+                              : t('systems.components.common.expiryType.renewableHint')}
+                        </span>
+                      </span>
+                    </label>
+                    {expiryReached && formData.expiry_permanent && (
+                      <p className={`mt-2 rounded-md border px-3 py-2 text-[11px] ${isDark ? 'border-amber-500/40 bg-amber-500/10 text-amber-300' : 'border-amber-300 bg-amber-50 text-amber-800'}`}>
+                        {t('systems.components.common.expiryType.expiredPermanentNotice')}
+                      </p>
+                    )}
+                    {expiryReached && !formData.expiry_permanent && (
+                      <p className={`mt-2 rounded-md border px-3 py-2 text-[11px] ${isDark ? 'border-amber-500/40 bg-amber-500/10 text-amber-300' : 'border-amber-300 bg-amber-50 text-amber-800'}`}>
+                        {t('systems.components.common.expiryType.expiredNotice')}
+                      </p>
+                    )}
+                  </div>
                   <div className="col-span-1 sm:col-span-3">
                     <Label className={labelCls}>{t('systems.components.addComponent.fields.vendor')}</Label>
                     <Input className={inputCls} value={formData.component_vendor} onChange={e => handleChange('component_vendor', e.target.value)} />

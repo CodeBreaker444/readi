@@ -1,0 +1,122 @@
+import 'server-only';
+
+import { intervalsOverlap, slotInterval } from '@/lib/slot-booking-logic';
+import { addDaysIso, DEFAULT_SLOT_TIMEZONE, normalizeTimeZone, prettyDate, slotLabel, wallClockNow, zonedSlotInterval } from '@/lib/slot-booking-utils';
+import { prisma } from '@/lib/prisma';
+
+
+export const dateStr = (d: Date) => d.toISOString().slice(0, 10);
+export const toDate = (s: string) => new Date(`${s}T00:00:00.000Z`);
+
+
+/** True once the slot's start time has passed, in the slot group's time zone. */
+export const slotStarted = (date: string, start: string, timeZone: string, now = new Date()) =>
+  slotInterval(date, start, start).from <= wallClockNow(timeZone, now);
+
+/** True once the slot's end time has passed (overnight slots end the next day), in the slot group's time zone. */
+export const slotEnded = (date: string, start: string, end: string, timeZone: string, now = new Date()) =>
+  slotInterval(date, start, end).to <= wallClockNow(timeZone, now);
+
+/** The zone of a slot group; groups created before zones existed fall back to UTC. */
+export const groupZone = (g: { timezone?: string | null }) => normalizeTimeZone(g.timezone) ?? DEFAULT_SLOT_TIMEZONE;
+
+export interface CollisionCheck {
+  pilotId: number;
+  /** `timezone` is the zone of the slot's group: slot times are wall-clock at the site, so slots of groups in different zones are compared as real instants. */
+  slot: { slotId: number; date: string; start: string; end: string; timezone: string };
+}
+
+export const collisionKey = (pilotId: number, slotId: number) => `${pilotId}:${slotId}`;
+
+/**
+ * A pilot "collides" with a slot when they are already APPROVED for another slot whose time window overlaps it,
+ * in any slot group of the company (the same date and time in a different group counts).
+ * Returns a readable description of the clashing assignment per `pilotId:slotId`; pairs without a clash are absent.
+ */
+export async function findCollisions(ownerId: number, checks: CollisionCheck[]): Promise<Map<string, string>> {
+  const result = new Map<string, string>();
+  if (!checks.length) return result;
+
+  const dates = checks.map((c) => c.slot.date).sort();
+  const rows = await prisma.slot_booking.findMany({
+    where: {
+      status: 'APPROVED',
+      fk_pilot_user_id: { in: [...new Set(checks.map((c) => c.pilotId))] },
+      slot: {
+        is_active: true,
+        // ±2 days: a 22:00–06:00 slot reaches into the next date, and sites up to 26 h apart shift the same slot across dates.
+        slot_date: { gte: toDate(addDaysIso(dates[0], -2)), lte: toDate(addDaysIso(dates[dates.length - 1], 2)) },
+        slot_group: { fk_owner_id: ownerId },
+      },
+    },
+    select: {
+      fk_slot_id: true,
+      fk_pilot_user_id: true,
+      slot: { select: { slot_date: true, start_time: true, end_time: true, slot_group: { select: { name: true, timezone: true } } } },
+    },
+  });
+
+  for (const c of checks) {
+    const mine = zonedSlotInterval(c.slot.date, c.slot.start, c.slot.end, c.slot.timezone);
+    const clash = rows.find(
+      (r) =>
+        r.fk_pilot_user_id === c.pilotId &&
+        r.fk_slot_id !== c.slot.slotId &&
+        intervalsOverlap(mine, zonedSlotInterval(dateStr(r.slot.slot_date), r.slot.start_time, r.slot.end_time, groupZone(r.slot.slot_group))),
+    );
+    if (clash) {
+      result.set(
+        collisionKey(c.pilotId, c.slot.slotId),
+        `${prettyDate(dateStr(clash.slot.slot_date))} ${slotLabel({ start: clash.slot.start_time, end: clash.slot.end_time })} in “${clash.slot.slot_group.name}”`,
+      );
+    }
+  }
+  return result;
+}
+
+/** Hours before the approval day during which pilots cannot change their requests (0 = never). */
+export async function getLockHours(ownerId: number): Promise<number> {
+  const row = await prisma.slot_settings.findUnique({ where: { fk_owner_id: ownerId }, select: { modify_lock_hours: true } });
+  return row?.modify_lock_hours ?? 24;
+}
+
+/**
+ * Pilot groups that restrict a slot group. Empty = the group is offered to every pilot.
+ * Returned as groupId -> pilot group ids.
+ */
+export async function getAudiences(groupIds: number[]): Promise<Map<number, number[]>> {
+  const map = new Map<number, number[]>();
+  if (!groupIds.length) return map;
+  const rows = await prisma.slot_group_pilot_group.findMany({ where: { fk_slot_group_id: { in: groupIds } } });
+  for (const r of rows) map.set(r.fk_slot_group_id, [...(map.get(r.fk_slot_group_id) ?? []), r.fk_pilot_group_id]);
+  return map;
+}
+
+/** Ids of the pilot groups a user belongs to. */
+export async function getMembershipIds(userId: number): Promise<Set<number>> {
+  const rows = await prisma.pilot_group_member.findMany({ where: { fk_user_id: userId }, select: { fk_pilot_group_id: true } });
+  return new Set(rows.map((r) => r.fk_pilot_group_id));
+}
+
+/** Members of the given pilot groups. */
+export async function getMemberIds(pilotGroupIds: number[]): Promise<Set<number>> {
+  if (!pilotGroupIds.length) return new Set();
+  const rows = await prisma.pilot_group_member.findMany({
+    where: { fk_pilot_group_id: { in: pilotGroupIds } },
+    select: { fk_user_id: true },
+  });
+  return new Set(rows.map((r) => r.fk_user_id));
+}
+
+/**
+ * Drops the missions linked to a slot (Today's Schedule) once its approved pilot is gone, so the next pilot of the slot
+ * does not inherit them. Best effort: the Today board also only shows the slot pilot's own missions, so a failed
+ * cleanup must never fail the unassign / close that triggered it.
+ */
+export async function clearSlotMissions(slotId: number): Promise<void> {
+  try {
+    await prisma.slot_mission.deleteMany({ where: { fk_slot_id: slotId } });
+  } catch (e) {
+    console.error('[slot-booking] could not clear slot missions', slotId, e);
+  }
+}

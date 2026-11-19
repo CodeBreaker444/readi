@@ -3,7 +3,7 @@ import { sendNotificationToRoles } from '@/backend/services/notification/notific
 import { getComponentsForMaintenanceCycle } from '@/backend/services/operation/maintenance-cycle-service';
 import { assertComponentsTicketable, assertNoOpenTicketForTool, hasOpenTicketForTool } from '@/backend/services/system/maintenance-ticket-guards';
 import { createTicket } from '@/backend/services/system/maintenance-ticket';
-import { getComponentStatusesForTool, setComponentsOperationalStatus, setSystemOperationalStatus } from '@/backend/services/system/maintenance-ticket-components';import { requirePermission } from '@/lib/auth/api-auth';
+import { getComponentStatusesForTool, getTicketBlockedComponentIds, setComponentsOperationalStatus, setSystemOperationalStatus } from '@/backend/services/system/maintenance-ticket-components';import { requirePermission } from '@/lib/auth/api-auth';
 import { apiError, internalError } from '@/lib/api-error';
 import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
@@ -21,13 +21,17 @@ export async function GET(req: NextRequest) {
       getComponentsForMaintenanceCycle(toolId, session!.user.ownerId).catch(() => null),
     ]);
 
-    const statuses = await getComponentStatusesForTool(toolId);
+    const [statuses, ticketBlocked] = await Promise.all([
+      getComponentStatusesForTool(toolId),
+      getTicketBlockedComponentIds(toolId),
+    ]);
 
     return NextResponse.json({
       has_open_ticket: hasOpen,
       components: (systemData?.components ?? []).map((c) => ({
         ...c,
         component_status: statuses.get(c.component_id) ?? 'OPERATIONAL',
+        ticket_blocked: ticketBlocked.has(c.component_id),
       })),
     });
   } catch (err) {

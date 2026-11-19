@@ -1,21 +1,16 @@
 import { requireAuth } from '@/lib/auth/api-auth';
 import { NextRequest, NextResponse } from 'next/server';
 
-// leaflet-velocity needs a regular lat/lon grid (GRIB2-JSON-like shape: one
-// header+data record per U/V component), not sparse point samples — this
-// route fetches one batched Open-Meteo call for every node and reshapes it.
+ 
 const GRID_ROWS = 10;
 const GRID_COLS = 10;
-
-// Unlike airspace/flight data, wind isn't scoped to any particular region —
-// it should cover wherever the map is currently showing, same as the OWM
-// weather tiles. Only guard against the Mercator projection's pole singularity
-// and out-of-range longitudes.
+ 
 const LAT_LIMIT = 85;
 const LON_LIMIT = 180;
 
 interface OpenMeteoPoint {
   current?: {
+    time?: string;
     wind_speed_10m?: number;
     wind_direction_10m?: number;
   };
@@ -90,7 +85,9 @@ export async function GET(req: NextRequest) {
     vData[i] = Math.cos(toBearing) * speed;
   });
 
-  const refTime = new Date().toISOString();
+  const apiTime = points[0]?.current?.time;
+  const apiDate = apiTime ? new Date(`${apiTime}Z`) : null;
+  const refTime = (apiDate && !isNaN(apiDate.getTime()) ? apiDate : new Date()).toISOString();
   const baseHeader = {
     parameterUnit: 'm.s-1',
     la1: n, lo1: w, la2: s, lo2: e,

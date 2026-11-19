@@ -251,10 +251,16 @@ export function useMaintenanceLogbook() {
         note: closeNote,
       });
       const reset: { component_id: number; component_name: string | null }[] = res.data?.reset_components ?? [];
+      const renewed: { component_id: number; component_name: string | null }[] = res.data?.renewed_components ?? [];
       toast.success(t('systems.maintenanceLogbook.toasts.ticketClosed'), {
-        description: reset.length
-          ? t('systems.maintenanceLogbook.toasts.countersReset', { components: reset.map((c) => c.component_name ?? `#${c.component_id}`).join(', ') })
-          : t('systems.maintenanceLogbook.toasts.noCountersReset'),
+        description: [
+          reset.length
+            ? t('systems.maintenanceLogbook.toasts.countersReset', { components: reset.map((c) => c.component_name ?? `#${c.component_id}`).join(', ') })
+            : t('systems.maintenanceLogbook.toasts.noCountersReset'),
+          renewed.length
+            ? t('systems.maintenanceLogbook.toasts.expiryRenewed', { components: renewed.map((c) => c.component_name ?? `#${c.component_id}`).join(', ') })
+            : '',
+        ].filter(Boolean).join(' '),
         duration: 8000,
         style: { border: '2px solid #fde68a' },
       });

@@ -12,6 +12,8 @@ Operations is where missions move from planned to completed. It has four views o
 | **Calendar** | Schedule by week, month or list, and add missions |
 | **Flight Requests** | Requests waiting for a decision (internal and external) |
 
+**Slot Booking** also lives under Operations. It is a separate tool for opening time slots and letting pilots request them: see [Slot Booking](/docs/modules/slot-booking).
+
 Admins, OPMs and Super Admins also see **Email Notifications** to choose which mission emails are sent.
 
 ---
@@ -93,6 +95,8 @@ A pilot's mission goes to the OPMs of their department for approval before it ap
 ## Daily Board
 
 Each mission is a card in one of three columns: **Scheduled**, **In Progress** or **Done**. Drag a card to the next column to start or finish the mission.
+
+**Today** on the board is your own calendar day in the time zone of your profile (UTC if none is set), so a mission planned for 03:00 in India shows on that day. A mission still **Scheduled** is marked **Aborted** automatically only once it is more than 25 hours past its scheduled start without ever being started, which is over in every time zone. An aborted mission is a closed record and cannot be edited or restored.
 
 Cards show the pilot, the system, and its maintenance state (**Maintenance OK**, **Alert**, **Due** or **In Maintenance**). Open a card for the timeline (planned, official start and end, actual start and end), people and equipment, and flight results.
 
@@ -248,4 +252,5 @@ Who can read, edit and delete in this area, by role.
 
 - [Mission Lifecycle](/docs/business-logic/mission-lifecycle)
 - [Operations Module logic](/docs/business-logic/operations-module)
+- [Slot Booking](/docs/modules/slot-booking)
 - [Planning](/docs/modules/planning)

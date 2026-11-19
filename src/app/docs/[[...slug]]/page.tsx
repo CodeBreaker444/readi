@@ -9,6 +9,7 @@ import { notFound } from 'next/navigation';
 import { getMDXComponents } from '@/components/docs/mdx';
 import { createRelativeLink } from 'fumadocs-ui/mdx';
 import { Mermaid } from '@/components/docs/mermaid';
+import { DocsDownloadMenu } from '@/components/docs/download-menu';
 import { isValidElement, type ReactNode } from 'react';
 import defaultMdxComponents from 'fumadocs-ui/mdx';
 
@@ -63,8 +64,20 @@ export default async function Page(props: { params: Promise<{ slug?: string[] }>
 
   const MDX = page.data.body;
 
+  const downloads = (
+    <DocsDownloadMenu
+      slug={page.slugs}
+      showAll={page.slugs.length === 0 || (page.slugs.length === 1 && page.slugs[0] === 'introduction')}
+    />
+  );
+
   return (
-    <DocsPage toc={page.data.toc} full={page.data.full}>
+    <DocsPage
+      toc={page.data.toc}
+      full={page.data.full}
+      tableOfContent={{ footer: downloads }}
+      tableOfContentPopover={{ footer: downloads }}
+    >
       <DocsTitle>{page.data.title}</DocsTitle>
       <DocsDescription className="mb-0">{page.data.description}</DocsDescription>
       <DocsBody>

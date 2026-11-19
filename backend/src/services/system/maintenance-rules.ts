@@ -64,6 +64,64 @@ export function isComponentPartOfSystem(meta: Record<string, unknown>): boolean 
   return meta.system_detached !== true && meta.component_status !== 'DECOMMISSIONED';
 }
 
+/**
+ * Whether an EXPIRED component keeps its system Not Operational.
+ *   - detached (moved to the warehouse) components are out of the system: never.
+ *   - permanent expiry: always, until the component is removed from the system. Setting it to Decommissioned does not
+ *     free the system.
+ *   - renewable expiry: unless it was set to Decommissioned (it can also be renewed, which is no longer expired).
+ */
+export function blocksSystemWhenExpired(meta: Record<string, unknown>): boolean {
+  if (meta.system_detached === true) return false;
+  return isExpiryPermanent(meta) || meta.component_status !== 'DECOMMISSIONED';
+}
+
+/**
+ * Expiry is permanent by default: an expired component reads as Decommissioned and cannot be renewed.
+ * Only an explicit `expiry_permanent: false` selects the alternative flow (Not Operational + maintenance ticket,
+ * renewable). A missing flag (every component created before this option existed) stays permanent.
+ */
+export function isExpiryPermanent(meta: Record<string, unknown> | null | undefined): boolean {
+  return meta?.expiry_permanent !== false;
+}
+
+/** YYYY-MM-DD for a Date/string; null when empty or an Invalid Date (toISOString would throw RangeError). */
+export function toDayString(value: Date | string | null | undefined): string | null {
+  if (value == null || value === '') return null;
+  if (typeof value === 'string') return value;
+  return Number.isNaN(value.getTime()) ? null : value.toISOString().split('T')[0];
+}
+
+export interface ExpiryLimits {
+  expiration_date: Date | string | null;
+  expiry_type: string | null;
+  expiration_flights: number | null;
+  expiration_flight_hours: number | { toString(): string } | null;
+  current_maintenance_flights: number | { toString(): string } | null;
+  current_usage_hours: number | { toString(): string } | null;
+}
+
+/** True once a component has reached any of its expiry limits (date, flights or flight hours, per its expiry type). */
+export function isComponentExpired(item: ExpiryLimits, today: string = new Date().toISOString().split('T')[0]): boolean {
+  const expiryType: string = item.expiry_type || 'EXPIRATION_DATE';
+  // Callers pass either a Date (Prisma rows) or a YYYY-MM-DD string; a Date compared with a string is never <=, so normalise first.
+  const expiryDay = toDayString(item.expiration_date);
+  const isDateExpired = !!expiryDay && expiryDay <= today;
+  const isFlightExpired =
+    item.expiration_flights != null &&
+    Number(item.current_maintenance_flights) >= item.expiration_flights;
+  const isFlightHoursExpired =
+    item.expiration_flight_hours != null &&
+    Number(item.current_usage_hours) >= Number(item.expiration_flight_hours);
+  return expiryType === 'FLIGHTS'
+    ? isFlightExpired
+    : expiryType === 'FLIGHT_HOURS'
+      ? isFlightHoursExpired
+      : expiryType === 'MIXED'
+        ? isDateExpired || isFlightExpired || isFlightHoursExpired
+        : isDateExpired;
+}
+
 // ---------------------------------------------------------------------------
 // Status evaluation
 // ---------------------------------------------------------------------------

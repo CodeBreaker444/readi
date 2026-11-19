@@ -26,12 +26,15 @@ import {
   deleteFileFromS3,
   uploadFileToS3,
 } from '@/lib/s3Client';
+import { describeRenewal, type ExpiryRenewal } from '@/lib/system/expiry-renewal';
 import { addTicketEvent } from './maintenance-ticket-events';
+import { applyExpiryRenewals, planExpiryRenewals } from './maintenance-ticket-expiry';
 import { assertComponentsBelongToTool, assertComponentsTicketable, assertSystemCanCloseTicket } from './maintenance-ticket-guards';
 import {
   excludePermanentlyBlocked,
   getSystemComponentIds,
   getTicketableComponentIds,
+  putSystemInMaintenanceIfExpired,
   resetComponentCounters,
   setComponentsOperationalStatus,
   setSystemOperationalStatus,
@@ -95,6 +98,13 @@ export async function createTicket(payload: CreateTicketPayload): Promise<number
     select: { ticket_id: true },
   });
 
+  // A system held Not Operational by an expired component now has work under way: show it as Maintenance.
+  try {
+    await putSystemInMaintenanceIfExpired(payload.fk_tool_id);
+  } catch (err) {
+    console.error(`[Ticket] Could not set system ${payload.fk_tool_id} to Maintenance:`, err);
+  }
+
   const reporter = payload.reporter_name ?? `User #${payload.fk_user_id}`;
   const issueDetail = payload.note?.trim() ? `${payload.note.trim()}` : 'No description provided.';
   await addTicketEvent(
@@ -112,7 +122,11 @@ export async function createTicket(payload: CreateTicketPayload): Promise<number
 
 
 
-export async function closeTicket(payload: CloseTicketPayload): Promise<{ resetComponents: { component_id: number; component_name: string | null }[] }> {
+export async function closeTicket(payload: CloseTicketPayload): Promise<{
+  resetComponents: { component_id: number; component_name: string | null }[];
+  /** Expired components whose expiry is not permanent: renewed by this close. */
+  renewedComponents: { component_id: number; component_name: string | null; renewal: ExpiryRenewal }[];
+}> {
   const ticket = await prisma.maintenance_ticket.findUnique({
     where: { ticket_id: payload.ticket_id },
     select: {
@@ -180,9 +194,14 @@ export async function closeTicket(payload: CloseTicketPayload): Promise<{ resetC
     mergeResetComponentIds(getTicketedComponentIds(closingTickets), systemComponentIds),
   );
 
+  // An expired component whose expiry is not permanent is renewed by closing the ticket that covers it.
+  // Planned BEFORE the counters are reset: the flight counter is part of the "reached its limit" check.
+  const renewalPlans = await planExpiryRenewals(resetComponentIds);
+
   for (const componentId of resetComponentIds) {
     await resetComponentCounters(ticket.fk_tool_id!, now.toISOString(), componentId);
   }
+  await applyExpiryRenewals(renewalPlans);
   const stillOpen = await prisma.maintenance_ticket.count({
     where: { fk_tool_id: ticket.fk_tool_id, ticket_status: { not: 'CLOSED' } },
   });
@@ -197,6 +216,16 @@ export async function closeTicket(payload: CloseTicketPayload): Promise<{ resetC
         orderBy: { component_id: 'asc' },
       })
     : [];
+
+  for (const plan of renewalPlans) {
+    await addTicketEvent(
+      payload.ticket_id,
+      'EXPIRY_RENEWED',
+      `${plan.component_code || plan.component_name || `Component #${plan.component_id}`}: ${describeRenewal(plan.renewal)}`,
+      payload.closed_by_email,
+      payload.closed_by,
+    );
+  }
 
   // Add close event to all tickets
   await Promise.all(
@@ -214,7 +243,14 @@ export async function closeTicket(payload: CloseTicketPayload): Promise<{ resetC
     note: payload.note,
   });
 
-  return { resetComponents };
+  return {
+    resetComponents,
+    renewedComponents: renewalPlans.map((p) => ({
+      component_id: p.component_id,
+      component_name: p.component_code || p.component_name,
+      renewal: p.renewal,
+    })),
+  };
 }
 
 

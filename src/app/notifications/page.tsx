@@ -60,6 +60,7 @@ import { Notification, NotificationListFilters } from "@/config/types/notificati
 import axios from "axios";
 import {
   HiOutlineBell,
+  HiOutlineCalendar,
   HiOutlinePaperAirplane,
   HiOutlineUsers,
   HiOutlineAdjustments,
@@ -108,6 +109,12 @@ const TABS: TabDef[] = [
       !!p && (p.toUpperCase().includes("ASSIGNMENT") || p.toUpperCase().includes("ASSIGN")),
   },
   {
+    key: "slot",
+    label: "Slot Booking",
+    icon: HiOutlineCalendar,
+    match: (p) => !!p && p.toUpperCase().includes("SLOT"),
+  },
+  {
     key: "other",
     label: "Other",
     icon: HiOutlineInformationCircle,
@@ -115,6 +122,7 @@ const TABS: TabDef[] = [
       if (!p) return false;
       const u = p.toUpperCase();
       return (
+        !u.includes("SLOT") &&
         !u.includes("MAINTENANCE") &&
         !u.includes("MISSION") &&
         !u.includes("GENERAL") &&

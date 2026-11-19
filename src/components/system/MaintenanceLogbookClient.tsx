@@ -214,6 +214,7 @@ export default function MaintenanceLogbookClient({ canIntervene = false, canClos
       />
 
       <CloseTicketModal
+        ticketId={activeTicketId}
         open={modals.close}
         onClose={() => closeModal('close')}
         note={closeNote}

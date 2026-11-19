@@ -1,0 +1,227 @@
+import { addDaysIso, DEFAULT_SLOT_TIMEZONE, nextApprovalDay, weekdayOf, zonedMidnight } from './slot-booking-utils';
+
+/**
+ * Pure rules of Slot Booking v2, shared by the API and the UI and unit-tested without a database.
+ * Slot dates/times are wall-clock values; they are all placed on one UTC timeline, so comparing them is timezone-safe.
+ */
+
+// ───────────────────────── Overlap / collisions ─────────────────────────
+
+export interface Interval {
+  from: number;
+  to: number;
+}
+
+/** [from, to) of a slot in epoch ms. An end at or before the start means the slot runs past midnight (22:00–06:00). */
+export function slotInterval(date: string, start: string, end: string): Interval {
+  const from = Date.parse(`${date}T${start}:00.000Z`);
+  const endDate = end <= start ? addDaysIso(date, 1) : date;
+  return { from, to: Date.parse(`${endDate}T${end}:00.000Z`) };
+}
+
+/** Back-to-back slots (14:00 end / 14:00 start) do not overlap. */
+export const intervalsOverlap = (a: Interval, b: Interval) => a.from < b.to && b.from < a.to;
+
+// ───────────────────────── Scheduled publishing ─────────────────────────
+
+/** A group is visible to pilots once its publish time has passed (no publish time = immediately). */
+export const isPublished = (publishAt: Date | string | null | undefined, now = new Date()) =>
+  !publishAt || new Date(publishAt).getTime() <= now.getTime();
+
+export const MAX_SCHEDULE_DAYS = 365;
+export const MIN_SCHEDULE_LEAD_MS = 60_000;
+
+/** null when fine, otherwise the reason a requested publish time is not acceptable. */
+export function scheduleError(publishAt: string, now = new Date()): string | null {
+  const t = Date.parse(publishAt);
+  if (Number.isNaN(t)) return 'Invalid publish time';
+  if (t < now.getTime() + MIN_SCHEDULE_LEAD_MS) return 'The publish time must be in the future';
+  if (t > now.getTime() + MAX_SCHEDULE_DAYS * 86_400_000) return `The publish time cannot be more than ${MAX_SCHEDULE_DAYS} days ahead`;
+  return null;
+}
+
+// ───────────────────────── Modification lock ─────────────────────────
+
+export type LockHours = 0 | 24 | 48;
+export const LOCK_HOUR_OPTIONS: LockHours[] = [0, 24, 48];
+
+export interface ModificationLock {
+  locked: boolean;
+  /** Start of the approval day the lock counts down to (ISO), null when the group has no approval day. */
+  approvalAt: string | null;
+}
+
+/**
+ * Pilots may not cancel or move a request during the last `lockHours` before the group's next approval day
+ * (the day counts from 00:00 in the group's time zone; on the approval day itself the request is locked). 0 disables the lock.
+ */
+export function modificationLock(approvalDays: number[], lockHours: number, now = new Date(), timeZone = DEFAULT_SLOT_TIMEZONE): ModificationLock {
+  const next = nextApprovalDay(approvalDays, now, timeZone);
+  if (!next) return { locked: false, approvalAt: null };
+  const at = zonedMidnight(next.date, timeZone);
+  const locked = lockHours > 0 && at - now.getTime() < lockHours * 3_600_000;
+  return { locked, approvalAt: new Date(at).toISOString() };
+}
+
+// ───────────────────────── Pilot merit score ─────────────────────────
+
+/** Lookback window for availability and hours. */
+export const MERIT_WINDOW_DAYS = 90;
+
+/** Weekend availability is the biggest part of the score, as requested. */
+export const MERIT_WEIGHTS = { weekend: 0.4, availability: 0.3, hours: 0.3 } as const;
+
+export interface MeritInput {
+  userId: number;
+  /** Slot requests made in the window (any status): the pilot offering to fly. */
+  requests: number;
+  /** Of those, slots on a Saturday or Sunday. */
+  weekendRequests: number;
+  /** Hours flown in the window. */
+  hours: number;
+}
+
+export interface MeritScore {
+  userId: number;
+  score: number;
+  rank: number;
+}
+
+export const isWeekend = (date: string) => [0, 6].includes(weekdayOf(date));
+
+/**
+ * 0–100, relative to the best pilot of the company in each measure:
+ *   40% weekend availability + 30% overall availability + 30% hours flown.
+ * Ranks are shared by equal scores (1, 1, 3 …).
+ */
+export function computeMerits(rows: MeritInput[]): MeritScore[] {
+  const max = {
+    weekend: Math.max(0, ...rows.map((r) => r.weekendRequests)),
+    availability: Math.max(0, ...rows.map((r) => r.requests)),
+    hours: Math.max(0, ...rows.map((r) => r.hours)),
+  };
+  const part = (v: number, m: number) => (m > 0 ? v / m : 0);
+  const scored = rows.map((r) => ({
+    userId: r.userId,
+    score: Math.round(
+      100 *
+        (MERIT_WEIGHTS.weekend * part(r.weekendRequests, max.weekend) +
+          MERIT_WEIGHTS.availability * part(r.requests, max.availability) +
+          MERIT_WEIGHTS.hours * part(r.hours, max.hours)),
+    ),
+  }));
+  const sorted = [...scored].sort((a, b) => b.score - a.score);
+  return scored.map((s) => ({ ...s, rank: sorted.findIndex((x) => x.score === s.score) + 1 }));
+}
+
+// ───────────────────────── Weather difficulty ─────────────────────────
+
+export type WeatherLevel = 'calm' | 'moderate' | 'tough';
+
+/** Maps the Go/Marginal/No-go verdict of the flight-weather scoring onto what the OPM cares about. */
+export const weatherLevel = (status: 'go' | 'marginal' | 'nogo'): WeatherLevel =>
+  status === 'go' ? 'calm' : status === 'marginal' ? 'moderate' : 'tough';
+
+/** Forecast covers today plus the next six days. */
+export const WEATHER_DAYS = 7;
+
+// ───────────────────────── Monthly flight limits ─────────────────────────
+
+/** Share of the monthly limit at which the OPM is warned (yellow). 100% is red. */
+export const FLIGHT_WARN_RATIO = 0.9;
+
+export type FlightLevel = 'none' | 'ok' | 'warn' | 'over';
+
+/**
+ * The flying-hours cycle that contains `today`, for a cycle that starts on `startDay` (1–28) of every month.
+ * Example: startDay 10, today 2026-11-05 → 2026-10-10 up to (not including) 2026-11-10.
+ * Returns yyyy-MM-dd dates; the end is exclusive.
+ */
+export function cycleWindow(startDay: number, today: string): { start: string; end: string } {
+  const day = Math.min(28, Math.max(1, Math.trunc(startDay) || 1));
+  const [y, m, d] = today.split('-').map(Number);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const at = (year: number, month: number) => {
+    const date = new Date(Date.UTC(year, month - 1, 1));
+    return `${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(day)}`;
+  };
+  const startMonth = d >= day ? m : m - 1;
+  return { start: at(y, startMonth), end: at(y, startMonth + 1) };
+}
+
+/** Where a pilot stands against their monthly limit. No limit assigned → 'none' (grey). */
+export function flightLevel(hours: number, limit: number | null): FlightLevel {
+  if (limit === null || limit <= 0) return 'none';
+  if (hours >= limit) return 'over';
+  if (hours >= limit * FLIGHT_WARN_RATIO) return 'warn';
+  return 'ok';
+}
+
+// ───────────────────────── Today tab ─────────────────────────
+
+/** Where a linked mission is on the Daily Board. */
+export type MissionProgress = 'planned' | 'in_progress' | 'completed' | 'aborted';
+
+// Daily Board column ids (see operation-board-service / auto-abort-service); status_name wins when it is set.
+const BOARD_PROGRESS_BY_ID: Record<number, MissionProgress> = { 1: 'planned', 2: 'in_progress', 3: 'completed', 5: 'aborted' };
+const PROGRESS_BY_NAME: Record<string, MissionProgress> = {
+  PLANNED: 'planned',
+  SCHEDULED: 'planned',
+  IN_PROGRESS: 'in_progress',
+  IN_FLIGHT: 'in_progress',
+  'IN ESECUZIONE': 'in_progress',
+  COMPLETED: 'completed',
+  COMPLETATA: 'completed',
+  ABORTED: 'aborted',
+  CANCELLED: 'aborted',
+  CANCELED: 'aborted',
+};
+
+/** Reads a mission's progress the same way the Daily Board moves it: Scheduled → In progress → Done (or Aborted). */
+export function missionProgress(m: {
+  statusName?: string | null;
+  statusId?: number | null;
+  actualStart?: Date | string | null;
+  actualEnd?: Date | string | null;
+}): MissionProgress {
+  const byName = m.statusName ? PROGRESS_BY_NAME[m.statusName.trim().toUpperCase()] : undefined;
+  if (byName) return byName;
+  const byId = m.statusId != null ? BOARD_PROGRESS_BY_ID[m.statusId] : undefined;
+  if (byId) return byId;
+  if (m.actualEnd) return 'completed';
+  if (m.actualStart) return 'in_progress';
+  return 'planned';
+}
+
+export type SlotPhase = 'upcoming' | 'live' | 'ended';
+
+export const slotPhase = (now: number, from: number, to: number): SlotPhase => (now < from ? 'upcoming' : now < to ? 'live' : 'ended');
+
+/** Share (0–1) of the slot's time that has passed. */
+export const slotElapsed = (now: number, from: number, to: number) => (to <= from ? 1 : Math.min(1, Math.max(0, (now - from) / (to - from))));
+
+/**
+ * What a slot of the Today tab shows:
+ * - no_mission: nothing (or only aborted missions) linked yet
+ * - waiting: missions linked, slot not started
+ * - no_progress: slot running or over, but none of its missions was started on the Daily Board
+ * - in_progress: a linked mission is in progress
+ * - partial: slot running, some missions done, the next one not started yet
+ * - completed: every linked mission is done
+ * - incomplete: slot over, some missions done, others never flown
+ */
+export type TodaySlotState = 'no_mission' | 'waiting' | 'no_progress' | 'in_progress' | 'partial' | 'completed' | 'incomplete';
+
+/** States the pilot must act on; shown in red. */
+export const TODAY_ALERT_STATES: readonly TodaySlotState[] = ['no_mission', 'no_progress', 'incomplete'];
+
+export function todaySlotState(phase: SlotPhase, missions: MissionProgress[]): TodaySlotState {
+  if (missions.includes('in_progress')) return 'in_progress';
+  const active = missions.filter((p) => p !== 'aborted');
+  if (!active.length) return 'no_mission';
+  if (active.every((p) => p === 'completed')) return 'completed';
+  const someDone = active.includes('completed');
+  if (phase === 'upcoming') return 'waiting';
+  if (phase === 'live') return someDone ? 'partial' : 'no_progress';
+  return someDone ? 'incomplete' : 'no_progress';
+}
