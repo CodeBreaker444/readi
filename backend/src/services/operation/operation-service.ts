@@ -546,6 +546,7 @@ export async function updateOperation(id: number, input: UpdateOperationSchema, 
   if (input.flight_duration !== undefined) updatePayload.flight_duration = input.flight_duration;
   if (input.location !== undefined) updatePayload.location = input.location;
   if (input.notes !== undefined) updatePayload.notes = input.notes;
+  if ((input as any).abort_reason !== undefined) updatePayload.abort_reason = (input as any).abort_reason;
   if (input.fk_pilot_user_id !== undefined) updatePayload.fk_pilot_user_id = input.fk_pilot_user_id;
   if (input.fk_tool_id !== undefined) updatePayload.fk_tool_id = input.fk_tool_id;
   if ((input as any).fk_client_id !== undefined) updatePayload.fk_client_id = (input as any).fk_client_id;

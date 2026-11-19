@@ -56,6 +56,44 @@ The settings page also lists the exact addresses called, which you can share wit
 
 ---
 
+## Client status URLs
+
+Separate from the DCC server above, you can give each **client** its own URL. Readi sends the status of that client's missions to it, even when the mission was created in Readi and never came from an external request.
+
+Set it up in **Settings → Integrations → DCC server → Client mission status URLs**: search for a client, enter the URL and click **Add / Update**. Selecting a client that is already configured shows its current URL so you can change it.
+
+A status update is sent when:
+
+| Event | Status sent |
+|---|---|
+| Mission started on the Daily Board | `IN_PROGRESS` |
+| Mission finished (or reverted) on the Daily Board | `COMPLETED` (or `IN_PROGRESS`) |
+| Status changed from the Operations table | The new status |
+| A mission is aborted | `ABORTED`, with the abort reason as the note |
+| A planned mission's day passes without it starting | `ABORTED`, with an automatic reason |
+
+When you set missions to **Aborted** from the Operations table, Readi asks for an optional reason. It is saved on the mission and sent as the `note`.
+
+Each update is a `POST` with a JSON body:
+
+```json
+{
+  "missionId": "external id, or the mission code",
+  "missionCode": "OP-1042",
+  "missionName": "Bridge inspection",
+  "status": "ABORTED",
+  "note": "Wind above limits",
+  "scheduledStart": "2026-11-19T08:00:00.000Z",
+  "actualStart": null,
+  "actualEnd": null,
+  "sentAt": "2026-11-19T09:12:30.000Z"
+}
+```
+
+Missions of clients with no URL are not sent anywhere. A failed delivery is logged and never blocks the action in Readi.
+
+---
+
 ## Pushing a flight log
 
 On a request, archive a Control Center flight, then use **Push to DCC**. It is sent as the mission's flight report. Manual logs cannot be pushed, and the mission needs a drone with a DCC Drone ID.

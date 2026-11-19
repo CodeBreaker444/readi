@@ -1683,7 +1683,8 @@
         "reportGenerating": "Generating report for {{missionCode}}…",
         "reportDownloaded": "Report downloaded.",
         "reportFailed": "Failed to generate report.",
-        "abortedCannotUpdate": "Aborted missions cannot be updated."
+        "abortedCannotUpdate": "Aborted missions cannot be updated.",
+        "abortPrompt": "Reason for aborting (optional — sent to the client with the status update):"
       },
       "procedureBadge": {
         "noLuc": "No LUC",
@@ -1731,6 +1732,13 @@
         "notes": "Notes",
         "missionGroup": "Mission Group"
       },
+      "abort": {
+        "title": "Abort mission",
+        "description": "This closes the mission and it cannot be restarted. The reason is sent to the client with the status update.",
+        "placeholder": "Reason for aborting (optional)",
+        "aborting": "Aborting…",
+        "confirm": "Abort mission"
+      },
       "toast": {
         "loadError": "Failed to load board",
         "missionStarted": "Mission started",
@@ -1741,6 +1749,8 @@
         "revertDesc": "Please update the maintenance cycle to complete the mission.",
         "revertError": "Failed to revert mission status",
         "droneInMaintenance": "Drone in maintenance",
+        "missionAborted": "Mission aborted",
+        "abortFailed": "Failed to abort mission",
         "droneInMaintenanceDesc": "This drone has an open maintenance ticket. Close it before starting the mission."
       },
       "card": {
@@ -1761,6 +1771,7 @@
         "completeTasks": "Complete Tasks",
         "updateMaintenance": "Update Maintenance",
         "updateMaintenanceCycle": "Update maintenance cycle",
+        "abort": "Abort",
         "missionDetails": "Mission details",
         "view": "View",
         "lastMaintenanceClosed": "Last maintenance closed"
@@ -5943,6 +5954,24 @@
       "title": "Integrations",
       "subtitle": "Configure external system connections",
       "dcc": {
+        "clientUrls": {
+          "title": "Client mission status URLs",
+          "subtitle": "Send each status change (In Progress, Completed, Aborted + abort note) of a client's missions to its own URL — whether or not the mission was requested externally.",
+          "client": "Client",
+          "selectClient": "Select client…",
+          "searchClients": "Search clients…",
+          "noClients": "No clients found.",
+          "configured": "Configured",
+          "statusUrl": "Status URL",
+          "statusUrlPlaceholder": "https://client.example.com/api/mission-status",
+          "addUpdate": "Add / Update",
+          "bodySent": "Body sent (POST, JSON):",
+          "toastLoadFailed": "Failed to load client status URLs",
+          "toastValidation": "Select a client and enter a URL",
+          "toastSaved": "Client status URL saved",
+          "toastSaveFailed": "Failed to save client status URL",
+          "toastRemoveFailed": "Failed to remove client status URL"
+        },
         "title": "DCC Server Configuration",
         "subtitle": "Readi will send mission status updates to this server",
         "displayName": "Display Name",

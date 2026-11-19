@@ -1067,6 +1067,19 @@ model dcc_integrations {
   @@schema("public")
 }
 
+model dcc_client_endpoints {
+  id           Int       @id @default(autoincrement())
+  fk_owner_id  Int
+  fk_client_id Int
+  status_url   String    @db.VarChar(500)
+  active       Boolean   @default(true)
+  created_at   DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at   DateTime? @default(now()) @db.Timestamptz(6)
+
+  @@unique([fk_owner_id, fk_client_id], map: "dcc_client_endpoints_owner_client_key")
+  @@schema("public")
+}
+
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model deleted_owner {
@@ -2165,6 +2178,7 @@ model pilot_mission {
   flight_duration                     Int?
   location                            String?
   notes                               String?
+  abort_reason                        String?
   created_at                          DateTime?                  @default(now()) @db.Timestamp(6)
   updated_at                          DateTime?                  @default(now()) @db.Timestamp(6)
   fk_owner_id                         Int

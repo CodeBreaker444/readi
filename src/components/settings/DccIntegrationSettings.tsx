@@ -3,10 +3,12 @@
 import '@/lib/i18n/config';
 import { FeatureGate } from '@/components/permissions/FeatureGate';
 import { Button } from '@/components/ui/button';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import axios from 'axios';
-import { CheckCircle2, Globe, Loader2, Save } from 'lucide-react';
+import { Check, CheckCircle2, ChevronDown, Globe, Loader2, Plus, Save, Trash2 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -103,6 +105,12 @@ export default function DccIntegrationSettings() {
   const [displayName, setDisplayName] = useState('');
   const [callbackUrl, setCallbackUrl] = useState('');
   const [saved, setSaved]             = useState(false);
+  const [clientEndpoints, setClientEndpoints] = useState<{ fk_client_id: number; client_name: string; status_url: string }[]>([]);
+  const [clients, setClients]         = useState<{ client_id: number; client_name: string; client_code?: string | null }[]>([]);
+  const [clientPickerOpen, setClientPickerOpen] = useState(false);
+  const [newClientId, setNewClientId] = useState('');
+  const [newClientUrl, setNewClientUrl] = useState('');
+  const selectedClient = clients.find((c) => String(c.client_id) === newClientId) ?? null;
 
   const card  = isDark ? 'bg-slate-800/80 border-slate-700/60' : 'bg-white border-gray-200';
   const input = isDark ? 'bg-slate-900 border-slate-600 text-slate-200 placeholder:text-slate-500' : '';
@@ -125,6 +133,46 @@ export default function DccIntegrationSettings() {
   }, [t]);
 
   useEffect(() => { load(); }, [load]);
+
+  const loadClientEndpoints = useCallback(async () => {
+    try {
+      const [eps, cl] = await Promise.all([
+        axios.get('/api/settings/dcc/clients'),
+        axios.get('/api/client/list'),
+      ]);
+      setClientEndpoints(eps.data.data ?? []);
+      setClients(cl.data.data ?? []);
+    } catch {
+      toast.error(t('settings.integrations.dcc.clientUrls.toastLoadFailed'));
+    }
+  }, [t]);
+
+  useEffect(() => { loadClientEndpoints(); }, [loadClientEndpoints]);
+
+  async function saveClientEndpoint() {
+    if (!newClientId || !newClientUrl.trim()) {
+      toast.error(t('settings.integrations.dcc.clientUrls.toastValidation'));
+      return;
+    }
+    try {
+      await axios.post('/api/settings/dcc/clients', { client_id: Number(newClientId), status_url: newClientUrl.trim(), active: true });
+      setNewClientId('');
+      setNewClientUrl('');
+      toast.success(t('settings.integrations.dcc.clientUrls.toastSaved'));
+      loadClientEndpoints();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.error ?? t('settings.integrations.dcc.clientUrls.toastSaveFailed'));
+    }
+  }
+
+  async function removeClientEndpoint(clientId: number) {
+    try {
+      await axios.delete('/api/settings/dcc/clients', { data: { client_id: clientId } });
+      loadClientEndpoints();
+    } catch {
+      toast.error(t('settings.integrations.dcc.clientUrls.toastRemoveFailed'));
+    }
+  }
 
   async function handleSave() {
     if (!displayName.trim() || !callbackUrl.trim()) {
@@ -213,6 +261,102 @@ export default function DccIntegrationSettings() {
               {saved ? t('settings.integrations.dcc.saved') : t('settings.integrations.dcc.save')}
             </Button>
           </FeatureGate>
+        </div>
+      </div>
+
+      {/* Per-client mission status URLs */}
+      <div className={`rounded-xl border p-6 space-y-4 ${card}`}>
+        <div>
+          <h2 className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('settings.integrations.dcc.clientUrls.title')}</h2>
+          <p className={`text-xs ${label}`}>
+            {t('settings.integrations.dcc.clientUrls.subtitle')}
+          </p>
+        </div>
+
+        {clientEndpoints.length > 0 && (
+          <div className="space-y-2">
+            {clientEndpoints.map((ep) => (
+              <div key={ep.fk_client_id} className={`flex items-center gap-3 rounded-lg border px-3 py-2 ${isDark ? 'border-slate-700' : 'border-gray-200'}`}>
+                <span className={`text-xs font-medium w-40 truncate ${isDark ? 'text-slate-200' : 'text-gray-800'}`}>{ep.client_name}</span>
+                <code className={`text-[11px] flex-1 break-all ${isDark ? 'text-violet-400' : 'text-violet-600'}`}>{ep.status_url}</code>
+                <FeatureGate feature="settings_integrations" require="edit">
+                  <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-red-500" onClick={() => removeClientEndpoint(ep.fk_client_id)}>
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </FeatureGate>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <FeatureGate feature="settings_integrations" require="edit">
+          <div className="grid gap-3 sm:grid-cols-[200px_1fr_auto] items-end">
+            <div className="space-y-1.5">
+              <Label className={`text-xs ${label}`}>{t('settings.integrations.dcc.clientUrls.client')}</Label>
+              <Popover open={clientPickerOpen} onOpenChange={setClientPickerOpen}>
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    className={`flex h-9 w-full items-center justify-between gap-2 rounded-md border px-2.5 text-xs ${isDark ? 'bg-slate-900 border-slate-600 text-slate-200' : 'bg-white border-gray-200'}`}
+                  >
+                    <span className={`truncate ${selectedClient ? '' : isDark ? 'text-slate-500' : 'text-gray-400'}`}>
+                      {selectedClient ? selectedClient.client_name : t('settings.integrations.dcc.clientUrls.selectClient')}
+                    </span>
+                    <ChevronDown className="h-3.5 w-3.5 shrink-0 opacity-60" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent align="start" className="w-[280px] p-0">
+                  <Command>
+                    <CommandInput placeholder={t('settings.integrations.dcc.clientUrls.searchClients')} />
+                    <CommandList className="max-h-64">
+                      <CommandEmpty>{t('settings.integrations.dcc.clientUrls.noClients')}</CommandEmpty>
+                      <CommandGroup>
+                        {clients.map((c) => {
+                          const existing = clientEndpoints.find((e) => e.fk_client_id === c.client_id);
+                          return (
+                            <CommandItem
+                              key={c.client_id}
+                              value={`${c.client_name} ${c.client_code ?? ''}`}
+                              onSelect={() => {
+                                setNewClientId(String(c.client_id));
+                                setNewClientUrl(existing?.status_url ?? '');
+                                setClientPickerOpen(false);
+                              }}
+                              className="flex items-center gap-2"
+                            >
+                              <span className="min-w-0 flex-1">
+                                <span className="block truncate text-xs font-semibold">{c.client_name}</span>
+                                {c.client_code && <span className="block truncate text-[11px] opacity-60">{c.client_code}</span>}
+                              </span>
+                              {existing && <span className="text-[10px] font-semibold text-emerald-500">{t('settings.integrations.dcc.clientUrls.configured')}</span>}
+                              {String(c.client_id) === newClientId && <Check className="h-3.5 w-3.5 shrink-0 text-violet-500" />}
+                            </CommandItem>
+                          );
+                        })}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+            </div>
+            <div className="space-y-1.5">
+              <Label className={`text-xs ${label}`}>{t('settings.integrations.dcc.clientUrls.statusUrl')}</Label>
+              <Input
+                value={newClientUrl}
+                onChange={(e) => setNewClientUrl(e.target.value)}
+                placeholder={t('settings.integrations.dcc.clientUrls.statusUrlPlaceholder')}
+                className={`h-9 text-xs font-mono ${input}`}
+              />
+            </div>
+            <Button size="sm" onClick={saveClientEndpoint} className="h-9 text-xs bg-violet-600 hover:bg-violet-500 text-white gap-1.5">
+              <Plus className="h-3.5 w-3.5" /> {t('settings.integrations.dcc.clientUrls.addUpdate')}
+            </Button>
+          </div>
+        </FeatureGate>
+
+        <div className={`text-[11px] ${label}`}>
+          <p className="mb-1">{t('settings.integrations.dcc.clientUrls.bodySent')}</p>
+          <code className="block whitespace-pre-wrap">{`{ missionId, missionCode, missionName, status: "IN_PROGRESS" | "COMPLETED" | "ABORTED" | "PLANNED" | "CANCELLED", note, scheduledStart, actualStart, actualEnd, sentAt }`}</code>
         </div>
       </div>
 

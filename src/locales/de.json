@@ -1679,7 +1679,8 @@
         "reportGenerating": "Bericht für {{missionCode}} wird erstellt…",
         "reportDownloaded": "Bericht heruntergeladen.",
         "reportFailed": "Bericht konnte nicht erstellt werden.",
-        "abortedCannotUpdate": "Abgebrochene Missionen können nicht aktualisiert werden."
+        "abortedCannotUpdate": "Abgebrochene Missionen können nicht aktualisiert werden.",
+        "abortPrompt": "Grund für den Abbruch (optional — wird mit dem Statusupdate an den Kunden gesendet):"
       },
       "procedureBadge": {
         "noLuc": "Kein LUC",
@@ -1724,6 +1725,13 @@
         "notes": "Notizen",
         "missionGroup": "Missionsgruppe"
       },
+      "abort": {
+        "title": "Mission abbrechen",
+        "description": "Die Mission wird geschlossen und kann nicht neu gestartet werden. Der Grund wird mit dem Statusupdate an den Kunden gesendet.",
+        "placeholder": "Grund für den Abbruch (optional)",
+        "aborting": "Wird abgebrochen…",
+        "confirm": "Mission abbrechen"
+      },
       "toast": {
         "loadError": "Board konnte nicht geladen werden",
         "missionStarted": "Mission gestartet",
@@ -1734,6 +1742,8 @@
         "revertDesc": "Bitte aktualisieren Sie den Wartungszyklus, um die Mission abzuschließen.",
         "revertError": "Missionsstatus konnte nicht zurückgesetzt werden",
         "droneInMaintenance": "Drohne in Wartung",
+        "missionAborted": "Mission abgebrochen",
+        "abortFailed": "Mission konnte nicht abgebrochen werden",
         "droneInMaintenanceDesc": "Diese Drohne hat ein offenes Wartungsticket. Schließen Sie es, bevor Sie die Mission starten."
       },
       "card": {
@@ -1754,6 +1764,7 @@
         "completeTasks": "Aufgaben abschließen",
         "updateMaintenance": "Wartung aktualisieren",
         "updateMaintenanceCycle": "Wartungszyklus aktualisieren",
+        "abort": "Abbrechen",
         "missionDetails": "Missionsdetails",
         "view": "Ansehen",
         "lastMaintenanceClosed": "Letzte Wartung abgeschlossen"
@@ -5791,6 +5802,24 @@
       "title": "Integrationen",
       "subtitle": "Externe Systemverbindungen konfigurieren",
       "dcc": {
+        "clientUrls": {
+          "title": "Missionsstatus-URLs pro Kunde",
+          "subtitle": "Sendet jede Statusänderung (In Bearbeitung, Abgeschlossen, Abgebrochen + Abbruchnotiz) der Missionen eines Kunden an dessen eigene URL — unabhängig davon, ob die Mission extern angefordert wurde.",
+          "client": "Kunde",
+          "selectClient": "Kunde auswählen…",
+          "searchClients": "Kunden suchen…",
+          "noClients": "Keine Kunden gefunden.",
+          "configured": "Konfiguriert",
+          "statusUrl": "Status-URL",
+          "statusUrlPlaceholder": "https://kunde.beispiel.com/api/mission-status",
+          "addUpdate": "Hinzufügen / Aktualisieren",
+          "bodySent": "Gesendeter Body (POST, JSON):",
+          "toastLoadFailed": "Status-URLs der Kunden konnten nicht geladen werden",
+          "toastValidation": "Kunden auswählen und URL eingeben",
+          "toastSaved": "Status-URL des Kunden gespeichert",
+          "toastSaveFailed": "Status-URL des Kunden konnte nicht gespeichert werden",
+          "toastRemoveFailed": "Status-URL des Kunden konnte nicht entfernt werden"
+        },
         "title": "DCC-Server-Konfiguration",
         "subtitle": "Readi sendet Missionsstatusaktualisierungen an diesen Server",
         "displayName": "Anzeigename",

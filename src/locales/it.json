@@ -1681,7 +1681,8 @@
         "reportGenerating": "Generazione del report per {{missionCode}}…",
         "reportDownloaded": "Report scaricato.",
         "reportFailed": "Impossibile generare il report.",
-        "abortedCannotUpdate": "Le missioni annullate non possono essere aggiornate."
+        "abortedCannotUpdate": "Le missioni annullate non possono essere aggiornate.",
+        "abortPrompt": "Motivo dell'annullamento (facoltativo — inviato al cliente con l'aggiornamento di stato):"
       },
       "procedureBadge": {
         "noLuc": "Nessun LUC",
@@ -1726,6 +1727,13 @@
         "notes": "Note",
         "missionGroup": "Gruppo missione"
       },
+      "abort": {
+        "title": "Annulla missione",
+        "description": "La missione verrà chiusa e non potrà essere riavviata. Il motivo viene inviato al cliente con l'aggiornamento di stato.",
+        "placeholder": "Motivo dell'annullamento (facoltativo)",
+        "aborting": "Annullamento…",
+        "confirm": "Annulla missione"
+      },
       "toast": {
         "loadError": "Caricamento bacheca fallito",
         "missionStarted": "Missione avviata",
@@ -1736,6 +1744,8 @@
         "revertDesc": "Aggiornare il ciclo di manutenzione per completare la missione.",
         "revertError": "Ripristino dello stato missione fallito",
         "droneInMaintenance": "Drone in manutenzione",
+        "missionAborted": "Missione annullata",
+        "abortFailed": "Impossibile annullare la missione",
         "droneInMaintenanceDesc": "Questo drone ha un ticket di manutenzione aperto. Chiuderlo prima di avviare la missione."
       },
       "card": {
@@ -1756,6 +1766,7 @@
         "completeTasks": "Completa compiti",
         "updateMaintenance": "Aggiorna manutenzione",
         "updateMaintenanceCycle": "Aggiorna ciclo di manutenzione",
+        "abort": "Annulla missione",
         "missionDetails": "Dettagli missione",
         "view": "Visualizza",
         "lastMaintenanceClosed": "Ultima manutenzione chiusa"
@@ -5933,6 +5944,24 @@
       "title": "Integrazioni",
       "subtitle": "Configura connessioni a sistemi esterni",
       "dcc": {
+        "clientUrls": {
+          "title": "URL di stato missione per cliente",
+          "subtitle": "Invia ogni cambio di stato (In corso, Completata, Annullata + nota di annullamento) delle missioni di un cliente al suo URL — indipendentemente dal fatto che la missione sia stata richiesta da una fonte esterna.",
+          "client": "Cliente",
+          "selectClient": "Seleziona cliente…",
+          "searchClients": "Cerca clienti…",
+          "noClients": "Nessun cliente trovato.",
+          "configured": "Configurato",
+          "statusUrl": "URL di stato",
+          "statusUrlPlaceholder": "https://cliente.esempio.com/api/mission-status",
+          "addUpdate": "Aggiungi / Aggiorna",
+          "bodySent": "Corpo inviato (POST, JSON):",
+          "toastLoadFailed": "Impossibile caricare gli URL di stato dei clienti",
+          "toastValidation": "Seleziona un cliente e inserisci un URL",
+          "toastSaved": "URL di stato del cliente salvato",
+          "toastSaveFailed": "Impossibile salvare l'URL di stato del cliente",
+          "toastRemoveFailed": "Impossibile rimuovere l'URL di stato del cliente"
+        },
         "title": "Configurazione Server DCC",
         "subtitle": "Readi invierà aggiornamenti sullo stato delle missioni a questo server",
         "displayName": "Nome visualizzato",

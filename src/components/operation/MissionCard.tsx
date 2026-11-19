@@ -8,7 +8,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Mission, MissionStatusCode } from "@/config/types/operation";
 import { useTimezone } from "@/components/TimezoneProvider";
 import { cn, formatDateInTz } from "@/lib/utils";
-import { Calendar, CheckCircle2, ClipboardList, Clock, Crosshair, Gauge, Tag, User, Wrench, TicketCheck } from "lucide-react";
+import { Ban, Calendar, CheckCircle2, ClipboardList, Clock, Crosshair, Gauge, Tag, User, Wrench, TicketCheck } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { OpmApprovalBadge } from "@/components/operation/OpmApprovalBadge";
 import { MissionLimitsPanel } from "./MissionLimitsPanel";
@@ -21,6 +21,7 @@ interface MissionCardProps {
   onOpenTasks?: (mission: Mission) => void;
   onOpenLuc?: (mission: Mission) => void;
   onUpdateMaintenance?: () => void;
+  onAbort?: (mission: Mission) => void;
   isDark: boolean
 }
 
@@ -159,7 +160,7 @@ const MAINTENANCE_LABEL_KEY: Record<string, string> = {
   IN_MAINTENANCE: "operations.board.card.maintenanceStatus.inMaintenance",
 };
 
-export function MissionCard({ mission, draggable, onDragStart, onViewDetails, onOpenTasks, onOpenLuc, onUpdateMaintenance, isDark}: MissionCardProps) {
+export function MissionCard({ mission, draggable, onDragStart, onViewDetails, onOpenTasks, onOpenLuc, onUpdateMaintenance, onAbort, isDark}: MissionCardProps) {
   const { t } = useTranslation();
   const { timezone } = useTimezone();
 
@@ -475,6 +476,20 @@ export function MissionCard({ mission, draggable, onDragStart, onViewDetails, on
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
+          )}
+          {onAbort && (
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => onAbort(mission)}
+              className={cn(
+                "h-7 cursor-pointer gap-1 px-2 text-[11px] font-semibold",
+                isDark ? "text-red-400 hover:bg-red-500/10 hover:text-red-300" : "text-red-600 hover:bg-red-50 hover:text-red-700"
+              )}
+            >
+              <Ban className="h-3 w-3" />
+              {t("operations.board.card.abort")}
+            </Button>
           )}
         </div>
         <TooltipProvider delayDuration={300}>
