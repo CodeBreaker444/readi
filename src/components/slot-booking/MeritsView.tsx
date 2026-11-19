@@ -1,7 +1,9 @@
 'use client';
 
 import type { Merits } from '@/config/types/slot-booking';
+import { TablePagination } from '@/components/tables/Pagination';
 import { cn } from '@/lib/utils';
+import { type ColumnDef, getCoreRowModel, getPaginationRowModel, useReactTable } from '@tanstack/react-table';
 import axios from 'axios';
 import { Info, Star } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -37,6 +39,16 @@ export function MeritsView({ isDark }: { isDark: boolean }) {
     if (!data) return [];
     return q ? data.rows.filter((r) => [r.name, r.email ?? '', r.role ?? '', ...r.groups.map((g) => g.name)].some((v) => v.toLowerCase().includes(q))) : data.rows;
   }, [data, search]);
+
+  // Same pagination as the rest of the app: a tanstack table that only provides the page model.
+  const table = useReactTable({
+    data: rows,
+    columns: [] as ColumnDef<(typeof rows)[number]>[],
+    getCoreRowModel: getCoreRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    initialState: { pagination: { pageIndex: 0, pageSize: 8 } },
+  });
+  const pageRows = table.getRowModel().rows.map((r) => r.original);
 
   if (error) return <ErrorBlock isDark={isDark} message={error} onRetry={load} />;
   if (!data) return <MeritsSkeleton isDark={isDark} />;
@@ -78,7 +90,7 @@ export function MeritsView({ isDark }: { isDark: boolean }) {
               </tr>
             </thead>
             <tbody>
-              {rows.map((r) => (
+              {pageRows.map((r) => (
                 <tr key={r.userId} className={cn('border-t', isDark ? 'border-white/[0.05]' : 'border-gray-100')}>
                   <td className={cn(td, 'font-semibold')}>{r.rank}</td>
                   <td className={td}>
@@ -116,6 +128,7 @@ export function MeritsView({ isDark }: { isDark: boolean }) {
           </table>
         </div>
       )}
+      {rows.length > 0 && <TablePagination table={table} />}
     </div>
   );
 }
