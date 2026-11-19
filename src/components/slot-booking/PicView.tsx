@@ -262,6 +262,27 @@ export function PicView({ isDark, me, groups }: { isDark: boolean; me: SlotMe; g
                       {t('slotBooking.pic.datesRange', { from: s.date(dates[0]), to: s.date(dates[dates.length - 1]), count: g.stats?.openSlots ?? 0 })}
                     </div>
                     <div className={cn('text-[11px]', muted(isDark))}>{t('slotBooking.pic.reviewDay', { days: s.daysLabel(g.approvalDays) })}</div>
+                    {(() => {
+                      const total = g.stats?.totalSlots ?? 0;
+                      const applied = g.stats?.appliedSlots ?? 0;
+                      const myApplied = g.stats?.myApplied ?? 0;
+                      const myApproved = g.stats?.myApproved ?? 0;
+                      const full = total > 0 && applied >= total;
+                      return (
+                        <div className="flex flex-wrap gap-1.5">
+                          {total > 0 && (
+                            <Pill isDark={isDark} tone={full ? 'green' : applied > 0 ? 'blue' : undefined}>
+                              {t(full ? 'slotBooking.pic.appliedFull' : 'slotBooking.pic.appliedOfTotal', { applied, total })}
+                            </Pill>
+                          )}
+                          {myApplied > 0 && (
+                            <Pill isDark={isDark} tone={myApproved >= myApplied ? 'green' : myApproved > 0 ? 'blue' : 'violet'}>
+                              {t('slotBooking.pic.myApproved', { approved: myApproved, applied: myApplied })}
+                            </Pill>
+                          )}
+                        </div>
+                      );
+                    })()}
                     <Btn isDark={isDark} variant="primary" className="mt-auto" loading={opening === g.id} onClick={() => openGroup(g.id)}>
                       {t('slotBooking.opm.openCalendar')}
                     </Btn>

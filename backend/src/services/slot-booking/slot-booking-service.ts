@@ -383,7 +383,7 @@ export async function listGroups(user: SessionUser): Promise<SlotGroup[]> {
   // "Upcoming" starts at today's date at each group's own site, not today's UTC date.
   const upcoming = groups.map((g) => ({ groupId: g.slot_group_id, from: toDate(todayInZone(groupZone(g))) }));
 
-  const [activeSlots, approvedUpcoming, bookingCounts, names, metas] = await Promise.all([
+  const [activeSlots, approvedUpcoming, bookingCounts, names, metas, liveBookings] = await Promise.all([
     prisma.slot.groupBy({
       by: ['fk_slot_group_id'],
       where: { is_active: true, OR: upcoming.map((u) => ({ fk_slot_group_id: u.groupId, slot_date: { gte: u.from } })) },
@@ -404,9 +404,19 @@ export async function listGroups(user: SessionUser): Promise<SlotGroup[]> {
     }),
     userNames(groups.map((g) => g.created_by)),
     loadGroupMeta(groups),
+    // Pending/approved requests on upcoming active slots: drives the "applied / total" and "my approved / my applied" counters.
+    prisma.slot_booking.findMany({
+      where: {
+        status: { in: ['PENDING', 'APPROVED'] },
+        OR: upcoming.map((u) => ({ fk_slot_group_id: u.groupId, slot: { is_active: true, slot_date: { gte: u.from } } })),
+      },
+      select: { fk_slot_group_id: true, fk_slot_id: true, fk_pilot_user_id: true, status: true },
+    }),
   ]);
 
   return groups.map((g) => {
+    const live = liveBookings.filter((b) => b.fk_slot_group_id === g.slot_group_id);
+    const mine = live.filter((b) => b.fk_pilot_user_id === user.userId);
     const count = (status: string) =>
       bookingCounts.find((b) => b.fk_slot_group_id === g.slot_group_id && b.status === status)?._count._all ?? 0;
     return mapGroup(g, g.created_by ? (names.get(g.created_by) ?? null) : null, {
@@ -417,6 +427,10 @@ export async function listGroups(user: SessionUser): Promise<SlotGroup[]> {
       ),
       pending: count('PENDING'),
       approved: count('APPROVED'),
+      totalSlots: activeSlots.find((o) => o.fk_slot_group_id === g.slot_group_id)?._count._all ?? 0,
+      appliedSlots: new Set(live.map((b) => b.fk_slot_id)).size,
+      myApplied: mine.length,
+      myApproved: mine.filter((b) => b.status === 'APPROVED').length,
     }, metas.get(g.slot_group_id));
   });
 }
