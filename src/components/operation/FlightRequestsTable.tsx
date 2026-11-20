@@ -69,6 +69,7 @@ export default function FlightRequestsTable() {
   const [archiving, setArchiving] = useState(false);
   const [pushingLog, setPushingLog] = useState(false);
 
+  const [filterClient, setFilterClient] = useState('ALL');
   const [planModal, setPlanModal] = useState<{ request_id: number; mission_id: string } | null>(null);
   const [plannings, setPlannings] = useState<Planning[]>([]);
   const [evalLoading, setEvalLoading] = useState(false);
@@ -336,8 +337,19 @@ export default function FlightRequestsTable() {
     onUpdateStatus: handleUpdateStatus,
   }), [deleting, updatingStatus, isDark, t]);
 
+  const clientOptions = useMemo(
+    () => [...new Set(requests.map((r) => r.client_name).filter((n): n is string => !!n))].sort((a, b) => a.localeCompare(b)),
+    [requests],
+  );
+  const hasUnassignedClient = useMemo(() => requests.some((r) => !r.client_name), [requests]);
+  const visibleRequests = useMemo(() => {
+    if (filterClient === 'ALL') return requests;
+    if (filterClient === 'NONE') return requests.filter((r) => !r.client_name);
+    return requests.filter((r) => `name:${r.client_name}` === filterClient);
+  }, [requests, filterClient]);
+
   const table = useReactTable({
-    data: requests,
+    data: visibleRequests,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
@@ -361,6 +373,10 @@ export default function FlightRequestsTable() {
         tab={tab}
         hideFilter={tab === 'internal'}
         onTabChange={setTab}
+        clients={clientOptions}
+        hasUnassignedClient={hasUnassignedClient}
+        filterClient={filterClient}
+        onClientChange={setFilterClient}
         internalPending={internalPending}
         onFilterChange={tab === 'internal' ? setInternalFilter : setFilterStatus}
         onRefresh={tab === 'internal' ? () => setInternalRefresh((n) => n + 1) : load}

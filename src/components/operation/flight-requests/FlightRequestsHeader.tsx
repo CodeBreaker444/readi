@@ -14,6 +14,10 @@ interface FlightRequestsHeaderProps {
   tab: 'internal' | 'external';
   hideFilter?: boolean;
   onTabChange: (tab: 'internal' | 'external') => void;
+  clients?: string[];
+  hasUnassignedClient?: boolean;
+  filterClient?: string;
+  onClientChange?: (value: string) => void;
   internalPending: number;
   onFilterChange: (value: string) => void;
   onRefresh: () => void;
@@ -27,6 +31,10 @@ export function FlightRequestsHeader({
   tab,
   hideFilter,
   onTabChange,
+  clients = [],
+  hasUnassignedClient = false,
+  filterClient = 'ALL',
+  onClientChange,
   internalPending,
   onFilterChange,
   onRefresh,
@@ -68,6 +76,22 @@ export function FlightRequestsHeader({
               </button>
             ))}
           </div>
+          {!hideFilter && onClientChange && (
+          <Select value={filterClient} onValueChange={onClientChange}>
+            <SelectTrigger className={`h-8 text-xs w-44 ${isDark ? 'bg-slate-700 border-slate-600 text-slate-200' : 'bg-gray-50 border-gray-200'}`}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className={`max-h-72 ${isDark ? 'bg-slate-800 border-slate-700 text-slate-200' : ''}`}>
+              <SelectItem value="ALL">{t('planning.flightRequests.allClients')}</SelectItem>
+              {clients.map((name) => (
+                <SelectItem key={name} value={`name:${name}`}>{name}</SelectItem>
+              ))}
+              {hasUnassignedClient && (
+                <SelectItem value="NONE">{t('planning.flightRequests.noClientFilter')}</SelectItem>
+              )}
+            </SelectContent>
+          </Select>
+          )}
           {!hideFilter && (
           <Select value={filterStatus} onValueChange={onFilterChange}>
             <SelectTrigger className={`h-8 text-xs w-36 ${isDark ? 'bg-slate-700 border-slate-600 text-slate-200' : 'bg-gray-50 border-gray-200'}`}>

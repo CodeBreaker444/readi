@@ -1069,6 +1069,8 @@
       "acknowledged": "Acknowledged",
       "assigned": "Assigned",
       "noRequests": "No flight requests found.",
+      "allClients": "All clients",
+      "noClientFilter": "No client",
       "deleteTitle": "Delete flight request?",
       "deleteDesc": "This action will permanently remove the request from Readi. It cannot be undone.",
       "pushLogDcc": "Push Log to DCC",
