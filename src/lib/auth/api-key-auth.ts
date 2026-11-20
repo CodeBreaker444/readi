@@ -7,6 +7,7 @@ export interface ApiKeySession {
   owner_id: number;
   key_name: string;
   key_scope: string;
+  client_id: number | null;
 }
 
 export interface ApiKeyAuthResult {
@@ -36,6 +37,7 @@ export async function requireApiKey(req: NextRequest): Promise<ApiKeyAuthResult>
       fk_owner_id: true,
       key_name: true,
       key_scope: true,
+      fk_client_id: true,
       is_active: true,
       expires_at: true,
     },
@@ -86,6 +88,7 @@ export async function requireApiKey(req: NextRequest): Promise<ApiKeyAuthResult>
       owner_id:   data.fk_owner_id,
       key_name:   data.key_name,
       key_scope:  data.key_scope,
+      client_id:  data.fk_client_id,
     },
     error: null,
   };

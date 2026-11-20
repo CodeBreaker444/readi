@@ -2,12 +2,20 @@ import { getDccIntegration, upsertDccIntegration } from '@/backend/services/miss
 import { internalError, zodError } from '@/lib/api-error';
 import { requireFullAccessRole } from '@/lib/auth/api-auth';
 import { E } from '@/lib/error-codes';
+import { assertSafeCallbackUrl, callbackUrlFormatError } from '@/lib/safe-url';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
 const SaveSchema = z.object({
   display_name: z.string().min(1, 'Display name is required').max(100),
-  callback_url: z.string().url('Must be a valid URL').max(500),
+  callback_url: z
+    .string()
+    .url('Must be a valid URL')
+    .max(500)
+    .superRefine((v, ctx) => {
+      const msg = callbackUrlFormatError(v);
+      if (msg) ctx.addIssue({ code: 'custom', message: msg });
+    }),
 });
 
 export async function GET() {
@@ -31,6 +39,12 @@ export async function POST(req: NextRequest) {
     const parsed = SaveSchema.safeParse(body);
     if (!parsed.success) {
       return zodError(E.VL001, parsed.error);
+    }
+
+    try {
+      await assertSafeCallbackUrl(parsed.data.callback_url);
+    } catch (e: any) {
+      return NextResponse.json({ code: 0, error: e.message }, { status: 400 });
     }
 
     await upsertDccIntegration(

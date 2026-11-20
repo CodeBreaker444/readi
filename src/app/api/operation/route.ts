@@ -183,7 +183,7 @@ export async function POST(req: NextRequest) {
       })),
       notes: validated.notes ?? undefined,
       operator: session.user.email ?? undefined,
-    });
+    }, validated.fk_client_id);
 
     if (dcc.outcome === 'http_error' || dcc.outcome === 'network_error') {
       console.warn('[POST /api/operation] DCC notification failed (non-fatal):', dcc.message);

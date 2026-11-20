@@ -36,11 +36,11 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
     let dcc: DccCallbackResult | undefined;
     if (fr.external_mission_id) {
       if (parsed.data.dcc_status === 'IN_PROGRESS') {
-        dcc = await notifyDccExecutionForRequest(ownerId, fr.external_mission_id);
+        dcc = await notifyDccExecutionForRequest(ownerId, fr.external_mission_id, fr.fk_client_id);
       } else if (parsed.data.dcc_status === 'COMPLETED') {
-        dcc = await notifyDccTerminationForRequest(ownerId, fr.external_mission_id, 1);
+        dcc = await notifyDccTerminationForRequest(ownerId, fr.external_mission_id, 1, undefined, fr.fk_client_id);
       } else if (parsed.data.dcc_status === 'ISSUE') {
-        dcc = await notifyDccDenial(ownerId, fr.external_mission_id);
+        dcc = await notifyDccDenial(ownerId, fr.external_mission_id, undefined, fr.fk_client_id);
       }
     }
 

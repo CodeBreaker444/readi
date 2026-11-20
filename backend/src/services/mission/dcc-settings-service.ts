@@ -69,7 +69,28 @@ export async function upsertDccIntegration(
   });
 }
 
-export async function getDccCallbackUrl(ownerId: number): Promise<string | null> {
+/**
+ * Resolves where DCC callbacks go.
+ *
+ * - With a clientId, the client's own callback URL (dcc_client_endpoints) is used.
+ * - If that client has none: `strict` callers (a request that came in through a
+ *   client's API key) get null — never another client's DCC. Non-strict callers
+ *   (missions created in Readi) fall back to the organisation-level URL.
+ * - Without a clientId (legacy keys / unmapped requests), the organisation URL.
+ */
+export async function getDccCallbackUrl(
+  ownerId: number,
+  clientId?: number | null,
+  strict = false,
+): Promise<string | null> {
+  if (clientId) {
+    const endpoint = await prisma.dcc_client_endpoints.findUnique({
+      where: { fk_owner_id_fk_client_id: { fk_owner_id: ownerId, fk_client_id: clientId } },
+      select: { callback_url: true, active: true },
+    });
+    if (endpoint?.active && endpoint.callback_url) return endpoint.callback_url;
+    if (strict) return null;
+  }
   const integration = await getDccIntegration(ownerId);
   return integration?.callback_url ?? null;
 }

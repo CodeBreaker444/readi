@@ -10,6 +10,8 @@ export function hashApiKey(rawKey: string): string {
 export interface CreateFlightRequestInput {
   owner_id: number;
   api_key_id: number;
+  /** Client the API key belongs to (null for unmapped/legacy keys). */
+  client_id?: number | null;
   external_mission_id: string;
   mission_type?: string;
   target?: string;
@@ -38,6 +40,9 @@ export interface FlightRequest {
   assigned_by_user_id: number | null;
   assigned_at: string | null;
   created_at: string;
+  fk_client_id: number | null;
+  client_name: string | null;
+  deny_note: string | null;
 }
 
 function mapFlightRequest(row: {
@@ -57,7 +62,9 @@ function mapFlightRequest(row: {
   assigned_by_user_id: number | null;
   assigned_at: Date | null;
   created_at: Date;
-}): FlightRequest {
+  fk_client_id: number | null;
+  deny_note: string | null;
+}, clientNames?: Map<number, string>): FlightRequest {
   return {
     request_id: row.request_id,
     fk_owner_id: row.fk_owner_id,
@@ -75,7 +82,20 @@ function mapFlightRequest(row: {
     assigned_by_user_id: row.assigned_by_user_id,
     assigned_at: row.assigned_at?.toISOString() ?? null,
     created_at: row.created_at.toISOString(),
+    fk_client_id: row.fk_client_id,
+    client_name: row.fk_client_id ? clientNames?.get(row.fk_client_id) ?? null : null,
+    deny_note: row.deny_note,
   };
+}
+
+async function clientNameMap(ownerId: number, clientIds: Array<number | null>): Promise<Map<number, string>> {
+  const ids = [...new Set(clientIds.filter((id): id is number => id != null))];
+  if (ids.length === 0) return new Map();
+  const clients = await prisma.client.findMany({
+    where: { client_id: { in: ids }, fk_owner_id: ownerId },
+    select: { client_id: true, client_name: true },
+  });
+  return new Map(clients.map((c) => [c.client_id, c.client_name]));
 }
 
 /**
@@ -90,7 +110,12 @@ export async function upsertFlightRequestByExternalId(
   input: CreateFlightRequestInput,
 ): Promise<{ request_id: number; created: boolean; dcc_status: string }> {
   const existing = await prisma.flight_requests.findFirst({
-    where: { external_mission_id: input.external_mission_id, fk_owner_id: input.owner_id },
+    // missionIds are only unique per client: two clients may both send "1".
+    where: {
+      external_mission_id: input.external_mission_id,
+      fk_owner_id: input.owner_id,
+      fk_client_id: input.client_id ?? null,
+    },
     select: { request_id: true, dcc_status: true },
   });
 
@@ -117,6 +142,7 @@ export async function upsertFlightRequestByExternalId(
     data: {
       fk_owner_id:         input.owner_id,
       fk_api_key_id:       input.api_key_id,
+      fk_client_id:        input.client_id ?? null,
       external_mission_id: input.external_mission_id,
       ...sharedData,
       dcc_status:          'NEW',
@@ -134,7 +160,8 @@ export async function listFlightRequests(owner_id: number, status?: string): Pro
     },
     orderBy: { created_at: 'desc' },
   });
-  return rows.map(mapFlightRequest);
+  const names = await clientNameMap(owner_id, rows.map((r) => r.fk_client_id));
+  return rows.map((r) => mapFlightRequest(r, names));
 }
 
 export async function assignFlightRequest(
@@ -159,10 +186,16 @@ export async function updateFlightRequestStatus(
   request_id: number,
   owner_id: number,
   dcc_status: string,
+  /** Denial reason: stored when moving to REJECTED (null clears it); ignored for other statuses. */
+  deny_note?: string | null,
 ): Promise<void> {
   await prisma.flight_requests.updateMany({
     where: { request_id, fk_owner_id: owner_id },
-    data: { dcc_status, updated_at: new Date() },
+    data: {
+      dcc_status,
+      ...(dcc_status === 'REJECTED' ? { deny_note: deny_note ?? null } : {}),
+      updated_at: new Date(),
+    },
   });
 }
 
@@ -174,6 +207,7 @@ export async function listApiKeys(owner_id: number) {
       key_name: true,
       key_prefix: true,
       key_scope: true,
+      fk_client_id: true,
       is_active: true,
       last_used_at: true,
       expires_at: true,
@@ -181,11 +215,14 @@ export async function listApiKeys(owner_id: number) {
     },
     orderBy: { created_at: 'desc' },
   });
+  const names = await clientNameMap(owner_id, rows.map((r) => r.fk_client_id));
   return rows.map((r) => ({
     api_key_id: r.api_key_id,
     key_name: r.key_name,
     key_prefix: r.key_prefix,
     key_scope: r.key_scope,
+    fk_client_id: r.fk_client_id,
+    client_name: r.fk_client_id ? names.get(r.fk_client_id) ?? null : null,
     is_active: r.is_active,
     last_used_at: r.last_used_at?.toISOString() ?? null,
     expires_at: r.expires_at?.toISOString() ?? null,
@@ -201,7 +238,17 @@ export async function createApiKey(
   userName?: string,
   userEmail?: string,
   userRole?: string,
-): Promise<{ api_key_id: number; key_value: string }> {
+  client_id?: number | null,
+): Promise<{ api_key_id: number; key_value: string } | null> {
+  if (client_id) {
+    // The client must belong to this owner — otherwise a key could be tied to another tenant's client.
+    const client = await prisma.client.findFirst({
+      where: { client_id, fk_owner_id: owner_id },
+      select: { client_id: true },
+    });
+    if (!client) return null;
+  }
+
   const rawKey  = `rdi_${randomUUID().replace(/-/g, '')}`;
   const keyHash = hashApiKey(rawKey);
   const prefix  = rawKey.slice(0, 8);
@@ -213,6 +260,7 @@ export async function createApiKey(
       key_value:           keyHash,
       key_prefix:          prefix,
       key_scope:           'mission_request',
+      fk_client_id:        client_id ?? null,
       is_active:           true,
       created_by_user_id,
       expires_at:          expires_at ? new Date(expires_at) : null,
@@ -230,7 +278,7 @@ export async function createApiKey(
     userEmail: userEmail,
     userRole: userRole,
     ownerId: owner_id,
-    metadata: { keyName: key_name, keyPrefix: prefix, expiresAt: expires_at },
+    metadata: { keyName: key_name, keyPrefix: prefix, expiresAt: expires_at, clientId: client_id ?? null },
   });
 
   return { api_key_id: row.api_key_id, key_value: rawKey };
@@ -275,7 +323,8 @@ export async function getFlightRequestsByPlanningId(
     where: { fk_planning_id: planning_id, fk_owner_id: owner_id },
     orderBy: { created_at: 'desc' },
   });
-  return rows.map(mapFlightRequest);
+  const names = await clientNameMap(owner_id, rows.map((r) => r.fk_client_id));
+  return rows.map((r) => mapFlightRequest(r, names));
 }
 
 export interface AssignablePlanning {
@@ -396,6 +445,7 @@ export interface FlightRequestWithPlanning {
   fk_planning_id: number | null;
   dcc_status: string;
   external_mission_id: string | null;
+  fk_client_id: number | null;
 }
 
 export async function getFlightRequestById(
@@ -404,7 +454,7 @@ export async function getFlightRequestById(
 ): Promise<FlightRequestWithPlanning | null> {
   const row = await prisma.flight_requests.findFirst({
     where: { request_id, fk_owner_id: owner_id },
-    select: { fk_planning_id: true, dcc_status: true, external_mission_id: true },
+    select: { fk_planning_id: true, dcc_status: true, external_mission_id: true, fk_client_id: true },
   });
   return row ?? null;
 }
@@ -469,11 +519,14 @@ export async function getLatestFlightLogForMission(
 export async function getFlightRequestsByExternalIds(
   external_mission_ids: string[],
   owner_id: number,
+  client_id?: number | null,
 ): Promise<Array<{ request_id: number; external_mission_id: string; dcc_status: string }>> {
   const data = await prisma.flight_requests.findMany({
     where: {
       external_mission_id: { in: external_mission_ids },
       fk_owner_id: owner_id,
+      // A client may only see/cancel its own requests.
+      fk_client_id: client_id ?? null,
     },
     select: {
       request_id: true,

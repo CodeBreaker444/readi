@@ -8,7 +8,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import axios from 'axios';
-import { Check, CheckCircle2, ChevronDown, Globe, Loader2, Plus, Save, Trash2 } from 'lucide-react';
+import { Check, CheckCircle2, ChevronDown, Globe, Loader2, Plus, RefreshCw, Save, Trash2 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -105,11 +105,42 @@ export default function DccIntegrationSettings() {
   const [displayName, setDisplayName] = useState('');
   const [callbackUrl, setCallbackUrl] = useState('');
   const [saved, setSaved]             = useState(false);
-  const [clientEndpoints, setClientEndpoints] = useState<{ fk_client_id: number; client_name: string; status_url: string }[]>([]);
+  const [clientEndpoints, setClientEndpoints] = useState<{ fk_client_id: number; client_name: string; status_url: string | null; callback_url: string | null }[]>([]);
   const [clients, setClients]         = useState<{ client_id: number; client_name: string; client_code?: string | null }[]>([]);
   const [clientPickerOpen, setClientPickerOpen] = useState(false);
   const [newClientId, setNewClientId] = useState('');
   const [newClientUrl, setNewClientUrl] = useState('');
+  const [newClientCallbackUrl, setNewClientCallbackUrl] = useState('');
+  const [outbox, setOutbox] = useState<{
+    id: number; client_name: string | null; path: string; status: string; attempts: number;
+    next_attempt_at: string | null; last_http_status: number | null; last_error: string | null; created_at: string;
+  }[]>([]);
+  const [resendingId, setResendingId] = useState<number | null>(null);
+
+  const loadOutbox = useCallback(async () => {
+    try {
+      const { data } = await axios.get('/api/settings/dcc/callbacks');
+      setOutbox(data.data ?? []);
+    } catch {
+      /* non-critical panel */
+    }
+  }, []);
+
+  useEffect(() => { loadOutbox(); }, [loadOutbox]);
+
+  async function resendCallback(id: number) {
+    setResendingId(id);
+    try {
+      const { data } = await axios.post('/api/settings/dcc/callbacks', { id });
+      if (data.dcc?.outcome === 'success') toast.success(t('settings.integrations.dcc.callbacks.resent'));
+      else toast.error(data.dcc?.message ?? t('settings.integrations.dcc.callbacks.resendFailed'));
+    } catch (err: any) {
+      toast.error(err?.response?.data?.error ?? t('settings.integrations.dcc.callbacks.resendFailed'));
+    } finally {
+      setResendingId(null);
+      loadOutbox();
+    }
+  }
   const selectedClient = clients.find((c) => String(c.client_id) === newClientId) ?? null;
 
   const card  = isDark ? 'bg-slate-800/80 border-slate-700/60' : 'bg-white border-gray-200';
@@ -150,14 +181,21 @@ export default function DccIntegrationSettings() {
   useEffect(() => { loadClientEndpoints(); }, [loadClientEndpoints]);
 
   async function saveClientEndpoint() {
-    if (!newClientId || !newClientUrl.trim()) {
+    if (!newClientId || (!newClientUrl.trim() && !newClientCallbackUrl.trim())) {
       toast.error(t('settings.integrations.dcc.clientUrls.toastValidation'));
       return;
     }
     try {
-      await axios.post('/api/settings/dcc/clients', { client_id: Number(newClientId), status_url: newClientUrl.trim(), active: true });
+      // Empty string clears a URL on the server; both fields are always sent so the form is the source of truth.
+      await axios.post('/api/settings/dcc/clients', {
+        client_id: Number(newClientId),
+        status_url: newClientUrl.trim(),
+        callback_url: newClientCallbackUrl.trim(),
+        active: true,
+      });
       setNewClientId('');
       setNewClientUrl('');
+      setNewClientCallbackUrl('');
       toast.success(t('settings.integrations.dcc.clientUrls.toastSaved'));
       loadClientEndpoints();
     } catch (err: any) {
@@ -264,6 +302,50 @@ export default function DccIntegrationSettings() {
         </div>
       </div>
 
+      {/* Callbacks that failed or are waiting for an automatic retry */}
+    
+        <div className={`rounded-xl border p-6 space-y-3 ${card}`}>
+          <div>
+            <h2 className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('settings.integrations.dcc.callbacks.title')}</h2>
+            <p className={`text-xs ${label}`}>{t('settings.integrations.dcc.callbacks.subtitle')}</p>
+          </div>
+          <div className="space-y-2">
+            {outbox.length === 0 && (
+              <p className={`rounded-lg border border-dashed px-3 py-4 text-center text-xs ${isDark ? 'border-slate-700' : 'border-gray-200'} ${label}`}>
+                {t('settings.integrations.dcc.callbacks.empty')}
+              </p>
+            )}
+            {outbox.map((o) => (
+              <div key={o.id} className={`flex items-center gap-3 rounded-lg border px-3 py-2 ${isDark ? 'border-slate-700' : 'border-gray-200'}`}>
+                <div className="flex-1 min-w-0 space-y-0.5">
+                  <code className={`block text-[11px] break-all ${isDark ? 'text-violet-400' : 'text-violet-600'}`}>{o.path}</code>
+                  <p className={`text-[11px] ${label}`}>
+                    {o.client_name ? `${o.client_name} · ` : ''}
+                    {o.status === 'PENDING'
+                      ? t('settings.integrations.dcc.callbacks.retrying', { attempts: o.attempts })
+                      : t('settings.integrations.dcc.callbacks.failed', { attempts: o.attempts })}
+                    {o.last_http_status ? ` · HTTP ${o.last_http_status}` : ''}
+                    {o.last_error ? ` · ${o.last_error}` : ''}
+                  </p>
+                </div>
+                <FeatureGate feature="settings_integrations" require="edit">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 gap-1.5 text-xs"
+                    disabled={resendingId === o.id}
+                    onClick={() => resendCallback(o.id)}
+                  >
+                    {resendingId === o.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+                    {t('settings.integrations.dcc.callbacks.resend')}
+                  </Button>
+                </FeatureGate>
+              </div>
+            ))}
+          </div>
+        </div>
+    
+
       {/* Per-client mission status URLs */}
       <div className={`rounded-xl border p-6 space-y-4 ${card}`}>
         <div>
@@ -278,7 +360,18 @@ export default function DccIntegrationSettings() {
             {clientEndpoints.map((ep) => (
               <div key={ep.fk_client_id} className={`flex items-center gap-3 rounded-lg border px-3 py-2 ${isDark ? 'border-slate-700' : 'border-gray-200'}`}>
                 <span className={`text-xs font-medium w-40 truncate ${isDark ? 'text-slate-200' : 'text-gray-800'}`}>{ep.client_name}</span>
-                <code className={`text-[11px] flex-1 break-all ${isDark ? 'text-violet-400' : 'text-violet-600'}`}>{ep.status_url}</code>
+                <div className="flex-1 min-w-0 space-y-0.5">
+                  {ep.callback_url && (
+                    <code className={`block text-[11px] break-all ${isDark ? 'text-violet-400' : 'text-violet-600'}`}>
+                      <span className={label}>{t('settings.integrations.dcc.clientUrls.callbackShort')}: </span>{ep.callback_url}
+                    </code>
+                  )}
+                  {ep.status_url && (
+                    <code className={`block text-[11px] break-all ${isDark ? 'text-violet-400' : 'text-violet-600'}`}>
+                      <span className={label}>{t('settings.integrations.dcc.clientUrls.statusShort')}: </span>{ep.status_url}
+                    </code>
+                  )}
+                </div>
                 <FeatureGate feature="settings_integrations" require="edit">
                   <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-red-500" onClick={() => removeClientEndpoint(ep.fk_client_id)}>
                     <Trash2 className="h-3.5 w-3.5" />
@@ -290,7 +383,7 @@ export default function DccIntegrationSettings() {
         )}
 
         <FeatureGate feature="settings_integrations" require="edit">
-          <div className="grid gap-3 sm:grid-cols-[200px_1fr_auto] items-end">
+          <div className="grid gap-3 sm:grid-cols-[200px_1fr_1fr_auto] items-end">
             <div className="space-y-1.5">
               <Label className={`text-xs ${label}`}>{t('settings.integrations.dcc.clientUrls.client')}</Label>
               <Popover open={clientPickerOpen} onOpenChange={setClientPickerOpen}>
@@ -320,6 +413,7 @@ export default function DccIntegrationSettings() {
                               onSelect={() => {
                                 setNewClientId(String(c.client_id));
                                 setNewClientUrl(existing?.status_url ?? '');
+                                setNewClientCallbackUrl(existing?.callback_url ?? '');
                                 setClientPickerOpen(false);
                               }}
                               className="flex items-center gap-2"
@@ -338,6 +432,15 @@ export default function DccIntegrationSettings() {
                   </Command>
                 </PopoverContent>
               </Popover>
+            </div>
+            <div className="space-y-1.5">
+              <Label className={`text-xs ${label}`}>{t('settings.integrations.dcc.clientUrls.callbackUrl')}</Label>
+              <Input
+                value={newClientCallbackUrl}
+                onChange={(e) => setNewClientCallbackUrl(e.target.value)}
+                placeholder={t('settings.integrations.dcc.clientUrls.callbackUrlPlaceholder')}
+                className={`h-9 text-xs font-mono ${input}`}
+              />
             </div>
             <div className="space-y-1.5">
               <Label className={`text-xs ${label}`}>{t('settings.integrations.dcc.clientUrls.statusUrl')}</Label>

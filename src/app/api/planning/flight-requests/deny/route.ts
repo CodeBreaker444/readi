@@ -36,6 +36,7 @@ export async function POST(req: NextRequest) {
       select: {
         external_mission_id: true,
         dcc_status: true,
+        fk_client_id: true,
       },
     });
 
@@ -47,9 +48,9 @@ export async function POST(req: NextRequest) {
       return apiError(E.BL003, 422);
     }
 
-    await updateFlightRequestStatus(request_id, session!.user.ownerId, 'REJECTED');
+    await updateFlightRequestStatus(request_id, session!.user.ownerId, 'REJECTED', note?.trim() || null);
 
-    const dcc = await notifyDccDenial(session!.user.ownerId, fr.external_mission_id as string, note);
+    const dcc = await notifyDccDenial(session!.user.ownerId, fr.external_mission_id as string, note, fr.fk_client_id);
 
     return NextResponse.json({ code: 1, message: 'Flight request denied', dcc });
   } catch (err) {

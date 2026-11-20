@@ -33,6 +33,10 @@
       "schedule": "*/5 * * * *"
     },
     {
+      "path": "/api/cron/dcc-callback-retry",
+      "schedule": "*/5 * * * *"
+    },
+    {
       "path": "/api/cron/refresh-weather-tiles",
       "schedule": "*/5 * * * *"
     },

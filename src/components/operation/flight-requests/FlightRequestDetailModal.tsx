@@ -283,6 +283,15 @@ export function FlightRequestDetailModal({
                   <p className="text-sm">No actions available for this status.</p>
                 </div>
               )}
+
+              {request.dcc_status === 'REJECTED' && (
+                <div className={`rounded-xl border p-4 space-y-1.5 ${isDark ? 'border-red-500/30 bg-red-500/5' : 'border-red-200 bg-red-50'}`}>
+                  <p className={`text-[11px] font-semibold uppercase tracking-wide ${isDark ? 'text-red-400' : 'text-red-500'}`}>Reason for denial</p>
+                  <p className={`text-sm whitespace-pre-wrap break-words ${isDark ? 'text-slate-200' : 'text-gray-700'}`}>
+                    {request.deny_note?.trim() || 'No reason provided.'}
+                  </p>
+                </div>
+              )}
             </div>
           )}
         </div>

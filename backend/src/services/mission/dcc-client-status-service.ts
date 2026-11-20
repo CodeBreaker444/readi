@@ -1,6 +1,7 @@
 import 'server-only';
 
 import { prisma } from '@/lib/prisma';
+import { assertSafeCallbackUrl } from '@/lib/safe-url';
 
 export type MissionStatusName = 'PLANNED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'ABORTED';
 
@@ -8,7 +9,8 @@ export interface DccClientEndpoint {
   id: number;
   fk_client_id: number;
   client_name: string;
-  status_url: string;
+  status_url: string | null;
+  callback_url: string | null;
   active: boolean;
 }
 
@@ -30,15 +32,19 @@ export async function listClientEndpoints(ownerId: number): Promise<DccClientEnd
     fk_client_id: r.fk_client_id,
     client_name: names.get(r.fk_client_id) ?? `Client #${r.fk_client_id}`,
     status_url: r.status_url,
+    callback_url: r.callback_url,
     active: r.active,
   }));
 }
 
-/** Creates or updates the status URL for one client. Returns false if the client is not in this owner. */
+/**
+ * Creates or updates the URLs for one client. `undefined` leaves a URL as it is,
+ * `null` clears it. Returns false if the client is not in this owner.
+ */
 export async function upsertClientEndpoint(
   ownerId: number,
   clientId: number,
-  statusUrl: string,
+  urls: { statusUrl?: string | null; callbackUrl?: string | null },
   active: boolean,
 ): Promise<boolean> {
   const client = await prisma.client.findFirst({
@@ -49,8 +55,19 @@ export async function upsertClientEndpoint(
 
   await prisma.dcc_client_endpoints.upsert({
     where: { fk_owner_id_fk_client_id: { fk_owner_id: ownerId, fk_client_id: clientId } },
-    update: { status_url: statusUrl, active, updated_at: new Date() },
-    create: { fk_owner_id: ownerId, fk_client_id: clientId, status_url: statusUrl, active },
+    update: {
+      ...(urls.statusUrl !== undefined ? { status_url: urls.statusUrl } : {}),
+      ...(urls.callbackUrl !== undefined ? { callback_url: urls.callbackUrl } : {}),
+      active,
+      updated_at: new Date(),
+    },
+    create: {
+      fk_owner_id: ownerId,
+      fk_client_id: clientId,
+      status_url: urls.statusUrl ?? null,
+      callback_url: urls.callbackUrl ?? null,
+      active,
+    },
   });
   return true;
 }
@@ -96,7 +113,7 @@ export async function notifyClientMissionStatus(
         fk_owner_id_fk_client_id: { fk_owner_id: mission.fk_owner_id, fk_client_id: mission.fk_client_id },
       },
     });
-    if (!endpoint?.active) return;
+    if (!endpoint?.active || !endpoint.status_url) return;
 
     // External id is only present for missions requested by a third party.
     const flightRequest = mission.fk_planning_id
@@ -125,10 +142,13 @@ export async function notifyClientMissionStatus(
     const authPass = process.env.DCC_AUTH_PASSWORD ?? 'dcc';
     const basicAuth = Buffer.from(`${authUser}:${authPass}`).toString('base64');
 
+    await assertSafeCallbackUrl(endpoint.status_url);
+
     const res = await fetch(endpoint.status_url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Basic ${basicAuth}` },
       body: JSON.stringify(payload),
+      redirect: 'manual',
       signal: AbortSignal.timeout(10_000),
     });
 
