@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
       })),
       notes: body.notes ?? undefined,
       operator: session!.user.email ?? undefined,
-    })
+    }, body.fk_client_id ? Number(body.fk_client_id) : null)
 
     // D-Flight authorization + flytrelay watch registration — no-op unless the
     // owner has D-Flight enabled; never blocks mission creation on failure.

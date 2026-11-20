@@ -1,5 +1,6 @@
 import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { notifyDccAcceptance } from '@/backend/services/mission/dcc-callback-service';
+import { notifyClientMissionStatus, type MissionStatusName } from '@/backend/services/mission/dcc-client-status-service';
 import { notifyPilotAssignment } from '@/backend/services/notification/notification-service';
 import { deleteOperation, getOperation, updateOperation } from '@/backend/services/operation/operation-service';
 import { prisma } from '@/lib/prisma';
@@ -31,6 +32,7 @@ const updateOperationSchema = z.object({
   location_longitude: z.number().min(-180).max(180).nullable().optional(),
   location_pseudo_name: z.string().max(255).nullable().optional(),
   notes: z.string().nullable().optional(),
+  abort_reason: z.string().max(1000).nullable().optional(),
   fk_pilot_user_id: z.number().int().positive().optional(),
   fk_tool_id: z.number().int().positive().nullable().optional(),
   fk_client_id: z.number().int().positive().nullable().optional(),
@@ -132,6 +134,15 @@ export async function PUT(req: NextRequest, { params }: Params) {
         missionCode: (updated as any).mission_code ?? `#${id}`,
         fromUserId:  session!.user.userId,
       }).catch((notifyErr) => console.error('[operation/update] pilot notification failed:', notifyErr));
+    }
+
+    const newStatus = (validated as any).status_name as MissionStatusName | undefined;
+    if (newStatus) {
+      void notifyClientMissionStatus(
+        id,
+        newStatus,
+        newStatus === 'ABORTED' ? (validated as any).abort_reason : null,
+      );
     }
 
     let dcc: DccCallbackResult | undefined;

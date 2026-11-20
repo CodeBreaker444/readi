@@ -659,11 +659,13 @@ model api_keys {
   expires_at         DateTime?         @db.Timestamp(6)
   created_at         DateTime          @default(now()) @db.Timestamp(6)
   key_prefix         String?
+  fk_client_id       Int?
   users              public_users?     @relation(fields: [created_by_user_id], references: [user_id], onUpdate: NoAction)
   owner              owner             @relation(fields: [fk_owner_id], references: [owner_id], onDelete: NoAction, onUpdate: NoAction)
   flight_requests    flight_requests[]
 
   @@index([key_value], map: "idx_api_keys_value")
+  @@index([fk_client_id], map: "idx_api_keys_client")
   @@schema("public")
 }
 
@@ -1067,6 +1069,40 @@ model dcc_integrations {
   @@schema("public")
 }
 
+model dcc_callback_outbox {
+  id               Int       @id @default(autoincrement())
+  fk_owner_id      Int
+  fk_client_id     Int?
+  strict           Boolean   @default(false)
+  path             String    @db.VarChar(300)
+  body             Json?
+  status           String    @default("PENDING") @db.VarChar(10)
+  attempts         Int       @default(1)
+  next_attempt_at  DateTime? @db.Timestamptz(6)
+  last_http_status Int?
+  last_error       String?
+  created_at       DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime  @default(now()) @db.Timestamptz(6)
+
+  @@index([status, next_attempt_at], map: "idx_dcc_outbox_due")
+  @@index([fk_owner_id, created_at(sort: Desc)], map: "idx_dcc_outbox_owner")
+  @@schema("public")
+}
+
+model dcc_client_endpoints {
+  id           Int       @id @default(autoincrement())
+  fk_owner_id  Int
+  fk_client_id Int
+  status_url   String?   @db.VarChar(500)
+  callback_url String?   @db.VarChar(500)
+  active       Boolean   @default(true)
+  created_at   DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at   DateTime? @default(now()) @db.Timestamptz(6)
+
+  @@unique([fk_owner_id, fk_client_id], map: "dcc_client_endpoints_owner_client_key")
+  @@schema("public")
+}
+
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model deleted_owner {
@@ -1392,6 +1428,8 @@ model flight_requests {
   created_at          DateTime       @default(now()) @db.Timestamp(6)
   updated_at          DateTime       @default(now()) @db.Timestamp(6)
   fk_pilot_mission_id Int?
+  fk_client_id        Int?
+  deny_note           String?
   users               public_users?  @relation(fields: [assigned_by_user_id], references: [user_id], onUpdate: NoAction)
   api_keys            api_keys?      @relation(fields: [fk_api_key_id], references: [api_key_id], onDelete: NoAction, onUpdate: NoAction)
   owner               owner          @relation(fields: [fk_owner_id], references: [owner_id], onDelete: NoAction, onUpdate: NoAction)
@@ -1400,6 +1438,7 @@ model flight_requests {
   @@index([fk_owner_id], map: "idx_flight_requests_owner")
   @@index([fk_pilot_mission_id], map: "idx_flight_requests_pilot_mission")
   @@index([dcc_status], map: "idx_flight_requests_status")
+  @@index([fk_client_id], map: "idx_flight_requests_client")
   @@schema("public")
 }
 
@@ -2165,6 +2204,7 @@ model pilot_mission {
   flight_duration                     Int?
   location                            String?
   notes                               String?
+  abort_reason                        String?
   created_at                          DateTime?                  @default(now()) @db.Timestamp(6)
   updated_at                          DateTime?                  @default(now()) @db.Timestamp(6)
   fk_owner_id                         Int

@@ -10,6 +10,7 @@ import { InternalFlightRequests } from '@/components/operation/flight-requests/I
 import { FlightRequest, createFlightRequestColumns } from '@/components/tables/flightRequestsColumns';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Textarea } from '@/components/ui/textarea';
 import { toastAfterDccAction } from '@/lib/dcc-toast';
 import { cn } from '@/lib/utils';
 import type { DccCallbackResult } from '@/types/dcc-callback';
@@ -46,6 +47,8 @@ export default function FlightRequestsTable() {
   const [filterStatus, setFilterStatus] = useState('ALL');
   const [assigning, setAssigning] = useState<number | null>(null);
   const [denying, setDenying] = useState<number | null>(null);
+  const [denyTarget, setDenyTarget] = useState<number | null>(null);
+  const [denyNote, setDenyNote] = useState('');
   const [deleting, setDeleting] = useState<number | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
   const [updatingStatus, setUpdatingStatus] = useState<{ id: number; status: string } | null>(null);
@@ -98,12 +101,22 @@ export default function FlightRequestsTable() {
       .catch(() => {});
   }, []);
 
-  async function handleDeny(request_id: number) {
+  // Deny opens a dialog so the OPM can add a reason, which is sent to the client's DCC as `note`.
+  function handleDeny(request_id: number) {
+    setDenyNote('');
+    setDenyTarget(request_id);
+  }
+
+  async function confirmDeny() {
+    if (denyTarget === null) return;
+    const request_id = denyTarget;
+    const note = denyNote.trim();
+    setDenyTarget(null);
     setDenying(request_id);
     try {
       const { data } = await axios.post<{ code: number; dcc?: DccCallbackResult }>(
         '/api/planning/flight-requests/deny',
-        { request_id },
+        { request_id, ...(note ? { note } : {}) },
       );
       toastAfterDccAction(t('planning.flightRequests.denied'), data.dcc);
       setSelectedRequest(null);
@@ -427,6 +440,33 @@ export default function FlightRequestsTable() {
         onOpenPlanModal={openPlanModal}
         onOpenLogModal={openLogModal}
       />
+
+      <AlertDialog open={denyTarget !== null} onOpenChange={(open) => { if (!open) setDenyTarget(null); }}>
+        <AlertDialogContent className={isDark ? 'bg-slate-900 border-slate-700 text-slate-100' : ''}>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('planning.flightRequests.denyTitle')}</AlertDialogTitle>
+            <AlertDialogDescription className={isDark ? 'text-slate-400' : ''}>
+              {t('planning.flightRequests.denyDesc')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <Textarea
+            value={denyNote}
+            onChange={(e) => setDenyNote(e.target.value)}
+            maxLength={500}
+            rows={3}
+            placeholder={t('planning.flightRequests.denyNotePlaceholder')}
+            className={isDark ? 'bg-slate-800 border-slate-600 text-slate-100' : ''}
+          />
+          <AlertDialogFooter>
+            <AlertDialogCancel className={isDark ? 'border-slate-600 text-slate-300 hover:bg-slate-700 bg-transparent cursor-pointer' : 'cursor-pointer'}>
+              {t('common.cancel')}
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeny} className="bg-red-600 cursor-pointer hover:bg-red-500 text-white">
+              {t('planning.flightRequests.denyConfirm')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog open={deleteConfirm !== null} onOpenChange={(open) => { if (!open) setDeleteConfirm(null); }}>
         <AlertDialogContent className={isDark ? 'bg-slate-900 border-slate-700 text-slate-100' : ''}>

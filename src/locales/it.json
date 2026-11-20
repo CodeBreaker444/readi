@@ -1096,6 +1096,10 @@
       "manual": "manuale",
       "loadError": "Errore nel caricamento delle richieste di volo",
       "denied": "Richiesta rifiutata",
+      "denyTitle": "Rifiutare questa richiesta di volo?",
+      "denyDesc": "Il cliente viene informato che la richiesta è stata rifiutata. Puoi aggiungere un motivo.",
+      "denyNotePlaceholder": "Motivo del rifiuto (facoltativo)",
+      "denyConfirm": "Rifiuta richiesta",
       "acknowledged2": "Richiesta ricevuta",
       "acknowledgeError": "Errore nella ricezione",
       "deleteSuccess": "Richiesta di volo eliminata",
@@ -1120,6 +1124,7 @@
       },
       "columns": {
         "missionId": "ID Missione",
+        "client": "Cliente",
         "type": "Tipo",
         "target": "Destinazione",
         "operator": "Operatore",
@@ -1681,7 +1686,8 @@
         "reportGenerating": "Generazione del report per {{missionCode}}…",
         "reportDownloaded": "Report scaricato.",
         "reportFailed": "Impossibile generare il report.",
-        "abortedCannotUpdate": "Le missioni annullate non possono essere aggiornate."
+        "abortedCannotUpdate": "Le missioni annullate non possono essere aggiornate.",
+        "abortPrompt": "Motivo dell'annullamento (facoltativo — inviato al cliente con l'aggiornamento di stato):"
       },
       "procedureBadge": {
         "noLuc": "Nessun LUC",
@@ -1726,6 +1732,13 @@
         "notes": "Note",
         "missionGroup": "Gruppo missione"
       },
+      "abort": {
+        "title": "Annulla missione",
+        "description": "La missione verrà chiusa e non potrà essere riavviata. Il motivo viene inviato al cliente con l'aggiornamento di stato.",
+        "placeholder": "Motivo dell'annullamento (facoltativo)",
+        "aborting": "Annullamento…",
+        "confirm": "Annulla missione"
+      },
       "toast": {
         "loadError": "Caricamento bacheca fallito",
         "missionStarted": "Missione avviata",
@@ -1736,6 +1749,8 @@
         "revertDesc": "Aggiornare il ciclo di manutenzione per completare la missione.",
         "revertError": "Ripristino dello stato missione fallito",
         "droneInMaintenance": "Drone in manutenzione",
+        "missionAborted": "Missione annullata",
+        "abortFailed": "Impossibile annullare la missione",
         "droneInMaintenanceDesc": "Questo drone ha un ticket di manutenzione aperto. Chiuderlo prima di avviare la missione."
       },
       "card": {
@@ -1756,6 +1771,7 @@
         "completeTasks": "Completa compiti",
         "updateMaintenance": "Aggiorna manutenzione",
         "updateMaintenanceCycle": "Aggiorna ciclo di manutenzione",
+        "abort": "Annulla missione",
         "missionDetails": "Dettagli missione",
         "view": "Visualizza",
         "lastMaintenanceClosed": "Ultima manutenzione chiusa"
@@ -5933,6 +5949,38 @@
       "title": "Integrazioni",
       "subtitle": "Configura connessioni a sistemi esterni",
       "dcc": {
+        "callbacks": {
+          "title": "Callback non consegnati",
+          "empty": "Nessun callback non consegnato al momento.",
+          "subtitle": "Aggiornamenti non accettati dal DCC. I guasti temporanei vengono ritentati automaticamente; puoi reinviarli subito.",
+          "retrying": "Nuovo tentativo automatico (tentativo {{attempts}})",
+          "failed": "Non riuscito dopo {{attempts}} tentativo/i",
+          "resend": "Reinvia",
+          "resent": "Callback consegnato",
+          "resendFailed": "Reinvio non riuscito"
+        },
+        "clientUrls": {
+          "title": "URL di stato missione per cliente",
+          "subtitle": "Invia ogni cambio di stato (In corso, Completata, Annullata + nota di annullamento) delle missioni di un cliente al suo URL — indipendentemente dal fatto che la missione sia stata richiesta da una fonte esterna.",
+          "client": "Cliente",
+          "selectClient": "Seleziona cliente…",
+          "searchClients": "Cerca clienti…",
+          "noClients": "Nessun cliente trovato.",
+          "configured": "Configurato",
+          "callbackUrl": "URL di callback (richieste di volo)",
+          "callbackUrlPlaceholder": "https://cliente.esempio.com/api",
+          "callbackShort": "Callback",
+          "statusShort": "Stato",
+          "statusUrl": "URL di stato",
+          "statusUrlPlaceholder": "https://cliente.esempio.com/api/mission-status",
+          "addUpdate": "Aggiungi / Aggiorna",
+          "bodySent": "Corpo inviato (POST, JSON):",
+          "toastLoadFailed": "Impossibile caricare gli URL di stato dei clienti",
+          "toastValidation": "Seleziona un cliente e inserisci un URL",
+          "toastSaved": "URL di stato del cliente salvato",
+          "toastSaveFailed": "Impossibile salvare l'URL di stato del cliente",
+          "toastRemoveFailed": "Impossibile rimuovere l'URL di stato del cliente"
+        },
         "title": "Configurazione Server DCC",
         "subtitle": "Readi invierà aggiornamenti sullo stato delle missioni a questo server",
         "displayName": "Nome visualizzato",
@@ -5999,6 +6047,10 @@
         "newKey": "Nuova chiave",
         "newApiKey": "Nuova chiave API",
         "keyName": "Nome chiave",
+        "client": "Cliente",
+        "noClient": "Nessun cliente (a livello di organizzazione)",
+        "searchClients": "Cerca clienti…",
+        "noClientsFound": "Nessun cliente trovato",
         "expiresAt": "Scade il (opzionale)",
         "keyNamePlaceholder": "es. App di volo esterna",
         "creating": "Creazione...",
@@ -6009,6 +6061,7 @@
         "noKeys": "Nessuna chiave API. Creane una per consentire ai servizi esterni di inviare missioni.",
         "tableHeaders": {
           "name": "Nome",
+          "client": "Cliente",
           "keyPrefix": "Prefisso chiave",
           "scope": "Ambito",
           "status": "Stato",
@@ -6433,6 +6486,9 @@
       "noGroups": "Al momento non ci sono gruppi di slot aperti.",
       "singlePilot": "Un pilota per slot",
       "multiPilot": "Più richieste consentite",
+      "appliedOfTotal": "{{applied}}/{{total}} slot richiesti",
+      "appliedFull": "{{applied}}/{{total}} slot richiesti · completo",
+      "myApproved": "{{approved}}/{{applied}} slot approvati",
       "datesRange_one": "{{from}} – {{to}} · {{count}} slot libero",
       "datesRange_other": "{{from}} – {{to}} · {{count}} slot liberi",
       "myRequests": "Le mie richieste",

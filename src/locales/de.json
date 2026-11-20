@@ -1096,6 +1096,10 @@
       "manual": "manuell",
       "loadError": "Fluganfragen konnten nicht geladen werden",
       "denied": "Anfrage abgelehnt",
+      "denyTitle": "Diese Fluganfrage ablehnen?",
+      "denyDesc": "Der Kunde wird über die Ablehnung informiert. Sie können eine Begründung angeben.",
+      "denyNotePlaceholder": "Grund der Ablehnung (optional)",
+      "denyConfirm": "Anfrage ablehnen",
       "acknowledged2": "Anfrage bestätigt",
       "acknowledgeError": "Bestätigung fehlgeschlagen",
       "deleteSuccess": "Fluganfrage gelöscht",
@@ -1120,6 +1124,7 @@
       },
       "columns": {
         "missionId": "Missions-ID",
+        "client": "Kunde",
         "type": "Typ",
         "target": "Ziel",
         "operator": "Operator",
@@ -1679,7 +1684,8 @@
         "reportGenerating": "Bericht für {{missionCode}} wird erstellt…",
         "reportDownloaded": "Bericht heruntergeladen.",
         "reportFailed": "Bericht konnte nicht erstellt werden.",
-        "abortedCannotUpdate": "Abgebrochene Missionen können nicht aktualisiert werden."
+        "abortedCannotUpdate": "Abgebrochene Missionen können nicht aktualisiert werden.",
+        "abortPrompt": "Grund für den Abbruch (optional — wird mit dem Statusupdate an den Kunden gesendet):"
       },
       "procedureBadge": {
         "noLuc": "Kein LUC",
@@ -1724,6 +1730,13 @@
         "notes": "Notizen",
         "missionGroup": "Missionsgruppe"
       },
+      "abort": {
+        "title": "Mission abbrechen",
+        "description": "Die Mission wird geschlossen und kann nicht neu gestartet werden. Der Grund wird mit dem Statusupdate an den Kunden gesendet.",
+        "placeholder": "Grund für den Abbruch (optional)",
+        "aborting": "Wird abgebrochen…",
+        "confirm": "Mission abbrechen"
+      },
       "toast": {
         "loadError": "Board konnte nicht geladen werden",
         "missionStarted": "Mission gestartet",
@@ -1734,6 +1747,8 @@
         "revertDesc": "Bitte aktualisieren Sie den Wartungszyklus, um die Mission abzuschließen.",
         "revertError": "Missionsstatus konnte nicht zurückgesetzt werden",
         "droneInMaintenance": "Drohne in Wartung",
+        "missionAborted": "Mission abgebrochen",
+        "abortFailed": "Mission konnte nicht abgebrochen werden",
         "droneInMaintenanceDesc": "Diese Drohne hat ein offenes Wartungsticket. Schließen Sie es, bevor Sie die Mission starten."
       },
       "card": {
@@ -1754,6 +1769,7 @@
         "completeTasks": "Aufgaben abschließen",
         "updateMaintenance": "Wartung aktualisieren",
         "updateMaintenanceCycle": "Wartungszyklus aktualisieren",
+        "abort": "Abbrechen",
         "missionDetails": "Missionsdetails",
         "view": "Ansehen",
         "lastMaintenanceClosed": "Letzte Wartung abgeschlossen"
@@ -5791,6 +5807,38 @@
       "title": "Integrationen",
       "subtitle": "Externe Systemverbindungen konfigurieren",
       "dcc": {
+        "callbacks": {
+          "title": "Nicht zugestellte Callbacks",
+          "empty": "Derzeit keine nicht zugestellten Callbacks.",
+          "subtitle": "Aktualisierungen, die das DCC nicht akzeptiert hat. Vorübergehende Fehler werden automatisch wiederholt; Sie können jeden sofort erneut senden.",
+          "retrying": "Automatische Wiederholung (Versuch {{attempts}})",
+          "failed": "Fehlgeschlagen nach {{attempts}} Versuch(en)",
+          "resend": "Erneut senden",
+          "resent": "Callback zugestellt",
+          "resendFailed": "Erneutes Senden fehlgeschlagen"
+        },
+        "clientUrls": {
+          "title": "Missionsstatus-URLs pro Kunde",
+          "subtitle": "Sendet jede Statusänderung (In Bearbeitung, Abgeschlossen, Abgebrochen + Abbruchnotiz) der Missionen eines Kunden an dessen eigene URL — unabhängig davon, ob die Mission extern angefordert wurde.",
+          "client": "Kunde",
+          "selectClient": "Kunde auswählen…",
+          "searchClients": "Kunden suchen…",
+          "noClients": "Keine Kunden gefunden.",
+          "configured": "Konfiguriert",
+          "callbackUrl": "Callback-URL (Fluganfragen)",
+          "callbackUrlPlaceholder": "https://kunde.beispiel.com/api",
+          "callbackShort": "Callback",
+          "statusShort": "Status",
+          "statusUrl": "Status-URL",
+          "statusUrlPlaceholder": "https://kunde.beispiel.com/api/mission-status",
+          "addUpdate": "Hinzufügen / Aktualisieren",
+          "bodySent": "Gesendeter Body (POST, JSON):",
+          "toastLoadFailed": "Status-URLs der Kunden konnten nicht geladen werden",
+          "toastValidation": "Kunden auswählen und URL eingeben",
+          "toastSaved": "Status-URL des Kunden gespeichert",
+          "toastSaveFailed": "Status-URL des Kunden konnte nicht gespeichert werden",
+          "toastRemoveFailed": "Status-URL des Kunden konnte nicht entfernt werden"
+        },
         "title": "DCC-Server-Konfiguration",
         "subtitle": "Readi sendet Missionsstatusaktualisierungen an diesen Server",
         "displayName": "Anzeigename",
@@ -5857,6 +5905,10 @@
         "newKey": "Neuer Schlüssel",
         "newApiKey": "Neuer API-Schlüssel",
         "keyName": "Schlüsselname",
+        "client": "Kunde",
+        "noClient": "Kein Kunde (organisationsweit)",
+        "searchClients": "Kunden suchen…",
+        "noClientsFound": "Keine Kunden gefunden",
         "expiresAt": "Läuft ab am (optional)",
         "keyNamePlaceholder": "z.B. Externe Flug-App",
         "creating": "Erstellen...",
@@ -5867,6 +5919,7 @@
         "noKeys": "Noch keine API-Schlüssel. Erstellen Sie einen, damit externe Dienste Missionen einreichen können.",
         "tableHeaders": {
           "name": "Name",
+          "client": "Kunde",
           "keyPrefix": "Schlüsselpräfix",
           "scope": "Bereich",
           "status": "Status",
@@ -6291,6 +6344,9 @@
       "noGroups": "Derzeit sind keine Slot-Gruppen geöffnet.",
       "singlePilot": "Ein Pilot pro Slot",
       "multiPilot": "Mehrere Anfragen möglich",
+      "appliedOfTotal": "{{applied}}/{{total}} Slots beantragt",
+      "appliedFull": "{{applied}}/{{total}} Slots beantragt · voll",
+      "myApproved": "{{approved}}/{{applied}} Slots genehmigt",
       "datesRange_one": "{{from}} – {{to}} · {{count}} offener Slot",
       "datesRange_other": "{{from}} – {{to}} · {{count}} offene Slots",
       "myRequests": "Meine Anfragen",

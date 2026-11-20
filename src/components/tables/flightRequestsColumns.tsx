@@ -7,6 +7,8 @@ import { AlertCircle, CheckCircle2, ExternalLink, Loader2, Trash2 } from 'lucide
 export interface FlightRequest {
   request_id: number;
   external_mission_id: string;
+  client_name?: string | null;
+  deny_note?: string | null;
   mission_type: string | null;
   target: string | null;
   localization: any;
@@ -96,6 +98,12 @@ export function createFlightRequestColumns(handlers: FlightRequestColumnHandlers
       cell: ({ getValue }) => (
         <span className="font-mono font-semibold text-violet-400">{getValue<string>()}</span>
       ),
+    },
+    {
+      id: 'client_name',
+      header: t('planning.flightRequests.columns.client'),
+      accessorKey: 'client_name',
+      cell: ({ getValue }) => getValue<string>() ?? '—',
     },
     {
       id: 'mission_type',

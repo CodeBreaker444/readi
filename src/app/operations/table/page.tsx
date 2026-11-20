@@ -298,11 +298,21 @@ const table = useReactTable({
       toast.warning(t('operations.table.toast.abortedCannotUpdate'));
       return;
     }
+    // Aborting asks for a reason; it is stored on the mission and sent to the client's status URL.
+    let abortReason: string | undefined;
+    if (status === 'ABORTED') {
+      const input = window.prompt(t('operations.table.toast.abortPrompt'));
+      if (input === null) return; // cancelled
+      abortReason = input.trim() || undefined;
+    }
     setBatchUpdating(true);
     try {
       await Promise.all(
         eligibleRows.map((op) =>
-          axios.put(`/api/operation/${op.pilot_mission_id}`, { status_name: status })
+          axios.put(`/api/operation/${op.pilot_mission_id}`, {
+            status_name: status,
+            ...(abortReason ? { abort_reason: abortReason } : {}),
+          })
         )
       );
       setOperations((prev) =>

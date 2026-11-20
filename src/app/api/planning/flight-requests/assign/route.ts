@@ -41,6 +41,7 @@ export async function POST(req: NextRequest) {
         parsed.data.planning_id,
         undefined,
         parsed.data.mission_planning_id,
+        parsed.data.request_id,
       );
     }
 

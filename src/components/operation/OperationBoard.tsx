@@ -4,6 +4,8 @@ import { useAuthorization } from "@/components/authorization/AuthorizationProvid
 import { usePermissions } from "@/components/permissions/PermissionsProvider";
 import { SystemCell } from "@/components/tables/SystemCell";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Mission, MissionBoardData } from "@/config/types/operation";
@@ -58,7 +60,10 @@ export function OperationBoard() {
     const [maintenanceMission, setMaintenanceMission] = useState<Mission | null>(null);
     const [lucMission, setLucMission] = useState<Mission | null>(null);
     const [showDeclarationModal, setShowDeclarationModal] = useState(false);
-    
+    const [abortMission, setAbortMission] = useState<Mission | null>(null);
+    const [abortReason, setAbortReason] = useState("");
+    const [aborting, setAborting] = useState(false);
+
     const dragMeta = useRef<{
         missionId: number;
         sourceColumn: ColumnId;
@@ -220,6 +225,35 @@ export function OperationBoard() {
         }
     }, [t]);
 
+    const handleConfirmAbort = useCallback(async () => {
+        if (!abortMission) return;
+        const mission = abortMission;
+        setAborting(true);
+        try {
+            await axios.post("/api/operation/board/abort", {
+                mission_id: mission.mission_id,
+                reason: abortReason.trim() || undefined,
+            });
+            // Aborted missions drop off the board.
+            setBoard((prev) => ({
+                scheduled: prev.scheduled.filter((m) => m.mission_id !== mission.mission_id),
+                in_progress: prev.in_progress.filter((m) => m.mission_id !== mission.mission_id),
+                done: prev.done.filter((m) => m.mission_id !== mission.mission_id),
+            }));
+            toast.success(t("operations.board.toast.missionAborted"), {
+                description: mission.mission_name ?? `#${mission.mission_id}`,
+            });
+            setAbortMission(null);
+            setAbortReason("");
+        } catch (err: any) {
+            toast.error(t("operations.board.toast.abortFailed"), {
+                description: err?.response?.data?.message ?? "Unknown error",
+            });
+        } finally {
+            setAborting(false);
+        }
+    }, [abortMission, abortReason, t]);
+
     const handleDrop = async (e: React.DragEvent, targetColumn: string) => {
         e.preventDefault();
         setDragOverColumn(null);
@@ -274,6 +308,33 @@ export function OperationBoard() {
         <div className={cn("min-h-screen transition-colors duration-300", isDark ? "bg-[#080c12]" : "bg-slate-50")}>
             <BoardHeader onRefresh={() => loadBoard(true)} isRefreshing={refreshing} isDark={isDark} />
 
+            <Dialog open={!!abortMission} onOpenChange={(open) => { if (!open && !aborting) setAbortMission(null); }}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>{t("operations.board.abort.title")}</DialogTitle>
+                        <DialogDescription>
+                            {t("operations.board.abort.description")}
+                            {abortMission && <span className="mt-1 block font-mono text-xs">{abortMission.mission_name ?? `#${abortMission.mission_id}`}</span>}
+                        </DialogDescription>
+                    </DialogHeader>
+                    <Textarea
+                        value={abortReason}
+                        onChange={(e) => setAbortReason(e.target.value)}
+                        maxLength={1000}
+                        rows={4}
+                        placeholder={t("operations.board.abort.placeholder")}
+                    />
+                    <DialogFooter>
+                        <Button variant="outline" disabled={aborting} onClick={() => setAbortMission(null)}>
+                            {t("common.cancel")}
+                        </Button>
+                        <Button className="bg-red-600 text-white hover:bg-red-700" disabled={aborting} onClick={handleConfirmAbort}>
+                            {aborting ? t("operations.board.abort.aborting") : t("operations.board.abort.confirm")}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
             {loading ? (
                 <BoardSkeleton isDark={isDark} />
             ) : (
@@ -291,6 +352,7 @@ export function OperationBoard() {
                             onViewDetails={(m) => setSelectedMission(m)}
                             onUpdateMaintenance={userCanUpdateMaintenance ? (m) => setMaintenanceMission(m) : undefined}
                             onOpenLuc={(m) => setLucMission(m)}
+                            onAbort={userCanUpdateMaintenance ? (m) => { setAbortReason(""); setAbortMission(m); } : undefined}
                             isDragOver={dragOverColumn === col.id}
                             onDragOver={(e) => handleDragOver(e, col.id)}
                             onDragLeave={handleDragLeave}

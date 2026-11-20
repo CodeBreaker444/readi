@@ -79,6 +79,7 @@ export async function POST(req: NextRequest) {
           const result = await upsertFlightRequestByExternalId({
             owner_id:            session!.owner_id,
             api_key_id:          session!.api_key_id,
+            client_id:           session!.client_id,
             external_mission_id: item.missionId,
             mission_type:        type,
             target,
@@ -131,6 +132,7 @@ export async function POST(req: NextRequest) {
     const result = await upsertFlightRequestByExternalId({
       owner_id:            session!.owner_id,
       api_key_id:          session!.api_key_id,
+      client_id:           session!.client_id,
       external_mission_id: missionId,
       mission_type:        type,
       target,
@@ -173,7 +175,7 @@ export async function DELETE(req: NextRequest) {
     const { missionIds } = parsed.data;
 
     // Pre-fetch all records to validate before making any changes
-    const records = await getFlightRequestsByExternalIds(missionIds, session!.owner_id);
+    const records = await getFlightRequestsByExternalIds(missionIds, session!.owner_id, session!.client_id);
 
     // Check for missions that don't exist
     const foundIds = new Set(records.map(r => r.external_mission_id));

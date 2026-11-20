@@ -20,6 +20,19 @@ Saving is recorded in the [Audit Logs](/docs/records/audit-logs). If no DCC is c
 
 ---
 
+## Multiple clients
+
+Several clients can request flights through the same Readi organisation, each with its own API key and callback URL.
+
+1. **Settings → Security → API Keys**: create a key and pick its **Client**. A key with no client is organisation-wide (the original behaviour).
+2. **Settings → Integrations → DCC server → Client URLs**: pick the client and set its **Callback URL**.
+
+A request is tied to the client of the key that sent it, and stays tied to it even if the key is later revoked or deleted. Accept, deny, started, finished and flight-log updates go to **that client's callback URL**. If the client has no callback URL, the update is skipped (never sent to another client's DCC). Requests from keys with no client use the organisation URL above.
+
+Mission IDs only need to be unique per client, and a client's key can only see and cancel that client's own requests.
+
+---
+
 ## Drone mapping
 
 The DCC identifies drones with its own ID. Enter it as **DCC Drone ID** (a long code provided by the DCC) on the system's **drone component**. If several active drones have one, the most recently installed is used.
@@ -56,6 +69,44 @@ The settings page also lists the exact addresses called, which you can share wit
 
 ---
 
+## Client status URLs
+
+Separate from the DCC server above, you can give each **client** its own URL. Readi sends the status of that client's missions to it, even when the mission was created in Readi and never came from an external request.
+
+Set it up in **Settings → Integrations → DCC server → Client mission status URLs**: search for a client, enter the URL and click **Add / Update**. Selecting a client that is already configured shows its current URL so you can change it.
+
+A status update is sent when:
+
+| Event | Status sent |
+|---|---|
+| Mission started on the Daily Board | `IN_PROGRESS` |
+| Mission finished (or reverted) on the Daily Board | `COMPLETED` (or `IN_PROGRESS`) |
+| Status changed from the Operations table | The new status |
+| A mission is aborted | `ABORTED`, with the abort reason as the note |
+| A planned mission's day passes without it starting | `ABORTED`, with an automatic reason |
+
+When you set missions to **Aborted** from the Operations table, Readi asks for an optional reason. It is saved on the mission and sent as the `note`.
+
+Each update is a `POST` with a JSON body:
+
+```json
+{
+  "missionId": "external id, or the mission code",
+  "missionCode": "OP-1042",
+  "missionName": "Bridge inspection",
+  "status": "ABORTED",
+  "note": "Wind above limits",
+  "scheduledStart": "2026-11-19T08:00:00.000Z",
+  "actualStart": null,
+  "actualEnd": null,
+  "sentAt": "2026-11-19T09:12:30.000Z"
+}
+```
+
+Missions of clients with no URL are not sent anywhere. A failed delivery is logged and never blocks the action in Readi.
+
+---
+
 ## Pushing a flight log
 
 On a request, archive a Control Center flight, then use **Push to DCC**. It is sent as the mission's flight report. Manual logs cannot be pushed, and the mission needs a drone with a DCC Drone ID.
@@ -65,6 +116,16 @@ On a request, archive a Control Center flight, then use **Push to DCC**. It is s
 ## Errors
 
 A failed update never blocks the action in Readi. The failure is shown in a **DCC Error Details** message, which has a bug-report option.
+
+### Retries and resend
+
+Updates the DCC could not take are kept and retried automatically (every 5 minutes, backing off 1 min → 5 min → 30 min → 2 h → 6 h; 6 attempts in total). Only temporary failures are retried: network errors, timeouts, HTTP 408, 429 and 5xx. A 4xx answer means the DCC refused the update, so it is not retried.
+
+Anything still waiting or given up on is listed under **Settings → Integrations → DCC server → Undelivered callbacks**, where an admin can **Resend** it at once. The DCC should treat repeated deliveries of the same update as harmless, since a retry can arrive after a timeout the DCC actually processed. Cancellation updates are never retried: if the DCC rejects one, the cancellation in Readi is stopped instead.
+
+### Callback URL rules
+
+In production a callback or status URL must use **https**, contain no username/password, and point to a **public** address. Localhost, private network, link-local and cloud-metadata addresses are rejected when saving and again before every send. Redirects are not followed.
 
 ---
 

@@ -1,5 +1,5 @@
 import { createApiKey, listApiKeys } from '@/backend/services/mission/flight-request-service';
-import { internalError, zodError } from '@/lib/api-error';
+import { apiError, internalError, zodError } from '@/lib/api-error';
 import { zDateString } from '@/lib/zod-date';
 import { requireAuth, requireFeatureAccess } from '@/lib/auth/api-auth';
 import { E } from '@/lib/error-codes';
@@ -9,6 +9,7 @@ import { z } from 'zod';
 const CreateSchema = z.object({
   key_name:   z.string().min(1, 'Key name is required').max(100),
   expires_at: zDateString().optional(),
+  client_id:  z.number().int().positive().nullable().optional(),
 });
 
 export async function GET() {
@@ -45,7 +46,9 @@ export async function POST(req: NextRequest) {
       session!.user.fullname,
       session!.user.email,
       session!.user.role,
+      parsed.data.client_id,
     );
+    if (!result) return apiError(E.VL002, 404);
 
     return NextResponse.json({ code: 1, ...result }, { status: 201 });
   } catch (err) {

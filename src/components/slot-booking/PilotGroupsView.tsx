@@ -20,7 +20,7 @@ import {
 } from '@/lib/pilot-group-validation';
 import { cn } from '@/lib/utils';
 import axios from 'axios';
-import { Check, Plane, Plus, Star, Trash2, UsersRound } from 'lucide-react';
+import { Check, ChevronLeft, ChevronRight, Plane, Plus, Star, Trash2, UsersRound } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -29,10 +29,10 @@ import { apiMsg, Btn, card, dialogSurface, EmptyBlock, ErrorBlock, heading, inpu
 import { PilotGroupsSkeleton } from './skeletons';
 
 const BASE = '/api/operation/slot-booking/pilot-groups';
-const EXAMPLES = ['Experts', 'Newbies', 'External'];
+const LIMITS_PAGE_SIZE = 8;
+const EXAMPLES =['Experts', 'Newbies', 'External'];
 
 type FieldErrors = { name?: string; description?: string; members?: string };
-/** Fixed-height slot under a field so showing/hiding a message never changes the modal's height. */
 function FieldError({ message }: { message?: string }) {
   return <p className="h-4 text-[11px] leading-4 font-light text-red-500 truncate">{message ?? ''}</p>;
 }
@@ -137,14 +137,23 @@ function FlightLimitsTab({
   bad: (id: number) => boolean;
 }) {
   const { t } = useTranslation();
+  const [page, setPage] = useState(0);
+  const pages = Math.max(1, Math.ceil(candidates.length / LIMITS_PAGE_SIZE));
+  const cur = Math.min(page, pages - 1);
+  const shown = candidates.slice(cur * LIMITS_PAGE_SIZE, (cur + 1) * LIMITS_PAGE_SIZE);
+  const pagerBtn = cn(
+    'cursor-pointer h-7 w-7 inline-flex items-center justify-center rounded-md border transition-colors disabled:opacity-40 disabled:cursor-not-allowed',
+    isDark ? 'border-white/[0.1] text-gray-300 hover:bg-white/[0.05]' : 'border-gray-200 text-gray-600 hover:bg-gray-50',
+  );
   return (
     <div className="space-y-2">
       <p className={cn('text-[11px]', muted(isDark))}>{t('slotBooking.pilotGroups.limits.hint')}</p>
       {candidates.length === 0 ? (
         <p className={cn('rounded-lg border border-dashed py-8 text-center text-xs', isDark ? 'border-white/[0.1]' : 'border-gray-300', muted(isDark))}>{t('slotBooking.pilotGroups.limits.noMembers')}</p>
       ) : (
-        <div className={cn('rounded-lg border max-h-80 overflow-y-auto divide-y', isDark ? 'border-white/[0.1] divide-white/[0.05]' : 'border-gray-200 divide-gray-100')}>
-          {candidates.map((c) => (
+        <>
+        <div className={cn('rounded-lg border divide-y', isDark ? 'border-white/[0.1] divide-white/[0.05]' : 'border-gray-200 divide-gray-100')}>
+          {shown.map((c) => (
             <div key={c.userId} className="flex items-center gap-3 px-3 py-2">
               <Avatar person={c} />
               <span className="min-w-0 flex-1">
@@ -165,6 +174,23 @@ function FlightLimitsTab({
             </div>
           ))}
         </div>
+        {candidates.length > LIMITS_PAGE_SIZE && (
+          <div className={cn('flex items-center justify-between text-[11px]', muted(isDark))}>
+            <span>
+              {cur * LIMITS_PAGE_SIZE + 1}–{Math.min((cur + 1) * LIMITS_PAGE_SIZE, candidates.length)} / {candidates.length}
+            </span>
+            <div className="flex items-center gap-2">
+              <button type="button" className={pagerBtn} disabled={cur === 0} onClick={() => setPage(cur - 1)} aria-label="Previous page">
+                <ChevronLeft size={14} />
+              </button>
+              <span>{cur + 1} / {pages}</span>
+              <button type="button" className={pagerBtn} disabled={cur >= pages - 1} onClick={() => setPage(cur + 1)} aria-label="Next page">
+                <ChevronRight size={14} />
+              </button>
+            </div>
+          </div>
+        )}
+        </>
       )}
     </div>
   );
@@ -195,7 +221,6 @@ function GroupFormDialog({
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [isExpert, setIsExpert] = useState(false);
   const [tab, setTab] = useState<'details' | 'limits'>('details');
-  /** Monthly flight limit per user as typed (blank = not assigned). */
   const [limits, setLimits] = useState<Record<number, string>>({});
   const [errors, setErrors] = useState<FieldErrors>({});
   const [busy, setBusy] = useState(false);
@@ -312,11 +337,12 @@ function GroupFormDialog({
           ))}
         </div>
 
-        {tab === 'limits' && (
+        <div className="grid">
+        <div className={cn('col-start-1 row-start-1 min-w-0', tab !== 'limits' && 'invisible pointer-events-none')} aria-hidden={tab !== 'limits'}>
           <FlightLimitsTab isDark={isDark} candidates={candidates.filter((c) => selected.has(c.userId))} limits={limits} onChange={(id, v) => setLimits((p) => ({ ...p, [id]: v }))} bad={limitBad} />
-        )}
+        </div>
 
-        <div className={tab === 'limits' ? 'hidden' : undefined}>
+        <div className={cn('col-start-1 row-start-1 min-w-0', tab === 'limits' && 'invisible pointer-events-none')} aria-hidden={tab === 'limits'}>
           <div>
             <label className={label} htmlFor="pg-name">{t('slotBooking.pilotGroups.name')} *</label>
             <input
@@ -360,6 +386,7 @@ function GroupFormDialog({
             <MemberPicker isDark={isDark} candidates={candidates} selected={selected} onToggle={toggle} onSetMany={setMany} />
             <FieldError message={errors.members} />
           </div>
+        </div>
         </div>
 
         <DialogFooter>
