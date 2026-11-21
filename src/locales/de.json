@@ -1066,6 +1066,8 @@
       "acknowledged": "Bestätigt",
       "assigned": "Zugewiesen",
       "noRequests": "Keine Fluganfragen gefunden.",
+      "allClients": "Alle Kunden",
+      "noClientFilter": "Kein Kunde",
       "deleteTitle": "Fluganfrage löschen?",
       "deleteDesc": "Die Anfrage wird dauerhaft aus Readi entfernt. Diese Aktion kann nicht rückgängig gemacht werden.",
       "pushLogDcc": "Protokoll an DCC senden",

@@ -1066,6 +1066,8 @@
       "acknowledged": "Ricevute",
       "assigned": "Assegnate",
       "noRequests": "Nessuna richiesta di volo trovata.",
+      "allClients": "Tutti i clienti",
+      "noClientFilter": "Nessun cliente",
       "deleteTitle": "Eliminare la richiesta di volo?",
       "deleteDesc": "Questa operazione rimuoverà definitivamente la richiesta da Readi. Non può essere annullata.",
       "pushLogDcc": "Invia Log a DCC",
