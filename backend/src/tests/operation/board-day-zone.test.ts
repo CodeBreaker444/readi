@@ -9,6 +9,7 @@
 const prismaMock: Record<string, any> = {
   pilot_mission: { findMany: jest.fn(), updateMany: jest.fn() },
   owner: { findUnique: jest.fn() },
+  pilot_mission_status: { findFirst: jest.fn() },
   maintenance_ticket: { findMany: jest.fn() },
 };
 jest.mock('@/lib/prisma', () => ({ prisma: prismaMock }));
@@ -27,6 +28,7 @@ beforeEach(() => {
   jest.clearAllMocks();
   prismaMock.pilot_mission.findMany.mockResolvedValue([]);
   prismaMock.owner.findUnique.mockResolvedValue({ d_flight_enabled: false });
+  prismaMock.pilot_mission_status.findFirst.mockResolvedValue(null);
 });
 
 // 06:00 on 17 Nov in India = 00:30 UTC. 03:00 India that day = 21:30 UTC on 16 Nov, which is "yesterday" in UTC.
@@ -77,5 +79,20 @@ describe('Daily Board day', () => {
 
     expect(scheduledWindow().gte.toISOString()).toBe('2026-11-17T00:00:00.000Z');
     expect(scheduledWindow().lte.toISOString()).toBe('2026-11-17T23:59:59.999Z');
+  });
+});
+
+describe('Daily Board in-progress column with owner-specific status ids', () => {
+  it('queries by the owner-specific in-progress id so a started mission does not vanish', async () => {
+    prismaMock.pilot_mission_status.findFirst.mockImplementation(async ({ where }: any) =>
+      where.status_code.in.includes('IN_PROGRESS') ? { status_id: 47 } : { status_id: 48 });
+
+    await getMissionBoard(7, 1, 'ADMIN', 'UTC', NOW);
+
+    const wheres = prismaMock.pilot_mission.findMany.mock.calls.map((c: any[]) => c[0].where);
+    const inProgress = wheres.find((w: any) => w.fk_mission_status_id?.in?.includes(47));
+    const done = wheres.find((w: any) => w.fk_mission_status_id?.in?.includes(48));
+    expect(inProgress.fk_mission_status_id.in).toEqual(expect.arrayContaining([2, 47]));
+    expect(done.fk_mission_status_id.in).toEqual(expect.arrayContaining([3, 48]));
   });
 });
