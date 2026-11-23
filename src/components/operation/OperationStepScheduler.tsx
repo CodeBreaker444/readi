@@ -211,7 +211,7 @@ export function OperationStepScheduler({
                 </div>
             )}
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                     <Label className={labelCls(isDark)}>{t('operations.newOperation.scheduler.missionType')} <span className="text-red-500">*</span></Label>
                     <Select value={form.typeId} onValueChange={v => onChange('typeId', v)} disabled={loadingOptions}>

@@ -17,7 +17,6 @@ export interface DccClientEndpoint {
   status_url: string | null;
   callback_url: string | null;
   mission_scope: MissionScope;
-  /** Last 6 characters of the key, null if no key has been generated yet. */
   api_key_last6: string | null;
   active: boolean;
 }

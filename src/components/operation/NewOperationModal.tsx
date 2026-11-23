@@ -725,8 +725,8 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
 
     return (
         <Dialog open={open} onOpenChange={v => !v && onClose()}>
-            <DialogContent className={cn('sm:max-w-4xl md:max-w-5xl lg:max-w-6xl gap-0 p-0 overflow-hidden', isDark && 'bg-slate-800 border-slate-700 text-white')}>
-                <DialogHeader className={cn('px-6 pt-6 pb-4 border-b', isDark ? 'border-slate-700' : 'border-gray-100')}>
+            <DialogContent className={cn('max-w-[calc(100%-1rem)] sm:max-w-4xl md:max-w-5xl lg:max-w-6xl gap-0 p-0 overflow-hidden max-h-[95dvh] flex flex-col', isDark && 'bg-slate-800 border-slate-700 text-white')}>
+                <DialogHeader className={cn('px-4 sm:px-6 pt-5 sm:pt-6 pb-3 sm:pb-4 border-b shrink-0', isDark ? 'border-slate-700' : 'border-gray-100')}>
                     <DialogTitle className={cn('text-base font-semibold', isDark && 'text-white')}>
                         {isEdit ? t('operations.newOperation.editTitle') : t('operations.newOperation.title')}
                     </DialogTitle>
@@ -734,7 +734,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
 
                 {/* Edit tab bar */}
                 {isEdit && (
-                    <div className={cn('flex border-b', isDark ? 'border-slate-700' : 'border-gray-200')}>
+                    <div className={cn('flex border-b overflow-x-auto scrollbar-thin shrink-0', isDark ? 'border-slate-700' : 'border-gray-200')}>
                         {EDIT_TABS.map(tab => {
                             const Icon = tab.icon
                             return (
@@ -743,7 +743,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                                     type="button"
                                     onClick={() => setEditTab(tab.id)}
                                     className={cn(
-                                        'flex flex-1 items-center justify-center cursor-pointer gap-1.5 px-4 py-2.5 text-xs font-medium border-b-2 transition-colors whitespace-nowrap',
+                                        'flex flex-1 items-center justify-center cursor-pointer gap-1.5 px-3 sm:px-4 py-2.5 text-xs font-medium border-b-2 transition-colors whitespace-nowrap',
                                         editTab === tab.id
                                             ? 'border-violet-600 text-violet-600'
                                             : isDark
@@ -761,7 +761,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
 
                 {/* Step progress bar — data tab only */}
                 {(!isEdit || editTab === 'data') && (
-                    <div className="px-6 pt-4 pb-2">
+                    <div className="px-3 sm:px-6 pt-3 sm:pt-4 pb-2 shrink-0">
                         <div className="flex items-center gap-0">
                             {STEPS.map((s, i) => {
                                 const Icon = s.icon
@@ -779,7 +779,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                                                 {done ? <CheckCircle2 className="h-4 w-4" /> : <Icon className="h-4 w-4" />}
                                             </div>
                                             <span className={cn(
-                                                'text-[10px] font-medium whitespace-nowrap',
+                                                'text-[9px] sm:text-[10px] font-medium text-center sm:whitespace-nowrap',
                                                 active ? 'text-violet-600' : done ? 'text-emerald-600' : 'text-muted-foreground'
                                             )}>
                                                 {s.label}
@@ -796,7 +796,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                 )}
 
                 {/* Tab content */}
-                <div className="px-6 py-5 h-[60vh] overflow-y-auto scrollbar-thin overflow-x-hidden">
+                <div className="px-4 sm:px-6 py-4 sm:py-5 flex-none shrink min-h-0 h-[60dvh] overflow-y-auto scrollbar-thin overflow-x-hidden">
 
                     {(!isEdit || editTab === 'data') && step === 1 && (
                         <OperationStepClient
@@ -978,7 +978,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
 
                 {/* Footer — data tab (step navigation) */}
                 {(!isEdit || editTab === 'data') && (
-                    <div className={cn('flex items-center justify-between px-6 pb-6 pt-2 border-t', isDark ? 'bg-slate-800/50 border-slate-700' : 'bg-muted/20')}>
+                    <div className={cn('flex items-center justify-between gap-2 px-4 sm:px-6 pb-4 sm:pb-6 pt-3 sm:pt-2 border-t shrink-0', isDark ? 'bg-slate-800/50 border-slate-700' : 'bg-muted/20')}>
                         <Button
                             variant="outline"
                             size="sm"
@@ -1002,7 +1002,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                                 size="sm"
                                 onClick={handleSubmit}
                                 disabled={isSubmitting || !pilotId || !schedulerForm.missionCode.trim() || !schedulerForm.lucId || !schedulerForm.typeId || !schedulerForm.categoryId || !schedulerForm.scheduledStart || (uspaceRequired && !uspaceId) || (circleRequired && (!circle || circle.radiusM > circleMaxRadiusM))}
-                                className="gap-2 cursor-pointer bg-violet-600 hover:bg-violet-700 text-white min-w-40"
+                                className="gap-2 cursor-pointer bg-violet-600 hover:bg-violet-700 text-white sm:min-w-40"
                             >
                                 {isSubmitting
                                     ? <><Loader2 className="h-4 w-4 animate-spin" /> {isEdit ? t('operations.newOperation.buttons.saving') : t('operations.newOperation.buttons.creating')}</>
@@ -1016,7 +1016,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
 
                 {/* Footer — other edit tabs */}
                 {isEdit && editTab !== 'data' && (
-                    <div className={cn('flex items-center justify-end gap-2 px-6 pb-6 pt-2 border-t', isDark ? 'bg-slate-800/50 border-slate-700' : 'bg-muted/20')}>
+                    <div className={cn('flex items-center justify-end gap-2 px-4 sm:px-6 pb-4 sm:pb-6 pt-3 sm:pt-2 border-t shrink-0', isDark ? 'bg-slate-800/50 border-slate-700' : 'bg-muted/20')}>
                         <Button variant="outline" size="sm" onClick={onClose} className={cn(isDark && 'border-slate-600 text-slate-300 hover:bg-slate-700')}>
                             {t('operations.newOperation.buttons.close')}
                         </Button>
