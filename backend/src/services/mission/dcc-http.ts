@@ -1,6 +1,7 @@
 import 'server-only';
 
 import type { DccCallbackResult } from '@/types/dcc-callback';
+import { createHmac } from 'crypto';
 import { assertSafeCallbackUrl } from '@/lib/safe-url';
 
 const BODY_PREVIEW = 800;
@@ -11,21 +12,43 @@ function truncateBody(text: string): string {
   return `${t.slice(0, BODY_PREVIEW)}…`;
 }
 
-/** Network failures, timeouts, 408, 429 and 5xx are worth retrying; other 4xx are the DCC saying "no". */
+/**
+ * Network failures, timeouts, 408, 429 and 5xx are worth retrying; other 4xx are the DCC saying "no".
+ * 401/403 are retried too: right after an API key is rotated the client's server rejects the old key
+ * until it is updated, and those updates should still arrive once it is.
+ */
 export function isRetryableResult(r: DccCallbackResult): boolean {
   if (r.outcome === 'network_error') return true;
   if (r.outcome !== 'http_error') return false;
   const s = r.httpStatus ?? 0;
-  return s === 408 || s === 429 || s >= 500;
+  return s === 401 || s === 403 || s === 408 || s === 429 || s >= 500;
 }
 
 /**
- * One attempt to POST to a DCC callback URL. Never throws.
- * - the URL is re-validated (SSRF guard) right before sending
- * - redirects are not followed (a public host could 302 to an internal one)
- * A blocked URL returns 'skipped' so it is never retried.
+ * Auth headers for a call to a client's server.
  */
-export async function sendDccRequest(url: string, path: string, body?: unknown): Promise<DccCallbackResult> {
+export function buildDccAuthHeaders(apiKey: string | null | undefined, bodyText: string): Record<string, string> {
+  if (apiKey) {
+    const timestamp = Math.floor(Date.now() / 1000).toString();
+    const signature = createHmac('sha256', apiKey).update(`${timestamp}.${bodyText}`).digest('hex');
+    return {
+      'X-API-Key': apiKey,
+      'X-Readi-Timestamp': timestamp,
+      'X-Readi-Signature': `sha256=${signature}`,
+    };
+  }
+  const authUser = process.env.DCC_AUTH_USERNAME ?? 'dcc';
+  const authPass = process.env.DCC_AUTH_PASSWORD ?? 'dcc';
+  return { Authorization: `Basic ${Buffer.from(`${authUser}:${authPass}`).toString('base64')}` };
+}
+
+ 
+export async function sendDccRequest(
+  url: string,
+  path: string,
+  body?: unknown,
+  apiKey?: string | null,
+): Promise<DccCallbackResult> {
   try {
     await assertSafeCallbackUrl(url);
   } catch (err: any) {
@@ -34,17 +57,14 @@ export async function sendDccRequest(url: string, path: string, body?: unknown):
   }
 
   try {
-    const authUser = process.env.DCC_AUTH_USERNAME ?? 'dcc';
-    const authPass = process.env.DCC_AUTH_PASSWORD ?? 'dcc';
-    const basicAuth = Buffer.from(`${authUser}:${authPass}`).toString('base64');
-
+    const bodyText = body !== undefined ? JSON.stringify(body) : '';
     const res = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Basic ${basicAuth}`,
+        ...buildDccAuthHeaders(apiKey, bodyText),
       },
-      body: body !== undefined ? JSON.stringify(body) : undefined,
+      body: body !== undefined ? bodyText : undefined,
       redirect: 'manual',
       signal: AbortSignal.timeout(10_000),
     });

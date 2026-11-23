@@ -1095,6 +1095,10 @@ model dcc_client_endpoints {
   fk_client_id Int
   status_url   String?   @db.VarChar(500)
   callback_url String?   @db.VarChar(500)
+  /// EXTERNAL | INTERNAL | ALL — which missions are sent to this client's URLs
+  mission_scope     String    @default("ALL") @db.VarChar(10)
+  api_key_encrypted String?
+  api_key_last6     String?   @db.VarChar(6)
   active       Boolean   @default(true)
   created_at   DateTime? @default(now()) @db.Timestamptz(6)
   updated_at   DateTime? @default(now()) @db.Timestamptz(6)

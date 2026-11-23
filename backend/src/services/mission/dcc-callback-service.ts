@@ -2,7 +2,7 @@ import 'server-only';
 
 import { prisma } from '@/lib/prisma';
 import type { DccCallbackResult } from '@/types/dcc-callback';
-import { getDccCallbackUrl } from './dcc-settings-service';
+import { resolveDccEndpoint } from './dcc-settings-service';
 import { sendDccRequest } from './dcc-http';
 import { enqueueFailedCallback } from './dcc-outbox-service';
 
@@ -183,19 +183,15 @@ async function dccPost(
   body?: unknown,
   target: DccTarget = {},
 ): Promise<DccCallbackResult> {
-  const base = await getDccCallbackUrl(ownerId, target.clientId, target.strict);
-  if (!base) {
-    return {
-      path,
-      outcome: 'skipped',
-      message: target.clientId && target.strict
-        ? 'No callback URL configured for this client'
-        : 'DCC integration not configured for this organization',
-    };
+  // strict = came in through a client's API key = an external request; the rest is created in Readi.
+  const resolved = await resolveDccEndpoint(ownerId, target.clientId, target.strict ? 'EXTERNAL' : 'INTERNAL');
+  if (!resolved.ok) {
+    return { path, outcome: 'skipped', message: resolved.reason };
   }
 
+  const { url: base, apiKey } = resolved.endpoint;
   const url = `${base.replace(/\/$/, '')}${path}`;
-  const result = await sendDccRequest(url, path, body);
+  const result = await sendDccRequest(url, path, body, apiKey);
 
   // Keep failures so they are retried by cron and can be resent manually.
   // Not for calls whose caller already aborts on failure (a late retry would contradict that).
@@ -425,6 +421,32 @@ export async function notifyDccTermination(
       outcome: 'network_error',
       message: err?.message ?? String(err),
     };
+  }
+}
+
+/**
+ * Start / finish of a mission created inside Readi, in the same DCC structure used for
+ * external requests, so a client with only a callback URL still hears about them.
+ * IN_PROGRESS → /execution, COMPLETED → /termination (success), ABORTED → /termination (failure).
+ * Other statuses have no DCC equivalent (cancellation goes through the bulk cancel call).
+ * `missionRef` is the id the client already knows from the "new mission" call (the mission code).
+ */
+export async function notifyDccInternalMissionStatus(
+  ownerId: number,
+  clientId: number,
+  missionRef: string,
+  status: 'PLANNED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'ABORTED',
+  note?: string | null,
+): Promise<DccCallbackResult | null> {
+  const base = `/dcc/missions/${missionRef}`;
+  try {
+    if (status === 'IN_PROGRESS') return await dccPost(ownerId, `${base}/execution`, undefined, { clientId });
+    if (status === 'COMPLETED') return await dccPost(ownerId, `${base}/termination`, { result: 1, note: note ?? '' }, { clientId });
+    if (status === 'ABORTED') return await dccPost(ownerId, `${base}/termination`, { result: 0, note: note ?? '' }, { clientId });
+    return null;
+  } catch (err: any) {
+    console.error('[DCC] notifyDccInternalMissionStatus error:', err?.message ?? err);
+    return { path: base, outcome: 'network_error', message: err?.message ?? String(err) };
   }
 }
 

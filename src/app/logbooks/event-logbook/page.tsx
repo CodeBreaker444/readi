@@ -18,6 +18,7 @@ import { EventTypeSettings } from '@/components/logbook/event/EventTypeSettings'
 import { EventWebhookSettings } from '@/components/logbook/event/EventWebhookSettings';
 import { eventUi } from '@/components/logbook/event/event-ui';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useTheme } from '@/components/useTheme';
 import type { EventDroneOption, EventLogbookItem, EventMissionOption, EventNotifyContact } from '@/config/types/event-logbook';
 import { cn } from '@/lib/utils';
@@ -44,6 +45,8 @@ export default function EventLogbookPage() {
   const [canReport, setCanReport] = useState(false);
   const [canConfigure, setCanConfigure] = useState(false);
   const [scoped, setScoped] = useState(true);
+  // Permissions come from the options call; until it settles the tabs/buttons are skeletons.
+  const [optionsLoaded, setOptionsLoaded] = useState(false);
 
   const [filters, setFilters] = useState<EventFilters>(EMPTY_EVENT_FILTERS);
   const [data, setData] = useState<EventLogbookItem[]>([]);
@@ -93,6 +96,8 @@ export default function EventLogbookPage() {
       setScoped(!!res.data.scoped);
     } catch (err: any) {
       toast.error(err?.response?.data?.error ?? t('logbooks.eventLogbook.loadError'));
+    } finally {
+      setOptionsLoaded(true);
     }
   }, [t]);
 
@@ -129,7 +134,18 @@ export default function EventLogbookPage() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {canConfigure && (
+            {!optionsLoaded && (
+              <>
+                <Skeleton className="h-8 w-8" />
+                <Skeleton className="h-8 w-8" />
+                <Skeleton className="h-8 w-8" />
+                <Skeleton className="h-8 w-8" />
+                <Skeleton className="h-8 w-24" />
+                <Skeleton className="h-8 w-28" />
+                <Skeleton className="h-8 w-28" />
+              </>
+            )}
+            {optionsLoaded && canConfigure && (
               <Button
                 variant="outline"
                 size="icon"
@@ -140,7 +156,7 @@ export default function EventLogbookPage() {
                 <Tags className="h-4 w-4" />
               </Button>
             )}
-            {canConfigure && (
+            {optionsLoaded && canConfigure && (
               <Button
                 variant="outline"
                 size="icon"
@@ -151,7 +167,7 @@ export default function EventLogbookPage() {
                 <Mail className="h-4 w-4" />
               </Button>
             )}
-            {canConfigure && (
+            {optionsLoaded && canConfigure && (
               <Button
                 variant="outline"
                 size="icon"
@@ -162,7 +178,7 @@ export default function EventLogbookPage() {
                 <Radio className="h-4 w-4" />
               </Button>
             )}
-            {canConfigure && (
+            {optionsLoaded && canConfigure && (
               <Button
                 variant="outline"
                 size="icon"
@@ -173,11 +189,13 @@ export default function EventLogbookPage() {
                 <Settings className="h-4 w-4" />
               </Button>
             )}
-            <Button variant="outline" size="sm" className={cn('h-8 gap-1.5 text-xs', ui.outlineBtn)} disabled={loading} onClick={() => (view === 'ai' ? setAiRefresh((k) => k + 1) : search())}>
-              {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
-              {e('refresh')}
-            </Button>
-            {canReport && !onAiTab && (
+            {optionsLoaded && (
+              <Button variant="outline" size="sm" className={cn('h-8 gap-1.5 text-xs', ui.outlineBtn)} disabled={loading} onClick={() => (view === 'ai' ? setAiRefresh((k) => k + 1) : search())}>
+                {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+                {e('refresh')}
+              </Button>
+            )}
+            {optionsLoaded && canReport && !onAiTab && (
               <Button
                 variant="outline"
                 size="sm"
@@ -191,7 +209,7 @@ export default function EventLogbookPage() {
                 {t('logbooks.eventLogbook.wizard.setupTitle')}
               </Button>
             )}
-            {canReport && !onAiTab && (
+            {optionsLoaded && canReport && !onAiTab && (
               <Button
                 size="sm"
                 className="h-8 gap-1.5 bg-violet-600 text-xs text-white hover:bg-violet-700"
@@ -209,7 +227,13 @@ export default function EventLogbookPage() {
       </div>
 
       <div className="mx-auto max-w-[1800px] space-y-4 px-6 py-5">
-        {canConfigure && (
+        {!optionsLoaded && (
+          <div className={cn('flex gap-1 border-b pb-2', ui.divider)}>
+            <Skeleton className="h-6 w-24" />
+            <Skeleton className="h-6 w-24" />
+          </div>
+        )}
+        {optionsLoaded && canConfigure && (
           <div className={cn('flex gap-1 border-b', ui.divider)}>
             {(['pilot', 'ai'] as const).map((v) => (
               <button
