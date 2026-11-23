@@ -8,6 +8,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import axios from 'axios';
 import { Check, ChevronDown, ChevronLeft, ChevronRight, Copy, Globe, KeyRound, Loader2, Pencil, Plus, RefreshCw, Trash2 } from 'lucide-react';
@@ -116,6 +117,7 @@ export default function DccIntegrationSettings() {
   const { t } = useTranslation();
   const { isDark } = useTheme();
   const [integrations, setIntegrations] = useState<ClientIntegration[]>([]);
+  const [loadingIntegrations, setLoadingIntegrations] = useState(true);
   const [clients, setClients]         = useState<{ client_id: number; client_name: string; client_code?: string | null }[]>([]);
   const [clientPickerOpen, setClientPickerOpen] = useState(false);
   const [clientId, setClientId]       = useState('');
@@ -182,6 +184,8 @@ export default function DccIntegrationSettings() {
       setClients(cl.data.data ?? []);
     } catch {
       toast.error(t('settings.integrations.dcc.integrations.toastLoadFailed'));
+    } finally {
+      setLoadingIntegrations(false);
     }
   }, [t]);
 
@@ -396,7 +400,28 @@ export default function DccIntegrationSettings() {
           <code className="block whitespace-pre-wrap">{`{ missionId, missionCode, missionName, status: "IN_PROGRESS" | "COMPLETED" | "ABORTED" | "PLANNED" | "CANCELLED", note, scheduledStart, actualStart, actualEnd, sentAt }`}</code>
         </div>
 
-        {integrations.length === 0 ? (
+        {loadingIntegrations ? (
+          <div className="space-y-2" aria-busy="true">
+            {[0, 1, 2].map((n) => (
+              <div key={n} className={`flex flex-wrap items-center gap-3 rounded-lg border px-3 py-2 ${isDark ? 'border-slate-700' : 'border-gray-200'}`}>
+                <div className="w-40 shrink-0 space-y-1.5">
+                  <Skeleton className="h-3.5 w-28" />
+                  <Skeleton className="h-4 w-14 rounded-full" />
+                </div>
+                <div className="flex-1 min-w-[200px] space-y-1.5">
+                  <Skeleton className="h-3 w-3/4" />
+                  <Skeleton className="h-3 w-2/3" />
+                </div>
+                <Skeleton className="h-3.5 w-20" />
+                <div className="flex items-center gap-1">
+                  <Skeleton className="h-7 w-7" />
+                  <Skeleton className="h-7 w-7" />
+                  <Skeleton className="h-7 w-7" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : integrations.length === 0 ? (
           <p className={`rounded-lg border border-dashed px-3 py-4 text-center text-xs ${isDark ? 'border-slate-700' : 'border-gray-200'} ${label}`}>
             {t('settings.integrations.dcc.integrations.empty')}
           </p>

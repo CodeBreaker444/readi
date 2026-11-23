@@ -150,6 +150,15 @@ export async function getMissionBoard(
   });
   const dflightGateActive = !!owner?.d_flight_enabled;
 
+  // updateMissionStatus writes the owner-specific status_id (not always 2/3), so the
+  // board must query by those same resolved ids or moved missions vanish from it.
+  const [inProgressStatusId, completedStatusId] = await Promise.all([
+    resolveOwnerStatusId(ownerId, IN_PROGRESS_STATUS_CODE_ALIASES, 2),
+    resolveOwnerStatusId(ownerId, COMPLETED_STATUS_CODE_ALIASES, 3),
+  ]);
+  const inProgressIds = [...new Set([2, inProgressStatusId])];
+  const completedIds = [...new Set([3, completedStatusId])];
+
   const [scheduledData, inProgressData, doneData] = await Promise.all([
     prisma.pilot_mission.findMany({
       where: {
@@ -181,7 +190,7 @@ export async function getMissionBoard(
     prisma.pilot_mission.findMany({
       where: {
         fk_owner_id: ownerId,
-        fk_mission_status_id: 2,
+        fk_mission_status_id: { in: inProgressIds },
         mission_metadata: {
           not: {
             is_imported: true
@@ -196,7 +205,7 @@ export async function getMissionBoard(
     prisma.pilot_mission.findMany({
       where: {
         fk_owner_id: ownerId,
-        fk_mission_status_id: 3,
+        fk_mission_status_id: { in: completedIds },
         mission_metadata: {
           not: {
             is_imported: true

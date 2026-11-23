@@ -7,7 +7,7 @@ import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Mission, MissionStatusCode } from "@/config/types/operation";
 import { useTimezone } from "@/components/TimezoneProvider";
-import { cn, formatDateInTz } from "@/lib/utils";
+import { cn, formatDateInTz, formatDateTimeInTz } from "@/lib/utils";
 import { Ban, Calendar, CheckCircle2, ClipboardList, Clock, Crosshair, Gauge, Tag, User, Wrench, TicketCheck } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { OpmApprovalBadge } from "@/components/operation/OpmApprovalBadge";
@@ -327,12 +327,20 @@ export function MissionCard({ mission, draggable, onDragStart, onViewDetails, on
         <div className="mt-1.5 space-y-1">
           <div className={`flex items-center gap-1.5 text-[11px] ${isDark ? "text-slate-400" : "text-slate-500"}`}>
             <Calendar className={`h-3 w-3 shrink-0 ${isDark ? "text-slate-500" : "text-slate-400"}`} />
-            <span>{mission.date_start} {mission.time_start}</span>
+            <span>
+              {mission.planned_at || mission.official_start
+                ? formatDateTimeInTz(mission.planned_at ?? mission.official_start, timezone)
+                : `${mission.date_start} ${mission.time_start}`}
+            </span>
           </div>
           {mission.date_end && (
             <div className={`flex items-center gap-1.5 text-[11px] ${isDark ? "text-slate-400" : "text-slate-500"}`}>
               <CheckCircle2 className="h-3 w-3 shrink-0 text-emerald-500" />
-              <span>{mission.date_end} {mission.time_end}</span>
+              <span>
+                {mission.official_end
+                  ? formatDateTimeInTz(mission.official_end, timezone)
+                  : `${mission.date_end} ${mission.time_end}`}
+              </span>
             </div>
           )}
           {mission.flown_time != null && (
