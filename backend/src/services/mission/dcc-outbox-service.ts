@@ -3,7 +3,7 @@ import 'server-only';
 import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import type { DccCallbackResult } from '@/types/dcc-callback';
-import { getDccCallbackUrl } from './dcc-settings-service';
+import { resolveDccEndpoint } from './dcc-settings-service';
 import { isRetryableResult, sendDccRequest } from './dcc-http';
 
 /** Seconds to wait after attempt N fails (index N-1). After the last entry the item is marked FAILED. */
@@ -55,12 +55,18 @@ type OutboxRow = NonNullable<Awaited<ReturnType<typeof prisma.dcc_callback_outbo
 
 /** One send for an outbox row. Re-resolves the URL so config changes since the failure are honoured. */
 async function attempt(row: OutboxRow): Promise<DccCallbackResult> {
-  const base = await getDccCallbackUrl(row.fk_owner_id, row.fk_client_id, row.strict);
-  if (!base) {
-    return { path: row.path, outcome: 'skipped', message: 'No callback URL configured any more' };
+  // Must never throw: one bad row (e.g. a key that can't be decrypted) would abort the whole cron batch.
+  try {
+    const resolved = await resolveDccEndpoint(row.fk_owner_id, row.fk_client_id, row.strict ? 'EXTERNAL' : 'INTERNAL');
+    if (!resolved.ok) {
+      return { path: row.path, outcome: 'skipped', message: resolved.reason };
+    }
+    const { url: base, apiKey } = resolved.endpoint;
+    const url = `${base.replace(/\/$/, '')}${row.path}`;
+    return await sendDccRequest(url, row.path, row.body ?? undefined, apiKey);
+  } catch (err: any) {
+    return { path: row.path, outcome: 'skipped', message: `Could not prepare the callback: ${err?.message ?? err}` };
   }
-  const url = `${base.replace(/\/$/, '')}${row.path}`;
-  return sendDccRequest(url, row.path, row.body ?? undefined);
 }
 
 async function recordResult(row: OutboxRow, result: DccCallbackResult, auto: boolean): Promise<void> {

@@ -1,6 +1,7 @@
 import 'server-only';
 import { prisma } from '@/lib/prisma';
 import { logEvent } from '@/backend/services/auditLog/audit-log';
+import { decryptToken } from '@/backend/utils/token-encryption';
 
 export interface DccIntegration {
   id: number;
@@ -69,28 +70,54 @@ export async function upsertDccIntegration(
   });
 }
 
+export const MISSION_SCOPES = ['EXTERNAL', 'INTERNAL', 'ALL'] as const;
+export type MissionScope = (typeof MISSION_SCOPES)[number];
+/** Where a mission came from: requested by a client's API key (EXTERNAL) or created inside Readi (INTERNAL). */
+export type MissionOrigin = 'EXTERNAL' | 'INTERNAL';
+
+export function scopeAllows(scope: string, origin: MissionOrigin): boolean {
+  return scope === 'ALL' || scope === origin;
+}
+
+export interface ResolvedDccEndpoint {
+  url: string;
+  /** Decrypted key to send to the client's server; null for rows created before keys existed. */
+  apiKey: string | null;
+}
+
+export type DccEndpointResolution =
+  | { ok: true; endpoint: ResolvedDccEndpoint }
+  | { ok: false; reason: string };
+
 /**
- * Resolves where DCC callbacks go.
+ * Resolves where a DCC callback for `clientId` goes.
  *
- * - With a clientId, the client's own callback URL (dcc_client_endpoints) is used.
- * - If that client has none: `strict` callers (a request that came in through a
- *   client's API key) get null — never another client's DCC. Non-strict callers
- *   (missions created in Readi) fall back to the organisation-level URL.
- * - Without a clientId (legacy keys / unmapped requests), the organisation URL.
+ * Every integration belongs to one client; there is no organisation-wide fallback,
+ * so an update is never sent to another client's server. The client's mission scope
+ * decides whether missions of this origin are sent at all.
  */
-export async function getDccCallbackUrl(
+export async function resolveDccEndpoint(
   ownerId: number,
-  clientId?: number | null,
-  strict = false,
-): Promise<string | null> {
-  if (clientId) {
-    const endpoint = await prisma.dcc_client_endpoints.findUnique({
-      where: { fk_owner_id_fk_client_id: { fk_owner_id: ownerId, fk_client_id: clientId } },
-      select: { callback_url: true, active: true },
-    });
-    if (endpoint?.active && endpoint.callback_url) return endpoint.callback_url;
-    if (strict) return null;
+  clientId: number | null | undefined,
+  origin: MissionOrigin,
+): Promise<DccEndpointResolution> {
+  if (!clientId) return { ok: false, reason: 'Mission has no client — no integration to send to' };
+
+  const row = await prisma.dcc_client_endpoints.findUnique({
+    where: { fk_owner_id_fk_client_id: { fk_owner_id: ownerId, fk_client_id: clientId } },
+    select: { callback_url: true, active: true, mission_scope: true, api_key_encrypted: true },
+  });
+  if (!row?.active || !row.callback_url) {
+    return { ok: false, reason: 'No callback URL configured for this client' };
   }
-  const integration = await getDccIntegration(ownerId);
-  return integration?.callback_url ?? null;
+  if (!scopeAllows(row.mission_scope, origin)) {
+    return { ok: false, reason: `Skipped: this client's integration only sends ${row.mission_scope.toLowerCase()} missions` };
+  }
+  return {
+    ok: true,
+    endpoint: {
+      url: row.callback_url,
+      apiKey: row.api_key_encrypted ? decryptToken(row.api_key_encrypted) : null,
+    },
+  };
 }
