@@ -1,0 +1,82 @@
+---
+title: "Regole sullo stato dei sistemi"
+description: "Come OPERATIONAL, MAINTENANCE e NOT_OPERATIONAL vengono calcolati a ogni caricamento della flotta."
+---
+
+Lo stato di un sistema viene calcolato a ogni caricamento dell'elenco della flotta, in base ai suoi componenti e ai suoi ticket di manutenzione. Uno stato impostato manualmente sul sistema (ad esempio Escluso o Dismesso) viene mantenuto e prevale sulle regole seguenti.
+
+---
+
+## Logica di calcolo
+
+```
+Per ogni sistema (tool):
+
+  1. Controlla i componenti:
+     Cerca un componente attivo (component_active = Y)
+     con expiration_date <= oggi,
+     oppure il cui limite di scadenza per voli / ore di volo è stato raggiunto
+     → Se trovato: NOT_OPERATIONAL
+
+  2. Controlla i ticket di manutenzione:
+     Cerca un ticket con ticket_status != CLOSED,
+     oppure un componente il cui stato è MAINTENANCE
+     → Se trovato: MAINTENANCE
+
+  3. Nessuna delle due condizioni → OPERATIONAL
+```
+
+**Priorità:** `NOT_OPERATIONAL` prevale su `MAINTENANCE`.
+
+---
+
+## Definizioni degli stati
+
+| Stato | Condizione |
+|---|---|
+| `OPERATIONAL` | Nessun componente attivo scaduto, nessun ticket aperto, nessun componente impostato su MAINTENANCE |
+| `MAINTENANCE` | Un ticket non chiuso, oppure un componente impostato su MAINTENANCE |
+| `NOT_OPERATIONAL` | `component_active = Y` E (`expiration_date <= today` OPPURE ha raggiunto il limite di scadenza per voli o ore di volo) |
+
+<Note>
+Un componente che è solo in **Avviso** o **In scadenza** per la manutenzione non cambia lo stato del sistema. Compare nella Dashboard manutenzione. Il sistema passa In manutenzione quando viene aperto un ticket. Vedi [Manutenzione](/docs/modules/maintenance).
+</Note>
+
+<Note>
+**Ticket su un sistema Non operativo.** Quando viene creato un ticket per un sistema Non operativo solo a causa di un componente scaduto, lo stato memorizzato del sistema viene impostato su **Manutenzione**, così mostra Manutenzione finché il ticket è aperto. Uno stato impostato manualmente non viene modificato.
+</Note>
+
+<Note>
+Imposta `component_active = N` su un componente scaduto per rimuoverlo dal calcolo dello stato senza eliminarlo.
+</Note>
+
+<Warning>
+**La scadenza è permanente per impostazione predefinita.** Un componente scaduto non può tornare Operativo e non è possibile creare per esso alcun ticket di manutenzione. Non rinnovarlo modificando la data di scadenza: la modifica viene rifiutata. Il sistema resta Non operativo finché il componente non viene **rimosso dal sistema** (rimosso, oppure spostato in magazzino). Impostarlo come Dismesso non libera il sistema. Vedi [Stati dei componenti](/docs/modules/systems).
+</Warning>
+
+<Note>
+**Eccezione: Scadenza permanente non selezionata.** Un componente con la casella **Scadenza permanente** deselezionata rende comunque il sistema `NOT_OPERATIONAL` alla scadenza, ma viene mostrato come Non operativo (non Dismesso) e si rinnova creando un ticket per esso e chiudendolo (la sua scadenza non può essere modificata mentre è scaduto). Nessun ticket di manutenzione viene creato automaticamente; un utente può crearne uno e il sistema mostra allora **Manutenzione** invece di Non operativo. Impostarlo come Dismesso libera il sistema. Vedi [Opzione Scadenza permanente](/docs/modules/systems).
+</Note>
+
+---
+
+## Dove compare lo stato
+
+| Funzionalità | Effetto |
+|---|---|
+| Elenco della flotta | Badge di stato per ogni drone |
+| Bacheca delle operazioni | Cambio di stato bloccato se NOT_OPERATIONAL o MAINTENANCE |
+| Creazione della missione | I droni non operativi sono disattivati in grigio e non selezionabili |
+| Calendario delle operazioni | Le missioni su sistemi non operativi sono mostrate barrate |
+| Archivio documenti | I documenti collegati a sistemi non operativi sono contrassegnati |
+| Filtro del Registro di volo | Lo stato del drone è mostrato per ogni voce |
+| Agente AI | L'intento DECOMMISSIONED interroga `tool_component.expiration_date` |
+
+---
+
+## Come risolvere ciascuno stato
+
+| Stato | Come risolverlo |
+|---|---|
+| `NOT_OPERATIONAL` | Scadenza permanente: rimuovi il componente scaduto dal sistema oppure spostalo in magazzino (non può essere rinnovato e Dismesso non libera il sistema). Scadenza permanente deselezionata: crea un ticket per il componente e chiudilo (la scadenza viene rinnovata), oppure impostalo su Dismesso |
+| `MAINTENANCE` | Chiudi il ticket di manutenzione (`ticket_status = CLOSED`) |

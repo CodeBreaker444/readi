@@ -1,0 +1,103 @@
+---
+title: "Autorizzazione missioni D-Flight"
+description: "Come Readi richiede l'autorizzazione al volo a D-Flight, quali missioni vengono inviate, come arrivano gli aggiornamenti di stato e cosa blocca una missione."
+---
+
+Per le aziende con D-Flight abilitato, Readi richiede l'autorizzazione al volo a D-Flight quando viene creata una missione. Una missione è utilizzabile nella Bacheca giornaliera solo dopo che D-Flight l'ha **accettata**.
+
+La richiesta è **non bloccante**: se non può essere inviata, la missione viene comunque creata e il problema viene segnalato all'utente (vedi [Errori e nuovi tentativi](#errori-e-nuovi-tentativi)).
+
+---
+
+## Quando viene inviata la richiesta
+
+| Missione creata da | Richiesta inviata |
+|---|---|
+| OPM, manager, Admin, Super Admin | Immediatamente alla creazione |
+| Pilota (non manager) | Dopo che un OPM approva la missione. Vedi [Approvazione missioni (OPM)](/docs/business-logic/mission-approval) |
+| Missioni ricorrenti (calendario) | Alla creazione, per ogni missione |
+
+Fino ad allora la Tabella missione mostra **"D-Flight: In attesa di approvazione OPM"**, oppure **"D-Flight: Non inviata"** se la richiesta è fallita dopo l'approvazione e può essere ritentata.
+
+---
+
+## Saltare D-Flight per una missione
+
+Quando crei o modifichi una missione puoi spuntare **Salta l'autorizzazione D-Flight**. La missione viene allora esclusa completamente da D-Flight: non servono né U-space né area di volo, non viene inviata alcuna richiesta e la Bacheca giornaliera non attende che D-Flight la accetti. Vedi [Operazioni](/docs/modules/operations).
+
+---
+
+## Requisiti
+
+Una richiesta viene costruita solo quando tutte queste condizioni sono vere:
+
+1. D-Flight è abilitato per l'azienda e le credenziali sono salvate ([configurazione](/docs/business-logic/dflight-integration)).
+2. La missione ha un **inizio programmato**.
+3. Il sistema della missione ha un **componente DRONE attivo con un Drone Registration Code**, cioè un drone importato da D-Flight o sincronizzato con D-Flight.
+4. La missione ha **dati di traiettoria** (sotto).
+
+Se manca la 1 la richiesta viene saltata in silenzio; se manca la 2, la 3 o la 4 viene segnalato all'utente.
+
+### Traiettoria per tipo di operazione
+
+| Tipo di operazione | Origine dell'area di volo |
+|---|---|
+| **OPEN, STS-01, STS-02** | Un **cerchio** disegnato sulla mappa durante la creazione della missione. I cerchi oltre il raggio massimo non vengono inviati |
+| **PDRA** | I **waypoint** del piano di missione selezionato per la missione (in mancanza, si usa un altro piano della stessa valutazione che ha waypoint) |
+| Altri tipi | Nessuna traiettoria: non inviata |
+
+I percorsi sono distribuiti uniformemente sul tempo di volo, e l'area prevede un margine di 50 m attorno al percorso e il volo da 0 a 120 m di quota. Il pilota può scegliere un **U-space** quando D-Flight ne offre più di uno.
+
+<Warning>
+Se l'inizio programmato è già trascorso, la richiesta parte tra un minuto da adesso in modo che D-Flight la accetti. La durata predefinita è di 15 minuti se non è impostata sulla missione.
+</Warning>
+
+---
+
+## Monitoraggio dello stato
+
+Dopo che D-Flight ha creato la missione, Readi memorizza la missione D-Flight e chiede al servizio flytrelay di monitorarla. flytrelay controlla D-Flight ogni 30 secondi e avvisa Readi quando uno stato cambia. Vengono monitorati tre stati:
+
+| Stato | Esempi |
+|---|---|
+| Stato della missione | SAVED, ABORTED, CANCELLED, WITHDRAWN |
+| Stato dell'autorizzazione al volo | ACCEPTED, REJECTED, REVOKED, WITHDRAWN |
+| Stato dell'autorizzazione (clearance) al volo | CLEARANCE_REJECTED, CLEARANCE_REJECTED_BY_SYSTEM |
+
+La Bacheca giornaliera e i dettagli della missione mostrano lo stato dell'autorizzazione come **D-Flight: In attesa** (predefinito), **Accettata**, **Rifiutata** o **Ritirata**.
+
+---
+
+## Cosa blocca lo stato D-Flight
+
+| Regola | Effetto |
+|---|---|
+| Autorizzazione non ancora **ACCEPTED** | La missione non può essere **avviata** |
+| Stato della missione ABORT/ABORTED/ABORTING, CANCELLED, WITHDRAWN | La missione non può procedere nella Bacheca giornaliera |
+| Autorizzazione REJECTED, REVOKED, WITHDRAWN | La missione non può procedere |
+| Clearance rifiutata | La missione non può procedere |
+
+Le aziende che usano D-Flight vedono una missione nella Bacheca giornaliera solo dopo che D-Flight l'ha accettata. Le missioni senza richiesta D-Flight (D-Flight disattivato, o mai creata) non sono soggette a questo vincolo.
+
+### Notifiche al pilota
+
+Una notifica ad alta priorità viene inviata al pilota assegnato quando:
+
+- D-Flight **interrompe** (abort) la missione: "atterra immediatamente" se già in volo, "non decollare" altrimenti.
+- D-Flight ritira, rifiuta, revoca, annulla o mette in conflitto la missione **mentre è in volo**: fermati immediatamente.
+
+---
+
+## Errori e nuovi tentativi
+
+Quando una richiesta fallisce, o viene saltata per un motivo che l'utente può correggere (ad esempio, nessun drone registrato in D-Flight assegnato), un toast di **errore D-Flight** ne spiega la causa e suggerisce una soluzione. Questo vale per le missioni PDRA, OPEN, STS-01 e STS-02.
+
+Una richiesta può essere reinviata dalla Tabella missione (missioni contrassegnate come "Non inviata") dopo aver corretto la causa.
+
+---
+
+## Correlati
+
+- [Integrazione D-Flight e importazione droni](/docs/business-logic/dflight-integration)
+- [Approvazione missioni (OPM)](/docs/business-logic/mission-approval)
+- [Vincoli di stato della missione](/docs/platform-rules/mission-status-gates)

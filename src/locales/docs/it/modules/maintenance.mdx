@@ -1,0 +1,169 @@
+---
+title: "Manutenzione"
+description: "Apri ticket di manutenzione, registra il lavoro svolto, chiudili e mantieni un registro di manutenzione consultabile."
+---
+
+La Manutenzione è il punto in cui mantieni i droni idonei al volo. Ha due pagine nella barra laterale sotto **Sistemi**:
+
+| Pagina | Scopo |
+|---|---|
+| **Dashboard manutenzione** | Vedi quali sistemi e componenti sono a posto, vicini al limite (Avviso) o oltre il limite (Scaduto) |
+| **Registro di manutenzione** | Ogni ticket di manutenzione: crea, assegna, redigi il rapporto, chiudi, cerca ed esporta |
+
+Finché un ticket è aperto su un sistema, quel sistema è contrassegnato come **in manutenzione** e non può essere usato per una missione. Vedi [Regole sullo stato dei sistemi](/docs/platform-rules/system-status-rules).
+
+---
+
+## Tipi di ticket
+
+Quando crei un ticket scegli uno di tre tipi:
+
+| Tipo | Significato |
+|---|---|
+| **Basic** | Manutenzione di livello base |
+| **Standard** | Manutenzione di livello standard |
+| **Extraordinary** | Manutenzione straordinaria, al di fuori della normale routine |
+
+Scegli il tipo che corrisponde al tuo programma di manutenzione. Viene salvato nel ticket e mostrato nel registro e nelle esportazioni.
+
+---
+
+## Creare un ticket
+
+Clicca su **Nuovo Ticket** e compila:
+
+1. **Drone:** scegli il sistema. Puoi cercare per codice.
+2. **Componenti (facoltativo, selezione multipla):** scegli uno o più componenti oggetto del lavoro. Selezionali tutti in un unico ticket invece di aprire un ticket per ogni parte. Lascia vuoto per coprire l'**intero sistema**.
+3. **Tipo** e **Priorità**.
+4. **Assegna A:** il tecnico che svolgerà il lavoro (puoi farlo anche in seguito).
+5. **Posizione** (facoltativa) e una **Nota** che descrive il problema.
+
+I ticket non possono sovrapporsi. Se un ticket aperto copre già il sistema, o uno qualsiasi dei componenti scelti, vedrai "Un ticket aperto copre già questo sistema o i componenti selezionati". Chiudi prima quel ticket o scegli componenti diversi. Un ticket senza componenti copre l'intero sistema, quindi non può essere aperto mentre un altro ticket è aperto su quel sistema.
+
+---
+
+## Lavorare su un ticket
+
+Ogni riga del Registro di manutenzione ha delle azioni:
+
+| Azione | Cosa fa |
+|---|---|
+| **Assegna** | Scegli o cambia il tecnico |
+| **Rapporto** | Aggiungi il rapporto di lavoro del tecnico (vedi sotto) |
+| **Carica** | Allega un file come evidenza, con una breve descrizione |
+| **Scarica File** | Scarica i file allegati |
+| **Eventi** | Mostra la cronologia del ticket |
+| **Chiudi Ticket** | Termina il ticket |
+
+### Rapporto di lavoro del tecnico
+
+Apri **Rapporto** per registrare cosa è stato fatto:
+
+- **Inizio Lavori** e **Fine Lavori:** quando il lavoro è iniziato e finito. La fine deve essere successiva all'inizio.
+- **Rapporto:** una descrizione del lavoro svolto. È obbligatorio.
+- **Allegato (facoltativo):** una foto, un documento o un altro file.
+
+Salvalo con **Salva Rapporto**. Un ticket può avere più rapporti.
+
+### Cronologia del ticket ed evidenze
+
+**Eventi** elenca in ordine ciò che è accaduto sul ticket: creazione, assegnazione, rapporti aggiunti, file caricati e chiusura, ciascuno con chi lo ha fatto e quando. I file caricati nel ticket restano associati ad esso e possono essere scaricati in seguito con **Scarica File**. Insieme costituiscono la tua traccia di evidenze per gli audit.
+
+---
+
+## Chiudere un ticket
+
+Ci sono due modi per chiudere un ticket, entrambi con lo stesso effetto:
+
+- **Chiudi il ticket al salvataggio:** seleziona questa casella nella finestra del rapporto. Il ticket si chiude non appena salvi e il testo del rapporto diventa la nota di chiusura.
+- **Chiudi Ticket** (l'azione separata): scrivi una **Nota di Chiusura** che descrive il lavoro e conferma.
+
+Quando un ticket viene chiuso:
+
+- Il sistema torna **operativo**, a meno che non sia ancora aperto un altro ticket su di esso.
+- Un record di manutenzione viene aggiunto alla storia del sistema.
+- I **contatori di manutenzione dei componenti presenti nel ticket vengono azzerati**: ore, voli e giorni dalla manutenzione. La data dell'ultima manutenzione diventa il giorno in cui chiudi il ticket. Se il ticket copriva l'intero sistema, vengono azzerati tutti i componenti del sistema. I componenti dismessi, fuori servizio o scaduti non vengono azzerati.
+- Un messaggio conferma quali componenti sono stati azzerati, ad esempio "Contatori azzerati per: Batteria 1, Motore 2".
+- **I componenti scaduti vengono rinnovati.** Se il ticket copre un componente scaduto la cui scadenza **non è permanente**, la chiusura del ticket ne rinnova la scadenza: la data di scadenza slitta di 1 mese in avanti e i limiti di voli o ore di volo aumentano di 10. La finestra **Chiudi Ticket** elenca i nuovi valori prima della conferma e gli Eventi del ticket registrano il rinnovo. Dopo di che puoi modificare normalmente la scadenza.
+
+### Cosa viene azzerato e cosa viene conservato
+
+| Conservato | Azzerato |
+|---|---|
+| Le **ore totali** del componente (il suo utilizzo complessivo da quando era nuovo). La manutenzione non le cancella e contano ancora per il suo limite di scadenza | **Ore dalla manutenzione** |
+| La storia del componente e i voli passati | **Voli dalla manutenzione** |
+| | **Giorni dalla manutenzione** |
+
+### Come vengono contati i giorni in seguito
+
+Il contatore dei giorni riparte dal **giorno in cui il ticket è stato chiuso**, non dal giorno in cui il componente è stato installato. Finché un componente non viene sottoposto a manutenzione per la prima volta, i suoi giorni vengono contati dalla data di installazione. Dopo di che, vengono sempre contati dall'ultima volta in cui è stato chiuso un ticket che lo copriva. Quindi chiudi il ticket nel giorno in cui il lavoro è davvero terminato, perché quella data diventa il nuovo punto di partenza.
+
+### La chiusura non annulla altri blocchi
+
+La chiusura di un ticket riporta il sistema a **operativo** solo quando nient'altro lo trattiene. Queste condizioni continuano a valere dopo la chiusura:
+
+- **Un altro ticket aperto** sullo stesso sistema lo mantiene in manutenzione. Viene influenzato solo il ticket che chiudi.
+- **Un componente scaduto** (oltre la data di scadenza o il limite di voli o di ore) mantiene il sistema **non operativo** e non viene azzerato. La scadenza è permanente: non si può creare alcun ticket di manutenzione per un componente scaduto. Mettilo fuori servizio, rimuovilo o spostalo nel magazzino. Vedi [Regole sullo stato dei sistemi](/docs/platform-rules/system-status-rules).
+- **I componenti dismessi o fuori servizio** restano come sono.
+- Se il sistema è diventato **non operativo** mentre il ticket era aperto (ad esempio un componente è scaduto nel frattempo), Readi non ti permette di chiudere il ticket. Ti chiede di cambiare prima lo stato del sistema in **Manutenzione**, poi di chiuderlo.
+
+### Se un componente scade mentre un ticket è aperto
+
+Un componente può superare la data di scadenza, o il limite di voli o di ore di volo, mentre il ticket è ancora aperto. Il sistema diventa allora **Non Operativo** e il ticket **non può essere chiuso** finché non hai risolto la situazione:
+
+1. **Gestisci il componente scaduto.** La scadenza è permanente, quindi non può essere rinnovata. Impostalo su Fuori servizio, rimuovilo dal sistema o spostalo nel magazzino. Vedi [Regole sullo stato dei sistemi](/docs/platform-rules/system-status-rules).
+2. **Imposta lo stato del sistema su Manutenzione.**
+3. **Chiudi il ticket** come al solito.
+
+Finché entrambi i passaggi non sono completati, Readi rifiuta di chiudere il ticket. Questo evita che un sistema con una parte scaduta venga chiuso come se fosse pronto al volo.
+
+La chiusura di un ticket (o il salvataggio di un rapporto con **Chiudi il ticket al salvataggio**) è limitata ai ruoli Responsible Manager (RM), Admin e Super Admin.
+
+<Warning>
+La chiusura di un ticket riavvia i contatori di manutenzione, quindi chiudilo solo quando il lavoro è davvero terminato.
+</Warning>
+
+---
+
+## Cercare, filtrare ed esportare
+
+Il Registro di manutenzione mostra i totali dei ticket **Totale**, **Aperti**, **Chiusi** e **Alta Priorità**.
+
+- **Filtra** per Tutti, Aperti o Chiusi.
+- **Cerca** per codice drone, numero di serie o tecnico.
+- **Esporta** l'elenco. Il file include numero del ticket, tipo, stato, priorità, sistema, seriale, componente, tecnico, date, note e la posizione con il suo nome.
+
+---
+
+## Notifiche email
+
+**Sistemi → Notifiche email** ti permette di scegliere quali email di manutenzione vengono inviate e a chi. È disponibile per gli amministratori.
+
+| Evento | Inviata quando |
+|---|---|
+| **Ticket creato** | Viene creato un nuovo ticket di manutenzione |
+| **Ticket assegnato** | Un ticket viene assegnato a un tecnico (inviata direttamente a quel tecnico) |
+| **Ticket chiuso** | Un ticket viene chiuso |
+| **Avviso di manutenzione** | Un componente si sta avvicinando al suo limite di manutenzione |
+| **Manutenzione in scadenza** | Un componente ha raggiunto il suo limite |
+| **Intervento iniziato / terminato** | Il lavoro su un ticket inizia o termina |
+
+Per ogni evento, scegli **Notifica Ruoli**, cioè i ruoli che ricevono l'email. Se non è selezionato alcun ruolo, nessuno riceve email per quell'evento. Le modifiche vengono salvate automaticamente.
+
+Se la pagina indica che le notifiche email sono disattivate, chiedi al tuo amministratore di attivarle per l'azienda. Vedi anche [Notifiche email](/docs/business-logic/email-notifications).
+
+---
+
+## Permessi
+
+Chi può leggere, modificare ed eliminare in quest'area, per ruolo.
+
+<PermissionsTable section="Systems" />
+
+---
+
+## Correlati
+
+- [Sistemi](/docs/modules/systems)
+- [Logica del modulo Manutenzione](/docs/business-logic/maintenance-module)
+- [Operazioni](/docs/modules/operations)

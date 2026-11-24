@@ -1,0 +1,58 @@
+---
+title: "Flusso della bacheca operazioni"
+description: "Sequenza passo dopo passo quando una scheda missione viene trascinata sulla Bacheca delle operazioni."
+---
+
+## Sequenza completa del trascinamento
+
+```
+1. L'utente trascina la scheda della missione dalla colonna A alla colonna B
+2. targetStatus determinato dal nome della colonna B
+3. Controlli preliminari: sistema operativo? transizione di stato valida?
+4. Viene attivato il controllo di autorizzazione
+   → Si apre la finestra di autorizzazione
+   → L'utente inserisce il PIN
+   → JWT firmato, POST /api/authorization/transaction-sign
+   → transaction_sign_id restituito
+5. POST /api/operation/board/status
+   { missionId, targetStatus, transactionSignId }
+6. Controlli del server:
+   a. Verifica del permesso di visualizzazione delle Operazioni
+   b. Verifica della dichiarazione giornaliera
+   c. Verifica dello stato operativo del sistema
+   d. Stato della missione aggiornato nel database
+7. pilot_mission.fk_mission_status_id aggiornato
+8. La scheda appare nella nuova colonna, vengono create notifica e voce nel registro di audit
+```
+
+---
+
+## Transizioni di stato
+
+| Da | A | `action_type` |
+|---|---|---|
+| `PLANNED` | `IN_PROGRESS` | `mission_start` |
+| `IN_PROGRESS` | `COMPLETED` | `mission_complete` |
+| Qualsiasi non finale | `CANCELLED` | `mission_cancel` |
+| `IN_PROGRESS` | `PLANNED` | `mission_revert` |
+
+---
+
+## Cosa viene registrato
+
+Ogni trascinamento riuscito crea due record:
+
+1. **`transaction_signs`**: record firmato di chi ha autorizzato la modifica
+2. **Registro di audit**: in testo semplice: "Mission status changed from X to Y by [user]"
+
+---
+
+## Stati di errore
+
+| Errore | Causa | Risultato |
+|---|---|---|
+| PIN non configurato | Nessuna voce `user_authorization_keys` | Finestra: "Authorization PIN not set up. Go to Settings → Security." |
+| PIN errato | La decifratura lato client fallisce | Finestra: "Incorrect PIN. Please try again." |
+| Nessuna dichiarazione giornaliera | Nessuna dichiarazione presentata oggi | Azione sulla bacheca bloccata |
+| Sistema non operativo | NOT_OPERATIONAL o MAINTENANCE | Azione sulla bacheca bloccata |
+| Errore di rete | La chiamata API fallisce | La scheda torna alla colonna di partenza |

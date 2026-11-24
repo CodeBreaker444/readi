@@ -1,5 +1,6 @@
 'use client';
 
+import { localizeText } from '@/lib/api-error-message';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -69,7 +70,7 @@ export default function ClientProfilePage({ user }: { user: SessionUser }) {
           setClientPhone(res.data.client.client_phone || '');
         }
       })
-      .catch(() => toast.error('Failed to load profile'))
+      .catch(() => toast.error(localizeText('Failed to load profile')))
       .finally(() => setLoading(false));
 
     return () => { if (avatarPreview) URL.revokeObjectURL(avatarPreview); };
@@ -78,9 +79,9 @@ export default function ClientProfilePage({ user }: { user: SessionUser }) {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 10 * 1024 * 1024) { toast.error('Image must be under 10 MB'); return; }
+    if (file.size > 10 * 1024 * 1024) { toast.error(localizeText('Image must be under 10 MB')); return; }
     if (!['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(file.type)) {
-      toast.error('Only JPEG, PNG, WebP, or GIF allowed'); return;
+      toast.error(localizeText('Only JPEG, PNG, WebP, or GIF allowed')); return;
     }
     setAvatar(file);
     setAvatarPreview(URL.createObjectURL(file));
@@ -98,14 +99,14 @@ export default function ClientProfilePage({ user }: { user: SessionUser }) {
     try {
       const res = await axios.post('/api/profile', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
       if (res.data.updateResult) {
-        toast.success('Profile updated');
+        toast.success(localizeText('Profile updated'));
         if (res.data.avatarUrl) { setCurrentAvatarUrl(res.data.avatarUrl); setAvatarPreview(null); setAvatar(null); }
         router.refresh();
       } else {
-        toast.error(res.data.message || 'Update failed');
+        toast.error(res.data.message || localizeText('Update failed'));
       }
     } catch {
-      toast.error('Update failed');
+      toast.error(localizeText('Update failed'));
     } finally {
       setSaving(false);
     }
@@ -116,10 +117,10 @@ export default function ClientProfilePage({ user }: { user: SessionUser }) {
     setSavingPhone(true);
     try {
       await axios.patch('/api/client-portal/profile', { client_phone: clientPhone.trim() });
-      toast.success('Phone number updated');
+      toast.success(localizeText('Phone number updated'));
       setClient((c) => c ? { ...c, client_phone: clientPhone.trim() } : c);
     } catch {
-      toast.error('Failed to update phone number');
+      toast.error(localizeText('Failed to update phone number'));
     } finally {
       setSavingPhone(false);
     }

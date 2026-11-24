@@ -1,5 +1,6 @@
 'use client';
 
+import { localizeText } from '@/lib/api-error-message';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -81,7 +82,7 @@ export function LcuEditModal({ open, procedure, onClose, onSave, saving }: EditM
       try {
         procedure_steps = JSON.parse(form.procedure_steps_raw);
       } catch {
-        toast.error('Invalid JSON for procedure steps');
+        toast.error(localizeText('Invalid JSON for procedure steps'));
         return;
       }
     }

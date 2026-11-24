@@ -1,0 +1,62 @@
+---
+title: "Drone ATC"
+description: "Una mappa in tempo reale dei tuoi droni e dello spazio aereo circostante."
+---
+
+**Drone ATC** (Air Traffic Control) mostra la tua flotta su una mappa in tempo reale, insieme agli aeromobili vicini, alle zone di spazio aereo e al meteo.
+
+È disponibile dal menu **Control Center** per gli utenti con accesso a Drone ATC (Admin, OPM e diversi altri ruoli di gestione).
+
+---
+
+## Prima di iniziare
+
+Drone ATC richiede che il tuo account Control Center sia collegato (vedi [Control Center](/docs/modules/flytbase)). Senza di esso vedi "No Control Center API key configured", con un link per configurarlo.
+
+L'indicatore di connessione in alto mostra **Live**, **Connessione in corso**, **Errore** o **Nessuna chiave API**. Usa **Riprova** se la connessione non riesce.
+
+---
+
+## Pannello della flotta
+
+L'elenco laterale mostra i tuoi droni con il loro stato:
+
+| Stato | Significato |
+|---|---|
+| **Live** | In volo e sta inviando la propria posizione |
+| **Standby** | Disponibile ma non in volo |
+| **Offline** | Non connesso |
+| **No GPS** | Connesso ma ancora senza posizione |
+
+Seleziona un drone per seguirlo e apri il suo feed live o il video, se disponibile.
+
+---
+
+## Livelli della mappa
+
+Attiva o disattiva i livelli dal pannello **Livelli**:
+
+- **Traffico:** i tuoi droni e gli altri aeromobili vicini
+- **Spazio aereo:** zone per classe (A, B, C, D), con i relativi limiti di altezza
+- **Meteo:** vento (animato), temperatura, nuvole, pioggia e neve e pressione atmosferica
+
+---
+
+## Aggiornare i droni
+
+Usa **Sincronizza droni** (o **Aggiorna droni**) per aggiornare l'elenco dei droni mostrati sulla mappa dalla tua flotta Readi. Fallo dopo aver aggiunto o modificato un drone.
+
+---
+
+## Permessi
+
+Chi può leggere, modificare ed eliminare in quest'area, in base al ruolo.
+
+<PermissionsTable section="Drone ATC" />
+
+---
+
+## Correlati
+
+- [Control Center](/docs/modules/flytbase)
+- [Operazioni](/docs/modules/operations)

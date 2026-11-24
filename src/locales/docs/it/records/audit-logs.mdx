@@ -1,0 +1,79 @@
+---
+title: "Registri di audit"
+description: "Registro eventi dell'intera piattaforma per ogni azione di creazione, modifica ed eliminazione, più i registri firmati delle azioni autorizzate con PIN."
+---
+
+La pagina Registri di audit ha due schede: **Registri eventi** e **Transazioni sicure**.
+
+---
+
+## Registri eventi
+
+Un registro cronologico di ciò che le persone hanno fatto in Readi.
+
+### Cosa viene registrato
+
+- Utente creato / modificato / eliminato
+- Cambi di stato delle missioni (chi li ha effettuati e quando)
+- Cambi di stato di conformità
+- Caricamenti di documenti
+- Modifiche a sistemi e componenti
+
+### Campi per ogni voce
+
+| Campo | Significato |
+|---|---|
+| `event_type` | CREATE, UPDATE, DELETE |
+| `entity_type` | Cosa è stato modificato |
+| `entity_id` | ID del record modificato |
+| `description` | Riepilogo leggibile |
+| `user_name` / `user_email` | Chi ha eseguito l'azione |
+| `created_at` | Quando è avvenuta |
+
+Usa i filtri (azienda, utente, evento, sezione) e la casella di ricerca per restringere l'elenco.
+
+---
+
+## Transazioni sicure
+
+Alcune azioni importanti richiedono il tuo [PIN di autorizzazione](/docs/platform-rules/authorization-code). Ogni volta che qualcuno ne conferma una con il proprio PIN, Readi salva un **registro firmato** dell'azione. Questa scheda li elenca, così puoi dimostrare chi ha autorizzato cosa e che nulla è stato modificato in seguito.
+
+Le azioni che compaiono qui includono l'avvio, il completamento o il ripristino di una missione, il distacco di un componente, la messa in operatività di un drone e il completamento o la revisione di una valutazione.
+
+### Lettura della tabella
+
+| Colonna | Significato |
+|---|---|
+| **Data / Ora** | Quando l'azione è stata autorizzata |
+| **Azione** | Cosa è stato autorizzato, ad esempio Inizio missione |
+| **Entità** | La missione, il drone o il record a cui si riferiva |
+| **Autorizzato da** | La persona che ha inserito il proprio PIN |
+| **Integrità** | Se il registro è affidabile (vedi sotto) |
+
+### Verifica di un registro
+
+Clicca su **Verifica** su una riga. Readi controlla la firma digitale di quel registro e mostra uno di questi risultati:
+
+| Risultato | Significato |
+|---|---|
+| **Valida** | Il registro è stato firmato da quella persona e non è stato alterato |
+| **Manomessa** | Il registro non corrisponde alla sua firma, quindi potrebbe essere stato modificato. Indaga |
+| **Sconosciuto** | Non è stato possibile verificarlo |
+
+Apri una riga per vedere i **Dettagli azione** e il **Registro crittografico** (ID transazione e dati della firma) se un auditor deve verificarlo in modo indipendente.
+
+Se la scheda mostra "Nessuna transazione autorizzata registrata", nessuno ha ancora confermato un'azione con il proprio PIN.
+
+---
+
+## Principali percorsi dell'app
+
+- `/audit-logs`
+
+---
+
+## Permessi
+
+Chi può leggere, modificare ed eliminare in quest'area, in base al ruolo.
+
+<PermissionsTable section="Audit Logs" />

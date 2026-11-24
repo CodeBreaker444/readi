@@ -1,0 +1,334 @@
+---
+title: "Logica di business del modulo Operazioni"
+description: "Flusso della logica di business del modulo operazioni/missioni, inclusi parametri, trigger e dipendenze."
+---
+
+# Logica di business del modulo Operazioni
+
+## Panoramica
+
+Il modulo Operazioni gestisce l'intero ciclo di vita della missione, dalla creazione al completamento, includendo assegnazioni dei piloti, assegnazioni dei droni, allegati dei registri di volo e tracciamento della conformità. Questo modulo è strettamente integrato con i sistemi di pianificazione, manutenzione e notifica.
+
+---
+
+## Flusso di business principale
+
+```
+Pianificazione approvata
+  → Missione creata (stato PLANNED)
+  → Pilota e drone assegnati
+  → Controllo pre-volo completato
+  → Missione avviata (stato IN_PROGRESS)
+  → PIN di autorizzazione inserito
+  → Registrazione della telemetria (integrazione FlytBase)
+  → Missione completata (stato COMPLETED)
+  → Controllo post-volo completato
+  → Log di volo allegato
+  → Ciclo di manutenzione aggiornato
+  → Notifiche email inviate
+```
+
+---
+
+## Parametri chiave
+
+### Parametri della missione
+
+| Etichetta frontend | Parametro | Impatto sulla manutenzione |
+|---|---|---|
+| Codice missione | `mission_code` | Identificazione della missione |
+| Nome missione | `mission_name` | Nome visualizzato |
+| Pianificazione | `fk_planning_id` | Collega al record di pianificazione approvato |
+| Pilota | `fk_pilot_user_id` | Assegnazione del pilota (PIC) |
+| Drone/Sistema | `fk_tool_id` | **SÌ** - L'assegnazione del drone attiva l'aggiornamento della manutenzione al completamento |
+| Cliente | `fk_client_id` | Associazione al cliente |
+| Tipo di missione | `fk_mission_type_id` | Tipo di missione (sorveglianza, consegna, ecc.) |
+| Categoria di missione | `fk_mission_category_id` | Categoria della missione |
+| Procedura LUC | `fk_luc_procedure_id` | Riferimento alla procedura LUC per la conformità |
+| Inizio programmato | `scheduled_start` | Orario di decollo pianificato |
+| Inizio effettivo | `actual_start` | Timestamp effettivo di decollo |
+| Fine effettiva | `actual_end` | **SÌ** - Attiva l'aggiornamento del ciclo di manutenzione al completamento della missione |
+| Durata del volo | `flight_duration` | **SÌ** - Aggiunta alle Ore di manutenzione del componente |
+| Distanza percorsa | `distance_flown` | Distanza in chilometri per la conformità |
+| Altitudine massima | `max_altitude` | Altitudine di picco in metri (>120m = segnalazione di conformità) |
+| Posizione | `location` | Luogo del volo |
+| Note | `notes` | Note della missione |
+| Stato | `status_name` | Stato della missione (PLANNED, IN_PROGRESS, COMPLETED, CANCELLED, FAILED) |
+| Controllo pre-volo OK | `pre_flight_check_ok` | Checklist pre-volo firmata |
+| Controllo post-volo OK | `post_flight_check_ok` | Checklist post-volo firmata |
+| Flag incidente | `incident_flag` | Si è verificato un incidente di sicurezza |
+| RTH non pianificato | `rth_unplanned` | Ritorno al punto di partenza non pianificato |
+| Perdita di collegamento | `link_loss` | Collegamento di comunicazione perso |
+| Flag deviazione | `deviation_flag` | Il volo ha deviato dalla rotta pianificata |
+| Carica batteria iniziale | `battery_charge_start` | % batteria al decollo |
+| Carica batteria finale | `battery_charge_end` | % batteria all'atterraggio |
+
+### Logica dello stato della missione
+
+| Stato | Transizioni consentite | Logica di business |
+|---|---|---|
+| PLANNED | IN_PROGRESS, CANCELLED | Stato iniziale, in attesa di esecuzione |
+| IN_PROGRESS | COMPLETED, FAILED | Drone in volo, telemetria attiva |
+| COMPLETED | Nessuna | Completamento del volo riuscito |
+| CANCELLED | Nessuna | Annullata prima del decollo |
+| FAILED | Nessuna | Avviata ma non completata normalmente |
+
+**Transizioni di stato:**
+- PLANNED → IN_PROGRESS: Richiede controllo pre-volo OK, sistema OPERATIONAL
+- IN_PROGRESS → COMPLETED: Richiede controllo post-volo OK, actual_end registrato
+- IN_PROGRESS → FAILED: Flag di incidente impostati, può essere presentato un rapporto di sicurezza
+- PLANNED → CANCELLED: actual_start rimane NULL
+
+---
+
+## Logica di creazione della missione
+
+**Logica di creazione:**
+1. Valida i parametri obbligatori (mission_code, procedura LUC, ID volo)
+2. Crea il record della missione con i parametri forniti
+3. Imposta lo stato predefinito su COMPLETED se non fornito
+4. Invia la notifica email di missione creata (se abilitata)
+5. Allega il registro di volo FlytBase usando l'ID volo
+6. Invia l'email di missione completata (se status = COMPLETED e actual_end fornito)
+7. Per le operazioni PDRA: verifica se la missione è stata creata >1 ora dopo il completamento del volo → avviso di conformità
+
+**Trigger delle email:**
+- mission_created: Inviata subito dopo la creazione
+- mission_completed: Inviata se status = COMPLETED e actual_end fornito
+
+**Logica di conformità (PDRA):**
+Se il tipo di operazione è PDRA e la missione viene creata più di 1 ora dopo il completamento del volo, viene creato un log di audit con un avviso di conformità.
+
+---
+
+## Logica di allegato del registro di volo
+
+**Logica:**
+1. Recupera i dati di volo dall'API FlytBase usando l'ID volo
+2. Analizza i dati di telemetria (altitudine, velocità, coordinate, batteria)
+3. Crea il record del registro di volo
+4. Aggiorna la missione con i valori derivati dalla telemetria:
+   - max_altitude (dalla telemetria)
+   - distance_flown (calcolata dalla traccia GPS)
+   - flight_duration (dai timestamp della telemetria)
+   - battery_charge_start/end (dalla telemetria)
+
+**Deduplicazione:**
+- Una missione può avere un solo registro di volo allegato
+- Se il registro esiste già, l'allegato viene rifiutato
+
+---
+
+## Logica di assegnazione della missione
+
+### Assegnazione del pilota
+
+**Validazione:**
+- Il pilota deve avere il ruolo PIC o PILOT
+- Il pilota deve essere attivo
+- Viene verificata la disponibilità del pilota (nessuna missione IN_PROGRESS in contemporanea)
+- Viene verificata la certificazione del pilota (se richiesta dal tipo di missione)
+
+### Assegnazione del drone
+
+**Validazione:**
+- Il sistema deve essere OPERATIONAL (non MAINTENANCE o NOT_OPERATIONAL)
+- Il sistema deve essere attivo
+- Viene verificata la disponibilità del sistema (nessuna missione IN_PROGRESS in contemporanea)
+- Viene verificato lo stato di manutenzione del sistema
+- Viene verificata la posizione del sistema (se la missione ha un requisito di posizione specifico)
+
+---
+
+## Logica del controllo pre-volo
+
+**Logica:**
+1. Carica le voci della checklist dalla procedura LUC
+2. Il pilota deve completare tutte le voci obbligatorie della checklist
+3. Ogni voce deve avere una prova (foto, documento o firma)
+4. Il sistema valida tutte le voci prima di consentire l'avvio della missione
+5. Il sistema deve essere OPERATIONAL per il volo
+
+---
+
+## Logica di esecuzione della missione
+
+### PIN di autorizzazione
+
+**Logica:**
+1. Il PIN è richiesto per l'avvio della missione (actual_start)
+2. Il PIN è richiesto per la fine della missione (actual_end)
+3. Il pilota inserisce il PIN prima del decollo
+4. Il sistema valida il PIN rispetto alle credenziali dell'utente
+5. Se valido, lo stato della missione passa a IN_PROGRESS
+6. Stesso processo per l'atterraggio (COMPLETED)
+7. Il PIN viene registrato nel registro di audit
+
+### Registrazione della telemetria
+
+**Integrazione:** API FlytBase
+
+**Parametri registrati:**
+- Coordinate GPS (lat, lon, altitudine)
+- Velocità e direzione
+- Tensione e percentuale della batteria
+- Intensità del segnale
+- Modalità di volo
+- Timestamp
+
+**Logica:**
+1. La telemetria viene trasmessa continuamente durante il volo
+2. I dati sono archiviati in FlytBase e referenziati tramite l'ID volo
+3. Al completamento della missione, i dati di riepilogo vengono allegati al record della missione
+
+---
+
+## Logica post-volo
+
+### Completamento della checklist
+
+**Logica:**
+1. Il pilota completa la checklist post-volo
+2. Include ispezione della batteria, controllo dei danni, caricamento dei dati
+3. Tutte le voci devono essere completate prima che la missione venga contrassegnata come COMPLETED
+
+### Aggiornamento del ciclo di manutenzione
+
+**Trigger:** Completamento della missione (Fine effettiva - actual_end registrato)
+
+**Logica:**
+1. Identifica tutti i componenti attivi sul drone tramite Drone/Sistema (fk_tool_id)
+2. Aggiorna le Ore di manutenzione del componente (initial_maintenance_hours) con la Durata del volo (flight_duration)
+3. Aggiorna i Voli di manutenzione del componente (initial_maintenance_flights) con +1 (moltiplicato per il Rapporto cicli batteria - battery_cycle_ratio)
+4. Ricalcola lo Stato del componente (component_status) - OK/ALERT/DUE in base ai limiti del modello
+5. Attiva le notifiche di manutenzione se lo Stato passa a ALERT o DUE
+6. Ricalcola lo Stato del sistema (tool_status) in base al peggiore stato dei componenti
+7. Se la Data di scadenza (expiration_date) di un qualsiasi componente viene raggiunta, il sistema diventa NOT_OPERATIONAL
+
+---
+
+## Logica del risultato della missione
+
+**Logica:**
+1. Creato al completamento della missione
+2. Popolato con i dati derivati dalla telemetria
+3. Lo stato di elaborazione viene aggiornato in modo asincrono
+4. Il punteggio di qualità viene calcolato in base alla completezza dei dati
+
+---
+
+## Integrazione delle notifiche email
+
+### Eventi email della missione
+
+| Tipo di evento | Trigger |
+|---|---|
+| mission_created | Record della missione creato |
+| mission_assigned | Pilota/drone assegnato |
+| mission_started | Stato della missione = IN_PROGRESS |
+| mission_completed | Stato della missione = COMPLETED |
+
+### Abilitazione delle email
+
+Le email vengono inviate solo quando:
+1. L'email operativa a livello aziendale è abilitata
+2. La notifica email a livello di modulo è abilitata per l'evento specifico
+3. Il limite giornaliero di email non è stato raggiunto
+
+### Assegnazione diretta all'utente
+
+Per gli eventi mission_assigned, le email possono essere inviate direttamente a utenti specifici invece che tramite distribuzione basata sui ruoli.
+
+---
+
+## Logica dell'API Flight Request
+
+### Integrazione con missioni esterne
+
+**Scopo:** Consentire a sistemi esterni di richiedere missioni tramite API
+
+**Flusso degli stati:**
+```
+NEW → ACKNOWLEDGED → ASSIGNED → IN_PROGRESS → COMPLETED
+      ↓
+   CANCELLED
+```
+
+**Gestione delle chiavi API:**
+- Le chiavi vengono generate come identificatori univoci
+- L'hash viene archiviato nel database
+- Il prefisso viene mostrato per l'identificazione
+- Le chiavi possono essere revocate
+
+---
+
+## Logica di blocco della missione
+
+### Prevenzione delle missioni concorrenti
+
+**Scopo:** Impedire che lo stesso pilota/drone sia impegnato in più missioni
+
+**Logica:**
+- Verifica la presenza di missioni attive per il pilota/drone
+- Se esiste una missione attiva, genera un errore
+- Applicato alle assegnazioni dei piloti, alle assegnazioni dei droni e all'autorizzazione di avvio della missione
+
+---
+
+## Logica di tracciamento della conformità
+
+### PDRA (Pre-Defined Risk Assessment)
+
+**Logica:**
+- Confronta il timestamp di creazione della missione con il timestamp di completamento del volo
+- Se il tipo di operazione è PDRA e la differenza di tempo è > 1 ora, crea un log di audit con avviso di conformità
+- Consente la creazione ma segnala per la revisione
+
+### Conformità dell'altitudine
+
+**Logica:**
+- Se max_altitude > 120 metri, segnala per la revisione di conformità
+- Può richiedere un'autorizzazione aggiuntiva
+
+---
+
+## Dipendenze dei parametri
+
+### Dipendenze dirette
+
+- L'Inizio effettivo (actual_start) dipende da: Controllo pre-volo OK (pre_flight_check_ok), Sistema OPERATIONAL (tool_status), PIN di autorizzazione
+- La Fine effettiva (actual_end) dipende da: Controllo post-volo OK (post_flight_check_ok), PIN di autorizzazione
+- La Durata del volo (flight_duration) dipende da: Inizio effettivo (actual_start), Fine effettiva (actual_end) - calcolata
+- L'Altitudine massima (max_altitude) dipende da: telemetria FlytBase
+- La Distanza percorsa (distance_flown) dipende da: telemetria FlytBase (traccia GPS)
+- Lo Stato (status_name) dipende da: Inizio effettivo (actual_start), Fine effettiva (actual_end), checklist
+- **Le metriche di manutenzione dipendono da:** Completamento della missione - Durata del volo (flight_duration) aggiunta alle Ore di manutenzione del componente (initial_maintenance_hours), +1 volo aggiunto ai Voli di manutenzione (initial_maintenance_flights) moltiplicato per il Rapporto cicli batteria (battery_cycle_ratio)
+
+### Dipendenze tra moduli
+
+- **Modulo Pianificazione:** Missione collegata tramite Pianificazione (fk_planning_id)
+- **Modulo Manutenzione:** **SÌ** - Utilizzo dei componenti aggiornato al completamento tramite Drone/Sistema (fk_tool_id) e Fine effettiva (actual_end)
+- **Modulo Notifiche:** Email inviate in caso di variazioni dello Stato (status_name)
+- **Modulo Sistemi:** Il drone deve essere OPERATIONAL (tool_status) per l'avvio della missione
+- **Modulo Utenti:** Il pilota deve essere attivo e certificato
+- **Modulo Integrazioni:** Allegato del registro di volo FlytBase tramite ID volo (flytbase_flight_id)
+- **Modulo Conformità:** Controlli temporali PDRA, segnalazioni di altitudine (>120m)
+
+---
+
+ 
+
+## Regole di business chiave
+
+1. **Flusso degli stati:** PLANNED → IN_PROGRESS → COMPLETED (o FAILED/CANCELLED)
+2. **Pre-volo obbligatorio:** Il sistema deve essere OPERATIONAL (tool_status), checklist completata
+3. **Autorizzazione obbligatoria:** PIN richiesto per inizio e fine
+4. **Un registro per missione:** L'allegato del registro di volo è univoco per missione
+5. **Aggiornamento manutenzione:** **SÌ** - Ore/Voli di manutenzione del componente aggiornati automaticamente al completamento (actual_end, flight_duration)
+6. **Prevenzione della concorrenza:** Pilota/drone non possono essere in più missioni attive
+7. **Notifiche email:** Inviate alla creazione, assegnazione, avvio, completamento
+8. **Conformità PDRA:** Creazione della missione >1h dopo il volo segnalata
+9. **Segnalazione altitudine:** >120m segnalato per la revisione di conformità
+10. **Assegnazione diretta:** Le email possono essere inviate direttamente agli utenti assegnati
+11. **Blocco per manutenzione:** Le missioni non possono iniziare se il drone ha ticket di manutenzione aperti (sistema in stato MAINTENANCE)
+12. **Impatto del rapporto batteria:** Conteggio dei voli moltiplicato per il Rapporto cicli batteria (battery_cycle_ratio) per i calcoli di manutenzione

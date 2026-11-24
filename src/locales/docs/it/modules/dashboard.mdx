@@ -1,0 +1,73 @@
+---
+title: "Dashboard"
+description: "La tua operatività a colpo d'occhio: totali delle missioni, ore di volo, missioni recenti e imminenti e Safety Health Index."
+---
+
+La Dashboard è la prima pagina dopo il login. Ha due viste, **Dashboard** e **Indice SHI e KPI** (Safety Health Index), entrambe nella barra laterale.
+
+---
+
+## Panoramica
+
+### Totali
+
+Le schede in alto mostrano i totali del periodo selezionato (**Quest'anno**, **Questo mese** o **Questa settimana**):
+
+| Scheda | Significato |
+|---|---|
+| Missioni totali | Missioni nel periodo |
+| Droni registrati | Droni che hanno volato |
+| Ore volate | Tempo di volo totale |
+| Km volati | Distanza totale |
+| Clienti serviti | Clienti con almeno una missione |
+
+### Risultati missione
+
+Un grafico suddivide le missioni in **Completate**, **In corso** e **Fallite**, così puoi individuare subito i problemi.
+
+### Missioni passate e prossime
+
+Due elenchi mostrano cosa è stato volato di recente e cosa è in programma. Ogni riga riporta l'ID della missione, il pilota, la data e lo stato. Usa **Cerca** e **Filtra** per restringere l'elenco. Le missioni senza pilota mostrano "Non assegnato".
+
+<Warning>
+Le missioni in attesa dell'approvazione di un OPM e le aziende che usano D-Flight con autorizzazione non ancora accettata non compaiono come pronte al volo. Vedi [Approvazione missioni (OPM)](/docs/business-logic/mission-approval).
+</Warning>
+
+---
+
+## Safety Health Index (SHI)
+
+La pagina **Indice SHI e KPI** trasforma i tuoi indicatori di sicurezza in un unico punteggio, basato sul modello EASA.
+
+| Punteggio | Stato |
+|---|---|
+| 85% e oltre | **Eccellente** |
+| Da 70% a 84% | **Marginale** |
+| Sotto il 70% | **Insoddisfacente** |
+
+La pagina mostra:
+
+- **Punteggio complessivo** e il suo stato
+- **Punteggio di sicurezza per area** (Conformità, Formazione, Operazioni, Manutenzione), ciascuna con il proprio numero di indicatori
+- **Andamento mensile:** punteggio attuale, medio e massimo e variazione rispetto al mese precedente
+- **Schede degli indicatori:** il valore di ogni indicatore rispetto al suo obiettivo, contrassegnato come Buono, Marginale o Allerta
+- **Andamento dell'indicatore:** seleziona un indicatore per vedere il suo storico e quanto è vicino all'obiettivo
+
+<Warning>
+Un indicatore viene conteggiato solo dopo che sono stati registrati dei valori di misurazione. Vedi [Gestione della sicurezza](/docs/modules/safety-management).
+</Warning>
+
+---
+
+## Permessi
+
+Chi può leggere, modificare ed eliminare in quest'area, in base al ruolo.
+
+<PermissionsTable section="Dashboard" />
+
+---
+
+## Correlati
+
+- [Gestione della sicurezza](/docs/modules/safety-management)
+- [Operazioni](/docs/modules/operations)

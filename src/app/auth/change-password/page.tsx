@@ -1,5 +1,6 @@
 'use client'
 
+import { localizeText } from '@/lib/api-error-message';
 import axios from 'axios'
 import { EyeIcon, EyeOffIcon, Loader2Icon } from 'lucide-react'
 import Image from 'next/image'
@@ -35,14 +36,14 @@ export default function ChangePasswordPage() {
 
       const response = await axios.post('/api/auth/update-password', { newPassword: formData.newPassword })
       if (response.data?.success) {
-        toast.success('Password changed successfully!')
+        toast.success(localizeText('Password changed successfully!'))
         const nextRoute = response.data.role === 'CLIENT' ? getDefaultRoute('CLIENT') : '/auth/setup-2fa'
         setTimeout(() => { window.location.href = nextRoute }, 500)
       } else {
         throw new Error(response.data?.error || 'Failed to change password')
       }
     } catch (err: any) {
-      const msg = err.response?.data?.error || err.message || 'Failed to change password.'
+      const msg = err.response?.data?.error || err.message || localizeText('Failed to change password.')
       setError(msg)
       toast.error(msg)
     } finally {

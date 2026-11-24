@@ -2,6 +2,7 @@
 
 'use client';
 
+import { localizeText } from '@/lib/api-error-message';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -96,7 +97,7 @@ export default function EditOwnerModal({ open, onClose, onSuccess, owner }: Edit
         toast.success(t('companyPage.toast.updatedSuccessfully'));
         onClose();
       } else {
-        setError(data.message || 'Something went wrong');
+        setError(data.message || localizeText('Something went wrong'));
         toast.error(data.message || t('companyPage.toast.updateCompanyFailed'));
       }
     } catch (err) {

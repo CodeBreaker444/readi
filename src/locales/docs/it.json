@@ -1,0 +1,574 @@
+{
+  "introduction": {
+    "title": "Documentazione della piattaforma Readi",
+    "description": "Documentazione ufficiale di Readi — piattaforma per le operazioni con droni e la conformità.",
+    "blocks": [
+      {
+        "type": "p",
+        "text": "Benvenuto nella documentazione ufficiale di **Readi**, una piattaforma operativa e di conformità per i team che operano con i droni."
+      },
+      {
+        "type": "h2",
+        "text": "Che cos'è Readi?"
+      },
+      {
+        "type": "p",
+        "text": "Readi aiuta i team di aviazione e operazioni con droni a gestire pianificazione, missioni, formazione, conformità, manutenzione e registri in un unico spazio di lavoro. È pensato per le attività quotidiane, mantenendo il team pronto agli audit e offrendo a tutti visibilità sulla sicurezza."
+      },
+      {
+        "type": "p",
+        "text": "Questa documentazione è scritta per le persone che usano Readi: piloti, responsabili operativi, personale di manutenzione, responsabili della sicurezza e della conformità e amministratori. Non servono conoscenze tecniche. Le sezioni **Logica di business** e **Regole della piattaforma** approfondiscono per chi vuole sapere esattamente come funziona una regola."
+      },
+      {
+        "type": "h2",
+        "text": "Cosa puoi fare in Readi"
+      },
+      {
+        "type": "ul",
+        "items": [
+          "Richiedere valutazioni e pianificare missioni, con approvazioni e richieste di volo",
+          "Gestire le operazioni su una bacheca giornaliera e un calendario, con supporto meteo e autorizzazione D-Flight",
+          "Registrare ogni volo, batteria e incidente nei registri di bordo",
+          "Gestire i droni e i loro componenti, mantenendoli idonei al volo con i ticket di manutenzione",
+          "Conservare i documenti con le versioni e collegarli alle attrezzature a cui si riferiscono",
+          "Gestire la conformità con il tracciamento delle evidenze, i piani di audit e gli obiettivi di sicurezza",
+          "Monitorare gli indicatori di sicurezza e consultare il Safety Health Index",
+          "Organizzare personale, reparti, qualifiche, procedure e checklist",
+          "Gestire corsi di formazione, certificati e scadenze",
+          "Ricevere gli avvisi in un'unica casella e fare domande all'assistente AI"
+        ]
+      },
+      {
+        "type": "h2",
+        "text": "Da dove comincio?"
+      },
+      {
+        "type": "table",
+        "headers": [
+          "Se sei",
+          "Inizia da"
+        ],
+        "rows": [
+          [
+            "**Nuovo in Readi**",
+            "[Per iniziare](/docs/start-guide/getting-started), poi [Funzionalità principali](/docs/start-guide/key-features)"
+          ],
+          [
+            "**Un pilota**",
+            "[Operazioni](/docs/modules/operations) (dichiarazione, Bacheca giornaliera, completamento di una missione), poi [Registri di bordo](/docs/modules/logbooks)"
+          ],
+          [
+            "**Un responsabile operativo**",
+            "[Pianificazione](/docs/modules/planning), [Operazioni](/docs/modules/operations) e [Approvazione missioni](/docs/business-logic/mission-approval)"
+          ],
+          [
+            "**Addetto alla manutenzione**",
+            "[Sistemi](/docs/modules/systems) e [Manutenzione](/docs/modules/maintenance)"
+          ],
+          [
+            "**Addetto a sicurezza o conformità**",
+            "[Gestione della sicurezza](/docs/modules/safety-management), [Conformità](/docs/modules/compliance) e [Registri di audit](/docs/records/audit-logs)"
+          ],
+          [
+            "**Un amministratore**",
+            "[Azienda](/docs/configuration/company), [Gestione del team](/docs/configuration/team) e [Impostazioni e sicurezza](/docs/configuration/settings-security)"
+          ]
+        ]
+      },
+      {
+        "type": "h2",
+        "text": "Esplora la documentazione"
+      },
+      {
+        "type": "cards",
+        "items": [
+          {
+            "icon": "Rocket",
+            "title": "Per iniziare",
+            "href": "/docs/start-guide/getting-started",
+            "text": "Requisiti, funzionalità principali e primi passi."
+          },
+          {
+            "icon": "LayoutGrid",
+            "title": "Moduli principali",
+            "href": "/docs/modules/operations",
+            "text": "Operazioni, pianificazione, sistemi, manutenzione, registri di bordo e altro."
+          },
+          {
+            "icon": "Settings",
+            "title": "Configurazione",
+            "href": "/docs/configuration/company",
+            "text": "Azienda, team, definizioni delle missioni e impostazioni di sicurezza."
+          },
+          {
+            "icon": "Workflow",
+            "title": "Logica di business",
+            "href": "/docs/business-logic/mission-lifecycle",
+            "text": "Ciclo di vita delle missioni, cron job, notifiche e regole."
+          }
+        ]
+      },
+      {
+        "type": "note",
+        "text": "Manca qualcosa o hai trovato una pagina che non corrisponde all'app? Consulta le [Note di rilascio](/docs/modules/releases) per le modifiche recenti e informa il tuo amministratore."
+      }
+    ]
+  },
+  "getting-started": {
+    "title": "Per iniziare",
+    "description": "Una guida passo passo per il primo giorno e la prima settimana di configurazione di Readi.",
+    "blocks": [
+      {
+        "type": "p",
+        "text": "Questa guida ti accompagna da un nuovo account fino alla tua prima missione completata. Segui i passaggi in ordine, perché ognuno si basa sul precedente."
+      },
+      {
+        "type": "hr"
+      },
+      {
+        "type": "h2",
+        "text": "Giorno 1: accedi e proteggi il tuo account"
+      },
+      {
+        "type": "ol",
+        "items": [
+          "**Attiva il tuo account** con il link nell'email di invito, quindi accedi.",
+          "**Configura l'autenticazione a due fattori** con un'app di autenticazione quando Readi la propone dopo il primo cambio password.",
+          "**Imposta il tuo PIN di autorizzazione** in **Impostazioni → Sicurezza**. Ti serve per avviare e terminare le missioni.",
+          "Apri il tuo **Profilo** e controlla nome, fuso orario e reparto."
+        ]
+      },
+      {
+        "type": "p",
+        "text": "Vedi [Impostazioni e sicurezza](/docs/configuration/settings-security)."
+      },
+      {
+        "type": "hr"
+      },
+      {
+        "type": "h2",
+        "text": "Giorno 1: configura la tua azienda (amministratori)"
+      },
+      {
+        "type": "ol",
+        "items": [
+          "**Azienda:** controlla i dati aziendali, il logo e il fuso orario ([Azienda](/docs/configuration/company)).",
+          "**Team:** invita le persone, assegna a ciascuna un ruolo e un reparto e aggiungi le qualifiche dei piloti ([Gestione del team](/docs/configuration/team)).",
+          "**Clienti:** aggiungi i clienti per cui voli.",
+          "**Definizioni delle missioni:** adatta tipi, categorie, stati e risultati delle missioni alle tue esigenze ([Definizioni delle missioni](/docs/configuration/mission-definitions)).",
+          "**Organizzazione:** aggiungi procedure, checklist, incarichi e protocolli di comunicazione ([Procedure, incarichi e comunicazione](/docs/configuration/procedures-assignments))."
+        ]
+      },
+      {
+        "type": "hr"
+      },
+      {
+        "type": "h2",
+        "text": "Giorno 2: aggiungi le tue attrezzature"
+      },
+      {
+        "type": "ol",
+        "items": [
+          "Aggiungi ogni **sistema** (drone) e i suoi **componenti**, con i numeri di serie ([Sistemi](/docs/modules/systems)).",
+          "Organizza le parti con le **Relazioni** e scegli il **componente principale**.",
+          "Se usi D-Flight o Control Center, collegali in modo che droni e voli arrivino automaticamente ([D-Flight](/docs/business-logic/dflight-integration), [Control Center](/docs/modules/flytbase)).",
+          "Carica manuali e certificati nel [Repository documenti](/docs/records/document-repository)."
+        ]
+      },
+      {
+        "type": "hr"
+      },
+      {
+        "type": "h2",
+        "text": "Settimana 1: pianifica ed esegui la tua prima missione"
+      },
+      {
+        "type": "ol",
+        "items": [
+          "Invia una **Nuova richiesta di valutazione** e seguila fino a un esito positivo ([Pianificazione](/docs/modules/planning)).",
+          "Crea una missione in **Operazioni**, scegliendo drone, pilota e osservatori ([Operazioni](/docs/modules/operations)).",
+          "Il giorno stesso, il pilota presenta la **dichiarazione giornaliera** e la missione viene spostata lungo la **Bacheca giornaliera** con il PIN.",
+          "Al termine, completa la missione: registra l'utilizzo dei componenti, allega il log di volo e aggiungi i dati post-volo.",
+          "Controlla il volo nel **Registro di volo** ([Registri di bordo](/docs/modules/logbooks))."
+        ]
+      },
+      {
+        "type": "hr"
+      },
+      {
+        "type": "h2",
+        "text": "Settimana 1: sicurezza e conformità"
+      },
+      {
+        "type": "ul",
+        "items": [
+          "Aggiungi un record di **formazione** per ogni pilota e controlla le date di scadenza ([Formazione](/docs/modules/training)).",
+          "Aggiungi un **requisito di conformità** e allega le evidenze ([Conformità](/docs/modules/compliance)).",
+          "Definisci un **indicatore di sicurezza** e registra il suo primo valore ([Gestione della sicurezza](/docs/modules/safety-management)).",
+          "Controlla la **Manutenzione** e apri un ticket di prova per vedere come funziona ([Manutenzione](/docs/modules/maintenance))."
+        ]
+      },
+      {
+        "type": "hr"
+      },
+      {
+        "type": "h2",
+        "text": "Buone abitudini"
+      },
+      {
+        "type": "ul",
+        "items": [
+          "Leggi le tue **Notifiche** ogni giorno ([Notifiche](/docs/modules/notifications)).",
+          "Chiedi all'[Assistente AI](/docs/modules/ai-assistant) quando non trovi qualcosa.",
+          "Controlla ogni tanto i [Registri di audit](/docs/records/audit-logs).",
+          "Consulta le [Note di rilascio](/docs/modules/releases) per scoprire le novità."
+        ]
+      }
+    ]
+  },
+  "key-features": {
+    "title": "Funzionalità principali",
+    "description": "Panoramica delle principali aree funzionali di Readi.",
+    "blocks": [
+      {
+        "type": "h2",
+        "text": "Aree funzionali"
+      },
+      {
+        "type": "table",
+        "headers": [
+          "Area",
+          "Cosa comprende"
+        ],
+        "rows": [
+          [
+            "**Pianificazione**",
+            "Creazione dei piani di volo, flusso di approvazione, waypoint, registri di prova"
+          ],
+          [
+            "**Operazioni**",
+            "Bacheca kanban, calendario giornaliero, monitoraggio dell'esecuzione delle missioni"
+          ],
+          [
+            "**Registri di bordo**",
+            "Registri di volo con filtri per pilota, drone, data e tipo"
+          ],
+          [
+            "**Sistemi**",
+            "Inventario di droni e attrezzature, ciclo di vita dei componenti, ticket di manutenzione"
+          ],
+          [
+            "**Sicurezza**",
+            "Segnalazioni di incidenti, osservazioni di pericolo, azioni correttive, monitoraggio dei KPI"
+          ],
+          [
+            "**Conformità**",
+            "Registri di audit, requisiti normativi, caricamento delle evidenze"
+          ],
+          [
+            "**Formazione**",
+            "Definizione dei corsi, presenze, monitoraggio delle certificazioni"
+          ],
+          [
+            "**Manutenzione**",
+            "Ticket con rapporti dei tecnici, evidenze e azzeramento automatico dei contatori"
+          ],
+          [
+            "**Documenti**",
+            "Documenti con versioni collegati a più componenti, con storico delle modifiche"
+          ],
+          [
+            "**Notifiche**",
+            "Un'unica casella con categorie e filtri"
+          ],
+          [
+            "**Agente AI**",
+            "Interrogazioni in linguaggio naturale su dati di missioni, manutenzione e conformità, limitate in base al ruolo"
+          ]
+        ]
+      },
+      {
+        "type": "h2",
+        "text": "Comportamenti distintivi"
+      },
+      {
+        "type": "ul",
+        "items": [
+          "Lo stato operativo (`OPERATIONAL / MAINTENANCE / NOT_OPERATIONAL`) viene calcolato in tempo reale a ogni caricamento della flotta — non viene memorizzato",
+          "Le modifiche di stato di una missione richiedono un **PIN di autorizzazione** crittografico — ogni transizione è firmata e verificabile",
+          "L'Agente AI applica la sicurezza a livello di riga — i piloti vedono solo i propri dati"
+        ]
+      }
+    ]
+  },
+  "system-requirements": {
+    "title": "Requisiti di sistema",
+    "description": "Cosa ti serve sul computer o sul telefono per usare Readi senza problemi.",
+    "blocks": [
+      {
+        "type": "p",
+        "text": "Readi funziona nel browser web, quindi non c'è nulla da installare. Ti servono un browser recente e una connessione internet funzionante."
+      },
+      {
+        "type": "hr"
+      },
+      {
+        "type": "h2",
+        "text": "Browser"
+      },
+      {
+        "type": "p",
+        "text": "Usa un browser aggiornato:"
+      },
+      {
+        "type": "table",
+        "headers": [
+          "Browser",
+          "Versione minima"
+        ],
+        "rows": [
+          [
+            "Chrome",
+            "110 o successiva"
+          ],
+          [
+            "Firefox",
+            "110 o successiva"
+          ],
+          [
+            "Edge",
+            "110 o successiva"
+          ],
+          [
+            "Safari",
+            "16 o successiva"
+          ]
+        ]
+      },
+      {
+        "type": "p",
+        "text": "Se qualcosa non appare correttamente o un pulsante non fa nulla, aggiorna prima il browser. Risolve la maggior parte dei problemi."
+      },
+      {
+        "type": "hr"
+      },
+      {
+        "type": "h2",
+        "text": "Schermo"
+      },
+      {
+        "type": "p",
+        "text": "Readi funziona su computer, tablet o telefono. Tabelle e mappe sono più comode da usare su uno schermo più grande. Su telefono, la Bacheca giornaliera e il Calendario vengono mostrati un giorno alla volta."
+      },
+      {
+        "type": "hr"
+      },
+      {
+        "type": "h2",
+        "text": "Internet"
+      },
+      {
+        "type": "ul",
+        "items": [
+          "È necessaria una connessione stabile. Mappe, previsioni meteo e dati di volo in tempo reale vengono caricati man mano che li usi.",
+          "Se la tua azienda usa un firewall o un proxy, chiedi al tuo team IT di consentire Readi e il suo servizio email. Altrimenti pagine, mappe o email potrebbero non caricarsi."
+        ]
+      },
+      {
+        "type": "hr"
+      },
+      {
+        "type": "h2",
+        "text": "Autorizzazioni che il browser può richiedere"
+      },
+      {
+        "type": "table",
+        "headers": [
+          "Autorizzazione",
+          "Motivo"
+        ],
+        "rows": [
+          [
+            "**Posizione**",
+            "Solo se usi il pulsante a croce su una mappa per utilizzare la tua posizione attuale. Puoi anche cercare un luogo o toccare la mappa"
+          ],
+          [
+            "**Pop-up**",
+            "Consentili per Readi, perché alcuni PDF e documenti si aprono in una nuova scheda"
+          ],
+          [
+            "**Download**",
+            "Necessari per esportazioni e report, come il report QTB, le esportazioni dei registri di bordo e i download dei documenti"
+          ]
+        ]
+      },
+      {
+        "type": "hr"
+      },
+      {
+        "type": "h2",
+        "text": "File che carichi"
+      },
+      {
+        "type": "table",
+        "headers": [
+          "Cosa",
+          "Limite"
+        ],
+        "rows": [
+          [
+            "Documenti nel Repository documenti",
+            "25 MB, PDF, DOCX, XLSX, JPG, PNG o TXT"
+          ],
+          [
+            "Allegati degli eventi",
+            "100 MB ciascuno, JPG, PNG, MP4 o PDF"
+          ],
+          [
+            "File della Knowledge Base",
+            "10 MB per PDF"
+          ]
+        ]
+      },
+      {
+        "type": "hr"
+      },
+      {
+        "type": "h2",
+        "text": "Accesso"
+      },
+      {
+        "type": "ul",
+        "items": [
+          "Ti serve un'**app di autenticazione** sul telefono (come Google Authenticator o Authy) per configurare l'autenticazione a due fattori. Vedi [Impostazioni e sicurezza](/docs/configuration/settings-security).",
+          "Ti serve un **indirizzo email** che puoi leggere, per ricevere il link di attivazione."
+        ]
+      },
+      {
+        "type": "hr"
+      },
+      {
+        "type": "h2",
+        "text": "Ruoli e accessi"
+      },
+      {
+        "type": "p",
+        "text": "Le funzionalità sono limitate in base al ruolo, quindi assicurati che ogni persona abbia il ruolo giusto prima di darle accesso. Vedi il [Glossario dei ruoli](/docs/business-logic/role-glossary)."
+      }
+    ]
+  },
+  "_permissions": {
+    "feature": "Funzionalità",
+    "customisable": "Personalizzabile nell'editor dei permessi dei ruoli",
+    "yes": "Sì",
+    "no": "No",
+    "features": {
+      "dashboard_analytics": "Analisi",
+      "dashboard_shi_kpi": "Indice SHI e KPI",
+      "planning_new_evaluation": "P00 - Nuova richiesta di valutazione",
+      "planning_evaluation": "P01 - Valutazione",
+      "planning_dashboard": "P02 - Dashboard di pianificazione",
+      "planning_mission_templates": "P03 - Modelli di missione",
+      "operation_mission_table": "Tabella missioni",
+      "operation_daily_board": "Bacheca giornaliera",
+      "operation_flight_requests": "Richieste di volo",
+      "operation_calendar": "Calendario",
+      "logbook_planned_mission": "Registro missioni pianificate",
+      "logbook_flight": "Registro di volo",
+      "logbook_battery": "Registro batterie",
+      "logbook_event": "Registro eventi",
+      "safety_spi_kpi_definitions": "Definizioni SPI e KPI",
+      "emergency_contact_list": "Elenco contatti di emergenza",
+      "compliance_general_audit_plan": "Piano generale di audit",
+      "compliance_safety_target_review": "Revisione degli obiettivi di sicurezza",
+      "compliance_requirements_evidence": "Requisiti ed evidenze",
+      "compliance_calendar": "Calendario",
+      "control_center_settings": "Impostazioni",
+      "control_center_recent_flights": "Voli recenti",
+      "drone_atc": "Drone ATC",
+      "training_courses": "Corsi",
+      "training_calendar": "Calendario",
+      "notifications": "Notifiche",
+      "document_repository": "Repository documenti",
+      "audit_logs": "Registri di audit",
+      "org_chart": "Organigramma",
+      "org_procedures": "Procedure",
+      "org_checklist": "Checklist",
+      "org_assignments": "Incarichi",
+      "org_communication": "Comunicazione",
+      "mission_type": "Tipo di missione",
+      "mission_category": "Categoria di missione",
+      "mission_status": "Stato della missione",
+      "mission_result": "Risultato della missione",
+      "systems_manage": "Gestione sistemi",
+      "systems_map": "Mappa",
+      "systems_maintenance_dashboard": "Dashboard di manutenzione",
+      "systems_maintenance_tickets": "Ticket di manutenzione",
+      "team_personnel": "Personale",
+      "team_client": "Clienti",
+      "settings_security_api_keys": "Sicurezza e chiavi API",
+      "settings_integrations": "Integrazioni"
+    },
+    "legend": [
+      "**R** = lettura (read), **W** = scrittura / modifica (write), **D** = eliminazione (delete). – = nessun accesso.",
+      "* L'eliminazione richiede anche il flag **Manager** dell'utente. ¹ Può aggiungere nuovi record ma non modificare quelli esistenti.",
+      "† Fisso, non modificabile: ADMIN, OPM e SUPERADMIN hanno sempre accesso completo; RM e SLA seguono regole predefinite; CLIENT usa solo il Portale clienti. Per gli altri ruoli, **Sì** significa che il livello di accesso può essere cambiato tra sola lettura (R) e completo (R · W · D) in **Team → Ruoli e permessi**, accessibile solo a ADMIN, OPM e SUPERADMIN. Un ruolo senza accesso (–) non può essere modificato lì. Un utente con permessi personalizzati individuali segue quelli al posto del proprio ruolo."
+    ]
+  },
+  "_ui": {
+    "downloadPage": "Scarica questa pagina (PDF)",
+    "downloadAll": "Scarica tutta la documentazione (PDF)",
+    "folders": {
+      "Getting Started": "Per iniziare",
+      "Core Modules": "Moduli principali",
+      "Configuration": "Configurazione",
+      "Records": "Archivi",
+      "Business Logic": "Logica di business",
+      "Platform Rules": "Regole della piattaforma"
+    }
+  },
+  "_fumadocs": {
+    "Back to Home(404 page)": "Torna alla home",
+    "Choose a language(language switcher)": "Scegli una lingua",
+    "Choose a language(language switcher)(aria-label)": "Scegli una lingua",
+    "Close Banner(banner)(aria-label)": "Chiudi il banner",
+    "Close Search(search dialog)(aria-label)": "Chiudi la ricerca",
+    "Collapse Sidebar(sidebar)(aria-label)": "Comprimi la barra laterale",
+    "Copied Text(code block)(aria-label)": "Testo copiato",
+    "Copy Anchor Link(heading anchor)(aria-label)": "Copia il link all'ancora",
+    "Copy Link(accordion)(aria-label)": "Copia il link",
+    "Copy Markdown(page actions)": "Copia Markdown",
+    "Copy Text(code block)(aria-label)": "Copia il testo",
+    "Dark(theme switcher)(aria-label)": "Scuro",
+    "Default(type table)": "Predefinito",
+    "Edit on GitHub(edit page)": "Modifica su GitHub",
+    "Last updated on(page footer)": "Ultimo aggiornamento il",
+    "Light(theme switcher)(aria-label)": "Chiaro",
+    "Next Page(pagination)": "Pagina successiva",
+    "No Headings(table of contents)": "Nessun titolo",
+    "No results found(search dialog)": "Nessun risultato trovato",
+    "On this page(table of contents)": "In questa pagina",
+    "Open Search(search trigger)(aria-label)": "Apri la ricerca",
+    "Open Sidebar(sidebar)(aria-label)": "Apri la barra laterale",
+    "Open in ChatGPT(page actions)": "Apri in ChatGPT",
+    "Open in Claude(page actions)": "Apri in Claude",
+    "Open in Cursor(page actions)": "Apri in Cursor",
+    "Open in GitHub(page actions)": "Apri in GitHub",
+    "Open in Scira AI(page actions)": "Apri in Scira AI",
+    "Open(page actions)": "Apri",
+    "Page Not Found(404 page)": "Pagina non trovata",
+    "Parameters(type table)": "Parametri",
+    "Previous Page(pagination)": "Pagina precedente",
+    "Prop(type table)": "Proprietà",
+    "Returns(type table)": "Restituisce",
+    "Search(search dialog)": "Cerca",
+    "Search(search trigger)": "Cerca",
+    "System(theme switcher)(aria-label)": "Sistema",
+    "Table of Contents(inline table of contents)": "Indice",
+    "The page you are looking for might have been removed, had its name changed, or is temporarily unavailable.(404 page)": "La pagina che stai cercando potrebbe essere stata rimossa, rinominata o essere temporaneamente non disponibile.",
+    "Toggle Menu(mobile menu)(aria-label)": "Apri/chiudi il menu",
+    "Toggle Theme(theme switcher)(aria-label)": "Cambia tema",
+    "Type(type table)": "Tipo",
+    "View as Markdown(page actions)": "Visualizza come Markdown"
+  }
+}

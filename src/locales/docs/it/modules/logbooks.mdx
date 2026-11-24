@@ -1,0 +1,376 @@
+---
+title: "Registri di bordo"
+description: "Registri consultabili delle missioni pianificate, dei voli effettuati e delle batterie dei droni."
+---
+
+I registri di bordo sono la documentazione ufficiale della tua operazione. Sono quattro, nella barra laterale sotto **Registri**: il Registro missioni pianificate, il Registro voli, il Registro eventi e il Registro batterie. Tutti hanno filtri, una casella di ricerca e un pulsante **Aggiorna**.
+
+---
+
+## Registro missioni pianificate
+
+Tutti i piani di missione delle tue valutazioni e pianificazioni.
+
+| Filtro | |
+|---|---|
+| Cliente, PiC (pilota in comando), Valutazione, Pianificazione, Sistema | Restringi per chi e cosa |
+| Aggiornato dal / al | Restringi per data |
+| Cerca | In tutte le colonne |
+
+Colonne: cliente, valutazione, pianificazione, descrizione della missione, piano di missione, sistema, versione e stato attivo. Puoi aggiungere, modificare o eliminare voci e aprire i file allegati a un piano. L'eliminazione è definitiva.
+
+---
+
+## Registro voli
+
+Ogni volo effettuato.
+
+**Filtri:** intervallo di date, PiC, cliente, sistema drone, tipo di missione, categoria, stato, risultato, piano di missione e gruppo missione.
+
+**Colonne:** inizio, fine, PiC, cliente, categoria, tipo, sistema drone, stato, risultato, piano di missione, tempo di volo, distanza e note.
+
+Apri un volo per vedere tutti i dettagli, incluso il **Numero di serie della batteria** utilizzata, così puoi risalire da ogni volo alla batteria esatta. Il filtro **Gruppo missione** mostra tutti i voli che condividono la stessa etichetta di gruppo (vedi [Operazioni](/docs/modules/operations)).
+
+Usa l'opzione di esportazione per scaricare l'elenco per audit o autorità. I file esportati includono l'ID della missione, le date, il pilota, gli osservatori visivi, il veicolo, il risultato, il codice del piano, il tempo volato, i metri volati, il numero di serie della batteria e la posizione con il suo nome descrittivo.
+
+---
+
+## Registro batterie
+
+Ogni batteria dei tuoi sistemi.
+
+**Filtri:** installata dal / al, sistema drone e stato.
+
+| Colonna | Significato |
+|---|---|
+| Batteria e S/N | Quale batteria |
+| Sistema drone | Dove è installata |
+| Stato | Stato attuale |
+| Salute dei cicli | Quanti cicli di carica sono stati usati rispetto al limite |
+| Installata, Ultima manutenzione, Ciclo di manutenzione | Storico degli interventi |
+| Fornitore, Data di acquisto | Origine |
+
+Apri una batteria per il suo **Registro Cicli**: ogni missione in cui è stata usata, con data, durata, pilota e cicli aggiunti, più il totale.
+
+---
+
+## Registro eventi
+
+I piloti segnalano incidenti e anomalie (ad esempio malfunzionamento dell'attrezzatura, problema del segnale GPS, ostacolo rilevato, presenza di uccelli o fly-away) con **Segnala evento**. I tipi di evento sono definiti dalla tua azienda: un amministratore li crea, li rinomina e li elimina dal pulsante **Tipi di evento** nell'intestazione della pagina. Rinominare un tipo ne cambia il nome e il codice per i nuovi eventi; gli eventi già segnalati mantengono il nome e il codice con cui sono stati segnalati. Un tipo eliminato resta sugli eventi che lo usavano, ma non può più essere scelto per quelli nuovi. I tipi di evento possono essere **specifici per cliente**: quando crei o modifichi un tipo puoi scegliere un **Cliente**, oppure lasciarlo su **Predefinito (tutti i clienti)**. Un tipo predefinito è offerto per ogni cliente; un tipo di un cliente è offerto solo per gli eventi di quel cliente. Quando segnali un evento, l'elenco dei tipi mostra i tipi predefiniti più quelli del cliente dell'evento (preso dalla missione, altrimenti dal cliente assegnato al sistema). Modificando un tipo puoi spostarlo su un altro cliente o di nuovo su Predefinito, e l'ultimo tipo predefinito non può essere eliminato. Poiché un volo ha spesso più eventi, i dettagli che condividono vengono impostati una sola volta, così aggiungere un evento durante un volo richiede pochi tocchi.
+
+### Codici dei tipi di evento
+
+Ogni tipo di evento ha un **id** univoco (un numero che non cambia mai), un **nome** (quello che vedono le persone) e un **codice** (inviato nei webhook come `event_type`). Digiti solo il nome; il codice viene generato da esso quando il tipo viene creato e generato di nuovo quando il tipo viene rinominato:
+
+1. Gli accenti vengono rimossi ("Détecté" diventa "Detecte") e tutto viene convertito in minuscolo.
+2. Ogni sequenza di caratteri che non sono lettere a–z o cifre 0–9 (spazi, `-`, `/`, `!` e così via) diventa un singolo `_`.
+3. I `_` iniziali e finali vengono rimossi e il risultato viene tagliato a 50 caratteri. Se non rimane nulla di utilizzabile, il codice è `event_type`.
+
+| Nome digitato | Codice |
+| --- | --- |
+| Fire | `fire` |
+| Person detected | `person_detected` |
+| Fly-away / Loss of control | `fly_away_loss_of_control` |
+| Bird strike! | `bird_strike` |
+
+I codici sono univoci per azienda, tra tutti i clienti. Se il codice è già occupato, viene aggiunto un numero: un secondo "Fire" diventa `fire_2`, poi `fire_3`. Il codice di un tipo eliminato non viene mai riutilizzato, perché gli eventi più vecchi lo conservano ancora. Ad esempio, "Fire" per il Cliente A e "Fire" per il Cliente B ottengono `fire` e `fire_2`, ma ogni cliente vede entrambi come "Fire".
+
+#### Rinominare un tipo
+
+Gli eventi sono collegati al loro tipo tramite il suo **id univoco**, non tramite il codice. Ogni evento memorizza inoltre un'**istantanea** del codice e del nome del tipo nel momento in cui è stato segnalato (o in cui ne è stato cambiato il tipo). Rinominare quindi non riscrive mai gli eventi già esistenti:
+
+- **Nuovo nome, nuovo codice:** rinominare "Fire" in "Water" cambia il tipo nel nome "Water" e nel codice `water` (un duplicato riceve un suffisso, ad es. `water_2`). Gli eventi segnalati da quel momento portano `water` / "Water".
+- **I vecchi eventi mantengono i vecchi valori:** gli eventi segnalati prima della ridenominazione mostrano ancora "Fire" e il codice `fire`, nella tabella, nei dettagli, nelle email e in ciò che è stato inviato ai webhook. Restano collegati allo stesso tipo (stesso id), quindi filtrando la tabella degli eventi per "Water" si trovano sia gli eventi vecchi sia quelli nuovi, e il conteggio di utilizzo del tipo li include.
+- **I filtri dei webhook seguono la ridenominazione:** un webhook limitato al codice `fire` viene aggiornato automaticamente a `water`, così continua a ricevere questo tipo. I webhook che ricevono tutti i tipi di evento non sono interessati.
+- **Spostare un tipo su un altro cliente o su Predefinito** non ne cambia il codice. Lo cambia solo la modifica del nome.
+- **Rinominare di nuovo** con un nome precedente restituisce il codice precedente, a meno che nel frattempo un altro tipo non lo abbia occupato.
+- **Eliminare un tipo** lascia ai suoi eventi il nome e il codice con cui sono stati segnalati; semplicemente non sono più collegati a un tipo.
+
+I messaggi dei webhook contengono tutti e tre i valori: `event_type_id` (l'id univoco, stabile anche dopo le ridenominazioni), `event_type` (il codice con cui l'evento è stato segnalato) e `event_type_label` (il nome con cui l'evento è stato segnalato). I sistemi riceventi che hanno bisogno di un'unica chiave stabile per un tipo dovrebbero usare `event_type_id`.
+
+#### Codice di esempio
+
+Le stesse regole in TypeScript, per i sistemi riceventi che vogliono calcolare un codice da un nome di tipo, o mostrare un'etichetta leggibile per un codice. È esattamente la funzione usata da ReADI:
+
+```ts
+const EVENT_TYPE_CODE_MAX = 50;
+
+/** Name -> code, e.g. "Bird strike!" -> "bird_strike". */
+export function slugifyEventTypeCode(name: string): string {
+  return name
+    .normalize('NFKD')
+    .replace(/[̀-ͯ]/g, '') // strip accents
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_') // anything else becomes "_"
+    .replace(/^_+|_+$/g, '') // trim leading/trailing "_"
+    .slice(0, EVENT_TYPE_CODE_MAX);
+}
+
+/** Code -> readable fallback label, e.g. "bird_strike" -> "Bird strike". */
+export function prettifyEventTypeCode(code: string): string {
+  const spaced = code.replace(/_+/g, ' ').trim();
+  return spaced ? spaced.charAt(0).toUpperCase() + spaced.slice(1) : code;
+}
+
+slugifyEventTypeCode('Person detected'); // "person_detected"
+slugifyEventTypeCode('Fly-away / Loss of control'); // "fly_away_loss_of_control"
+prettifyEventTypeCode('person_detected'); // "Person detected"
+```
+
+Due limiti da tenere presenti:
+
+- **Un codice non può essere riconvertito nel nome esatto.** Maiuscole, punteggiatura e accenti vanno persi, e `prettifyEventTypeCode` fornisce solo un'approssimazione leggibile. Il webhook invia già il nome reale come `event_type_label`, quindi preferiscilo per la visualizzazione e usa `event_type_id` (non il codice) come chiave stabile per un tipo.
+- **`slugifyEventTypeCode(name)` restituisce il codice memorizzato solo quando il codice non è già occupato.** Un nome duplicato riceve un suffisso (`fire_2`) e gli eventi mantengono il codice con cui sono stati segnalati dopo una ridenominazione. Per trovare il codice di un evento, leggi `event_type` dal messaggio invece di ricalcolarlo dal nome.
+
+### Configurazione della missione
+
+La prima volta che clicchi **Segnala evento** vedi **Configurazione missione**:
+
+- **Sistema** – il drone. Se ne è disponibile uno solo, viene preselezionato. La posizione base del sistema viene usata per aprire la mappa.
+- **Missione (facoltativa)** – elenca tutte le missioni del sistema scelto, ciascuna con il suo tipo di operazione, stato (Programmata, In corso, Completata, Annullata o Interrotta), categoria, cliente e data. Una missione che ha un piano di missione lo mostra annidato sotto. L'elenco è ricercabile.
+- **Ora di decollo** – compilata dall'inizio programmato della missione e modificabile.
+- **Notifiche** – i contatti a cui inviare l'email, preselezionati dai valori predefiniti del cliente.
+
+Salva la configurazione e verrà ricordata nel tuo browser per 24 ore. Da quel momento **Segnala evento** si apre direttamente sulla schermata dell'evento con questi valori precompilati. Per modificare la configurazione in seguito, usa il pulsante **Configurazione missione** in cima alla pagina; la schermata dell'evento la mostra soltanto, non può essere modificata da lì.
+
+### Segnalare un evento
+
+La schermata dell'evento è un'unica finestra modale senza pulsanti Avanti:
+
+1. Controlla il riepilogo della configurazione precompilato. Solo il menu a discesa **Notifica** può essere modificato direttamente.
+2. Scegli il **tipo di evento**.
+3. Imposta la **posizione** esatta toccando la mappa o cercando, e se vuoi aggiungi allegati (JPG, PNG, MP4, PDF, fino a 100 MB ciascuno) nella stessa sezione. La mappa si apre sul piano di missione quando ce n'è uno, altrimenti sulla posizione base del sistema. Quando la missione ha un piano, la sua area è evidenziata sulla mappa.
+4. Se vuoi, aggiungi **Media di supporto** (solo immagini e video) nella loro sezione dedicata. Vengono salvati con l'evento e mostrati separatamente dagli allegati.
+5. Aggiungi note facoltative e clicca **Invia evento**. **Aggiungi un altro evento** mantiene la configurazione, così per l'evento successivo servono solo un tipo e una posizione.
+
+### Visualizzare, modificare ed eliminare gli eventi
+
+Clicca su una riga (o sull'icona a forma di occhio) nella tabella degli eventi per aprire l'evento:
+
+- **Dettagli** – tipo di evento, ora di decollo e di segnalazione, pilota segnalante, drone, missione, cliente, posizione, note e contatti che sono stati notificati.
+- **Mappa** – la posizione esatta su una mappa. Se la missione ha un piano di missione, anche la sua area è evidenziata. Un link apre il punto in Google Maps.
+- **Allegati** – anteprime delle immagini, un link per aprire ogni file e un pulsante **Scarica**. Immagini e video si aprono in un **visualizzatore** integrato (precedente/successivo, tasti freccia, download); i PDF si aprono in una nuova scheda.
+- **Media di supporto** – immagini e video aggiuntivi aggiunti all'evento, mostrati nella loro sezione e aperti nello stesso visualizzatore. Usa l'icona **+** accanto all'evento nella tabella, oppure il pulsante **Aggiungi media di supporto** nei dettagli, per aggiungerne altri in qualsiasi momento (JPG, PNG, WebP, MP4, WebM, MOV; fino a 10 file per caricamento e 20 per evento). **Aggiungere media di supporto non invia mai email**; vengono invece notificati i webhook del cliente (vedi sotto).
+- **Modifica** – cambia il tipo di evento, l'ora di decollo, la posizione, le note e gli allegati. Il sistema, la missione e i destinatari restano come segnalati. **La modifica non invia mai di nuovo le email.**
+- **Elimina** – rimuove definitivamente l'evento e i suoi file, dopo una conferma.
+
+Aggiungere media di supporto richiede l'accesso in modifica al registro eventi; i piloti possono aggiungere media solo agli eventi che hanno segnalato loro stessi, e il portale clienti non può aggiungere media. Modifica ed Elimina sono disponibili per gli utenti con accesso completo al registro eventi. I piloti possono modificare solo gli eventi che hanno segnalato loro stessi. I clienti nel portale clienti possono vedere i propri eventi (dettagli, mappa e allegati) ma non modificarli.
+
+Un pilota può scegliere solo i sistemi e le missioni a lui assegnati e vede solo gli eventi che ha segnalato. I ruoli che gestiscono i sistemi vedono ogni evento dell'azienda. Il magazzino non viene mai offerto come sistema.
+
+### Webhook
+
+Amministratori, OPM e super amministratori vedono nella pagina un'icona delle impostazioni per configurare i webhook. Ogni webhook può avere come destinazione **un solo cliente** (in tal caso riceve solo gli eventi di quel cliente, determinato dalla missione, altrimenti dal cliente assegnato al sistema) oppure **tutti i clienti**, e può essere limitato a tipi di evento specifici.
+
+Ogni nuovo evento viene inviato come `POST` HTTPS con `event.created`:
+
+```json
+{
+  "id": "delivery-uuid",
+  "type": "event.created",
+  "created_at": "2026-10-07T14:20:05.000Z",
+  "data": {
+    "event_id": 126,
+    "event_type_id": 2,
+    "event_type": "equipment_malfunction",
+    "event_type_label": "Equipment malfunction",
+    "takeoff_time": "2026-10-07T10:32:00.000Z",
+    "reported_at": "2026-10-07T14:20:05.000Z",
+    "location": { "latitude": 42.4097, "longitude": 12.8603, "label": "Rieti, Lazio, Italy" },
+    "notes": "Strange vibration from motor",
+    "pilot": { "id": 12, "name": "Jane Doe" },
+    "drone": { "id": 4, "name": "Lito X1", "code": "LX1" },
+    "mission": { "id": 88, "name": "Survey-12", "code": "M-88" },
+    "client": { "id": 3, "name": "Acme" },
+    "system": {
+      "name": "Lito X1",
+      "code": "LX1",
+      "components": [
+        { "name": "Matrice 4TD", "code": "DR-01", "drone_type": "DRONE", "serial_number": "1581F5BKD00A" },
+        { "name": "Dock 3", "code": "DK-01", "drone_type": "DOCK", "serial_number": "8UUXN4R00A0B" }
+      ]
+    },
+    "attachments": [{ "attachment_id": 28, "is_supporting": false, "file_name": "screenshot.png", "file_type": "image/png", "file_size": 120394, "url": "https://…", "url_expires_in_seconds": 604800 }]
+  }
+}
+```
+
+#### Parametri di `event.created`
+
+| Campo | Significato |
+| --- | --- |
+| `id` | Id univoco di **questa consegna** (inviato anche come header `X-Readi-Delivery`). Cambia a ogni consegna e **non** identifica l'evento. |
+| `type` | Il nome della notifica, `event.created` (inviato anche come header `X-Readi-Event`). |
+| `created_at` | Quando è stata creata la consegna (UTC, ISO 8601). |
+| `data.event_id` | **L'id dell'evento.** È il numero mostrato nella colonna **ID** della tabella degli eventi e come `#id` nei dettagli dell'evento. Usalo per collegare ogni notifica, inclusi i successivi aggiornamenti, allo stesso evento. |
+| `data.event_type_id` | L'id univoco del tipo di evento. Non cambia mai, anche quando il tipo viene rinominato, quindi è la chiave stabile per un tipo. `null` se il tipo è stato eliminato. |
+| `data.event_type` / `data.event_type_label` | Il codice e il nome del tipo **così come l'evento è stato segnalato** (un'istantanea). Rinominare il tipo in seguito non li cambia per questo evento. |
+| `data.takeoff_time` / `data.reported_at` | Quando il volo è decollato e quando l'evento è stato segnalato. |
+| `data.location` | `latitude`, `longitude` e un `label` (quando è stato cercato un luogo). |
+| `data.notes` | Le note del pilota. |
+| `data.pilot`, `data.drone`, `data.mission`, `data.client` | Il pilota segnalante, il sistema, la missione (`null` se non c'è) e il cliente, ciascuno con il proprio `id` e `name` (drone e missione hanno anche un `code`). |
+| `data.system` | Il sistema selezionato nella configurazione della missione (il sistema del piano di missione), così i riceventi possono identificare l'hardware esatto. È un **oggetto vuoto `{}` quando l'evento non ha una missione**. Altrimenti: `name`, `code` e `components[]` – ogni componente attivo del sistema con `name`, `code`, `drone_type` (il tipo di componente, ad es. `DRONE`, `DOCK`, `BATTERY`) e `serial_number` (`null` se non impostato). Questa chiave è stata aggiunta in seguito; le altre chiavi sono invariate. |
+| `data.attachments[]` | Tutti i file dell'evento. Ognuno ha `attachment_id` (id del file), `is_supporting` (`false` = allegato durante la segnalazione, `true` = media di supporto), `file_name`, `file_type`, `file_size` (byte), `url` (link di download) e `url_expires_in_seconds` (i link restano validi per 7 giorni). |
+
+#### Aggiornamenti dei media di supporto (`event.updated`)
+
+Quando vengono aggiunti media di supporto a un evento già segnalato, gli stessi webhook (stessi filtri di cliente e tipo di evento) ricevono una notifica `event.updated` con `update_type: "support_media"`. È così che i **nuovi media** raggiungono il ricevente:
+
+```json
+{
+  "id": "delivery-uuid",
+  "type": "event.updated",
+  "created_at": "2026-10-07T15:02:11.000Z",
+  "data": {
+    "update_type": "support_media",
+    "event_id": 126,
+    "event_type_id": 2,
+    "event_type": "equipment_malfunction",
+    "event_type_label": "Equipment malfunction",
+    "takeoff_time": "2026-10-07T10:32:00.000Z",
+    "reported_at": "2026-10-07T14:20:05.000Z",
+    "location": { "latitude": 42.4097, "longitude": 12.8603, "label": "Rieti, Lazio, Italy" },
+    "notes": "Strange vibration from motor",
+    "pilot": { "id": 12, "name": "Jane Doe" },
+    "drone": { "id": 4, "name": "Lito X1", "code": "LX1" },
+    "mission": { "id": 88, "name": "Survey-12", "code": "M-88" },
+    "client": { "id": 3, "name": "Acme" },
+    "system": {
+      "name": "Lito X1",
+      "code": "LX1",
+      "components": [
+        { "name": "Matrice 4TD", "code": "DR-01", "drone_type": "DRONE", "serial_number": "1581F5BKD00A" },
+        { "name": "Dock 3", "code": "DK-01", "drone_type": "DOCK", "serial_number": "8UUXN4R00A0B" }
+      ]
+    },
+    "new_media": [
+      {
+        "attachment_id": 29,
+        "is_supporting": true,
+        "file_name": "close-up.mp4",
+        "file_type": "video/mp4",
+        "file_size": 5242880,
+        "url": "https://…",
+        "url_expires_in_seconds": 604800
+      }
+    ]
+  }
+}
+```
+
+| Campo | Significato |
+| --- | --- |
+| `type` | `event.updated` – qualcosa è cambiato su un evento esistente. |
+| `data.update_type` | Cosa è cambiato. Attualmente solo `support_media`: sono stati aggiunti media di supporto. |
+| `data.event_id` | **L'id dell'evento a cui appartengono i media** – lo stesso `event_id` inviato in `event.created`. Usalo per associare i nuovi media all'evento giusto. |
+| `data.new_media[]` | Solo i file aggiunti da questo aggiornamento (non l'intero elenco). Ognuno ha `attachment_id`, `is_supporting` (sempre `true`), `file_name`, `file_type` (immagine o video), `file_size`, `url` e `url_expires_in_seconds`. |
+| Altri campi `data` | Gli stessi dettagli dell'evento di `event.created` (tipo, orari, posizione, note, pilota, drone, missione, cliente, sistema). `attachments` non è incluso. |
+
+I media di supporto aggiunti mentre l'evento viene segnalato fanno parte di `event.created` (contrassegnati con `is_supporting: true`), quindi per essi non viene inviato alcun aggiornamento separato. Le regole di firma, nuovo tentativo e registro delle consegne riportate di seguito valgono per entrambe le notifiche.
+
+Verifica l'header `X-Readi-Signature`: `sha256=` + HMAC-SHA256 (esadecimale) di `"<X-Readi-Timestamp>.<raw body>"` con il segreto di firma del webhook, che viene mostrato una sola volta quando il webhook viene creato o ruotato. Rispondi con un qualsiasi `2xx` entro 8 secondi; le consegne non riuscite (errore di rete o `5xx`) vengono ritentate una volta. Tutte le consegne compaiono nel registro delle consegne di ciascun webhook. Gli endpoint devono essere URL HTTPS pubblici.
+
+### Notifiche email
+
+Amministratori, OPM e super amministratori vedono anche un'**icona a forma di busta** accanto all'icona delle impostazioni dei webhook. Apre due schede:
+
+- **Rubrica** – i destinatari riutilizzabili dell'azienda. Ogni contatto ha un **nome**, un'**email** (univoca per azienda) e, facoltativamente, un'**azienda** e delle **note**. I contatti possono essere cercati, modificati, eliminati e destinatari di un'email di prova. Eliminare un contatto lo rimuove anche da tutti i valori predefiniti dei clienti.
+- **Notifiche predefinite** – scegli un **cliente** dal menu a discesa e spunta i contatti a cui inviare l'email per impostazione predefinita per quel cliente. I valori predefiniti vengono preselezionati ogni volta che viene segnalato un evento per quel cliente.
+
+Le notifiche sono **per evento**, non per tipo di evento: il menu a discesa **Notifica** nella configurazione della missione e nella schermata dell'evento elenca la rubrica con i valori predefiniti del cliente già spuntati. Mostra cinque contatti alla volta, prima quelli selezionati, e ha una casella di ricerca per trovare gli altri. Il pilota può aggiungere o rimuovere contatti (fino a 20); la selezione viene salvata con l'evento. Cambiare la missione o il sistema prima di toccare la selezione riapplica i valori predefiniti del nuovo cliente.
+
+Quando l'evento viene inviato, i contatti selezionati ricevono una email con il tipo di evento, gli orari di segnalazione e di decollo, il pilota, il drone, il cliente, la missione, la posizione, le note, un'**istantanea della mappa** della posizione, un'anteprima di ogni immagine, un link **Scarica** per ogni allegato (valido 7 giorni) e un pulsante **Visualizza l'evento in ReADI**. Il pulsante apre l'evento dopo l'accesso: l'accesso segue le normali autorizzazioni, quindi un destinatario ha bisogno di un account ReADI con accesso al registro eventi (personale) o al portale clienti (clienti, che vengono portati alla propria pagina Eventi). Senza accesso vedono la consueta pagina "non autorizzato". Ogni invio conta ai fini del limite giornaliero di email dell'azienda; una volta raggiunto, le email degli eventi vengono saltate fino al ripristino del contatore. Gli errori delle email non bloccano mai la segnalazione del pilota.
+
+### Eventi AI
+
+La scheda **Eventi AI** mostra gli eventi rilevati automaticamente dal modello AI sui tuoi stream video, ad esempio un intruso. I piloti non li segnalano; il modello li invia a ReADI man mano che accadono (vedi [API Eventi AI](/docs/modules/ai-events-api) per l'aspetto tecnico). La scheda si trova accanto a **Eventi segnalati** in cima alla pagina ed è visibile ad amministratori, OPM e super amministratori.
+
+#### Chi vede quali eventi
+
+Il modello non è legato a un'azienda. Ogni evento che invia viene **memorizzato**, ma un'azienda **vede** un evento solo quando uno dei suoi amministratori ha aggiunto l'**id dello stream** dell'evento (vedi sotto).
+
+| Id dello stream | Cosa succede ai suoi eventi |
+|---|---|
+| Aggiunto dalla tua azienda | Compaiono nella tua scheda **Eventi AI**, inclusi gli eventi arrivati prima che aggiungessi l'id dello stream. |
+| Non aggiunto da nessuno | Vengono solo memorizzati. Nessuna azienda li vede e non viene inviata alcuna email. Compaiono non appena un'azienda aggiunge l'id dello stream. |
+| Aggiunto da un'altra azienda | Non li vedi mai. |
+
+Un id di stream appartiene a **una sola azienda** in tutta la piattaforma. Se provi ad aggiungerne uno già in uso, ricevi "Questo id stream è già in uso".
+
+I super amministratori vedono **tutti** gli eventi della piattaforma. La colonna **Azienda** mostra quale azienda ha aggiunto l'id dello stream di ciascun evento, oppure **Non assegnato** quando nessuno l'ha fatto, e un menu a discesa **Azienda** filtra l'elenco su *Tutte le aziende*, *Non assegnati* o una singola azienda.
+
+#### L'elenco
+
+Per ogni evento l'elenco mostra l'ora, il tipo di evento, lo stream, ciò che è stato rilevato (ad esempio `person`, con "+2 altri" quando nel fotogramma c'erano più oggetti), la confidenza, una miniatura, il cliente, il **collegamento avvisi** e lo stato dell'email. Filtri:
+
+| Filtro | |
+|---|---|
+| Stream | Ricerca testuale sull'id dello stream. Basta parte del nome, con qualsiasi combinazione di maiuscole e minuscole |
+| Tipo di evento | Ricerca testuale sul tipo di evento, ad esempio `intrusion`. Basta parte del nome, con qualsiasi combinazione di maiuscole e minuscole, e uno spazio corrisponde al `_` nel codice (`intrusion detected` trova `INTRUSION_DETECTED`) |
+| Azienda | Solo super amministratori: tutte le aziende, non assegnati o una singola azienda |
+| Da / A | L'ora dell'evento. "A" non può essere precedente a "Da" |
+
+Le colonne **Cliente** e **Collegamento avvisi** descrivono lo stream **com'era quando l'evento è arrivato** e non cambiano mai in seguito:
+
+| Collegamento avvisi | Significato |
+|---|---|
+| **Collegato** | Lo stream aveva gli avvisi configurati (un cliente, almeno un contatto, o entrambi) quando l'evento è arrivato. |
+| **Non collegato** | Lo stream non aveva né cliente né contatti, oppure nessuno aveva ancora aggiunto il suo id stream. Non viene inviata alcuna email. |
+
+Se in seguito assegni un cliente a uno stream, o ne cambi il cliente, solo gli eventi che arrivano **successivamente** portano il nuovo cliente e risultano Collegati. Gli eventi precedenti mantengono il nome del cliente e lo stato del collegamento con cui sono stati ricevuti.
+
+L'elenco mostra per primo **l'ultimo evento ricevuto**, nell'ordine in cui ReADI li ha memorizzati, qualunque sia l'ora che il modello ha attribuito a ciascun evento. Mostra 8 eventi per pagina; quando ce ne sono di più, sotto compare lo stesso selettore di pagine della scheda Eventi segnalati, con una scelta **Righe per pagina** (8, 16, 24, 32, 48 o 56) e i pulsanti prima, precedente, successiva e ultima. Clicca su una riga per aprire l'evento. L'evento si apre su **Originale + previsioni**: il fotogramma originale della telecamera, non modificato, con i rilevamenti disegnati sopra da ReADI, ogni riquadro con l'etichetta della classe e la confidenza. Il **rosso** indica l'oggetto che ha attivato l'evento e l'**ambra** gli altri, e l'interruttore **Mostra previsioni** nasconde i riquadri per vedere il fotogramma semplice. **Immagine elaborata dall'AI** mostra invece l'immagine del modello stesso, con il suo disegno già applicato. Sotto l'immagine vedi i dettagli (traccia, sessione, fotogramma, fotogrammi rilevati, tempo di elaborazione, modalità del modello, stato dell'email e gli indirizzi a cui è stato inviato l'avviso) e una tabella di ogni oggetto rilevato nel fotogramma.
+
+#### Aggiungere id di stream (stream AI)
+
+Clicca sull'**icona a forma di radio** nell'intestazione della pagina per aprire **Stream AI**. Clicca **Aggiungi ID stream** e digita l'id dello stream esattamente come lo invia il modello (distingue tra maiuscole e minuscole). Questo basta già per iniziare a vedere gli eventi dello stream.
+
+Sotto, **Avvisi email (facoltativo)** decide a chi viene inviata l'email quando lo stream rileva qualcosa:
+
+| Impostazione | Significato |
+|---|---|
+| **Cliente** | Facoltativo. Scegli un cliente, oppure *Nessun cliente*. |
+| **Invia all'indirizzo del cliente** | Mostrata quando è scelto un cliente. Se spuntata, l'indirizzo email del cliente (mostrato accanto alla casella) riceve l'avviso. Deseleziona per avvisare solo i contatti qui sotto. |
+| **Contatti aggiuntivi** | Contatti della [rubrica](#email-notifications) che ricevono anch'essi l'avviso (fino a 20). |
+| **Invia avvisi email per questo stream** | Disattiva per sospendere le email senza perdere lo stream. Gli eventi restano visibili. |
+
+Uno stream senza cliente e senza contatti mostra soltanto gli eventi, che sono contrassegnati come **Non collegato**, e non invia email. L'elenco mostra per primo l'ultimo id di stream aggiunto, 8 per pagina. **Rimuovere** un id di stream nasconde i suoi eventi dalla tua scheda e interrompe gli avvisi; gli eventi vengono conservati e riappaiono se l'id dello stream viene aggiunto di nuovo (da te o da un'altra azienda).
+
+#### Email di avviso
+
+Quando arriva un evento per un id di stream con gli avvisi email configurati, i destinatari ricevono una email con il tipo di evento, lo stream, il cliente, ciò che è stato rilevato, la confidenza, l'ora (UTC), le immagini elaborata dall'AI e originale e un pulsante **Visualizza l'evento in ReADI** che apre la scheda Eventi AI. I destinatari sono l'indirizzo del cliente (se spuntato) più i contatti selezionati, senza duplicati. La colonna **Email** mostra cosa è successo:
+
+| Stato email | Significato |
+|---|---|
+| Inviata | L'email è stata consegnata al provider di posta. I dettagli dell'evento elencano gli indirizzi. |
+| Stream non aggiunto alla ricezione | Nessuno aveva aggiunto l'id dello stream quando l'evento è arrivato, quindi non è stata inviata alcuna email. Aggiungerlo in seguito non invia email per gli eventi più vecchi. |
+| Avvisi in pausa | Gli avvisi email sono disattivati per lo stream. |
+| Nessun destinatario | Per lo stream non è configurato alcun indirizzo cliente utilizzabile né alcun contatto. |
+| Limite giornaliero raggiunto | È stato raggiunto il limite giornaliero di email dell'azienda; le email riprendono quando il contatore viene azzerato. |
+| Invio non riuscito | Il provider di posta ha rifiutato l'email. |
+| In attesa | L'evento è ancora in elaborazione. |
+
+Ogni nuovo evento invia la propria email, anche quando ne arrivano diversi per lo stesso stream nel giro di pochi secondi. La ripetizione di un evento che ReADI ha già ricevuto non viene mai inviata di nuovo per email. Ogni avviso conta ai fini del limite giornaliero di email dell'azienda. I problemi con le email non impediscono mai la memorizzazione di un evento.
+
+#### Immagini
+
+Il modello carica le sue immagini direttamente nell'archiviazione di ReADI e invia solo la loro posizione, quindi non c'è nulla da scaricare. Se il modello segnala un caricamento come non completato, quell'immagine viene esclusa e l'evento mostra **Snapshot non disponibile** (o l'altra immagine, se ne è fallita una sola). L'evento e la sua email vengono conservati in ogni caso.
+
+---
+
+## Permessi
+
+Chi può leggere, modificare ed eliminare in quest'area, in base al ruolo.
+
+<PermissionsTable section="Logbooks" />
+
+<Note>
+Le impostazioni del Registro eventi (**Tipi di evento**, **Notifiche email** con la rubrica, **Webhook** e la scheda **Eventi AI** con **Stream AI**; i super amministratori vedono anche gli eventi di ogni azienda) non fanno parte dei permessi modificabili. Solo ADMIN, OPM e SUPERADMIN possono aprirle e modificarle.
+</Note>
+
+---
+
+## Correlati
+
+- [Operazioni](/docs/modules/operations)
+- [Modulo Manutenzione](/docs/business-logic/maintenance-module)

@@ -1,5 +1,6 @@
 'use client';
 
+import { localizeText } from '@/lib/api-error-message';
 import { GutmaPreviewPanel } from '@/components/control-center/GutmaPreviewPanel';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -86,7 +87,7 @@ export function ComponentFlightLogsModal({ open, onClose, componentId, component
       if (!res.ok || !body.success) throw new Error(body?.message ?? `Error ${res.status}`);
       setPreview(body.data);
     } catch (err: any) {
-      setPreviewError(err?.message ?? 'Failed to load flight log.');
+      setPreviewError(err?.message ?? localizeText('Failed to load flight log.'));
     } finally {
       setPreviewLoading(false);
     }

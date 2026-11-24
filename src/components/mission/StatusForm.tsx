@@ -1,5 +1,6 @@
 'use client';
 
+import { localizeText } from '@/lib/api-error-message';
 import { MissionStatus } from '@/config/types/types';
 import { Plus } from 'lucide-react';
 import { FormEvent, useState } from 'react';
@@ -20,7 +21,7 @@ export default function StatusForm({ onSubmit, isDark }: StatusFormProps) {
     e.preventDefault();
     
     if (!formData.code || !formData.description) {
-      toast.error('Please fill in all fields');
+      toast.error(localizeText('Please fill in all fields'));
       return;
     }
 

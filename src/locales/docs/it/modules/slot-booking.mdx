@@ -1,0 +1,485 @@
+---
+title: "Prenotazione slot"
+description: "Apri fasce orarie per i piloti, lascia che richiedano uno slot e assegna un pilota per slot, con gruppi piloti, pubblicazione programmata, controlli delle collisioni, foglio giornaliero, meteo e meriti dei piloti."
+---
+
+La Prenotazione slot permette all'**Operations Manager (OPM)** di aprire fasce orarie e ai **piloti (PIC)** di richiederle. L'OPM decide poi quale pilota ottiene ogni slot. Si trova nella barra laterale sotto **Operazioni → Prenotazione slot**.
+
+| Pagina | Chi la vede | Scopo |
+|---|---|---|
+| **Prenotazione slot** | Tutti | OPM: crea e gestisce i gruppi di slot. Pilota: consulta i gruppi e richiede gli slot |
+| **Programma di oggi** | PIC (pilota) | Gli slot approvati del pilota per oggi su una timeline, le missioni collegate a ogni slot e il loro avanzamento in tempo reale dalla Bacheca giornaliera |
+| **Slot approvati** | Tutti | Incarichi approvati e il PDF allegato dall'OPM. I piloti vedono i propri, l'OPM vede tutti |
+| **Calendario** | OPM, Admin, Super Admin | Sette giorni di ogni slot con gruppo, cliente, pilota assegnato, ore di volo e meteo in un'unica vista |
+| **Anteprima giorno** | OPM, Admin, Super Admin | Ogni slot di un giorno con il suo cliente e il pilota assegnato. Gli slot non assegnati sono rossi |
+| **Gruppi piloti** | OPM, Admin, Super Admin | Gruppi personalizzati di piloti (per esempio Esperti, Nuovi, Esterni) |
+| **Meriti piloti** | OPM, Admin, Super Admin | Ore volate, disponibilità e punteggio di ogni pilota |
+| **Registro di audit** | OPM, Admin, Super Admin | Ogni modifica a gruppi, slot, prenotazioni e gruppi piloti |
+
+---
+
+## Chi può fare cosa
+
+| Ruolo | Cosa può fare |
+|---|---|
+| **OPM, Admin, Super Admin** | Creare ed eliminare gruppi di slot, programmare la pubblicazione, modificare gli slot, approvare o rifiutare le richieste, assegnare e rimuovere piloti, gestire i gruppi piloti, vedere l'anteprima giorno e i meriti dei piloti, impostare i valori predefiniti aziendali, vedere le richieste di tutti i piloti e il registro di audit |
+| **PIC (pilota)** | Consultare i gruppi di slot offerti a lui, richiedere, spostare e annullare i propri slot (fino alla finestra di blocco), vedere i propri slot approvati e le proprie ore e il proprio rango |
+| **Altri ruoli con accesso a Operazioni** | Solo consultare i calendari. Non possono richiedere slot |
+
+---
+
+## Termini chiave
+
+- **Gruppo di slot:** il contenitore creato dall'OPM. Contiene le regole (orari, date, blocco, giorni di approvazione) e tutti gli slot creati da esse.
+- **Slot:** un blocco orario all'interno di un gruppo, per esempio `06:00–14:00`.
+- **Richiesta:** un pilota che chiede uno slot. Parte come **In attesa di approvazione**.
+- **Gruppo piloti:** un gruppo personalizzato di utenti dell'azienda, come *Esperti*, *Nuovi* o *Esterni*. Vedi [Gruppi piloti](#pilot-groups).
+- **Cliente:** il cliente per cui vola un gruppo di slot. Viene mostrato nel foglio giornaliero.
+- **Pubblico:** i gruppi piloti a cui è offerto un gruppo di slot. Nessun pubblico significa tutti i piloti.
+- **Collisione:** un pilota ha già uno slot approvato il cui orario si sovrappone a un altro slot. Vedi [Collisioni](#collisions).
+- **Finestra di blocco:** le ultime 24 o 48 ore prima del giorno di approvazione di un gruppo, quando i piloti non possono più modificare le proprie richieste.
+- **Fuso orario del sito:** il fuso orario del luogo in cui si vola per un gruppo di slot. Gli orari degli slot sono l'ora locale di quel luogo, quindi hanno lo stesso significato per l'OPM e per ogni pilota, ovunque si trovi. Vedi [Fuso orario](#time-zone).
+
+---
+
+## Per l'OPM
+
+### Crea un gruppo di slot
+
+Clicca su **Nuovo gruppo di slot**. Il modulo è precompilato con le **Impostazioni slot predefinite** (i valori predefiniti della tua azienda) e puoi modificare qualsiasi cosa per questo gruppo.
+
+| Impostazione | Opzioni |
+|---|---|
+| **Orari degli slot** | **Blocchi orari** (slot di 1 ora all'interno di una fascia di inizio/fine che scegli) oppure **Blocchi di turno** (`06:00–14:00`, `14:00–22:00`, `22:00–06:00`) |
+| **Intervallo di date** | Un giorno singolo, una settimana intera o due settimane, a partire da una data di inizio che sia oggi o successiva |
+| **Blocco degli slot** | Disattivato (predefinito): più piloti possono richiedere lo stesso slot e ne scegli uno tu. Attivato: un solo pilota per slot, la prima richiesta lo blocca |
+| **Giorni di approvazione** | I giorni della settimana in cui esamini le richieste di questo gruppo |
+| **Cliente** | **Obbligatorio.** Il cliente per cui si volano questi slot. Sono elencati solo i clienti attivi della tua azienda. Usa la casella di ricerca per trovarne uno in un elenco lungo; l'elenco scorre. **Avanti: Calendario** resta disattivato finché non scegli un cliente |
+| **Sistema** | Facoltativo. Scegli il sistema con cui si volano gli slot per ottenere il meteo a 7 giorni nella posizione di quel sistema (vedi [Posizione del meteo](#weather-location)). Sono elencati solo i sistemi attivi del cliente scelto e l'elenco si azzera quando cambi cliente. I sistemi **senza alcuna posizione (né sul sistema né su un drone) sono in grigio** e non possono essere selezionati. **Nessun sistema** mantiene il gruppo senza meteo e un avviso ambra lo segnala |
+| **Fuso orario del sito** | **Obbligatorio.** Il fuso del luogo in cui si volano gli slot, per esempio `Asia/Kolkata`. Viene compilato automaticamente dalla posizione del sistema scelto e puoi modificarlo. Senza **nessun sistema** (o con un sistema il cui fuso non è determinabile) non c'è nulla da cui ricavarlo, quindi devi inserirlo tu: **non** viene dedotto dal tuo fuso orario, perché puoi trovarti in un luogo diverso dal sito. Digita per cercare nell'elenco; un nome non valido mostra un messaggio rosso e **Avanti: Calendario** resta disattivato. La data di inizio e gli slot vengono verificati rispetto a questo fuso. Vedi [Fuso orario](#time-zone) |
+| **Pubblicazione** | **Pubblica ora** (predefinito) oppure **Programma** una data e un'ora. Vedi [Pubblicazione programmata](#scheduled-publishing) |
+| **Offerto a** | Facoltativo. Uno o più [gruppi piloti](#pilot-groups). Lascia vuoto per offrire gli slot a tutti i piloti. Cerca i gruppi per nome; l'elenco scorre quando sono molti. Ogni scheda mostra il numero di membri e le immagini dei primi membri, e una stella per gli esperti. **Passa il mouse** su una scheda per vedere la descrizione del gruppo e tutti i suoi membri con immagine, nome, ruolo ed email. **Cancella** rimuove la selezione |
+
+**I nomi dei gruppi devono essere univoci.** Un nuovo gruppo non può riutilizzare il nome di un gruppo esistente nella tua azienda. Maiuscole, minuscole e spazi extra vengono ignorati, quindi `Week 1` e ` week 1 ` contano come lo stesso nome. Se il nome è già in uso, il modulo mostra *Esiste già un gruppo di slot con questo nome* e **Avanti: Calendario** resta disattivato. Anche il sistema lo rifiuta alla pubblicazione, anche se qualcun altro crea lo stesso nome nello stesso momento.
+
+Clicca su **Avanti: Calendario**. Ogni slot parte attivo. Clicca su uno slot, o su **Disattiva giorno**, per disattivare elementi, poi su **Pubblica calendario**. I piloti che possono vedere il gruppo possono richiedere gli slot non appena è pubblicato.
+
+### Avviso di slot duplicati
+
+Quando pubblichi, Readi verifica se una qualsiasi data selezionata ha già slot in un altro gruppo di slot **dello stesso cliente** (i gruppi senza cliente vengono confrontati tra loro). In tal caso vedi:
+
+> Attenzione: esistono già slot per una o più date selezionate in questo intervallo. Vuoi unire, sovrascrivere o annullare?
+
+| Scelta | Risultato |
+|---|---|
+| **Unisci** | Mantiene gli slot esistenti e aggiunge solo i blocchi orari che non esistono ancora in quelle date |
+| **Sovrascrivi** | Elimina gli slot esistenti **di quel cliente** in quelle date. Le relative prenotazioni vengono annullate e i piloti ricevono un [avviso](#warnings) |
+| **Annulla** | Non viene pubblicato nulla |
+
+**Clienti diversi non attivano mai questo avviso.** Due gruppi di slot per clienti diversi possono usare le stesse date e le stesse fasce orarie, per esempio 06:00–14:00 due volte nello stesso giorno, ciascuno con i propri piloti. Unisci e Sovrascrivi guardano e modificano solo gli slot del cliente per cui pubblichi, quindi non toccano mai gli slot di un altro cliente. Il [Calendario](#calendar) li mostra affiancati con il colore del gruppo e il nome del cliente. I piloti sono comunque protetti dall'essere prenotati su entrambi contemporaneamente: vedi [Collisioni](#collisions) e le collisioni di orario del Calendario.
+
+### Controlla le prenotazioni
+
+Apri il calendario di un gruppo. Ogni slot mostra un indicatore in tempo reale:
+
+- **Libero:** nessuna richiesta finora
+- **2 PIC richiesti:** richieste in attesa della tua decisione
+- **Il nome del pilota:** è stato scelto un pilota (approvato o assegnato). Anche gli altri piloti vedono questo nome sul calendario, al posto di "Occupato"
+
+Gli slot dei prossimi 7 giorni mostrano anche un piccolo **punto meteo** colorato. Vedi [Meteo](#weather).
+
+In un giorno di approvazione di un gruppo con richieste in attesa, la pagina mostra anche un banner **Oggi è un giorno di approvazione**.
+
+### Approva o rifiuta
+
+Clicca su uno slot per vedere i piloti che lo hanno richiesto. Sotto il nome di ogni pilota trovi ciò che ti serve per decidere:
+
+| Dettaglio | Significato |
+|---|---|
+| **Chip del volo** | Ore volate in questo ciclo rispetto al limite mensile (vedi [Limiti di volo](#flight-limits)) |
+| **Voli totali** | Missioni volate dal pilota, in totale |
+| **Ultimi 7 giorni** | Missioni volate negli ultimi 7 giorni, mostrate come *weekend / totali* (weekend = sabato o domenica) |
+| **Punteggio meriti** | Il [punteggio meriti](#pilot-merits) da 0 a 100 del pilota e la sua posizione tra i piloti dell'azienda (*#2 di 14*). *Non classificato* se il pilota non è in classifica |
+| **Richiesti in questo gruppo** | Quanti slot di **questo gruppo di slot** il pilota ha richiesto, in qualsiasi stato. Gli slot che hai assegnato direttamente non vengono contati |
+| **Slot nel weekend** | Un'etichetta verde *Ha richiesto slot nel weekend (n)* quando il pilota ha richiesto slot di sabato o domenica in questo gruppo, altrimenti grigia *Nessuno slot nel weekend richiesto* |
+| **Gruppi piloti** | I gruppi piloti a cui appartiene il pilota; i gruppi di esperti hanno una stella |
+
+I dettagli vengono mostrati per le richieste in attesa e approvate, solo a OPM, Admin e Super Admin. Un "volo" è una missione con un orario di inizio effettivo. Il weekend di un volo è determinato dal suo orario di inizio in UTC.
+
+- **Approva:** allega facoltativamente un **PDF** (nulla osta, briefing operativo, modulo di autorizzazione; solo PDF, fino a 10 MB), poi conferma. Lo slot diventa Approvato, il pilota riceve un'email con il PDF allegato e lo slot compare nella pagina **Slot approvati** del pilota.
+- **Rifiuta:** aggiungi un motivo facoltativo. Il pilota viene avvisato via email e in-app.
+
+Puoi decidere in qualsiasi giorno. Se oggi non è uno dei giorni di approvazione del gruppo, la finestra di dialogo ti ricorda soltanto i giorni programmati.
+
+Se il pilota è già assegnato a un altro slot che si sovrappone a questo, la richiesta mostra un avviso rosso e **Approva** è disattivato. Vedi [Collisioni](#collisions).
+
+### Modifica uno slot pubblicato
+
+Clicca su **Modifica slot** per cambiarne l'orario di inizio e fine, oppure per chiuderlo alla prenotazione. È **obbligatorio un motivo**. La modifica viene scritta nel registro di audit e i piloti che hanno già richiesto quello slot vengono avvisati. Due slot nella stessa data non possono avere la stessa fascia oraria e l'orario di inizio e fine devono essere diversi (una fine precedente all'inizio significa che lo slot supera la mezzanotte).
+
+- **Chiudere uno slot** annulla tutto ciò che è prenotato su di esso: le richieste in attesa e il pilota assegnato vengono impostati come rifiutati con la nota *Slot chiuso dall'OPM*. I piloti vengono avvisati e il pilota assegnato riceve un avviso. Uno slot chiuso non impedisce più al pilota di prendere altri slot sovrapposti e non può essere approvato. Riaprirlo non ripristina le vecchie prenotazioni; i piloti devono richiederlo di nuovo.
+- **Cambiare l'orario** mantiene le prenotazioni, ma viene rifiutato se il pilota assegnato si sovrapporrebbe a un altro slot approvato.
+
+### Fuso orario
+
+Ogni gruppo di slot memorizza un **fuso orario del sito**. Uno slot `06:00–14:00` significa sempre 06:00–14:00 **nel sito**, per tutti, quindi un OPM in un paese e piloti in altri paesi vedono lo stesso slot e le stesse regole. Il fuso viene mostrato accanto a ogni gruppo nelle schede dei gruppi dell'OPM.
+
+Dove viene usato il fuso:
+
+| Cosa | Come usa il fuso del sito |
+|---|---|
+| **Slot già iniziato** | I piloti non possono richiedere né spostare una richiesta su uno slot già iniziato e l'OPM non può approvare né assegnare uno slot terminato, in base all'ora attuale nel sito. I nuovi gruppi non possono essere pubblicati con una data di inizio nel passato o con slot già iniziati |
+| **Giorno di approvazione** | Il giorno di approvazione, il banner *Oggi è un giorno di approvazione* e il giorno della *Prossima revisione* sono il giorno della settimana nel sito |
+| **Finestra di blocco** | Il blocco conta dalle 00:00 nel sito del giorno di approvazione |
+| **Promemoria del giorno di approvazione** | Inviato il giorno di approvazione nel sito, a partire dalle 08:00 ora del sito. Vedi [Notifiche](#notifications) |
+
+**Come viene scelto il fuso.** Quando scegli un sistema, il suo fuso viene ricavato dalle coordinate del sistema (la stessa posizione usata per il [meteo](#weather-location)). Puoi sovrascriverlo, per esempio per un sito vicino al confine tra due fusi. Il fuso non può essere modificato dopo la creazione del gruppo.
+
+**Gruppi più vecchi.** I gruppi creati prima di questa funzione non hanno un fuso memorizzato e sono trattati come **UTC** (il loro comportamento precedente). Per dare un fuso a un vecchio gruppo, ricrealo.
+
+### Elimina un gruppo di slot
+
+Clicca sull'icona del cestino su una scheda di gruppo. Compare una finestra di conferma; se i piloti hanno richieste in attesa o approvate nel gruppo, ti indica quante richieste verranno annullate. Conferma con **Elimina gruppo**. Questo rimuove il gruppo, tutti i suoi slot e tutte le richieste fatte al suo interno, e non può essere annullato.
+
+Se i piloti avevano richieste **in attesa o approvate** nel gruppo, ciascuno di loro riceve un [avviso](#warnings) **Gruppo di slot eliminato** con l'elenco degli slot annullati, per esempio:
+
+> Il gruppo di slot “Week 46 — Field Ops” è stato eliminato dall'OPM. Le tue 2 richieste di slot al suo interno sono state annullate: Tue, 10 Nov 2026 06:00–14:00; Wed, 11 Nov 2026 14:00–22:00 (approved).
+
+- Un pilota riceve **un solo** avviso per l'intero gruppo, indipendentemente da quanti slot avesse richiesto.
+- Gli slot approvati sono contrassegnati con *(approvato)* nell'elenco, così il pilota sa che un incarico su cui contava non c'è più.
+- Le richieste già rifiutate non vengono menzionate e i piloti che non hanno mai richiesto uno slot nel gruppo non vengono avvisati.
+- L'eliminazione viene scritta nel [registro di audit](#audit-log) con il numero di richieste rimosse e i piloti avvisati.
+
+### Impostazioni slot predefinite
+
+Le **Impostazioni slot predefinite** contengono i valori predefiniti della tua azienda: orari degli slot, intervallo di date, blocco e giorni di approvazione. Precompilano soltanto i nuovi gruppi. I gruppi esistenti non vengono modificati. Per gli slot orari, l'ora di inizio e di fine si scelgono da una griglia di ore (la fine può arrivare fino alle 24:00, mostrata come 00:00); un bordo rosso significa che la fine non è successiva all'inizio.
+
+Due impostazioni si applicano subito a tutta l'azienda:
+
+| Impostazione | Cosa fa |
+|---|---|
+| **Blocca le modifiche prima del giorno di approvazione** | Scegli **Mai bloccare**, **24 ore prima** o **48 ore prima** con i pulsanti (predefinito 24). Entro questa finestra i piloti non possono annullare né spostare le richieste in attesa. Vedi [Modificare una richiesta](#changing-a-request) |
+| **Il ciclo delle ore di volo inizia il** | Giorno da 1 a 28 del mese (predefinito 1). I limiti mensili di volo vengono contati da quel giorno di un mese al giorno prima dello stesso giorno del mese successivo, per esempio dal 10 al 9. Vedi [Limiti di volo](#flight-limits) |
+
+---
+
+## Gruppi piloti
+
+Apri **Gruppi piloti** (solo OPM) per organizzare i piloti in gruppi tuoi. Esempi tipici sono *Esperti*, *Nuovi* ed *Esterni*. I gruppi sono personalizzati: creane quanti ne vuoi.
+
+- **Nuovo gruppo:** inserisci un nome (obbligatorio, fino a 100 caratteri), una descrizione facoltativa (fino a 500) e scegli i membri. Puoi cercare nell'elenco dei membri per nome, email o ruolo e selezionare tutti quelli mostrati con un clic. L'elenco mostra l'immagine del profilo (o le iniziali), il nome, l'email e il ruolo di ogni utente.
+- I **membri** possono essere qualsiasi **utente attivo della tua azienda**, non solo piloti, per esempio un pilota esterno con un altro ruolo. Un utente può far parte di più gruppi.
+- I **nomi dei gruppi devono essere univoci** nella tua azienda. Maiuscole e spazi extra vengono ignorati. Se il nome è già in uso vedi un messaggio di errore dopo aver cliccato su **Crea gruppo**.
+- **Gruppo esperti:** spunta questa opzione sui gruppi di piloti esperti. I loro membri sono consigliati per primi per gli slot con meteo difficile. Vedi [Meteo](#weather).
+- **Modifica** un gruppo per cambiarne nome, membri o flag di esperti. Eliminalo con l'icona del cestino. Eliminare un gruppo non elimina mai i suoi utenti e i gruppi di slot offerti a esso non vengono eliminati. Se il gruppo piloti è l'**unico** pubblico di un gruppo di slot, non può essere eliminato: rimuoverlo lascerebbe quel gruppo di slot senza pubblico, il che significherebbe offrirlo a tutti i piloti. L'errore indica i nomi dei gruppi di slot, quindi eliminali o aggiungi prima un altro gruppo piloti.
+
+---
+
+## Pubblicazione programmata
+
+Un gruppo di slot può aprirsi ai piloti più tardi. In **Nuovo gruppo di slot**, scegli **Programma** e seleziona una data e un'ora.
+
+- L'orario deve essere almeno un minuto nel futuro, non oltre un anno e **entro l'ultimo giorno degli slot** del gruppo. Lo verificano sia il modulo sia il server.
+- Fino ad allora i piloti **non vedono affatto il gruppo**. Se lo aprono da un link ricevono *Gruppo di slot non trovato*. L'OPM lo vede con un'etichetta ambra **Apre …**.
+- Quando l'orario passa, il gruppo diventa visibile e richiedibile automaticamente.
+- I piloti che possono vedere il gruppo ricevono una notifica **Gruppo di slot aperto alle richieste** entro pochi minuti (vedi [Cron Job](/docs/business-logic/cron-jobs)). Viene inviata una sola volta per gruppo.
+- **Pubblica ora** sulla scheda del gruppo apre subito un gruppo programmato.
+
+### Chi vede un gruppo
+
+Un pilota vede un gruppo di slot solo quando è **pubblicato** e non ha **nessun pubblico**, oppure il pilota è membro di almeno uno dei **gruppi piloti** a cui è offerto. OPM, Admin e Super Admin vedono ogni gruppo.
+
+---
+
+## Collisioni
+
+Un pilota non può essere in due posti contemporaneamente. Readi considera una collisione quando un pilota è **approvato** per uno slot il cui orario si sovrappone a un altro slot, anche in un gruppo di slot diverso.
+
+- La sovrapposizione viene verificata sulla fascia oraria reale, quindi un turno di notte (22:00–06:00) si sovrappone alle prime ore del giorno successivo. Gli slot che si toccano soltanto, come 06:00–14:00 e 14:00–22:00, **non** sono in collisione.
+- Un pilota che richiede uno slot che si sovrappone a uno che ha già riceve *Sei già assegnato a uno slot sovrapposto*.
+- L'OPM non può approvare né assegnare un tale pilota: *… è già assegnato a uno slot sovrapposto*. Nell'elenco delle richieste dello slot l'avviso è mostrato in rosso e **Approva** è disattivato.
+- Nel [menu a tendina di assegnazione](#assign-a-pilot) i piloti con una collisione sono elencati per ultimi e non possono essere selezionati.
+
+---
+
+## Assegna un pilota
+
+Oltre ad approvare le richieste, l'OPM può scegliere direttamente un pilota. Apri uno slot (dal calendario o dall'[Anteprima giorno](#day-preview)) e usa **Assegna pilota**. Il pannello è nascosto una volta approvata la richiesta del pilota per quello slot. Dopo un'assegnazione diretta resta visibile, così puoi rimuovere il pilota.
+
+Il menu a tendina elenca i piloti in questo ordine:
+
+1. **Ha richiesto questo slot**
+2. **Disponibile** (nessuna collisione)
+3. **Non disponibile** (assegnazione sovrapposta, in grigio)
+
+All'interno di ogni parte, i piloti con il [punteggio](#pilot-merits) più alto vengono per primi. Per uno slot con meteo difficile, vengono per primi i membri dei **gruppi di esperti**. Ogni opzione mostra le ore del pilota negli ultimi 90 giorni, il suo punteggio e una stella di esperto. Selezionandone una vedi immagine, email, ruolo, gruppi e numeri del pilota.
+
+- Se il gruppo di slot ha un pubblico, vengono elencati e accettati solo i membri di quei gruppi piloti.
+- Se il meteo è difficile e il pilota non è in un gruppo di esperti, ti viene chiesto di confermare: **Assegna comunque**.
+- Assegnare approva la richiesta del pilota se ne ha fatta una, altrimenti crea una prenotazione approvata. Le altre richieste in attesa per quello slot vengono rifiutate automaticamente. Il pilota riceve una notifica in-app e un'email (*Slot assegnato*).
+- Una prenotazione creata da un'assegnazione diretta è mostrata come **Assegnato** (non *Richiesto*) nell'elenco delle richieste dello slot e come *Assegnato dall'OPM* nella tabella **Le mie richieste** del pilota.
+- **Rimuovi** toglie il pilota dallo slot così che si possa scegliere qualcun altro. Il pilota riceve una notifica di avviso e un'email (*Assegnazione dello slot rimossa*) e la prenotazione compare come rifiutata nelle sue **Le mie richieste**.
+- Si possono assegnare solo slot futuri e liberi, e un solo pilota per slot.
+
+---
+
+## Calendario
+
+Il **Calendario** (solo OPM) mostra **sette giorni alla volta** per tutti i gruppi di slot, a partire da oggi. Usa le frecce per spostarti di una settimana, il campo data per saltare a una data oppure **Oggi** per tornare.
+
+- **Riquadri riepilogativi:** slot, assegnati, non assegnati, richieste in attesa e slot con meteo difficile per i sette giorni mostrati.
+- **Colonne dei giorni:** ciascuna mostra la data, quanti slot sono assegnati (con una barra di avanzamento che diventa verde quando il giorno è completo) e il meteo peggiore del giorno. Oggi è evidenziato con un contorno e i weekend sono colorati. Clicca sull'intestazione di un giorno per aprire l'elenco degli slot di quel giorno.
+- **Schede degli slot:** orario, gruppo di slot (con una striscia colorata per gruppo), cliente, il pilota assegnato con immagine, il chip del [limite di volo](#flight-limits) del pilota, il numero di richieste in attesa e un chip meteo (calmo, moderato o difficile, con temperatura e vento). Uno slot senza pilota è rosso con l'etichetta **Serve un pilota**.
+- **Tutti i gruppi di slot insieme:** il Calendario elenca gli slot di ogni gruppo di slot. Due gruppi, per esempio per clienti diversi, possono avere la stessa fascia oraria nello stesso giorno (come 06:00–14:00 due volte); compaiono entrambi, ciascuno con il proprio colore di gruppo, cliente e pilota.
+- **Filtri per cliente e gruppo di slot:** due menu a tendina sopra i riquadri riepilogativi scelgono un **cliente** (o *Nessun cliente*) e/o un **gruppo di slot**. Limitano l'intera vista: riquadri, conteggi dei giorni, schede e collisioni. **Cancella filtri** li azzera.
+- **Collisioni di orario:** lo stesso pilota su due slot sovrapposti, tipicamente in gruppi di slot diversi o per clienti diversi. Una collisione rossa **Assegnato a entrambi** significa che il pilota è approvato su entrambi. Una ambra **Si sovrapporrebbe** significa che almeno uno è ancora una richiesta, quindi approvarli entrambi si sovrapporrebbe. Vengono mostrate in un banner sopra i giorni (clicca su una per aprire lo slot), come riquadro **Collisioni** e come badge e contorno rosso o ambra sulle schede degli slot interessati; i dettagli dello slot le elencano. Gli slot che si toccano soltanto (06:00–14:00 e 14:00–22:00) non sono collisioni. Approvare o assegnare un pilota sovrapposto resta comunque bloccato, vedi [Collisioni](#collisions).
+- **Ricerca e filtro:** cerca per gruppo, cliente, pilota o richiedente e filtra per **Tutti**, **Non assegnati** o **Assegnati**. I filtri cambiano solo le schede; i riquadri continuano a contare l'intera settimana.
+- **Dettagli dello slot:** clicca su una scheda per vedere il pilota (immagine, ruolo, email, quando è stato approvato e se l'OPM lo ha assegnato direttamente), le richieste in attesa con i relativi chip di volo, il meteo completo (livello, vento medio, raffiche, pioggia, temperatura e problema principale), i dettagli del gruppo di slot e il [menu a tendina di assegnazione](#assign-a-pilot) per gli slot che possono ancora cambiare.
+
+Sotto il calendario viene mostrato l'orario dell'ultimo aggiornamento del meteo, per esempio *Meteo aggiornato l'ultima volta 13 nov, 15:42*. Il meteo esiste solo per i prossimi 7 giorni; vedi [Meteo](#weather).
+
+---
+
+## Anteprima giorno
+
+L'**Anteprima giorno** (solo OPM) è il foglio giornaliero: scegli una data e vedi ogni slot attivo di quel giorno in tutti i gruppi di slot.
+
+| Colonna | Significato |
+|---|---|
+| **Slot** | La fascia oraria |
+| **Cliente** | Il cliente del gruppo di slot |
+| **Gruppo slot** | A quale gruppo appartiene lo slot |
+| **Pilota assegnato** | Il pilota approvato, oppure un'etichetta rossa **Non assegnato** con il numero di richieste in attesa |
+| **Meteo** | Il badge delle previsioni, per le date dei prossimi 7 giorni |
+
+Una barra in alto mostra quanti slot sono assegnati, in rosso finché uno slot è senza pilota e in verde quando tutti sono assegnati. Le righe non assegnate sono rosse. Clicca su **Assegna** (o **Modifica**) su una riga per aprire il [menu a tendina di assegnazione](#assign-a-pilot). Usa le frecce o il campo data per spostarti tra i giorni.
+
+---
+
+## Meteo
+
+Per gli slot dei **prossimi 7 giorni** (oggi e i sei giorni successivi) l'OPM vede le previsioni, così il meteo difficile può essere affidato a piloti esperti.
+
+- Un **punto colorato** compare su ogni slot del calendario: verde = calmo, ambra = moderato, rosso = difficile. Apri lo slot, o l'Anteprima giorno, per i dettagli: vento medio, raffiche e pioggia durante le ore dello slot.
+- Il verdetto usa gli stessi limiti della funzione meteo di volo. **Il buio viene ignorato**: i turni di notte sono valutati solo in base al meteo.
+- Le previsioni sono prese nella posizione del **sistema scelto per il gruppo di slot** (vedi [Posizione del meteo](#weather-location)), quindi i gruppi di clienti diversi possono avere un meteo diverso. I gruppi di slot senza sistema non mostrano il meteo.
+- **Previsioni in cache:** le previsioni sono memorizzate nel database e condivise da ogni schermata, come i livelli della mappa meteo di Drone ATC. Vengono aggiornate dal servizio meteo quando hanno più di **30 minuti** e un job mantiene aggiornate le posizioni visualizzate di recente (vedi [Cron Job](/docs/business-logic/cron-jobs)). Se il servizio meteo non è disponibile, viene comunque usata una copia vecchia fino a 6 ore. Il Calendario e l'Anteprima giorno mostrano quando le previsioni sono state recuperate l'ultima volta.
+- Gli slot oltre i 7 giorni, o nel passato, non hanno previsioni. Se il servizio meteo non è disponibile, la prenotazione degli slot continua a funzionare senza di esso.
+
+### Posizione del meteo
+
+Non esiste una posizione base valida per tutta l'azienda. Ogni gruppo di slot prende la propria posizione meteo da un **sistema**:
+
+1. Quando crei un gruppo di slot, scegli un **cliente** e poi uno dei **sistemi** di quel cliente.
+2. Readi legge le coordinate salvate del sistema (latitudine e longitudine nella pagina del sistema) e prevede il meteo per gli slot del gruppo in quel punto. I sistemi vicini condividono una sola previsione in cache.
+   - **Nessuna posizione sul sistema?** Readi usa la posizione del suo **drone principale**. Se il drone principale non ne ha una, usa il **primo drone** (quello aggiunto per primo) che ha una posizione. I droni inattivi e quelli senza coordinate vengono saltati.
+   - La posizione del sistema stesso ha sempre la precedenza quando ne ha una.
+3. Il Calendario, l'Anteprima giorno, i dettagli dello slot e il menu a tendina di assegnazione usano tutti la posizione del gruppo dello slot stesso.
+
+Cosa vedi quando qualcosa manca:
+
+| Situazione | Cosa succede |
+|---|---|
+| Nessun sistema selezionato | Un avviso ambra nel modulo. Il gruppo viene creato, ma i suoi slot non mostrano il meteo |
+| Né il sistema né nessuno dei suoi droni ha una posizione | Il sistema è in grigio nell'elenco e non può essere scelto. Aggiungi prima una posizione al sistema o a un drone |
+| Calendario o Anteprima giorno in cui nessuno slot ha un sistema con una posizione | Una nota ti chiede di scegliere un sistema per il gruppo di slot |
+| Alcuni gruppi hanno un sistema e altri no | Solo i gruppi con un sistema mostrano il meteo |
+
+Il sistema viene impostato quando il gruppo è creato. Un sistema che viene successivamente disattivato o perde la sua posizione smette di fornire il meteo per quel gruppo.
+
+---
+
+## Limiti di volo
+
+Ogni pilota può avere un **limite di volo mensile** (ore per ciclo di ore di volo). Avvisa l'OPM prima che a un pilota vengano dati più slot di quanti possa volare.
+
+- **Impostare un limite:** apri **Gruppi piloti**, crea o modifica un gruppo e usa la scheda **Limiti di volo**. Elenca i membri selezionati nella prima scheda; inserisci le ore per ciascuno, oppure lascia vuoto per nessun limite. Un limite appartiene all'utente e vale in ogni gruppo di cui fa parte.
+- **Ciclo:** scelto nelle [Impostazioni slot predefinite](#default-slot-settings) (**Il ciclo delle ore di volo inizia il**).
+- **Ore volate:** la durata di volo delle missioni del pilota iniziate all'interno del ciclo corrente.
+
+Le ore del pilota sono mostrate come `volate / limite` e colorate:
+
+| Colore | Quando |
+|---|---|
+| **Verde** | Sotto il 90% del limite |
+| **Giallo** | 90% o più del limite |
+| **Rosso** | 100% o più del limite |
+| **Grigio** | Nessun limite assegnato, mostrato come `12 / N/D` |
+
+Il tooltip mostra le date del ciclo, il limite e le ore totali del pilota. Il chip compare accanto a ogni richiesta nella finestra dello slot, nel menu a tendina di assegnazione e sulle schede degli slot del pilota nella scheda Calendario. Quando approvi o assegni un pilota giallo o rosso, viene mostrato un avviso. È solo un avviso: l'OPM può comunque approvare.
+
+---
+
+## Meriti piloti
+
+I **Meriti piloti** (solo OPM) mostrano come si è comportato ogni pilota, così una migliore disponibilità ed esperienza possono portare a più slot. L'assegnazione degli slot è sempre una decisione dell'OPM: il punteggio serve solo ad aiutarti a decidere.
+
+Negli ultimi **90 giorni**, ogni misura viene confrontata con il pilota migliore dell'azienda:
+
+| Misura | Peso |
+|---|---|
+| **Disponibilità nel weekend:** slot di sabato o domenica richiesti dal pilota | 40% |
+| **Disponibilità generale:** slot richiesti dal pilota | 30% |
+| **Ore di volo:** ore volate in missioni negli ultimi 90 giorni | 30% |
+
+Il punteggio va da 0 a 100. Punteggi uguali condividono la stessa posizione. Poiché ogni misura è confrontata con il pilota migliore, il punteggio è relativo: quando cambiano i numeri del pilota in testa, può cambiare anche il punteggio di tutti gli altri.
+
+La disponibilità conta ogni richiesta di slot fatta nel periodo, qualunque sia il suo stato (in attesa, approvata o rifiutata). Anche uno slot assegnato direttamente dall'OPM crea una prenotazione, quindi viene contato. Le missioni senza pilota o senza durata non aggiungono ore. La tabella mostra anche le ore totali, il numero di slot approvati e i gruppi del pilota. Le ore derivano dalla durata di volo delle missioni del pilota. Viene elencato chiunque abbia il ruolo di pilota e chiunque sia in un gruppo piloti.
+
+I piloti vedono i propri numeri nella pagina **Prenotazione slot**, in **I miei voli**: ore volate, richieste nel weekend, slot richiesti, slot approvati, punteggio e posizione.
+
+---
+
+## Per i piloti
+
+1. Apri **Prenotazione slot**. Vengono elencati i gruppi di slot offerti a te (pubblicati e aperti a tutti o a un gruppo piloti di cui fai parte). Puoi cercarli per nome.
+2. Clicca su un gruppo per vedere il suo calendario degli slot liberi.
+3. Clicca su uno slot libero e conferma **Richiedi slot**.
+4. La tua richiesta è **In attesa di approvazione**. Un messaggio lo conferma, per esempio: *Prenotazione richiesta. Attendi l'approvazione dell'OPM. Giorno di revisione previsto: giovedì.*
+
+Sul calendario i tuoi slot compaiono come **In attesa** (ambra) o **Approvato** (verde). Gli slot chiusi, nel passato o già assegnati a qualcun altro sono in grigio e mostrano il nome del pilota che li ha.
+
+### Le mie richieste
+
+La scheda **Le mie richieste**, accanto a **Gruppi di slot disponibili**, mostra nella sua etichetta il numero di richieste. Elenca ogni slot che hai richiesto, in una tabella con filtri per **data**, **gruppo di slot** e **stato**, una casella di ricerca e la paginazione (8 per pagina). Puoi **modificare** o **annullare** una richiesta finché è in attesa e non bloccata. Una finestra di conferma ti chiede prima di confermare l'annullamento (**Annulla richiesta**, oppure **Mantieni richiesta** per lasciarla com'è). Per le richieste approvate il PDF allegato è un link nella colonna **Dettagli**. Per le richieste rifiutate lì viene mostrato il motivo dell'OPM.
+
+### Modificare una richiesta
+
+- **Modifica** sposta una richiesta in attesa su un altro slot libero dello **stesso gruppo**. Scegli il nuovo slot sul calendario e conferma **Sposta richiesta**. L'OPM viene avvisato.
+- **Annulla** ritira una richiesta in attesa.
+- **Finestra di blocco:** nelle ultime **24 o 48 ore** prima del prossimo giorno di approvazione del gruppo (impostazione aziendale, vedi [Impostazioni slot predefinite](#default-slot-settings)) una richiesta in attesa mostra **Bloccato** e non può essere spostata né annullata. Il giorno di approvazione stesso conta dalla mezzanotte nel [fuso orario del sito](#time-zone) del gruppo, quindi nel giorno di approvazione tutto è bloccato. Con il blocco impostato su *Mai bloccare*, le richieste possono essere modificate finché non vengono decise.
+- Fare una **nuova** richiesta non è bloccato dalla finestra di blocco.
+- Anche il server lo applica: una modifica bloccata risponde *Le richieste non possono più essere modificate*.
+- Le richieste approvate non possono essere modificate dal pilota. Chiedi all'OPM.
+
+### Programma di oggi
+
+La scheda **Programma di oggi** è il foglio giornaliero del pilota. Elenca ogni slot per cui il pilota è **approvato** oggi, in ordine di orario, come timeline. "Oggi" è la data nel [sito](#time-zone) di ciascun gruppo di slot; uno slot notturno di ieri (per esempio 22:00–06:00) resta nell'elenco finché non termina.
+
+| Parte | Cosa mostra |
+|---|---|
+| **Intestazione** | La data, un orologio in tempo reale e quando i dati sono stati aggiornati l'ultima volta, più **Apri Daily Board** |
+| **Riquadri** | Slot di oggi, ore in servizio, missioni completate su quelle collegate, missioni in corso ora e slot che richiedono attenzione |
+| **Banner** | Rosso quando uno slot richiede attenzione, o quando alcune missioni di oggi non sono ancora collegate a uno slot; verde quando ogni slot è in regola |
+| **Scheda dello slot** | Orario, durata, gruppo di slot, cliente, sistema, fuso del sito, meteo, il suo stato, una **barra del timer** che si riempie con il passare del tempo dello slot (*Inizia tra…*, *Mancano…*, *Terminato*) e le missioni collegate |
+
+**Collega missioni.** Clicca su **Collega missioni** (o **Collega un'altra missione**) su uno slot. Una finestra elenca le missioni del pilota per quel giorno con tutti i loro dettagli: codice e nome, stato, orario pianificato/avviato/terminato, tempo di volo, drone, cliente, tipo, categoria, pianificazione, codice e descrizione del piano missione, luogo, descrizione e note. Le missioni pianificate all'interno dell'orario dello slot sono contrassegnate **Nella finestra dello slot**, mostrate per prime e preselezionate. Scegline una o più e conferma.
+
+- Missioni elencate: le missioni del pilota dello slot pianificate o avviate nel giorno dello slot, le missioni ancora in corso e le missioni pianificate senza data. Le missioni importate e quelle ancora in attesa di approvazione dell'OPM non vengono elencate (come nella Bacheca giornaliera). Le missioni interrotte o annullate di quel giorno sono elencate in grigio in fondo con una nota, così puoi capire perché ne manca una; una missione interrotta è un record chiuso e non può essere collegata né ripristinata, quindi pianifica una nuova missione.
+- Una missione può essere collegata a **un solo slot**. Una missione collegata a un altro slot è in grigio con *Collegata a …*; scollegala prima da lì.
+- Una missione per un cliente diverso da quello dello slot mostra un avviso ambra, ma può essere collegata.
+- Passa il mouse su una missione collegata e clicca su **×** per scollegarla.
+- Solo il pilota approvato dello slot, o l'OPM, può collegare. L'OPM, il pilota dello slot o il pilota a cui appartiene la missione possono scollegare, così un collegamento rimasto su uno slot che ha perso il pilota può sempre essere rimosso. Un collegamento obsoleto di questo tipo non blocca mai la missione: collegarla a un altro slot lo sostituisce. Se due richieste collegano la stessa missione contemporaneamente, una vince e all'altra viene detto quante missioni sono state saltate. Ogni modifica viene scritta nel [registro di audit](#audit-log) sullo slot.
+
+**Avanzamento in tempo reale.** Lo stato della missione proviene direttamente dalla missione, quindi avviare una missione sulla **Bacheca giornaliera** (Programmata → In corso) o terminarla (→ Completata) compare nella scheda Programma di oggi al successivo aggiornamento. La scheda si aggiorna ogni 20 secondi e quando la scheda del browser torna visibile; **Aggiorna** la ricarica subito. Una missione in corso mostra da quanto tempo è in volo.
+
+**Stati dello slot.**
+
+| Stato | Quando | Colore |
+|---|---|---|
+| **Nessuna missione collegata** | Nessuna missione (o solo missioni interrotte) è collegata | Rosso |
+| **Pronto** | Ci sono missioni collegate e lo slot non è ancora iniziato | Viola |
+| **Nessun avanzamento** | Lo slot è iniziato (o terminato) e nessuna delle sue missioni è stata avviata dalla Bacheca giornaliera | Rosso |
+| **In corso** | Una delle sue missioni è in corso | Blu |
+| **Prossima missione in attesa** | Lo slot è in corso, alcune missioni sono completate, la successiva non è iniziata | Ambra |
+| **Completato** | Ogni missione collegata è completata | Verde |
+| **Incompleto** | Lo slot è terminato con alcune missioni completate e altre non volate | Rosso |
+
+Gli orari degli slot e delle missioni sono mostrati nel fuso orario del sito del gruppo di slot. Anche la data e l'orologio nell'intestazione mostrano l'ora del sito, con il nome del fuso; quando il tuo fuso è diverso, accanto viene aggiunta la tua ora locale.
+
+---
+
+## Quando due piloti richiedono lo stesso slot
+
+Cosa succede dipende dall'impostazione di **blocco** del gruppo.
+
+### Gruppo non bloccato (predefinito)
+
+Entrambe le richieste vengono accettate ed entrambe sono **In attesa di approvazione**. Nessuno dei due piloti viene informato di essere in competizione: ognuno vede solo la propria richiesta e lo slot resta **Libero** per gli altri.
+
+1. L'OPM vede **2 PIC richiesti** sullo slot e lo apre per confrontare le richieste.
+2. L'OPM approva **un** pilota (facoltativamente con un PDF).
+3. Lo slot diventa Approvato e **ogni altra richiesta in attesa su quello slot viene rifiutata automaticamente**, con la nota *È stato scelto un altro pilota*. Quei piloti ricevono una notifica in-app "Slot completato" (nessuna email).
+4. Per tutti gli altri lo slot ora mostra **Occupato**. Nessuno può approvare un secondo pilota per esso e nessuno può più richiederlo.
+
+### Gruppo bloccato
+
+Vince **la prima richiesta**. Non appena un pilota ha una richiesta attiva sullo slot, questo mostra **Occupato** per tutti gli altri e il secondo pilota non può richiederlo.
+
+- Se entrambi cliccano nello stesso identico momento, il sistema gestisce le richieste una dopo l'altra, quindi ne riesce esattamente una. L'altro pilota vede *Questo slot è già occupato* e il calendario si aggiorna.
+- Lo slot torna libero se la prima richiesta viene **rifiutata** dall'OPM o **annullata** dal pilota.
+
+### Altri casi
+
+| Situazione | Cosa vede il pilota |
+|---|---|
+| Lo stesso pilota richiede due volte lo slot | *Hai già richiesto questo slot* |
+| Un pilota richiede uno slot dopo che l'OPM ha approvato qualcun altro | *Questo slot è già stato assegnato* |
+| Un pilota richiede uno slot che l'OPM ha appena chiuso | *Questo slot non è aperto* |
+| Un pilota richiede uno slot di una data passata | *Questo slot è nel passato* |
+
+Se il calendario era aperto e non aggiornato quando il pilota ha cliccato, la richiesta viene rifiutata con uno di questi messaggi e il calendario si ricarica con lo stato attuale.
+
+---
+
+## Notifiche
+
+Ogni notifica viene creata **in-app** (l'icona della campanella) e inviata **via email**.
+
+| Quando | Chi viene avvisato |
+|---|---|
+| Un pilota richiede uno slot | L'OPM (*Nuova richiesta di slot*) e il pilota (*Prenotazione richiesta, in attesa di approvazione*, con il giorno di revisione) |
+| L'OPM approva | Il pilota (*Slot approvato*, con il PDF allegato se presente) |
+| L'OPM approva qualcun altro | Gli altri piloti su quello slot (*Slot completato*, solo in-app, nessuna email) |
+| L'OPM rifiuta | Il pilota (*Richiesta di slot rifiutata*, con il motivo) |
+| L'OPM modifica uno slot | I piloti con una richiesta attiva su di esso |
+| Un gruppo viene eliminato | I piloti con richieste in attesa o approvate al suo interno (**avviso**: *Gruppo di slot eliminato*) |
+| Le date di un gruppo vengono sovrascritte | I piloti le cui richieste sono state annullate da essa (**avviso**: *Prenotazione slot annullata*) |
+| È un giorno di approvazione e ci sono richieste in attesa | L'OPM (*Promemoria giorno di approvazione slot*) |
+| Si apre un gruppo programmato | I piloti che possono vederlo (*Gruppo di slot aperto alle richieste*), una sola volta |
+| L'OPM assegna direttamente un pilota | Il pilota (*Slot assegnato*) e i piloti le cui richieste sono state rifiutate |
+| L'OPM rimuove un pilota | Il pilota (**avviso**: *Assegnazione dello slot rimossa*) |
+| Un pilota sposta una richiesta | L'OPM (*Richiesta di slot spostata*) |
+
+### Avvisi
+
+Le notifiche che comunicano a un pilota che qualcosa su cui contava è stato annullato, come un gruppo eliminato, vengono inviate come **avvisi**. Sono mostrati come gli avvisi di manutenzione, quindi è difficile non notarli:
+
+- **Pop-up in alto a destra.** Entro circa 10 secondi, mentre il pilota usa Readi, compare una scheda ambra nell'angolo in alto a destra: *Nuovo avviso Slot*, con l'inizio del messaggio. Scompare dopo 5 secondi, o quando viene chiusa. Cliccandoci si apre la pagina Notifiche nella scheda **Prenotazione slot**.
+- **Nella campanella delle notifiche.** La voce ha un'etichetta ambra **Avviso Slot** e il messaggio completo, e conta come non letta finché non viene aperta. Cliccandoci si apre la Prenotazione slot.
+- **Nella pagina Notifiche.** Gli avvisi sono elencati nella scheda **Prenotazione slot** insieme alle altre notifiche degli slot (usano il tipo `SLOT_WARNING`; le normali notifiche degli slot usano `SLOT_BOOKING`).
+- **Via email**, con lo stesso testo, a meno che non sia stato raggiunto il limite giornaliero di email dell'azienda.
+
+Un pilota che non ha effettuato l'accesso quando il gruppo viene eliminato vede l'avviso, ancora non letto, la prossima volta che apre Readi.
+
+Note:
+
+- La notifica "gruppo aperto" è inviata da un job che gira ogni 5 minuti, quindi può arrivare qualche minuto dopo l'apertura del gruppo. I piloti vedono il gruppo nel momento in cui passa il suo orario, indipendentemente dal fatto che la notifica sia stata inviata o meno.
+- Il promemoria del giorno di approvazione è inviato da un job orario. Per ogni gruppo usa il proprio [fuso orario del sito](#time-zone): viene inviato **una volta per giorno locale**, a partire dalle **08:00 ora del sito**, solo quando quel giorno della settimana locale è uno dei giorni di approvazione del gruppo e almeno una richiesta è in attesa. Un'esecuzione ripetuta o sovrapposta nello stesso giorno non lo invia mai due volte. Vedi [Cron Job](/docs/business-logic/cron-jobs).
+- Le email contano ai fini del **limite giornaliero di email** dell'azienda. Quando il limite viene raggiunto, l'email viene saltata ma la notifica in-app viene comunque creata. Vedi [Notifiche email](/docs/business-logic/email-notifications).
+- I testi delle notifiche sono inviati in inglese.
+
+---
+
+## Registro di audit
+
+Ogni modifica viene registrata: gruppi creati, pubblicati in anticipo o eliminati, slot modificati, richieste fatte, spostate o annullate, approvazioni e rifiuti (con il motivo, il nome del file allegato e i piloti rifiutati automaticamente), assegnazioni dirette e rimozioni, e gruppi piloti creati, modificati o eliminati.
+
+- **Prenotazione slot → Registro di audit** mostra queste voci in una tabella con filtri per evento, sezione e data. Clicca su una riga per vedere i dettagli, come i valori prima e dopo di una modifica. Anche la pagina del calendario di ogni gruppo mostra il registro filtrato per quel gruppo.
+- Le stesse voci compaiono nella pagina principale dei [Registri di audit](/docs/records/audit-logs) nelle sezioni **gruppo di slot**, **slot**, **prenotazione** e **gruppo piloti**.
+
+---
+
+## Lingua
+
+Le schermate della Prenotazione slot seguono la lingua che scegli in Readi (inglese, tedesco o italiano), comprese le date e i nomi dei giorni della settimana. Le email di notifica e le descrizioni memorizzate nel registro di audit restano in inglese.
+
+---
+
+## Correlati
+
+- [Operazioni](/docs/modules/operations)
+- [Notifiche](/docs/modules/notifications)
+- [Notifiche email](/docs/business-logic/email-notifications)
+- [Cron Job](/docs/business-logic/cron-jobs)
+- [Registri di audit](/docs/records/audit-logs)

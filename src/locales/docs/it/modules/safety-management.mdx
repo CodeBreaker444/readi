@@ -1,0 +1,75 @@
+---
+title: "Gestione della sicurezza"
+description: "Definisci gli indicatori di sicurezza (SPI e KPI), registra le misurazioni e osserva come alimentano il Safety Health Index."
+---
+
+Gestione della sicurezza nella barra laterale contiene **Definizioni SPI e KPI**. I risultati sono mostrati nella [Dashboard](/docs/modules/dashboard) come Safety Health Index. Qui si trova anche l'**Elenco contatti emergenza**: vedi [Piani di risposta alle emergenze](/docs/modules/emergency-contact).
+
+---
+
+## SPI e KPI
+
+| Tipo | Significato | Usato per |
+|---|---|---|
+| **SPI** | Safety Performance Indicator | Misurare la sicurezza, ad esempio il numero di incidenti |
+| **KPI** | Key Performance Indicator | Misurare le prestazioni, ad esempio la manutenzione puntuale |
+
+Ogni indicatore appartiene a un'**area**: Conformità, Formazione, Operazioni o Manutenzione.
+
+La pagina mostra il totale degli indicatori, i monitor attivi e il conteggio dell'area Operazioni. Filtra per area e per Attivo o Inattivo e cerca per nome.
+
+---
+
+## Creare un indicatore
+
+Fai clic su **Nuovo indicatore** e compila:
+
+| Campo | Note |
+|---|---|
+| Codice | Lettere maiuscole, numeri e trattini bassi, almeno 3 caratteri. **Non può essere modificato dopo il salvataggio** |
+| Nome, Descrizione | Cosa misura |
+| Tipo e Area | SPI o KPI, e la relativa area |
+| Unità | Ad esempio %, ore o conteggio |
+| Valore obiettivo | Il traguardo. Deve essere positivo |
+| Direzione obiettivo | **Più alto è meglio** o **Più basso è meglio**. Per gli incidenti scegli Più basso |
+| Frequenza di reportistica | Settimanale, Mensile, Trimestrale o Annuale |
+| Stato | **Attivo / In monitoraggio** o **Disattivato / Bozza** |
+
+---
+
+## Registrare una misurazione
+
+Un indicatore non compare nella dashboard finché non registri un valore.
+
+1. Fai clic su **Registra valore di misurazione** sulla sua riga.
+2. Inserisci la **Data misurazione** e il **Valore effettivo**.
+3. Lo stato viene calcolato automaticamente:
+
+| Stato | Significato |
+|---|---|
+| Verde | In linea, oppure meglio dell'obiettivo |
+| Giallo | A rischio, oppure esattamente sull'obiettivo |
+| Rosso | Violato, oppure peggiore dell'obiettivo |
+
+Quale lato dell'obiettivo sia quello buono dipende dalla Direzione obiettivo.
+
+---
+
+## Revisione degli obiettivi
+
+Vedi **Revisione obiettivi sicurezza** in [Conformità](/docs/modules/compliance) per ottenere obiettivi suggeriti in base ai dati storici.
+
+---
+
+## Permessi
+
+Chi può leggere, modificare ed eliminare in quest'area, in base al ruolo.
+
+<PermissionsTable section="Safety Management" />
+
+---
+
+## Correlati
+
+- [Dashboard](/docs/modules/dashboard)
+- [Conformità](/docs/modules/compliance)

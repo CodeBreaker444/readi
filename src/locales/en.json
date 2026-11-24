@@ -6975,5 +6975,21 @@
         "unlink": "Could not unlink the mission"
       }
     }
+  },
+  "apiErrors": {},
+  "apiMessages": {
+    "Documento eliminato": "Document deleted",
+    "Documento aggiornato": "Document updated"
+  },
+  "apiValidation": {
+    "required": "is required",
+    "maxChars": "must be at most {{n}} characters",
+    "minChars": "must be at least {{n}} characters",
+    "maxNum": "must be at most {{n}}",
+    "minNum": "must be at least {{n}}",
+    "gtNum": "must be greater than {{n}}",
+    "wholeNumber": "must be a whole number",
+    "validType": "must be a valid {{type}}",
+    "unsupported": "has an unsupported value"
   }
 }

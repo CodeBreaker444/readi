@@ -1,5 +1,6 @@
 "use client"
 
+import { localizeText } from '@/lib/api-error-message';
 import {
   CircleCheckIcon,
   CopyIcon,
@@ -56,7 +57,7 @@ if (typeof window !== "undefined" && !(toast as any)[PATCH_FLAG]) {
         onClick: (e: React.MouseEvent) => {
           e.preventDefault() // keep the toast open
           void copyText(`${body}\n\nPage: ${window.location.href}\nTime: ${new Date().toISOString()}`)
-          toast.success("Error details copied", { duration: 1500 })
+          toast.success(localizeText("Error details copied"), { duration: 1500 })
         },
       },
     })

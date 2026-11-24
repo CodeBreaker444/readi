@@ -1,0 +1,129 @@
+---
+title: "Gestione del team"
+description: "Account utente, ruoli, reparti, qualifiche e profili del personale."
+---
+
+## Funzionalità principali
+
+- Creare e gestire gli account utente (nome, email, ruolo, fuso orario)
+- Assegnazione dei ruoli: PIC, OPM, SM, AM, CMM, MM, TM, DC, SLA, ADMIN
+- Flag Viewer e Manager per livelli di permesso aggiuntivi
+- Reparti e qualifiche per ogni persona
+- Assegnazione dell'unità territoriale
+- Reinvio degli inviti di attivazione agli utenti in attesa
+
+## Flusso di attivazione dell'utente
+
+I nuovi utenti ricevono un'email di attivazione con un link monouso. Finché non attivano l'account, risultano **In attesa**. Usa "Reinvia invito" se l'email non è stata ricevuta.
+
+---
+
+## Reparti
+
+I reparti raggruppano le persone, ad esempio "Operazioni di volo" o "Manutenzione". Il reparto viene mostrato accanto al nome di un pilota quando lo assegni a una missione.
+
+- **Assegnare un reparto:** scegline uno nel campo **Reparto** quando crei o modifichi un utente.
+- **Creare o gestire i reparti:** accanto a quel campo, clicca su **Gestisci** per aggiungere un nuovo reparto o rimuoverne uno, senza uscire dal modulo.
+- **Filtrare:** nella pagina Team, usa **Tutti i reparti** per vedere un solo reparto.
+
+---
+
+## Qualifiche
+
+Le qualifiche sono le licenze e i certificati di una persona, come la licenza di pilota, con una data di inizio e una di scadenza. Vengono mostrate quando scegli un pilota per una missione.
+
+### Alla creazione di un utente
+
+Puoi aggiungere le qualifiche prima che l'utente esista. Nella sezione **Qualifiche**, compila i dettagli e aggiungili all'elenco. Sono **in sospeso**, cioè vengono salvati solo quando clicchi su **Salva** e l'utente viene creato. Puoi metterne in sospeso fino a 10 alla volta. Se il salvataggio delle qualifiche non riesce, l'utente viene comunque creato e potrai aggiungerle in seguito dalla pagina di modifica.
+
+### Per un utente esistente
+
+Apri l'utente ed espandi **Qualifiche** per vedere cosa è registrato, aggiungerne altre o rimuoverne una.
+
+---
+
+## Profilo del personale
+
+Ognuno può aprire il proprio **Profilo** dal menu in alto a destra.
+
+| Campo | Note |
+|---|---|
+| Nome completo, telefono, fuso orario | I tuoi dati di contatto. Puoi modificarli. Il fuso orario determina come ti vengono mostrati date e orari |
+| **Email** | **Di sola lettura** per la maggior parte delle persone. È il tuo indirizzo di accesso e appare in grigio. Solo un Admin o un Super Admin può cambiare un indirizzo email. Chiedi al tuo amministratore se il tuo è errato |
+| **Reparto** | Scegli tra i reparti configurati dalla tua azienda |
+| **Firma** | Il testo della tua firma, usato nei documenti che ne richiedono una |
+| Codice operatore EASA | Se il tuo ruolo lo richiede |
+
+Clicca su **Aggiorna profilo** per salvare.
+
+Il tuo **Curriculum Formativo** è mostrato anche nel profilo, suddiviso in **Attivi** e **Storico**, con ogni corso, il relativo certificato, le date di completamento e di scadenza e se è **Valido** o **Scaduto**. Puoi vedere il tuo curriculum in qualsiasi momento senza chiedere a un amministratore. Vedi [Formazione](/docs/modules/training) per aggiungere i record.
+
+---
+
+## Clienti
+
+Apri **Clienti** nel menu Team per gestire le aziende per cui voli. Mostra i totali di **Clienti Totali**, **Attivi**, **Inattivi** e **In Scadenza** (contratti prossimi alla fine).
+
+- **Aggiungi Nuovo Cliente:** inserisci i dati di contatto, la sede, il sito web, le condizioni di pagamento e la data di fine contratto.
+- **Cerca** per nome, email, codice o città e filtra per stato.
+- Ogni riga ha **Modifica cliente**, **Aggiorna Password** (la nuova password viene inviata al cliente via email), **Attiva account** (solo admin, vedi [Stato e attivazione del cliente](#stato-e-attivazione-del-cliente)) ed **Elimina cliente**.
+
+### Accesso al portale
+
+Ogni cliente riceve un accesso al portale quando lo aggiungi.
+
+- **Utente del portale:** quando digiti l'email di contatto, il campo **Utente del portale** si compila da solo con lo stesso valore. Modificalo se vuoi un nome utente diverso. Accetta lettere minuscole, numeri e `. _ @ + -`. Dopo che lo hai modificato a mano, smette di seguire l'email.
+- **Password:** viene generata per te una password temporanea. Puoi mostrarla, copiarla o rigenerarla. Viene inviata via email al cliente insieme al suo link di attivazione.
+- **Modifica cliente → Accesso al portale:** cambia l'**Utente del portale** o l'**Email di accesso al portale** e seleziona **Salva utente del portale**. I clienti accedono con l'email di accesso, non con il nome utente. L'email di contatto resta di sola lettura.
+- **Reimposta password:** genera una nuova password e la invia via email al cliente. Funziona anche dopo che il cliente ha attivato il proprio account e la vecchia password smette di funzionare.
+
+Le modifiche a un utente del portale vengono registrate nel registro di audit.
+
+I clienti che aggiungi qui possono poi essere scelti nelle missioni e nel [Portale clienti](/docs/modules/client-portal).
+
+### Stato e attivazione del cliente
+
+Un cliente ha due stati distinti:
+
+| Stato | Chi lo controlla | Significato |
+|---|---|---|
+| **Stato** (Attivo / Inattivo) | Un admin, in **Modifica cliente** | Usalo per bloccare un cliente per motivi di sicurezza |
+| **Email** (Verificata / Non attivato) | Il cliente, tramite il link di attivazione ricevuto via email | Indica se il cliente ha attivato il proprio account |
+
+Un cliente può accedere solo quando entrambi sono attivi.
+
+Se un cliente non ha attivato il proprio account, la riga mostra **Non attivato**. Gli admin (Admin e Super Admin) possono allora scegliere **Attiva account** nel menu della riga per attivarlo manualmente. Il link di attivazione smette quindi di funzionare e l'azione scompare una volta che il cliente è attivato. Non modifica lo **Stato** controllato dall'admin e viene registrata nel registro di audit.
+
+Ovunque i clienti compaiano in un menu a tendina o in un filtro, sono etichettati in base al loro stato. Questo vale per la creazione e l'importazione di missioni, le valutazioni, i sistemi, il personale, i filtri di operazioni, registri di bordo e modelli di missione, la mappa dei sistemi e le impostazioni del registro eventi:
+
+- **Inattivo:** lo **Stato** controllato dall'admin è Inattivo. Il cliente è elencato ma appare in grigio e non può essere selezionato.
+- **Non attivato:** il cliente non ha attivato il proprio account via email. L'etichetta è solo informativa: il cliente può comunque essere selezionato.
+
+I clienti inattivi sono sempre elencati, così puoi vederli, ma non sono mai selezionabili.
+
+---
+
+## Ruoli e permessi
+
+La pagina **Ruoli e permessi** mostra cosa può fare ogni ruolo per impostazione predefinita. Ogni riga è una funzionalità e ogni colonna un ruolo.
+
+- Clicca su una cella per passare tra **Sola lettura** e **Accesso completo**.
+- Clicca su **Salva** sotto un ruolo per memorizzarne le modifiche.
+- **OPM** e **Admin** hanno sempre accesso completo e non possono essere modificati.
+- Un utente senza una personalizzazione individuale segue questa tabella.
+
+Vedi [Permessi dei ruoli](/docs/business-logic/role-permissions) per il significato di ogni ruolo.
+
+---
+
+## Percorsi principali dell'app
+
+- `/team/personnel`
+
+---
+
+## Permessi
+
+Chi può leggere, modificare ed eliminare in quest'area, in base al ruolo.
+
+<PermissionsTable section="Team" />

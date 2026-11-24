@@ -1,0 +1,87 @@
+---
+title: "Ciclo di vita della missione"
+description: "Campi della missione, definizioni degli stati, ciclo di vita passo dopo passo e risultati."
+---
+
+Una **missione** è un singolo evento di volo legato a un pilota, un drone e un piano di volo (`pilot_mission`).
+
+## Campi della missione
+
+| Campo | Colonna DB | Significato |
+|---|---|---|
+| ID missione | `pilot_mission_id` | PK auto-incrementale |
+| Codice missione | `mission_code` | Codice univoco leggibile |
+| Piano collegato | `fk_planning_id` | Il piano di volo che viene eseguito |
+| Pilota | `fk_pilot_user_id` | PIC assegnato |
+| Drone | `fk_tool_id` | Quale sistema è stato usato |
+| Inizio pianificato | `scheduled_start` | Data e ora di decollo previste |
+| Inizio effettivo | `actual_start` | Orario reale di decollo |
+| Fine effettiva | `actual_end` | Orario reale di atterraggio |
+| Tempo di volo | `flight_duration` | Minuti in volo |
+| Distanza | `distance_flown` | Chilometri percorsi |
+| Altitudine massima | `max_altitude` | Altitudine di picco in metri (>120 m = segnalazione di conformità) |
+| Controllo pre-volo | `pre_flight_check_ok` | Checklist firmata prima del volo |
+| Controllo post-volo | `post_flight_check_ok` | Checklist firmata dopo il volo |
+| Flag incidente | `incident_flag` | Si è verificato un incidente di sicurezza |
+| RTH non pianificato | `rth_unplanned` | Il drone è tornato alla base in modo inatteso |
+| Perdita del link | `link_loss` | Il collegamento di comunicazione è andato perso |
+| Deviazione | `deviation_flag` | Il volo ha deviato dalla rotta pianificata |
+| Batteria | `battery_charge_start` / `battery_charge_end` | % di batteria al decollo e all'atterraggio |
+
+---
+
+## Stati della missione
+
+Definiti dall'organizzazione in `pilot_mission_status`.
+
+| Stato | `is_final_status` | Significato |
+|---|---|---|
+| `PLANNED` | false | Programmata, non ancora iniziata |
+| `IN_PROGRESS` | false | Il drone è in volo |
+| `COMPLETED` | true | Volo concluso con successo |
+| `CANCELLED` | true | Annullata prima del decollo |
+| `FAILED` | true | Iniziata ma non conclusa normalmente |
+
+`is_final_status = true` indica gli stati terminali: non sono previste ulteriori transizioni.
+
+---
+
+## Ciclo di vita passo dopo passo
+
+```
+1. CREAZIONE
+   Missione collegata a planning_id, status = PLANNED, pilota + drone assegnati
+
+2. PRE-VOLO
+   pre_flight_check_ok = true, pilot_declaration (Pre-flight) presentata
+   Il sistema deve essere OPERATIONAL
+
+3. DECOLLO → IN_PROGRESS
+   Ora di inizio effettiva registrata, PIN di autorizzazione richiesto
+   Inizia la telemetria FlytBase, carica della batteria al decollo registrata
+
+4. ATTERRAGGIO → COMPLETED
+   Ora di fine effettiva registrata, PIN di autorizzazione richiesto
+   flight_duration, distance_flown, max_altitude registrati
+
+5. POST-VOLO
+   post_flight_check_ok = true, pilot_declaration (Post-flight) presentata
+   Risultati salvati in pilot_mission_result
+
+6. FALLIMENTO
+   status = FAILED, flag di incidente impostati, può essere presentato un rapporto di sicurezza
+
+7. ANNULLAMENTO
+   status = CANCELLED, actual_start resta NULL
+```
+
+---
+
+## Risultati della missione (`pilot_mission_result`)
+
+| Campo | Significato |
+|---|---|
+| `result_type` | Categoria (imagery, thermal, RGB, survey) |
+| `quality_score` | Valutazione 0–100 |
+| `data_size` | Byte di dati grezzi raccolti |
+| `processing_status` | `Raw → Processing → Ready` |

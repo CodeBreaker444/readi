@@ -1,0 +1,92 @@
+---
+title: "Sistemi (droni e attrezzature)"
+description: "Come funzionano i record dei sistemi, lo stato operativo e la dismissione."
+---
+
+Un **sistema** in Readi è qualsiasi bene fisico tracciato come record `tool` nel database.
+
+## Campi del sistema
+
+| Campo | Colonna DB | Significato |
+|---|---|---|
+| Codice asset | `tool.tool_code` | Identificativo univoco (ad es. `DJI-M3T-001`) |
+| Nome | `tool.tool_name` | Nome visualizzato |
+| Flag attivo | `tool.tool_active` | `Y` = in servizio, `N` = dismesso |
+| Posizione | `tool.location` | Luogo fisico di stoccaggio |
+| Data di attivazione | `tool_metadata.activationDate` | Quando il bene è entrato in servizio |
+| Assegnazione al cliente | `tool_metadata.clientId` | A quale cliente è dedicato questo drone |
+| Calibrazione | `tool.last_calibration_date` / `tool.next_calibration_date` | Tracciamento della calibrazione |
+| Garanzia | `tool.warranty_expiry` | Data di fine garanzia |
+
+Ogni sistema può avere dei **componenti** (`tool_component`): motori, batterie, sensori, ciascuno tracciato singolarmente per ore di utilizzo e scadenza.
+
+---
+
+## Stato operativo
+
+Calcolato in tempo reale a ogni caricamento della flotta. **Non è un campo memorizzato.**
+
+```
+NOT_OPERATIONAL  >  MAINTENANCE  >  OPERATIONAL
+```
+
+| Stato | Condizione che lo determina |
+|---|---|
+| `OPERATIONAL` | Nessun ticket aperto, nessun componente scaduto |
+| `MAINTENANCE` | Ticket di manutenzione aperto (`ticket_status != CLOSED`) OPPURE componente con `component_status = MAINTENANCE` |
+| `NOT_OPERATIONAL` | Un componente attivo (`component_active = Y`) ha `expiration_date <= today` (oppure ha raggiunto un limite di voli / ore di volo) |
+
+<Warning>
+Un sistema può soddisfare contemporaneamente sia MAINTENANCE sia NOT_OPERATIONAL. NOT_OPERATIONAL prevale sempre nella visualizzazione.
+</Warning>
+
+Vedi [Regole sullo stato dei sistemi](/docs/platform-rules/system-status-rules) per il calcolo completo.
+
+---
+
+## Dismesso
+
+**Manuale:** l'amministratore imposta `tool_active = N` tramite Impostazioni → Sistemi.
+
+**Automatico:** i componenti vengono dismessi automaticamente quando scadono, cioè quando superano la data di scadenza o raggiungono il limite di voli o di ore di volo. Un componente scaduto risulta Dismesso e il sistema diventa Non operativo. La piattaforma invia inoltre ai responsabili le notifiche di scadenza.
+
+<Warning>
+**La scadenza è permanente per impostazione predefinita.** Un componente scaduto non può tornare operativo e non è possibile creare per esso alcun ticket di manutenzione. Il sistema resta `NOT_OPERATIONAL` finché il componente non viene rimosso dal sistema (rimosso, oppure spostato in magazzino). Impostare il componente come Dismesso non libera il sistema.
+</Warning>
+
+### Scadenza rinnovabile (`expiry_permanent = false`)
+
+La casella **Scadenza permanente** di un componente è memorizzata in `tool_component.component_metadata.expiry_permanent`. Un valore mancante equivale a `true`, quindi ogni componente creato prima che l'opzione esistesse è permanente.
+
+| | `expiry_permanent = true` (predefinito) | `expiry_permanent = false` |
+|---|---|---|
+| Stato effettivo alla scadenza | `DECOMMISSIONED` | `NOT_OPERATIONAL` (un valore memorizzato esplicito `MAINTENANCE`, `DECOMMISSIONED` o `DISMISSED` viene mantenuto) |
+| Stato del sistema alla scadenza | `NOT_OPERATIONAL` finché il componente non viene rimosso dal sistema (scollegato / magazzino / rimosso). `DECOMMISSIONED` non lo libera | `NOT_OPERATIONAL` finché non viene rinnovato, `DECOMMISSIONED` o rimosso |
+| Ticket di manutenzione | Non può essere creato | Creato da un utente, mai automaticamente |
+| Rinnovo dei limiti tramite modifica | Rifiutato | Rifiutato finché è scaduto (errore `expiredRenewViaTicket`). Rinnovato alla chiusura di un ticket che lo copre. Di nuovo modificabile quando non è più scaduto |
+| Modifica del flag mentre è scaduto | Rifiutata | Rifiutata |
+
+Quando un componente rinnovabile scade diventa `NOT_OPERATIONAL` e rimane tale finché non viene chiuso un ticket che lo copre (che ne rinnova la scadenza) oppure finché non viene impostato su `DECOMMISSIONED`. **Nessun ticket di manutenzione viene creato automaticamente.**
+
+Finché è scaduto, la modifica della sua scadenza (`expiry_type`, `expiration_date`, `expiration_flights`, `expiration_flight_hours`) o dei contatori che potrebbero azzerarla viene rifiutata con l'errore `expiredRenewViaTicket`. Gli altri campi possono comunque essere modificati.
+
+**Rinnovo alla chiusura del ticket.** `closeTicket` rinnova ogni componente del ticket (o ogni componente del sistema, per un ticket a livello di sistema) che ha `expiry_permanent = false`, è ancora nel sistema (non scollegato, dismesso o escluso) e ha raggiunto un limite. Gli importi sono costanti in `src/lib/system/expiry-renewal.ts`:
+
+| Limite | Nuovo valore |
+|---|---|
+| `expiration_date` | la più recente tra la vecchia data e oggi, più 1 mese (il giorno viene ridotto alla fine di un mese più corto) |
+| `expiration_flights` | vecchio limite + 10 |
+| `expiration_flight_hours` | il maggiore tra il vecchio limite e `current_usage_hours`, più 10 |
+
+Vengono rinnovati solo i limiti raggiunti (un componente `MIXED` mantiene gli altri). Il rinnovo viene pianificato prima dell'azzeramento dei contatori, perché il contatore dei voli fa parte del controllo. Ogni rinnovo aggiunge un evento `EXPIRY_RENEWED` alla cronologia del ticket e viene scritto nel registro di audit. `GET /api/system/maintenance/tickets/expiry-renewals?ticket_id=` restituisce lo stesso piano per la finestra Chiudi ticket.
+
+Un utente può inserirlo in un ticket di manutenzione: un componente rinnovabile scaduto è ticketabile anche se il suo stato è `NOT_OPERATIONAL`. Un componente con stato memorizzato `NOT_OPERATIONAL` (ad esempio da un problema segnalato), `DECOMMISSIONED` o `DISMISSED`, oppure scollegato, continua a non essere ticketabile. La chiusura del ticket azzera i contatori del componente e ne rinnova la scadenza (vedi sotto).
+
+Quando viene creato un ticket per un sistema il cui stato memorizzato è `OPERATIONAL` (o vuoto) ma che è `NOT_OPERATIONAL` a causa di un componente scaduto, lo stato memorizzato del sistema viene impostato su `MAINTENANCE`, così l'elenco della flotta mostra Manutenzione. Questo vale sia per la scadenza permanente sia per quella rinnovabile (per un componente scaduto permanente, tramite un ticket per un altro componente o per l'intero sistema). Torna a `OPERATIONAL` quando si chiude l'ultimo ticket aperto; se un componente scaduto è ancora nel sistema, viene mostrato di nuovo il valore calcolato `NOT_OPERATIONAL`. Uno stato impostato manualmente (`NOT_OPERATIONAL`, `DISMISSED`, ...) non viene mai sovrascritto.
+
+| Stato | `tool_active` | Nella flotta? | Missioni? |
+|---|---|---|---|
+| In servizio | `Y` | Sì | Sì |
+| Dismesso | `N` | No | No |
+| Eliminato (soft-delete) | `Y` ma `tool_metadata.deleted = true` | No | No |
+| Magazzino | `Y` ma `tool_metadata.is_warehouse = true` | No | No |

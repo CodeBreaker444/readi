@@ -1,0 +1,62 @@
+---
+title: "Assistente AI"
+description: "A cosa può rispondere l'assistente AI, chi può chiedere cosa, i suoi limiti attuali e i controlli di sicurezza che esegue."
+---
+
+L'assistente AI ti permette di fare domande in linguaggio naturale su missioni, manutenzione, conformità e sicurezza. Mostra solo le informazioni che il tuo ruolo e la tua organizzazione possono vedere.
+
+## Come funziona
+
+Quando fai una domanda, l'assistente:
+
+1. **Capisce di cosa hai bisogno**, ad esempio una domanda sui tuoi dati, su una procedura aziendale, una ricerca generica sul web o un'attrezzatura non più in servizio.
+2. **Trova le informazioni giuste**: cerca solo nelle aree a cui il tuo ruolo ha accesso.
+3. **Applica le regole sulla privacy**: usa solo i dati della tua organizzazione. I piloti vedono solo le proprie missioni e i dettagli sensibili, come le password e i prezzi di acquisto, non vengono mai mostrati.
+4. **Prepara una risposta chiara**: combina i tuoi dati con le procedure aziendali e, quando utile, con informazioni generali dal web.
+
+Per mantenere le risposte rapide e leggibili, l'assistente esamina un numero limitato di record alla volta (fino a 15). Per risultati molto estesi, fai una domanda più specifica, ad esempio con un intervallo di date più ristretto.
+
+---
+
+## Chi può chiedere cosa
+
+| Ruolo | Su cosa può aiutare l'assistente |
+|---|---|
+| **Pilota in comando (PIC)** | Le tue missioni e i tuoi risultati, la pianificazione, le tue dichiarazioni, le notifiche e i file condivisi |
+| **Responsabile operativo (OPM)** | Tutto ciò che può vedere un pilota, più turni, checklist, documenti, utenti, attrezzature e manutenzione, audit, conformità, segnalazioni di sicurezza, avvisi, formazione e clienti |
+| **Responsabile della sicurezza (SM)** | Segnalazioni e azioni di sicurezza, indicatori di sicurezza, avvisi, missioni, attrezzature, manutenzione e presenze alla formazione |
+| **Responsabile accountable (AM)** | Missioni, pianificazione, attrezzature e relativa manutenzione, documenti, audit e conformità |
+| **Responsabile del monitoraggio della conformità (CMM)** | Audit e rilievi, requisiti di conformità, evidenze e cronologia degli stati, e indicatori di sicurezza |
+| **Responsabile della manutenzione (MM)** | Attrezzature, parti, lavori di manutenzione e relativa cronologia, missioni e avvisi |
+| **Responsabile della formazione (TM)** | Formazione, presenze, indicatori di sicurezza e profili utente |
+| **Titolare del trattamento dei dati (DC)** | Utenti e profili, permessi, missioni e file condivisi |
+| **Service Level Agreement (SLA)** | Missioni, attrezzature, manutenzione, indicatori di sicurezza, avvisi e clienti |
+| **Amministratore** | Come il Responsabile operativo, una volta che agisce come Responsabile operativo |
+
+---
+
+## Limiti attuali
+
+L'assistente non può ancora rispondere ad alcune domande:
+
+| Argomento | Cosa non puoi ancora chiedere |
+|---|---|
+| Valutazioni | "Quali valutazioni sono ancora aperte?" |
+| Qualifiche dei piloti | "Quali piloti hanno qualifiche scadute?" |
+| Dichiarazioni dei piloti (per i responsabili) | "Il pilota X ha presentato una dichiarazione pre-volo?" |
+| Incidenti di volo | Flag di incidente, rientri alla base non pianificati, perdita di connessione e deviazioni di rotta |
+| Batteria e carburante | Carica della batteria e consumo di carburante durante un volo |
+
+Per sicurezza, l'assistente non rivela mai password, dati di accesso, chiavi di accesso o prezzi di acquisto.
+
+---
+
+## Controlli di sicurezza integrati
+
+Quando gli viene chiesto di rivedere le missioni, l'assistente segnala automaticamente una **violazione** in questi casi:
+
+1. **Vento**: la missione è stata volata mentre un'allerta vento era ancora aperta.
+2. **Altitudine**: il drone ha volato a più di 120 metri.
+3. **Manutenzione**: il drone aveva un problema di manutenzione ad alta priorità aperto al momento del volo.
+
+Può anche elencare le **parti delle attrezzature che hanno raggiunto la data di scadenza** e non sono più in servizio, raggruppate per sistema.

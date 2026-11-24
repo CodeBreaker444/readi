@@ -1,0 +1,35 @@
+---
+title: "Glossario dei ruoli"
+description: "Tutti i ruoli della piattaforma, i loro nomi completi e le responsabilità principali."
+---
+
+| Codice | Nome completo | Responsabilità principale |
+|---|---|---|
+| **PIC** | Pilot in Command (pilota in comando) | Eseguire i voli, presentare le dichiarazioni, completare le checklist |
+| **OPM** | Operations Manager (responsabile operazioni) | Supervisionare tutte le operazioni, assegnare piloti e droni, gestire la pianificazione |
+| **SM** | Safety Manager (responsabile sicurezza) | Monitorare segnalazioni di sicurezza, KPI e allarmi; indagare sugli incidenti |
+| **AM** | Accountable Manager (dirigente responsabile) | Responsabilità normativa; supervisiona audit e conformità |
+| **CMM** | Compliance Monitoring Manager (responsabile monitoraggio conformità) | Gestione degli audit e monitoraggio della conformità |
+| **MM** | Maintenance Manager (responsabile manutenzione) | Manutenzione di droni e attrezzature; ciclo di vita dei ticket |
+| **TM** | Training Manager (responsabile formazione) | Corsi di formazione, presenze, certificazioni |
+| **DC** | Data Controller (titolare dei dati) | Gestione utenti, permessi, governance dei dati |
+| **SLA** | SLA Manager | Monitoraggio dei livelli di servizio, metriche di performance dei clienti |
+| **RM** | Responsible Manager (responsabile) | Supervisiona operazioni, registri e registri di bordo, e piani di emergenza. Può chiudere i ticket di manutenzione e gestire il sotto-ruolo pilota-tecnico. Segue regole integrate, quindi il suo accesso non può essere modificato |
+| **OM** | Vedi nota sotto | Lavora su pianificazione, operazioni, registri di bordo, documenti, configurazione dell'organizzazione e definizioni delle missioni, e può gestire gli utenti e il Control Center |
+| **VM** | Vedi nota sotto | Vista di sola lettura di dashboard e Drone ATC, più notifiche, Repository documenti e chiavi API |
+| **CLIENT** | Cliente | Un cliente esterno. Vede solo il Portale cliente e solo le missioni della propria azienda. Non può essere personalizzato |
+| **ADMIN** | Amministratore della piattaforma | Accesso completo; impersona l'OPM per le query dell'agente AI |
+| **SUPERADMIN** | Interno | Completamente bloccato per l'agente AI |
+
+<Note>
+I nomi completi di **OM** e **VM** non sono definiti nell'app, quindi qui sono indicati con il codice. L'accesso elencato per questi ruoli è quello che l'app assegna loro oggi. **RM** è chiamato Responsible Manager nei Piani di risposta alle emergenze.
+</Note>
+
+Per sapere cosa può leggere, modificare ed eliminare ogni ruolo in ogni modulo, consulta [Permessi dei ruoli](/docs/business-logic/role-permissions).
+
+## Flag dei permessi
+
+| Flag | Effetto |
+|---|---|
+| `Manager` = true | Può creare, modificare ed eliminare |
+| `Manager` = false | Può solo creare e modificare (nessuna eliminazione) |

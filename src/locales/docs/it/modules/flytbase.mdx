@@ -1,0 +1,90 @@
+---
+title: "Control Center"
+description: "Collega il tuo account Control Center, consulta i voli recenti e salvali in Readi."
+---
+
+La connessione a Control Center ti permette di portare in Readi i voli effettuati con i tuoi droni, così diventano parte dei tuoi registri di volo.
+
+---
+
+## Collegare il tuo account
+
+Apri **Control Center** nella barra laterale e inserisci:
+
+| Campo | Cosa inserire |
+|---|---|
+| Nome | Etichetta facoltativa, ad esempio "Produzione" |
+| API Token | Una chiave di lunga durata del tuo account Control Center (non un token di accesso di breve durata) |
+| ID organizzazione | Si trova nella dashboard di Control Center, in Impostazioni organizzazione |
+
+1. Fai clic su **Verifica token**. Readi mostra l'account a cui appartiene il token (nome, nome utente, telefono, organizzazione).
+2. Controlla che sia il tuo account, quindi fai clic su **Sì, salva questo token**.
+
+Il token viene conservato in modo sicuro e non viene mai mostrato agli altri utenti. Per cambiarlo usa **Sostituisci token**, oppure **Rimuovi** per scollegare. Dopo la rimozione, i voli di Control Center non sono più disponibili finché non viene aggiunto un nuovo token.
+
+<Warning>
+Se vedi "Nessun token API di Control Center configurato", chiedi al tuo amministratore di collegare l'account.
+</Warning>
+
+---
+
+## Voli recenti
+
+**Control Center → Voli recenti** elenca gli ultimi voli del tuo account. Scegli un intervallo di tempo (ultime 1, 6, 12 o 24 ore, oppure gli ultimi 20 voli) e seleziona un volo per vederne l'anteprima.
+
+L'anteprima ha tre schede:
+
+| Scheda | Mostra |
+|---|---|
+| **Mappa** | Il percorso volato |
+| **Log di volo** | Ogni punto registrato: ora, posizione, altitudine, velocità, direzione e batteria |
+| **Info volo** | Pilota, missione, ora di inizio e fine, durata, distanza, il drone, i dettagli di batteria e controller, ed eventi di volo |
+
+---
+
+## Salvare un volo in Readi
+
+Fai clic su **Archivia in ReADI** per salvare il volo. I voli già salvati mostrano l'etichetta **Salvato in ReADI**.
+
+<Warning>
+Aggiungi prima all'elenco delle attrezzature i numeri di serie del drone e del controller. Se non sono registrati, Readi ti chiede di registrarli prima di archiviare.
+</Warning>
+
+Un volo archiviato può poi essere inviato a un DCC collegato come report di volo della missione (vedi [Integrazione DCC](/docs/business-logic/dcc-integration)).
+
+---
+
+## Configurazione C2
+
+**Configurazione C2** è riservata ad Amministratori, OPM e Super Admin. Controlla quali account Control Center può usare la tua azienda e chi può usarli. Ha due schede.
+
+### Organizzazioni
+
+Ogni voce è un account Control Center (ad esempio "Ambiente di produzione").
+
+- **Aggiungi organizzazione:** inserisci un nome, l'ID organizzazione di Control Center e un API token. Readi controlla il token prima di salvare.
+- **Elimina:** rimuove l'account da Readi, quindi chiunque lo usasse perde l'accesso ai suoi voli.
+
+### Permessi
+
+Elenca i tuoi utenti e le organizzazioni che ciascuno può usare.
+
+- **Modifica utente:** sposta le organizzazioni tra *Disponibili* e *Assegnate*, poi **Salva modifiche**.
+- Un utente senza organizzazioni assegnate non può vedere i voli di Control Center.
+
+Eliminare un'organizzazione e revocare l'accesso a un utente richiedono il tuo [PIN di autorizzazione](/docs/platform-rules/authorization-code).
+
+---
+
+## Permessi
+
+Chi può leggere, modificare ed eliminare in quest'area, per ruolo.
+
+<PermissionsTable section="Control Center" />
+
+---
+
+## Correlati
+
+- [Drone ATC](/docs/modules/drone-atc)
+- [Registri di bordo](/docs/modules/logbooks)
