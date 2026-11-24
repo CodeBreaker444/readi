@@ -238,6 +238,17 @@ Ha due schede:
 - **Interne:** missioni create dai tuoi piloti che richiedono l'approvazione dell'OPM. Approva, oppure rifiuta con un motivo facoltativo. Filtra per Tutte, In attesa, Approvate o Rifiutate.
 - **Esterne:** richieste da sistemi e clienti esterni (vedi [Integrazione DCC](/docs/business-logic/dcc-integration) e [Portale clienti](/docs/modules/client-portal)). Le richieste sono conteggiate come Nuove, Riconosciute o Assegnate. Un OPM può **Passare alla pianificazione** (assegnarla a una missione di pianificazione e a un piano), oppure rifiutarla.
 
+### Cosa può fare un pilota (PIC)
+
+Un PIC vede **Richieste di volo** nel menu e può lavorare nella scheda **Esterne**, in base all'accesso assegnato nella matrice dei permessi (**Operazioni → Richieste di volo**):
+
+- **Sola lettura (R):** il PIC vede le richieste ma non ha pulsanti di azione.
+- **Lettura e scrittura (R · W):** il PIC può **Riconoscere** una nuova richiesta, **Passare alla pianificazione**, impostarla su **In corso**, **Completata** o **Problema**, e inviare il log del Centro di controllo.
+- **Il rifiuto non è disponibile per un PIC.** Solo i ruoli di livello OPM possono rifiutare una richiesta e il pulsante Rifiuta è nascosto per il PIC.
+- La scheda **Interne** (approvazioni) resta agli OPM e agli admin. Un PIC segue l'approvazione delle proprie missioni dalla Tabella missione.
+
+Nella **Tabella missione**, un PIC che non è responsabile può solo **aggiungere se stesso** come pilota di una missione PLANNED che non ha ancora un pilota. Un PIC non può assegnare un altro pilota e non può cambiare il pilota di una missione quando ne ha già uno (l'elenco **Imposta pilota** multiplo mostra solo il PIC). Responsabili, OPM e admin mantengono il pieno controllo. Il messaggio è mostrato nella lingua selezionata nell'app.
+
 ---
 
 ## Permessi

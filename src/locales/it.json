@@ -6979,6 +6979,7 @@
     "PX004": "Richiesto accesso da super amministratore",
     "PX005": "Accesso negato",
     "PX006": "Non hai il permesso di eseguire questa azione",
+    "PX007": "I piloti possono aggiungere solo sé stessi a una missione senza pilota; non possono cambiare il pilota di una missione.",
     "VL001": "Convalida non riuscita",
     "VL002": "Identificativo non valido",
     "VL003": "Formato identificativo non valido",

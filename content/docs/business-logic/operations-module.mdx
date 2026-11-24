@@ -123,6 +123,10 @@ If operation type is PDRA and mission is created more than 1 hour after flight c
 
 ### Pilot Assignment
 
+**Who can assign:**
+- OPM, admins and managers can assign or change any pilot.
+- A PIC who is not a manager can only add themselves to a PLANNED mission that has no pilot yet. Changing an existing pilot, or adding another user, is rejected with error `PX007` (HTTP 403). This applies to Batch Set pilot, editing a mission and creating a mission.
+
 **Validation:**
 - Pilot must have role of PIC or PILOT
 - Pilot must be active

@@ -8,6 +8,7 @@ import { revertMissionMaintenance } from '@/backend/services/operation/maintenan
 import { DFLIGHT_CIRCLE_MAX_RADIUS_M, UpdateOperationSchema } from '@/config/types/operation';
 import { apiError, dbError, internalError, notFound, zodError } from '@/lib/api-error';
 import { requireFeatureAccess, requirePermission } from '@/lib/auth/api-auth';
+import { canChangePilot, isSelfAssignOnly } from '@/lib/auth/pilot-assignment';
 import { getUserSession } from '@/lib/auth/server-session';
 import { E } from '@/lib/error-codes';
 import type { DccCallbackResult } from '@/types/dcc-callback';
@@ -109,6 +110,17 @@ export async function PUT(req: NextRequest, { params }: Params) {
         select: { d_flight_enabled: true },
       });
       if (!owner?.d_flight_enabled) validated.dflight_skip_authorization = true;
+    }
+
+    // A PIC (non-manager) may not change a mission's pilot; sending the unchanged pilot is fine.
+    if (validated.fk_pilot_user_id !== undefined && isSelfAssignOnly(session!.user)) {
+      const current = await prisma.pilot_mission.findFirst({
+        where: { pilot_mission_id: id, fk_owner_id: session!.user.ownerId },
+        select: { fk_pilot_user_id: true },
+      });
+      if (!canChangePilot(session!.user, validated.fk_pilot_user_id, current?.fk_pilot_user_id)) {
+        return apiError(E.PX007, 403);
+      }
     }
 
     const currentSession = session || await getUserSession();

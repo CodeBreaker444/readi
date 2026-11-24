@@ -6837,6 +6837,7 @@
     "PX004": "Super-Admin-Zugriff erforderlich",
     "PX005": "Zugriff verweigert",
     "PX006": "Sie haben keine Berechtigung für diese Aktion",
+    "PX007": "Piloten können sich nur selbst zu einer Mission ohne Pilot hinzufügen; den Piloten einer Mission können sie nicht ändern.",
     "VL001": "Validierung fehlgeschlagen",
     "VL002": "Ungültige Kennung",
     "VL003": "Ungültiges Kennungsformat",

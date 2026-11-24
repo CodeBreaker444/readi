@@ -191,6 +191,7 @@ export function createFlightRequestColumns(handlers: FlightRequestColumnHandlers
 
             {/* State progression buttons */}
             {showStateButtons && (
+              <FeatureGate feature="operation_flight_requests" require="edit">
               <>
                 {r.dcc_status !== 'IN_PROGRESS' && (
                   <Button
@@ -225,6 +226,7 @@ export function createFlightRequestColumns(handlers: FlightRequestColumnHandlers
                   {t('planning.flightRequests.statuses.ISSUE')}
                 </Button>
               </>
+              </FeatureGate>
             )}
 
             {/* Delete */}

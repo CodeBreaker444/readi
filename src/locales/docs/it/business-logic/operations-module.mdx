@@ -123,6 +123,10 @@ Se il tipo di operazione è PDRA e la missione viene creata più di 1 ora dopo i
 
 ### Assegnazione del pilota
 
+**Chi può assegnare:**
+- OPM, admin e responsabili possono assegnare o cambiare qualsiasi pilota.
+- Un PIC che non è responsabile può solo aggiungere se stesso a una missione PLANNED che non ha ancora un pilota. Cambiare un pilota esistente o aggiungere un altro utente viene rifiutato con l'errore `PX007` (HTTP 403). Vale per Imposta pilota multiplo, modifica e creazione della missione.
+
 **Validazione:**
 - Il pilota deve avere il ruolo PIC o PILOT
 - Il pilota deve essere attivo

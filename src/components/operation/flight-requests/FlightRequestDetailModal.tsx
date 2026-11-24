@@ -1,5 +1,6 @@
 'use client';
 
+import { usePermissions } from '@/components/permissions/PermissionsProvider';
 import { FlightRequest } from '@/components/tables/flightRequestsColumns';
 import { Button } from '@/components/ui/button';
 import { LEAFLET_TILE_BASE_MAX_NATIVE_ZOOM, LEAFLET_TILE_DARK, LEAFLET_TILE_DARK_LABELS, LEAFLET_TILE_LIGHT, LEAFLET_TILE_LIGHT_LABELS } from '@/lib/leaflet-tiles';
@@ -135,6 +136,10 @@ export function FlightRequestDetailModal({
   onAcknowledge, onDeny, onOpenPlanModal, onOpenLogModal,
 }: Props) {
   const [tab, setTab] = useState<Tab>('details');
+  const { canEdit, role } = usePermissions();
+  const canAct = canEdit('operation_flight_requests');
+  // Denying a client request stays with OPM-level roles; a PIC can acknowledge and plan but not deny.
+  const canDeny = canAct && role !== 'PIC';
 
   useEffect(() => { setTab('details'); }, [request?.request_id]);
 
@@ -220,7 +225,7 @@ export function FlightRequestDetailModal({
 
           {tab === 'action' && (
             <div className="space-y-3 py-2">
-              {(request.dcc_status === 'NEW' || request.dcc_status === 'ACKNOWLEDGED') && (
+              {canAct && (request.dcc_status === 'NEW' || request.dcc_status === 'ACKNOWLEDGED') && (
                 <div className={`rounded-xl border p-4 space-y-2 ${isDark ? 'border-slate-700 bg-slate-800/40' : 'border-gray-200 bg-gray-50'}`}>
                   <p className={`text-[11px] font-semibold uppercase tracking-wide ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>Request Decision</p>
                   <div className="flex flex-col gap-2">
@@ -247,6 +252,7 @@ export function FlightRequestDetailModal({
                         Move to Planning
                       </Button>
                     )}
+                    {canDeny && (
                     <Button
                       size="sm"
                       variant="outline"
@@ -258,11 +264,12 @@ export function FlightRequestDetailModal({
                         ? <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Denying…</>
                         : <><X className="h-3.5 w-3.5" /> Deny Request</>}
                     </Button>
+                    )}
                   </div>
                 </div>
               )}
 
-              {request.dcc_status === 'ASSIGNED' && (
+              {canAct && request.dcc_status === 'ASSIGNED' && (
                 <div className={`rounded-xl border p-4 space-y-2 ${isDark ? 'border-slate-700 bg-slate-800/40' : 'border-gray-200 bg-gray-50'}`}>
                   <p className={`text-[11px] font-semibold uppercase tracking-wide ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>Log</p>
                   <Button
