@@ -1,0 +1,53 @@
+---
+title: "Logica del pilota"
+description: "Qualifiche dei piloti, dichiarazioni e regole di idoneità."
+---
+
+I piloti (ruolo `PIC`) sono record `public_users`. L'idoneità è determinata da qualifiche, formazione e dichiarazioni.
+
+## Qualifiche (`user_qualification`)
+
+| Campo | Significato |
+|---|---|
+| `qualification_name` | Nome del certificato/licenza (A2 CofC, GVC, BVLOS) |
+| `expiry_date` | Quando scade |
+| `status` | `Active` / `Expired` / `Suspended` |
+
+Un pilota è **qualificato** quando tutte le qualifiche richieste hanno `status = Active` e `expiry_date > today`.
+
+## Formazione (`training_attendance`)
+
+| Campo | Significato |
+|---|---|
+| `attendance_status` | `present` / `absent` / `excused` |
+| `completion_status` | `completed` / `in_progress` / `failed` |
+| `score` | 0–100 |
+| `certification_issued` | Se questa sessione ha generato un certificato |
+| `certification_expiry` | Quando scade quel certificato |
+
+---
+
+## Dichiarazioni del pilota
+
+Presentate prima e dopo ogni volo tramite `pilot_declaration`.
+
+| `declaration_type` | Quando viene presentata |
+|---|---|
+| `Pre-flight` | Prima del decollo: conferma idoneità, meteo e controlli del sistema |
+| `Post-flight` | Dopo l'atterraggio: conferma il completamento e annota le anomalie |
+| `Medical` | Dichiarazione periodica di idoneità |
+
+<Warning>
+Se un pilota non ha presentato la dichiarazione giornaliera, i cambi di stato della missione sulla Bacheca delle operazioni sono bloccati.
+</Warning>
+
+---
+
+## Stati del pilota in una missione
+
+```
+ASSIGNED → PRE-FLIGHT → AIRBORNE → POST-FLIGHT → DONE
+    │           │            │           │
+  missione   pilot_decl   in corso    pilot_decl
+  creata     (Pre-flight)             (Post-flight)
+```

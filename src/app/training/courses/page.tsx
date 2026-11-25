@@ -1,5 +1,6 @@
 'use client';
 
+import { localizeText } from '@/lib/api-error-message';
 import { FlatTrainingRecord } from '@/backend/services/training/training-service';
 import { useAuthorization } from '@/components/authorization/AuthorizationProvider';
 import { FeatureGate } from '@/components/permissions/FeatureGate';
@@ -255,7 +256,7 @@ export default function TrainingCoursesPage() {
       const fieldMessage = Object.values((data?.errors ?? {}) as Record<string, string[] | undefined>)
         .flat()
         .find(Boolean);
-      toast.error(fieldMessage || data?.error || 'Failed to save training record');
+      toast.error(fieldMessage || data?.error || localizeText('Failed to save training record'));
     } finally {
       setSaving(false);
     }

@@ -1,0 +1,61 @@
+---
+title: "Flusso complessivo della piattaforma"
+description: "Le quattro fasi operative: Valutazione, Pianificazione, Missione, Manutenzione."
+---
+
+```
+EVALUATION ──► PLANNING ──► MISSION ──► MAINTENANCE
+     │              │            │            │
+  Valutazione   Piano di volo Esecuzione   Cura degli asset
+  della         pianificazione pilot_mission maintenance_ticket
+  valutazione
+```
+
+---
+
+## Fase 1 — Valutazione
+
+Valuta se un'operazione proposta è sicura e conforme prima che inizi la pianificazione del volo.
+
+- `evaluation_status`: `NEW → PROCESSING → DONE`
+- Ogni valutazione contiene attività (`evaluation_action`) con risultati della checklist ed evidenze nel JSON `dependencies`
+- Stato = `DONE` sblocca la fase di pianificazione
+
+---
+
+## Fase 2 — Pianificazione
+
+Costruisci il piano di volo dettagliato.
+
+| Stato | Significato |
+|---|---|
+| `NEW` | Bozza appena creata |
+| `PROCESSING` | In revisione interna |
+| `REQ_FEEDBACK` | In attesa di approvazione formale |
+| `POSITIVE_RESULT` | Approvato: pronto per la creazione della missione |
+| `NEGATIVE_RESULT` | Respinto: deve essere rivisto |
+
+---
+
+## Fase 3 — Missione
+
+Vedi [Ciclo di vita della missione](/docs/business-logic/mission-lifecycle). Collegamento chiave: `pilot_mission.fk_planning_id`.
+
+---
+
+## Fase 4 — Manutenzione
+
+| Tipo | Significato |
+|---|---|
+| `BASIC` | Manutenzione di livello base |
+| `STANDARD` | Manutenzione di livello standard |
+| `EXTRAORDINARY` | Manutenzione al di fuori della routine normale |
+
+**Ciclo del componente:**
+```
+La missione si completa
+  → usage_hours aggiornato sui componenti
+  → se usage_hours >= maintenance_cycle_hour: avviso inviato
+  → l'MM crea maintenance_ticket → system = MAINTENANCE
+  → ticket chiuso → system = OPERATIONAL
+```

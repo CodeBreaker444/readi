@@ -1,6 +1,7 @@
 
 'use client'
 
+import { localizeText } from '@/lib/api-error-message';
 import axios from 'axios'
 
 import { FlightLogsTab } from '@/components/operation/FlightLogsTab'
@@ -48,7 +49,7 @@ export function EditMissionLogTab({ missionId, isDark }: { missionId: number; is
         setLoadingLogs(true)
         axios.get(`/api/operation/board/flight-logs?mission_id=${missionId}`)
             .then(res => { if (res.data.code === 1) setLogs(res.data.data ?? []) })
-            .catch(() => toast.error('Failed to load flight logs'))
+            .catch(() => toast.error(localizeText('Failed to load flight logs')))
             .finally(() => setLoadingLogs(false))
     }, [missionId])
 
@@ -63,7 +64,7 @@ export function EditMissionLogTab({ missionId, isDark }: { missionId: number; is
                     }
                 }
             })
-            .catch(() => toast.error('Failed to load organizations'))
+            .catch(() => toast.error(localizeText('Failed to load organizations')))
             .finally(() => setOrgLoading(false))
     }, [])
 
@@ -77,14 +78,14 @@ export function EditMissionLogTab({ missionId, isDark }: { missionId: number; is
             form.append('file', file)
             const { data } = await axios.post('/api/operation/board/flight-logs/upload', form)
             if (data.code === 1) {
-                toast.success('Log file uploaded')
+                toast.success(localizeText('Log file uploaded'))
                 const res = await axios.get(`/api/operation/board/flight-logs?mission_id=${missionId}`)
                 if (res.data.code === 1) setLogs(res.data.data ?? [])
             } else {
-                toast.error(data.message ?? 'Upload failed')
+                toast.error(data.message ?? localizeText('Upload failed'))
             }
         } catch (err: any) {
-            toast.error(err.response?.data?.message ?? 'Upload failed')
+            toast.error(err.response?.data?.message ?? localizeText('Upload failed'))
         } finally {
             setUploading(false)
             if (fileInputRef.current) fileInputRef.current.value = ''
@@ -121,16 +122,16 @@ export function EditMissionLogTab({ missionId, isDark }: { missionId: number; is
                 flight_id: selectedFlight,
             })
             if (data.code === 1) {
-                toast.success('Flight attached — mission start/end time and post-flight data synced')
+                toast.success(localizeText('Flight attached — mission start/end time and post-flight data synced'))
                 setSelectedFlight(null)
                 setFlights([])
                 const res = await axios.get(`/api/operation/board/flight-logs?mission_id=${missionId}`)
                 if (res.data.code === 1) setLogs(res.data.data ?? [])
             } else {
-                toast.error(data.message ?? 'Attach failed')
+                toast.error(data.message ?? localizeText('Attach failed'))
             }
         } catch (err: any) {
-            toast.error(err.response?.data?.message ?? 'Failed to attach flight')
+            toast.error(err.response?.data?.message ?? localizeText('Failed to attach flight'))
         } finally {
             setAttachingFlight(false)
             setAutoSyncingFlight(false)

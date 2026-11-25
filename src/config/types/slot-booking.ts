@@ -84,7 +84,18 @@ export interface SlotGroup {
   approvalDays: number[];
   createdAt: string;
   createdByName: string | null;
-  stats?: { openSlots: number; pending: number; approved: number };
+  stats?: {
+    openSlots: number;
+    pending: number;
+    approved: number;
+    /** Upcoming active slots of the group. */
+    totalSlots?: number;
+    /** Upcoming active slots with at least one pending/approved request (any pilot). */
+    appliedSlots?: number;
+    /** The requesting user's own pending+approved requests / approved requests on upcoming active slots. */
+    myApplied?: number;
+    myApproved?: number;
+  };
   clientId: number | null;
   clientName: string | null;
   /** System the slot weather is forecast for; null = no weather. */

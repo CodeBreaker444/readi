@@ -216,6 +216,16 @@ export default function DuplicateSystemModal({
   const createSystemWithRetries = async () => {
     if (!systemDraft) throw new Error('System draft is missing');
 
+    // Operation zones travel with the copy (best effort: a failed read just copies without zones).
+    let operationZones: unknown = null;
+    if (sourceSystemId) {
+      try {
+        const zr = await (await fetch(`/api/system/${sourceSystemId}/zones`)).json();
+        const z = zr?.operationZones;
+        if (zr?.code === 1 && z && (z.zones?.length > 0 || z.perimeter)) operationZones = z;
+      } catch { /* ignore */ }
+    }
+
     for (let attempt = 0; attempt < 5; attempt++) {
       const candidateCode = withCopyAttempt(systemDraft.tool_code, attempt);
       const formPayload = new FormData();
@@ -232,6 +242,7 @@ export default function DuplicateSystemModal({
           longitude: systemDraft.tool_longitude ? Number(systemDraft.tool_longitude) : null,
           locationPseudoName: systemDraft.location_pseudo_name || null,
           activationDate: systemDraft.date_activation || null,
+          operationZones,
         }),
       );
 

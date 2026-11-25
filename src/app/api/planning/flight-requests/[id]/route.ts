@@ -2,7 +2,7 @@ import { getFlightRequestById, updateFlightRequestStatus, deleteFlightRequest, v
 import { notifyDccDenial, notifyDccExecutionForRequest, notifyDccTerminationForRequest } from '@/backend/services/mission/dcc-callback-service';
 import type { DccCallbackResult } from '@/types/dcc-callback';
 import { apiError, internalError, zodError } from '@/lib/api-error';
-import { requireFeatureAccess, requirePermission } from '@/lib/auth/api-auth';
+import { requireFeatureAccess } from '@/lib/auth/api-auth';
 import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
@@ -14,11 +14,8 @@ const PatchSchema = z.object({
 export async function PATCH(req: NextRequest, props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
   try {
-    const { session, error } = await requirePermission('view_planning_advanced');
+    const { session, error } = await requireFeatureAccess('operation_flight_requests', 'edit');
     if (error) return error;
-
-    const { error: featureError } = await requireFeatureAccess('operation_flight_requests', 'edit');
-    if (featureError) return featureError;
 
     const id = Number(params.id);
     if (isNaN(id) || id <= 0) return apiError(E.VL001, 400);
@@ -36,11 +33,11 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
     let dcc: DccCallbackResult | undefined;
     if (fr.external_mission_id) {
       if (parsed.data.dcc_status === 'IN_PROGRESS') {
-        dcc = await notifyDccExecutionForRequest(ownerId, fr.external_mission_id);
+        dcc = await notifyDccExecutionForRequest(ownerId, fr.external_mission_id, fr.fk_client_id);
       } else if (parsed.data.dcc_status === 'COMPLETED') {
-        dcc = await notifyDccTerminationForRequest(ownerId, fr.external_mission_id, 1);
+        dcc = await notifyDccTerminationForRequest(ownerId, fr.external_mission_id, 1, undefined, fr.fk_client_id);
       } else if (parsed.data.dcc_status === 'ISSUE') {
-        dcc = await notifyDccDenial(ownerId, fr.external_mission_id);
+        dcc = await notifyDccDenial(ownerId, fr.external_mission_id, undefined, fr.fk_client_id);
       }
     }
 
@@ -53,11 +50,8 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
 export async function DELETE(_req: NextRequest, props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
   try {
-    const { session, error } = await requirePermission('view_planning_advanced');
+    const { session, error } = await requireFeatureAccess('operation_flight_requests', 'delete');
     if (error) return error;
-
-    const { error: featureError } = await requireFeatureAccess('operation_flight_requests', 'delete');
-    if (featureError) return featureError;
 
     const id = Number(params.id);
     if (isNaN(id) || id <= 0) return apiError(E.VL001, 400);

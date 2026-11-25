@@ -9,8 +9,8 @@ import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import axios from 'axios';
 import { format } from 'date-fns';
-import { Check, Copy, KeyRound, Loader2, Plus, Trash2, XCircle } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import { Check, Copy, KeyRound, Loader2, Plus, Search, Trash2, XCircle } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { useTheme } from '../useTheme';
@@ -20,6 +20,8 @@ interface ApiKey {
   key_name: string;
   key_prefix: string | null;
   key_scope: string;
+  fk_client_id: number | null;
+  client_name: string | null;
   is_active: boolean;
   last_used_at: string | null;
   expires_at: string | null;
@@ -52,6 +54,19 @@ export default function ApiKeyManager() {
   const [newKeyName, setNewKeyName] = useState('');
   const [newExpiresAt, setNewExpiresAt] = useState('');
   const [revealedKey, setRevealedKey] = useState<string | null>(null);
+  const [clients, setClients] = useState<{ client_id: number; client_name: string }[]>([]);
+  const [newClientId, setNewClientId] = useState('');
+  const [clientSearch, setClientSearch] = useState('');
+  const filteredClients = useMemo(() => {
+    const q = clientSearch.trim().toLowerCase();
+    return q ? clients.filter((c) => c.client_name?.toLowerCase().includes(q)) : clients;
+  }, [clients, clientSearch]);
+
+  useEffect(() => {
+    axios.get('/api/client/list')
+      .then(({ data }) => setClients(data.data ?? []))
+      .catch(() => {});
+  }, []);
 
   const load = useCallback(async () => {
     try {
@@ -73,11 +88,14 @@ export default function ApiKeyManager() {
       const { data } = await axios.post('/api/settings/api-keys', {
         key_name: newKeyName.trim(),
         expires_at: newExpiresAt || undefined,
+        client_id: newClientId ? Number(newClientId) : undefined,
       });
       setRevealedKey(data.key_value);
       setShowForm(false);
       setNewKeyName('');
       setNewExpiresAt('');
+      setNewClientId('');
+      setClientSearch('');
       await load();
       toast.success(t('settings.security.apiKeys.toast.created'));
     } catch (err: any) {
@@ -130,6 +148,7 @@ export default function ApiKeyManager() {
 
   const tableHeaders = [
     t('settings.security.apiKeys.tableHeaders.name'),
+    t('settings.security.apiKeys.tableHeaders.client'),
     t('settings.security.apiKeys.tableHeaders.keyPrefix'),
     t('settings.security.apiKeys.tableHeaders.scope'),
     t('settings.security.apiKeys.tableHeaders.status'),
@@ -212,6 +231,46 @@ export default function ApiKeyManager() {
               />
             </div>
           </div>
+          <div className="space-y-1.5">
+            <Label className={labelCls}>{t('settings.security.apiKeys.client')}</Label>
+            <div className={`rounded-lg border overflow-hidden ${isDark ? 'border-slate-600' : 'border-gray-200'}`}>
+              <div className={`relative border-b ${isDark ? 'border-slate-600' : 'border-gray-200'}`}>
+                <Search className={`absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 ${isDark ? 'text-slate-500' : 'text-gray-400'}`} />
+                <input
+                  value={clientSearch}
+                  onChange={(e) => setClientSearch(e.target.value)}
+                  placeholder={t('settings.security.apiKeys.searchClients')}
+                  className={`h-9 w-full bg-transparent pl-8 pr-3 text-sm outline-none ${isDark ? 'text-slate-200 placeholder:text-slate-500' : 'text-gray-900 placeholder:text-gray-400'}`}
+                />
+              </div>
+              <div className={`max-h-[17rem] overflow-y-auto divide-y ${isDark ? 'divide-slate-700' : 'divide-gray-100'}`}>
+                {[{ client_id: '', client_name: t('settings.security.apiKeys.noClient') }, ...filteredClients].map((c) => {
+                  const value = String(c.client_id);
+                  const selected = newClientId === value;
+                  return (
+                    <button
+                      type="button"
+                      key={value || 'none'}
+                      onClick={() => setNewClientId(value)}
+                      className={`flex h-[34px] w-full cursor-pointer items-center justify-between gap-2 px-3 text-left text-sm transition-colors ${
+                        selected
+                          ? (isDark ? 'bg-violet-500/20 text-violet-300' : 'bg-violet-50 text-violet-700')
+                          : (isDark ? 'text-slate-300 hover:bg-slate-700/60' : 'text-gray-700 hover:bg-gray-50')
+                      }`}
+                    >
+                      <span className="truncate">{c.client_name}</span>
+                      {selected && <Check className="h-3.5 w-3.5 shrink-0" />}
+                    </button>
+                  );
+                })}
+                {filteredClients.length === 0 && clientSearch.trim() && (
+                  <p className={`px-3 py-3 text-center text-xs ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
+                    {t('settings.security.apiKeys.noClientsFound')}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
           <div className="flex gap-2 pt-1">
             <FeatureGate feature="settings_security_api_keys" require="edit">
               <Button size="sm" onClick={handleCreate} disabled={creating} className="bg-violet-600 hover:bg-violet-500 text-white text-xs h-8">
@@ -235,7 +294,7 @@ export default function ApiKeyManager() {
             <tbody>
               {Array.from({ length: 4 }).map((_, i) => (
                 <tr key={i} className="border-b border-slate-700/30 last:border-0">
-                  {Array.from({ length: 7 }).map((_, j) => (
+                  {Array.from({ length: 8 }).map((_, j) => (
                     <td key={j} className="px-4 py-3">
                       <Skeleton className="h-4 w-full rounded" />
                     </td>
@@ -261,6 +320,9 @@ export default function ApiKeyManager() {
               {keys.map((k) => (
                 <tr key={k.api_key_id} className={isDark ? 'hover:bg-slate-700/20' : 'hover:bg-gray-50/80'}>
                   <td className={`px-4 py-3 font-medium ${isDark ? 'text-slate-200' : 'text-gray-800'}`}>{k.key_name}</td>
+                  <td className={`px-4 py-3 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
+                    {k.client_name ?? (k.fk_client_id ? `#${k.fk_client_id}` : '—')}
+                  </td>
                   <td className={`px-4 py-3 font-mono text-[11px] ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
                     {k.key_prefix ? <>{k.key_prefix}…</> : '—'}
                   </td>

@@ -1,10 +1,13 @@
 'use client';
 
+import { usePermissions } from '@/components/permissions/PermissionsProvider';
 import { FlightRequest } from '@/components/tables/flightRequestsColumns';
 import { Button } from '@/components/ui/button';
 import { LEAFLET_TILE_BASE_MAX_NATIVE_ZOOM, LEAFLET_TILE_DARK, LEAFLET_TILE_DARK_LABELS, LEAFLET_TILE_LIGHT, LEAFLET_TILE_LIGHT_LABELS } from '@/lib/leaflet-tiles';
+import { boundsOf, checkPointAgainstZones, OperationZones, ZoneWarning } from '@/lib/operation-zones';
+import { renderZoneLayers } from '@/lib/operation-zones-leaflet';
 import { format } from 'date-fns';
-import { CheckCircle2, FileUp, Loader2, MapPin, Send, X } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, FileUp, Loader2, MapPin, Send, ShieldAlert, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 interface Evaluation {
@@ -45,7 +48,48 @@ const PRIORITY_COLORS: Record<string, string> = {
   LOW: 'bg-green-100 text-green-700',
 };
 
-function WaypointMap({ waypoint, isDark }: { waypoint: any; isDark: boolean }) {
+interface ZoneSystem { toolId: number; toolCode: string; operationZones: OperationZones }
+
+const WARNING_TEXT: Record<ZoneWarning['type'], (w: ZoneWarning) => string> = {
+  red: (w) => `Waypoint is inside a RED zone${w.zoneName ? ` (${w.zoneName})` : ''}`,
+  unsurveyed: (w) => `Waypoint is inside an unsurveyed zone${w.zoneName ? ` (${w.zoneName})` : ''}`,
+  outside_perimeter: () => 'Waypoint is outside the operational perimeter',
+  not_in_green: () => 'Waypoint is not covered by any green zone',
+};
+
+function ZoneWarnings({ systems, waypoint, isDark }: { systems: ZoneSystem[]; waypoint: any; isDark: boolean }) {
+  const coords = waypoint?.coordinates as number[] | undefined;
+  if (!coords || systems.length === 0) return null;
+  const [lng, lat] = coords;
+  if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) return null;
+  const rows = systems.map((s) => ({ s, r: checkPointAgainstZones(lat, lng, s.operationZones) }));
+  return (
+    <div className="space-y-1.5 mb-4">
+      {rows.map(({ s, r }) => {
+        const danger = r.warnings.some((w) => w.severity === 'danger');
+        const tone = r.clear
+          ? (isDark ? 'border-green-500/30 bg-green-500/10 text-green-300' : 'border-green-200 bg-green-50 text-green-700')
+          : danger
+            ? (isDark ? 'border-red-500/40 bg-red-500/10 text-red-300' : 'border-red-200 bg-red-50 text-red-700')
+            : (isDark ? 'border-amber-500/40 bg-amber-500/10 text-amber-300' : 'border-amber-200 bg-amber-50 text-amber-800');
+        const Icon = r.clear ? CheckCircle2 : danger ? ShieldAlert : AlertTriangle;
+        return (
+          <div key={s.toolId} role={r.clear ? undefined : 'alert'} className={`flex items-start gap-2 rounded-lg border px-3 py-2 text-xs ${tone}`}>
+            <Icon className="h-4 w-4 shrink-0 mt-px" />
+            <div className="min-w-0">
+              <span className="font-semibold">{s.toolCode}</span>
+              {r.clear
+                ? <span> — waypoint is within its operation zones</span>
+                : <ul className="list-disc pl-4">{r.warnings.map((w, i) => <li key={i}>{WARNING_TEXT[w.type](w)}</li>)}</ul>}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function WaypointMap({ waypoint, isDark, zoneSystems }: { waypoint: any; isDark: boolean; zoneSystems: ZoneSystem[] }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
 
@@ -88,7 +132,18 @@ function WaypointMap({ waypoint, isDark }: { waypoint: any; isDark: boolean }) {
           ${lat.toFixed(6)}, ${lng.toFixed(6)}${alt !== undefined ? `<br/>Alt: ${alt} m` : ''}
         </div>`;
 
-      L.marker([lat, lng], { icon })
+      if (zoneSystems.length > 0) {
+        const multi = zoneSystems.length > 1;
+        zoneSystems.forEach((s) => renderZoneLayers(L as any, L.layerGroup().addTo(map), s.operationZones, { labelPrefix: multi ? s.toolCode : undefined }));
+        const pts: [number, number][] = [[lat, lng]];
+        zoneSystems.forEach((s) => {
+          const b = boundsOf(s.operationZones);
+          if (b) pts.push(b[0], b[1]);
+        });
+        if (pts.length > 1) map.fitBounds(pts, { padding: [24, 24], maxZoom: 16 });
+      }
+
+      L.marker([lat, lng], { icon, zIndexOffset: 1000 })
         .bindTooltip(tooltip, { permanent: false, direction: 'top', offset: [0, -10] })
         .addTo(map);
     });
@@ -97,7 +152,7 @@ function WaypointMap({ waypoint, isDark }: { waypoint: any; isDark: boolean }) {
       mapRef.current?.remove();
       mapRef.current = null;
     };
-  }, [waypoint, isDark]);
+  }, [waypoint, isDark, zoneSystems]);
 
   if (!waypoint?.coordinates) {
     return (
@@ -135,8 +190,30 @@ export function FlightRequestDetailModal({
   onAcknowledge, onDeny, onOpenPlanModal, onOpenLogModal,
 }: Props) {
   const [tab, setTab] = useState<Tab>('details');
+  const { canEdit, role } = usePermissions();
+  const canAct = canEdit('operation_flight_requests');
+  // Denying a client request stays with OPM-level roles; a PIC can acknowledge and plan but not deny.
+  const canDeny = canAct && role !== 'PIC';
 
   useEffect(() => { setTab('details'); }, [request?.request_id]);
+
+  // Operation zones of the client's systems, overlaid on the waypoint map and used to warn the OPM.
+  const [zoneSystems, setZoneSystems] = useState<ZoneSystem[]>([]);
+  useEffect(() => {
+    setZoneSystems([]);
+    const clientId = request?.fk_client_id;
+    if (!clientId || !request?.waypoint?.coordinates) return;
+    let cancelled = false;
+    fetch('/api/system/zones', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ clientId }),
+    })
+      .then((r) => r.json())
+      .then((res) => { if (!cancelled && res?.code === 1 && Array.isArray(res.systems)) setZoneSystems(res.systems); })
+      .catch(() => { /* zones are advisory; the request stays usable without them */ });
+    return () => { cancelled = true; };
+  }, [request?.request_id, request?.fk_client_id, request?.waypoint]);
 
   if (!request) return null;
 
@@ -189,6 +266,8 @@ export function FlightRequestDetailModal({
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto px-6 py-4">
+          {tab !== 'location' && <ZoneWarnings systems={zoneSystems} waypoint={request.waypoint} isDark={isDark} />}
+
           {tab === 'details' && (
             <div className={`divide-y ${divider}`}>
               <DetailRow label="Mission ID" value={<span className="font-mono font-semibold text-violet-400">{request.external_mission_id}</span>} isDark={isDark} />
@@ -215,12 +294,15 @@ export function FlightRequestDetailModal({
           )}
 
           {tab === 'location' && (
-            <WaypointMap waypoint={request.waypoint} isDark={isDark} />
+            <>
+              <ZoneWarnings systems={zoneSystems} waypoint={request.waypoint} isDark={isDark} />
+              <WaypointMap waypoint={request.waypoint} isDark={isDark} zoneSystems={zoneSystems} />
+            </>
           )}
 
           {tab === 'action' && (
             <div className="space-y-3 py-2">
-              {(request.dcc_status === 'NEW' || request.dcc_status === 'ACKNOWLEDGED') && (
+              {canAct && (request.dcc_status === 'NEW' || request.dcc_status === 'ACKNOWLEDGED') && (
                 <div className={`rounded-xl border p-4 space-y-2 ${isDark ? 'border-slate-700 bg-slate-800/40' : 'border-gray-200 bg-gray-50'}`}>
                   <p className={`text-[11px] font-semibold uppercase tracking-wide ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>Request Decision</p>
                   <div className="flex flex-col gap-2">
@@ -247,6 +329,7 @@ export function FlightRequestDetailModal({
                         Move to Planning
                       </Button>
                     )}
+                    {canDeny && (
                     <Button
                       size="sm"
                       variant="outline"
@@ -258,11 +341,12 @@ export function FlightRequestDetailModal({
                         ? <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Denying…</>
                         : <><X className="h-3.5 w-3.5" /> Deny Request</>}
                     </Button>
+                    )}
                   </div>
                 </div>
               )}
 
-              {request.dcc_status === 'ASSIGNED' && (
+              {canAct && request.dcc_status === 'ASSIGNED' && (
                 <div className={`rounded-xl border p-4 space-y-2 ${isDark ? 'border-slate-700 bg-slate-800/40' : 'border-gray-200 bg-gray-50'}`}>
                   <p className={`text-[11px] font-semibold uppercase tracking-wide ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>Log</p>
                   <Button
@@ -281,6 +365,15 @@ export function FlightRequestDetailModal({
                 <div className={`flex flex-col items-center justify-center py-8 gap-2 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
                   <CheckCircle2 className="h-8 w-8 opacity-30" />
                   <p className="text-sm">No actions available for this status.</p>
+                </div>
+              )}
+
+              {request.dcc_status === 'REJECTED' && (
+                <div className={`rounded-xl border p-4 space-y-1.5 ${isDark ? 'border-red-500/30 bg-red-500/5' : 'border-red-200 bg-red-50'}`}>
+                  <p className={`text-[11px] font-semibold uppercase tracking-wide ${isDark ? 'text-red-400' : 'text-red-500'}`}>Reason for denial</p>
+                  <p className={`text-sm whitespace-pre-wrap break-words ${isDark ? 'text-slate-200' : 'text-gray-700'}`}>
+                    {request.deny_note?.trim() || 'No reason provided.'}
+                  </p>
                 </div>
               )}
             </div>

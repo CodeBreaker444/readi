@@ -1,4 +1,4 @@
-import { docs } from '@/.source/server';
+import { docs, docsIt } from '@/.source/server';
 import { loader } from 'fumadocs-core/source';
 import { lucideIconsPlugin } from 'fumadocs-core/source/lucide-icons';
 import { docsContentRoute, docsImageRoute, docsRoute } from './shared';
@@ -8,6 +8,12 @@ export const source = loader({
   baseUrl: docsRoute,
   source: docs.toFumadocsSource(),
   plugins: [lucideIconsPlugin()],
+});
+
+/** Italian MDX translations (src/locales/docs/it). Only translated pages exist here; others fall back to `source`. */
+export const sourceIt = loader({
+  baseUrl: docsRoute,
+  source: docsIt.toFumadocsSource(),
 });
 
 export function getPageImage(page: (typeof source)['$inferPage']) {

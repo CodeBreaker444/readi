@@ -88,6 +88,25 @@ export async function requireFeatureAccess(featureKey: FeatureKey, mutation: 'cr
 }
 
  
+/**
+ * Requires the user's effective per-feature permission to grant at least read access ('R' or 'A').
+ * Errors: AU013 (no session) · PX006 (no access to the feature)
+ */
+export async function requireFeatureView(featureKey: FeatureKey): Promise<ApiAuthResult> {
+  const session = await getUserSession();
+
+  if (!session) {
+    return { session: null, error: unauthorized(E.AU013) };
+  }
+
+  const permissions = await getSessionEffectivePermissions(session.user);
+  if (!permissions[featureKey]) {
+    return { session: null, error: forbidden(E.PX006) };
+  }
+
+  return { session, error: null };
+}
+
 export async function requireAnyFeatureAccess(featureKeys: FeatureKey[], mutation: 'edit' | 'delete'): Promise<ApiAuthResult> {
   const session = await getUserSession();
 

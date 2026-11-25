@@ -1,0 +1,248 @@
+---
+title: "Logica di business del modulo Manutenzione"
+description: "Flusso della logica di business del modulo di manutenzione, inclusi parametri, trigger e dipendenze."
+---
+
+# Logica di business del modulo Manutenzione
+
+## Panoramica
+
+Il modulo di manutenzione tiene traccia dello stato di salute di componenti e sistemi tramite metriche di utilizzo (ore, voli, giorni) e attiva avvisi di manutenzione quando i limiti vengono avvicinati o superati. Questo modulo è strettamente integrato con missioni, notifiche e stato operativo del sistema.
+
+---
+
+## Flusso di business principale
+
+```
+Completamento della missione
+  → Utilizzo dei componenti aggiornato (ore, voli, giorni)
+  → Verifica del ciclo di manutenzione (threshold_alert = 80%)
+  → Stato calcolato (OK/ALERT/DUE)
+  → Notifiche inviate (se ALERT o DUE)
+  → Stato del sistema aggiornato (OPERATIONAL/MAINTENANCE/NOT_OPERATIONAL)
+```
+
+---
+
+## Parametri chiave
+
+### Parametri del componente
+
+| Etichetta frontend | Parametro | Impatto sulla manutenzione |
+|---|---|---|
+| Sistema | `fk_tool_id` | Collega il componente al sistema drone per il tracciamento della manutenzione |
+| Componente padre | `fk_parent_component_id` | Struttura gerarchica per la dipendenza di manutenzione |
+| Tipo di componente | `component_type` | Determina la configurazione del ciclo di manutenzione |
+| Codice | `component_code` | Identificazione del componente nei registri di manutenzione |
+| Numero di serie | `component_sn` | **SÌ** - Usato per la sincronizzazione GUTMA/DFlight e per gli aggiornamenti di manutenzione |
+| Nome | `component_name` | Nome visualizzato nella dashboard di manutenzione |
+| Marca/Modello | `fk_tool_model_id` | **SÌ** - Configurazione del ciclo di manutenzione specifica per modello |
+| Descrizione | `component_desc` | Informazioni visualizzate |
+| Stato | `component_status` | **SÌ** - OPERATIONAL/NOT_OPERATIONAL/MAINTENANCE/DECOMMISSIONED influisce sull'idoneità alla manutenzione |
+| Data di attivazione | `component_activation_date` | **SÌ** - Punto di riferimento per i calcoli di manutenzione basati sui giorni |
+| Data di acquisto | `component_purchase_date` | Tracciamento della garanzia |
+| Tipo di scadenza | `expiry_type` | **SÌ** - Determina se il componente viene dismesso automaticamente (EXPIRATION_DATE/FLIGHTS/FLIGHT_HOURS/MIXED) |
+| Scadenza permanente | `component_metadata.expiry_permanent` | **SÌ** - `true` (predefinito): la scadenza dismette il componente. `false`: la scadenza rende il componente NOT_OPERATIONAL (un utente crea il ticket); la chiusura di quel ticket rinnova la scadenza e la scadenza non può essere modificata mentre è scaduta. Con `true`, il sistema resta NOT_OPERATIONAL finché il componente non viene rimosso da esso |
+| Data di scadenza | `expiration_date` | **SÌ** - Dismette automaticamente il componente al raggiungimento |
+| Voli di scadenza | `expiration_flights` | **SÌ** - Dismette automaticamente il componente al raggiungimento del limite di voli |
+| Ore di volo di scadenza | `expiration_flight_hours` | **SÌ** - Dismette automaticamente il componente al raggiungimento del limite di ore |
+| Fornitore | `component_vendor` | Contatto di supporto per la manutenzione |
+| Garanzia | `component_guarantee_day` | Periodo di garanzia per la copertura della manutenzione |
+| Rapporto cicli batteria | `battery_cycle_ratio` | **SÌ** - Moltiplica il conteggio dei voli nei calcoli di manutenzione (predefinito: 1.0) |
+| Ore di utilizzo | `initial_usage_hours` | Tracciamento della vita utile del componente |
+| Ore di manutenzione | `initial_maintenance_hours` | **SÌ** - Utilizzo attuale rispetto al limite di ore del ciclo di manutenzione |
+| Voli di manutenzione | `initial_maintenance_flights` | **SÌ** - Voli attuali rispetto al limite di voli del ciclo di manutenzione |
+| Nome assicurazione | `insurance_name` | Tracciamento della conformità |
+| Compagnia assicurativa | `insurance_company` | Tracciamento della conformità |
+| Data di scadenza assicurazione | `insurance_expiry_date` | **SÌ** - Attiva le notifiche di avviso di scadenza |
+| Codice di registrazione del drone | `drone_registration_code` | **SÌ** - La sincronizzazione di conformità DFlight influisce sullo stato di manutenzione |
+| Numero di serie UAS | `uas_serial_number` | Conformità DFlight |
+| Numero di serie GCS | `gcs_serial_number` | Conformità DFlight |
+
+### Parametri del sistema
+
+| Etichetta frontend | Parametro | Impatto sulla manutenzione |
+|---|---|---|
+| Codice | `tool_code` | Identificazione del sistema nei registri di manutenzione |
+| Descrizione | `tool_desc` | Informazioni visualizzate |
+| Stato | `tool_status` | **SÌ** - OPERATIONAL/MAINTENANCE/NOT_OPERATIONAL determina l'idoneità alla missione e i requisiti di manutenzione |
+| Attivo | `tool_active` | Visibilità nella dashboard - solo i sistemi attivi compaiono nella dashboard di manutenzione |
+| Cliente | `fk_client_id` | Ambito di proprietà per la manutenzione |
+| Posizione | `location` | Informazioni visualizzate |
+| Data di attivazione | `date_activation` | Tracciamento per la pianificazione della manutenzione |
+| Registro di manutenzione | `tool_maintenance_logbook` | **SÌ** - Abilita/disabilita il tracciamento della manutenzione per il sistema |
+
+---
+
+## Logica di calcolo dello stato
+
+### Calcolo dello stato del componente
+
+Per ogni componente con un ciclo di manutenzione definito:
+
+1. Calcola il rapporto per ogni metrica: utilizzo attuale / limite
+   - Ore di manutenzione (initial_maintenance_hours) rispetto al limite di ore del modello
+   - Voli di manutenzione (initial_maintenance_flights) rispetto al limite di voli del modello
+   - Giorni dalla data di attivazione (component_activation_date) rispetto al limite di giorni del modello
+2. Se un qualsiasi rapporto >= 1.0 → status = DUE
+3. Altrimenti, se un qualsiasi rapporto >= 0.8 → status = ALERT
+4. Altrimenti → status = OK
+
+**Priorità:** DUE > ALERT > OK (prevale lo stato peggiore)
+
+**Soglia:** ALERT si attiva all'80% (configurabile)
+
+**Impatto del rapporto cicli batteria:** Il conteggio dei voli viene moltiplicato per battery_cycle_ratio prima del confronto con il limite di voli.
+
+**Impatto della scadenza:** Se la data di scadenza (expiration_date) viene raggiunta, lo stato del componente diventa NOT_OPERATIONAL indipendentemente dallo stato di manutenzione.
+
+### Calcolo dello stato del sistema
+
+Lo stato del sistema viene determinato a partire dai suoi componenti e dai suoi ticket:
+- Se un qualsiasi componente attivo ha superato la data di scadenza, o ha raggiunto il limite di scadenza in voli o ore di volo → NOT_OPERATIONAL
+- Se un qualsiasi ticket di manutenzione è aperto, o un componente è impostato su MAINTENANCE → MAINTENANCE
+- Altrimenti → OPERATIONAL
+
+Un componente che è solo **DUE** o **ALERT** (vicino o al limite di manutenzione) **non** modifica lo stato del sistema. Compare nella Dashboard manutenzione e invia notifiche. Il sistema passa a MAINTENANCE quando viene aperto un ticket per esso.
+
+**Priorità:** NOT_OPERATIONAL > MAINTENANCE > OPERATIONAL
+
+---
+
+## Logica delle notifiche di manutenzione
+
+### Condizioni di attivazione degli avvisi
+
+Le notifiche vengono inviate quando:
+1. Lo stato del componente è ALERT o DUE
+2. Il componente non è stato notificato oggi (deduplicazione)
+3. I destinatari sono utenti attivi con ruoli: OPM, RM, ADMIN
+
+### Logica di deduplicazione
+
+Ogni componente viene notificato una sola volta per giorno di calendario per lo stesso stato, per evitare spam.
+
+---
+
+## Logica di aggiornamento del ciclo di manutenzione
+
+### Integrazione con il completamento della missione
+
+Quando una missione viene completata (actual_end registrato), l'utilizzo dei componenti viene aggiornato:
+- La durata del volo (flight_duration) viene aggiunta alle Ore di manutenzione (initial_maintenance_hours)
+- Il conteggio dei voli viene incrementato e moltiplicato per il Rapporto cicli batteria (battery_cycle_ratio) prima di essere aggiunto ai Voli di manutenzione (initial_maintenance_flights)
+- Vengono registrati l'ID dell'ultima missione e il timestamp di aggiornamento
+- Lo stato del componente viene ricalcolato (OK/ALERT/DUE)
+- Le notifiche di manutenzione vengono attivate se lo stato passa a ALERT o DUE
+
+**Impatto del rapporto cicli batteria:**
+- Predefinito: 1.0
+- Scopo: Tiene conto dei cicli di scarica della batteria rispetto al conteggio dei voli (ad es. operazioni in hovering)
+- Applicato automaticamente all'incremento del conteggio dei voli
+- Esempio: 1 volo con rapporto 2.0 = 2 voli effettivi per la manutenzione
+
+---
+
+## Integrazione dei ticket di manutenzione
+
+### Impatto dei ticket sullo stato
+
+| Stato del ticket | Impatto sullo stato del sistema |
+|---|---|
+| NEW, IN_PROGRESS, ASSIGNED | Sistema = MAINTENANCE (impedisce l'avvio della missione) |
+| CLOSED | Lo stato del sistema viene rivalutato in base ai componenti |
+| CANCELLED | Lo stato del sistema viene rivalutato in base ai componenti |
+
+**Parametri del ticket di manutenzione:**
+- Sistema (fk_tool_id) - Collega il ticket al sistema drone
+- Componente (fk_component_id) - Collega il ticket a un componente specifico
+- Stato (ticket_status) - Controlla lo stato di manutenzione del sistema
+- Tipo (ticket_type) - Categorizzazione (BASIC, STANDARD, EXTRAORDINARY)
+
+### Tipi di manutenzione
+
+| Tipo | Note |
+|---|---|
+| BASIC | Manutenzione di livello base |
+| STANDARD | Manutenzione di livello standard (il valore predefinito quando non è salvato alcun tipo) |
+| EXTRAORDINARY | Manutenzione al di fuori della normale routine |
+
+Il tipo viene conservato nel ticket e nel record di manutenzione creato alla chiusura del ticket. Le esportazioni della dashboard di manutenzione mostrano la data dell'ultima manutenzione per ciascun tipo. Vedi [Manutenzione](/docs/modules/maintenance).
+
+---
+
+## Integrazione delle notifiche email
+
+### Eventi email di manutenzione
+
+| Tipo di evento | Trigger |
+|---|---|
+| ticket_created | Nuovo ticket di manutenzione creato |
+| ticket_assigned | Ticket assegnato a un tecnico |
+| ticket_closed | Ticket chiuso/risolto |
+| intervention_started | L'intervento di manutenzione ha inizio |
+| intervention_ended | L'intervento di manutenzione termina |
+
+### Abilitazione delle email
+
+Le email vengono inviate solo quando:
+1. L'email di sistema a livello aziendale è abilitata
+2. La notifica email a livello di modulo è abilitata per l'evento specifico
+3. Il limite giornaliero di email non è stato raggiunto
+
+---
+
+## Integrazione con lo stato operativo del sistema
+
+### Mappatura dallo stato di manutenzione allo stato operativo
+
+| Stato di manutenzione | Stato operativo | Condizione |
+|---|---|---|
+| IN_MAINTENANCE | MAINTENANCE | Esiste un ticket aperto |
+| DUE | OPERATIONAL | Componente al limite. Mostrato nella dashboard finché non viene aperto un ticket |
+| ALERT | OPERATIONAL | Vicino al limite. Mostrato nella dashboard |
+| OK | OPERATIONAL | Entro i limiti (se non c'è un ticket) |
+| Componente scaduto | NOT_OPERATIONAL | Data di scadenza raggiunta |
+
+**Priorità:** NOT_OPERATIONAL > MAINTENANCE > OPERATIONAL
+
+---
+
+## Dipendenze dei parametri
+
+### Dipendenze dirette
+
+- Le Ore di manutenzione (initial_maintenance_hours) dipendono da: limite di ore del modello, durata del volo della missione (flight_duration)
+- I Voli di manutenzione (initial_maintenance_flights) dipendono da: limite di voli del modello, numero di missioni, Rapporto cicli batteria (battery_cycle_ratio)
+- I giorni dall'ultima manutenzione dipendono da: limite di giorni del modello, Data di attivazione (component_activation_date)
+- Lo Stato del componente (component_status) dipende da: tutte e tre le metriche attuali rispetto ai limiti, Data di scadenza (expiration_date)
+- Lo Stato del sistema (tool_status) dipende da: tutti gli stati dei componenti, ticket di manutenzione aperti
+- La dismissione automatica del componente dipende da: Tipo di scadenza (expiry_type), Data di scadenza (expiration_date), Voli di scadenza (expiration_flights), Ore di volo di scadenza (expiration_flight_hours)
+
+### Dipendenze tra moduli
+
+- **Modulo Missioni:** Aggiorna Ore/Voli di manutenzione al completamento della missione (actual_end, flight_duration)
+- **Modulo Notifiche:** Invia avvisi in base allo Stato del componente (ALERT/DUE)
+- **Modulo Email:** Invia email in base agli eventi dei ticket e alla Data di scadenza assicurazione (insurance_expiry_date)
+- **Modulo Sistemi:** Lo stato operativo viene calcolato a partire dallo stato di manutenzione
+- **Modulo Pianificazione:** I requisiti di manutenzione possono essere specificati nella pianificazione
+- **Modulo Integrazioni:** La sincronizzazione GUTMA/DFlight aggiorna Ore/Voli di manutenzione tramite Numero di serie (component_sn) e Codice di registrazione del drone (drone_registration_code)
+
+---
+
+ 
+
+## Regole di business chiave
+
+1. **Avvisi basati su soglia:** ALERT all'80%, DUE al 100% dei limiti di manutenzione (Ore/Voli di manutenzione rispetto ai limiti del modello)
+2. **Prevale lo stato peggiore:** Stato del sistema = peggiore stato dei componenti (NOT_OPERATIONAL > MAINTENANCE > OPERATIONAL)
+3. **Priorità del ticket:** Un ticket di manutenzione aperto forza il sistema allo stato MAINTENANCE
+4. **Deduplicazione giornaliera:** Ogni componente viene notificato una volta al giorno per stato
+5. **Rapporto batteria:** I cicli di volo vengono moltiplicati per il Rapporto cicli batteria (battery_cycle_ratio) prima del calcolo di manutenzione
+6. **Solo attivi:** Vengono valutati solo i componenti attivi (Stato != DECOMMISSIONED) e i sistemi (Attivo = Y)
+7. **Esclusioni:** Gli elementi scollegati (Magazzino), dismessi e inattivi sono esclusi dalla dashboard
+8. **Limiti email:** Il limite giornaliero di email viene applicato prima dell'invio delle notifiche
+9. **Abilitazione del modulo:** Sono richieste sia l'abilitazione a livello aziendale (System Email Enabled) sia a livello di evento (Is Enabled)
+10. **Integrazione con le missioni:** Ore/Voli di manutenzione vengono aggiornati automaticamente al completamento della missione
+11. **Dismissione automatica alla scadenza:** I componenti vengono dismessi automaticamente quando vengono raggiunte Data di scadenza/Voli/Ore. Non viene creato alcun ticket automaticamente. Eccezione: con Scadenza permanente deselezionata il componente diventa NOT_OPERATIONAL invece di essere dismesso, un utente può creare un ticket per esso e la chiusura di quel ticket ne rinnova la scadenza
+12. **Avvisi di scadenza assicurazione:** La scadenza dell'assicurazione attiva un'email ai destinatari configurati prima della data di scadenza

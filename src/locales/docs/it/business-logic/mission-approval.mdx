@@ -1,0 +1,101 @@
+---
+title: "Approvazione missioni (OPM)"
+description: "Come le missioni create dai piloti vengono inviate agli OPM del loro reparto per l'approvazione, chi è esente e cosa innesca ogni decisione."
+---
+
+Le missioni create da un pilota normale non sono attive subito. Vengono inviate come **richiesta di approvazione** agli OPM del reparto del pilota. La missione resta fuori dalla Bacheca giornaliera finché uno di loro non la approva.
+
+---
+
+## Chi ha bisogno dell'approvazione
+
+L'approvazione si applica solo ai **piloti che non sono responsabili**.
+
+| Creatore | Approvazione richiesta |
+|---|---|
+| Pilota (non responsabile) | **Sì** |
+| Pilota contrassegnato come responsabile | No |
+| OPM | No |
+| Manager, Admin, Super Admin | No |
+
+La missione di un pilota responsabile salta del tutto il passaggio di approvazione: nessun OPM viene avvisato e la richiesta di autorizzazione D-Flight viene inviata appena la missione è creata, come per qualsiasi altra missione.
+
+Se l'impostazione di responsabile di un utente viene modificata, l'utente deve accedere di nuovo perché abbia effetto.
+
+---
+
+## Ciclo di vita della richiesta
+
+```
+Il pilota crea la missione
+        │
+        ▼
+     PENDING ──► Gli OPM e i responsabili del reparto vengono notificati
+        │
+        ├── L'OPM approva ──► APPROVED ──► Autorizzazione D-Flight richiesta ──► la missione compare nella Bacheca giornaliera
+        │
+        └── L'OPM rifiuta ──► DENIED   ──► il pilota viene notificato, con il motivo se indicato
+```
+
+### Stati
+
+| Stato | Significato |
+|---|---|
+| In attesa | In attesa di una decisione. La missione è nascosta dalla Bacheca giornaliera e non può essere avviata, completata né spostata in un altro stato. |
+| Approvata | Accettata. La missione prosegue normalmente. |
+| Rifiutata | Respinta. Un motivo facoltativo viene mostrato nella pagina dei dettagli della missione. |
+
+Le missioni che non richiedevano approvazione non mostrano alcuno stato di approvazione.
+
+---
+
+## Chi può decidere
+
+- Gli **OPM** possono decidere solo le richieste **del proprio reparto**. Un OPM senza reparto non vede alcuna richiesta.
+- Gli **Admin e i Super Admin** possono decidere le richieste di ogni reparto. Questo vale anche per i reparti senza OPM.
+- **La prima decisione è definitiva.** Se due OPM agiscono contemporaneamente, al secondo viene comunicato che la richiesta è già stata decisa.
+- Le **missioni ricorrenti** sono un'unica richiesta: approvare o rifiutare una occorrenza vale per l'intera serie.
+
+---
+
+## Notifiche
+
+| Evento | Chi viene avvisato | Come |
+|---|---|---|
+| Richiesta inviata | Gli OPM e i responsabili del reparto del pilota (non il pilota). Se il reparto non ha un OPM, vengono avvisati tutti gli admin attivi, così la richiesta non viene dimenticata. | Nell'app, e via email se le notifiche email sono abilitate |
+| Approvata o rifiutata | Il pilota che ha inviato la missione | Nell'app, e via email se le notifiche email sono abilitate |
+
+Facendo clic su una notifica, nell'elenco delle notifiche o nel menu della campanella, si apre la pagina correlata e la notifica viene segnata come letta:
+
+- **Nuova richiesta** (per OPM, responsabili e admin): apre la pagina Richieste di volo.
+- **Approvata o rifiutata** (per il pilota): apre la Tabella missione, dove sono mostrati lo stato di approvazione ed eventuale motivo del rifiuto.
+
+Le notifiche ricevute prima di questa modifica mantengono il collegamento originale, che apre Richieste di volo.
+
+---
+
+## Autorizzazione D-Flight
+
+Per le missioni che richiedono approvazione, la richiesta di autorizzazione D-Flight **non** viene inviata quando la missione è creata. Viene inviata quando l'OPM approva.
+
+- In attesa, la Tabella missione mostra **D-Flight: In attesa di approvazione OPM**.
+- Se la richiesta non può essere inviata dopo l'approvazione, mostra **D-Flight: Non inviata** e può essere ritentata. L'approvazione in sé non viene annullata.
+- Le aziende che usano D-Flight vedono una missione sulla Bacheca giornaliera solo dopo che D-Flight l'ha accettata.
+
+---
+
+## Dove compare nell'app
+
+- **Nuova missione, ultimo passaggio:** un avviso che la missione sarà inviata per approvazione, con il reparto del pilota e il numero di OPM. Viene mostrato un avviso se il pilota non ha un reparto o il reparto non ha un OPM. La missione può comunque essere creata e resta in attesa, e gli admin vengono avvisati. L'avviso non viene mostrato agli utenti esenti.
+- **Richieste di volo → Interne:** l'elenco delle richieste con le azioni Approva e Rifiuta, un filtro (Tutte, In attesa, Approvate, Rifiutate) e un badge con il numero di richieste in attesa. **Esterne** conserva le richieste ricevute da altri sistemi.
+- **Richieste di volo → Esterne (per i PIC):** con l'accesso a Richieste di volo nella matrice dei permessi, un PIC può riconoscere, pianificare e portare le richieste esterne in In corso e Completata. Un PIC non può rifiutare una richiesta e non vede la scheda Interne.
+- **Bacheca giornaliera, Tabella missione e dettagli della missione:** lo stato di approvazione e il motivo del rifiuto, se indicato.
+
+---
+
+## Correlati
+
+- [Vincoli di stato della missione](/docs/platform-rules/mission-status-gates)
+- [Flusso della bacheca operazioni](/docs/platform-rules/operation-board-flow)
+- [Notifiche email](/docs/business-logic/email-notifications)
+- [Glossario dei ruoli](/docs/business-logic/role-glossary)

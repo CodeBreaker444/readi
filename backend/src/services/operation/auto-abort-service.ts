@@ -1,5 +1,8 @@
 import { logEvent } from '@/backend/services/auditLog/audit-log';
+import { notifyClientMissionStatus } from '@/backend/services/mission/dcc-client-status-service';
 import { prisma } from '@/lib/prisma';
+
+const AUTO_ABORT_REASON = 'Automatically aborted: scheduled date passed without the mission being started';
 
 // Keys must match the OperationStatus enum (PLANNED | IN_PROGRESS | COMPLETED | CANCELLED | ABORTED).
 const PLANNED_STATUS_ID = 1;
@@ -41,10 +44,15 @@ export async function autoAbortStaleMissions(ownerId: number, now = new Date()):
 
   await prisma.pilot_mission.updateMany({
     where: { pilot_mission_id: { in: stale.map((m) => m.pilot_mission_id) } },
-    data: { status_name: 'ABORTED', fk_mission_status_id: ABORTED_STATUS_ID },
+    data: {
+      status_name: 'ABORTED',
+      fk_mission_status_id: ABORTED_STATUS_ID,
+      abort_reason: AUTO_ABORT_REASON,
+    },
   });
 
   for (const mission of stale) {
+    void notifyClientMissionStatus(mission.pilot_mission_id, 'ABORTED', AUTO_ABORT_REASON);
     logEvent({
       eventType: 'UPDATE',
       entityType: 'operation',

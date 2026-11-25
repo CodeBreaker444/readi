@@ -1,0 +1,114 @@
+---
+title: "Permessi dei ruoli"
+description: "Cosa può leggere, modificare ed eliminare ogni ruolo in ogni modulo e quali permessi un amministratore può personalizzare."
+---
+
+Questa pagina elenca l'accesso **predefinito** di ogni ruolo in ogni modulo. La stessa tabella compare anche alla fine della pagina di ciascun modulo.
+
+## Come funziona l'accesso
+
+| Livello | Cosa può fare il ruolo |
+|---|---|
+| **R** (Read, lettura) | Aprire il modulo e vederne i dati. In alcuni moduli il ruolo può anche aggiungere nuovi record (indicati con ¹ nelle tabelle). |
+| **W** (Write, scrittura/modifica) | Creare e modificare i record. |
+| **D** (Delete, eliminazione) | Eliminare i record. Richiede l'accesso in scrittura **e** il flag **Manager** dell'utente. Un utente senza il flag Manager può creare e modificare ma non eliminare mai. |
+
+## Quali ruoli possono essere personalizzati
+
+| Ruoli | Comportamento | Personalizzabile nell'editor dei permessi dei ruoli |
+|---|---|---|
+| **AM, SM, OM, MM, TM, CMM, DC, VM, PIC** | Seguono le tabelle sotto. Dove un ruolo ha accesso a una funzionalità, può essere impostato tra sola lettura (R) e completo (R · W · D). | **Sì**, per le funzionalità a cui il ruolo ha già accesso |
+| **ADMIN, OPM, SUPERADMIN** | Sempre accesso completo ovunque. | No |
+| **RM, SLA** | Seguono regole integrate basate sull'area (per esempio configurazione o registri di bordo). | No |
+| **CLIENT** | Solo Portale cliente. Vedi [Portale cliente](/docs/modules/client-portal). | No |
+
+### L'editor dei permessi dei ruoli
+
+Un ADMIN, OPM o SUPERADMIN apre **Team → Ruoli e permessi**. Ogni colonna è un ruolo e ogni riga una funzionalità. Fai clic su una cella per passare da **R** (sola lettura) ad **A** (accesso completo: lettura, scrittura ed eliminazione). Premi **Salva** sulla colonna del ruolo. La modifica si applica a ogni utente di quel ruolo nella tua azienda che non ha una personalizzazione individuale. Un utente con permessi personalizzati individuali segue quelli al posto del suo ruolo.
+
+Una funzionalità a cui un ruolo non ha accesso (indicata con – nelle tabelle) appare come un trattino nell'editor e non può essere modificata da lì. L'eliminazione dipende sempre dal flag Manager, quindi non può essere concessa solo dall'editor.
+
+<Note>
+Alcune impostazioni non fanno parte della tabella modificabile. Per esempio, i **Tipi di evento**, le **Notifiche e-mail** e i **Webhook** del Registro eventi, e le impostazioni D-Flight e DCC, possono essere modificati solo da ADMIN, OPM e SUPERADMIN.
+</Note>
+
+---
+
+## Dashboard
+
+<PermissionsTable section="Dashboard" />
+
+## Pianificazione
+
+<PermissionsTable section="CO-00 - Planning" />
+
+## Operazioni
+
+<PermissionsTable section="Operation" />
+
+## Registri di bordo
+
+<PermissionsTable section="Logbooks" />
+
+## Gestione della sicurezza
+
+<PermissionsTable section="Safety Management" />
+
+## Elenco contatti di emergenza
+
+<PermissionsTable section="Emergency contact list" />
+
+## Conformità
+
+<PermissionsTable section="Compliance" />
+
+## Control Center
+
+<PermissionsTable section="Control Center" />
+
+## Drone ATC
+
+<PermissionsTable section="Drone ATC" />
+
+## Formazione
+
+<PermissionsTable section="Training" />
+
+## Notifiche
+
+<PermissionsTable section="Notifications" />
+
+## Repository documenti
+
+<PermissionsTable section="Document repository" />
+
+## Registri di audit
+
+<PermissionsTable section="Audit Logs" />
+
+## Organizzazione
+
+<PermissionsTable section="Organization" />
+
+## Definizioni delle missioni
+
+<PermissionsTable section="Mission" />
+
+## Sistemi
+
+<PermissionsTable section="Systems" />
+
+## Team
+
+<PermissionsTable section="Team" />
+
+## Impostazioni
+
+<PermissionsTable section="Settings" />
+
+---
+
+## Correlati
+
+- [Glossario dei ruoli](/docs/business-logic/role-glossary)
+- [Team](/docs/configuration/team)

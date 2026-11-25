@@ -14,9 +14,11 @@ import EditModelModal from '@/components/system/EditModelModal';
 import EditSystemModal from '@/components/system/EditSystemModal';
 import { FilesDownloadModal, SystemFile } from '@/components/system/FilesDownloadModal';
 import { FeatureGate } from '@/components/permissions/FeatureGate';
+import { usePermissions } from '@/components/permissions/PermissionsProvider';
 import { QtbReportModal } from '@/components/system/QtbReportModal';
 import SystemComponentsTable from '@/components/system/SystemComponentsTable';
 import ViewComponentModal from '@/components/system/ViewComponentModal';
+import OperationZonesModal from '@/components/system/OperationZonesModal';
 import ViewToolModal from '@/components/system/ViewToolModal';
 import { DroneToolData, getComponentColumns, getModelColumns } from '@/components/tables/SystemColumn';
 import { Button } from '@/components/ui/button';
@@ -57,6 +59,7 @@ export default function DroneToolPage({ dFlightEnabled }: DroneToolPageProps) {
     const { isDark } = useTheme();
     const { t } = useTranslation();
     const { requireAuthorization } = useAuthorization();
+    const { canEdit } = usePermissions();
 
     const [loading, setLoading] = useState<boolean>(false);
     const [toolData, setToolData] = useState<DroneToolData[]>([]);
@@ -74,6 +77,7 @@ export default function DroneToolPage({ dFlightEnabled }: DroneToolPageProps) {
     const [flightLogsComponent, setFlightLogsComponent] = useState<any | null>(null);
     const [showEditSystem, setShowEditSystem] = useState<boolean>(false);
     const [showDuplicateSystem, setShowDuplicateSystem] = useState<boolean>(false);
+    const [zonesTool, setZonesTool] = useState<DroneToolData | null>(null);
     const [showEditModel, setShowEditModel] = useState<boolean>(false);
     const [showEditComponent, setShowEditComponent] = useState<boolean>(false);
     const [selectedToolId, setSelectedToolId] = useState<number | null>(null);
@@ -545,6 +549,7 @@ export default function DroneToolPage({ dFlightEnabled }: DroneToolPageProps) {
                                     setShowRelations(true);
                                 }}
                                 onGenerateQtbReport={handleGenerateQtbReport}
+                                onOpenZones={setZonesTool}
                             />
                         )}
                         {activeTab === 'model' && (
@@ -611,6 +616,14 @@ export default function DroneToolPage({ dFlightEnabled }: DroneToolPageProps) {
                     onComponentRemoved={() => { fetchAllComponents(); fetchToolData(); }}
                     clients={clients} models={models} dFlightEnabled={dFlightEnabled} />
             )}
+
+            <OperationZonesModal
+                open={!!zonesTool}
+                toolId={zonesTool?.tool_id ?? null}
+                toolCode={zonesTool?.tool_code}
+                canEdit={canEdit('systems_manage')}
+                onClose={() => setZonesTool(null)}
+            />
 
             <DuplicateSystemModal
                 open={showDuplicateSystem}

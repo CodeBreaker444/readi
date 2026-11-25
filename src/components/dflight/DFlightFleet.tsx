@@ -85,13 +85,14 @@ export default function DFlightFleet() {
         '/api/dflight/fleet',
       );
       if (data.code === 0) {
-        if (data.message === 'D-Flight integration not configured') {
+        const rawMessage = (data as { messageOriginal?: string }).messageOriginal ?? data.message;
+        if (rawMessage === 'D-Flight integration not configured') {
           setNotConfigured(true);
           setRows([]);
-        } else if (data.message?.includes('digital certificate') || data.message?.includes('PFX certificate')) {
+        } else if (rawMessage?.includes('digital certificate') || rawMessage?.includes('PFX certificate')) {
           setMissingCertificate(true);
           setRows([]);
-          setError(data.message);
+          setError(data.message ?? null);
         } else {
           setError(data.message ?? t('dflight.fleet.error.generic'));
           setRows([]);

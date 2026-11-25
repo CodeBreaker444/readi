@@ -153,8 +153,12 @@ export function FlightRequestsPlanModal({
                                       : isDark ? 'hover:bg-slate-800 text-slate-300' : 'hover:bg-white text-gray-600'
                                   }`}
                               >
-                                <span className="font-mono font-semibold shrink-0"> </span>
-                                {plan.tool_code && <span className="truncate">{plan.tool_code}</span>}
+                                <span className="font-mono font-semibold shrink-0">
+                                  {plan.mission_planning_code ?? `#${plan.mission_planning_id}`}
+                                </span>
+                                {plan.tool_code && (
+                                  <span className={`truncate ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>· {plan.tool_code}</span>
+                                )}
                                 {planDisabled ? (
                                   <span className={`ml-auto shrink-0 text-[10px] px-1.5 py-0.5 rounded-full ${isDark ? 'bg-slate-800 text-slate-600' : 'bg-gray-100 text-gray-400'}`}>
                                     {t('planning.flightRequests.noDroneId')}

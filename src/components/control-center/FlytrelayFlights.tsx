@@ -1,5 +1,6 @@
 'use client';
 
+import { localizeText } from '@/lib/api-error-message';
 import { GutmaPreviewPanel } from '@/components/control-center/GutmaPreviewPanel';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -88,7 +89,7 @@ export function FlytrelayFlights({
       setFlights(res.data.flights ?? []);
       setTotal(res.data.total ?? 0);
     } catch (err: any) {
-      const msg = err?.response?.data?.message ?? 'Failed to fetch FlytRelay flights';
+      const msg = err?.response?.data?.message ?? localizeText('Failed to fetch FlytRelay flights');
       setError(err?.response?.status === 422 ? 'no_token' : msg);
     } finally {
       setLoading(false);
@@ -125,7 +126,7 @@ export function FlytrelayFlights({
       if (!res.ok) throw new Error(body?.message ?? `Server error ${res.status}`);
       setPreview(body.data);
     } catch (err: any) {
-      const msg = err?.message ?? 'Failed to load flight telemetry.';
+      const msg = err?.message ?? localizeText('Failed to load flight telemetry.');
       setPreviewError(msg);
       setPreview(null);
     } finally {

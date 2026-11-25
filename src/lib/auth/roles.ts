@@ -239,7 +239,7 @@ export const API_ROUTE_PERMISSIONS: Array<{ prefix: string; permission: ApiPermi
   { prefix: '/api/dashboard', permission: ['view_dashboard', 'view_pilot_dashboard'] },
   { prefix: '/api/evaluation/new-req', permission: 'view_planning_advanced' },
   { prefix: '/api/evaluation/planning', permission: 'view_planning' },
-  { prefix: '/api/planning/flight-requests', permission: 'view_planning_advanced' },
+  { prefix: '/api/planning/flight-requests', permission: null },
   { prefix: '/api/planning', permission: 'view_planning' },
   { prefix: '/api/settings', permission: null },
   { prefix: '/api/evaluation/mission-template', permission: 'view_planning' },

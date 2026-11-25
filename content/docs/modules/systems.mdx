@@ -26,6 +26,83 @@ A system can have a **Location Name** next to its map coordinates, for example "
 
 ---
 
+## Operation zones
+
+A system can have **operation zones**: an optional overlay that says where it may fly. They are shown on the map and checked against every flight request from the system's client. You can set them when you add a system or later.
+
+| Zone | Colour | Meaning |
+|---|---|---|
+| **Green zone** | Green | Safe and approved to fly |
+| **Red zone** | Red | Restricted, do not fly (for example a substation or a power line) |
+| **Unsurveyed zone** | Grey | Not checked yet, fly only after a survey |
+| **Perimeter** | Blue dashed line | The operational limit of this system. A system has one perimeter |
+
+Zones can be **polygons** (areas) or **lines** (for example a power line). A red line blocks anything within about 30 m of it. Every zone has a name you can edit.
+
+### Add or edit zones
+
+- **When adding a system:** open the **Operation zones (optional)** tab. Everything on it is optional, and the tab shows how many zones you have drawn.
+- **On an existing system:** in **Systems → Manage**, click the fence icon on the system row (tooltip **Operation zones**), then **Save zones**. Users who can only view systems see the zones but not the Save button.
+
+The map opens in **satellite** view. The layers button switches to the street map.
+
+| Tool | What it does |
+|---|---|
+| Polygon | Click the map to place the corners of an area, then press **Enter** or the tick button |
+| Line | Same, for a line zone |
+| Fence | Draws the operational perimeter. Drawing a new one replaces the old one (a message tells you). **Esc** keeps the old one |
+| Green, red, grey dots | The type of the next zone you draw. With a zone selected, they change its type |
+| Undo, tick, cross | Remove the last point, finish the shape, cancel it (**Esc**) |
+| Zoom to all zones | Fits the map to everything you drew |
+
+Click a zone on the map or in the list to select it. Drag its points to reshape it, or right-click a point to remove it. Use the list under the map to rename a zone, change its type or delete it.
+
+### Import a KMZ or KML file
+
+Click **Import KMZ** and choose a `.kmz` or `.kml` file, for example one exported from Google Earth. Every polygon and line in it is added as a zone. A KMZ is a zipped KML.
+
+The type of each shape is decided in this order:
+
+1. **Its name:** words such as *red*, *no-fly*, *restricted* make it red. *green*, *safe*, *approved* make it green. *unsurveyed*, *unknown*, *grey* make it grey. *perimeter*, *boundary*, *fence* make it the perimeter.
+2. **Its colour** in the file (green, red or grey).
+3. **The name of its folder**, using the same words.
+4. If nothing matches, it is imported as **unsurveyed** (grey). Check and change it in the list.
+
+Points and image overlays are skipped, and the message tells you how many. If the file has several perimeters, only the first is used. Importing into a system that already has zones adds to them. Holes inside polygons are ignored. After importing, review the list and **Save zones**.
+
+### Limits and things to know
+
+- **Size:** up to **500 zones**, **5,000 points** per shape and **100,000 points** in total per system. A KMZ/KML file can be up to **10 MB**. When you import a shape with more than 5,000 points, Readi keeps evenly spaced points so the shape stays close to the original.
+- **Holes are ignored.** A polygon with an inner ring (for example a green area with a building cut out) is imported as a solid area. Draw the hole as a separate red zone.
+- **Crossing outlines:** if a shape crosses itself, the crossed part counts as outside it. Redraw it without crossings.
+- **Dateline:** shapes that cross the 180° meridian are not supported.
+- **Red lines** block about 30 m on each side. **Green** and **unsurveyed** lines are shown on the map but only red lines are checked.
+- **Duplicate:** **Duplicate system** copies the zones to the new system.
+- **One perimeter per system.** To cover several sites, use green zones for each, or create one system per site.
+- **Warnings are advice.** They never block a request, and the warning text on the flight request is in English.
+
+### Warnings on flight requests
+
+When an OPM opens an **external** flight request that has a waypoint, Readi checks the waypoint against the zones of every system assigned to that client. The result shows at the top of the request (Details and Action tabs), and the **Location** tab draws the zones and perimeter around the waypoint.
+
+| Result | Shown as |
+|---|---|
+| Inside a green zone, inside the perimeter | Green: within its operation zones |
+| Inside a red zone, or near a red line | **Red** danger warning |
+| Inside an unsurveyed zone | Amber warning |
+| Outside the perimeter | Amber warning |
+| Inside the perimeter but in no green zone | Amber warning |
+
+A warning does not block the request. It tells the OPM what to check before acknowledging or planning. Systems without zones, and clients whose systems have none, show nothing.
+
+---
+
+## Row buttons
+
+In **Systems → Manage**, the buttons on each system and component row are icons. Hover over one to see its name. On a system row they are **View**, **Edit**, **Duplicate**, **Files**, **Relations**, **Operation zones** (fence icon) and **Delete**. On a component row they are **View**, **Edit**, **Log**, **Flights**, **QTB report** (drones only) and **Delete**. The ones you are not allowed to use are hidden.
+
+---
+
 ## QTB report (PDF)
 
 The QTB report is a printable flight record for a drone. It is available on **drone** components.

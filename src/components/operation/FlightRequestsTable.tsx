@@ -1,6 +1,7 @@
 'use client';
 
 import { useAuthorization } from '@/components/authorization/AuthorizationProvider';
+import { usePermissions } from '@/components/permissions/PermissionsProvider';
 import { FlightRequestDetailModal } from '@/components/operation/flight-requests/FlightRequestDetailModal';
 import { FlightRequestsHeader } from '@/components/operation/flight-requests/FlightRequestsHeader';
 import { FlightRequestsLogModal } from '@/components/operation/flight-requests/FlightRequestsLogModal';
@@ -10,6 +11,7 @@ import { InternalFlightRequests } from '@/components/operation/flight-requests/I
 import { FlightRequest, createFlightRequestColumns } from '@/components/tables/flightRequestsColumns';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Textarea } from '@/components/ui/textarea';
 import { toastAfterDccAction } from '@/lib/dcc-toast';
 import { cn } from '@/lib/utils';
 import type { DccCallbackResult } from '@/types/dcc-callback';
@@ -37,6 +39,9 @@ export default function FlightRequestsTable() {
   const { isDark } = useTheme();
   const { t } = useTranslation();
   const { requireAuthorization } = useAuthorization();
+  const { role } = usePermissions();
+  // Only OPM-level roles decide internal approvals; a PIC only has the External tab.
+  const canSeeInternal = role === null || ['OPM', 'ADMIN', 'SUPERADMIN'].includes(role);
   const [tab, setTab] = useState<'internal' | 'external'>('internal');
   const [internalPending, setInternalPending] = useState(0);
   const [internalFilter, setInternalFilter] = useState('PENDING');
@@ -46,6 +51,8 @@ export default function FlightRequestsTable() {
   const [filterStatus, setFilterStatus] = useState('ALL');
   const [assigning, setAssigning] = useState<number | null>(null);
   const [denying, setDenying] = useState<number | null>(null);
+  const [denyTarget, setDenyTarget] = useState<number | null>(null);
+  const [denyNote, setDenyNote] = useState('');
   const [deleting, setDeleting] = useState<number | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
   const [updatingStatus, setUpdatingStatus] = useState<{ id: number; status: string } | null>(null);
@@ -66,6 +73,7 @@ export default function FlightRequestsTable() {
   const [archiving, setArchiving] = useState(false);
   const [pushingLog, setPushingLog] = useState(false);
 
+  const [filterClient, setFilterClient] = useState('ALL');
   const [planModal, setPlanModal] = useState<{ request_id: number; mission_id: string } | null>(null);
   const [plannings, setPlannings] = useState<Planning[]>([]);
   const [evalLoading, setEvalLoading] = useState(false);
@@ -91,19 +99,35 @@ export default function FlightRequestsTable() {
 
   useEffect(() => { load(); }, [load]);
 
+  // A PIC has no Internal tab: once the role is known, open External instead.
+  useEffect(() => {
+    if (role !== null && !canSeeInternal) setTab('external');
+  }, [role, canSeeInternal]);
+
   // Pending badge on the Internal pill — also shown while the External tab is open.
   useEffect(() => {
+    if (!canSeeInternal) return;
     axios.get('/api/operation/approvals', { params: { status: 'PENDING' } })
       .then(({ data }) => setInternalPending((data.items ?? []).length))
       .catch(() => {});
-  }, []);
+  }, [canSeeInternal]);
 
-  async function handleDeny(request_id: number) {
+  // Deny opens a dialog so the OPM can add a reason, which is sent to the client's DCC as `note`.
+  function handleDeny(request_id: number) {
+    setDenyNote('');
+    setDenyTarget(request_id);
+  }
+
+  async function confirmDeny() {
+    if (denyTarget === null) return;
+    const request_id = denyTarget;
+    const note = denyNote.trim();
+    setDenyTarget(null);
     setDenying(request_id);
     try {
       const { data } = await axios.post<{ code: number; dcc?: DccCallbackResult }>(
         '/api/planning/flight-requests/deny',
-        { request_id },
+        { request_id, ...(note ? { note } : {}) },
       );
       toastAfterDccAction(t('planning.flightRequests.denied'), data.dcc);
       setSelectedRequest(null);
@@ -323,8 +347,19 @@ export default function FlightRequestsTable() {
     onUpdateStatus: handleUpdateStatus,
   }), [deleting, updatingStatus, isDark, t]);
 
+  const clientOptions = useMemo(
+    () => [...new Set(requests.map((r) => r.client_name).filter((n): n is string => !!n))].sort((a, b) => a.localeCompare(b)),
+    [requests],
+  );
+  const hasUnassignedClient = useMemo(() => requests.some((r) => !r.client_name), [requests]);
+  const visibleRequests = useMemo(() => {
+    if (filterClient === 'ALL') return requests;
+    if (filterClient === 'NONE') return requests.filter((r) => !r.client_name);
+    return requests.filter((r) => `name:${r.client_name}` === filterClient);
+  }, [requests, filterClient]);
+
   const table = useReactTable({
-    data: requests,
+    data: visibleRequests,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
@@ -348,7 +383,12 @@ export default function FlightRequestsTable() {
         tab={tab}
         hideFilter={tab === 'internal'}
         onTabChange={setTab}
+        clients={clientOptions}
+        hasUnassignedClient={hasUnassignedClient}
+        filterClient={filterClient}
+        onClientChange={setFilterClient}
         internalPending={internalPending}
+        showInternal={canSeeInternal}
         onFilterChange={tab === 'internal' ? setInternalFilter : setFilterStatus}
         onRefresh={tab === 'internal' ? () => setInternalRefresh((n) => n + 1) : load}
       />
@@ -427,6 +467,33 @@ export default function FlightRequestsTable() {
         onOpenPlanModal={openPlanModal}
         onOpenLogModal={openLogModal}
       />
+
+      <AlertDialog open={denyTarget !== null} onOpenChange={(open) => { if (!open) setDenyTarget(null); }}>
+        <AlertDialogContent className={isDark ? 'bg-slate-900 border-slate-700 text-slate-100' : ''}>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('planning.flightRequests.denyTitle')}</AlertDialogTitle>
+            <AlertDialogDescription className={isDark ? 'text-slate-400' : ''}>
+              {t('planning.flightRequests.denyDesc')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <Textarea
+            value={denyNote}
+            onChange={(e) => setDenyNote(e.target.value)}
+            maxLength={500}
+            rows={3}
+            placeholder={t('planning.flightRequests.denyNotePlaceholder')}
+            className={isDark ? 'bg-slate-800 border-slate-600 text-slate-100' : ''}
+          />
+          <AlertDialogFooter>
+            <AlertDialogCancel className={isDark ? 'border-slate-600 text-slate-300 hover:bg-slate-700 bg-transparent cursor-pointer' : 'cursor-pointer'}>
+              {t('common.cancel')}
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeny} className="bg-red-600 cursor-pointer hover:bg-red-500 text-white">
+              {t('planning.flightRequests.denyConfirm')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog open={deleteConfirm !== null} onOpenChange={(open) => { if (!open) setDeleteConfirm(null); }}>
         <AlertDialogContent className={isDark ? 'bg-slate-900 border-slate-700 text-slate-100' : ''}>

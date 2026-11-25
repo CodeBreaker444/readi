@@ -1,5 +1,6 @@
 'use client'
 
+import { localizeText } from '@/lib/api-error-message';
 import { createShiftSchema } from '@/app/api/team/shift/schema'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -83,7 +84,7 @@ const onSubmit = async (data: CreateShiftInput) => {
     const result = res.data  
 
     if (!result.success) {
-      toast.error(result.error ?? 'Something went wrong')
+      toast.error(result.error ?? localizeText('Something went wrong'))
       return
     }
 
@@ -91,7 +92,7 @@ const onSubmit = async (data: CreateShiftInput) => {
     onSuccess(result.newShiftIds.length)
     setTimeout(() => handleClose(), 1500) 
   } catch (err: any) {
-    const msg = err.response?.data?.error || 'Network error. Please try again.'
+    const msg = err.response?.data?.error || localizeText('Network error. Please try again.')
     toast.error(msg)
   } finally {
     setIsSubmitting(false)

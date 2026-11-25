@@ -1,0 +1,96 @@
+---
+title: "Cron Job"
+description: "Tutti i job pianificati in background (Vercel Cron): pianificazioni e cosa fa ciascuno."
+---
+
+# Cron Job
+
+## Panoramica
+
+I job pianificati in background sono definiti in `vercel.json` ed eseguiti come Vercel Cron Job. Ogni job è protetto da un segreto condiviso (`CRON_SECRET`), quindi solo lo scheduler può avviarlo.
+
+**Schema di esecuzione:** tutti i job recuperano ogni owner attivo (`owner_active: 'Y'`) e li scorrono uno per uno, elaborando/inviando le notifiche per ciascun owner in modo indipendente. Un errore per un owner viene intercettato e registrato; non interrompe l'elaborazione degli altri owner.
+
+---
+
+## Riferimento delle pianificazioni
+
+| Job | Pianificazione (UTC) | Frequenza |
+|---|---|---|
+| `refresh-maintenance-days` | `0 */6 * * *` | Ogni 6 ore (00:00, 06:00, 12:00, 18:00) |
+| `check-component-expiration` | `0 */6 * * *` | Ogni 6 ore (00:00, 06:00, 12:00, 18:00) |
+| `check-maintenance-alerts` | `0 */6 * * *` | Ogni 6 ore (00:00, 06:00, 12:00, 18:00) |
+| `check-insurance-expiration` | `0 */6 * * *` | Ogni 6 ore (00:00, 06:00, 12:00, 18:00) |
+| `reset-email-counters` | `0 0 * * *` | Ogni giorno alle 00:00 |
+| `check-training-expiration` | `0 6 * * *` | Ogni giorno alle 06:00 |
+| `slot-approval-reminder` | `0 * * * *` | Ogni ora |
+| `slot-publish` | `*/5 * * * *` | Ogni 5 minuti |
+| `refresh-weather-forecasts` | `*/30 * * * *` | Ogni 30 minuti |
+
+Le pianificazioni sono definite in `vercel.json` nella radice del progetto e vengono valutate in UTC da Vercel Cron.
+
+---
+
+## Dettaglio dei job
+
+### refresh-maintenance-days
+
+- **Pianificazione:** `0 */6 * * *` (ogni 6 ore)
+- **Scopo:** Ricalcola i campi di conto alla rovescia della manutenzione di tipo "giorni rimanenti" per i sistemi/strumenti di ogni owner attivo.
+- **Invia email:** No — è un job di aggiornamento dati, non un job di notifica.
+
+### check-component-expiration
+
+- **Pianificazione:** `0 */6 * * *` (ogni 6 ore)
+- **Scopo:** Trova i componenti degli strumenti attivi la cui `expiration_date` è trascorsa e invia le notifiche di scadenza, raggruppate per owner. Non crea ticket di manutenzione.
+- **Invia email:** Sì, soggetto ai controlli di abilitazione del modulo/evento descritti in [Logica di business delle notifiche email](/docs/business-logic/email-notifications).
+
+### check-maintenance-alerts
+
+- **Pianificazione:** `0 */6 * * *` (ogni 6 ore)
+- **Scopo:** Valuta i trigger degli avvisi di manutenzione (ad es. soglie di utilizzo/cicli) per ogni owner e invia le email di avviso di manutenzione.
+- **Invia email:** Sì, soggetto all'interruttore aziendale `system_email_enabled` e alla configurazione per evento.
+
+### check-insurance-expiration
+
+- **Pianificazione:** `0 */6 * * *` (ogni 6 ore)
+- **Scopo:** Trova le polizze assicurative di droni/D-Flight in scadenza o già scadute per ogni owner e invia le email di promemoria di scadenza.
+- **Invia email:** Sì.
+
+### reset-email-counters
+
+- **Pianificazione:** `0 0 * * *` (ogni giorno, a mezzanotte)
+- **Scopo:** Azzera il `daily_email_count` di ogni owner e aggiorna `daily_email_count_reset_date` una volta al giorno, e svuota `email_limit_notification_sent_date` in modo che la notifica agli amministratori di limite raggiunto possa scattare di nuovo il giorno successivo. Salta gli owner già azzerati oggi (idempotente/sicuro da eseguire più di una volta).
+- **Invia email:** No — è l'azzeramento giornaliero del contatore del limite da cui dipendono gli altri job (vedi [Logica del limite giornaliero di email](/docs/business-logic/email-notifications)).
+
+### check-training-expiration
+
+- **Pianificazione:** `0 6 * * *` (ogni giorno, alle 06:00)
+- **Scopo:** Trova le certificazioni di formazione/corso in scadenza entro le soglie di promemoria configurate (30/14/7/3/1 giorni) per ogni owner e invia le email di certificazione di formazione in scadenza.
+- **Invia email:** Sì, soggetto a `training_email_enabled` e alla configurazione dell'evento `training_certification_expiring`. Dopo la modifica di `trainer_user_id`/proprietario del corso, anche il proprietario del corso (`training.trainer_user_id`) viene notificato, oltre ai ruoli/utenti configurati.
+
+### slot-approval-reminder
+
+- **Pianificazione:** `0 * * * *` (ogni ora)
+- **Scopo:** Trova i gruppi di slot che hanno ancora richieste di slot in sospeso e i cui **giorni di approvazione** includono il giorno della settimana di oggi **nel fuso orario proprio del gruppo** (il fuso orario del sito memorizzato sul gruppo di slot; i gruppi senza fuso orario contano come UTC). Un gruppo riceve il promemoria una volta per giorno locale, dalle 08:00 ora del sito: il job prima prende in carico il gruppo scrivendo la data locale di oggi in `slot_group.approval_reminded_on`, così un'esecuzione ripetuta o sovrapposta nello stesso giorno non lo invia mai due volte. Per ogni azienda invia un unico promemoria con l'elenco dei gruppi e il numero di richieste in attesa agli OPM dell'azienda (o ai suoi amministratori se non c'è alcun OPM). I gruppi senza richieste in sospeso vengono saltati.
+- **Invia email:** Sì, e una notifica in-app. L'email è soggetta al limite giornaliero di email dell'azienda; quando il limite è raggiunto l'email viene saltata ma la notifica in-app viene comunque creata. Vedi [Prenotazione slot](/docs/modules/slot-booking).
+
+### slot-publish
+
+- **Pianificazione:** `*/5 * * * *` (ogni 5 minuti)
+- **Scopo:** Trova i gruppi di slot il cui **orario di pubblicazione** pianificato è trascorso e i cui piloti non sono ancora stati avvisati. Prende in carico ciascun gruppo per primo, così due esecuzioni sovrapposte non notificano mai due volte, quindi notifica i piloti che possono vedere il gruppo: i membri dei suoi gruppi di piloti destinatari, oppure tutti i piloti attivi dell'azienda quando non ha un pubblico. La visibilità in sé non dipende da questo job: i piloti vedono un gruppo non appena il suo orario è trascorso.
+- **Invia email:** Sì, e una notifica in-app, soggetto al limite giornaliero di email dell'azienda. Vedi [Prenotazione slot](/docs/modules/slot-booking).
+
+### refresh-weather-forecasts
+
+- **Pianificazione:** `*/30 * * * *` (ogni 30 minuti)
+- **Scopo:** Mantiene aggiornate le previsioni meteo memorizzate per la prenotazione slot. Recupera di nuovo le località che qualcuno ha visualizzato nelle ultime 6 ore e la cui copia ha più di 30 minuti (fino a 20 per esecuzione), ed elimina le località che nessuno ha visualizzato per 24 ore. Le schermate leggono la previsione memorizzata e chiamano il servizio meteo solo quando una località non ha una copia o la copia è obsoleta. Vedi [Prenotazione slot](/docs/modules/slot-booking#weather).
+- **Invia email:** No.
+
+---
+
+## Aggiungere un nuovo cron job
+
+1. Crea il job e assicurati che verifichi il `CRON_SECRET` prima di svolgere qualsiasi altra operazione.
+2. Registra la sua pianificazione in `vercel.json` sotto `crons`.
+3. Aggiungi una riga alla tabella [Riferimento delle pianificazioni](#riferimento-delle-pianificazioni) e una voce corrispondente in [Dettaglio dei job](#dettaglio-dei-job) qui sopra.

@@ -1,0 +1,93 @@
+---
+title: "Codice di autorizzazione (PIN)"
+description: "Come funziona il PIN di autorizzazione, cosa succede se non è impostato e il flusso crittografico completo."
+---
+
+Ogni cambio di stato di una missione sulla Bacheca delle operazioni richiede un **PIN di autorizzazione crittografico**: un codice di 6 cifre che protegge una chiave privata usata per firmare digitalmente ogni transizione di stato.
+
+---
+
+## Cosa succede se il PIN non è impostato
+
+Se un utente prova a cambiare lo stato di una missione senza un PIN configurato, l'azione viene bloccata:
+
+> **"Authorization PIN not set up"** — HTTP 422
+
+L'utente deve andare in **Impostazioni → Sicurezza** e configurare il proprio PIN prima di poter eseguire qualsiasi cambio di stato delle missioni.
+
+<Warning>
+Non esiste alcuna scorciatoia. Senza un PIN, il trascinamento di una scheda missione sulla Bacheca delle operazioni viene annullato in silenzio dopo la restituzione dell'errore.
+</Warning>
+
+---
+
+## Impostare il PIN
+
+1. Vai in **Impostazioni → Sicurezza**
+2. Clicca su **Configura PIN di autorizzazione**
+3. Inserisci e conferma un PIN di 6 cifre
+4. La piattaforma genera una coppia di chiavi:
+   - **Chiave privata**: cifrata con AES-GCM usando il PIN, memorizzata in `user_authorization_keys.encrypted_private_key`
+   - **Chiave pubblica**: memorizzata in chiaro in `user_authorization_keys.public_key`
+   - **Salt + IV**: memorizzati per la derivazione della chiave
+
+Il PIN in sé non viene mai memorizzato: esiste solo in memoria durante la firma.
+
+---
+
+## Flusso completo: cambio di stato della missione
+
+```
+1. L'utente trascina la scheda della missione sulla Bacheca delle operazioni
+2. Viene attivato il controllo di autorizzazione (tipo di azione: avvio o completamento della missione)
+3. Si apre AuthorizationModal
+4. L'utente inserisce il PIN di 6 cifre
+5. Il frontend deriva la chiave (PIN + salt + IV tramite PBKDF2)
+6. Il frontend decifra la chiave privata (AES-GCM)
+7. Il frontend firma il JWT con la chiave privata decifrata
+   Payload: { action_type, entity_type, entity_id, label, timestamp }
+8. POST /api/authorization/transaction-sign
+   → transazione salvata nella tabella transaction_signs
+   → restituisce transaction_sign_id
+9. POST /api/operation/board/status
+   → pilot_mission.fk_mission_status_id aggiornato
+10. La scheda della missione si sposta nella nuova colonna
+```
+
+---
+
+## Tabelle del database
+
+### `user_authorization_keys`
+
+| Campo | Significato |
+|---|---|
+| `user_id` | Una coppia di chiavi per utente (univoca) |
+| `encrypted_private_key` | Cifrata con AES-GCM: non può essere decifrata senza il PIN |
+| `public_key` | Memorizzata in chiaro per la verifica della firma |
+| `salt` | Salt casuale per la derivazione della chiave |
+| `iv` | Vettore di inizializzazione per AES-GCM |
+| `key_fingerprint` | Hash breve per l'identificazione della chiave |
+
+### `transaction_signs`
+
+| Campo | Significato |
+|---|---|
+| `action_type` | `mission_start` o `mission_complete` |
+| `entity_type` | Sempre `mission` |
+| `entity_id` | Il `pilot_mission_id` che è stato modificato |
+| `jwt_token` | JWT firmato completo: verificabile rispetto alla chiave pubblica |
+| `payload_preview` | Istantanea JSON del contesto dell'azione |
+| `integrity_status` | `valid` / `invalid` |
+
+---
+
+## Scenari comuni
+
+| Scenario | Risultato |
+|---|---|
+| PIN non configurato | HTTP 422 — "Authorization PIN not set up". Vai in Impostazioni → Sicurezza |
+| PIN errato | La decifratura lato client fallisce. Finestra: "Incorrect PIN. Please try again." |
+| PIN corretto | La chiave privata viene decifrata, il JWT firmato, la transazione memorizzata e lo stato cambia |
+| L'utente dimentica il PIN | L'amministratore reimposta la coppia di chiavi dalla gestione utenti. Le vecchie transazioni restano in `transaction_signs` |
+| Ruolo ADMIN | Deve prima impersonare un OPM tramite l'header `x-opm-impersonate` |

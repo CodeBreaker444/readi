@@ -2,27 +2,40 @@ import 'server-only';
 
 import { prisma } from '@/lib/prisma';
 import type { DccCallbackResult } from '@/types/dcc-callback';
-import { getDccCallbackUrl } from './dcc-settings-service';
-
-const BODY_PREVIEW = 800;
-
-function truncateBody(text: string): string {
-  const t = text.trim();
-  if (t.length <= BODY_PREVIEW) return t;
-  return `${t.slice(0, BODY_PREVIEW)}…`;
-}
+import { resolveDccEndpoint } from './dcc-settings-service';
+import { sendDccRequest } from './dcc-http';
+import { enqueueFailedCallback } from './dcc-outbox-service';
 
 /**
  * Returns the external_mission_id the DCC system uses for callbacks,
  * by finding the flight_request linked to a given planning_id.
  */
 async function getExternalMissionIdForPlanning(planningId: number): Promise<string | null> {
-  const row = await prisma.flight_requests.findFirst({
+  return (await getFlightRequestForPlanning(planningId))?.external_mission_id ?? null;
+}
+
+interface LinkedRequest {
+  external_mission_id: string;
+  fk_client_id: number | null;
+}
+
+/** Latest flight request linked to a planning, with the client whose key sent it. */
+async function getFlightRequestForPlanning(planningId: number): Promise<LinkedRequest | null> {
+  return prisma.flight_requests.findFirst({
     where: { fk_planning_id: planningId },
     orderBy: { created_at: 'desc' },
-    select: { external_mission_id: true },
+    select: { external_mission_id: true, fk_client_id: true },
   });
-  return row?.external_mission_id ?? null;
+}
+
+/** Flight request linked to a mission via its planning (null if never requested externally). */
+async function getFlightRequestForMission(missionId: number): Promise<LinkedRequest | null> {
+  const row = await prisma.pilot_mission.findUnique({
+    where: { pilot_mission_id: missionId },
+    select: { fk_planning_id: true },
+  });
+  if (!row?.fk_planning_id) return null;
+  return getFlightRequestForPlanning(row.fk_planning_id);
 }
 
 /**
@@ -33,20 +46,37 @@ async function getExternalMissionIdForPlanning(planningId: number): Promise<stri
  * PMVD-generated UUID assigned at creation time).
  */
 export async function getExternalMissionIdForMission(missionId: number): Promise<string | null> {
+  return (await resolveMissionTarget(missionId)).externalId;
+}
+
+/**
+ * External id + the client whose callback URL should receive it.
+ * strict = the mission was requested through a client's API key, so the
+ * callback must never fall back to another client's / the org-level URL.
+ */
+async function resolveMissionTarget(
+  missionId: number,
+): Promise<{ externalId: string | null; clientId: number | null; strict: boolean }> {
   const row = await prisma.pilot_mission.findUnique({
     where: { pilot_mission_id: missionId },
-    select: { fk_planning_id: true, mission_code: true },
+    select: { fk_planning_id: true, mission_code: true, fk_client_id: true },
   });
 
-  if (!row) return null;
+  if (!row) return { externalId: null, clientId: null, strict: false };
 
   if (row.fk_planning_id) {
-    const externalId = await getExternalMissionIdForPlanning(row.fk_planning_id);
-    if (externalId) return externalId;
+    const request = await getFlightRequestForPlanning(row.fk_planning_id);
+    if (request) {
+      return {
+        externalId: request.external_mission_id,
+        clientId: request.fk_client_id,
+        strict: request.fk_client_id != null,
+      };
+    }
   }
 
   // Fallback: PMVD-initiated missions store their DCC ID in mission_code
-  return row.mission_code ?? null;
+  return { externalId: row.mission_code ?? null, clientId: row.fk_client_id ?? null, strict: false };
 }
 
 /**
@@ -54,13 +84,7 @@ export async function getExternalMissionIdForMission(missionId: number): Promise
  * third-party service .  
  */
 async function getExternalMissionIdFromFlightRequest(missionId: number): Promise<string | null> {
-  const row = await prisma.pilot_mission.findUnique({
-    where: { pilot_mission_id: missionId },
-    select: { fk_planning_id: true },
-  });
-
-  if (!row?.fk_planning_id) return null;
-  return getExternalMissionIdForPlanning(row.fk_planning_id);
+  return (await getFlightRequestForMission(missionId))?.external_mission_id ?? null;
 }
 
 /**
@@ -144,66 +168,37 @@ async function getDccDroneIdForMissionPlanning(missionPlanningId: number): Promi
 }
 
 
-async function dccPost(ownerId: number, path: string, body?: unknown): Promise<DccCallbackResult> {
-  const base = await getDccCallbackUrl(ownerId);
-  if (!base) {
-    return {
-      path,
-      outcome: 'skipped',
-      message: 'DCC integration not configured for this organization',
-    };
+interface DccTarget {
+  /** Client whose callback URL receives this call. */
+  clientId?: number | null;
+  /** True for requests that came in through a client's key: never fall back to the org URL. */
+  strict?: boolean;
+  /** Don't queue a retry if this fails. */
+  noRetry?: boolean;
+}
+
+async function dccPost(
+  ownerId: number,
+  path: string,
+  body?: unknown,
+  target: DccTarget = {},
+): Promise<DccCallbackResult> {
+  // strict = came in through a client's API key = an external request; the rest is created in Readi.
+  const resolved = await resolveDccEndpoint(ownerId, target.clientId, target.strict ? 'EXTERNAL' : 'INTERNAL');
+  if (!resolved.ok) {
+    return { path, outcome: 'skipped', message: resolved.reason };
   }
 
+  const { url: base, apiKey } = resolved.endpoint;
   const url = `${base.replace(/\/$/, '')}${path}`;
-  try {
-    console.log('dcc body :',body)
-    const authUser = process.env.DCC_AUTH_USERNAME ?? 'dcc';
-    const authPass = process.env.DCC_AUTH_PASSWORD ?? 'dcc';
-    const basicAuth = Buffer.from(`${authUser}:${authPass}`).toString('base64');
+  const result = await sendDccRequest(url, path, body, apiKey);
 
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Basic ${basicAuth}`,
-      },
-      body: body !== undefined ? JSON.stringify(body) : undefined,
-      signal: AbortSignal.timeout(10_000),
-    });
-
-    console.log('dcc response:', res.status, res.statusText, res.body);
-
-    const text = await res.text().catch(() => '');
-    const responseBody = text ? truncateBody(text) : undefined;
-
-    if (!res.ok) {
-      console.error(`[DCC] ${path} → HTTP ${res.status}: ${text.slice(0, 300)}`);
-      return {
-        path,
-        outcome: 'http_error',
-        message: `DCC returned an error`,
-        httpStatus: res.status,
-        responseBody,
-      };
-    }
-
-    console.info(`[DCC] ${path} → OK`);
-    return {
-      path,
-      outcome: 'success',
-      message: 'DCC accepted the callback',
-      httpStatus: res.status,
-      responseBody,
-    };
-  } catch (err: any) {
-    const message = err?.message ?? String(err);
-    console.error(`[DCC] ${path} → fetch error: ${message}`);
-    return {
-      path,
-      outcome: 'network_error',
-      message: `Request failed: ${message}`,
-    };
+  // Keep failures so they are retried by cron and can be resent manually.
+  // Not for calls whose caller already aborts on failure (a late retry would contradict that).
+  if ((result.outcome === 'http_error' || result.outcome === 'network_error') && !target.noRetry) {
+    await enqueueFailedCallback(ownerId, path, body, target, result);
   }
+  return result;
 }
 
 
@@ -216,9 +211,19 @@ export async function notifyDccAcceptance(
   planningId: number,
   externalMissionId?: string,
   missionPlanningId?: number,
+  requestId?: number,
 ): Promise<DccCallbackResult> {
   try {
-    const missionId = externalMissionId ?? await getExternalMissionIdForPlanning(planningId);
+    // When the caller knows the exact request (assign route), use it: a planning
+    // can be linked to requests from several clients.
+    const request = requestId
+      ? await prisma.flight_requests.findFirst({
+          where: { request_id: requestId, fk_owner_id: ownerId },
+          select: { external_mission_id: true, fk_client_id: true },
+        })
+      : await getFlightRequestForPlanning(planningId);
+    const missionId = externalMissionId ?? request?.external_mission_id ?? null;
+    const target: DccTarget = { clientId: request?.fk_client_id, strict: request?.fk_client_id != null };
     const path = `/dcc/missions/${missionId ?? 'unknown'}/acceptance`;
     if (!missionId) {
       console.warn('[DCC] acceptance: could not resolve external_mission_id for planning', planningId);
@@ -244,7 +249,7 @@ export async function notifyDccAcceptance(
       };
     }
 
-    return await dccPost(ownerId, `/dcc/missions/${missionId}/acceptance`, { droneId });
+    return await dccPost(ownerId, `/dcc/missions/${missionId}/acceptance`, { droneId }, target);
   } catch (err: any) {
     console.error('[DCC] notifyDccAcceptance error:', err?.message ?? err);
     return {
@@ -263,10 +268,11 @@ export async function notifyDccDenial(
   ownerId: number,
   externalMissionId: string,
   note?: string,
+  clientId?: number | null,
 ): Promise<DccCallbackResult> {
   const path = `/dcc/missions/${externalMissionId}/denial`;
   try {
-    return await dccPost(ownerId, path, { note: note ?? '' });
+    return await dccPost(ownerId, path, { note: note ?? '' }, { clientId, strict: clientId != null });
   } catch (err: any) {
     console.error('[DCC] notifyDccDenial error:', err?.message ?? err);
     return {
@@ -297,10 +303,11 @@ export async function isMissionRequestedByDcc(missionId: number): Promise<boolea
 export async function notifyDccExecutionForRequest(
   ownerId: number,
   externalMissionId: string,
+  clientId?: number | null,
 ): Promise<DccCallbackResult> {
   const path = `/dcc/missions/${externalMissionId}/execution`;
   try {
-    return await dccPost(ownerId, path);
+    return await dccPost(ownerId, path, undefined, { clientId, strict: clientId != null });
   } catch (err: any) {
     console.error('[DCC] notifyDccExecutionForRequest error:', err?.message ?? err);
     return { path, outcome: 'network_error', message: err?.message ?? String(err) };
@@ -319,10 +326,11 @@ export async function notifyDccTerminationForRequest(
   externalMissionId: string,
   result: 1 | 0 = 1,
   note?: string,
+  clientId?: number | null,
 ): Promise<DccCallbackResult> {
   const path = `/dcc/missions/${externalMissionId}/termination`;
   try {
-    return await dccPost(ownerId, path, { result, note: note ?? '' });
+    return await dccPost(ownerId, path, { result, note: note ?? '' }, { clientId, strict: clientId != null });
   } catch (err: any) {
     console.error('[DCC] notifyDccTerminationForRequest error:', err?.message ?? err);
     return { path, outcome: 'network_error', message: err?.message ?? String(err) };
@@ -335,10 +343,11 @@ export async function notifyDccTerminationForRequest(
  */
 export async function notifyDccExecution(missionId: number): Promise<DccCallbackResult> {
   try {
-    const [externalId, ownerId] = await Promise.all([
-      getExternalMissionIdFromFlightRequest(missionId),
+    const [request, ownerId] = await Promise.all([
+      getFlightRequestForMission(missionId),
       getOwnerIdForMission(missionId),
     ]);
+    const externalId = request?.external_mission_id ?? null;
     const path = `/dcc/missions/${externalId ?? 'unknown'}/execution`;
     if (!externalId) {
       return {
@@ -355,7 +364,10 @@ export async function notifyDccExecution(missionId: number): Promise<DccCallback
         message: 'Could not resolve owner for this operation',
       };
     }
-    return await dccPost(ownerId, `/dcc/missions/${externalId}/execution`);
+    return await dccPost(ownerId, `/dcc/missions/${externalId}/execution`, undefined, {
+      clientId: request?.fk_client_id,
+      strict: request?.fk_client_id != null,
+    });
   } catch (err: any) {
     console.error('[DCC] notifyDccExecution error:', err?.message ?? err);
     return {
@@ -377,10 +389,11 @@ export async function notifyDccTermination(
   note?: string,
 ): Promise<DccCallbackResult> {
   try {
-    const [externalId, ownerId] = await Promise.all([
-      getExternalMissionIdFromFlightRequest(missionId),
+    const [request, ownerId] = await Promise.all([
+      getFlightRequestForMission(missionId),
       getOwnerIdForMission(missionId),
     ]);
+    const externalId = request?.external_mission_id ?? null;
     const path = `/dcc/missions/${externalId ?? 'unknown'}/termination`;
     if (!externalId) {
       return {
@@ -397,7 +410,10 @@ export async function notifyDccTermination(
         message: 'Could not resolve owner for this operation',
       };
     }
-    return await dccPost(ownerId, `/dcc/missions/${externalId}/termination`, { result, note: note ?? '' });
+    return await dccPost(ownerId, `/dcc/missions/${externalId}/termination`, { result, note: note ?? '' }, {
+      clientId: request?.fk_client_id,
+      strict: request?.fk_client_id != null,
+    });
   } catch (err: any) {
     console.error('[DCC] notifyDccTermination error:', err?.message ?? err);
     return {
@@ -405,6 +421,32 @@ export async function notifyDccTermination(
       outcome: 'network_error',
       message: err?.message ?? String(err),
     };
+  }
+}
+
+/**
+ * Start / finish of a mission created inside Readi, in the same DCC structure used for
+ * external requests, so a client with only a callback URL still hears about them.
+ * IN_PROGRESS → /execution, COMPLETED → /termination (success), ABORTED → /termination (failure).
+ * Other statuses have no DCC equivalent (cancellation goes through the bulk cancel call).
+ * `missionRef` is the id the client already knows from the "new mission" call (the mission code).
+ */
+export async function notifyDccInternalMissionStatus(
+  ownerId: number,
+  clientId: number,
+  missionRef: string,
+  status: 'PLANNED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'ABORTED',
+  note?: string | null,
+): Promise<DccCallbackResult | null> {
+  const base = `/dcc/missions/${missionRef}`;
+  try {
+    if (status === 'IN_PROGRESS') return await dccPost(ownerId, `${base}/execution`, undefined, { clientId });
+    if (status === 'COMPLETED') return await dccPost(ownerId, `${base}/termination`, { result: 1, note: note ?? '' }, { clientId });
+    if (status === 'ABORTED') return await dccPost(ownerId, `${base}/termination`, { result: 0, note: note ?? '' }, { clientId });
+    return null;
+  } catch (err: any) {
+    console.error('[DCC] notifyDccInternalMissionStatus error:', err?.message ?? err);
+    return { path: base, outcome: 'network_error', message: err?.message ?? String(err) };
   }
 }
 
@@ -425,10 +467,11 @@ export interface DccMissionCreationPayload {
 export async function notifyDccMissionCreation(
   ownerId: number,
   payload: DccMissionCreationPayload,
+  clientId?: number | null,
 ): Promise<DccCallbackResult> {
   const path = '/dcc/missions';
   try {
-    return await dccPost(ownerId, path, payload);
+    return await dccPost(ownerId, path, payload, { clientId });
   } catch (err: any) {
     console.error('[DCC] notifyDccMissionCreation error:', err?.message ?? err);
     return { path, outcome: 'network_error', message: err?.message ?? String(err) };
@@ -442,10 +485,12 @@ export async function notifyDccMissionCreation(
 export async function notifyDccBulkCancellation(
   ownerId: number,
   missionIds: string[],
+  clientId?: number | null,
 ): Promise<DccCallbackResult> {
   const path = '/dcc/missions/cancel';
   try {
-    return await dccPost(ownerId, path, { missionIds });
+    // The caller aborts the cancellation if this fails, so never retry it later.
+    return await dccPost(ownerId, path, { missionIds }, { clientId, noRetry: true });
   } catch (err: any) {
     console.error('[DCC] notifyDccBulkCancellation error:', err?.message ?? err);
     return { path, outcome: 'network_error', message: err?.message ?? String(err) };
@@ -462,7 +507,7 @@ export async function notifyDccLogging(
   uri: string,
 ): Promise<DccCallbackResult> {
   try {
-    const externalId = await getExternalMissionIdForMission(missionId);
+    const { externalId, clientId, strict } = await resolveMissionTarget(missionId);
     const path = `/dcc/missions/${externalId ?? 'unknown'}/logging`;
     if (!externalId) {
       console.warn('[DCC] logging: no external_mission_id for mission', missionId);
@@ -472,7 +517,7 @@ export async function notifyDccLogging(
         message: 'No external_mission_id linked to this mission',
       };
     }
-    return await dccPost(ownerId, `/dcc/missions/${externalId}/logging`, { uri });
+    return await dccPost(ownerId, `/dcc/missions/${externalId}/logging`, { uri }, { clientId, strict });
   } catch (err: any) {
     console.error('[DCC] notifyDccLogging error:', err?.message ?? err);
     return {

@@ -1,5 +1,6 @@
 'use client';
 
+import { localizeText } from '@/lib/api-error-message';
 import {
     flexRender,
     getCoreRowModel,
@@ -308,7 +309,7 @@ export function TaskCompletionTable({
                     clientId={clientId}
                     onClose={closeModal}
                     onCreated={(planningId) => {
-                        toast.success(`Planning PLAN_${planningId} created!`);
+                        toast.success(localizeText('Planning PLAN_{{id}} created!', { id: planningId }));
                         closeModal();
                     }}
                 />

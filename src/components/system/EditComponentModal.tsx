@@ -1,5 +1,6 @@
 'use client';
 
+import { localizeText } from '@/lib/api-error-message';
 import { ModelSelectPager, usePagedModels } from "./ModelSelectPager";
 import LocationPicker from '@/components/system/LocationPicker';
 import { Button } from '@/components/ui/button';
@@ -289,7 +290,7 @@ export default function EditComponentModal({
 
   const handleStsSync = async () => {
     if (!selectedComponentId || !formData.drone_registration_code) {
-      toast.error('Component must be linked to D-Flight to sync STS declarations');
+      toast.error(localizeText('Component must be linked to D-Flight to sync STS declarations'));
       return;
     }
     setStsSyncing(true);
@@ -299,20 +300,20 @@ export default function EditComponentModal({
       });
       if (data.code === 1) {
         if (data.data.hasDeclarations) {
-          toast.success('STS declarations synced successfully');
+          toast.success(localizeText('STS declarations synced successfully'));
           // Update the STS declarations in the form
           const stsText = data.data.declarations
             .map((d: any) => `${d.stsType} (Start: ${d.startDate ? formatDateDDMMYYYY(d.startDate) : 'N/A'})`)
             .join('\n');
           setFormData(prev => ({ ...prev, sts_declarations: stsText }));
         } else {
-          toast.info('No STS declarations found for this drone');
+          toast.info(localizeText('No STS declarations found for this drone'));
         }
       } else {
-        toast.error(data.message || 'Failed to sync STS declarations');
+        toast.error(data.message || localizeText('Failed to sync STS declarations'));
       }
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to sync STS declarations');
+      toast.error(error.response?.data?.message || localizeText('Failed to sync STS declarations'));
     } finally {
       setStsSyncing(false);
     }

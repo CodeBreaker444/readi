@@ -1,5 +1,6 @@
 'use client';
 
+import { localizeText } from '@/lib/api-error-message';
 import { useAuthorization } from '@/components/authorization/AuthorizationProvider';
 import { GutmaPreviewPanel } from '@/components/control-center/GutmaPreviewPanel';
 import { Badge } from '@/components/ui/badge';
@@ -164,7 +165,7 @@ export function FlytbaseFlights({ isActive = true, selectedOrganization, listCon
         setCanArchive(true);
       }
     } catch (err: any) {
-      const msg = err?.message ?? 'Failed to load flight log.';
+      const msg = err?.message ?? localizeText('Failed to load flight log.');
       setPreviewError(msg);
       setPreview(null);
     } finally {

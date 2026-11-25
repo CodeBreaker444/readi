@@ -7,6 +7,9 @@ import { AlertCircle, CheckCircle2, ExternalLink, Loader2, Trash2 } from 'lucide
 export interface FlightRequest {
   request_id: number;
   external_mission_id: string;
+  client_name?: string | null;
+  fk_client_id?: number | null;
+  deny_note?: string | null;
   mission_type: string | null;
   target: string | null;
   localization: any;
@@ -98,6 +101,12 @@ export function createFlightRequestColumns(handlers: FlightRequestColumnHandlers
       ),
     },
     {
+      id: 'client_name',
+      header: t('planning.flightRequests.columns.client'),
+      accessorKey: 'client_name',
+      cell: ({ getValue }) => getValue<string>() ?? '—',
+    },
+    {
       id: 'mission_type',
       header: t('planning.flightRequests.columns.type'),
       accessorKey: 'mission_type',
@@ -183,6 +192,7 @@ export function createFlightRequestColumns(handlers: FlightRequestColumnHandlers
 
             {/* State progression buttons */}
             {showStateButtons && (
+              <FeatureGate feature="operation_flight_requests" require="edit">
               <>
                 {r.dcc_status !== 'IN_PROGRESS' && (
                   <Button
@@ -217,6 +227,7 @@ export function createFlightRequestColumns(handlers: FlightRequestColumnHandlers
                   {t('planning.flightRequests.statuses.ISSUE')}
                 </Button>
               </>
+              </FeatureGate>
             )}
 
             {/* Delete */}

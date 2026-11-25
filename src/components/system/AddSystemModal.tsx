@@ -11,7 +11,10 @@ import { useTheme } from '@/components/useTheme';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
+import { EMPTY_ZONES, hasZones, OperationZones } from '@/lib/operation-zones';
+import { Fence } from 'lucide-react';
 import LocationPicker from './LocationPicker';
+import OperationZonesEditor from './OperationZonesEditor';
 
 const INITIAL_FORM = {
   tool_code: '', tool_description: '',
@@ -31,11 +34,15 @@ export default function AddSystemModal({ open, onClose, onSuccess, models, clien
   const [formData, setFormData] = useState(INITIAL_FORM);
   const [files, setFiles] = useState<File[]>([]);
   const [codeError, setCodeError] = useState(false);
+  const [tab, setTab] = useState<'details' | 'zones'>('details');
+  const [zones, setZones] = useState<OperationZones>(EMPTY_ZONES);
 
-  useEffect(() => { if (open) { setFormData(INITIAL_FORM); setFiles([]); setCodeError(false); } }, [open]);
+  useEffect(() => { if (open) { setFormData(INITIAL_FORM); setFiles([]); setCodeError(false); setTab('details'); setZones(EMPTY_ZONES); } }, [open]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    // Validation errors refer to fields on the Details tab, so make sure the user can see them.
+    setTab('details');
 
     if (formData.latitude) {
       const lat = Number(formData.latitude);
@@ -76,6 +83,7 @@ export default function AddSystemModal({ open, onClose, onSuccess, models, clien
         longitude: formData.longitude ? Number(formData.longitude) : null,
         locationPseudoName: formData.locationPseudoName || null,
         activationDate: formData.activation_date || null,
+        operationZones: hasZones(zones) ? zones : null,
       };
       formPayload.append('data', JSON.stringify(payload));
       files.forEach(f => formPayload.append('files', f));
@@ -118,8 +126,41 @@ export default function AddSystemModal({ open, onClose, onSuccess, models, clien
         <DialogHeader className={`border-b pb-3 ${isDark ? 'border-slate-700/60' : 'border-gray-100'}`}>
           <DialogTitle className={isDark ? 'text-white' : ''}>{t('systems.components.addSystem.title')}</DialogTitle>
         </DialogHeader>
+        <div className={`flex gap-1 p-1 rounded-lg w-fit ${isDark ? 'bg-slate-900' : 'bg-gray-100'}`} role="tablist">
+          {([
+            ['details', t('systems.zones.tabDetails', 'Details')],
+            ['zones', t('systems.zones.tabZones', 'Operation zones (optional)')],
+          ] as const).map(([id, label]) => (
+            <button key={id} type="button" role="tab" aria-selected={tab === id} onClick={() => setTab(id)}
+              className={`flex items-center gap-1.5 cursor-pointer rounded-md px-3 py-1.5 text-xs font-medium transition-all ${tab === id
+                ? (isDark ? 'bg-slate-700 text-white' : 'bg-white text-slate-900 shadow-sm')
+                : (isDark ? 'text-slate-400 hover:text-slate-200' : 'text-gray-500 hover:text-gray-700')}`}>
+              {id === 'zones' && <Fence className="h-3.5 w-3.5" />}
+              {label}
+              {id === 'zones' && hasZones(zones) && (
+                <span className="rounded-full bg-violet-600 px-1.5 text-[10px] text-white">{zones.zones.length + (zones.perimeter ? 1 : 0)}</span>
+              )}
+            </button>
+          ))}
+        </div>
+
         <form onSubmit={handleSubmit} className="space-y-5">
 
+          {tab === 'zones' && (
+            <div>
+              <p className={`mb-2 text-xs ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
+                {t('systems.zones.intro', 'Define green (safe), red (restricted) and unsurveyed (grey) zones plus the operational perimeter of this system. They are overlaid on flight requests to warn about conflicts. Optional.')}
+              </p>
+              <OperationZonesEditor
+                value={zones}
+                onChange={setZones}
+                isDark={isDark}
+                focus={formData.latitude && formData.longitude ? { lat: Number(formData.latitude), lng: Number(formData.longitude) } : null}
+              />
+            </div>
+          )}
+
+          <div className={tab === 'details' ? 'space-y-5' : 'hidden'}>
           <div>
             <p className={sectionLabelCls}>{t('systems.components.addSystem.sections.basicInfo')}</p>
             <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
@@ -230,6 +271,7 @@ export default function AddSystemModal({ open, onClose, onSuccess, models, clien
                 )}
               </div>
             </div>
+          </div>
           </div>
 
           <div className={`flex justify-end gap-2 pt-2 border-t ${isDark ? 'border-slate-700/60' : 'border-gray-100'}`}>

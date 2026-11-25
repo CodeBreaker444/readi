@@ -14,7 +14,7 @@ import { RouteLoadingOverlay, RouteLoadingProvider } from './RouteLoading';
 import Sidebar from './Sidebar';
 import TopBar from './TopBar';
 import { useTheme } from './useTheme';
-import { enrichApiErrorBody } from '@/lib/api-error-message';
+import { enrichApiErrorBody, localizeApiBody } from '@/lib/api-error-message';
 
 interface ClientLayoutWrapperProps {
   children: React.ReactNode;
@@ -72,12 +72,18 @@ const ClientLayoutWrapper: React.FC<ClientLayoutWrapperProps> = ({
 
   useEffect(() => {
     interceptorRef.current = axios.interceptors.response.use(
-      (response) => response,
+      (response) => {
+        // Show server messages in the language the user has selected at this moment.
+        localizeApiBody(response?.data);
+        return response;
+      },
       (error) => {
         if (error?.response?.status === 401 && !isAuthPage) {
           handleExpiredSession();
         }
         enrichApiErrorBody(error?.response?.data);
+        const localized = error?.response?.data?.message;
+        if (typeof localized === 'string' && localized) error.message = localized;
         return Promise.reject(error);
       }
     );

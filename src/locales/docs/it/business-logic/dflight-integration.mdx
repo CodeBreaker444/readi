@@ -1,0 +1,106 @@
+---
+title: "Integrazione D-Flight e importazione droni"
+description: "Come collegare D-Flight, visualizzare la tua flotta D-Flight, importare i droni in Readi e mantenerli sincronizzati."
+---
+
+D-Flight è la piattaforma USSP italiana. Quando un'organizzazione ha D-Flight abilitato, Readi si collega ad esso per recuperare i droni registrati e per richiedere l'autorizzazione al volo per le missioni (vedi [Autorizzazione missioni D-Flight](/docs/business-logic/dflight-authorization)).
+
+La voce **D-Flight** compare nella barra laterale per gli utenti **Admin, OPM e Super Admin**, e solo quando D-Flight è abilitato per l'azienda (impostato sul record aziendale da un Super Admin).
+
+---
+
+## Collegare D-Flight
+
+Vai su **D-Flight → Impostazioni** e compila la connessione:
+
+| Campo | Note |
+|---|---|
+| URL base | Indirizzo dell'API D-Flight |
+| Nome utente | Obbligatorio |
+| Password | Cifrata a riposo. Lascia vuoto in modifica per mantenere quella attuale |
+| Client ID | Obbligatorio |
+| Codice operatore EASA | Usato come ID operatore di riserva quando D-Flight non ne restituisce uno |
+| Certificato PFX + password | Certificato client facoltativo |
+
+È richiesto almeno un metodo di autenticazione: **una password, oppure un certificato PFX con la sua password**. La password è obbligatoria la prima volta che salvi.
+
+<Warning>
+Finché queste impostazioni non vengono salvate, la pagina Flotta mostra "D-Flight non configurato" e ogni autorizzazione di missione viene saltata in silenzio.
+</Warning>
+
+---
+
+## Flotta D-Flight
+
+**D-Flight → Flotta** elenca ogni drone attivo registrato in D-Flight per il tuo account e abbina ciascuno a un componente drone Readi **tramite numero di serie**.
+
+| Scheda | Significato |
+|---|---|
+| Droni D-Flight Totali | Droni trovati in D-Flight |
+| Collegati a Readi | Abbinati a un componente Readi esistente |
+| Non presenti in Readi | In D-Flight ma non ancora importati |
+| Solo ReADI | Componenti drone Readi attivi senza corrispondenza in D-Flight |
+
+Ogni riga mostra il nome D-Flight, il sistema e il componente Readi, il numero di serie, il **DRC** (l'ID drone D-Flight), il modello e lo stato, oltre all'azione disponibile: **Importa** per i droni non collegati, **Sincronizza** per quelli collegati.
+
+---
+
+## Importare un drone
+
+Usa **Importa** su un drone non collegato per crearlo in Readi. Il modulo è precompilato con i dati di D-Flight (incluse marca/modello e classe UAS, dove disponibili).
+
+### 1. Scegli il sistema
+
+| Opzione | Cosa succede |
+|---|---|
+| **Crea nuovo sistema** | Richiede un **Codice Sistema** univoco e un **Cliente**. Il nuovo sistema viene contrassegnato come proveniente da un'importazione D-Flight |
+| **Seleziona sistema esistente** | Il drone viene aggiunto come componente di quel sistema |
+
+### 2. Componente e modello
+
+- **Nome/codice componente** e **Numero di serie** (obbligatori). Il numero di serie deve essere univoco nella tua organizzazione (senza distinzione tra maiuscole e minuscole).
+- **Marca / Modello** devono esistere nel tuo registro dei modelli. Se non viene trovata alcuna corrispondenza ti viene chiesto di crearlo con **Nuovo Modello**.
+- I numeri di serie UAS/GCS, le classi del drone, l'assicurazione (nome, compagnia, data di scadenza, destinatari degli avvisi, giorni di preavviso, predefinito 30) e il codice QR vengono riportati.
+
+### 3. Certificazioni
+
+Le autorizzazioni ENAC e le dichiarazioni STS vengono **inserite manualmente**: D-Flight non le espone per l'importazione.
+
+### Cosa viene creato
+
+- Un componente **DRONE**, stato **Operational**, con l'ID D-Flight memorizzato come **Drone Registration Code**.
+- Un record di assicurazione, se sono stati forniti i dettagli assicurativi.
+- Dopo l'importazione, Readi recupera da D-Flight le **dichiarazioni STS** del drone e le memorizza sul componente (STS-01 / STS-02 e data di inizio). Se questo passaggio fallisce, l'importazione riesce comunque.
+
+L'importazione richiede il permesso di visualizzare la configurazione e di creare sistemi. Errori come "System code already exists" o "Component serial number already exists" vengono mostrati nel modulo.
+
+---
+
+## Sincronizzare un drone esistente
+
+Per un drone già collegato tramite numero di serie, **Sincronizza** recupera di nuovo i dati D-Flight e **sovrascrive** i valori sincronizzati in precedenza sul componente Readi:
+
+- Drone Registration Code (DRC) e timestamp di sincronizzazione
+- Codice QR, numeri di serie UAS e GCS
+- Classi del drone (mantenute invariate se D-Flight non ne restituisce)
+- Assicurazione (creata o aggiornata)
+
+<Warning>
+La sincronizzazione è bloccata a meno che il componente sia **Operational**. Un componente in manutenzione o scaduto riceve: "Component must be Operational to sync from D-Flight".
+</Warning>
+
+Le dichiarazioni STS possono anche essere aggiornate su richiesta per un componente collegato, ed è possibile scaricare il PDF della dichiarazione D-Flight.
+
+---
+
+## Avvisi di scadenza dell'assicurazione
+
+L'assicurazione registrata su un drone importato alimenta la notifica di scadenza dell'assicurazione (vedi [Cron Job](/docs/business-logic/cron-jobs)), inviata ai destinatari degli avvisi configurati il numero di giorni configurato prima della scadenza.
+
+---
+
+## Correlati
+
+- [Autorizzazione missioni D-Flight](/docs/business-logic/dflight-authorization)
+- [Riferimento dei parametri](/docs/business-logic/parameter-reference): campi usati dalla sincronizzazione D-Flight
+- [Modulo Manutenzione](/docs/business-logic/maintenance-module)

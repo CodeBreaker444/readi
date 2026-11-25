@@ -1,10 +1,11 @@
 'use client';
 
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { SlotCandidate, SlotCandidates } from '@/config/types/slot-booking';
 import { cn } from '@/lib/utils';
 import axios from 'axios';
-import { AlertTriangle, Star } from 'lucide-react';
+import { AlertTriangle, Check, ChevronDown, Search, Star } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -13,8 +14,99 @@ import { apiMsg, Btn, ErrorBlock, FlightChip, FlightWarning, heading, inputCls, 
 
 const BASE = '/api/operation/slot-booking';
 
-const optionText = (c: SlotCandidate, t: (k: string, o?: Record<string, unknown>) => string) =>
-  `${c.name}${c.expert ? ' ★' : ''} · ${t('slotBooking.assign.hoursShort', { hours: c.hours90 })} · ${t('slotBooking.assign.scoreShort', { score: c.score })} · ${c.flight.cycleHours}/${c.flight.limitHours ?? t('slotBooking.flight.na')}${c.flight.level === 'over' ? ' ⚠' : c.flight.level === 'warn' ? ' !' : ''}`;
+/** Styled pilot dropdown: searchable, grouped, with avatar, hours/score and flight-limit chip per pilot. */
+function PilotSelect({
+  isDark,
+  value,
+  onChange,
+  groups,
+  placeholder,
+}: {
+  isDark: boolean;
+  value: string;
+  onChange: (v: string) => void;
+  groups: Array<{ label: string; items: SlotCandidate[]; disabled?: boolean }>;
+  placeholder: string;
+}) {
+  const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
+  const [q, setQ] = useState('');
+  const all = groups.flatMap((g) => g.items);
+  const current = all.find((c) => String(c.userId) === value) ?? null;
+  const needle = q.trim().toLowerCase();
+  const shown = groups
+    .map((g) => ({ ...g, items: needle ? g.items.filter((c) => [c.name, c.email ?? '', c.role ?? ''].some((v) => v.toLowerCase().includes(needle))) : g.items }))
+    .filter((g) => g.items.length > 0);
+  const line = isDark ? 'border-white/[0.08]' : 'border-gray-100';
+
+  return (
+    <Popover open={open} onOpenChange={(o) => { setOpen(o); if (!o) setQ(''); }}>
+      <PopoverTrigger asChild>
+        <button type="button" className={cn(inputCls(isDark), 'h-11 flex items-center justify-between gap-2 cursor-pointer text-left')}>
+          {current ? (
+            <span className="flex items-center gap-2 min-w-0">
+              <Avatar person={current} size={24} />
+              <span className="truncate text-sm font-medium">{current.name}</span>
+              {current.expert && <Star size={11} className="text-amber-500 shrink-0" />}
+            </span>
+          ) : (
+            <span className="truncate opacity-60">{placeholder}</span>
+          )}
+          <ChevronDown size={14} className={cn('shrink-0 transition-transform opacity-60', open && 'rotate-180')} />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent
+        align="start"
+        className={cn('w-(--radix-popover-trigger-width) min-w-72 p-0 overflow-hidden', isDark && 'bg-[#0f1320] border-white/[0.1] text-white')}
+      >
+        <div className={cn('relative p-2 border-b', line)}>
+          <Search size={13} className={cn('absolute left-4.5 top-1/2 -translate-y-1/2 pointer-events-none', muted(isDark))} />
+          <input autoFocus className={cn(inputCls(isDark), 'pl-8 h-8 text-xs')} value={q} onChange={(e) => setQ(e.target.value)} placeholder={t('slotBooking.pilotGroups.searchUsers')} />
+        </div>
+        <div className="max-h-72 overflow-y-auto p-1.5 space-y-1">
+          {shown.length === 0 && <p className={cn('py-6 text-center text-xs', muted(isDark))}>{t('slotBooking.pilotGroups.noUsers')}</p>}
+          {shown.map((g) => (
+            <div key={g.label}>
+              <div className={cn('px-2 pt-1.5 pb-1 text-[10px] font-semibold uppercase tracking-wider', muted(isDark))}>{g.label}</div>
+              {g.items.map((c) => {
+                const on = String(c.userId) === value;
+                return (
+                  <button
+                    key={c.userId}
+                    type="button"
+                    disabled={g.disabled}
+                    onClick={() => { onChange(String(c.userId)); setOpen(false); setQ(''); }}
+                    className={cn(
+                      'w-full flex items-center gap-2.5 rounded-md px-2 py-1.5 text-left transition-colors',
+                      g.disabled
+                        ? 'opacity-50 cursor-not-allowed'
+                        : cn('cursor-pointer', on ? 'bg-violet-600 text-white' : isDark ? 'hover:bg-white/[0.08]' : 'hover:bg-violet-50'),
+                    )}
+                  >
+                    <Avatar person={c} size={30} />
+                    <span className="min-w-0 flex-1">
+                      <span className="flex items-center gap-1 text-xs font-medium">
+                        <span className="truncate">{c.name}</span>
+                        {c.expert && <Star size={10} className={cn('shrink-0', on ? 'text-white' : 'text-amber-500')} />}
+                      </span>
+                      <span className={cn('block text-[11px] truncate', on ? 'text-white/80' : muted(isDark))}>
+                        {g.disabled && c.collision
+                          ? c.collision
+                          : `${t('slotBooking.assign.hoursShort', { hours: c.hours90 })} · ${t('slotBooking.assign.scoreShort', { score: c.score })}`}
+                      </span>
+                    </span>
+                    {!g.disabled && <FlightChip flight={c.flight} isDark={isDark} />}
+                    {on && <Check size={14} className="shrink-0" />}
+                  </button>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
 
 /**
  * "Assign pilot" dropdown for one slot: pilots who asked for it come first, then free pilots (experts first when the
@@ -122,29 +214,17 @@ export function AssignPicker({ slotId, isDark, onChanged }: { slotId: number; is
         <p className={cn('text-xs', muted(isDark))}>{t('slotBooking.assign.none')}</p>
       ) : (
         <>
-          <select
-            className={inputCls(isDark)}
+          <PilotSelect
+            isDark={isDark}
             value={selected}
-            onChange={(e) => { setSelected(e.target.value); setConfirmTough(false); }}
-            aria-label={t('slotBooking.assign.choose')}
-          >
-            <option value="">{t('slotBooking.assign.choose')}</option>
-            {requested.length > 0 && (
-              <optgroup label={t('slotBooking.assign.groupRequested')}>
-                {requested.map((c) => <option key={c.userId} value={c.userId}>{optionText(c, t)}</option>)}
-              </optgroup>
-            )}
-            {free.length > 0 && (
-              <optgroup label={t('slotBooking.assign.groupAvailable')}>
-                {free.map((c) => <option key={c.userId} value={c.userId}>{optionText(c, t)}</option>)}
-              </optgroup>
-            )}
-            {blockedOnes.length > 0 && (
-              <optgroup label={t('slotBooking.assign.groupBlocked')}>
-                {blockedOnes.map((c) => <option key={c.userId} value={c.userId} disabled>{optionText(c, t)}</option>)}
-              </optgroup>
-            )}
-          </select>
+            placeholder={t('slotBooking.assign.choose')}
+            onChange={(v) => { setSelected(v); setConfirmTough(false); }}
+            groups={[
+              { label: t('slotBooking.assign.groupRequested'), items: requested },
+              { label: t('slotBooking.assign.groupAvailable'), items: free },
+              { label: t('slotBooking.assign.groupBlocked'), items: blockedOnes, disabled: true },
+            ]}
+          />
 
           {chosen && (
             <div className={cn('rounded-lg border p-3 flex items-start gap-3', isDark ? 'border-white/[0.08]' : 'border-gray-200')}>

@@ -7,6 +7,8 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 interface PermissionsContextValue {
   loading: boolean;
   isManager: boolean;
+  role: string | null;
+  userId: number | null;
   access: (feature: FeatureKey) => AccessLevel | null;
   canEdit: (feature: FeatureKey) => boolean;
   canDelete: (feature: FeatureKey) => boolean;
@@ -16,6 +18,8 @@ interface PermissionsContextValue {
 const PermissionsContext = createContext<PermissionsContextValue>({
   loading: true,
   isManager: false,
+  role: null,
+  userId: null,
   access: () => null,
   canEdit: () => false,
   canDelete: () => false,
@@ -31,6 +35,8 @@ interface PermissionsProviderProps {
 export function PermissionsProvider({ children, enabled = true }: PermissionsProviderProps) {
   const [permissions, setPermissions] = useState<Partial<Record<FeatureKey, AccessLevel | null>>>({});
   const [isManager, setIsManager] = useState(false);
+  const [role, setRole] = useState<string | null>(null);
+  const [userId, setUserId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -44,6 +50,8 @@ export function PermissionsProvider({ children, enabled = true }: PermissionsPro
       if (res.data?.code === 1) {
         setPermissions(res.data.data.permissions ?? {});
         setIsManager(res.data.data.isManager ?? false);
+        setRole(res.data.data.role ?? null);
+        setUserId(res.data.data.userId ?? null);
       }
     }).catch(() => {
       // Fail closed: an empty map means every feature resolves to no-access.
@@ -56,6 +64,8 @@ export function PermissionsProvider({ children, enabled = true }: PermissionsPro
   const value: PermissionsContextValue = {
     loading,
     isManager,
+    role,
+    userId,
     access: (feature) => permissions[feature] ?? null,
     canEdit: (feature) => canEditFeature(permissions[feature]),
     canDelete: (feature) => canDeleteFeature(permissions[feature], isManager),

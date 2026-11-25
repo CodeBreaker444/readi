@@ -238,6 +238,21 @@ Has two tabs:
 - **Internal:** missions created by your pilots that need OPM approval. Approve, or deny with an optional reason. Filter by All, Pending, Approved or Denied.
 - **External:** requests from outside systems and clients (see [DCC Integration](/docs/business-logic/dcc-integration) and [Client Portal](/docs/modules/client-portal)). Requests are counted as New, Acknowledged or Assigned. An OPM can **Move to Planning** (assign it to a planning mission and a plan), or deny it.
 
+### Operation zone warnings
+
+If the request has a waypoint, Readi checks it against the **operation zones** of the systems assigned to the request's client (see [Systems](/docs/modules/systems)). Open the request to see the result at the top of the **Details** and **Action** tabs: green when the waypoint is within the zones, amber when it is outside the perimeter, in an unsurveyed zone or in no green zone, and red when it is in a red zone or near a red line. The **Location** tab draws the zones and perimeter around the waypoint. A warning does not block the request, it tells you what to check before you acknowledge or plan it.
+
+### What a pilot (PIC) can do here
+
+A PIC sees **Flight Requests** in the menu and can work on the **External** tab, according to the access given in the permission matrix (**Operation → Flight Requests**):
+
+- **Read-only (R):** the PIC can see the requests but has no action buttons.
+- **Read and write (R · W):** the PIC can **Acknowledge** a new request, **Move to Planning**, set it **In Progress**, **Completed** or **Issue**, and push the Control Center log.
+- **Deny is not available to a PIC.** Only OPM-level roles can deny a request, and the Deny button is hidden for a PIC.
+- The **Internal** tab (approvals) stays with OPMs and admins. A PIC follows the approval of their own missions on the Mission Table.
+
+On the **Mission Table**, a PIC who is not a manager can only **add themselves** as the pilot of a PLANNED mission that has no pilot yet. A PIC cannot assign another pilot, and cannot change a mission's pilot once one is set (the batch **Set pilot** list shows only the PIC). Managers, OPMs and admins keep full control. The message is shown in the language selected in the app.
+
 ---
 
 ## Permissions

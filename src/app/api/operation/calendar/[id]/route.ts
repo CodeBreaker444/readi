@@ -2,6 +2,7 @@ import { notifyDccBulkCancellation } from '@/backend/services/mission/dcc-callba
 import { deleteOperationCalendarEntry, lookupOperationMissionCode } from '@/backend/services/operation/operation-calendar-service'
 import { revertMissionMaintenance } from '@/backend/services/operation/maintenance-cycle-service'
 import { internalError } from '@/lib/api-error'
+import { prisma } from '@/lib/prisma'
 import { requireFeatureAccess, requirePermission } from '@/lib/auth/api-auth'
 import { E } from '@/lib/error-codes'
 import { NextRequest, NextResponse } from 'next/server'
@@ -28,7 +29,11 @@ export async function DELETE(
     // Notify DCC first — if it fails, abort the cancellation entirely
     let dcc
     if (dccId) {
-      dcc = await notifyDccBulkCancellation(session!.user.ownerId, [dccId])
+      const mission = await prisma.pilot_mission.findFirst({
+        where: { pilot_mission_id: operationId, fk_owner_id: session!.user.ownerId },
+        select: { fk_client_id: true },
+      })
+      dcc = await notifyDccBulkCancellation(session!.user.ownerId, [dccId], mission?.fk_client_id)
       if (dcc.outcome === 'http_error' || dcc.outcome === 'network_error') {
         return NextResponse.json(
           { success: false, error: `DCC rejected the cancellation — ${dcc.message}. Operation not deleted.`, dcc },

@@ -1,6 +1,7 @@
 'use client';
 
 import { useAuthorization } from '@/components/authorization/AuthorizationProvider';
+import { usePermissions } from '@/components/permissions/PermissionsProvider';
 import type { DFlightTrajectoryCircle } from '@/config/types/operation';
 import GeneralCommunicationDialog from '@/components/operation/GeneralCommunicationDialog';
 import ImportOperationDialog from '@/components/operation/ImportOperationDialog';
@@ -119,6 +120,7 @@ export default function OperationsPage() {
   const { timezone } = useTimezone();
   const { t } = useTranslation();
   const { requireAuthorization } = useAuthorization();
+  const { role: currentRole, userId: currentUserId, isManager: currentIsManager } = usePermissions();
 
   const [operations, setOperations] = useState<Operation[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -258,6 +260,10 @@ const table = useReactTable({
 });
 
   const selectedRows = table.getSelectedRowModel().rows.map((r) => r.original);
+  // A PIC (non-manager) can only assign themselves; the API enforces the same rule.
+  const batchPilots = currentRole === 'PIC' && !currentIsManager
+    ? pilots.filter((p) => p.user_id === currentUserId)
+    : pilots;
 
   async function handleBatchDelete() {
     if (!selectedRows.length) return;
@@ -298,11 +304,21 @@ const table = useReactTable({
       toast.warning(t('operations.table.toast.abortedCannotUpdate'));
       return;
     }
+    // Aborting asks for a reason; it is stored on the mission and sent to the client's status URL.
+    let abortReason: string | undefined;
+    if (status === 'ABORTED') {
+      const input = window.prompt(t('operations.table.toast.abortPrompt'));
+      if (input === null) return; // cancelled
+      abortReason = input.trim() || undefined;
+    }
     setBatchUpdating(true);
     try {
       await Promise.all(
         eligibleRows.map((op) =>
-          axios.put(`/api/operation/${op.pilot_mission_id}`, { status_name: status })
+          axios.put(`/api/operation/${op.pilot_mission_id}`, {
+            status_name: status,
+            ...(abortReason ? { abort_reason: abortReason } : {}),
+          })
         )
       );
       setOperations((prev) =>
@@ -459,7 +475,7 @@ const table = useReactTable({
           <OperationsBatchBar
             isDark={isDark}
             selectedCount={selectedRows.length}
-            pilots={pilots}
+            pilots={batchPilots}
             batchDeleting={batchDeleting}
             batchUpdating={batchUpdating}
             batchSettingPilot={batchSettingPilot}

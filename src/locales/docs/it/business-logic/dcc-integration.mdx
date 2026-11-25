@@ -1,0 +1,179 @@
+---
+title: "Integrazione DCC"
+description: "Come Readi scambia le missioni con il Drone Control Center (DCC) di ogni cliente: configurazione, quali missioni vengono inviate, la chiave API e gli aggiornamenti che Readi restituisce."
+---
+
+Un **DCC** (Drone Control Center) è il sistema esterno di un cliente che richiede missioni a Readi. Readi lo tiene informato man mano che le missioni avanzano. Ogni cliente ha la propria **integrazione**: i propri indirizzi, la propria scelta di missioni e la propria chiave API.
+
+---
+
+## Configurazione
+
+Vai su **Impostazioni → Integrazioni → Integrazioni cliente** (Admin e superiori). Seleziona un **cliente** e imposta:
+
+| Campo | Note |
+|---|---|
+| Cliente | Obbligatorio. Scegli dall'elenco dei clienti. Un cliente che ha già un'integrazione è contrassegnato come **Configurato** e carica i valori attuali per la modifica |
+| Missioni da inviare | **Tutte le missioni**, **Richieste esterne** o **Missioni interne** (vedi sotto) |
+| URL di callback | Il server del cliente. Readi chiama su di esso i percorsi DCC elencati nella tabella **Endpoint di stato**. Non deve contenere una query string (`?...`) o un `#fragment`, perché i percorsi vengono aggiunti dopo di esso |
+| URL di stato | Facoltativo. Riceve il semplice messaggio di stato della missione descritto in [URL di stato del cliente](#url-di-stato-del-cliente) |
+
+Inserisci almeno uno dei due URL e fai clic su **Aggiungi / Aggiorna**. Il salvataggio, la rotazione di una chiave e la rimozione vengono registrati nei [Registri di audit](/docs/records/audit-logs).
+
+L'elenco sopra il modulo mostra ogni cliente con la sua integrazione: le missioni che riceve, i suoi indirizzi e gli ultimi 6 caratteri della sua chiave. Da lì puoi **modificare**, **ruotare la chiave** o **rimuovere** un'integrazione.
+
+<Warning>
+Non esiste più un server valido per l'intera organizzazione. Un cliente senza integrazione non riceve nulla, e un aggiornamento non viene mai inviato al server di un altro cliente. Le integrazioni create in precedenza continuano a funzionare; sono impostate su **Tutte le missioni** e non hanno chiave finché non ne ruoti una.
+</Warning>
+
+---
+
+## Quali missioni vengono inviate
+
+| Opzione | Il cliente riceve aggiornamenti per |
+|---|---|
+| **Richieste esterne** | Solo le missioni che il cliente ha richiesto da sé tramite la sua chiave API (compaiono in **Richieste di volo → Esterne**) |
+| **Missioni interne** | Solo le missioni create all'interno di Readi per quel cliente |
+| **Tutte le missioni** | Entrambe. È l'impostazione predefinita |
+
+Se una missione non corrisponde alla scelta dell'integrazione, l'aggiornamento viene saltato (non è un errore e non viene ritentato).
+
+---
+
+## Chiave API
+
+Ogni integrazione ha la propria chiave API, usata da Readi per identificarsi presso il server del cliente, con la stessa logica del segreto di un webhook del registro eventi.
+
+- Una chiave viene generata automaticamente al primo salvataggio dell'integrazione. Viene mostrata **una sola volta**: copiala e consegnala al cliente.
+- In seguito vengono mostrati solo gli **ultimi 6 caratteri** (per esempio `••••a3f9c1`) in modo da distinguere le chiavi. La chiave è memorizzata cifrata.
+- Usa **Ruota chiave** per sostituirla. La vecchia chiave smette di essere inviata subito, quindi condividi prima la nuova con il cliente. Gli aggiornamenti che nel frattempo il cliente rifiuta (401/403) vengono ritentati automaticamente.
+
+Readi invia queste intestazioni a ogni chiamata al server del cliente:
+
+| Intestazione | Contenuto |
+|---|---|
+| `X-API-Key` | La chiave dell'integrazione. Il server del cliente dovrebbe rifiutare le chiamate senza quella corretta |
+| `X-Readi-Timestamp` | Unix time della chiamata |
+| `X-Readi-Signature` | `sha256=` + HMAC-SHA256 di `timestamp.body`, usando la chiave come segreto, così il cliente può verificare che il corpo non sia stato alterato |
+
+Un'integrazione senza chiave (creata prima dell'introduzione delle chiavi) usa ancora il vecchio accesso condiviso finché non viene ruotata una chiave.
+
+---
+
+## Più clienti
+
+Più clienti possono richiedere voli tramite la stessa organizzazione Readi, ciascuno con la propria chiave API e la propria integrazione.
+
+1. **Impostazioni → Sicurezza → Chiavi API**: crea una chiave e scegli il suo **Cliente**. Una chiave senza cliente vale per l'intera organizzazione (il comportamento originale).
+2. **Impostazioni → Integrazioni → Integrazioni cliente**: scegli lo stesso cliente e imposta il suo **URL di callback** e le missioni da inviare.
+
+Una richiesta è legata al cliente della chiave che l'ha inviata, e rimane legata a esso anche se la chiave viene in seguito revocata o eliminata. Gli aggiornamenti di accettazione, rifiuto, avvio, fine e registro di volo vanno all'**URL di callback di quel cliente**. Se il cliente non ha un'integrazione, l'aggiornamento viene saltato.
+
+Gli ID missione devono essere unici solo per cliente, e la chiave di un cliente può vedere e annullare solo le richieste di quel cliente.
+
+---
+
+## Mappatura dei droni
+
+Il DCC identifica i droni con un proprio ID. Inseriscilo come **ID drone DCC** (un codice lungo fornito dal DCC) nel **componente drone** del sistema. Se più droni attivi ne hanno uno, viene usato quello installato più di recente.
+
+<Warning>
+Senza un ID drone DCC, l'aggiornamento "Accepted" **non viene inviato** al DCC.
+</Warning>
+
+---
+
+## Flusso
+
+1. Il DCC crea una richiesta, che compare in **Richieste di volo → Esterne**.
+2. Un OPM la **assegna** a una missione di pianificazione (accetta) oppure la **rifiuta**.
+3. Readi informa il DCC a ogni passaggio della missione (sotto).
+
+Le missioni create direttamente in Readi vengono comunicate anche al DCC del cliente quando la sua integrazione include le missioni **interne**: **Nuova missione** e **Annullata**, e anche **Avviata** e **Terminata** (una missione interrotta viene comunicata come fine non riuscita, con il motivo come nota). Il codice della missione viene usato come ID missione, lo stesso inviato nell'aggiornamento Nuova missione.
+
+Per le missioni richieste dal DCC, Avviata e Terminata provengono invece dal flusso delle Richieste di volo, quindi non vengono ripetute dalla Bacheca giornaliera.
+
+---
+
+## Aggiornamenti inviati da Readi
+
+Tutti gli aggiornamenti sono richieste `POST` all'**URL di callback** del cliente, con gli stessi percorsi e corpi di prima.
+
+| Aggiornamento | Inviato quando |
+|---|---|
+| Nuova missione | Una missione pianificata o su richiesta viene creata in Readi |
+| Accettata | Un OPM assegna la richiesta (include il drone) |
+| Rifiutata | Un OPM rifiuta la richiesta |
+| Avviata | La missione passa a **In corso** (missioni interne: quando viene avviata dalla Bacheca giornaliera) |
+| Terminata | La missione è **Completata**, comunicata come successo o fallimento con una nota (missioni interne: Completata è successo, Interrotta è fallimento) |
+| Annullata | Un programma pianificato viene annullato |
+| Registro di volo | Un registro di volo viene inviato dalla pagina Richieste di volo |
+
+La pagina delle impostazioni elenca anche gli indirizzi esatti chiamati, nella tabella **Endpoint di stato**. È compressa per impostazione predefinita: fai clic sulla sua intestazione per aprirla e condividerla con il tuo fornitore DCC.
+
+---
+
+## URL di stato del cliente
+
+Oltre ai percorsi DCC sopra, l'integrazione di un cliente può avere un **URL di stato**. Readi vi invia lo stato delle missioni di quel cliente, comprese le missioni create in Readi che non provengono mai da una richiesta esterna. Anche qui vale la scelta **Missioni da inviare**.
+
+Un aggiornamento di stato viene inviato quando:
+
+| Evento | Stato inviato |
+|---|---|
+| Missione avviata dalla Bacheca giornaliera | `IN_PROGRESS` |
+| Missione terminata (o ripristinata) dalla Bacheca giornaliera | `COMPLETED` (o `IN_PROGRESS`) |
+| Stato modificato dalla tabella Operazioni | Il nuovo stato |
+| Una missione viene interrotta | `ABORTED`, con il motivo dell'interruzione come nota |
+| Il giorno di una missione pianificata passa senza che sia stata avviata | `ABORTED`, con un motivo automatico |
+
+Quando imposti le missioni su **Interrotto** dalla tabella Operazioni, Readi chiede un motivo facoltativo. Viene salvato nella missione e inviato come `note`.
+
+Ogni aggiornamento è un `POST` con un corpo JSON:
+
+```json
+{
+  "missionId": "id esterno, oppure il codice della missione",
+  "missionCode": "OP-1042",
+  "missionName": "Ispezione del ponte",
+  "status": "ABORTED",
+  "note": "Vento oltre i limiti",
+  "scheduledStart": "2026-11-19T08:00:00.000Z",
+  "actualStart": null,
+  "actualEnd": null,
+  "sentAt": "2026-11-19T09:12:30.000Z"
+}
+```
+
+Un invio di stato non riuscito viene registrato e non blocca mai l'azione in Readi.
+
+---
+
+## Invio di un registro di volo
+
+Su una richiesta, archivia un volo del Control Center, poi usa **Invia a DCC**. Viene inviato come rapporto di volo della missione. I registri manuali non possono essere inviati, e la missione richiede un drone con un ID drone DCC.
+
+---
+
+## Errori
+
+Un aggiornamento non riuscito non blocca mai l'azione in Readi. Il fallimento viene mostrato in un messaggio **Dettagli errore DCC**, che ha un'opzione per la segnalazione di bug.
+
+### Nuovi tentativi e reinvio
+
+Gli aggiornamenti che il DCC non ha potuto accettare vengono conservati e ritentati automaticamente (ogni 5 minuti, con intervalli crescenti 1 min → 5 min → 30 min → 2 h → 6 h; 6 tentativi in totale). Vengono ritentati solo i guasti temporanei: errori di rete, timeout, HTTP 401, 403, 408, 429 e 5xx. Qualsiasi altra risposta 4xx significa che il DCC ha rifiutato l'aggiornamento, quindi non viene ritentato. 401 e 403 vengono ritentati in modo che gli aggiornamenti inviati subito dopo una rotazione della chiave arrivino comunque quando il cliente ha la nuova chiave.
+
+Tutto ciò che è ancora in attesa o è stato abbandonato è elencato in **Impostazioni → Integrazioni → Callback non consegnati**, dove un amministratore può **Reinviarlo** subito. L'elenco scorre quando ci sono molte voci. Il DCC dovrebbe considerare innocue le consegne ripetute dello stesso aggiornamento, poiché un nuovo tentativo può arrivare dopo un timeout che il DCC ha in realtà elaborato. Gli aggiornamenti di annullamento non vengono mai ritentati: se il DCC ne rifiuta uno, l'annullamento in Readi viene invece interrotto.
+
+Un reinvio e ogni nuovo tentativo usano gli indirizzi e la chiave attuali dell'integrazione, quindi correggere un indirizzo o ruotare una chiave sistema anche gli aggiornamenti in attesa.
+
+### Regole per l'URL di callback
+
+In produzione un URL di callback o di stato deve usare **https**, non contenere nome utente/password e puntare a un indirizzo **pubblico**. Gli indirizzi localhost, di rete privata, link-local e dei metadati cloud vengono rifiutati al salvataggio e di nuovo prima di ogni invio. I reindirizzamenti non vengono seguiti.
+
+---
+
+## Correlati
+
+- [Modulo Pianificazione](/docs/modules/planning)
+- [Ciclo di vita della missione](/docs/business-logic/mission-lifecycle)

@@ -1,5 +1,6 @@
 'use client';
 
+import { localizeText } from '@/lib/api-error-message';
 import axios from 'axios';
 import { Filter, Loader2, Send } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
@@ -100,11 +101,11 @@ export function AssignmentActionModal({
 
     async function handleAssign() {
         if (!toUserId) {
-            toast.error('Please select a recipient');
+            toast.error(localizeText('Please select a recipient'));
             return;
         }
         if (!message.trim()) {
-            toast.error('Message cannot be empty');
+            toast.error(localizeText('Message cannot be empty'));
             return;
         }
 
@@ -117,10 +118,10 @@ export function AssignmentActionModal({
                 to_user_id: Number(toUserId),
                 message: message.trim(),
             });
-            toast.success('Assignment sent successfully');
+            toast.success(localizeText('Assignment sent successfully'));
             onSent();
         } catch (err: any) {
-            toast.error(err?.response?.data?.message ?? 'Failed to send assignment');
+            toast.error(err?.response?.data?.message ?? localizeText('Failed to send assignment'));
         } finally {
             setIsSending(false);
         }

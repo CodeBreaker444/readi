@@ -1,5 +1,6 @@
 'use client';
 
+import { localizeText } from '@/lib/api-error-message';
 import { useAuthorization } from '@/components/authorization/AuthorizationProvider';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -67,15 +68,15 @@ export function ManageDepartmentsModal({ open, onClose, departments, onReload, i
       }
 
       if (data.code === 1) {
-        toast.success('Department updated');
+        toast.success(localizeText('Department updated'));
         setEditingId(null);
         setImpactData(null);
         onReload();
       } else {
-        toast.error(data.message ?? 'Failed to update department');
+        toast.error(data.message ?? localizeText('Failed to update department'));
       }
     } catch (e: any) {
-      toast.error(e.response?.data?.message || 'Failed to update department');
+      toast.error(e.response?.data?.message || localizeText('Failed to update department'));
     } finally {
       setSavingId(null);
     }
@@ -98,32 +99,32 @@ export function ManageDepartmentsModal({ open, onClose, departments, onReload, i
     try {
       const { data } = await axios.delete(`/api/team/department/${departmentId}`);
       if (data.code === 1) {
-        toast.success('Department removed');
+        toast.success(localizeText('Department removed'));
         onReload();
       } else {
-        toast.error(data.message ?? 'Failed to delete department');
+        toast.error(data.message ?? localizeText('Failed to delete department'));
       }
     } catch (e: any) {
-      toast.error(e.response?.data?.message || 'Failed to delete department');
+      toast.error(e.response?.data?.message || localizeText('Failed to delete department'));
     } finally {
       setDeletingId(null);
     }
   };
 
   const handleAdd = async () => {
-    if (!newName.trim()) { toast.error('Department name is required'); return; }
+    if (!newName.trim()) { toast.error(localizeText('Department name is required')); return; }
     setAdding(true);
     try {
       const { data } = await axios.post('/api/team/department', { department_name: newName.trim() });
       if (data.code === 1) {
-        toast.success('Department added');
+        toast.success(localizeText('Department added'));
         setNewName('');
         onReload();
       } else {
-        toast.error(data.message ?? 'Failed to add department');
+        toast.error(data.message ?? localizeText('Failed to add department'));
       }
     } catch (e: any) {
-      toast.error(e.response?.data?.message ?? 'Failed to add department');
+      toast.error(e.response?.data?.message ?? localizeText('Failed to add department'));
     } finally {
       setAdding(false);
     }

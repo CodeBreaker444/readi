@@ -1069,6 +1069,8 @@
       "acknowledged": "Acknowledged",
       "assigned": "Assigned",
       "noRequests": "No flight requests found.",
+      "allClients": "All clients",
+      "noClientFilter": "No client",
       "deleteTitle": "Delete flight request?",
       "deleteDesc": "This action will permanently remove the request from Readi. It cannot be undone.",
       "pushLogDcc": "Push Log to DCC",
@@ -1099,6 +1101,10 @@
       "manual": "manual",
       "loadError": "Failed to load flight requests",
       "denied": "Request denied",
+      "denyTitle": "Deny this flight request?",
+      "denyDesc": "The client is notified that the request was denied. You can add a reason.",
+      "denyNotePlaceholder": "Reason for denial (optional)",
+      "denyConfirm": "Deny request",
       "acknowledged2": "Request acknowledged",
       "acknowledgeError": "Acknowledgment failed",
       "deleteSuccess": "Flight request deleted",
@@ -1123,6 +1129,7 @@
       },
       "columns": {
         "missionId": "Mission ID",
+        "client": "Client",
         "type": "Type",
         "target": "Target",
         "operator": "Operator",
@@ -1683,7 +1690,8 @@
         "reportGenerating": "Generating report for {{missionCode}}…",
         "reportDownloaded": "Report downloaded.",
         "reportFailed": "Failed to generate report.",
-        "abortedCannotUpdate": "Aborted missions cannot be updated."
+        "abortedCannotUpdate": "Aborted missions cannot be updated.",
+        "abortPrompt": "Reason for aborting (optional — sent to the client with the status update):"
       },
       "procedureBadge": {
         "noLuc": "No LUC",
@@ -1731,6 +1739,13 @@
         "notes": "Notes",
         "missionGroup": "Mission Group"
       },
+      "abort": {
+        "title": "Abort mission",
+        "description": "This closes the mission and it cannot be restarted. The reason is sent to the client with the status update.",
+        "placeholder": "Reason for aborting (optional)",
+        "aborting": "Aborting…",
+        "confirm": "Abort mission"
+      },
       "toast": {
         "loadError": "Failed to load board",
         "missionStarted": "Mission started",
@@ -1741,6 +1756,8 @@
         "revertDesc": "Please update the maintenance cycle to complete the mission.",
         "revertError": "Failed to revert mission status",
         "droneInMaintenance": "Drone in maintenance",
+        "missionAborted": "Mission aborted",
+        "abortFailed": "Failed to abort mission",
         "droneInMaintenanceDesc": "This drone has an open maintenance ticket. Close it before starting the mission."
       },
       "card": {
@@ -1761,6 +1778,7 @@
         "completeTasks": "Complete Tasks",
         "updateMaintenance": "Update Maintenance",
         "updateMaintenanceCycle": "Update maintenance cycle",
+        "abort": "Abort",
         "missionDetails": "Mission details",
         "view": "View",
         "lastMaintenanceClosed": "Last maintenance closed"
@@ -4596,6 +4614,46 @@
     }
   },
   "systems": {
+    "zones": {
+      "perimeterReplaced": "Previous perimeter replaced (a system has one perimeter)",
+      "replacesPerimeter": "replaces the existing perimeter",
+      "title": "Operation zones",
+      "tabDetails": "Details",
+      "tabZones": "Operation zones (optional)",
+      "intro": "Define green (safe), red (restricted) and unsurveyed (grey) zones plus the operational perimeter of this system. They are overlaid on flight requests to warn about conflicts. Optional.",
+      "drawPolygon": "Draw polygon zone",
+      "drawLine": "Draw line zone",
+      "drawPerimeter": "Draw operational perimeter",
+      "undoPoint": "Undo last point",
+      "finish": "Finish shape (Enter)",
+      "cancel": "Cancel drawing (Esc)",
+      "importTitle": "Import zones from a KMZ/KML file",
+      "import": "Import KMZ",
+      "fit": "Zoom to all zones",
+      "showMap": "Switch to street map",
+      "showSatellite": "Switch to satellite",
+      "toggleBasemap": "Toggle basemap",
+      "drawingHint": "Click the map to add points · {{n}} placed · Enter to finish, Esc to cancel",
+      "empty": "No zones yet. Draw on the map or import a KMZ/KML file. Everything here is optional.",
+      "perimeter": "Operational perimeter",
+      "perimeterTag": "Perimeter",
+      "line": "Line",
+      "polygon": "Area",
+      "delete": "Delete",
+      "vertexHint": "Drag to move · right-click to remove",
+      "tooMany": "Too many zones",
+      "importEmpty": "No lines or polygons found in this file",
+      "importDone": "{{count}} zones imported",
+      "importPerimeter": " + perimeter",
+      "importSkipped": "{{count}} skipped (no line/polygon)",
+      "importFailed": "Could not read this KML/KMZ file",
+      "loadFailed": "Could not load zones",
+      "saveFailed": "Could not save zones",
+      "saved": "Operation zones saved",
+      "save": "Save zones",
+      "saving": "Saving…",
+      "close": "Close"
+    },
     "manage": {
       "title": "Drone System List",
       "subtitle": "Manage systems, models, and system components",
@@ -5060,6 +5118,7 @@
           "duplicate": "Duplicate",
           "files": "Files",
           "relations": "Relations",
+          "zones": "Operation zones",
           "delete": "Delete",
           "log": "Log",
           "flights": "Flights",
@@ -5943,14 +6002,65 @@
       "title": "Integrations",
       "subtitle": "Configure external system connections",
       "dcc": {
-        "title": "DCC Server Configuration",
-        "subtitle": "Readi will send mission status updates to this server",
-        "displayName": "Display Name",
-        "displayNamePlaceholder": "e.g. AI View Group DCC",
-        "callbackUrl": "Callback URL",
-        "callbackUrlPlaceholder": "http://pmvd-controlcenter.example.com",
-        "saved": "Saved",
-        "save": "Save",
+        "callbacks": {
+          "title": "Undelivered callbacks",
+          "empty": "No undelivered callbacks right now.",
+          "subtitle": "Updates the DCC did not accept. Temporary failures are retried automatically; you can resend any of them now.",
+          "retrying": "Retrying automatically (attempt {{attempts}})",
+          "failed": "Failed after {{attempts}} attempt(s)",
+          "resend": "Resend",
+          "resent": "Callback delivered",
+          "resendFailed": "Resend failed"
+        },
+        "integrations": {
+          "title": "Client Integrations",
+          "subtitle": "One integration per client: where updates go, which missions it receives, and the API key Readi sends with every call.",
+          "client": "Client",
+          "selectClient": "Select client…",
+          "searchClients": "Search clients…",
+          "noClients": "No clients found.",
+          "configured": "Configured",
+          "pageInfo": "{{from}}–{{to}} of {{total}}",
+          "prevPage": "Previous page",
+          "nextPage": "Next page",
+          "deleteTitle": "Remove integration?",
+          "rotateTitle": "Rotate API key?",
+          "cancel": "Cancel",
+          "missionScope": "Missions to send",
+          "scope": {
+            "ALL": "All missions",
+            "EXTERNAL": "External requests",
+            "INTERNAL": "Internal missions"
+          },
+          "scopeHelp": "External = missions the client requested through its API key. Internal = missions created inside Readi. All = both.",
+          "callbackUrl": "Callback URL (DCC paths)",
+          "callbackUrlPlaceholder": "https://client.example.com/api",
+          "callbackShort": "Callback",
+          "statusShort": "Status",
+          "statusUrl": "Status URL (optional)",
+          "statusUrlPlaceholder": "https://client.example.com/api/mission-status",
+          "addUpdate": "Add / Update",
+          "edit": "Edit",
+          "delete": "Remove",
+          "rotate": "Rotate key",
+          "empty": "No client integrations yet. Select a client below and add its URLs.",
+          "keyNone": "No key",
+          "copy": "Copy",
+          "copied": "Copied",
+          "dismiss": "Done",
+          "keyRevealTitle": "API key for {{client}}",
+          "keyRevealHint": "Copy it now — it will not be shown again. Readi sends it in the X-API-Key header and signs every body in X-Readi-Signature.",
+          "deleteConfirm": "Remove the integration for {{client}}? Updates will stop being sent.",
+          "rotateConfirm": "Generate a new key for {{client}}? The old key stops being sent immediately.",
+          "bodySent": "Status URL body (POST, JSON):",
+          "toastLoadFailed": "Failed to load client integrations",
+          "toastValidation": "Select a client and enter at least one URL",
+          "toastSaved": "Client integration saved",
+          "toastSaveFailed": "Failed to save client integration",
+          "toastRemoveFailed": "Failed to remove client integration",
+          "toastRotated": "New API key generated",
+          "toastRotateFailed": "Failed to rotate key"
+        },
         "statusEndpoints": "Status Endpoints",
         "statusEndpointsSubtitle": "These paths are called on the DCC server when mission states change in Readi",
         "tableHeaders": {
@@ -5961,13 +6071,7 @@
           "responses": "Responses"
         },
         "noBody": "— none —",
-        "required": "required",
-        "toast": {
-          "loadFailed": "Failed to load DCC integration settings",
-          "validationError": "Display name and URL are required",
-          "saved": "DCC integration saved",
-          "saveFailed": "Failed to save"
-        }
+        "required": "required"
       }
     },
     "security": {
@@ -6009,6 +6113,10 @@
         "newKey": "New Key",
         "newApiKey": "New API Key",
         "keyName": "Key Name",
+        "client": "Client",
+        "noClient": "No client (organisation-wide)",
+        "searchClients": "Search clients…",
+        "noClientsFound": "No clients match your search",
         "expiresAt": "Expires At (optional)",
         "keyNamePlaceholder": "e.g. External Flight App",
         "creating": "Creating...",
@@ -6019,6 +6127,7 @@
         "noKeys": "No API keys yet. Create one to allow external services to submit missions.",
         "tableHeaders": {
           "name": "Name",
+          "client": "Client",
           "keyPrefix": "Key Prefix",
           "scope": "Scope",
           "status": "Status",
@@ -6450,6 +6559,9 @@
       "noGroups": "No slot groups are open right now.",
       "singlePilot": "One pilot per slot",
       "multiPilot": "Multiple requests allowed",
+      "appliedOfTotal": "{{applied}}/{{total}} slots applied",
+      "appliedFull": "{{applied}}/{{total}} slots applied · full",
+      "myApproved": "{{approved}}/{{applied}} slots approved",
       "datesRange_one": "{{from}} – {{to}} · {{count}} open slot",
       "datesRange_other": "{{from}} – {{to}} · {{count}} open slots",
       "myRequests": "My requests",
@@ -6904,5 +7016,21 @@
         "unlink": "Could not unlink the mission"
       }
     }
+  },
+  "apiErrors": {},
+  "apiMessages": {
+    "Documento eliminato": "Document deleted",
+    "Documento aggiornato": "Document updated"
+  },
+  "apiValidation": {
+    "required": "is required",
+    "maxChars": "must be at most {{n}} characters",
+    "minChars": "must be at least {{n}} characters",
+    "maxNum": "must be at most {{n}}",
+    "minNum": "must be at least {{n}}",
+    "gtNum": "must be greater than {{n}}",
+    "wholeNumber": "must be a whole number",
+    "validType": "must be a valid {{type}}",
+    "unsupported": "has an unsupported value"
   }
 }

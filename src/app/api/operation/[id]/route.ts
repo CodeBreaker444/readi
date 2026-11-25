@@ -1,5 +1,6 @@
 import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { notifyDccAcceptance } from '@/backend/services/mission/dcc-callback-service';
+import { notifyClientMissionStatus, type MissionStatusName } from '@/backend/services/mission/dcc-client-status-service';
 import { notifyPilotAssignment } from '@/backend/services/notification/notification-service';
 import { deleteOperation, getOperation, updateOperation } from '@/backend/services/operation/operation-service';
 import { prisma } from '@/lib/prisma';
@@ -7,6 +8,7 @@ import { revertMissionMaintenance } from '@/backend/services/operation/maintenan
 import { DFLIGHT_CIRCLE_MAX_RADIUS_M, UpdateOperationSchema } from '@/config/types/operation';
 import { apiError, dbError, internalError, notFound, zodError } from '@/lib/api-error';
 import { requireFeatureAccess, requirePermission } from '@/lib/auth/api-auth';
+import { canChangePilot, isSelfAssignOnly } from '@/lib/auth/pilot-assignment';
 import { getUserSession } from '@/lib/auth/server-session';
 import { E } from '@/lib/error-codes';
 import type { DccCallbackResult } from '@/types/dcc-callback';
@@ -31,6 +33,7 @@ const updateOperationSchema = z.object({
   location_longitude: z.number().min(-180).max(180).nullable().optional(),
   location_pseudo_name: z.string().max(255).nullable().optional(),
   notes: z.string().nullable().optional(),
+  abort_reason: z.string().max(1000).nullable().optional(),
   fk_pilot_user_id: z.number().int().positive().optional(),
   fk_tool_id: z.number().int().positive().nullable().optional(),
   fk_client_id: z.number().int().positive().nullable().optional(),
@@ -109,6 +112,17 @@ export async function PUT(req: NextRequest, { params }: Params) {
       if (!owner?.d_flight_enabled) validated.dflight_skip_authorization = true;
     }
 
+    // A PIC (non-manager) may not change a mission's pilot; sending the unchanged pilot is fine.
+    if (validated.fk_pilot_user_id !== undefined && isSelfAssignOnly(session!.user)) {
+      const current = await prisma.pilot_mission.findFirst({
+        where: { pilot_mission_id: id, fk_owner_id: session!.user.ownerId },
+        select: { fk_pilot_user_id: true },
+      });
+      if (!canChangePilot(session!.user, validated.fk_pilot_user_id, current?.fk_pilot_user_id)) {
+        return apiError(E.PX007, 403);
+      }
+    }
+
     const currentSession = session || await getUserSession();
     const updated = await updateOperation(id, validated, currentSession?.user.userId);
 
@@ -132,6 +146,15 @@ export async function PUT(req: NextRequest, { params }: Params) {
         missionCode: (updated as any).mission_code ?? `#${id}`,
         fromUserId:  session!.user.userId,
       }).catch((notifyErr) => console.error('[operation/update] pilot notification failed:', notifyErr));
+    }
+
+    const newStatus = (validated as any).status_name as MissionStatusName | undefined;
+    if (newStatus) {
+      void notifyClientMissionStatus(
+        id,
+        newStatus,
+        newStatus === 'ABORTED' ? (validated as any).abort_reason : null,
+      );
     }
 
     let dcc: DccCallbackResult | undefined;

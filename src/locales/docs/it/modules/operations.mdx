@@ -1,0 +1,271 @@
+---
+title: "Operazioni"
+description: "Crea, pianifica ed esegui le missioni: Tabella missione, Bacheca giornaliera, Calendario e Richieste di volo."
+---
+
+Operazioni è il luogo in cui le missioni passano da pianificate a completate. Offre quattro viste delle stesse missioni, nella barra laterale sotto **Operazioni**.
+
+| Vista | Scopo |
+|---|---|
+| **Tabella missione** | Elenco completo delle missioni con filtri e dettagli |
+| **Bacheca giornaliera** | Bacheca drag-and-drop: Programmata, In corso, Completata |
+| **Calendario** | Pianifica per settimana, mese o elenco e aggiungi missioni |
+| **Richieste di volo** | Richieste in attesa di una decisione (interne ed esterne) |
+
+**Prenotazione slot** si trova anch'essa in Operazioni. È uno strumento separato per aprire fasce orarie e lasciare che i piloti le richiedano: vedi [Prenotazione slot](/docs/modules/slot-booking).
+
+Amministratori, OPM e Super Admin vedono anche **Notifiche Email** per scegliere quali email sulle missioni vengono inviate.
+
+---
+
+## Creare una missione
+
+Fai clic su **Aggiungi missione** (Calendario) o **Nuova** (Tabella missione). La schermata **Nuova missione** ha queste parti:
+
+1. **Cliente:** per chi è la missione. I clienti con stato Inattivo sono mostrati come **Inattivo** e non possono essere selezionati. I clienti che non hanno attivato il proprio account sono etichettati **Non attivato**, ma possono comunque essere selezionati (vedi [Stato e attivazione del cliente](/docs/configuration/team#client-status-and-activation)).
+2. **Tipo di operazione e sistema drone:**
+
+| Tipo di operazione | Cosa richiede |
+|---|---|
+| **Open** | Il pilota vola con il radiocomando. Nessun piano di missione |
+| **PDRA** | Vola con un'analisi del rischio. È richiesto un piano di missione |
+| **STS-01 / STS-02** | Scenari standard. Come Open, nessun piano di missione |
+| **Specific - NO STD** | Categoria Specific senza scenario standard. Come STS-01 / STS-02: nessun piano di missione, area di volo disegnata come cerchio |
+
+3. **Dettagli della missione:** categoria, tipo, luogo, data e ora, pilota, procedura e note.
+4. **Missioni ricorrenti:** scegli i giorni della settimana e una data di fine per creare l'intera serie in una volta.
+
+### Pilota, osservatori e drone
+
+Scegliere chi vola e con cosa:
+
+- **Menu a tendina del drone:** ogni drone è mostrato come codice del sistema, poi il codice del componente drone e il suo numero di serie, ad esempio `LITO-01 – DRN-01 – SN12345`. Così è facile distinguere droni simili.
+- **Pilota:** l'elenco mostra il **reparto** di ciascun pilota accanto al nome, così puoi scegliere qualcuno del team giusto. Usa **Qualifiche** accanto al pilota per controllare licenze e formazione prima di assegnarlo.
+- **Osservatori visivi (facoltativo):** scegli prima un pilota, poi seleziona uno o più osservatori. Il pilota scelto sta già volando la missione, quindi appare in grigio ("PIC, già assegnato") e non può essere scelto anche come osservatore. Se cambi il pilota, viene rimosso automaticamente dagli osservatori.
+
+### Nome del luogo e gruppo di missioni
+
+- **Nome del luogo:** accanto alle coordinate sulla mappa puoi inserire un nome descrittivo, ad esempio "Campo Nord" o "Magazzino A". Viene mostrato accanto alle coordinate nei dettagli della missione e nel Registro di volo, così nessuno deve leggere numeri grezzi.
+- **Etichetta del gruppo:** un'etichetta libera come "Rilievo primavera 2025". Assegna la stessa etichetta a tutte le missioni che vanno insieme e potrai ritrovarle come gruppo, usando il filtro **Gruppo di missioni** nel Registro di volo e nei dettagli della Bacheca giornaliera. Le missioni create come serie ricorrente si prestano bene a un'unica etichetta.
+
+### Salta l'autorizzazione D-Flight
+
+Se la tua azienda usa D-Flight, il passaggio del pilota ha una casella **Salta l'autorizzazione D-Flight**. Selezionala per una missione che non vuoi inviare a D-Flight per l'autorizzazione.
+
+Quando è selezionata, Readi elimina **tutti** i requisiti D-Flight per quella missione:
+
+- non devi scegliere un U-space
+- non devi disegnare l'area di volo sulla mappa
+- nessuna richiesta di autorizzazione viene inviata a D-Flight, e la Bacheca giornaliera non aspetta che D-Flight accetti la missione
+
+Lasciala deselezionata per i voli normali. Saltare l'autorizzazione è una decisione dell'operatore: verifica che il volo non richieda davvero un'autorizzazione prima di usarla.
+
+### Meteo per la missione
+
+Dopo aver scelto data e ora di inizio, sotto di esse compare un badge **Meteo** che mostra l'icona delle condizioni, se l'ora è buona, marginale o non idonea, e un punteggio su 100 (una croce per non idoneo, `--` per la notte).
+
+Passaci sopra con il mouse per vedere le condizioni, vento e raffiche rispetto ai limiti del drone, pioggia, copertura nuvolosa, visibilità e temperatura, e rispetto a quali modelli di drone è stato calcolato il punteggio.
+
+- **Quale luogo:** il luogo della missione, se lo hai impostato, altrimenti il luogo del sistema selezionato. Se nessuno dei due ha un luogo, aggiungine uno per vedere il meteo.
+- **Quali limiti:** quelli dei droni del sistema selezionato. Senza un modello di drone vengono usati limiti generici e il badge lo indica.
+- **Quale ora:** l'ora che inizia all'orario di inizio scelto, nel tuo fuso orario (lo stesso usato dal resto dell'app). I dettagli mostrano l'intervallo orario con il fuso orario.
+- **Quanto in anticipo:** la previsione arriva a 16 giorni. Per un orario nel passato, o più lontano nel futuro, il badge lo segnala.
+
+Serve solo per la pianificazione. Non ti impedisce di creare la missione.
+
+### Sistemi che non puoi scegliere
+
+L'elenco contrassegna i sistemi non disponibili, con un motivo:
+
+- **Manutenzione** o **Manutenzione in scadenza:** in manutenzione, o in scadenza a breve (verifica prima di pianificare)
+- **Non operativo:** un componente è scaduto. La creazione è bloccata
+- **Dismesso:** ritirato a livello amministrativo
+- **SN non corrispondente:** nessun sistema di quel cliente ha il numero di serie
+
+### Aziende che usano D-Flight
+
+Per le missioni Open, STS-01, STS-02 e PDRA disegni anche l'area di volo sulla mappa (un cerchio, o il percorso del piano per PDRA). Vedi [Autorizzazione delle missioni D-Flight](/docs/business-logic/dflight-authorization).
+
+### Missioni create dai piloti
+
+La missione di un pilota va agli OPM del suo reparto per l'approvazione prima di comparire sulla Bacheca giornaliera. Vedi [Approvazione missioni (OPM)](/docs/business-logic/mission-approval).
+
+---
+
+## Bacheca giornaliera
+
+Ogni missione è una scheda in una di tre colonne: **Programmata**, **In corso** o **Completata**. Trascina una scheda nella colonna successiva per avviare o terminare la missione.
+
+**Oggi** sulla bacheca è il tuo giorno di calendario nel fuso orario del tuo profilo (UTC se non è impostato), quindi una missione pianificata alle 03:00 in India compare in quel giorno. Una missione ancora **Programmata** viene contrassegnata automaticamente come **Annullata** solo quando sono passate più di 25 ore dall'inizio previsto senza che sia mai stata avviata, un limite che è superato in qualsiasi fuso orario. Una missione annullata è un record chiuso e non può essere modificata né ripristinata.
+
+Le schede mostrano il pilota, il sistema e il suo stato di manutenzione (**Manutenzione OK**, **Allerta**, **In scadenza** o **In manutenzione**). Apri una scheda per vedere la cronologia (pianificato, inizio e fine ufficiali, inizio e fine effettivi), persone e attrezzature, e i risultati del volo.
+
+Prima che una scheda possa essere spostata, Readi verifica che:
+
+- Il sistema sia Operativo e non in manutenzione
+- Il pilota abbia presentato la dichiarazione di oggi (vedi sotto)
+- La missione abbia l'approvazione dell'OPM, se necessaria
+- D-Flight l'abbia accettata, se la tua azienda usa D-Flight
+- Tu abbia impostato un **PIN di autorizzazione**, che inserisci per confermare lo spostamento
+
+Vedi [Controlli di stato della missione](/docs/platform-rules/mission-status-gates) e [Codice di autorizzazione (PIN)](/docs/platform-rules/authorization-code).
+
+### Dichiarazione giornaliera del pilota
+
+Ogni giorno, prima di avviare una missione, il pilota deve confermare di:
+
+- essere riposato e non affaticato
+- essere in forma fisica e mentale
+- non assumere farmaci che potrebbero influire sulle prestazioni
+- aver esaminato il piano e l'area della missione
+- aver ispezionato le attrezzature e i sistemi del drone
+
+Tutte le voci devono essere selezionate prima dell'invio.
+
+### Attività della procedura
+
+Se la missione ha una procedura aziendale, le sue attività compaiono sulla scheda. Completale prima di terminare la missione. Una volta fatto, la scheda mostra "Tutte le attività completate".
+
+---
+
+## Completare una missione
+
+Quando una missione è terminata, **Missione Completata** ha tre schede:
+
+| Scheda | Cosa fare |
+|---|---|
+| **Manutenzione** | Registra i voli, le ore e i giorni utilizzati su ogni componente. L'utilizzo può essere automatico o manuale. Può essere registrato una sola volta per missione |
+| **Log di Volo** | Allega il log di volo, caricando un file (.zip, .json, .xml) o recuperandolo da Control Center |
+| **Dati post-volo** | Esito, note, distanza e altri dettagli finali |
+
+Un componente che raggiunge il suo limite di manutenzione mostra "Manutenzione scaduta". Vedi il [Modulo Manutenzione](/docs/business-logic/maintenance-module).
+
+---
+
+## Importare una missione già volata
+
+Usa **Importa missione** per aggiungere un volo già effettuato. Richiede quattro passaggi: **Cliente**, **File di log** (carica un file .gutma o .zip, oppure scegli un volo da Control Center), **Dati della missione** e **Pilota**. In questi passaggi puoi anche impostare un'**Etichetta del gruppo** e scegliere gli **Osservatori visivi**, come per una nuova missione.
+
+---
+
+## Calendario
+
+Mostra le missioni come voci colorate: Programmata, In corso e Completata. Passa tra **Oggi**, **Settimana**, **Mese** ed **Elenco**.
+
+### Momento migliore per volare
+
+La scheda **Momento migliore per volare** accanto al calendario mostra i prossimi 7 giorni come una griglia di finestre di volo (dalle 06:00 alle 22:00) e ti dice quando i tuoi droni possono volare in sicurezza. Il punteggio è calcolato rispetto ai limiti dei droni che scegli.
+
+#### Scegliere il luogo
+
+La previsione viene recuperata per un luogo alla volta. Apri il campo del luogo per scegliere:
+
+- **Un sistema:** la previsione usa il luogo di quel sistema.
+- **Scegli sulla mappa:** cerca un posto o posiziona un segnaposto ovunque.
+- **Pulsante mirino:** usa la tua posizione attuale.
+
+Quando apri la scheda non è selezionato nessun luogo, e la tua scelta non viene mantenuta dopo un aggiornamento della pagina. All'inizio è selezionato **Tutti i tipi della flotta**. Se scegli un sistema senza un luogo, ti viene chiesto di sceglierne uno. Usa la **x** nel campo del luogo per cancellarlo, ad esempio per tornare da un punto sulla mappa al luogo di un singolo sistema.
+
+#### Scegliere i droni
+
+I droni sono i tuoi componenti drone attivi che hanno un numero di serie, raggruppati sotto il loro sistema. Un'icona di avviso su un chip, e una nota sotto i droni, indicano che uno o più droni non hanno un modello impostato e usano limiti generici. Ogni chip è un sistema; se un sistema ha più di un drone, il chip mostra il numero (ad esempio **×2**) e sceglierlo li seleziona tutti.
+
+- **Nessun luogo ancora scelto:** scegliere un sistema ne seleziona i droni e viene usato il luogo del sistema. Se quel sistema non ha un luogo, ti viene chiesto di sceglierne uno.
+- **Un sistema fornisce il luogo:** si possono scegliere solo i droni di quel sistema. I droni degli altri sistemi sono in grigio, e una nota grigia sotto i droni ne spiega il motivo. Fai di nuovo clic sul sistema scelto per deselezionarlo e cancellarne il luogo; gli altri sistemi potranno poi essere scelti.
+- **Un luogo scelto sulla mappa:** puoi scegliere droni di più sistemi.
+- **Più droni selezionati:** una finestra è verde solo se tutti possono volare in quella finestra (si applicano i limiti più severi).
+- **Molti droni:** i primi compaiono come chip; usa l'elenco **+N** per cercare per sistema, drone, modello o numero di serie.
+
+<Note>
+Non vedi un drone? Deve trovarsi su un sistema attivo, essere un componente **Drone** e avere un numero di serie. Un drone senza modello impostato viene comunque elencato (con un'icona di avviso) e usa limiti generici finché non viene impostato un modello sul suo componente.
+</Note>
+
+#### Leggere la griglia
+
+Ogni cella è una finestra (la cui durata è impostata da **Durata slot**, da 1 a 4 ore) con:
+
+- il vento medio, la raffica massima e la pioggia totale
+- un'icona meteo per le condizioni
+- un numero grande: il punteggio su 100, una croce quando un limite è superato, oppure `--` di notte
+
+Usa **Mostra** per cambiare il numero grande tra punteggio complessivo, vento, raffiche e pioggia. Una finestra che non è verde indica direttamente nella cella cosa la penalizza (ad esempio **Vento**).
+
+**Fai clic o tocca una finestra** per il dettaglio completo: le condizioni, il giorno e l'ora con il fuso orario, il punteggio, e vento, raffiche, pioggia, probabilità di pioggia, copertura nuvolosa, visibilità e temperatura accanto ai limiti rispetto ai quali sono stati valutati, più i modelli di drone da cui derivano quei limiti. Il pulsante **Come leggere questa griglia** accanto alla legenda spiega ogni colore, icona e numero.
+
+Su uno schermo stretto (un telefono o una finestra stretta) la griglia mostra un giorno alla volta: scegli il giorno dalla riga dei giorni sopra di essa.
+
+| Colore | Significato |
+|---|---|
+| **Verde** | Idoneo al volo: margine di sicurezza su ogni limite |
+| **Ambra** | Marginale: entro il 25% di un limite, vola con attenzione |
+| **Rosso** | Non idoneo: un limite del drone è superato |
+| **Grigio** | Notte: fuori dalle ore di luce, mai consigliato |
+
+La migliore finestra in arrivo è evidenziata in viola con una stella. Tutti gli orari sono nel tuo fuso orario (mostrato in fondo alla griglia), anche se il luogo si trova in un altro, e le righe coprono le ore con luce diurna. Una finestra già iniziata, anche solo da pochi minuti, è attenuata e non viene mai consigliata: alle 11:45 la finestra dalle 10:00 alle 12:00 è esclusa, e il prossimo candidato inizia alle 12:00. L'orario di **Recuperato** accanto a **Mostra** indica quanto è vecchia la previsione, ad esempio "5 min fa". La griglia si mantiene aggiornata finché la scheda è aperta: le finestre escono man mano che iniziano, e la previsione si ricarica in background ogni ora e al cambio del giorno.
+
+#### Icone meteo
+
+| Icona | Condizioni |
+|---|---|
+| Sole | Cielo sereno, prevalentemente sereno |
+| Sole dietro una nuvola | Parzialmente nuvoloso |
+| Nuvola | Coperto |
+| Nebbia | Nebbia |
+| Pioggia leggera | Pioviggine |
+| Pioggia | Pioggia, rovesci |
+| Neve | Neve |
+| Temporale | Temporale |
+| Luna | Notte. Mostra anche le condizioni della notte, ad esempio una notte nuvolosa o piovosa |
+
+#### Come funziona il punteggio
+
+Ogni ora viene controllata rispetto ai limiti dei droni selezionati: vento, raffiche, pioggia, visibilità e temperatura. Il più debole di questi decide il risultato. Una finestra vale quanto la sua ora peggiore, e il punteggio è quello di quell'ora. Una finestra che contiene ore notturne non viene mai consigliata.
+
+Un drone non impermeabile (limite di pioggia 0) resta a terra con qualsiasi cosa oltre una traccia di pioggia.
+
+#### Limiti
+
+I limiti appartengono al **modello di drone**, quindi i droni dello stesso modello li condividono. Partono da un valore predefinito del produttore; usa l'icona a ingranaggio su un sistema per impostare i tuoi (se un sistema ha droni di modelli diversi, l'ingranaggio elenca ogni modello così puoi modificarli tutti): vento, raffiche e pioggia massimi, visibilità minima e intervallo di temperatura.
+
+La previsione è solo indicativa. Controlla sempre il meteo aeronautico ufficiale prima di volare.
+
+---
+
+## Richieste di volo
+
+Ha due schede:
+
+- **Interne:** missioni create dai tuoi piloti che richiedono l'approvazione dell'OPM. Approva, oppure rifiuta con un motivo facoltativo. Filtra per Tutte, In attesa, Approvate o Rifiutate.
+- **Esterne:** richieste da sistemi e clienti esterni (vedi [Integrazione DCC](/docs/business-logic/dcc-integration) e [Portale clienti](/docs/modules/client-portal)). Le richieste sono conteggiate come Nuove, Riconosciute o Assegnate. Un OPM può **Passare alla pianificazione** (assegnarla a una missione di pianificazione e a un piano), oppure rifiutarla.
+
+### Avvisi delle zone operative
+
+Se la richiesta ha un waypoint, Readi lo controlla rispetto alle **zone operative** dei sistemi assegnati al cliente della richiesta (vedi [Sistemi](/docs/modules/systems)). Apri la richiesta per vedere il risultato in cima alle schede **Dettagli** e **Azione**: verde quando il waypoint è entro le zone, ambra quando è fuori dal perimetro, in una zona non rilevata o in nessuna zona verde, e rosso quando è in una zona rossa o vicino a una linea rossa. La scheda **Posizione** disegna le zone e il perimetro attorno al waypoint. Un avviso non blocca la richiesta, indica cosa controllare prima di riconoscerla o pianificarla.
+
+### Cosa può fare un pilota (PIC)
+
+Un PIC vede **Richieste di volo** nel menu e può lavorare nella scheda **Esterne**, in base all'accesso assegnato nella matrice dei permessi (**Operazioni → Richieste di volo**):
+
+- **Sola lettura (R):** il PIC vede le richieste ma non ha pulsanti di azione.
+- **Lettura e scrittura (R · W):** il PIC può **Riconoscere** una nuova richiesta, **Passare alla pianificazione**, impostarla su **In corso**, **Completata** o **Problema**, e inviare il log del Centro di controllo.
+- **Il rifiuto non è disponibile per un PIC.** Solo i ruoli di livello OPM possono rifiutare una richiesta e il pulsante Rifiuta è nascosto per il PIC.
+- La scheda **Interne** (approvazioni) resta agli OPM e agli admin. Un PIC segue l'approvazione delle proprie missioni dalla Tabella missione.
+
+Nella **Tabella missione**, un PIC che non è responsabile può solo **aggiungere se stesso** come pilota di una missione PLANNED che non ha ancora un pilota. Un PIC non può assegnare un altro pilota e non può cambiare il pilota di una missione quando ne ha già uno (l'elenco **Imposta pilota** multiplo mostra solo il PIC). Responsabili, OPM e admin mantengono il pieno controllo. Il messaggio è mostrato nella lingua selezionata nell'app.
+
+---
+
+## Permessi
+
+Chi può leggere, modificare ed eliminare in quest'area, per ruolo.
+
+<PermissionsTable section="Operation" />
+
+---
+
+## Correlati
+
+- [Ciclo di vita della missione](/docs/business-logic/mission-lifecycle)
+- [Logica del modulo Operazioni](/docs/business-logic/operations-module)
+- [Prenotazione slot](/docs/modules/slot-booking)
+- [Pianificazione](/docs/modules/planning)

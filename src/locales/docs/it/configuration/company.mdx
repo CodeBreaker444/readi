@@ -1,0 +1,59 @@
+---
+title: "Azienda"
+description: "Aggiungi e gestisci le aziende che usano Readi: dettagli, stato, funzionalità, limiti email e account amministratore."
+---
+
+La pagina **Azienda** elenca tutte le aziende presenti sulla piattaforma. È riservata agli amministratori della piattaforma. Ogni azienda ha i propri utenti, sistemi e missioni e non può vedere i dati di un'altra azienda.
+
+---
+
+## Aggiungere un'azienda
+
+Clicca su **Aggiungi azienda**. Il modulo è suddiviso in sezioni:
+
+| Sezione | Cosa inserire |
+|---|---|
+| **Dati di base** | Codice e nome dell'azienda, ragione sociale, tipo di azienda (ad esempio Privata o ONG), email, telefono, sito web |
+| **Indirizzo** | Indirizzo stradale |
+| **Codice Operatore EASA** | Il codice di registrazione dell'operatore rilasciato dall'Agenzia dell'Unione europea per la sicurezza aerea, se l'azienda ne ha uno |
+| **Fuso orario** | Il fuso orario usato per le date e gli orari dell'azienda. Scegli quello più vicino, ad esempio Europa centrale, Italia / Spagna, India, Giappone, Singapore, Sydney o UTC |
+| **Logo aziendale** | Carica un logo. Puoi ritagliarlo prima di salvare. Viene usato nei documenti e nei report con il marchio aziendale |
+| **Utente amministratore principale** | Il primo amministratore: nome utente, nome completo, email e telefono. Dopo la creazione dell'azienda gli viene inviata un'email di attivazione |
+
+I numeri di telefono e dettagli simili devono essere univoci. Se uno è già in uso, il modulo te lo segnala.
+
+---
+
+## Dettagli dell'azienda
+
+Apri un'azienda per vederne la pagina, con le seguenti schede:
+
+### Informazioni sull'azienda
+I dettagli principali indicati sopra. Clicca su modifica, cambiali e salva.
+
+### Stato dell'account
+- **Azienda attiva** attiva o disattiva l'azienda. **Disattivarla impedisce a tutti gli utenti di questa azienda di accedere.** Riportala su Attiva per ripristinare l'accesso.
+
+### Flag delle funzionalità
+Attiva o disattiva le funzionalità della piattaforma per questa azienda:
+
+| Funzionalità | Cosa offre |
+|---|---|
+| **Drone ATC** | La mappa dello spazio aereo in tempo reale ([Drone ATC](/docs/modules/drone-atc)) |
+| **D-Flight** | Autorizzazione D-Flight e flotta ([D-Flight](/docs/business-logic/dflight-integration)) |
+| **FlytRelay** | Registri di volo e telemetria dei droni |
+| **Notifiche email predefinite** | Attivazione dell'account, reimpostazione della password e altre email predefinite |
+| **Email di Operazioni / Sistemi / Formazione** | Interruttori separati per le email di ciascuna area |
+| **Limite giornaliero di email** | Il numero massimo di email che l'azienda può inviare al giorno. Il valore predefinito è 100 |
+
+Disattiva **Notifiche email predefinite** solo se non vuoi che vengano inviate le email di attivazione e di reimpostazione della password.
+
+### Account amministratore
+La pagina mostra l'**Utente amministratore principale** dell'azienda. Se l'amministratore dimentica la password, usa **Reimposta password amministratore**, inserisci e conferma una nuova password e condividila con lui in modo sicuro. Se non è assegnato alcun amministratore, la pagina lo indica.
+
+---
+
+## Correlati
+
+- [Gestione del team](/docs/configuration/team)
+- [Notifiche email](/docs/business-logic/email-notifications)

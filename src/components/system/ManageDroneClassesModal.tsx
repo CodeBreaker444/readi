@@ -1,5 +1,6 @@
 'use client';
 
+import { localizeText } from '@/lib/api-error-message';
 import { useAuthorization } from '@/components/authorization/AuthorizationProvider';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -43,9 +44,9 @@ export function ManageDroneClassesModal({ open, onClose, classes, onReload, isDa
     setSavingId(classId);
     try {
       const { data } = await axios.patch(`/api/system/drone-classes/${classId}`, { class_label: editLabel.trim() });
-      if (data.code === 1) { toast.success('Class updated'); setEditingId(null); onReload(); }
-      else toast.error(data.message ?? 'Update failed');
-    } catch { toast.error('Update failed'); }
+      if (data.code === 1) { toast.success(localizeText('Class updated')); setEditingId(null); onReload(); }
+      else toast.error(data.message ?? localizeText('Update failed'));
+    } catch { toast.error(localizeText('Update failed')); }
     finally { setSavingId(null); }
   };
 
@@ -65,20 +66,20 @@ export function ManageDroneClassesModal({ open, onClose, classes, onReload, isDa
     setDeletingId(classId);
     try {
       const { data } = await axios.delete(`/api/system/drone-classes/${classId}`);
-      if (data.code === 1) { toast.success('Class deleted'); onReload(); }
-      else toast.error(data.message ?? 'Delete failed');
-    } catch { toast.error('Delete failed'); }
+      if (data.code === 1) { toast.success(localizeText('Class deleted')); onReload(); }
+      else toast.error(data.message ?? localizeText('Delete failed'));
+    } catch { toast.error(localizeText('Delete failed')); }
     finally { setDeletingId(null); }
   };
 
   const handleAdd = async () => {
-    if (!newValue.trim() || !newLabel.trim()) { toast.error('Both value and label are required'); return; }
+    if (!newValue.trim() || !newLabel.trim()) { toast.error(localizeText('Both value and label are required')); return; }
     setAdding(true);
     try {
       const { data } = await axios.post('/api/system/drone-classes', { class_value: newValue.trim(), class_label: newLabel.trim() });
-      if (data.code === 1) { toast.success('Class added'); setNewValue(''); setNewLabel(''); onReload(); }
-      else toast.error(data.message ?? 'Add failed');
-    } catch { toast.error('Add failed'); }
+      if (data.code === 1) { toast.success(localizeText('Class added')); setNewValue(''); setNewLabel(''); onReload(); }
+      else toast.error(data.message ?? localizeText('Add failed'));
+    } catch { toast.error(localizeText('Add failed')); }
     finally { setAdding(false); }
   };
 
