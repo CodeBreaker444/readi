@@ -4528,6 +4528,7 @@
   },
   "systems": {
     "zones": {
+      "importBreakdown": "{{areas}} Flächen · {{lines}} Linien · {{pins}} Pins",
       "clear": "Alles löschen",
       "clearConfirm": "Zum Bestätigen erneut klicken",
       "clearAll": "Alle Zonen von der Karte löschen",

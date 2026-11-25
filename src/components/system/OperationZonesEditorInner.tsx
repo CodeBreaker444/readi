@@ -361,6 +361,7 @@ export default function OperationZonesEditorInner({ value, onChange, isDark = fa
       if (b && mapRef.current) mapRef.current.fitBounds(b, { padding: [24, 24], maxZoom: 18 });
       toast.success(
         t('systems.zones.importDone', '{{count}} zones imported', { count: zones.length }) +
+        ` (${t('systems.zones.importBreakdown', '{{areas}} areas · {{lines}} lines · {{pins}} pins', { areas: zones.filter((z) => z.shape === 'polygon').length, lines: zones.filter((z) => z.shape === 'line').length, pins: zones.filter((z) => z.shape === 'point').length })})` +
         (res.perimeter ? t('systems.zones.importPerimeter', ' + perimeter') : '') +
         (res.skipped ? ` · ${t('systems.zones.importSkipped', '{{count}} skipped (no line/polygon)', { count: res.skipped })}` : ''),
       );
@@ -489,7 +490,7 @@ export default function OperationZonesEditorInner({ value, onChange, isDark = fa
             {value.zones.map((z) => (
               <li key={z.id} className={`flex items-center gap-2 px-3 py-1.5 ${selectedId === z.id ? (isDark ? 'bg-slate-700/60' : 'bg-violet-50') : ''}`}>
                 <ShapeBadge shape={z.shape} color={ZONE_COLORS[z.kind]} label={z.shape === 'line' ? t('systems.zones.line', 'Line') : z.shape === 'point' ? t('systems.zones.pin', 'Pin') : t('systems.zones.polygon', 'Area')} />
-                <input className={`${fieldCls} min-w-0 flex-1`} value={z.name} onKeyDown={stopEnter} placeholder={KIND_LABEL[z.kind]}
+                <input className={`${fieldCls} min-w-0 flex-1`} value={z.name} onKeyDown={stopEnter} title={z.note} placeholder={KIND_LABEL[z.kind]}
                   onFocus={() => focusItem(z.id)}
                   onChange={(e) => patchZone(z.id, { name: e.target.value })} />
                 <Select value={z.kind} onValueChange={(v) => patchZone(z.id, { kind: v as ZoneKind })}>

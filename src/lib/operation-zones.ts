@@ -14,6 +14,8 @@ export interface OperationZone {
   kind: ZoneKind;
   shape: ZoneShape;
   points: LatLngTuple[];
+  /** Extra information carried over from an import (e.g. waypoint altitude, custom KML fields). */
+  note?: string;
 }
 
 export interface OperationPerimeter {
@@ -37,6 +39,7 @@ export const PERIMETER_COLOR = '#06b6d4';
 
 export const MAX_ZONES = 500;
 export const MAX_POINTS = 5000;
+export const MAX_NOTE = 500;
 /** Across all zones of one system, keeps the stored JSON (and flight-request checks) small. */
 export const MAX_TOTAL_POINTS = 100000;
 export const MAX_IMPORT_BYTES = 10 * 1024 * 1024;
@@ -68,6 +71,7 @@ export const operationZonesSchema = z.object({
     name: z.string().trim().max(120),
     kind: z.enum(['green', 'red', 'unsurveyed']),
     shape: z.enum(['polygon', 'line', 'point']),
+    note: z.string().trim().max(MAX_NOTE).optional(),
     points: z.array(pointSchema).min(1).max(MAX_POINTS),
   }).refine((z) => z.points.length >= minPointsFor(z.shape) && (z.shape !== 'point' || z.points.length === 1), { message: 'Not enough points for this shape' }))
     .max(MAX_ZONES),
@@ -248,7 +252,7 @@ function classifyColor(rgb: [number, number, number] | null): ZoneKind | null {
 }
 
 const RE_PERIMETER = /(perimeter|boundary|fence|geofence|operational\s*(area|limit)|operating\s*area|limite)/i;
-const RE_RED = /(\bred\b|no[\s-]?fly|restrict|prohibit|forbidden|danger|hazard|exclusion|rosso|vietat)/i;
+const RE_RED = /(\bred\b|no[\s-]?fly|(?<![a-z])restrict|prohibit|forbidden|danger|hazard|exclusion|rosso|vietat)/i;
 const RE_GREEN = /(\bgreen\b|\bsafe\b|allowed|approved|authori[sz]ed|permitted|cleared|verde)/i;
 const RE_GREY = /(unsurvey|unknown|\bgr[ae]y\b|unverified|unmapped|grigi)/i;
 
@@ -280,6 +284,49 @@ const firstChild = (el: Element, name: string) => childrenNamed(el, name)[0] ?? 
 const descendants = (el: Element, name: string) => Array.from(el.getElementsByTagName('*')).filter((c) => localName(c) === name);
 const textOf = (el: Element | null) => el?.textContent?.trim() ?? '';
 
+// Custom fields added by external services: <ExtendedData><Data name=".."><value>..</value></Data>
+// and <SchemaData><SimpleData name="..">..</SimpleData>. Keys like type/zone/category decide the zone type.
+const TYPE_KEYS = /^(type|zone|zone[_\s-]?type|category|class|classification|kind|status|restriction|level|risk|color|colour)$/i;
+const NAME_KEYS = /^(name|title|label|zone[_\s-]?name)$/i;
+
+function readAttributes(placemark: Element): Record<string, string> {
+  const out: Record<string, string> = {};
+  const ext = firstChild(placemark, 'ExtendedData');
+  if (!ext) return out;
+  for (const d of descendants(ext, 'Data')) {
+    const k = d.getAttribute('name');
+    const v = textOf(firstChild(d, 'value'));
+    if (k && v) out[k] = v;
+  }
+  for (const d of descendants(ext, 'SimpleData')) {
+    const k = d.getAttribute('name');
+    const v = d.textContent?.trim();
+    if (k && v) out[k] = v;
+  }
+  return out;
+}
+
+function hexToRgb(v: string): [number, number, number] | null {
+  const m = v.trim().match(/^#?([0-9a-f]{6})$/i);
+  if (!m) return null;
+  return [parseInt(m[1].slice(0, 2), 16), parseInt(m[1].slice(2, 4), 16), parseInt(m[1].slice(4, 6), 16)];
+}
+
+/** Zone type from custom fields (e.g. type=restricted, category=No-fly, color=#00ff00). */
+function classifyAttributes(attrs: Record<string, string>): ZoneKind | 'perimeter' | null {
+  for (const [k, v] of Object.entries(attrs)) {
+    if (!TYPE_KEYS.test(k.trim())) continue;
+    const hit = classifyByName(v) ?? classifyColor(hexToRgb(v));
+    if (hit) return hit;
+  }
+  return null;
+}
+
+/** Plain, short text of a KML description (HTML tags removed). Long descriptions are ignored for classification. */
+function plainText(html: string): string {
+  return html.replace(/<[^>]*>/g, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
 /** Parses KML text (browser DOMParser). Throws if the XML is invalid. */
 export function parseKml(kmlText: string): KmlImportResult {
   const doc = new DOMParser().parseFromString(kmlText, 'application/xml');
@@ -290,7 +337,8 @@ export function parseKml(kmlText: string): KmlImportResult {
   const styleOf = (el: Element): string | null => {
     const poly = firstChild(el, 'PolyStyle');
     const line = firstChild(el, 'LineStyle');
-    return textOf(poly && firstChild(poly, 'color')) || textOf(line && firstChild(line, 'color')) || null;
+    const icon = firstChild(el, 'IconStyle');
+    return textOf(poly && firstChild(poly, 'color')) || textOf(line && firstChild(line, 'color')) || textOf(icon && firstChild(icon, 'color')) || null;
   };
   for (const s of descendants(doc.documentElement, 'Style')) {
     const id = s.getAttribute('id');
@@ -312,7 +360,15 @@ export function parseKml(kmlText: string): KmlImportResult {
   const collectGeometries = (el: Element, out: { shape: ZoneShape; points: LatLngTuple[] }[]) => {
     for (const child of Array.from(el.children)) {
       const n = localName(child);
-      if (n === 'MultiGeometry') collectGeometries(child, out);
+      if (n === 'MultiGeometry' || n === 'MultiTrack') collectGeometries(child, out);
+      else if (n === 'Track') {
+        // gx:Track lists "lng lat alt" per gx:coord
+        const pts = childrenNamed(child, 'coord')
+          .map((c) => parseCoordinates((c.textContent ?? '').trim().split(/\s+/).slice(0, 2).join(',')))
+          .map((p) => p[0])
+          .filter((p): p is LatLngTuple => !!p);
+        out.push({ shape: 'line', points: pts });
+      }
       else if (n === 'Polygon') {
         const outer = firstChild(child, 'outerBoundaryIs');
         const ring = outer && descendants(outer, 'coordinates')[0];
@@ -331,7 +387,10 @@ export function parseKml(kmlText: string): KmlImportResult {
       if (n === 'Folder' || n === 'Document') {
         walk(child, [...folders, textOf(firstChild(child, 'name'))].filter(Boolean));
       } else if (n === 'Placemark') {
-        const name = textOf(firstChild(child, 'name'));
+        const attrs = readAttributes(child);
+        const nameAttr = Object.entries(attrs).find(([k]) => NAME_KEYS.test(k.trim()))?.[1];
+        const name = textOf(firstChild(child, 'name')) || nameAttr || '';
+        const description = plainText(textOf(firstChild(child, 'description')));
         const geoms: { shape: ZoneShape; points: LatLngTuple[] }[] = [];
         collectGeometries(child, geoms);
         const usable = geoms.filter((g) => g.points.length >= minPointsFor(g.shape));
@@ -344,7 +403,29 @@ export function parseKml(kmlText: string): KmlImportResult {
         const styleUrl = textOf(firstChild(child, 'styleUrl'));
         const inline = firstChild(child, 'Style');
         const color = (inline && styleOf(inline)) || styleColors.get(styleUrl) || null;
-        const kind = classifyByName(name) ?? classifyColor(kmlColorToRgb(color)) ?? classifyByName(folders.join(' ')) ?? 'unsurveyed';
+        const kind =
+          classifyAttributes(attrs) ??
+          classifyByName(name) ??
+          classifyColor(kmlColorToRgb(color)) ??
+          (description.length <= 120 ? classifyByName(description) : null) ??
+          classifyByName(folders.join(' ')) ??
+          'unsurveyed';
+
+        // What else the file told us about this shape, kept as a note (shown on the map and in the list).
+        const noteParts: string[] = [];
+        if (wpmlEl) {
+          const wp = (tag: string) =>
+            textOf(Array.from(child.children).find((c) => localName(c) === tag && (c.namespaceURI ?? '').includes('dji.com/wpmz')) ?? null);
+          const h = wp('executeHeight') || wp('height');
+          const sp = wp('waypointSpeed');
+          if (h) noteParts.push(`Altitude ${h} m`);
+          if (sp) noteParts.push(`Speed ${sp} m/s`);
+        }
+        for (const [k, v] of Object.entries(attrs)) {
+          if (!NAME_KEYS.test(k.trim())) noteParts.push(`${k}: ${v}`);
+        }
+        if (noteParts.length === 0 && description && description !== name) noteParts.push(description);
+        const note = noteParts.join(' · ').slice(0, MAX_NOTE) || undefined;
 
         usable.forEach((g, i) => {
           let points = g.points;
@@ -363,7 +444,7 @@ export function parseKml(kmlText: string): KmlImportResult {
             else result.perimeter = { name: label, points };
             return;
           }
-          result.zones.push({ id: newZoneId(), name: label.slice(0, 120), kind, shape: g.shape, points });
+          result.zones.push({ id: newZoneId(), name: label.slice(0, 120), kind, shape: g.shape, points, ...(note ? { note } : {}) });
         });
       }
     }
@@ -383,7 +464,10 @@ export async function parseKmlOrKmzFile(file: File): Promise<KmlImportResult> {
 
   const { default: JSZip } = await import('jszip');
   const zip = await JSZip.loadAsync(await file.arrayBuffer());
-  const kmlEntries = Object.values(zip.files).filter((f) => !f.dir && f.name.toLowerCase().endsWith('.kml'));
+  const all = Object.values(zip.files).filter((f) => !f.dir);
+  let kmlEntries = all.filter((f) => f.name.toLowerCase().endsWith('.kml'));
+  // DJI wayline archives may only hold waylines.wpml, which is KML with extra tags.
+  if (kmlEntries.length === 0) kmlEntries = all.filter((f) => f.name.toLowerCase().endsWith('.wpml'));
   // Spec: the main file sits at the archive root; prefer doc.kml, then any root-level .kml, then anything.
   const entry =
     kmlEntries.find((f) => f.name.toLowerCase() === 'doc.kml') ??

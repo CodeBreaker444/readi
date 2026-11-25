@@ -4615,6 +4615,7 @@
   },
   "systems": {
     "zones": {
+      "importBreakdown": "{{areas}} areas · {{lines}} lines · {{pins}} pins",
       "clear": "Clear all",
       "clearConfirm": "Click again to confirm",
       "clearAll": "Clear all zones from the map",

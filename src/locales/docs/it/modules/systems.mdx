@@ -64,12 +64,16 @@ Clicca **Importa KMZ** e scegli un file `.kmz` o `.kml`, ad esempio esportato da
 
 Il tipo di ogni forma viene deciso in quest'ordine:
 
-1. **Il suo nome:** parole come *red*, *no-fly*, *restricted*, *rosso*, *vietato* la rendono rossa. *green*, *safe*, *approved*, *verde* la rendono verde. *unsurveyed*, *unknown*, *grey*, *grigia* la rendono grigia. *perimeter*, *boundary*, *fence*, *limite* la rendono il perimetro.
-2. **Il suo colore** nel file (verde, rosso o grigio).
-3. **Il nome della sua cartella**, con le stesse parole.
-4. Se nulla corrisponde, viene importata come **non rilevata** (grigia). Controllala e modificala nell'elenco.
+1. **I campi personalizzati nel file:** i campi che un servizio esterno ha aggiunto a una forma (`ExtendedData` o `SimpleData` di KML) chiamati *type*, *zone*, *category*, *class*, *status*, *restriction*, *level*, *risk*, *kind* o *color*. Un valore come *restricted*, *no-fly*, *approved* o un colore come `#00cc00` decide il tipo.
+2. **Il suo nome** (o un campo *name*, *title* o *label* quando la forma non ha un nome): parole come *red*, *no-fly*, *restricted*, *rosso*, *vietato* la rendono rossa. *green*, *safe*, *approved*, *verde* la rendono verde. *unsurveyed*, *unknown*, *grey*, *grigia* la rendono grigia. *perimeter*, *boundary*, *fence*, *limite* la rendono il perimetro.
+3. **Il suo colore** nel file (colore di riempimento, linea o segnaposto: verde, rosso o grigio).
+4. **La sua descrizione**, se è breve, con le stesse parole.
+5. **Il nome della sua cartella**, con le stesse parole.
+6. Se nulla corrisponde, viene importata come **non rilevata** (grigia). Controllala e modificala nell'elenco.
 
-I segnaposto senza un nome o un colore che indichi un tipo vengono aggiunti come non rilevati. I **file wayline DJI** (un KMZ creato con DJI Pilot o FlightHub) vengono importati come un segnaposto per ogni waypoint, chiamati "Waypoint 1", "Waypoint 2" e così via, esattamente come li mostra Google Earth. Le sovrapposizioni di immagini e le forme vuote vengono ignorate e il messaggio indica quanti. Se il file contiene più perimetri, viene usato solo il primo. Importare in un sistema che ha già delle zone le aggiunge a quelle esistenti. I fori all'interno dei poligoni vengono ignorati. Dopo l'importazione, controlla l'elenco e usa **Salva zone**.
+I segnaposto senza un nome o un colore che indichi un tipo vengono aggiunti come non rilevati. I **file wayline DJI** (un KMZ creato con DJI Pilot o FlightHub) vengono importati come un segnaposto per ogni waypoint, chiamati "Waypoint 1", "Waypoint 2" e così via, esattamente come li mostra Google Earth. Le sovrapposizioni di immagini e le forme vuote vengono ignorate e il messaggio indica quanti. Dopo l'importazione, un messaggio mostra quante aree, linee e segnaposto sono stati aggiunti.
+
+Le altre informazioni nel file vengono conservate come **nota** sulla zona: altitudine e velocità di un waypoint DJI ed eventuali altri campi personalizzati. Passa il mouse sulla zona nella mappa, o sul suo nome nell'elenco, per leggerla. Le tracce (`gx:Track`) vengono importate come linee e funziona anche un archivio DJI che contiene solo `waylines.wpml`. Se il file contiene più perimetri, viene usato solo il primo. Importare in un sistema che ha già delle zone le aggiunge a quelle esistenti. I fori all'interno dei poligoni vengono ignorati. Dopo l'importazione, controlla l'elenco e usa **Salva zone**.
 
 ### Limiti e cose da sapere
 

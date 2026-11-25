@@ -64,12 +64,16 @@ Click **Import KMZ** and choose a `.kmz` or `.kml` file, for example one exporte
 
 The type of each shape is decided in this order:
 
-1. **Its name:** words such as *red*, *no-fly*, *restricted* make it red. *green*, *safe*, *approved* make it green. *unsurveyed*, *unknown*, *grey* make it grey. *perimeter*, *boundary*, *fence* make it the perimeter.
-2. **Its colour** in the file (green, red or grey).
-3. **The name of its folder**, using the same words.
-4. If nothing matches, it is imported as **unsurveyed** (grey). Check and change it in the list.
+1. **Custom fields in the file:** fields that an external service added to a shape (KML `ExtendedData` or `SimpleData`) named *type*, *zone*, *category*, *class*, *status*, *restriction*, *level*, *risk*, *kind* or *color*. A value such as *restricted*, *no-fly*, *approved* or a colour like `#00cc00` decides the type.
+2. **Its name** (or a *name*, *title* or *label* field when the shape has no name): words such as *red*, *no-fly*, *restricted* make it red. *green*, *safe*, *approved* make it green. *unsurveyed*, *unknown*, *grey* make it grey. *perimeter*, *boundary*, *fence* make it the perimeter.
+3. **Its colour** in the file (the fill, line or pin colour: green, red or grey).
+4. **Its description**, when it is short, using the same words.
+5. **The name of its folder**, using the same words.
+6. If nothing matches, it is imported as **unsurveyed** (grey). Check and change it in the list.
 
-Pins without a name or colour that points to a type are added as unsurveyed. **DJI wayline files** (a KMZ made in DJI Pilot or FlightHub) are imported as one pin per waypoint, named "Waypoint 1", "Waypoint 2" and so on, exactly as Google Earth shows them. Image overlays and empty shapes are skipped, and the message tells you how many. If the file has several perimeters, only the first is used. Importing into a system that already has zones adds to them. Holes inside polygons are ignored. After importing, review the list and **Save zones**.
+Pins without a name or colour that points to a type are added as unsurveyed. **DJI wayline files** (a KMZ made in DJI Pilot or FlightHub) are imported as one pin per waypoint, named "Waypoint 1", "Waypoint 2" and so on, exactly as Google Earth shows them. Image overlays and empty shapes are skipped, and the message tells you how many. After the import, a message shows how many areas, lines and pins were added.
+
+Other information in the file is kept as a **note** on the zone: the altitude and speed of a DJI waypoint, and any other custom fields. Hover over the zone on the map, or over its name in the list, to read it. Tracks (`gx:Track`) are imported as lines, and a DJI archive that only contains `waylines.wpml` also works. If the file has several perimeters, only the first is used. Importing into a system that already has zones adds to them. Holes inside polygons are ignored. After importing, review the list and **Save zones**.
 
 ### Limits and things to know
 

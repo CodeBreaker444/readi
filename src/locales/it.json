@@ -4610,6 +4610,7 @@
   },
   "systems": {
     "zones": {
+      "importBreakdown": "{{areas}} aree · {{lines}} linee · {{pins}} segnaposto",
       "clear": "Cancella tutto",
       "clearConfirm": "Clicca di nuovo per confermare",
       "clearAll": "Cancella tutte le zone dalla mappa",

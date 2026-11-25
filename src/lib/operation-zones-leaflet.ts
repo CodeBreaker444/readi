@@ -26,7 +26,18 @@ export function renderZoneLayers(L: typeof Leaflet, group: Leaflet.LayerGroup, z
   const { interactive = false, selectedId = null, onSelect, labelPrefix } = opts;
   group.clearLayers();
 
-  const tip = (name: string) => (labelPrefix ? `${labelPrefix} · ${name}` : name);
+  const tip = (name: string, note?: string): string | HTMLElement => {
+    const title = labelPrefix ? `${labelPrefix} · ${name}` : name;
+    if (!note) return title;
+    const el = document.createElement('div');
+    const b = document.createElement('strong');
+    b.textContent = title;
+    const n = document.createElement('div');
+    n.style.cssText = 'font-size:11px;opacity:.8;max-width:240px;white-space:normal';
+    n.textContent = note;
+    el.append(b, n);
+    return el;
+  };
 
   if (zones.perimeter) {
     const selected = selectedId === 'perimeter';
@@ -51,7 +62,7 @@ export function renderZoneLayers(L: typeof Leaflet, group: Leaflet.LayerGroup, z
         ? L.polygon(z.points, { color, weight: selected ? 4 : 2, fillColor: color, fillOpacity: selected ? 0.4 : 0.25, interactive })
         : L.polyline(z.points, { color, weight: selected ? 6 : 4, interactive });
     if (interactive) layer.on('click', () => onSelect?.(z.id));
-    layer.bindTooltip(tip(z.name || z.kind), z.shape === 'point' ? { direction: 'top', offset: [0, -24] } : { sticky: true });
+    layer.bindTooltip(tip(z.name || z.kind, z.note), z.shape === 'point' ? { direction: 'top', offset: [0, -24] } : { sticky: true });
     layer.addTo(group);
   }
 }
