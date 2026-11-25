@@ -37,7 +37,7 @@ A system can have **operation zones**: an optional overlay that says where it ma
 | **Unsurveyed zone** | Grey | Not checked yet, fly only after a survey |
 | **Perimeter** | Blue dashed line | The operational limit of this system. A system has one perimeter |
 
-Zones can be **polygons** (areas) or **lines** (for example a power line). A red line blocks anything within about 30 m of it. Every zone has a name you can edit.
+Zones can be **polygons** (areas), **lines** (for example a power line) or **pins** (a single point, for example a mast). A red line or red pin blocks anything within about 30 m of it. Every zone has a name you can edit.
 
 ### Add or edit zones
 
@@ -50,6 +50,7 @@ The map opens in **satellite** view. The layers button switches to the street ma
 |---|---|
 | Polygon | Click the map to place the corners of an area, then press **Enter** or the tick button |
 | Line | Same, for a line zone |
+| Pin | Click the map once to place a pin |
 | Fence | Draws the operational perimeter. Drawing a new one replaces the old one (a message tells you). **Esc** keeps the old one |
 | Green, red, grey dots | The type of the next zone you draw. With a zone selected, they change its type |
 | Undo, tick, cross | Remove the last point, finish the shape, cancel it (**Esc**) |
@@ -59,7 +60,7 @@ Click a zone on the map or in the list to select it. Drag its points to reshape 
 
 ### Import a KMZ or KML file
 
-Click **Import KMZ** and choose a `.kmz` or `.kml` file, for example one exported from Google Earth. Every polygon and line in it is added as a zone. A KMZ is a zipped KML.
+Click **Import KMZ** and choose a `.kmz` or `.kml` file, for example one exported from Google Earth. Every polygon, line and pin in it is added as a zone. A KMZ is a zipped KML.
 
 The type of each shape is decided in this order:
 
@@ -68,7 +69,7 @@ The type of each shape is decided in this order:
 3. **The name of its folder**, using the same words.
 4. If nothing matches, it is imported as **unsurveyed** (grey). Check and change it in the list.
 
-Points and image overlays are skipped, and the message tells you how many. If the file has several perimeters, only the first is used. Importing into a system that already has zones adds to them. Holes inside polygons are ignored. After importing, review the list and **Save zones**.
+Pins without a name or colour that points to a type are added as unsurveyed. **DJI wayline files** (a KMZ made in DJI Pilot or FlightHub) are imported as one pin per waypoint, named "Waypoint 1", "Waypoint 2" and so on, exactly as Google Earth shows them. Image overlays and empty shapes are skipped, and the message tells you how many. If the file has several perimeters, only the first is used. Importing into a system that already has zones adds to them. Holes inside polygons are ignored. After importing, review the list and **Save zones**.
 
 ### Limits and things to know
 
@@ -76,7 +77,7 @@ Points and image overlays are skipped, and the message tells you how many. If th
 - **Holes are ignored.** A polygon with an inner ring (for example a green area with a building cut out) is imported as a solid area. Draw the hole as a separate red zone.
 - **Crossing outlines:** if a shape crosses itself, the crossed part counts as outside it. Redraw it without crossings.
 - **Dateline:** shapes that cross the 180° meridian are not supported.
-- **Red lines** block about 30 m on each side. **Green** and **unsurveyed** lines are shown on the map but only red lines are checked.
+- **Red lines and red pins** block about 30 m around them. **Unsurveyed** lines and pins warn within the same distance. **Green** lines and pins are shown on the map but are not checked.
 - **Duplicate:** **Duplicate system** copies the zones to the new system.
 - **One perimeter per system.** To cover several sites, use green zones for each, or create one system per site.
 - **Warnings are advice.** They never block a request, and the warning text on the flight request is in English.

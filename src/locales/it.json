@@ -4610,6 +4610,13 @@
   },
   "systems": {
     "zones": {
+      "clear": "Cancella tutto",
+      "clearConfirm": "Clicca di nuovo per confermare",
+      "clearAll": "Cancella tutte le zone dalla mappa",
+      "cleared": "Tutte le zone cancellate",
+      "changeType": "Cambia tipo di zona",
+      "drawPin": "Aggiungi segnaposto",
+      "pin": "Segnaposto",
       "systemLocation": "Posizione del sistema",
       "perimeterReplaced": "Perimetro precedente sostituito (un sistema ha un solo perimetro)",
       "replacesPerimeter": "sostituisce il perimetro esistente",

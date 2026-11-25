@@ -4615,6 +4615,13 @@
   },
   "systems": {
     "zones": {
+      "clear": "Clear all",
+      "clearConfirm": "Click again to confirm",
+      "clearAll": "Clear all zones from the map",
+      "cleared": "All zones cleared",
+      "changeType": "Change zone type",
+      "drawPin": "Add pin",
+      "pin": "Pin",
       "systemLocation": "System location",
       "perimeterReplaced": "Previous perimeter replaced (a system has one perimeter)",
       "replacesPerimeter": "replaces the existing perimeter",

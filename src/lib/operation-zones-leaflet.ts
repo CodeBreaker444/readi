@@ -9,6 +9,18 @@ interface RenderOptions {
   labelPrefix?: string;
 }
 
+/** Small coloured map pin used for point zones. */
+export function pinIcon(L: typeof Leaflet, color: string, large = false) {
+  const w = large ? 26 : 20;
+  const h = Math.round(w * 1.5);
+  return L.divIcon({
+    html: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 36" width="${w}" height="${h}" style="filter:drop-shadow(0 1px 2px rgba(0,0,0,.6))"><path d="M12 0C5.373 0 0 5.373 0 12c0 8.25 12 24 12 24s12-15.75 12-24C24 5.373 18.627 0 12 0z" fill="${color}" stroke="#fff" stroke-width="1.5"/><circle cx="12" cy="12" r="4.5" fill="#fff"/></svg>`,
+    className: '',
+    iconSize: [w, h],
+    iconAnchor: [w / 2, h],
+  });
+}
+
 /** Draws zones + perimeter into `group` (clearing it first). Shared by the editor and the flight-request overlay. */
 export function renderZoneLayers(L: typeof Leaflet, group: Leaflet.LayerGroup, zones: OperationZones, opts: RenderOptions = {}) {
   const { interactive = false, selectedId = null, onSelect, labelPrefix } = opts;
@@ -33,11 +45,13 @@ export function renderZoneLayers(L: typeof Leaflet, group: Leaflet.LayerGroup, z
   for (const z of zones.zones) {
     const color = ZONE_COLORS[z.kind];
     const selected = selectedId === z.id;
-    const layer = z.shape === 'polygon'
-      ? L.polygon(z.points, { color, weight: selected ? 4 : 2, fillColor: color, fillOpacity: selected ? 0.4 : 0.25, interactive })
-      : L.polyline(z.points, { color, weight: selected ? 6 : 4, interactive });
+    const layer: Leaflet.Layer = z.shape === 'point'
+      ? L.marker(z.points[0], { icon: pinIcon(L, color, selected), interactive, keyboard: false, bubblingMouseEvents: true })
+      : z.shape === 'polygon'
+        ? L.polygon(z.points, { color, weight: selected ? 4 : 2, fillColor: color, fillOpacity: selected ? 0.4 : 0.25, interactive })
+        : L.polyline(z.points, { color, weight: selected ? 6 : 4, interactive });
     if (interactive) layer.on('click', () => onSelect?.(z.id));
-    layer.bindTooltip(tip(z.name || z.kind), { sticky: true });
+    layer.bindTooltip(tip(z.name || z.kind), z.shape === 'point' ? { direction: 'top', offset: [0, -24] } : { sticky: true });
     layer.addTo(group);
   }
 }
