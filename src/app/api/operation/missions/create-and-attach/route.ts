@@ -1,6 +1,7 @@
 import { createAndAttachMission } from '@/backend/services/operation/mission-service';
 import { requirePermission } from '@/lib/auth/api-auth';
-import { internalError } from '@/lib/api-error';
+import { apiError, internalError } from '@/lib/api-error';
+import { canChangePilot } from '@/lib/auth/pilot-assignment';
 import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -35,6 +36,10 @@ export async function POST(req: NextRequest) {
         { code: 0, message: 'Missing required fields: mission_code, flight_id, fk_luc_procedure_id' },
         { status: 400 }
       );
+    }
+
+    if (fk_pilot_user_id && !canChangePilot(session!.user, Number(fk_pilot_user_id), null)) {
+      return apiError(E.PX007, 403);
     }
 
     const userId = session!.user.userId;

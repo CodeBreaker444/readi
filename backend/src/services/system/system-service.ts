@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { blocksSystemWhenExpired, isComponentExpired, isComponentPartOfSystem, isExpiryPermanent, parseComponentMeta, toDayString, type ExpiryLimits } from './maintenance-rules';
 import { buildS3Url, getPresignedDownloadUrl, uploadFileToS3 } from '@/lib/s3Client';
 import { Prisma } from '@prisma/client';
+import { readOperationZones, type OperationZones } from '@/lib/operation-zones';
 
 /**
  * Tools with an expired active component (by date, flights or flight hours). Shared by the systems list and
@@ -58,6 +59,7 @@ export interface AddSystemInput {
   locationPseudoName?: string | null;
   activationDate?: string | null;
   clientId?: number | null;
+  operationZones?: OperationZones | null;
   files?: File[];
 }
 
@@ -287,6 +289,9 @@ export async function addSystem(toolData: AddSystemInput) {
         maintenanceLogbook: 'N',
         status: toolData.tool_status ?? 'OPERATIONAL',
         files: uploadedFiles,
+        ...(toolData.operationZones && (toolData.operationZones.zones.length > 0 || toolData.operationZones.perimeter)
+          ? { operationZones: toolData.operationZones }
+          : {}),
       } as unknown as Prisma.InputJsonValue,
     },
   });
@@ -1747,4 +1752,56 @@ export async function getComponentFlightLogs(
   });
 
   return { code: 1, message: 'Success', data };
+}
+
+
+// ── Operation zones (optional per-system overlay: green/red/unsurveyed zones + perimeter) ──
+
+export async function getSystemZones(toolId: number, ownerId: number) {
+  const tool = await prisma.tool.findFirst({
+    where: { tool_id: toolId, fk_owner_id: ownerId },
+    select: { tool_code: true, tool_metadata: true },
+  });
+  if (!tool) return { code: 0, message: 'System not found' };
+  const meta = tool.tool_metadata as Record<string, any> | null;
+  return {
+    code: 1,
+    toolCode: tool.tool_code,
+    latitude: meta?.latitude ?? null,
+    longitude: meta?.longitude ?? null,
+    operationZones: readOperationZones(meta),
+  };
+}
+
+export async function saveSystemZones(toolId: number, ownerId: number, zones: OperationZones) {
+  const tool = await prisma.tool.findFirst({
+    where: { tool_id: toolId, fk_owner_id: ownerId },
+    select: { tool_code: true, tool_metadata: true },
+  });
+  if (!tool) return { code: 0, message: 'System not found' };
+
+  const meta = { ...((tool.tool_metadata as Record<string, unknown> | null) ?? {}) };
+  if (zones.zones.length === 0 && !zones.perimeter) delete meta.operationZones;
+  else meta.operationZones = zones;
+
+  await prisma.tool.update({
+    where: { tool_id: toolId },
+    data: { tool_metadata: meta as Prisma.InputJsonValue },
+  });
+  return { code: 1, message: 'Operation zones saved', toolCode: tool.tool_code };
+}
+
+/** Systems assigned to a client that have zones defined (used to warn on flight requests). */
+export async function listClientSystemZones(ownerId: number, clientId: number) {
+  const tools = await prisma.tool.findMany({
+    where: { fk_owner_id: ownerId, tool_active: 'Y' },
+    select: { tool_id: true, tool_code: true, tool_metadata: true },
+  });
+  return tools
+    .filter((t) => {
+      const m = t.tool_metadata as Record<string, any> | null;
+      return m?.deleted !== true && m?.is_warehouse !== true && Number(m?.clientId) === clientId && m?.operationZones;
+    })
+    .map((t) => ({ toolId: t.tool_id, toolCode: t.tool_code, operationZones: readOperationZones(t.tool_metadata) }))
+    .filter((t) => t.operationZones.zones.length > 0 || t.operationZones.perimeter);
 }

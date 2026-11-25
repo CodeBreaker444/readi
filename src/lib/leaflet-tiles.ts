@@ -19,3 +19,6 @@ export const LEAFLET_TILE_SATELLITE = 'https://server.arcgisonline.com/ArcGIS/re
 export const LEAFLET_TILE_SATELLITE_ATTRIBUTION = 'Tiles © Esri';
 
 export const LEAFLET_TILE_MAX_ZOOM = 19;
+
+// Place/boundary labels drawn on top of the satellite imagery.
+export const LEAFLET_TILE_SATELLITE_LABELS = 'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}';

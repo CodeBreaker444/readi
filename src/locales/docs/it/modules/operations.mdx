@@ -238,6 +238,10 @@ Ha due schede:
 - **Interne:** missioni create dai tuoi piloti che richiedono l'approvazione dell'OPM. Approva, oppure rifiuta con un motivo facoltativo. Filtra per Tutte, In attesa, Approvate o Rifiutate.
 - **Esterne:** richieste da sistemi e clienti esterni (vedi [Integrazione DCC](/docs/business-logic/dcc-integration) e [Portale clienti](/docs/modules/client-portal)). Le richieste sono conteggiate come Nuove, Riconosciute o Assegnate. Un OPM può **Passare alla pianificazione** (assegnarla a una missione di pianificazione e a un piano), oppure rifiutarla.
 
+### Avvisi delle zone operative
+
+Se la richiesta ha un waypoint, Readi lo controlla rispetto alle **zone operative** dei sistemi assegnati al cliente della richiesta (vedi [Sistemi](/docs/modules/systems)). Apri la richiesta per vedere il risultato in cima alle schede **Dettagli** e **Azione**: verde quando il waypoint è entro le zone, ambra quando è fuori dal perimetro, in una zona non rilevata o in nessuna zona verde, e rosso quando è in una zona rossa o vicino a una linea rossa. La scheda **Posizione** disegna le zone e il perimetro attorno al waypoint. Un avviso non blocca la richiesta, indica cosa controllare prima di riconoscerla o pianificarla.
+
 ### Cosa può fare un pilota (PIC)
 
 Un PIC vede **Richieste di volo** nel menu e può lavorare nella scheda **Esterne**, in base all'accesso assegnato nella matrice dei permessi (**Operazioni → Richieste di volo**):

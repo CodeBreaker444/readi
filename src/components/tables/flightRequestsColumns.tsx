@@ -8,6 +8,7 @@ export interface FlightRequest {
   request_id: number;
   external_mission_id: string;
   client_name?: string | null;
+  fk_client_id?: number | null;
   deny_note?: string | null;
   mission_type: string | null;
   target: string | null;

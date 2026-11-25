@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+<Document>
+  <name>Readi test site - operation zones</name>
+  <description>Centre 41.9000, 12.5000. Test waypoints (lat, lng): 41.8985,12.4975 = clear (green A); 41.9020,12.4980 = RED zone; 41.9200,12.5000 = outside perimeter; 41.8965,12.5045 = unsurveyed; 41.9035,12.5040 = inside perimeter but no green zone; 41.8990,12.5000 near HV line.</description>
+  <Style id="greenStyle"><LineStyle><color>ff00c800</color></LineStyle><PolyStyle><color>7f00c800</color></PolyStyle></Style>
+  <Style id="redStyle"><LineStyle><color>ff0000ff</color><width>4</width></LineStyle><PolyStyle><color>7f0000ff</color></PolyStyle></Style>
+  <StyleMap id="redMap"><Pair><key>normal</key><styleUrl>#redStyle</styleUrl></Pair></StyleMap>
+  <Style id="greyStyle"><PolyStyle><color>7f888888</color></PolyStyle></Style>
+  <Folder>
+    <name>Boundary</name>
+    <Placemark>
+      <name>Site perimeter</name>
+      <description>Operational perimeter</description>
+      <Polygon><outerBoundaryIs><LinearRing><coordinates>12.493,41.895,0 12.507,41.895,0 12.507,41.905,0 12.493,41.905,0 12.493,41.895,0</coordinates></LinearRing></outerBoundaryIs></Polygon>
+    </Placemark>
+  </Folder>
+  <Folder>
+    <name>Zones</name>
+    <Placemark>
+      <name>Green pad A (safe)</name>
+      <description>Classified by name: contains "green"... see next</description>
+      <Polygon><outerBoundaryIs><LinearRing><coordinates>12.495,41.897,0 12.5,41.897,0 12.5,41.902,0 12.495,41.902,0 12.495,41.897,0</coordinates></LinearRing></outerBoundaryIs></Polygon>
+    </Placemark>
+    <Placemark>
+      <name>Pad B (colour only)</name>
+      <description>Green by style colour</description>
+      <styleUrl>#greenStyle</styleUrl>
+      <Polygon><outerBoundaryIs><LinearRing><coordinates>12.5015,41.898,0 12.5045,41.898,0 12.5045,41.901,0 12.5015,41.901,0 12.5015,41.898,0</coordinates></LinearRing></outerBoundaryIs></Polygon>
+    </Placemark>
+    <Placemark>
+      <name>Substation</name>
+      <description>Red by style colour</description>
+      <styleUrl>#redStyle</styleUrl>
+      <Polygon><outerBoundaryIs><LinearRing><coordinates>12.4975,41.9015,0 12.499,41.9015,0 12.499,41.9025,0 12.4975,41.9025,0 12.4975,41.9015,0</coordinates></LinearRing></outerBoundaryIs></Polygon>
+    </Placemark>
+    <Placemark>
+      <name>HV power line</name>
+      <styleUrl>#redMap</styleUrl>
+      <LineString><coordinates>12.494,41.896,0 12.506,41.904,0</coordinates></LineString>
+    </Placemark>
+    <Placemark>
+      <name>Quarry</name>
+      <description>Grey by style colour</description>
+      <styleUrl>#greyStyle</styleUrl>
+      <Polygon><outerBoundaryIs><LinearRing><coordinates>12.503,41.8955,0 12.506,41.8955,0 12.506,41.8975,0 12.503,41.8975,0 12.503,41.8955,0</coordinates></LinearRing></outerBoundaryIs></Polygon>
+    </Placemark>
+    <Placemark><name>Pin (ignored - not a line/polygon)</name><Point><coordinates>12.5,41.9,0</coordinates></Point></Placemark>
+  </Folder>
+</Document>
+</kml>

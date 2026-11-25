@@ -26,6 +26,83 @@ Un sistema può avere un **Nome posizione** accanto alle coordinate sulla mappa,
 
 ---
 
+## Zone operative
+
+Un sistema può avere delle **zone operative**: una sovrapposizione facoltativa che indica dove può volare. Vengono mostrate sulla mappa e controllate rispetto a ogni richiesta di volo del cliente del sistema. Puoi impostarle quando aggiungi un sistema o in seguito.
+
+| Zona | Colore | Significato |
+|---|---|---|
+| **Zona verde** | Verde | Sicura e approvata per il volo |
+| **Zona rossa** | Rosso | Vietata, non volare (ad esempio una sottostazione o una linea elettrica) |
+| **Zona non rilevata** | Grigio | Non ancora verificata, vola solo dopo un sopralluogo |
+| **Perimetro** | Linea azzurra tratteggiata | Il limite operativo di questo sistema. Un sistema ha un solo perimetro |
+
+Le zone possono essere **poligoni** (aree) o **linee** (ad esempio una linea elettrica). Una linea rossa blocca tutto ciò che si trova entro circa 30 m. Ogni zona ha un nome che puoi modificare.
+
+### Aggiungere o modificare le zone
+
+- **Quando aggiungi un sistema:** apri la scheda **Zone operative (facoltativo)**. Tutto ciò che contiene è facoltativo e la scheda mostra quante zone hai disegnato.
+- **Su un sistema esistente:** in **Sistemi → Elenco Sistemi Drone**, clicca l'icona della recinzione sulla riga del sistema (suggerimento **Zone operative**), poi **Salva zone**. Gli utenti che possono solo visualizzare i sistemi vedono le zone ma non il pulsante Salva.
+
+La mappa si apre in vista **satellite**. Il pulsante dei livelli passa alla mappa stradale.
+
+| Strumento | Cosa fa |
+|---|---|
+| Poligono | Clicca sulla mappa per posizionare gli angoli di un'area, poi premi **Invio** o il pulsante di conferma |
+| Linea | Come sopra, per una zona lineare |
+| Recinzione | Disegna il perimetro operativo. Disegnarne uno nuovo sostituisce il precedente (un messaggio ti avvisa). **Esc** mantiene il precedente |
+| Punti verde, rosso, grigio | Il tipo della prossima zona che disegni. Con una zona selezionata, ne cambiano il tipo |
+| Annulla, conferma, croce | Rimuovono l'ultimo punto, terminano la forma, la annullano (**Esc**) |
+| Zoom su tutte le zone | Adatta la mappa a tutto ciò che hai disegnato |
+
+Clicca una zona sulla mappa o nell'elenco per selezionarla. Trascina i suoi punti per modificarne la forma, oppure clicca con il tasto destro su un punto per rimuoverlo. Usa l'elenco sotto la mappa per rinominare una zona, cambiarne il tipo o eliminarla.
+
+### Importare un file KMZ o KML
+
+Clicca **Importa KMZ** e scegli un file `.kmz` o `.kml`, ad esempio esportato da Google Earth. Ogni poligono e ogni linea al suo interno viene aggiunto come zona. Un KMZ è un KML compresso.
+
+Il tipo di ogni forma viene deciso in quest'ordine:
+
+1. **Il suo nome:** parole come *red*, *no-fly*, *restricted*, *rosso*, *vietato* la rendono rossa. *green*, *safe*, *approved*, *verde* la rendono verde. *unsurveyed*, *unknown*, *grey*, *grigia* la rendono grigia. *perimeter*, *boundary*, *fence*, *limite* la rendono il perimetro.
+2. **Il suo colore** nel file (verde, rosso o grigio).
+3. **Il nome della sua cartella**, con le stesse parole.
+4. Se nulla corrisponde, viene importata come **non rilevata** (grigia). Controllala e modificala nell'elenco.
+
+I punti e le sovrapposizioni di immagini vengono ignorati e il messaggio indica quanti. Se il file contiene più perimetri, viene usato solo il primo. Importare in un sistema che ha già delle zone le aggiunge a quelle esistenti. I fori all'interno dei poligoni vengono ignorati. Dopo l'importazione, controlla l'elenco e usa **Salva zone**.
+
+### Limiti e cose da sapere
+
+- **Dimensioni:** fino a **500 zone**, **5.000 punti** per forma e **100.000 punti** in totale per sistema. Un file KMZ/KML può pesare fino a **10 MB**. Quando importi una forma con più di 5.000 punti, Readi mantiene punti equidistanti così che la forma resti vicina all'originale.
+- **I fori vengono ignorati.** Un poligono con un anello interno (ad esempio un'area verde con un edificio escluso) viene importato come area piena. Disegna il foro come zona rossa separata.
+- **Contorni che si incrociano:** se una forma si interseca, la parte incrociata conta come esterna. Ridisegnala senza incroci.
+- **Linea di cambio data:** le forme che attraversano il meridiano 180° non sono supportate.
+- **Le linee rosse** bloccano circa 30 m per lato. Le linee **verdi** e **non rilevate** sono mostrate sulla mappa, ma vengono controllate solo le linee rosse.
+- **Duplica:** **Duplica sistema** copia le zone sul nuovo sistema.
+- **Un solo perimetro per sistema.** Per coprire più siti, usa zone verdi per ciascuno oppure crea un sistema per sito.
+- **Gli avvisi sono consigli.** Non bloccano mai una richiesta e il testo dell'avviso sulla richiesta di volo è in inglese.
+
+### Avvisi sulle richieste di volo
+
+Quando un OPM apre una richiesta di volo **esterna** con un waypoint, Readi controlla il waypoint rispetto alle zone di ogni sistema assegnato a quel cliente. Il risultato appare in cima alla richiesta (schede Dettagli e Azione) e la scheda **Posizione** disegna le zone e il perimetro attorno al waypoint.
+
+| Risultato | Mostrato come |
+|---|---|
+| In una zona verde, dentro il perimetro | Verde: entro le sue zone operative |
+| In una zona rossa, o vicino a una linea rossa | Avviso di pericolo **rosso** |
+| In una zona non rilevata | Avviso ambra |
+| Fuori dal perimetro | Avviso ambra |
+| Dentro il perimetro ma in nessuna zona verde | Avviso ambra |
+
+Un avviso non blocca la richiesta. Indica all'OPM cosa controllare prima di riconoscerla o pianificarla. I sistemi senza zone, e i clienti i cui sistemi non ne hanno, non mostrano nulla.
+
+---
+
+## Pulsanti di riga
+
+In **Sistemi → Elenco Sistemi Drone**, i pulsanti su ogni riga di sistema e di componente sono icone. Passa il mouse su una per vederne il nome. Su una riga di sistema sono **Vedi**, **Modifica**, **Duplica**, **File**, **Relazioni**, **Zone operative** (icona della recinzione) ed **Elimina**. Su una riga di componente sono **Vedi**, **Modifica**, **Log**, **Voli**, **Report QTB** (solo droni) ed **Elimina**. Quelli che non hai il permesso di usare sono nascosti.
+
+---
+
 ## Report QTB (PDF)
 
 Il report QTB è un registro di volo stampabile per un drone. È disponibile per i componenti di tipo **drone**.

@@ -1,6 +1,7 @@
 'use client';
 
 import { useAuthorization } from '@/components/authorization/AuthorizationProvider';
+import { usePermissions } from '@/components/permissions/PermissionsProvider';
 import { FlightRequestDetailModal } from '@/components/operation/flight-requests/FlightRequestDetailModal';
 import { FlightRequestsHeader } from '@/components/operation/flight-requests/FlightRequestsHeader';
 import { FlightRequestsLogModal } from '@/components/operation/flight-requests/FlightRequestsLogModal';
@@ -38,6 +39,9 @@ export default function FlightRequestsTable() {
   const { isDark } = useTheme();
   const { t } = useTranslation();
   const { requireAuthorization } = useAuthorization();
+  const { role } = usePermissions();
+  // Only OPM-level roles decide internal approvals; a PIC only has the External tab.
+  const canSeeInternal = role === null || ['OPM', 'ADMIN', 'SUPERADMIN'].includes(role);
   const [tab, setTab] = useState<'internal' | 'external'>('internal');
   const [internalPending, setInternalPending] = useState(0);
   const [internalFilter, setInternalFilter] = useState('PENDING');
@@ -95,12 +99,18 @@ export default function FlightRequestsTable() {
 
   useEffect(() => { load(); }, [load]);
 
+  // A PIC has no Internal tab: once the role is known, open External instead.
+  useEffect(() => {
+    if (role !== null && !canSeeInternal) setTab('external');
+  }, [role, canSeeInternal]);
+
   // Pending badge on the Internal pill — also shown while the External tab is open.
   useEffect(() => {
+    if (!canSeeInternal) return;
     axios.get('/api/operation/approvals', { params: { status: 'PENDING' } })
       .then(({ data }) => setInternalPending((data.items ?? []).length))
       .catch(() => {});
-  }, []);
+  }, [canSeeInternal]);
 
   // Deny opens a dialog so the OPM can add a reason, which is sent to the client's DCC as `note`.
   function handleDeny(request_id: number) {
@@ -378,6 +388,7 @@ export default function FlightRequestsTable() {
         filterClient={filterClient}
         onClientChange={setFilterClient}
         internalPending={internalPending}
+        showInternal={canSeeInternal}
         onFilterChange={tab === 'internal' ? setInternalFilter : setFilterStatus}
         onRefresh={tab === 'internal' ? () => setInternalRefresh((n) => n + 1) : load}
       />

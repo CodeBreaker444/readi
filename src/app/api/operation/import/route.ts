@@ -4,7 +4,8 @@ import { getFlytbaseCredentials, getFlytbaseCredentialsForCompany } from '@/back
 import { getOrganizationCredentials } from '@/backend/services/integrations/flytbase-organization-service';
 import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { requirePermission } from '@/lib/auth/api-auth';
-import { internalError } from '@/lib/api-error';
+import { apiError, internalError } from '@/lib/api-error';
+import { canChangePilot } from '@/lib/auth/pilot-assignment';
 import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -121,6 +122,10 @@ export async function POST(req: NextRequest) {
       recurrentEndDate: String(formData.get('recurrent_end_date') ?? ''),
       recurrentDaysOfWeek: formData.getAll('recurrent_days_of_week').map((d) => Number(d)).filter((d) => !isNaN(d)),
     };
+
+    if (params.pilotId && !canChangePilot(session!.user, params.pilotId, null)) {
+      return apiError(E.PX007, 403);
+    }
 
     const result = await importMissionFromLog(file, params, flytbaseFlightId || null);
 
