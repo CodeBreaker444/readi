@@ -8,6 +8,7 @@ export interface FlightRequest {
   request_id: number;
   external_mission_id: string;
   client_name?: string | null;
+  fk_client_id?: number | null;
   deny_note?: string | null;
   mission_type: string | null;
   target: string | null;
@@ -191,6 +192,7 @@ export function createFlightRequestColumns(handlers: FlightRequestColumnHandlers
 
             {/* State progression buttons */}
             {showStateButtons && (
+              <FeatureGate feature="operation_flight_requests" require="edit">
               <>
                 {r.dcc_status !== 'IN_PROGRESS' && (
                   <Button
@@ -225,6 +227,7 @@ export function createFlightRequestColumns(handlers: FlightRequestColumnHandlers
                   {t('planning.flightRequests.statuses.ISSUE')}
                 </Button>
               </>
+              </FeatureGate>
             )}
 
             {/* Delete */}

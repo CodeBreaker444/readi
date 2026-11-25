@@ -783,15 +783,19 @@ export async function deleteOperationAttachment(attachmentId: number): Promise<v
 export async function batchSetPilot(
   missionIds: number[],
   pilotId: number,
-  ownerId: number
+  ownerId: number,
+  /** When true, only missions with no pilot yet (or already this pilot) may be set — an existing pilot is never replaced. */
+  onlyUnassigned = false,
 ): Promise<{ updated: number[]; skipped: number[]; pilotName: string; updatedMissions: { id: number; code: string }[] }> {
   const missions = await prisma.pilot_mission.findMany({
     where: { pilot_mission_id: { in: missionIds }, fk_owner_id: ownerId },
-    select: { pilot_mission_id: true, status_name: true, mission_code: true },
+    select: { pilot_mission_id: true, status_name: true, mission_code: true, fk_pilot_user_id: true },
   });
 
-  const planned = missions.filter((m) => m.status_name === 'PLANNED');
-  const skipped = missions.filter((m) => m.status_name !== 'PLANNED').map((m) => m.pilot_mission_id);
+  const canSet = (m: (typeof missions)[number]) =>
+    m.status_name === 'PLANNED' && (!onlyUnassigned || m.fk_pilot_user_id == null || m.fk_pilot_user_id === pilotId);
+  const planned = missions.filter(canSet);
+  const skipped = missions.filter((m) => !canSet(m)).map((m) => m.pilot_mission_id);
 
   if (planned.length === 0) return { updated: [], skipped, pilotName: '', updatedMissions: [] };
 

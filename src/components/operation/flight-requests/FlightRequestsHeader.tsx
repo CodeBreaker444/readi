@@ -19,6 +19,8 @@ interface FlightRequestsHeaderProps {
   filterClient?: string;
   onClientChange?: (value: string) => void;
   internalPending: number;
+  /** Internal (OPM approval) tab; hidden for roles that cannot decide approvals. Defaults to shown. */
+  showInternal?: boolean;
   onFilterChange: (value: string) => void;
   onRefresh: () => void;
 }
@@ -36,6 +38,7 @@ export function FlightRequestsHeader({
   filterClient = 'ALL',
   onClientChange,
   internalPending,
+  showInternal = true,
   onFilterChange,
   onRefresh,
 }: FlightRequestsHeaderProps) {
@@ -53,7 +56,7 @@ export function FlightRequestsHeader({
         </div>
         <div className="flex items-center gap-3">
           <div className={cn('inline-flex rounded-full p-0.5 gap-0.5', isDark ? 'bg-slate-800' : 'bg-gray-100')} role="tablist">
-            {(['internal', 'external'] as const).map((key) => (
+            {(['internal', 'external'] as const).filter((key) => key !== 'internal' || showInternal).map((key) => (
               <button
                 key={key}
                 type="button"

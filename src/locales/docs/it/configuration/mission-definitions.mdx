@@ -1,0 +1,49 @@
+---
+title: "Definizioni delle missioni"
+description: "Configura i tipi, le categorie, gli stati e i risultati usati dalle missioni."
+---
+
+Le Definizioni delle missioni sono le scelte che le persone vedono quando creano o concludono una missione. Le definisce la tua azienda, così corrispondono al tuo modo di lavorare. Sono quattro, nella barra laterale sotto **Missione**:
+
+| Insieme | Cosa descrive | Campi |
+|---|---|---|
+| **Tipo missione** | Il genere di lavoro, ad esempio un rilievo | Codice (ad esempio `SURV`), Nome, Descrizione |
+| **Categoria missione** | Il genere di cliente o di lavoro, ad esempio Commerciale | Codice categoria (ad esempio `COMMERCIAL`), Nome categoria, Descrizione |
+| **Stato missione** | Le fasi che una missione attraversa, ad esempio Pianificata | Codice (ad esempio `PLANNED`), Nome, Descrizione, Ordine, Stato finale |
+| **Risultato missione** | Come si è conclusa una missione, ad esempio Successo | Codice (ad esempio `SUCCESS`), Descrizione |
+
+Ogni pagina funziona allo stesso modo. Mostra quanti elementi hai, con un elenco in cui puoi cercare.
+
+---
+
+## Aggiungere, modificare ed eliminare
+
+1. Apri la pagina, ad esempio **Tipo missione**.
+2. Clicca su **Aggiungi** (ad esempio **Aggiungi tipo missione**).
+3. Compila i campi. Sono tutti obbligatori.
+4. Clicca su **Aggiungi**. Per modificarne uno in seguito, usa il suo pulsante di modifica e **Salva modifiche**.
+
+L'eliminazione chiede conferma.
+
+<Warning>
+Le missioni che usano già un valore lo mantengono. Rifletti prima di rinominare o eliminare qualcosa che è in uso, perché cambia il modo in cui si leggono le missioni passate.
+</Warning>
+
+---
+
+## Gli stati della missione nel dettaglio
+
+Gli stati sono l'insieme più importante perché governano la Bacheca giornaliera e le regole delle missioni.
+
+- **Ordine:** la posizione dello stato nel flusso di lavoro, dal primo all'ultimo.
+- **Stato finale:** spuntalo per uno stato che conclude una missione, come Completata o Annullata. La pagina mostra quanti stati sono attivi e quanti sono finali.
+
+Modificare gli stati predefiniti può influire su quali spostamenti sono consentiti. Consulta prima [Vincoli di stato della missione](/docs/platform-rules/mission-status-gates) e [Ciclo di vita della missione](/docs/business-logic/mission-lifecycle).
+
+---
+
+## Permessi
+
+Chi può leggere, modificare ed eliminare in quest'area, per ruolo.
+
+<PermissionsTable section="Mission" />

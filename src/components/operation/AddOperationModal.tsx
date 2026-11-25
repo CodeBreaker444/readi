@@ -1,5 +1,6 @@
 'use client'
 
+import { localizeText } from '@/lib/api-error-message';
 import { useTimezone } from '@/components/TimezoneProvider'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -186,7 +187,7 @@ export function AddOperationModal({ open, onClose, onSuccess, isDark }: AddOpera
                         onValueChange={(v) => {
                             const selected = options.find(o => o.id === Number(v))
                             if (selected?.is_non_operational) {
-                                toast.error(`System "${selected.label}" is not operational due to an expired component and cannot be used for missions.`)
+                                toast.error(localizeText('System "{{label}}" is not operational due to an expired component and cannot be used for missions.', { label: selected.label }))
                                 return
                             }
                             if (selected?.in_maintenance) {

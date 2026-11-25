@@ -1,0 +1,77 @@
+---
+title: "Repository documenti"
+description: "Archiviazione centralizzata di documenti operativi, evidenze e file normativi."
+---
+
+## Funzionalità principali
+
+- Caricare e taggare documenti operativi (SOP, manuali, certificati)
+- Collegare un documento a più componenti o sistemi
+- Conservare ogni versione di un documento, con un registro delle modifiche
+- Allegare documenti ai requisiti di conformità come evidenza
+- Filtrare per area, stato, riservatezza, tipo di documento e data di caricamento
+- Avviso di drone non operativo sui documenti collegati
+
+---
+
+## Aggiungere o modificare un documento
+
+Clicca su **Nuovo Documento**. Il modulo richiede:
+
+| Campo | Note |
+|---|---|
+| **Titolo** e **Tipo** | Entrambi obbligatori. Scegli il tipo dall'elenco |
+| **Riservatezza** | **Pubblico**, **Interno**, **Riservato** o **Limitato**. Usala per indicare quanto è sensibile il documento |
+| **Proprietario (Ruolo)** | Il ruolo responsabile del documento |
+| **Stato** | **Bozza**, **In revisione**, **Approvato** o **Obsoleto**. I nuovi documenti iniziano come Bozza |
+| **Data di decorrenza** e **Data di scadenza** | Quando il documento inizia e smette di essere valido. La scadenza deve essere successiva alla data di decorrenza |
+| **Descrizione**, **Parole chiave** | Aiutano le persone a trovarlo con la ricerca |
+| **File** | PDF, DOCX, XLSX, JPG, PNG o TXT, fino a 25 MB |
+
+La colonna **Validità** nell'elenco mostra queste date a colpo d'occhio.
+
+### Gestire i tipi di documento
+
+Manca un tipo? Clicca su **Gestisci** accanto al campo del tipo (**Gestisci tipi di documento**) per aggiungere, rinominare o rimuovere tipi senza uscire dal modulo.
+
+### Collegamento a componenti e sistemi
+
+Nel campo **Componente** puoi scegliere **uno o più** componenti, di un sistema o di più sistemi, così lo stesso documento (ad esempio un manuale o un certificato) viene allegato a tutto ciò a cui si applica. Anche i sistemi a cui appartengono quei componenti vengono collegati.
+
+- Usa **Filtra per sistema** per restringere l'elenco dei componenti.
+- Un contatore mostra quanti ne hai selezionati.
+- Se un sistema collegato non è operativo o è stato dismesso, il modulo ti avvisa.
+
+---
+
+## Versioni, registro modifiche e cronologia revisioni
+
+I documenti cambiano nel tempo e Readi conserva le versioni precedenti.
+
+1. Apri il documento con **Modifica**.
+2. Carica il file aggiornato in **Nuova Revisione**.
+3. Descrivi la modifica in **Registro modifiche**, ad esempio "Aggiornati i limiti della batteria".
+4. Salva. Il numero di **Versione** aumenta e il file precedente viene conservato.
+
+Scegli **Cronologia revisioni** su un documento per vedere tutte le sue versioni con il relativo registro modifiche, così puoi aprire o scaricare qualsiasi versione precedente.
+
+---
+
+## Visualizzazione e download
+
+- **Visualizza** apre un'anteprima all'interno di Readi (o in una nuova scheda per i tipi di file che non possono essere visualizzati in anteprima).
+- **Scarica** salva il file sul tuo computer.
+
+---
+
+## Principali percorsi dell'app
+
+- `/document-repository`
+
+---
+
+## Permessi
+
+Chi può leggere, modificare ed eliminare in quest'area, in base al ruolo.
+
+<PermissionsTable section="Document repository" />

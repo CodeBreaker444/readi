@@ -4614,6 +4614,46 @@
     }
   },
   "systems": {
+    "zones": {
+      "perimeterReplaced": "Previous perimeter replaced (a system has one perimeter)",
+      "replacesPerimeter": "replaces the existing perimeter",
+      "title": "Operation zones",
+      "tabDetails": "Details",
+      "tabZones": "Operation zones (optional)",
+      "intro": "Define green (safe), red (restricted) and unsurveyed (grey) zones plus the operational perimeter of this system. They are overlaid on flight requests to warn about conflicts. Optional.",
+      "drawPolygon": "Draw polygon zone",
+      "drawLine": "Draw line zone",
+      "drawPerimeter": "Draw operational perimeter",
+      "undoPoint": "Undo last point",
+      "finish": "Finish shape (Enter)",
+      "cancel": "Cancel drawing (Esc)",
+      "importTitle": "Import zones from a KMZ/KML file",
+      "import": "Import KMZ",
+      "fit": "Zoom to all zones",
+      "showMap": "Switch to street map",
+      "showSatellite": "Switch to satellite",
+      "toggleBasemap": "Toggle basemap",
+      "drawingHint": "Click the map to add points · {{n}} placed · Enter to finish, Esc to cancel",
+      "empty": "No zones yet. Draw on the map or import a KMZ/KML file. Everything here is optional.",
+      "perimeter": "Operational perimeter",
+      "perimeterTag": "Perimeter",
+      "line": "Line",
+      "polygon": "Area",
+      "delete": "Delete",
+      "vertexHint": "Drag to move · right-click to remove",
+      "tooMany": "Too many zones",
+      "importEmpty": "No lines or polygons found in this file",
+      "importDone": "{{count}} zones imported",
+      "importPerimeter": " + perimeter",
+      "importSkipped": "{{count}} skipped (no line/polygon)",
+      "importFailed": "Could not read this KML/KMZ file",
+      "loadFailed": "Could not load zones",
+      "saveFailed": "Could not save zones",
+      "saved": "Operation zones saved",
+      "save": "Save zones",
+      "saving": "Saving…",
+      "close": "Close"
+    },
     "manage": {
       "title": "Drone System List",
       "subtitle": "Manage systems, models, and system components",
@@ -5078,6 +5118,7 @@
           "duplicate": "Duplicate",
           "files": "Files",
           "relations": "Relations",
+          "zones": "Operation zones",
           "delete": "Delete",
           "log": "Log",
           "flights": "Flights",
@@ -6975,5 +7016,21 @@
         "unlink": "Could not unlink the mission"
       }
     }
+  },
+  "apiErrors": {},
+  "apiMessages": {
+    "Documento eliminato": "Document deleted",
+    "Documento aggiornato": "Document updated"
+  },
+  "apiValidation": {
+    "required": "is required",
+    "maxChars": "must be at most {{n}} characters",
+    "minChars": "must be at least {{n}} characters",
+    "maxNum": "must be at most {{n}}",
+    "minNum": "must be at least {{n}}",
+    "gtNum": "must be greater than {{n}}",
+    "wholeNumber": "must be a whole number",
+    "validType": "must be a valid {{type}}",
+    "unsupported": "has an unsupported value"
   }
 }

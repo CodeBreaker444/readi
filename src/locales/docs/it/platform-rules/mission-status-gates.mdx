@@ -1,0 +1,57 @@
+---
+title: "Vincoli di stato della missione"
+description: "Tutte le condizioni che bloccano un cambio di stato della missione sulla Bacheca delle operazioni."
+---
+
+Il cambio di stato di una missione (ad es. PLANNED → IN_PROGRESS) è subordinato a diversi controlli indipendenti. Tutti devono essere superati prima che l'aggiornamento proceda.
+
+---
+
+## Vincolo 1 — PIN di autorizzazione
+
+L'utente che agisce deve avere un PIN di autorizzazione configurato.
+
+- **Blocco:** nessun PIN di autorizzazione è stato configurato per questo utente
+- **Errore:** "Authorization PIN not set up"
+- **Soluzione:** l'utente configura il PIN in Impostazioni → Sicurezza
+
+---
+
+## Vincolo 2 — Dichiarazione giornaliera del pilota
+
+Il pilota assegnato alla missione deve aver presentato una dichiarazione oggi.
+
+- **Blocco:** il pilota non ha presentato una dichiarazione pre-volo dall'inizio di oggi (00:00)
+- **Soluzione:** il pilota presenta la propria dichiarazione pre-volo per la giornata
+
+---
+
+## Vincolo 3 — Stato operativo del sistema
+
+Il drone deve essere `OPERATIONAL`.
+
+- **Condizioni di blocco:**
+  - Componente attivo con `expiration_date <= today` → `NOT_OPERATIONAL`
+  - Ticket di manutenzione aperto (`ticket_status != CLOSED`) → `MAINTENANCE`
+- **Soluzione:** sostituisci/disattiva il componente scaduto, oppure chiudi il ticket di manutenzione
+
+---
+
+## Vincolo 4 — Blocco dello stato finale
+
+Gli stati terminali non possono avere ulteriori transizioni.
+
+- **Stati finali:** `COMPLETED`, `CANCELLED`, `FAILED` (`is_final_status = true`)
+- **Effetto:** la scheda della missione non è trascinabile sulla bacheca
+
+---
+
+## Riepilogo
+
+| Vincolo | Condizione di blocco | Risoluzione |
+|---|---|---|
+| PIN di autorizzazione | Nessun PIN di autorizzazione configurato | Configura il PIN in Impostazioni → Sicurezza |
+| Dichiarazione giornaliera | Nessuna dichiarazione presentata oggi | Il pilota presenta la dichiarazione pre-volo |
+| NOT_OPERATIONAL | Componente scaduto | Sostituisci o disattiva il componente |
+| MAINTENANCE | Ticket di manutenzione aperto | Chiudi il ticket |
+| Blocco dello stato finale | Già COMPLETED / CANCELLED / FAILED | N/D: stato terminale |

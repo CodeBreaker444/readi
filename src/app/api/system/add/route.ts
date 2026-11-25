@@ -4,6 +4,7 @@ import { requireFeatureAccess, requirePermission } from '@/lib/auth/api-auth';
 import { internalError, zodError } from '@/lib/api-error';
 import { zDateString } from '@/lib/zod-date';
 import { E } from '@/lib/error-codes';
+import { operationZonesSchema } from '@/lib/operation-zones';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
@@ -19,6 +20,7 @@ const toolSchema = z.object({
   longitude: z.number().optional().nullable(),
   locationPseudoName: z.string().max(255).optional().nullable(),
   activationDate: zDateString().optional().nullable(),
+  operationZones: operationZonesSchema.optional().nullable(),
 });
 export async function POST(request: NextRequest) {
   try {
@@ -71,6 +73,7 @@ export async function POST(request: NextRequest) {
       locationPseudoName: data.locationPseudoName,
       activationDate: data.activationDate,
       clientId: data.clientId,
+      operationZones: data.operationZones,
       files,
     });
 

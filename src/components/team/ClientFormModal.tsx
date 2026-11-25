@@ -1,5 +1,6 @@
 'use client';
 
+import { localizeText } from '@/lib/api-error-message';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -210,12 +211,12 @@ export function ClientFormModal({ isOpen, onClose, mode, clientData, onSubmit, i
         toast.success(resetPassword ? 'New password generated and emailed to the client' : 'Portal user updated');
         onPortalUpdated?.();
       } else {
-        toast.error(res.data.error || 'Failed to update portal user');
+        toast.error(res.data.error || localizeText('Failed to update portal user'));
       }
     } catch (err: any) {
       const d = err?.response?.data;
       const fieldErr = d?.errors && Object.values(d.errors).flat().find(Boolean);
-      toast.error((fieldErr as string) || d?.error || 'Failed to update portal user');
+      toast.error((fieldErr as string) || d?.error || localizeText('Failed to update portal user'));
     } finally {
       setPortalBusy(null);
     }

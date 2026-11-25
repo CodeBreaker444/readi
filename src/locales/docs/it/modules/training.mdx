@@ -1,0 +1,65 @@
+---
+title: "Formazione"
+description: "Registra corsi e certificati di ogni persona, scopri cosa è valido o scaduto e consulta il calendario delle sessioni."
+---
+
+La Formazione ha tre pagine nella barra laterale: **Corsi**, **Calendario** e, per Admin, OPM e Super Admin, **Notifiche email**.
+
+---
+
+## Corsi
+
+I record di formazione di ogni persona e i relativi certificati.
+
+La pagina mostra il numero totale di record. Filtra per **Valido** o **Scaduto**, oppure per utente, quindi usa **Cancella** per reimpostare.
+
+### Aggiungere un record
+
+Fai clic su **Nuovo** e compila:
+
+| Campo | Note |
+|---|---|
+| Utenti | Scegli una o più persone. Lo stesso record viene creato per ciascuna |
+| Nome del corso e Tipo | Cosa è stato insegnato |
+| Sessione | La sessione a cui appartiene |
+| Tipo di certificato | **Partecipazione** (ha partecipato) o **Qualifica** (ha superato un esame) |
+| Data della sessione, Data di completamento | Quando si è svolto e quando è terminato |
+| Data di scadenza | Quando il certificato cessa di essere valido |
+
+I record possono essere modificati o eliminati. L'eliminazione rimuove il record del corso di quella persona.
+
+### Curriculum formativo
+
+Apri una persona per vedere il suo **Curriculum formativo**, suddiviso in **Attivi** e **Storico** (record più vecchi, scaduti). Ogni riga mostra il corso, il tipo, il certificato, la sessione, la data di completamento, la data di scadenza e uno stato **Valido** o **Scaduto**.
+
+### Ricalcola KPI
+
+**Ricalcola KPI** ricalcola l'indicatore mensile della Formazione a partire dai registri di presenza, e questo alimenta la [Dashboard](/docs/modules/dashboard).
+
+---
+
+## Calendario
+
+Mostra le sessioni di formazione pianificate. Apri una sessione per vedere ogni partecipante, la data della sessione e il suo stato: Completato, In corso, Assente o Altro. Usa **Aggiorna** per ricaricare.
+
+---
+
+## Notifiche email
+
+Admin, OPM e Super Admin scelgono quali email di formazione vengono inviate: quando un record viene creato, aggiornato o eliminato, e un promemoria **Certificazione in scadenza** inviato 30, 14, 7, 3 e 1 giorni prima della scadenza. Non viene inviato nulla se le notifiche email sono disattivate per l'azienda.
+
+---
+
+## Permessi
+
+Chi può leggere, modificare ed eliminare in quest'area, in base al ruolo.
+
+<PermissionsTable section="Training" />
+
+---
+
+## Correlati
+
+- [Logica del pilota](/docs/business-logic/pilot-logic)
+- [Gestione della sicurezza](/docs/modules/safety-management)
+- [Notifiche email](/docs/business-logic/email-notifications)

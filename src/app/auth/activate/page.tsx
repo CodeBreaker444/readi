@@ -1,5 +1,6 @@
 'use client'
 
+import { localizeText } from '@/lib/api-error-message';
 import { CheckCircle, Loader2Icon, XCircle } from 'lucide-react'
 import Image from 'next/image'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -21,7 +22,7 @@ export default function ActivatePage() {
 
       if (!activationKey || !email || !usernameParam) {
         setStatus('error')
-        toast.error('Invalid activation link. Please contact your administrator.')
+        toast.error(localizeText('Invalid activation link. Please contact your administrator.'))
         return
       }
 
@@ -38,17 +39,17 @@ export default function ActivatePage() {
 
         if (data.code === 1) {
           setStatus('success')
-          toast.success('Your account has been activated successfully!')
+          toast.success(localizeText('Your account has been activated successfully!'))
           setTimeout(() => router.push(`/auth/login?activated=true&username=${usernameParam}`), 3000)
         } else if (data.title === 'alreadyActivated') {
           setStatus('already_active')
         } else {
           setStatus('error')
-          toast.error(data.message || 'Activation failed.')
+          toast.error(data.message || localizeText('Activation failed.'))
         }
       } catch (error) {
         setStatus('error')
-        toast.error('An error occurred during activation.')
+        toast.error(localizeText('An error occurred during activation.'))
       }
     }
 

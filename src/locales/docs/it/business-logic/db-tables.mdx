@@ -1,0 +1,105 @@
+---
+title: "Panoramica dei dati"
+description: "Dove Readi conserva ogni tipo di informazione e come si collegano tra loro i record principali."
+---
+
+Tutto in Readi appartiene a una **azienda** (chiamata anche owner). Gli utenti vedono sempre e solo i record della propria azienda. Questa pagina spiega i principali tipi di record e come sono collegati.
+
+---
+
+## Come sono collegati i record
+
+```
+Azienda
+ ├─ Clienti
+ │    └─ Valutazioni → Pianificazioni → Piani di missione (rotte)
+ │                                   └─ Missioni (voli)
+ ├─ Sistemi (droni e attrezzature)
+ │    ├─ Componenti (drone, batteria, controller, payload)
+ │    ├─ Modelli
+ │    └─ Ticket di manutenzione
+ ├─ Utenti, team e ruoli
+ └─ Integrazioni (D-Flight, DCC, Control Center)
+```
+
+---
+
+## Record principali
+
+| Record | Cosa contiene |
+|---|---|
+| **Azienda** | L'organizzazione: nome, indirizzo, funzionalità abilitate (come D-Flight e Drone ATC), limiti email |
+| **Cliente** | Un cliente dell'azienda: dati di contatto, date del contratto |
+| **Valutazione** | Una richiesta di valutare un'operazione per un cliente, con il suo stato e i file allegati |
+| **Pianificazione** | Il piano che nasce da una valutazione: date, stato, chi è assegnato |
+| **Piano di missione** | Il percorso e i parametri di volo di una pianificazione, con versioni e limiti |
+| **Missione** | Un volo effettivo o programmato: pilota, sistema, orari, luogo, esito, approvazione e stato D-Flight |
+| **Richiesta di volo** | Una richiesta ricevuta dall'esterno (un DCC o un cliente), in attesa di una decisione dell'OPM |
+| **Gruppo di slot** | Un insieme di fasce orarie prenotabili aperto da un OPM: ore degli slot, intervallo di date, regola di blocco, giorni di approvazione, un cliente facoltativo, un fuso orario del sito, un orario di pubblicazione facoltativo e un pubblico facoltativo di gruppi di piloti. Vedi [Prenotazione slot](/docs/modules/slot-booking) |
+| **Gruppo di piloti** | Un gruppo personalizzato di utenti dell'azienda (ad esempio Esperti o Esterni), con un flag esperto. Un gruppo di slot può essere offerto a gruppi di piloti scelti |
+| **Slot** | Un blocco orario di un gruppo di slot in una data, aperto o chiuso |
+| **Prenotazione slot** | La richiesta di un pilota per uno slot, con il suo stato (in attesa, approvata, rifiutata) e il PDF allegato all'approvazione |
+| **Missione slot** | Collega uno slot approvato alle missioni che il pilota vola al suo interno (scheda Oggi). Una missione è collegata al massimo a uno slot; il collegamento viene rimosso quando lo slot o la missione vengono eliminati |
+| **Impostazioni slot predefinite** | I valori predefiniti dell'azienda che precompilano ogni nuovo gruppo di slot, più la finestra di blocco per la modifica delle richieste e il giorno in cui inizia il ciclo delle ore di volo |
+| **Previsioni meteo** | Una previsione oraria memorizzata a 7 giorni per località (circa 1 km), usata dalla prenotazione slot. Aggiornata quando ha più di 30 minuti e da un cron job |
+| **Limite di volo del pilota** | Il limite mensile di volo di un pilota in ore (nessuna riga = nessun limite). La prenotazione slot lo confronta con le ore volate in questo ciclo |
+| **Sistema** | Un assetto drone composto da componenti. Ha un modello, uno stato e un cliente facoltativo |
+| **Componente** | Una parte di un sistema, con numero di serie, ore di utilizzo, contatori di manutenzione, assicurazione e ID D-Flight |
+| **Modello** | La definizione di produttore e modello, inclusi i limiti dei cicli di manutenzione |
+| **Ticket di manutenzione** | Una riparazione o ispezione che copre uno o più componenti, con cronologia e allegati |
+
+---
+
+## Persone e accessi
+
+| Record | Cosa contiene |
+|---|---|
+| **Utente** | Accesso, nome, ruolo e profilo |
+| **Team** | Gruppi di utenti |
+| **Permessi** | Cosa ogni ruolo, e ogni singolo utente, può aprire o modificare |
+| **Chiave di autorizzazione** | La chiave dietro il PIN di autorizzazione di ogni utente, usata per firmare i cambi di stato |
+| **Qualifiche e dichiarazioni** | Qualifiche e dichiarazioni dei piloti |
+
+Vedi il [Glossario dei ruoli](/docs/business-logic/role-glossary) per cosa può fare ogni ruolo.
+
+---
+
+## Record di controllo
+
+| Record | Cosa contiene |
+|---|---|
+| **Registro di audit** | Chi ha fatto cosa e quando, con il suo ruolo e indirizzo IP |
+| **Notifica** | Messaggi mostrati nell'app, con stato di lettura |
+| **Transazioni firmate** | Cambi di stato firmati con il PIN dell'utente |
+| **Registri di sicurezza** | Segnalazioni di sicurezza, azioni e indicatori di prestazione (SPI/KPI) |
+| **Conformità** | Requisiti, evidenze e cronologia degli stati |
+| **Formazione** | Corsi, sessioni e presenze |
+| **Archivio documenti** | File caricati e relativi tipi |
+| **Piani di risposta alle emergenze** | Contatti e procedure per tipo di emergenza |
+
+---
+
+## Impostazioni di integrazione
+
+| Record | Cosa contiene |
+|---|---|
+| **Impostazioni D-Flight** | Una per azienda: indirizzo, accesso e certificato facoltativo. Le password sono memorizzate cifrate |
+| **Integrazioni cliente** | Una per cliente: indirizzi di callback e di stato, quali missioni vengono inviate (esterne, interne o tutte) e la chiave API del cliente (memorizzata cifrata, vengono mostrati solo gli ultimi 6 caratteri) |
+| **Organizzazioni Control Center** | Account collegati e quali utenti possono usarli |
+| **Chiavi API** | Chiavi che permettono ai sistemi esterni di inviare richieste |
+
+---
+
+## Da sapere
+
+- **Eliminare spesso significa "nascondere".** Molti record (sistemi, missioni, clienti) vengono contrassegnati come inattivi o eliminati anziché cancellati, così la cronologia resta intatta.
+- **I numeri di serie sono univoci per azienda.** Lo stesso numero di serie non può essere usato due volte, ignorando maiuscole e minuscole.
+- **Password e chiavi non vengono mai mostrate.** Sono memorizzate cifrate.
+
+---
+
+## Correlati
+
+- [Sistemi](/docs/business-logic/systems)
+- [Ciclo di vita della missione](/docs/business-logic/mission-lifecycle)
+- [Registri di audit](/docs/records/audit-logs)

@@ -16,6 +16,8 @@ export async function GET() {
       data: {
         permissions,
         isManager: session!.user.isManager,
+        role: session!.user.role,
+        userId: session!.user.userId,
       },
     });
   } catch (err) {

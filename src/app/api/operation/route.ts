@@ -7,8 +7,9 @@ import { createOperation, deleteOperation, listOperations } from '@/backend/serv
 import { buildInitialApproval, notifyApprovalRequested } from '@/backend/services/operation/mission-approval-service';
 import { assertToolNotInMaintenance, assertToolNotNonOperational } from '@/backend/services/system/maintenance-ticket-guards';
 import { CreateOperationSchema, DFLIGHT_CIRCLE_MAX_RADIUS_M, ListOperationsQuerySchema } from '@/config/types/operation';
-import { internalError } from '@/lib/api-error';
+import { apiError, internalError } from '@/lib/api-error';
 import { requirePermission } from '@/lib/auth/api-auth';
+import { canChangePilot } from '@/lib/auth/pilot-assignment';
 import { getUserSession } from '@/lib/auth/server-session';
 import { E } from '@/lib/error-codes';
 import { prisma } from '@/lib/prisma';
@@ -113,6 +114,10 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
 
     const validated = createOperationSchema.parse(body) as CreateOperationSchema;
+
+    if (!canChangePilot(session.user, validated.fk_pilot_user_id, null)) {
+      return apiError(E.PX007, 403);
+    }
 
     if (['OPEN', 'STS-01', 'STS-02', 'NO-STD'].includes(validated.op_type ?? '') && validated.dflight_trajectory_data
       && validated.dflight_trajectory_data.radius_m > DFLIGHT_CIRCLE_MAX_RADIUS_M) {
@@ -261,4 +266,4 @@ export async function POST(req: NextRequest) {
     console.error('[POST /api/operation]', err);
     return internalError(E.SV001, err);  
   }
-}
+}

@@ -18,6 +18,9 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
     '/api/docs/export': ['./content/docs/**/*'],
   },
+  async redirects() {
+    return [{ source: '/docs', destination: '/docs/introduction', permanent: false }];
+  },
   compress: true,
   images: {
     formats: ['image/avif', 'image/webp'],

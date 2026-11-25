@@ -1,5 +1,6 @@
 'use client';
 
+import { localizeText } from '@/lib/api-error-message';
 import {
   Dialog,
   DialogContent,
@@ -123,7 +124,7 @@ export function AuthorizationModal({ open, context, onSuccess, onCancel, isDark 
       if (data.code === 1) {
         onSuccess(data.data.id);
       } else {
-        setError(data.message ?? 'Authorization failed.');
+        setError(data.message ?? localizeText('Authorization failed.'));
         setPin(EMPTY_PIN);
       }
     } catch (err: unknown) {

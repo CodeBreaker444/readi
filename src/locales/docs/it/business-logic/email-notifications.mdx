@@ -1,0 +1,263 @@
+---
+title: "Logica di business delle notifiche email"
+description: "Flusso della logica di business per le notifiche email, inclusi parametri, trigger, limiti e dipendenze."
+---
+
+# Logica di business delle notifiche email
+
+## Panoramica
+
+Il sistema di notifiche email gestisce tutte le email in uscita di tutti i moduli (manutenzione, operazioni, pianificazione, ecc.). Include l'applicazione del limite giornaliero, l'abilitazione a livello di modulo, la selezione dei destinatari in base al ruolo e l'assegnazione diretta all'utente. Questo sistema è strettamente integrato con ogni modulo che attiva notifiche.
+
+---
+
+## Flusso di business principale
+
+```
+Evento del modulo attivato
+  → Verifica email abilitate per il modulo (a livello azienda)
+  → Verifica email abilitate per l'evento (a livello configurazione)
+  → Verifica limite giornaliero di email
+  → Recupero degli indirizzi dei destinatari (ruoli + utenti specifici)
+  → Invio email tramite Resend
+  → Incremento del contatore giornaliero di email
+  → Verifica se il limite è stato appena raggiunto → Notifica agli amministratori
+```
+
+---
+
+## Parametri chiave
+
+### Impostazioni email a livello aziendale
+
+| Etichetta nell'interfaccia | Parametro | Impatto sulla manutenzione |
+|---|---|---|
+| Notifiche email abilitate | `email_notifications_enabled` | Interruttore generale per le email generiche |
+| Email operazioni abilitate | `operation_email_enabled` | Interruttore generale per le email del modulo operazioni |
+| Email sistemi abilitate | `system_email_enabled` | **SÌ** - Interruttore generale per le email del modulo manutenzione/sistemi |
+| Limite giornaliero di email | `daily_email_limit` | Numero massimo di email al giorno per azienda (predefinito: 1000) |
+| Conteggio giornaliero di email | `daily_email_count` | Conteggio attuale delle email giornaliere (azzeramento automatico) |
+| Data di azzeramento del conteggio giornaliero | `daily_email_count_reset_date` | Data in cui il contatore è stato azzerato l'ultima volta |
+
+### Configurazione email del modulo
+
+| Etichetta nell'interfaccia | Parametro | Impatto sulla manutenzione |
+|---|---|---|
+| Nome modulo | `module_name` | Identificatore del modulo (maintenance, operations, planning, ecc.) |
+| Tipo di evento | `event_type` | Evento specifico (ad es. ticket_created, mission_assigned) |
+| Abilitato | `is_enabled` | **SÌ** - Abilitazione per singolo evento per gli avvisi di manutenzione |
+| Ruoli da notificare | `notification_roles` | Ruoli da notificare (OPM, RM, ADMIN, ecc.) |
+| ID utente da notificare | `notification_user_ids` | ID utente specifici da notificare |
+
+---
+
+## Logica di abilitazione delle email
+
+### Controllo di abilitazione a più livelli
+
+**Flusso logico:**
+
+1. **Controllo del modulo a livello aziendale:**
+   - Per le operazioni: verifica operation_email_enabled
+   - Per la manutenzione: verifica system_email_enabled
+   - Per gli altri moduli: verifica email_notifications_enabled
+
+2. **Controllo della configurazione a livello di evento:**
+   - Interroga la configurazione per owner, modulo e tipo di evento
+   - Verifica se l'evento è abilitato
+
+3. **Entrambi devono essere veri:**
+   - Livello aziendale abilitato E livello evento abilitato → email inviata
+   - Altrimenti → email saltata
+
+---
+
+## Logica del limite giornaliero di email
+
+### Controllo del limite
+
+**Logica:**
+1. Recupera il limite giornaliero e il conteggio attuale
+2. Controlla la data di azzeramento - se non è oggi, azzera il contatore a 0
+3. Confronta il conteggio con il limite
+4. Se conteggio >= limite → limite raggiunto, email saltata
+5. Altrimenti → email consentita
+
+### Azzeramento del contatore
+
+**Logica:**
+- Il contatore si azzera automaticamente quando la data di azzeramento non è oggi
+- La data di azzeramento viene aggiornata alla data corrente
+- Il conteggio viene impostato a 0 all'azzeramento
+
+### Incremento del contatore
+
+**Logica:**
+- Se la data di azzeramento non è oggi → azzera a 1 (prima email del giorno)
+- Se la data di azzeramento è oggi → incrementa di 1
+- Restituisce il conteggio aggiornato
+
+---
+
+## Logica di selezione dei destinatari
+
+**Flusso logico:**
+
+1. **Recupero della configurazione:**
+   - Recupera la configurazione per owner, modulo e tipo di evento
+   - Se non trovata o non abilitata → restituisce un array vuoto
+
+2. **Raccolta degli utenti in base al ruolo:**
+   - Per ogni ruolo in notification_roles:
+     - Interroga gli utenti attivi con quel ruolo
+     - Raccoglie gli indirizzi email
+   - Deduplica per ID utente
+
+3. **Raccolta degli utenti specifici:**
+   - Per ogni ID utente in notification_user_ids:
+     - Interroga gli utenti attivi
+     - Raccoglie gli indirizzi email
+   - Deduplica (evita duplicati rispetto alla selezione per ruolo)
+
+4. **Restituzione dell'elenco combinato:**
+   - Unione delle email basate sul ruolo e degli utenti specifici
+   - Nessun duplicato
+
+---
+
+## Logica di assegnazione diretta all'utente
+
+### Sostituzione della selezione per ruolo
+
+Alcuni eventi (ad es. ticket_assigned, mission_assigned) supportano l'assegnazione diretta all'utente:
+
+**Logica:**
+- Se viene fornito un ID utente assegnato:
+  - Recupera l'utente per ID
+  - Verifica che l'utente abbia un'email
+  - Controlla il limite giornaliero di email
+  - Invia l'email direttamente solo a quell'utente
+  - Incrementa il conteggio giornaliero
+- Se non viene fornito alcun ID utente assegnato:
+  - Ripiega sulla selezione per ruolo
+  - Invia a tutti i destinatari configurati
+
+**Vantaggi:**
+- Garantisce che la persona assegnata riceva la notifica
+- Riduce il rumore delle email (solo destinatari rilevanti)
+- Aggira la configurazione dei ruoli per le assegnazioni critiche
+
+---
+
+## Notifica agli amministratori al raggiungimento del limite
+
+**Trigger:** Limite giornaliero di email raggiunto
+
+**Logica:**
+1. Verifica se la notifica è già stata inviata oggi
+2. Se non è stata inviata:
+   - Recupera i dettagli dell'owner
+   - Invia la notifica agli amministratori della piattaforma
+   - Segna la notifica come inviata nel database
+
+**Contenuto della notifica:**
+- ID e nome dell'owner
+- Limite giornaliero
+- Conteggio attuale
+
+---
+
+## Eventi email specifici per modulo
+
+### Eventi del modulo Manutenzione
+
+| Tipo di evento | Trigger |
+|---|---|
+| ticket_created | Nuovo ticket di manutenzione creato |
+| ticket_assigned | Ticket assegnato a un tecnico |
+| ticket_closed | Ticket risolto/chiuso |
+| intervention_started | Inizia l'intervento di manutenzione |
+| intervention_ended | Termina l'intervento di manutenzione |
+
+### Eventi del modulo Operazioni
+
+| Tipo di evento | Trigger |
+|---|---|
+| mission_created | Record della missione creato |
+| mission_assigned | Pilota/drone assegnato |
+| mission_started | Stato della missione = IN_PROGRESS |
+| mission_completed | Stato della missione = COMPLETED |
+
+---
+
+## Logica di invio delle email
+
+**Flusso logico:**
+
+1. **Verifica dell'abilitazione:**
+   - Verifica l'abilitazione a livello aziendale e di evento
+   - Se non abilitata → email saltata
+
+2. **Recupero dei destinatari:**
+   - Recupera gli indirizzi email dei destinatari
+   - Se vuoto → email saltata
+
+3. **Controllo del limite giornaliero:**
+   - Verifica che il limite non sia stato raggiunto
+   - Se il limite è raggiunto:
+     - Notifica gli amministratori se appena raggiunto
+     - Salta l'email
+
+4. **Invio dell'email:**
+   - Chiama la funzione di invio email
+   - Intercetta e registra gli errori (non far fallire l'operazione)
+
+5. **Incremento del contatore:**
+   - Incrementa il conteggio giornaliero di email
+
+6. **Verifica se il limite è appena stato raggiunto:**
+   - Se rimanenti = 0:
+     - Notifica gli amministratori
+     - Segna la notifica come inviata
+
+**Gestione degli errori:**
+- Gli errori di invio email vengono registrati ma non fanno fallire le operazioni padre
+- Il conteggio giornaliero NON viene incrementato se l'email non è stata inviata
+- Nessun nuovo tentativo automatico (è richiesto un nuovo tentativo manuale)
+
+---
+
+## Dipendenze dei parametri
+
+### Dipendenze dirette
+
+- L'abilitazione delle email dipende da: interruttore a livello aziendale E configurazione a livello di evento
+- L'elenco dei destinatari dipende da: ruoli da notificare, ID utente specifici, stato attivo dell'utente
+- L'invio delle email dipende da: abilitazione, conteggio giornaliero di email < limite
+- Il conteggio giornaliero dipende da: data di azzeramento (azzeramento automatico)
+- La notifica agli amministratori dipende da: limite raggiunto, notifica non ancora inviata oggi
+
+### Dipendenze tra moduli
+
+- **Modulo Manutenzione:** Attiva gli eventi dei ticket e degli interventi
+- **Modulo Operazioni:** Attiva gli eventi delle missioni
+- **Modulo Pianificazione:** Può attivare eventi del calendario
+- **Modulo Sistema:** Le impostazioni dell'owner controllano l'abilitazione a livello di modulo
+- **Modulo Utente:** I ruoli e lo stato attivo degli utenti determinano i destinatari
+- **Modulo Admin:** Gli amministratori della piattaforma vengono notificati al raggiungimento del limite
+
+---
+
+ 
+## Regole di business chiave
+
+1. **Abilitazione a due livelli:** Il livello aziendale E il livello evento devono essere entrambi abilitati
+2. **Applicazione del limite giornaliero:** Limite rigido per azienda, si azzera automaticamente ogni giorno
+3. **Destinatari per ruolo + utente:** Unione delle selezioni per ruolo e per utente specifico
+4. **Sostituzione tramite assegnazione diretta:** Le assegnazioni critiche possono aggirare la configurazione dei ruoli
+5. **Notifica di limite raggiunto:** Gli amministratori vengono notificati una volta al giorno quando il limite è raggiunto
+6. **Email non bloccanti:** Gli errori delle email non fanno fallire le operazioni padre
+7. **Deduplicazione:** Lo stesso componente viene notificato una volta al giorno (avvisi di manutenzione)
+8. **Interruttori specifici per modulo:** Moduli diversi hanno interruttori generali diversi
+9. **Solo utenti attivi:** Gli utenti inattivi sono esclusi dagli elenchi dei destinatari
+10. **Azzeramento del contatore:** Azzeramento automatico quando la data di azzeramento != oggi

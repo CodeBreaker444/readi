@@ -2,7 +2,7 @@ import { getFlightRequestById, updateFlightRequestStatus, deleteFlightRequest, v
 import { notifyDccDenial, notifyDccExecutionForRequest, notifyDccTerminationForRequest } from '@/backend/services/mission/dcc-callback-service';
 import type { DccCallbackResult } from '@/types/dcc-callback';
 import { apiError, internalError, zodError } from '@/lib/api-error';
-import { requireFeatureAccess, requirePermission } from '@/lib/auth/api-auth';
+import { requireFeatureAccess } from '@/lib/auth/api-auth';
 import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
@@ -14,11 +14,8 @@ const PatchSchema = z.object({
 export async function PATCH(req: NextRequest, props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
   try {
-    const { session, error } = await requirePermission('view_planning_advanced');
+    const { session, error } = await requireFeatureAccess('operation_flight_requests', 'edit');
     if (error) return error;
-
-    const { error: featureError } = await requireFeatureAccess('operation_flight_requests', 'edit');
-    if (featureError) return featureError;
 
     const id = Number(params.id);
     if (isNaN(id) || id <= 0) return apiError(E.VL001, 400);
@@ -53,11 +50,8 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
 export async function DELETE(_req: NextRequest, props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
   try {
-    const { session, error } = await requirePermission('view_planning_advanced');
+    const { session, error } = await requireFeatureAccess('operation_flight_requests', 'delete');
     if (error) return error;
-
-    const { error: featureError } = await requireFeatureAccess('operation_flight_requests', 'delete');
-    if (featureError) return featureError;
 
     const id = Number(params.id);
     if (isNaN(id) || id <= 0) return apiError(E.VL001, 400);

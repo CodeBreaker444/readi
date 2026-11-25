@@ -10,10 +10,24 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useTheme } from '@/components/useTheme';
 import { getComponentExpiryInfo } from '@/lib/system/component-expiry';
 import { getCoreRowModel, getPaginationRowModel, useReactTable } from '@tanstack/react-table';
-import { ChevronRight, FileText, GitBranch } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { ChevronRight, Copy, Eye, Fence, FileText, GitBranch, Paperclip, Pencil, Plane, ScrollText, Trash2 } from 'lucide-react';
 import { Fragment } from 'react';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+
+function IconAction({ label, onClick, destructive, className, children }: { label: string; onClick: () => void; destructive?: boolean; className?: string; children: React.ReactNode }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button size="icon" variant={destructive ? 'destructive' : 'outline'} className={`h-8 w-8 ${className ?? ''}`} aria-label={label} onClick={onClick}>
+          {children}
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>{label}</TooltipContent>
+    </Tooltip>
+  );
+}
 
 function formatFlightTime(minutes: number): string {
   if (!minutes) return '0m';
@@ -66,6 +80,7 @@ interface SystemComponentsTableProps {
   onFlightLogsComponent: (row: ComponentRow) => void;
   onOpenRelations: (toolId: number, toolCode: string) => void;
   onGenerateQtbReport: (component: ComponentRow) => void;
+  onOpenZones: (tool: DroneToolData) => void;
 }
 
 function StatusPill({ status }: { status?: string | null }) {
@@ -97,6 +112,7 @@ export default function SystemComponentsTable({
   onFlightLogsComponent,
   onOpenRelations,
   onGenerateQtbReport,
+  onOpenZones,
 }: SystemComponentsTableProps) {
   const { isDark } = useTheme();
   const { t } = useTranslation();
@@ -268,22 +284,23 @@ export default function SystemComponentsTable({
                         </td>
                         <td className="px-3 py-3" />
                         <td className="px-3 py-3" onClick={(e) => e.stopPropagation()}>
-                          <div className="flex flex-wrap gap-2">
-                            <Button size="sm" variant="outline" onClick={() => onViewSystem(system.tool_id)}>{t('systems.components.systemsTable.buttons.view')}</Button>
-                            <FeatureGate feature="systems_manage" require="edit">
-                              <Button size="sm" variant="outline" onClick={() => onEditSystem(system)}>{t('systems.components.systemsTable.buttons.edit')}</Button>
-                            </FeatureGate>
-                            <FeatureGate feature="systems_manage" require="edit">
-                              <Button size="sm" variant="outline" onClick={() => onDuplicateSystem(system)}>{t('systems.components.systemsTable.buttons.duplicate')}</Button>
-                            </FeatureGate>
-                            <Button size="sm" variant="outline" onClick={() => onViewFiles(system)}>{t('systems.components.systemsTable.buttons.files')}</Button>
-                            <Button size="sm" variant="outline" onClick={() => onOpenRelations(system.tool_id, system.tool_code)} className="gap-1">
-                              <GitBranch size={13} /> {t('systems.components.systemsTable.buttons.relations')}
-                            </Button>
-                            <FeatureGate feature="systems_manage" require="delete">
-                              <Button size="sm" variant="destructive" onClick={() => onDeleteSystem(system.tool_id)}>{t('systems.components.systemsTable.buttons.delete')}</Button>
-                            </FeatureGate>
-                          </div>
+                          <TooltipProvider>
+                            <div className="flex flex-wrap gap-1.5">
+                              <IconAction label={t('systems.components.systemsTable.buttons.view')} onClick={() => onViewSystem(system.tool_id)}><Eye size={14} /></IconAction>
+                              <FeatureGate feature="systems_manage" require="edit">
+                                <IconAction label={t('systems.components.systemsTable.buttons.edit')} onClick={() => onEditSystem(system)}><Pencil size={14} /></IconAction>
+                              </FeatureGate>
+                              <FeatureGate feature="systems_manage" require="edit">
+                                <IconAction label={t('systems.components.systemsTable.buttons.duplicate')} onClick={() => onDuplicateSystem(system)}><Copy size={14} /></IconAction>
+                              </FeatureGate>
+                              <IconAction label={t('systems.components.systemsTable.buttons.files')} onClick={() => onViewFiles(system)}><Paperclip size={14} /></IconAction>
+                              <IconAction label={t('systems.components.systemsTable.buttons.relations')} onClick={() => onOpenRelations(system.tool_id, system.tool_code)}><GitBranch size={14} /></IconAction>
+                              <IconAction label={t('systems.components.systemsTable.buttons.zones', 'Operation zones')} className="border-cyan-500/50 text-cyan-600 hover:bg-cyan-500/10 hover:text-cyan-500 dark:text-cyan-400" onClick={() => onOpenZones(system)}><Fence size={14} /></IconAction>
+                              <FeatureGate feature="systems_manage" require="delete">
+                                <IconAction label={t('systems.components.systemsTable.buttons.delete')} destructive onClick={() => onDeleteSystem(system.tool_id)}><Trash2 size={14} /></IconAction>
+                              </FeatureGate>
+                            </div>
+                          </TooltipProvider>
                         </td>
                       </tr>
                       {isOpen &&
@@ -328,40 +345,22 @@ export default function SystemComponentsTable({
                                 })()}
                               </td>
                               <td className="px-3 py-2.5">
-                                <div className="flex flex-wrap gap-2">
-                                  <Button size="sm" variant="outline" onClick={() => onViewComponent(comp)}>{t('systems.components.systemsTable.buttons.view')}</Button>
-                                  <FeatureGate feature="systems_manage" require="edit">
-                                    <Button size="sm" variant="outline" onClick={() => onEditComponent(comp.tool_component_id)}>{t('systems.components.systemsTable.buttons.edit')}</Button>
-                                  </FeatureGate>
-                                  <Button size="sm" variant="outline" onClick={() => onLogComponent(comp)}>{t('systems.components.systemsTable.buttons.log')}</Button>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => onFlightLogsComponent(comp)}
-                                    className="gap-1 text-violet-600 border-violet-200 hover:bg-violet-50 hover:text-violet-700"
-                                  >
-                                    {t('systems.components.systemsTable.buttons.flights')}
-                                  </Button>
-                                  {comp.component_type === 'DRONE' && (
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      onClick={() => onGenerateQtbReport(comp)}
-                                      className="gap-1 text-violet-600 border-violet-200 hover:bg-violet-50 hover:text-violet-700"
-                                    >
-                                      <FileText size={13} /> {t('systems.components.systemsTable.buttons.qtbReport')}
-                                    </Button>
-                                  )}
-                                  <FeatureGate feature="systems_manage" require="delete">
-                                    <Button
-                                      size="sm"
-                                      variant="destructive"
-                                      onClick={() => onDeleteComponent(comp.tool_component_id, comp.component_code || comp.component_name || `#${comp.tool_component_id}`)}
-                                    >
-                                      {t('systems.components.systemsTable.buttons.delete')}
-                                    </Button>
-                                  </FeatureGate>
-                                </div>
+                                <TooltipProvider>
+                                  <div className="flex flex-wrap gap-1.5">
+                                    <IconAction label={t('systems.components.systemsTable.buttons.view')} onClick={() => onViewComponent(comp)}><Eye size={14} /></IconAction>
+                                    <FeatureGate feature="systems_manage" require="edit">
+                                      <IconAction label={t('systems.components.systemsTable.buttons.edit')} onClick={() => onEditComponent(comp.tool_component_id)}><Pencil size={14} /></IconAction>
+                                    </FeatureGate>
+                                    <IconAction label={t('systems.components.systemsTable.buttons.log')} onClick={() => onLogComponent(comp)}><ScrollText size={14} /></IconAction>
+                                    <IconAction label={t('systems.components.systemsTable.buttons.flights')} className="border-violet-200 text-violet-600 hover:bg-violet-50 hover:text-violet-700" onClick={() => onFlightLogsComponent(comp)}><Plane size={14} /></IconAction>
+                                    {comp.component_type === 'DRONE' && (
+                                      <IconAction label={t('systems.components.systemsTable.buttons.qtbReport')} className="border-violet-200 text-violet-600 hover:bg-violet-50 hover:text-violet-700" onClick={() => onGenerateQtbReport(comp)}><FileText size={14} /></IconAction>
+                                    )}
+                                    <FeatureGate feature="systems_manage" require="delete">
+                                      <IconAction label={t('systems.components.systemsTable.buttons.delete')} destructive onClick={() => onDeleteComponent(comp.tool_component_id, comp.component_code || comp.component_name || `#${comp.tool_component_id}`)}><Trash2 size={14} /></IconAction>
+                                    </FeatureGate>
+                                  </div>
+                                </TooltipProvider>
                               </td>
                             </tr>
                           ))

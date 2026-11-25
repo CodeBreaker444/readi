@@ -1,8 +1,9 @@
 import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { batchSetPilot } from '@/backend/services/operation/operation-service';
 import { notifyPilotAssignment } from '@/backend/services/notification/notification-service';
-import { internalError } from '@/lib/api-error';
+import { apiError, internalError } from '@/lib/api-error';
 import { requirePermission } from '@/lib/auth/api-auth';
+import { canChangePilot, isSelfAssignOnly } from '@/lib/auth/pilot-assignment';
 import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
 import { z, ZodError } from 'zod';
@@ -21,8 +22,14 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { mission_ids, pilot_id } = schema.parse(body);
 
-    // pilot can only be set on PLANNED missions
-    const result = await batchSetPilot(mission_ids, pilot_id, ownerId);
+    // A PIC (who is not an OPM-like manager) may only add themselves to missions that have no pilot yet.
+    const restricted = isSelfAssignOnly(session!.user);
+    if (restricted && !canChangePilot(session!.user, pilot_id, null)) {
+      return apiError(E.PX007, 403);
+    }
+
+    // pilot can only be set on PLANNED missions (and, for restricted users, only pilot-less ones)
+    const result = await batchSetPilot(mission_ids, pilot_id, ownerId, restricted);
 
     if (result.updatedMissions.length > 0) {
       await notifyPilotAssignment(

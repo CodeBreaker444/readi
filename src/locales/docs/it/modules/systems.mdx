@@ -1,0 +1,280 @@
+---
+title: "Sistemi"
+description: "Gestisci i tuoi droni e i loro componenti: report, duplicati, relazioni, magazzino e storico dei componenti."
+---
+
+Un **sistema** è un drone e tutto ciò di cui è composto. Ogni parte (il drone stesso, una batteria, un motore, un controller) è un **componente** con il proprio numero di serie e il proprio utilizzo. Apri **Sistemi** nella barra laterale per gestirli. Questa pagina descrive gli strumenti che vanno oltre l'aggiunta e la modifica dei record.
+
+---
+
+## Mappa dei sistemi
+
+**Sistemi → Mappa** (Mappa dei sistemi drone) mostra su una mappa le tue dock e i tuoi sistemi drone installati.
+
+- **Filtri:** per **Stato** (Operativo, Non Operativo, Manutenzione, Fuori servizio), per **Cliente** e una casella di ricerca (ad esempio un codice sistema). **Solo dock** e **Solo installati** restringono ulteriormente i risultati.
+- **Legenda:** i simboli sono il Control Center, la Dock, il Drone e il Cluster (più sistemi vicini tra loro), colorati in base allo stato.
+- **Elenco strumenti:** una tabella dei sistemi presenti sulla mappa. **Localizza** ti porta su uno di essi sulla mappa e **Dettaglio** ne apre i dettagli: informazioni generali, specifiche e componenti.
+- **Schede del pannello:** **Sistemi** mostra i componenti collegati a un sistema, mentre **Magazzino** mostra i componenti di ricambio che non sono su nessun sistema, con i loro numeri di serie.
+- Un sistema senza posizione non viene mostrato sulla mappa ("Nessuna posizione sulla mappa disponibile per questo elemento").
+- **Ricarica** aggiorna la mappa.
+
+---
+
+## Nome della posizione
+
+Un sistema può avere un **Nome posizione** accanto alle coordinate sulla mappa, ad esempio "Magazzino A". Rende elenchi, esportazioni e il Registro di manutenzione più leggibili rispetto alle semplici coordinate. Anche le missioni ne hanno uno (vedi [Operazioni](/docs/modules/operations)).
+
+---
+
+## Zone operative
+
+Un sistema può avere delle **zone operative**: una sovrapposizione facoltativa che indica dove può volare. Vengono mostrate sulla mappa e controllate rispetto a ogni richiesta di volo del cliente del sistema. Puoi impostarle quando aggiungi un sistema o in seguito.
+
+| Zona | Colore | Significato |
+|---|---|---|
+| **Zona verde** | Verde | Sicura e approvata per il volo |
+| **Zona rossa** | Rosso | Vietata, non volare (ad esempio una sottostazione o una linea elettrica) |
+| **Zona non rilevata** | Grigio | Non ancora verificata, vola solo dopo un sopralluogo |
+| **Perimetro** | Linea azzurra tratteggiata | Il limite operativo di questo sistema. Un sistema ha un solo perimetro |
+
+Le zone possono essere **poligoni** (aree) o **linee** (ad esempio una linea elettrica). Una linea rossa blocca tutto ciò che si trova entro circa 30 m. Ogni zona ha un nome che puoi modificare.
+
+### Aggiungere o modificare le zone
+
+- **Quando aggiungi un sistema:** apri la scheda **Zone operative (facoltativo)**. Tutto ciò che contiene è facoltativo e la scheda mostra quante zone hai disegnato.
+- **Su un sistema esistente:** in **Sistemi → Elenco Sistemi Drone**, clicca l'icona della recinzione sulla riga del sistema (suggerimento **Zone operative**), poi **Salva zone**. Gli utenti che possono solo visualizzare i sistemi vedono le zone ma non il pulsante Salva.
+
+La mappa si apre in vista **satellite**. Il pulsante dei livelli passa alla mappa stradale.
+
+| Strumento | Cosa fa |
+|---|---|
+| Poligono | Clicca sulla mappa per posizionare gli angoli di un'area, poi premi **Invio** o il pulsante di conferma |
+| Linea | Come sopra, per una zona lineare |
+| Recinzione | Disegna il perimetro operativo. Disegnarne uno nuovo sostituisce il precedente (un messaggio ti avvisa). **Esc** mantiene il precedente |
+| Punti verde, rosso, grigio | Il tipo della prossima zona che disegni. Con una zona selezionata, ne cambiano il tipo |
+| Annulla, conferma, croce | Rimuovono l'ultimo punto, terminano la forma, la annullano (**Esc**) |
+| Zoom su tutte le zone | Adatta la mappa a tutto ciò che hai disegnato |
+
+Clicca una zona sulla mappa o nell'elenco per selezionarla. Trascina i suoi punti per modificarne la forma, oppure clicca con il tasto destro su un punto per rimuoverlo. Usa l'elenco sotto la mappa per rinominare una zona, cambiarne il tipo o eliminarla.
+
+### Importare un file KMZ o KML
+
+Clicca **Importa KMZ** e scegli un file `.kmz` o `.kml`, ad esempio esportato da Google Earth. Ogni poligono e ogni linea al suo interno viene aggiunto come zona. Un KMZ è un KML compresso.
+
+Il tipo di ogni forma viene deciso in quest'ordine:
+
+1. **Il suo nome:** parole come *red*, *no-fly*, *restricted*, *rosso*, *vietato* la rendono rossa. *green*, *safe*, *approved*, *verde* la rendono verde. *unsurveyed*, *unknown*, *grey*, *grigia* la rendono grigia. *perimeter*, *boundary*, *fence*, *limite* la rendono il perimetro.
+2. **Il suo colore** nel file (verde, rosso o grigio).
+3. **Il nome della sua cartella**, con le stesse parole.
+4. Se nulla corrisponde, viene importata come **non rilevata** (grigia). Controllala e modificala nell'elenco.
+
+I punti e le sovrapposizioni di immagini vengono ignorati e il messaggio indica quanti. Se il file contiene più perimetri, viene usato solo il primo. Importare in un sistema che ha già delle zone le aggiunge a quelle esistenti. I fori all'interno dei poligoni vengono ignorati. Dopo l'importazione, controlla l'elenco e usa **Salva zone**.
+
+### Limiti e cose da sapere
+
+- **Dimensioni:** fino a **500 zone**, **5.000 punti** per forma e **100.000 punti** in totale per sistema. Un file KMZ/KML può pesare fino a **10 MB**. Quando importi una forma con più di 5.000 punti, Readi mantiene punti equidistanti così che la forma resti vicina all'originale.
+- **I fori vengono ignorati.** Un poligono con un anello interno (ad esempio un'area verde con un edificio escluso) viene importato come area piena. Disegna il foro come zona rossa separata.
+- **Contorni che si incrociano:** se una forma si interseca, la parte incrociata conta come esterna. Ridisegnala senza incroci.
+- **Linea di cambio data:** le forme che attraversano il meridiano 180° non sono supportate.
+- **Le linee rosse** bloccano circa 30 m per lato. Le linee **verdi** e **non rilevate** sono mostrate sulla mappa, ma vengono controllate solo le linee rosse.
+- **Duplica:** **Duplica sistema** copia le zone sul nuovo sistema.
+- **Un solo perimetro per sistema.** Per coprire più siti, usa zone verdi per ciascuno oppure crea un sistema per sito.
+- **Gli avvisi sono consigli.** Non bloccano mai una richiesta e il testo dell'avviso sulla richiesta di volo è in inglese.
+
+### Avvisi sulle richieste di volo
+
+Quando un OPM apre una richiesta di volo **esterna** con un waypoint, Readi controlla il waypoint rispetto alle zone di ogni sistema assegnato a quel cliente. Il risultato appare in cima alla richiesta (schede Dettagli e Azione) e la scheda **Posizione** disegna le zone e il perimetro attorno al waypoint.
+
+| Risultato | Mostrato come |
+|---|---|
+| In una zona verde, dentro il perimetro | Verde: entro le sue zone operative |
+| In una zona rossa, o vicino a una linea rossa | Avviso di pericolo **rosso** |
+| In una zona non rilevata | Avviso ambra |
+| Fuori dal perimetro | Avviso ambra |
+| Dentro il perimetro ma in nessuna zona verde | Avviso ambra |
+
+Un avviso non blocca la richiesta. Indica all'OPM cosa controllare prima di riconoscerla o pianificarla. I sistemi senza zone, e i clienti i cui sistemi non ne hanno, non mostrano nulla.
+
+---
+
+## Pulsanti di riga
+
+In **Sistemi → Elenco Sistemi Drone**, i pulsanti su ogni riga di sistema e di componente sono icone. Passa il mouse su una per vederne il nome. Su una riga di sistema sono **Vedi**, **Modifica**, **Duplica**, **File**, **Relazioni**, **Zone operative** (icona della recinzione) ed **Elimina**. Su una riga di componente sono **Vedi**, **Modifica**, **Log**, **Voli**, **Report QTB** (solo droni) ed **Elimina**. Quelli che non hai il permesso di usare sono nascosti.
+
+---
+
+## Report QTB (PDF)
+
+Il report QTB è un registro di volo stampabile per un drone. È disponibile per i componenti di tipo **drone**.
+
+1. Nell'elenco dei componenti, trova il drone e scegli **Report QTB**.
+2. Scegli una **data di inizio** e una **data di fine**. Usano il tuo fuso orario ed entrambe partono da oggi.
+3. Clicca su **Genera PDF**. Il file viene scaricato subito.
+
+La data di fine deve essere uguale o successiva alla data di inizio. Se scegli un periodo molto lungo potresti vedere "troppi voli"; restringi le date e riprova.
+
+---
+
+## Duplica sistema
+
+Usa **Duplica sistema** per configurare un nuovo drone simile a uno esistente, senza dover riscrivere tutto.
+
+1. Scegli **Duplica** sul sistema che vuoi copiare.
+2. Scheda **Dettagli sistema**: i dettagli vengono copiati e il codice termina con `-copy`. Cambia il **Codice** e scegli il **Cliente** (entrambi obbligatori). Puoi anche modificare descrizione, posizione, stato e data di attivazione.
+3. Scheda **Componenti**: ogni componente dell'originale viene copiato come nuovo e puoi rivederli uno per uno. Anche codici e numeri di serie terminano con `-copy`, quindi sostituiscili con quelli reali. Per ognuno puoi modificare tipo, nome, modello, date, fornitore, ciclo di manutenzione e componente padre.
+4. Clicca su **Salva Duplicato**.
+
+La copia è un sistema completamente nuovo con i propri componenti. L'originale non viene modificato.
+
+---
+
+## Relazioni tra componenti
+
+**Relazioni** ti permette di organizzare le parti di un sistema in un semplice albero genealogico, ad esempio una batteria e una fotocamera che appartengono a un drone.
+
+- Apri **Relazioni** su un sistema. Ogni componente ha un menu a tendina **Padre**.
+- Scegli un padre per rendere un componente **figlio** di un altro. Scegli **Nessuno (livello superiore)** per toglierlo di nuovo.
+- **Anteprima Live** mostra il risultato prima del salvataggio. Clicca su **Salva** per applicarlo.
+
+C'è **un solo livello**:
+
+- Un componente non può essere padre di se stesso.
+- Solo i componenti di livello superiore possono essere padri. Un figlio non può avere figli propri.
+- Un componente che ha già dei figli non può diventare figlio. Rimuovi prima i suoi figli.
+
+### Componente primario
+
+Nella stessa finestra, scegli il **Componente Primario** del sistema, normalmente il drone stesso. È contrassegnato come **PRIMARY** ed è il componente mostrato per il sistema nei dettagli della missione. Può esserci un solo componente primario alla volta.
+
+---
+
+## Magazzino: spostare e riassegnare i componenti
+
+I ricambi che non sono su un drone si trovano nel **Magazzino**.
+
+- Per togliere un componente da un sistema, **scollegalo** e conferma. Viene spostato nel magazzino. Un componente ancora collegato a un sistema non può essere eliminato, quindi scollegalo prima.
+- La scheda **Magazzino**, nell'elenco dei componenti e sulla mappa dei sistemi, mostra cosa è disponibile, con i numeri di serie.
+- Per riutilizzare un componente del magazzino, assegnalo a un sistema. È così che si sostituisce una batteria o si sposta una parte da un drone a un altro.
+
+I componenti nel magazzino non vengono proposti come sistemi per le missioni. Lo scollegamento viene registrato come transazione sicura nei [Registri di audit](/docs/records/audit-logs).
+
+---
+
+## Registro del componente e Voli
+
+Ogni componente ha due viste della propria storia:
+
+| Vista | Mostra |
+|---|---|
+| **Registro** | Una cronologia per questo componente, ad esempio i cambi di posizione e le missioni in cui è stato usato |
+| **Voli** | I registri di volo di questo componente |
+
+Usali per rispondere a "quanto è stata usata questa batteria?" o "dove è stata questa parte?".
+
+---
+
+## Stati dei componenti
+
+Un componente ha uno di cinque stati:
+
+| Stato | Significato |
+|---|---|
+| **Operativo** | In servizio e utilizzabile |
+| **Non Operativo** | Al momento non utilizzabile |
+| **Manutenzione** | In fase di manutenzione. Mantiene il sistema in manutenzione |
+| **Dismesso** | Ritirato a livello amministrativo |
+| **Fuori servizio** | Definitivamente fuori servizio. Il sistema non lo considera più |
+
+### Opzione di scadenza permanente
+
+Quando aggiungi o modifichi un componente, la casella **Scadenza permanente** si trova sotto i campi di scadenza. È **selezionata per impostazione predefinita**. Decide cosa succede quando il componente scade, cioè quando supera la data di scadenza o raggiunge il limite di voli o di ore di volo.
+
+| | Scadenza permanente (selezionata) | Non permanente (non selezionata) |
+|---|---|---|
+| Stato alla scadenza | **Fuori servizio** | **Non Operativo** |
+| Ticket di manutenzione | Non può essere creato | Creato da un utente (mai in automatico) |
+| Può tornare Operativo? | No | Sì, creando un ticket e chiudendolo (la scadenza viene rinnovata) |
+| Come il sistema torna Operativo | Solo quando il componente viene **rimosso dal sistema** (rimosso o spostato nel magazzino) | Chiudi il ticket (scadenza rinnovata) oppure imposta il componente su **Fuori servizio** |
+
+La casella è bloccata mentre il componente è scaduto, quindi un componente scaduto non può passare da una modalità all'altra.
+
+### Scadenza rinnovabile (casella non selezionata)
+
+Quando il componente scade:
+
+- Appare come **Non Operativo** e il sistema diventa **Non Operativo**.
+- **Non viene creato alcun ticket in automatico.** Un utente crea il ticket di manutenzione: il componente scaduto può essere selezionato come qualsiasi altro componente (per il componente o per l'intero sistema). Un componente che è Non Operativo per qualsiasi altro motivo, oppure Fuori servizio o Dismesso, non può essere selezionato.
+- **Quando il ticket viene creato, il sistema mostra Manutenzione.** Se il sistema era Non Operativo solo a causa del componente scaduto, passa a **Manutenzione** invece di restare Non Operativo. Uno stato impostato a mano sul sistema non viene mai modificato.
+
+**La sua scadenza non può essere modificata mentre è scaduto.** Se modifichi la data di scadenza, il limite di voli o il limite di ore di volo di un componente scaduto e salvi, ricevi un errore: si può fare solo creando un ticket di manutenzione e chiudendolo.
+
+Per rimetterlo in funzione, scegli una delle opzioni:
+
+- **Renderlo operativo:** crea un ticket di manutenzione per il componente (o per l'intero sistema) e chiudilo. **La chiusura del ticket rinnova automaticamente la scadenza:**
+
+  | Tipo di scadenza | Nuovo valore |
+  |---|---|
+  | Data di scadenza | **1 mese** dopo la più recente tra la vecchia data di scadenza e oggi |
+  | Voli | il limite di voli **+ 10** |
+  | Ore di volo | il limite di ore di volo **+ 10** (calcolato a partire dalle ore volate se superiori) |
+  | Mista | vengono rinnovati solo i limiti raggiunti |
+
+  La finestra **Chiudi Ticket** mostra i nuovi valori prima della conferma. Il componente torna Operativo e la cronologia del ticket registra il rinnovo.
+- **Cambiare il nuovo valore:** quando il componente non è più scaduto, puoi modificare la sua scadenza come per qualsiasi altro componente.
+- **Metterlo fuori servizio:** imposta il suo stato su **Fuori servizio**. Il sistema non lo considera più.
+
+### La scadenza è permanente (casella selezionata, predefinito)
+
+Quando un componente supera la data di scadenza, oppure raggiunge il limite di voli o di ore di volo, è **scaduto**, e la scadenza è definitiva:
+
+- Appare come **Fuori servizio** e il sistema diventa **Non Operativo**.
+- **Non può tornare Operativo.** Estendere la data di scadenza o i limiti, o cambiarne lo stato, viene rifiutato.
+- **Non può essere inserito in un ticket di manutenzione.** La scadenza significa che il componente è ritirato per sempre, non in attesa di manutenzione.
+- **Il sistema resta Non Operativo finché il componente non viene rimosso da esso.** Impostare il suo stato su Fuori servizio non libera il sistema.
+
+<Note>
+**Impostare una data di scadenza uguale a oggi o nel passato** fa risultare il componente Fuori servizio e il suo sistema **Non Operativo**. Il campo Stato nella finestra Modifica componente mostra lo stato salvato e cambia solo se lo modifichi, quindi salvare una data di scadenza non mette da solo il componente fuori servizio. Non libera nemmeno il sistema: il sistema resta Non Operativo finché il componente non viene rimosso da esso.
+</Note>
+
+Per rendere di nuovo operativo il sistema, **rimuovi il componente scaduto dal sistema**, in uno di questi modi:
+
+- Rimuovilo dal sistema.
+- Spostalo nel magazzino.
+
+Poi monta un componente sostitutivo se il sistema ne ha bisogno.
+
+---
+
+## Modelli, tipi di componente e classi di drone
+
+Gli elenchi a discesa come modello, tipo e classe di un componente sono gestiti da te, dalle schermate dei sistemi.
+
+- **Modelli:** usa **Aggiungi Modello** per descrivere una sola volta un drone o un'altra attrezzatura e riutilizzarlo. Un modello contiene marca, codice e nome del modello, tipo e sottotipo (ad esempio multirotore, ala fissa, VTOL o dock), peso, condizioni operative (intervallo di vento e temperatura), prestazioni (autonomia, velocità, quota), il ciclo di manutenzione e la garanzia. Usa **Modifica Modello** per cambiarne uno in seguito. I limiti di vento e temperatura sono quelli usati per le previsioni meteo in [Operazioni](/docs/modules/operations).
+- **Gestisci tipi di componente:** aggiungi, rinomina o rimuovi i tipi che puoi scegliere per un componente.
+- **Gestisci classi di drone:** aggiungi o rinomina le classi di drone.
+
+---
+
+## Assicurazione e avvisi
+
+Un componente può memorizzare i dati della propria **assicurazione**: il nome dell'assicurazione, la compagnia e la **data di scadenza**. Per ricevere un avviso prima della scadenza:
+
+- **Notifica utenti:** scegli quali utenti ricevono l'email.
+- **Giorni prima:** quanti giorni prima della scadenza viene inviato il promemoria.
+- **Email aggiuntive:** aggiungi persone che non hanno un account Readi.
+
+---
+
+## Permessi
+
+Chi può leggere, modificare ed eliminare in quest'area, per ruolo.
+
+<PermissionsTable section="Systems" />
+
+---
+
+## Correlati
+
+- [Manutenzione](/docs/modules/maintenance)
+- [Logica dei sistemi](/docs/business-logic/systems)
+- [Regole sullo stato dei sistemi](/docs/platform-rules/system-status-rules)

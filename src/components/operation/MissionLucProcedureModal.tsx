@@ -1,5 +1,6 @@
 'use client';
 
+import { localizeText } from '@/lib/api-error-message';
 import { AuthorizationModal } from '@/components/authorization/AuthorizationModal';
 import { ChecklistRenderer } from '@/components/checklist/ChecklistRenderer';
 import { Button } from '@/components/ui/button';
@@ -254,8 +255,8 @@ function MissionAssignmentModal({
   }, [open, missionId, assignmentName, ownerId, t]);
 
   async function handleAssign() {
-    if (!toUserId) { toast.error('Please select a recipient'); return; }
-    if (!message.trim()) { toast.error('Message cannot be empty'); return; }
+    if (!toUserId) { toast.error(localizeText('Please select a recipient')); return; }
+    if (!message.trim()) { toast.error(localizeText('Message cannot be empty')); return; }
     setSending(true);
     try {
       await axios.post(`/api/operation/missions/${missionId}/assignment`, {
@@ -269,10 +270,10 @@ function MissionAssignmentModal({
         task_code: assignmentCode,
         completed: true,
       });
-      toast.success('Assignment sent successfully');
+      toast.success(localizeText('Assignment sent successfully'));
       onComplete('assignment', assignmentCode);
     } catch (err: any) {
-      toast.error(err?.response?.data?.message ?? 'Failed to send assignment');
+      toast.error(err?.response?.data?.message ?? localizeText('Failed to send assignment'));
     } finally {
       setSending(false);
     }

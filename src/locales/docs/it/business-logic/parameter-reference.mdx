@@ -1,0 +1,492 @@
+---
+title: "Riferimento completo dei parametri"
+description: "Indice generale di tutti i parametri della logica di business dei moduli, con le relative dipendenze e le relazioni tra moduli."
+---
+
+# Riferimento completo dei parametri
+
+## Panoramica
+
+Questo documento offre un indice generale di tutti i parametri della logica di business della piattaforma Readi, delle loro mappature sul database, delle regole di validazione e delle dipendenze tra moduli. Usalo per capire come i parametri circolano nel sistema e quali moduli influenzano.
+
+---
+
+## Indice dei parametri per modulo
+
+### Parametri del modulo Manutenzione
+
+#### Parametri dei componenti
+
+| Etichetta frontend | Parametro | Tipo | Predefinito | Validazione | Impatto sulla manutenzione |
+|---|---|---|---|---|---|
+| Sistema | `fk_tool_id` | number | Obbligatorio | FK | Collega il componente al sistema drone |
+| Componente padre | `fk_parent_component_id` | number | null | FK | Struttura gerarchica dei componenti |
+| Tipo di componente | `component_type` | string | null | Obbligatorio | Categorizza i cicli di manutenzione |
+| Codice | `component_code` | string | null | Univoco per sistema | Identificazione del componente |
+| Numero di serie | `component_sn` | string | null | Univoco per proprietario | Sincronizzazione GUTMA/DFlight |
+| Nome | `component_name` | string | null | Obbligatorio | Nome visualizzato |
+| Marca/Modello | `fk_tool_model_id` | number | null | FK | Cicli di manutenzione specifici per modello |
+| Descrizione | `component_desc` | string | null | Testo libero | Visualizzazione |
+| Stato | `component_status` | string | 'OPERATIONAL' | Enum | **SÌ** - Determina se è richiesta manutenzione |
+| Data di attivazione | `component_activation_date` | date | null | Data valida | Calcolo dei giorni |
+| Data di acquisto | `component_purchase_date` | date | null | Data valida | Monitoraggio della garanzia |
+| Tipo di scadenza | `expiry_type` | string | 'EXPIRATION_DATE' | Enum | Determina il metodo di calcolo della scadenza |
+| Data di scadenza | `expiration_date` | date | null | Data valida | **SÌ** - Attiva la dismissione automatica |
+| Voli di scadenza | `expiration_flights` | number | null | >= 0 | **SÌ** - Scadenza basata sui voli |
+| Ore di volo di scadenza | `expiration_flight_hours` | number | null | >= 0 | **SÌ** - Scadenza basata sulle ore |
+| Fornitore | `component_vendor` | string | null | Testo libero | Contatto per l'assistenza |
+| Garanzia | `component_guarantee_day` | number | null | >= 0 | Monitoraggio del periodo di garanzia |
+| Rapporto cicli batteria | `battery_cycle_ratio` | number | 1.0 | > 0 | **SÌ** - Moltiplica il conteggio dei voli per la manutenzione |
+| Ore di utilizzo | `initial_usage_hours` | number | 0 | >= 0 | Monitoraggio della vita utile |
+| Ore di manutenzione | `initial_maintenance_hours` | number | 0 | >= 0 | **SÌ** - Utilizzo corrente rispetto al limite |
+| Voli di manutenzione | `initial_maintenance_flights` | number | 0 | >= 0 | **SÌ** - Voli correnti rispetto al limite |
+| Nome assicurazione | `insurance_name` | string | null | Testo libero | Monitoraggio della conformità |
+| Compagnia assicurativa | `insurance_company` | string | null | Testo libero | Monitoraggio della conformità |
+| Data di scadenza assicurazione | `insurance_expiry_date` | date | null | Data valida | **SÌ** - Attiva l'avviso di scadenza |
+| Classi di drone | `drone_classes` | string[] | null | Array | Classificazione per la conformità |
+| Piattaforma C2 | `cc_platform` | string | null | Enum | Tipo di integrazione |
+| GCS | `gcs_type` | string | null | Enum | Tipo di stazione di controllo a terra |
+| ID drone DCC | `dcc_drone_id` | string | null | Testo libero | Integrazione DCC |
+| Codice di registrazione del drone | `drone_registration_code` | string | null | Obbligatorio per la sincronizzazione | **SÌ** - Sincronizzazione di conformità DFlight |
+| Numero di serie UAS | `uas_serial_number` | string | null | Formato obbligatorio | Conformità DFlight |
+| Numero di serie GCS | `gcs_serial_number` | string | null | Formato obbligatorio | Conformità DFlight |
+
+#### Parametri dei sistemi
+
+| Etichetta frontend | Parametro | Tipo | Predefinito | Validazione | Impatto sulla manutenzione |
+|---|---|---|---|---|---|
+| Codice | `tool_code` | string | Automatico | Univoco per proprietario | Identificazione del sistema |
+| Descrizione | `tool_desc` | string | null | Testo libero | Visualizzazione |
+| Stato | `tool_status` | string | 'OPERATIONAL' | Enum | **SÌ** - Determina l'idoneità alla missione |
+| Attivo | `tool_active` | string | 'Y' | Enum: 'Y', 'N' | Visibilità nella bacheca |
+| Cliente | `fk_client_id` | number | Obbligatorio | FK | Ambito di proprietà |
+| Posizione | `location` | string | null | Testo libero | Visualizzazione |
+| Data di attivazione | `date_activation` | date | null | Data valida | Monitoraggio |
+| Registro di manutenzione | `tool_maintenance_logbook` | string | 'N' | Enum: 'Y', 'N' | Abilita il monitoraggio della manutenzione |
+
+#### Parametri dei ticket di manutenzione
+
+| Etichetta frontend | Parametro | Tipo | Predefinito | Validazione | Impatto sulla manutenzione |
+|---|---|---|---|---|---|
+| Sistema | `fk_tool_id` | number | null | FK | **SÌ** - Forza il sistema allo stato MAINTENANCE |
+| Componente | `fk_component_id` | number | null | FK | **SÌ** - Collega il ticket al componente |
+| Stato | `ticket_status` | string | 'NEW' | Enum | **SÌ** - I ticket aperti forzano lo stato MAINTENANCE |
+| Tipo | `ticket_type` | string | null | Enum | Categorizzazione (BASIC, STANDARD, EXTRAORDINARY) |
+| Priorità | `ticket_priority` | string | null | Enum | Instradamento delle notifiche |
+| Titolo | `ticket_title` | string | null | Obbligatorio | Visualizzazione |
+| Descrizione | `ticket_description` | string | null | Testo libero | Dettagli |
+| Tecnico | `fk_technician_id` | number | null | FK | Assegnazione |
+| Assegnato da | `assigned_by_user_id` | number | null | FK | Traccia di audit |
+| Creato il | `created_at` | date | adesso | Data valida | Audit |
+| Aggiornato il | `updated_at` | date | adesso | Data valida | Audit |
+
+---
+
+### Parametri del modulo Operazioni
+
+#### Parametri delle missioni
+
+| Etichetta frontend | Parametro | Tipo | Predefinito | Validazione | Impatto sulla manutenzione |
+|---|---|---|---|---|---|
+| Codice missione | `mission_code` | string | Automatico | Univoco per proprietario | Identificazione |
+| Nome missione | `mission_name` | string | null | Testo libero | Visualizzazione |
+| Pianificazione | `fk_planning_id` | number | null | FK | Collega alla pianificazione approvata |
+| Pilota | `fk_pilot_user_id` | number | null | FK | Assegnazione del pilota |
+| Drone/Sistema | `fk_tool_id` | number | null | FK | **SÌ** - Assegnazione del drone per l'aggiornamento della manutenzione |
+| Cliente | `fk_client_id` | number | null | FK | Associazione al cliente |
+| Tipo di missione | `fk_mission_type_id` | number | null | FK | Categorizzazione |
+| Categoria di missione | `fk_mission_category_id` | number | null | FK | Categorizzazione |
+| Procedura LUC | `fk_luc_procedure_id` | number | Obbligatorio | FK | Conformità |
+| Inizio programmato | `scheduled_start` | datetime | null | Data e ora valide | Programmazione |
+| Inizio effettivo | `actual_start` | datetime | null | Data e ora valide | Transizione di stato |
+| Fine effettiva | `actual_end` | datetime | null | Data e ora valide | **SÌ** - Attiva l'aggiornamento della manutenzione |
+| Durata del volo | `flight_duration` | number | null | >= 0 | **SÌ** - Sommata alle ore di manutenzione del componente |
+| Distanza percorsa | `distance_flown` | number | null | >= 0 | Conformità |
+| Altitudine massima | `max_altitude` | number | null | >= 0 | Conformità (segnalazione >120m) |
+| Posizione | `location` | string | null | Testo libero | Reportistica |
+| Note | `notes` | string | null | Testo libero | Dettagli |
+| Stato | `status_name` | string | 'PLANNED' | Enum | Ciclo di vita |
+| Controllo pre-volo OK | `pre_flight_check_ok` | boolean | false | boolean | Requisito per l'avvio della missione |
+| Controllo post-volo OK | `post_flight_check_ok` | boolean | false | boolean | Completamento della missione |
+| Flag incidente | `incident_flag` | boolean | false | boolean | Monitoraggio della sicurezza |
+| RTH non pianificato | `rth_unplanned` | boolean | false | boolean | Monitoraggio degli incidenti |
+| Perdita del collegamento | `link_loss` | boolean | false | boolean | Monitoraggio degli incidenti |
+| Flag deviazione | `deviation_flag` | boolean | false | boolean | Conformità |
+| Carica batteria iniziale | `battery_charge_start` | number | null | 0-100 | Telemetria |
+| Carica batteria finale | `battery_charge_end` | number | null | 0-100 | Telemetria |
+
+#### Parametri dei registri di volo
+
+| Etichetta frontend | Parametro | Tipo | Predefinito | Validazione | Impatto sulla manutenzione |
+|---|---|---|---|---|---|
+| ID volo | `flytbase_flight_id` | string | null | Univoco | Collegamento con FlytBase |
+| Origine del registro | `log_source` | string | null | Enum: 'flytbase', 'manual' | Tracciamento dell'origine |
+| Nome file originale | `original_filename` | string | null | Testo libero | Visualizzazione |
+| Caricato il | `uploaded_at` | date | adesso | Data valida | Audit |
+
+---
+
+### Parametri delle notifiche e-mail
+
+#### Impostazioni e-mail dell'azienda
+
+| Etichetta frontend | Parametro | Tipo | Predefinito | Validazione | Impatto sulla manutenzione |
+|---|---|---|---|---|---|
+| Notifiche e-mail abilitate | `email_notifications_enabled` | boolean | false | boolean | Interruttore generale delle e-mail |
+| E-mail operative abilitate | `operation_email_enabled` | boolean | false | boolean | Interruttore generale delle e-mail operative |
+| E-mail di sistema abilitate | `system_email_enabled` | boolean | false | boolean | **SÌ** - Interruttore generale delle e-mail di manutenzione |
+| Limite giornaliero e-mail | `daily_email_limit` | number | 1000 | > 0 | Limitazione degli invii |
+| Conteggio giornaliero e-mail | `daily_email_count` | number | 0 | >= 0 | Conteggio corrente |
+| Data di azzeramento del conteggio giornaliero e-mail | `daily_email_count_reset_date` | date | oggi | Data valida | Azzeramento del contatore |
+
+#### Configurazione e-mail dei moduli
+
+| Etichetta frontend | Parametro | Tipo | Predefinito | Validazione | Impatto sulla manutenzione |
+|---|---|---|---|---|---|
+| Nome modulo | `module_name` | string | Obbligatorio | Enum: 'maintenance', 'operations', 'planning' | Ambito del modulo |
+| Tipo di evento | `event_type` | string | Obbligatorio | Enum per modulo | Ambito dell'evento |
+| Abilitato | `is_enabled` | boolean | false | boolean | **SÌ** - Abilitazione per singolo evento degli avvisi di manutenzione |
+| Ruoli di notifica | `notification_roles` | string[] | [] | Array di ruoli validi | Selezione dei destinatari |
+| ID utente di notifica | `notification_user_ids` | number[] | [] | Array di ID utente validi | Selezione dei destinatari |
+| Creato il | `created_at` | date | adesso | Data valida | Audit |
+| Aggiornato il | `updated_at` | date | adesso | Data valida | Audit |
+
+---
+
+### Parametri dei moduli Valutazione e Pianificazione
+
+#### Parametri delle valutazioni
+
+| Etichetta frontend | Parametro | Tipo | Predefinito | Validazione | Impatto sulla manutenzione |
+|---|---|---|---|---|---|
+| Cliente | `client_id` | number | Obbligatorio | FK | Associazione al cliente |
+| Procedura LUC | `fk_luc_procedure_id` | number | Obbligatorio | FK | Collegamento alla procedura |
+| Stato | `evaluation_status` | string | 'NEW' | Enum: 'NEW', 'PROCESSING', 'DONE' | Ciclo di vita |
+| Data della richiesta | `evaluation_request_date` | date | oggi | Data valida | Programmazione |
+| Anno di riferimento | `evaluation_year` | number | Anno corrente | Anno valido | Reportistica |
+| Descrizione | `evaluation_description` | string | null | Obbligatorio | Visualizzazione |
+| Riferimento offerta | `evaluation_offer` | string | null | Testo libero | Riferimento commerciale |
+| Responsabile vendite | `evaluation_sale_manager` | string | null | Testo libero | Tracciamento dei contatti |
+
+#### Parametri delle pianificazioni
+
+| Etichetta frontend | Parametro | Tipo | Predefinito | Validazione | Impatto sulla manutenzione |
+|---|---|---|---|---|---|
+| Codice pianificazione | `planning_code` | string | Automatico | Univoco per proprietario | Identificazione |
+| Descrizione pianificazione | `planning_description` | string | null | Obbligatorio | Visualizzazione |
+| Stato pianificazione | `planning_status` | string | 'NEW' | Enum: 'NEW', 'PROCESSING', 'REQ_FEEDBACK', 'POSITIVE_RESULT', 'NEGATIVE_RESULT', 'TESTING' | Ciclo di vita |
+| Tipo di pianificazione | `planning_type` | string | null | Testo libero | Categorizzazione |
+| Esito pianificazione | `planning_result` | string | 'PROGRESS' | Enum: 'PROGRESS', 'POSITIVE', 'NEGATIVE' | Esito |
+| Data pianificata | `planned_date` | date | null | Data valida | Programmazione |
+| Pianificazione attiva | `planning_active` | string | 'Y' | Enum: 'Y', 'N' | Visibilità |
+| JSON della pianificazione | `planning_json` | JSON | {} | JSON valido | Tasks, procedure_tasks |
+| Cliente | `fk_client_id` | number | null | FK | Associazione al cliente |
+| Valutazione | `fk_evaluation_id` | number | null | FK | Collegamento alla valutazione |
+| Assegnato a (PIC) | `assigned_to_user_id` | number | null | FK | Assegnazione del PIC |
+| Creato da | `created_by_user_id` | number | Obbligatorio | FK | Creatore |
+| Creato il | `created_at` | date | adesso | Data valida | Audit |
+| Aggiornato il | `updated_at` | date | adesso | Data valida | Audit |
+
+#### Parametri delle procedure LUC
+
+| Etichetta frontend | Parametro | Tipo | Predefinito | Validazione | Impatto sulla manutenzione |
+|---|---|---|---|---|---|
+| Codice procedura | `procedure_code` | string | Obbligatorio | Univoco per proprietario | Identificazione |
+| Nome procedura | `procedure_name` | string | Obbligatorio | Testo libero | Visualizzazione |
+| Versione procedura | `procedure_version` | string | '1.0' | Testo libero | Versionamento |
+| Stato procedura | `procedure_status` | string | null | Testo libero | Settore/categoria |
+| Procedura attiva | `procedure_active` | string | 'Y' | Enum: 'Y', 'N' | Visibilità |
+
+---
+
+### Parametri dei servizi di integrazione
+
+#### Credenziali FlytBase
+
+| Etichetta frontend | Parametro | Tipo | Predefinito | Validazione | Impatto sulla manutenzione |
+|---|---|---|---|---|---|
+| Token API FlytBase | `flytbase_api_token` | string | null | Formato JWT | Autenticazione API |
+| ID organizzazione FlytBase | `flytbase_org_id` | string | null | Obbligatorio con il token | Ambito API |
+| Nome del token FlytBase | `flytbase_token_name` | string | null | Testo libero | Visualizzazione |
+
+#### Parametri di sincronizzazione DFlight
+
+| Etichetta frontend | Parametro | Tipo | Predefinito | Validazione | Impatto sulla manutenzione |
+|---|---|---|---|---|---|
+| Codice di registrazione del drone | `drone_registration_code` | string | null | Obbligatorio per la sincronizzazione | **SÌ** - Sincronizzazione di conformità DFlight |
+| DRC sincronizzato il | `drc_synced_at` | date | null | Data valida | Tracciamento della sincronizzazione |
+| Immagine del codice QR | `qr_code_image` | string | null | Dati immagine validi | Codice QR |
+| Numero di serie UAS | `uas_serial_number` | string | null | Formato obbligatorio | Conformità DFlight |
+| Numero di serie GCS | `gcs_serial_number` | string | null | Formato obbligatorio | Conformità DFlight |
+| Classi di drone | `drone_classes` | string[] | null | Array di stringhe | Classificazione |
+
+#### Parametri delle assicurazioni
+
+| Etichetta frontend | Parametro | Tipo | Predefinito | Validazione | Impatto sulla manutenzione |
+|---|---|---|---|---|---|
+| Nome assicurazione | `insurance_name` | string | null | Testo libero | Nome della polizza |
+| Compagnia assicurativa | `insurance_company` | string | null | Testo libero | Fornitore |
+| Data di scadenza assicurazione | `insurance_expiry_date` | date | null | Data valida | **SÌ** - Attiva l'avviso di scadenza |
+| Destinatari degli avvisi | `alert_recipients` | string[] | [] | Array di e-mail | Destinatari della notifica di scadenza |
+| Giorni di preavviso | `alert_days_before` | number | 30 | >= 0 | Giorni prima della scadenza in cui inviare l'avviso |
+| Aggiornato il | `updated_at` | date | adesso | Data valida | Audit |
+
+---
+
+## Dipendenze dei parametri tra moduli
+
+### Manutenzione → Operazioni
+
+| Parametro di manutenzione | Parametro di operazioni | Logica di dipendenza |
+|---|---|---|
+| Stato del sistema (tool_status) | Assegnazione del drone (fk_tool_id) | Solo i sistemi OPERATIONAL possono essere assegnati alle missioni |
+| Stato del componente (component_status) | Stato della missione (status_name) | Il sistema deve essere OPERATIONAL per avviare la missione |
+| Ore di manutenzione (initial_maintenance_hours) | Durata del volo (flight_duration) | La durata della missione aggiorna le ore del componente |
+| Voli di manutenzione (initial_maintenance_flights) | Completamento della missione | Ogni missione incrementa i voli del componente (moltiplicati per battery_cycle_ratio) |
+| Ticket di manutenzione aperto | Avvio della missione | I ticket aperti impediscono l'avvio della missione (sistema in stato MAINTENANCE) |
+
+### Operazioni → Manutenzione
+
+| Parametro di operazioni | Parametro di manutenzione | Logica di dipendenza |
+|---|---|---|
+| Fine effettiva (actual_end) | Ore di manutenzione (initial_maintenance_hours) | Il completamento della missione attiva l'aggiornamento del ciclo di manutenzione |
+| Durata del volo (flight_duration) | Ore di manutenzione (initial_maintenance_hours) | La durata del volo viene sommata alle ore del componente |
+| Assegnazione del drone (fk_tool_id) | Sistema del ticket di manutenzione (fk_tool_id) | Le missioni collegate ai sistemi possono avere ticket di manutenzione |
+| Completamento della missione | Stato del componente | Ricalcola lo stato OK/ALERT/DUE in base alle metriche aggiornate |
+
+### Pianificazione → Operazioni
+
+| Parametro di pianificazione | Parametro di operazioni | Logica di dipendenza |
+|---|---|---|
+| Stato della pianificazione (planning_status) | Collegamento alla pianificazione della missione (fk_planning_id) | Solo una pianificazione POSITIVE_RESULT consente la creazione di missioni |
+| Procedura LUC della valutazione (fk_luc_procedure_id) | Procedura LUC della missione (fk_luc_procedure_id) | La procedura LUC della valutazione viene collegata alla missione |
+| Assegnato al PIC (assigned_to_user_id) | Assegnazione del pilota (fk_pilot_user_id) | Il PIC della pianificazione può essere assegnato alla missione |
+
+### Operazioni → E-mail
+
+| Parametro di operazioni | Parametro e-mail | Logica di dipendenza |
+|---|---|---|
+| Stato della missione (status_name) | Tipo di evento (event_type) | I cambi di stato della missione attivano eventi e-mail |
+| Assegnazione del pilota (fk_pilot_user_id) | ID utente di notifica (notification_user_ids) | Il pilota assegnato riceve un'e-mail diretta |
+| E-mail operative abilitate (operation_email_enabled) | Invio e-mail | Interruttore a livello aziendale per le e-mail operative |
+
+### Manutenzione → E-mail
+
+| Parametro di manutenzione | Parametro e-mail | Logica di dipendenza |
+|---|---|---|
+| Stato del ticket (ticket_status) | Tipo di evento (event_type) | I cambi di stato del ticket attivano eventi e-mail |
+| Assegnazione del tecnico (fk_technician_id) | ID utente di notifica (notification_user_ids) | Il tecnico assegnato riceve un'e-mail diretta |
+| E-mail di sistema abilitate (system_email_enabled) | Invio e-mail | Interruttore a livello aziendale per le e-mail di manutenzione |
+| Stato del componente (component_status) | Attivazione e-mail | Lo stato ALERT/DUE attiva le notifiche di manutenzione |
+| Data di scadenza assicurazione (insurance_expiry_date) | Destinatari degli avvisi (alert_recipients) | La scadenza attiva un'e-mail ai destinatari configurati |
+
+### E-mail → Tutti i moduli
+
+| Parametro e-mail | Tutti i moduli | Logica di dipendenza |
+|---|---|---|
+| Limite giornaliero e-mail (daily_email_limit) | Tutti gli invii e-mail | Limite massimo di e-mail al giorno |
+| Conteggio giornaliero e-mail (daily_email_count) | Tutti gli invii e-mail | Conteggio corrente, si azzera automaticamente ogni giorno |
+| Abilitato (is_enabled) | Tutti gli invii e-mail | Verifica di abilitazione per singolo evento |
+| Ruoli di notifica (notification_roles) | Tutti gli invii e-mail | Selezione dei destinatari in base al ruolo |
+
+### Integrazione → Operazioni
+
+| Parametro di integrazione | Parametro di operazioni | Logica di dipendenza |
+|---|---|---|
+| Token API FlytBase (flytbase_api_token) | ID volo (flytbase_flight_id) | Le credenziali FlytBase sono necessarie per allegare il registro di volo |
+| ID volo (flytbase_flight_id) | Telemetria della missione | Il registro di volo fornisce i dati di telemetria della missione |
+| Durata GUTMA | Durata del volo (flight_duration) | La durata GUTMA si sincronizza automaticamente con la missione |
+
+### Integrazione → Manutenzione
+
+| Parametro di integrazione | Parametro di manutenzione | Logica di dipendenza |
+|---|---|---|
+| Numero di serie (component_sn) | Corrispondenza nella sincronizzazione GUTMA | Il numero di serie associa i componenti per gli aggiornamenti di utilizzo |
+| Durata GUTMA | Ore di manutenzione (initial_maintenance_hours) | La durata GUTMA aggiorna le ore del componente |
+| Conteggio voli GUTMA | Voli di manutenzione (initial_maintenance_flights) | I voli GUTMA aggiornano i voli del componente |
+| Codice di registrazione del drone (drone_registration_code) | Sincronizzazione DFlight | L'ID DFlight è memorizzato sul componente per la conformità |
+| Sincronizzazione DFlight | Stato del componente | I dati di conformità DFlight influiscono sullo stato operativo |
+
+---
+
+## Regole di validazione dei parametri
+
+### Schemi di validazione comuni
+
+#### Validazione delle stringhe
+- Rimuovi gli spazi iniziali e finali prima del salvataggio
+- Converti in maiuscolo i codici (tool_code, mission_code, ecc.)
+- Rifiuta le stringhe vuote nei campi obbligatori
+- Lunghezza massima: 255 caratteri per la maggior parte dei campi
+
+#### Validazione numerica
+- Deve essere >= 0 per conteggi e durate
+- Deve essere > 0 per limiti e rapporti
+- Precisione decimale: 2 cifre decimali per le ore
+- Intero per conteggi e ID
+
+#### Validazione delle date
+- Deve essere in formato ISO 8601 valido
+- La data di fine deve essere >= alla data di inizio (dove applicabile)
+- Date future consentite per la programmazione
+- Date passate consentite per i record storici
+
+#### Validazione degli enum
+- Campi di stato: limitati ai valori enum definiti
+- Campi di tipo: limitati ai valori enum definiti
+- Flag di attivazione: solo 'Y' o 'N'
+
+#### Validazione JSON
+- Deve essere un oggetto JSON valido
+- Gli oggetti annidati vengono validati ricorsivamente
+- Gli array devono contenere elementi validi
+- Null consentito per i campi opzionali
+
+### Validazione specifica per modulo
+
+#### Modulo Manutenzione
+- `maintenance_cycle_hour`: Usato solo se > 0
+- `maintenance_cycle_flight`: Usato solo se > 0
+- `maintenance_cycle_day`: Usato solo se > 0
+- `battery_cycle_ratio`: Deve essere > 0, predefinito 1.0
+- `component_active`: Solo i componenti 'Y' vengono valutati
+
+#### Modulo Operazioni
+- `flight_duration`: Calcolata da actual_start e actual_end
+- `max_altitude`: > 120m attiva il flag di conformità
+- `battery_charge_start/end`: Deve essere 0-100
+- `status_name`: Deve seguire le transizioni definite
+
+#### Modulo E-mail
+- `daily_email_limit`: Deve essere > 0
+- `notification_roles`: Devono essere ruoli utente validi
+- `notification_user_ids`: Devono essere ID utente validi
+- `module_name`: Deve essere 'maintenance', 'operations' o 'planning'
+
+#### Modulo Pianificazione
+- `planning_status`: Solo 'NEW' può essere eliminato
+- `evaluation_status`: Solo 'NEW' può essere eliminato
+- `planning_json`: Deve contenere un array di tasks valido
+
+#### Modulo Integrazione
+- `flytbase_api_token`: Deve essere un JWT valido
+- `flytbase_org_id`: Obbligatorio con il token
+- `serial_number`: Corrispondenza senza distinzione tra maiuscole e minuscole
+- SN segnaposto: 'n/a', 'na', 'unknown', 'none', '-', 'null' vengono filtrati
+
+---
+
+
+## Transizioni di stato dei parametri
+
+### Transizioni di stato della manutenzione
+
+```
+OK → ALERT (all'80% del limite)
+ALERT → DUE (al 100% del limite)
+DUE → OK (dopo la manutenzione, contatori azzerati)
+OK → IN_MAINTENANCE (ticket creato)
+IN_MAINTENANCE → OK (ticket chiuso)
+```
+
+### Transizioni di stato della missione
+
+```
+PLANNED → IN_PROGRESS (controllo pre-volo OK, sistema OPERATIONAL)
+IN_PROGRESS → COMPLETED (controllo post-volo OK)
+IN_PROGRESS → FAILED (flag di incidente)
+PLANNED → CANCELLED (azione dell'utente)
+```
+
+### Transizioni di stato della pianificazione
+
+```
+NEW → PROCESSING (revisione avviata)
+PROCESSING → REQ_FEEDBACK (in attesa di approvazione)
+REQ_FEEDBACK → POSITIVE_RESULT (approvata)
+REQ_FEEDBACK → NEGATIVE_RESULT (rifiutata)
+NEGATIVE_RESULT → PROCESSING (revisione)
+PROCESSING → TESTING (fase di test)
+TESTING → POSITIVE_RESULT (test superati)
+TESTING → NEGATIVE_RESULT (test falliti)
+```
+
+### Transizioni di stato della valutazione
+
+```
+NEW → PROCESSING (valutazione avviata)
+PROCESSING → DONE (valutazione completata)
+```
+
+---
+
+## Traccia di audit dei parametri
+
+### Parametri del registro di audit
+
+| Parametro | Colonna DB | Tipo | Scopo |
+|---|---|---|---|
+| `audit_id` | `audit_logs.audit_id` | number | Chiave primaria |
+| `user_id` | `audit_logs.user_id` | number | Utente che ha effettuato la modifica |
+| `owner_id` | `audit_logs.owner_id` | number | Contesto aziendale |
+| `event_type` | `audit_logs.event_type` | string | Tipo di modifica |
+| `entity_type` | `audit_logs.entity_type` | string | Entità interessata |
+| `entity_id` | `audit_logs.entity_id` | string | ID dell'entità |
+| `description` | `audit_logs.description` | string | Descrizione leggibile |
+| `metadata` | `audit_logs.metadata` | JSON | Contesto aggiuntivo |
+| `created_at` | `audit_logs.created_at` | date | Timestamp |
+
+### Parametri sottoposti ad audit
+
+**Parametri ad alto valore (sempre sottoposti ad audit):**
+- `tool.tool_active` (attivazione/disattivazione del sistema)
+- `maintenance_ticket.ticket_status` (ciclo di vita del ticket)
+- `pilot_mission.status_name` (ciclo di vita della missione)
+- `public_users.user_active` (attivazione dell'utente)
+- `owner.daily_email_limit` (modifiche al limite e-mail)
+
+**Parametri a medio valore (sottoposti ad audit per le modifiche critiche):**
+- `tool_component.component_active` (attivazione del componente)
+- `planning.planning_status` (approvazione della pianificazione)
+- `evaluation.evaluation_status` (completamento della valutazione)
+
+**Parametri a basso valore (non sottoposti ad audit):**
+- Nomi visualizzati e descrizioni
+- Aggiornamenti dei timestamp
+- Incrementi dei contatori (cicli di manutenzione, conteggi e-mail)
+
+---
+
+### Memorizzazione in cache dei parametri calcolati
+
+**Calcoli in cache:**
+- Stato operativo del sistema (calcolato a ogni caricamento della bacheca)
+- Stato di manutenzione del componente (calcolato a ogni caricamento della bacheca)
+- Conteggio giornaliero e-mail (azzerato ogni giorno, memorizzato in cache nel DB)
+
+**Non in cache (tempo reale):**
+- Durata della missione (calcolata su richiesta)
+- Telemetria di volo (dall'API FlytBase)
+- Risultati della sincronizzazione GUTMA (per ogni operazione di sincronizzazione)
+
+---
+
+## Riepilogo
+
+Questo riferimento dei parametri fornisce:
+
+1. **Indice completo dei parametri:** Tutti i parametri dei moduli con le mappature sul database
+2. **Regole di validazione:** Validazione degli input e vincoli delle regole di business
+3. **Dipendenze:** Relazioni tra i parametri dei diversi moduli
+4. **Logica di calcolo:** Come vengono calcolati i parametri derivati
+5. **Transizioni di stato:** Transizioni valide dei valori dei parametri
+6. **Traccia di audit:** Quali parametri sono sottoposti ad audit e perché
+7. **Sicurezza:** Gestione dei parametri sensibili
+8. **Prestazioni:** Strategie di indicizzazione e di caching
+
+Usa questo documento per:
+- Capire come i parametri circolano nel sistema
+- Implementare nuove funzionalità con una corretta gestione dei parametri
+- Risolvere i problemi legati ai parametri
+- Pianificare le modifiche allo schema del database
+- Implementare i controlli di sicurezza

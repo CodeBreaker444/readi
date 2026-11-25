@@ -101,6 +101,9 @@ export const E = {
   /** requireFeatureAccess: effective feature access is not sufficient for the requested mutation. */
   PX006: { code: 'PX006', category: 'Permission', message: 'You do not have permission to perform this action', detail: 'requireFeatureAccess: resolved feature access is "R" (or delete attempted without Manager flag).' },
 
+  /** A PIC (non-manager) tried to change a mission's pilot, or to add someone other than themselves. */
+  PX007: { code: 'PX007', category: 'Permission', message: "Pilots can only add themselves to a mission that has no pilot; they cannot change a mission's pilot.", detail: 'pilot-assignment.ts: canChangePilot() denied a self-assign-only PIC (set-pilot, operation PUT/POST).' },
+
   // ── Validation (VL) ──────────────────────────────────────────────────────
 
   /** Generic Zod validation failure — fieldErrors forwarded to client. */

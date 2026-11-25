@@ -5,6 +5,7 @@ import axios from 'axios';
 import {
   AlertTriangle,
   Archive,
+  Fence,
   ArrowLeft,
   AtSign,
   Bell,
@@ -51,7 +52,7 @@ type TabKey = "What's New" | 'Improvements' | 'Bug Fixes' | 'Details';
 const HIGHLIGHT_ICON: Record<string, React.ElementType> = {
   bell: Bell, 'at-sign': AtSign, 'layout-grid': LayoutGrid,
   filter: Filter, shield: Shield, 'shield-alert': ShieldAlert, bug: Bug, rocket: Rocket,
-  file: FileText, warning: AlertTriangle, timer: Timer, archive: Archive,
+  file: FileText, warning: AlertTriangle, timer: Timer, archive: Archive, fence: Fence,
 };
 
 const HIGHLIGHT_COLOR: Record<string, { bg: string; text: string }> = {

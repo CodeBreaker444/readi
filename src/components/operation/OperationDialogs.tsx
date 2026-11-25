@@ -1,4 +1,5 @@
 'use client';
+import { localizeText } from '@/lib/api-error-message';
 import { Operation } from "@/app/operations/table/page";
 import { useAuthorization } from "@/components/authorization/AuthorizationProvider";
 import { useTimezone } from "@/components/TimezoneProvider";
@@ -99,7 +100,7 @@ export function AttachmentsDialog({ open, onClose, operationId, operationName }:
             );
             window.open(data.url, '_blank');
         } catch {
-            toast.error('Failed to get download link');
+            toast.error(localizeText('Failed to get download link'));
         }
     }
 

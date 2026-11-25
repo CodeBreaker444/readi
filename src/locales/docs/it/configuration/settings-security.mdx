@@ -1,0 +1,115 @@
+---
+title: "Impostazioni e sicurezza"
+description: "Attiva il tuo account, configura l'autenticazione a due fattori, imposta il tuo PIN di autorizzazione, crea chiavi API e collega un DCC."
+---
+
+Questa pagina spiega come accedi e quali impostazioni di sicurezza gestisci in autonomia. La pagina della sicurezza si trova nella barra laterale sotto **Impostazioni**.
+
+---
+
+## Attivare il tuo account
+
+Quando un amministratore crea il tuo account, ricevi un'email con un **link di attivazione**.
+
+1. Clicca sul link nell'email. Readi attiva il tuo account e mostra "Account attivato!".
+2. Accedi e segui i passaggi di configurazione qui sotto.
+
+Se il link indica "Link di attivazione non valido", oppure non hai mai ricevuto l'email, chiedi al tuo amministratore di **Reinviare l'invito**. Vedi [Gestione del team](/docs/configuration/team).
+
+---
+
+## Password
+
+Puoi cambiare la password dalla pagina **Cambia password**. Una password deve contenere:
+
+- almeno 8 caratteri
+- una lettera maiuscola e una minuscola
+- un numero
+- un carattere speciale
+
+Digita due volte la nuova password. Readi ti avvisa se non coincidono. Se dimentichi la password, chiedi al tuo amministratore di impostarne una nuova.
+
+---
+
+## Configurazione a due fattori
+
+L'autenticazione a due fattori aggiunge un secondo controllo al tuo account: un codice di 6 cifre generato da un'app di autenticazione sul tuo telefono, oltre alla password.
+
+### Quando viene proposta
+
+Al primo accesso imposti una nuova password. Subito dopo, Readi ti propone di configurare l'autenticazione a due fattori. Gli utenti cliente non vedono questo passaggio.
+
+### Configurazione
+
+1. Installa sul telefono un'app di autenticazione, come Google Authenticator o Authy.
+2. Nella pagina di configurazione, **scansiona il codice QR** con l'app. Se non riesci a scansionarlo, digita la chiave segreta mostrata sotto "Non riesci a scansionare? Inseriscila manualmente".
+3. Inserisci il **codice di 6 cifre** dell'app e clicca su **Abilita 2FA**. Il codice cambia ogni 30 secondi, quindi usa quello corrente. Se viene rifiutato, attendi il codice successivo e riprova.
+
+Se non vuoi configurarla ora, clicca su **Salta per ora**. In questa occasione non ti verrà chiesto alcun codice.
+
+<Note>
+Oggi Readi propone la configurazione a due fattori una sola volta, in questo primo passaggio. L'accesso continua a usare email e password e l'app non chiede ancora un codice a ogni accesso. Mantieni privata la tua password e rivolgiti al tuo amministratore se hai bisogno di far verificare la tua configurazione a due fattori.
+</Note>
+
+---
+
+## PIN di autorizzazione
+
+Le azioni importanti, come avviare o completare una missione o spostare un componente, devono essere confermate con un **PIN di autorizzazione di 6 cifre**. Ogni conferma è firmata, quindi può essere verificata in seguito nei [Registri di audit](/docs/records/audit-logs).
+
+Impostalo in **Impostazioni → Sicurezza**:
+
+1. Scegli un PIN di 6 cifre.
+2. Inseriscilo di nuovo per confermare. Readi crea quindi la tua chiave di firma personale.
+
+Il tuo PIN protegge quella chiave e non lascia mai il tuo browser. La pagina mostra l'impronta della chiave e la chiave pubblica, con un pulsante **Copia**.
+
+Se provi a confermare un'azione senza un PIN vedrai "PIN di autorizzazione non impostato".
+
+### Cambiare il PIN
+Usa **Cambia PIN**. Viene creata una nuova chiave di firma. I record che hai firmato in precedenza restano validi e possono ancora essere verificati.
+
+Vedi anche [Codice di autorizzazione (PIN)](/docs/platform-rules/authorization-code).
+
+---
+
+## Chiavi API
+
+Le chiavi API permettono a un altro programma, ad esempio un'app di volo esterna, di inviare a Readi richieste di missioni di volo.
+
+1. In **Impostazioni → Sicurezza → Chiavi API**, clicca su **Nuova chiave**.
+2. Assegnale un **Nome chiave**, ad esempio "App di volo esterna". Puoi impostare una data di scadenza.
+3. Clicca su **Crea chiave**.
+4. **Copia subito la chiave.** Viene mostrata una sola volta.
+
+L'altro programma la invia nell'header `X-API-KEY` quando inoltra una missione. La tabella elenca ogni chiave con il suo nome, l'inizio della chiave, il suo stato, l'ultimo utilizzo e la scadenza.
+
+- **Revoca** impedisce a una chiave di funzionare ma la mantiene nell'elenco.
+- **Elimina** la rimuove completamente.
+
+<Warning>
+Tratta una chiave API come una password. Se viene divulgata, revocala e creane una nuova.
+</Warning>
+
+---
+
+## Integrazioni
+
+Per gli amministratori, **Integrazioni** collega Readi ai server dei tuoi clienti (un DCC). Ogni cliente ha la propria integrazione: scegli il cliente, seleziona quali missioni inviare (**Tutte**, **Esterne** o **Interne**), inserisci il suo **Callback URL** e clicca su **Aggiungi / Aggiorna**. Readi mostra una sola volta la chiave API del cliente; in seguito sono visibili solo gli ultimi 6 caratteri. La pagina elenca anche gli aggiornamenti che Readi non è riuscito a recapitare e gli indirizzi esatti chiamati. Vedi [Integrazione DCC](/docs/business-logic/dcc-integration).
+
+---
+
+## Percorsi principali dell'app
+
+- `/settings/security`
+- `/settings/integrations`
+- `/auth/setup-2fa`
+- `/auth/change-password`
+
+---
+
+## Permessi
+
+Chi può leggere, modificare ed eliminare in quest'area, in base al ruolo.
+
+<PermissionsTable section="Settings" />

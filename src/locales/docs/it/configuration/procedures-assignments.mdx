@@ -1,0 +1,92 @@
+---
+title: "Procedure, assegnazioni e comunicazione"
+description: "Crea le procedure che i tuoi piloti seguono, con le relative checklist, assegnazioni e protocolli di comunicazione."
+---
+
+La sezione **Organizzazione** della barra laterale è il luogo in cui definisci come funziona la tua operatività. I piloti la seguono poi in ogni missione. Comprende questi elementi:
+
+| Pagina | Che cos'è |
+|---|---|
+| **Checklist** | Checklist che i piloti completano |
+| **Organigramma** | Chi riporta a chi nella tua azienda |
+| **Assegnazioni** | Chi o cosa è assegnato a un compito, definito da un modulo |
+| **Protocolli di comunicazione** | Script radio o di contatto, definiti da un modulo |
+| **Procedure** | Un insieme di passaggi con un nome che raggruppa checklist, assegnazioni e comunicazioni |
+
+Assegnazioni, Comunicazione e Procedure usano ciascuna un piccolo frammento di **JSON**, un formato di testo semplice per descrivere un modulo o un elenco. Non serve essere sviluppatori: l'editor ti dice se ciò che hai scritto è valido e il modo più facile per iniziare è copiare un elemento esistente e modificarlo.
+
+---
+
+## Checklist
+
+Apri **Checklist** per gestire le checklist usate nelle missioni. Clicca su **Aggiungi checklist** e assegnale un **Codice protocollo** e un modulo scritto come **Schema JSON (SurveyJS)**, il formato che descrive le domande e le caselle da spuntare.
+
+- **Valida JSON:** ti dice "Schema JSON valido" oppure mostra cosa non va. Il testo deve essere un oggetto JSON.
+- Cerca nell'elenco dalla casella di ricerca.
+- Una checklist **attiva** non può essere eliminata. Impostala prima su **Inattivo**.
+
+---
+
+## Organigramma
+
+L'**Organigramma** mostra la tua struttura di reporting come un albero, con il numero di **Membri**, **Livelli** e persone **Attivo**.
+
+- Clicca su una persona o su un riquadro per **modificare il nodo**: imposta la **Posizione / Ruolo** (ad esempio "Responsabile operativo") e a chi **Riporta a**. Scegli **Radice aziendale** per collocare qualcuno al vertice.
+- La posizione non può essere lasciata vuota.
+- Se l'organigramma non si carica, usa **Riprova**.
+
+---
+
+## Procedure
+
+Una procedura è l'insieme completo dei passaggi che una missione segue, ad esempio una procedura per il certificato di operatore. Apri **Procedure** per aggiungerle, modificarle o eliminarle. Puoi cercare e filtrare per stato.
+
+Ogni procedura ha un **codice** (ad esempio `LUC-001`), un **nome**, una **descrizione**, una **versione**, un **settore** e uno **stato** (Valutazione, Pianificazione o Missione, cioè la fase in cui viene usata). Una procedura deve essere impostata su **Inattivo** prima di poter essere eliminata.
+
+### Passaggi della procedura
+
+La casella **Passaggi procedura (JSON)** elenca i compiti della procedura. Ogni passaggio può contenere checklist, assegnazioni e comunicazioni, ciascuna identificata dal proprio **codice**:
+
+```json
+{
+  "tasks": [
+    {
+      "checklist": [{ "checklist_code": "PRE-FLIGHT" }],
+      "assignment": [{ "assignment_code": "CREW" }],
+      "communication": [{ "communication_code": "RADIO-CHECK" }]
+    }
+  ]
+}
+```
+
+Usa codici che esistono nelle pagine Checklist, Assegnazioni e Comunicazione. Una sezione che non ti serve può restare vuota (`[]`). Se il testo non è valido vedrai "JSON non valido per i passaggi della procedura" e non verrà salvato.
+
+Quando una missione usa la procedura, i suoi compiti compaiono nella scheda della missione e il pilota li spunta. Vedi [Operazioni](/docs/modules/operations).
+
+---
+
+## Assegnazioni
+
+Apri **Assegnazioni** per vedere l'elenco, cercare e aggiungerne di nuove con **Aggiungi assegnazione**. Ogni assegnazione ha un codice, un nome e uno **Schema JSON** che descrive i campi che la persona compila.
+
+- **Valida:** accanto alla casella dello schema, un pulsante di controllo ti dice "Schema JSON valido" oppure mostra un errore di sintassi. Correggi eventuali errori prima di salvare.
+- **Anteprima:** apri dall'elenco lo Schema JSON di un'assegnazione esistente per vedere cosa contiene.
+- Un'assegnazione **attiva** non può essere eliminata. Impostala prima su **Inattivo**.
+
+---
+
+## Protocolli di comunicazione
+
+Apri **Protocolli di comunicazione** per gli script di contatto e radio usati durante le operazioni.
+
+- **Nuova comunicazione:** assegnale un **Codice comunicazione** e scrivi il suo **Schema JSON**.
+- **Formatta (Prettify):** riordina il layout del testo in modo che sia facile da leggere.
+- **Salva:** memorizza il protocollo. Se il testo non è JSON valido vedi "Formato JSON non valido".
+- I protocolli esistenti possono essere modificati o eliminati dall'elenco.
+
+---
+
+## Correlati
+
+- [Operazioni](/docs/modules/operations)
+- [Definizioni delle missioni](/docs/configuration/mission-definitions)

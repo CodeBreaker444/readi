@@ -1,15 +1,8 @@
 export default {
   nav: {
     title: 'Readi Docs',
-    url: '/docs',
+    url: '/docs/introduction',
   },
-  links: [
-    {
-      text: 'Docs',
-      url: '/docs',
-      active: 'nested-url' as const,
-    },
-  ],
   sidebar: {
     defaultOpenLevel: 1,
   },

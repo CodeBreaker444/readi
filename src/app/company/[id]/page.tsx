@@ -1,5 +1,6 @@
 'use client';
 
+import { localizeText } from '@/lib/api-error-message';
 import DeleteOwnerDialog from '@/components/company/DeleteOwnerDialog';
 import LogoCropDialog from '@/components/company/LogoCropDialog';
 import { OwnerData } from '@/components/tables/OwnerColumn';
@@ -292,7 +293,7 @@ export default function CompanyDetailPage() {
             if (res.data.code === 1) {
                 toast.success(t('companyPage.toast.adminPasswordUpdated'));
                 setNewPassword(''); setConfirmPassword('');
-            } else { setPwError(res.data.message || 'Failed to update password'); }
+            } else { setPwError(res.data.message || localizeText('Failed to update password')); }
         } catch { setPwError('Network error'); }
         finally { setPwSaving(false); }
     };
@@ -314,8 +315,8 @@ export default function CompanyDetailPage() {
                     ? t('companyPage.toast.adminEmailUpdatedResent')
                     : t('companyPage.toast.adminEmailUpdated'));
                 await fetchOwner();
-            } else { setEmailError(res.data.message || 'Failed to update email'); }
-        } catch (err: any) { setEmailError(err?.response?.data?.message || 'Network error'); }
+            } else { setEmailError(res.data.message || localizeText('Failed to update email')); }
+        } catch (err: any) { setEmailError(err?.response?.data?.message || localizeText('Network error')); }
         finally { setEmailSaving(false); }
     };
 
@@ -336,11 +337,11 @@ export default function CompanyDetailPage() {
                 ...(password ? { new_password: password } : {}),
             });
             if (res.data.code === 1) {
-                toast.success('Support access updated');
+                toast.success(localizeText('Support access updated'));
                 setSupportPassword('');
                 await fetchOwner();
-            } else { setSupportError(res.data.message || 'Failed to update support access'); }
-        } catch (err: any) { setSupportError(err?.response?.data?.message || 'Network error'); }
+            } else { setSupportError(res.data.message || localizeText('Failed to update support access')); }
+        } catch (err: any) { setSupportError(err?.response?.data?.message || localizeText('Network error')); }
         finally { setSupportSaving(false); }
     };
 

@@ -1,5 +1,5 @@
 import { listPlansForPlanning } from '@/backend/services/mission/flight-request-service';
-import { requirePermission } from '@/lib/auth/api-auth';
+import { requireFeatureView } from '@/lib/auth/api-auth';
 import { internalError } from '@/lib/api-error';
 import { E } from '@/lib/error-codes';
 import { NextRequest, NextResponse } from 'next/server';
@@ -9,7 +9,7 @@ export async function GET(
   { params }: { params: Promise<{ planningId: string }> },
 ) {
   try {
-    const { session, error } = await requirePermission('view_planning_advanced');
+    const { session, error } = await requireFeatureView('operation_flight_requests');
     if (error) return error;
 
     const planningId = Number((await params).planningId);

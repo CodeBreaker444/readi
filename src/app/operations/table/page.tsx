@@ -1,6 +1,7 @@
 'use client';
 
 import { useAuthorization } from '@/components/authorization/AuthorizationProvider';
+import { usePermissions } from '@/components/permissions/PermissionsProvider';
 import type { DFlightTrajectoryCircle } from '@/config/types/operation';
 import GeneralCommunicationDialog from '@/components/operation/GeneralCommunicationDialog';
 import ImportOperationDialog from '@/components/operation/ImportOperationDialog';
@@ -119,6 +120,7 @@ export default function OperationsPage() {
   const { timezone } = useTimezone();
   const { t } = useTranslation();
   const { requireAuthorization } = useAuthorization();
+  const { role: currentRole, userId: currentUserId, isManager: currentIsManager } = usePermissions();
 
   const [operations, setOperations] = useState<Operation[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -258,6 +260,10 @@ const table = useReactTable({
 });
 
   const selectedRows = table.getSelectedRowModel().rows.map((r) => r.original);
+  // A PIC (non-manager) can only assign themselves; the API enforces the same rule.
+  const batchPilots = currentRole === 'PIC' && !currentIsManager
+    ? pilots.filter((p) => p.user_id === currentUserId)
+    : pilots;
 
   async function handleBatchDelete() {
     if (!selectedRows.length) return;
@@ -469,7 +475,7 @@ const table = useReactTable({
           <OperationsBatchBar
             isDark={isDark}
             selectedCount={selectedRows.length}
-            pilots={pilots}
+            pilots={batchPilots}
             batchDeleting={batchDeleting}
             batchUpdating={batchUpdating}
             batchSettingPilot={batchSettingPilot}

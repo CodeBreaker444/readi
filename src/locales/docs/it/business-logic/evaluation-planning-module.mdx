@@ -1,0 +1,357 @@
+---
+title: "Logica di business del modulo Valutazione e Pianificazione"
+description: "Flusso della logica di business del modulo di valutazione e pianificazione, inclusi parametri, trigger e dipendenze."
+---
+
+# Logica di business del modulo Valutazione e Pianificazione
+
+## Panoramica
+
+Il modulo di valutazione e pianificazione gestisce la valutazione pre-volo e il processo di approvazione del piano di volo. Le valutazioni verificano la fattibilità operativa, mentre la pianificazione costruisce piani di volo dettagliati con checklist, registri di bordo e comunicazioni. Questo modulo è la porta d'accesso all'esecuzione della missione.
+
+---
+
+## Flusso di business principale
+
+```
+Richiesta del cliente
+  → Valutazione creata (stato NEW)
+  → Procedura LUC assegnata
+  → Attività di valutazione create (voci della checklist)
+  → Stato della valutazione aggiornato (PROCESSING → DONE)
+  → Pianificazione creata (collegata alla valutazione)
+  → Flusso di stato della pianificazione (NEW → PROCESSING → REQ_FEEDBACK → POSITIVE_RESULT/NEGATIVE_RESULT)
+  → Registro missione aggiunto
+  → Registro di prova aggiunto
+  → Pianificazione approvata (POSITIVE_RESULT)
+  → Creazione della missione sbloccata
+```
+
+---
+
+## Parametri chiave
+
+### Parametri della valutazione
+
+| Etichetta nell'interfaccia | Parametro | Impatto sulla manutenzione |
+|---|---|---|
+| Cliente | `client_id` | Associazione al cliente |
+| Procedura LUC | `fk_luc_procedure_id` | Riferimento alla procedura LUC per la conformità |
+| Stato | `evaluation_status` | Stato: NEW, PROCESSING, DONE |
+| Data richiesta | `evaluation_request_date` | Data di completamento prevista |
+| Anno di riferimento | `evaluation_year` | Anno di riferimento per la rendicontazione |
+| Descrizione | `evaluation_description` | Descrizione della valutazione |
+| Riferimento offerta | `evaluation_offer` | Riferimento all'offerta commerciale |
+| Responsabile vendite | `evaluation_sale_manager` | Contatto del responsabile vendite |
+
+### Logica degli stati della valutazione
+
+| Stato | Transizioni consentite | Logica di business |
+|---|---|---|
+| NEW | PROCESSING, DONE | Stato iniziale, può essere eliminata |
+| PROCESSING | DONE | In revisione, attività in corso |
+| DONE | Nessuna | Completata, sblocca la pianificazione |
+
+**Regola di eliminazione:** solo le valutazioni con stato NEW possono essere eliminate. Una volta in PROCESSING o DONE, l'eliminazione è bloccata.
+
+---
+
+## Parametri della pianificazione
+
+| Etichetta nell'interfaccia | Parametro | Impatto sulla manutenzione |
+|---|---|---|
+| Codice pianificazione | `planning_code` | Codice univoco generato automaticamente |
+| Descrizione pianificazione | `planning_description` | Descrizione della pianificazione |
+| Stato pianificazione | `planning_status` | Stato: NEW, PROCESSING, REQ_FEEDBACK, POSITIVE_RESULT, NEGATIVE_RESULT, TESTING |
+| Tipo di pianificazione | `planning_type` | Tipo di pianificazione |
+| Esito pianificazione | `planning_result` | Esito: PROGRESS, POSITIVE, NEGATIVE |
+| Data pianificata | `planned_date` | Data di esecuzione prevista |
+| JSON pianificazione | `planning_json` | Contiene: tasks, procedure_tasks |
+| Cliente | `fk_client_id` | Associazione al cliente |
+| Valutazione | `fk_evaluation_id` | Collegamento alla valutazione |
+| Assegnato a (PIC) | `assigned_to_user_id` | Assegnazione del PIC per l'esecuzione della missione |
+| Creato da | `created_by_user_id` | Tracciamento del creatore |
+
+### Logica degli stati della pianificazione
+
+| Stato | Transizioni consentite | Logica di business |
+|---|---|---|
+| NEW | PROCESSING, TESTING | Stato iniziale, può essere eliminata |
+| PROCESSING | REQ_FEEDBACK, POSITIVE_RESULT, NEGATIVE_RESULT, TESTING | In revisione interna |
+| REQ_FEEDBACK | PROCESSING, POSITIVE_RESULT, NEGATIVE_RESULT, TESTING | In attesa di approvazione |
+| POSITIVE_RESULT | Nessuna | Approvata - pronta per la creazione della missione |
+| NEGATIVE_RESULT | PROCESSING | Rifiutata - deve essere rivista |
+| TESTING | POSITIVE_RESULT, NEGATIVE_RESULT | In fase di test |
+
+**Regola di eliminazione:** solo le pianificazioni con stato NEW possono essere eliminate. Una volta in PROCESSING o oltre, l'eliminazione è bloccata.
+
+---
+
+## Procedura LUC
+
+**Descrizione:** le procedure LUC (Light Unmanned Aircraft) forniscono modelli di attività standardizzati per i diversi tipi di operazione.
+
+**Parametri:**
+- Codice e nome della procedura
+- Stringa di versione
+- Settore/categoria (ad es. SURVEILLANCE, DELIVERY, INSPECTION)
+- Stato attivo
+
+---
+
+## File di valutazione
+
+**Descrizione:** documenti caricati durante il processo di valutazione.
+
+**Parametri:**
+- Nome e descrizione del file
+- Percorso e URL di archiviazione S3
+- Dimensione e versione del file
+- Tracciamento del caricamento (utente, data e ora)
+- Classificazione per categoria
+
+---
+
+## Registri di bordo della pianificazione
+
+### Registro di pianificazione della missione
+
+**Descrizione:** contiene i documenti e i parametri del piano di volo.
+
+**Parametri:**
+- Codice e descrizione della pianificazione
+- Limiti/parametri di volo (JSON)
+- Assegnazione di drone/sistema
+- Metadati del file (nome, dimensione, info S3)
+- Tracciamento delle versioni
+
+### Registro dei test della pianificazione
+
+**Descrizione:** contiene i risultati dei test per la validazione della pianificazione.
+
+**Parametri:**
+- Codice del test e nome del file
+- Risultato del test (successo/fallimento)
+- Dimensione del file e archiviazione S3
+- Data e ora di creazione
+
+---
+
+## Comunicazioni
+
+**Descrizione:** comunicazioni interne collegate alla pianificazione e alla valutazione.
+
+**Parametri:**
+- Oggetto e messaggio
+- Tipo di comunicazione (pianificazione, valutazione, ecc.)
+- Priorità e stato
+- Destinatari (principale e aggiuntivi)
+- Allegati (metadati del file)
+- Data e ora di invio e di lettura
+- Collegamenti a cliente, pianificazione, valutazione
+
+---
+
+## Logica di creazione della valutazione
+
+**Logica:**
+1. Crea il record della pianificazione con i parametri forniti
+2. Collega alla valutazione
+3. Imposta lo stato iniziale (tipicamente NEW o PROCESSING)
+4. Assegna il PIC
+5. Restituisce l'ID della pianificazione e i dettagli di assegnazione
+
+**Tracciamento delle assegnazioni:**
+- Utente che ha creato la pianificazione
+- PIC responsabile dell'esecuzione
+- Entrambi tracciati per la pista di audit
+
+---
+
+## Logica di eliminazione della valutazione
+
+**Logica:**
+1. Recupera la valutazione per ID e proprietario
+2. Controlla lo stato
+3. Se lo stato != NEW → genera un errore
+4. Se lo stato == NEW → elimina la valutazione
+5. Elimina a cascata i file di valutazione correlati
+
+**Errore:** "Only evaluations with status NEW can be deleted"
+
+---
+
+## Logica di eliminazione della pianificazione
+
+**Logica:**
+1. Recupera la pianificazione per ID e proprietario
+2. Controlla lo stato
+3. Se lo stato != NEW → genera un errore
+4. Se lo stato == NEW → elimina la pianificazione
+5. Elimina a cascata le voci del registro di bordo correlate
+
+**Errore:** "Only planning with status NEW can be deleted"
+
+---
+
+## Logica di aggiornamento della pianificazione
+
+**Logica:**
+1. Verifica che la pianificazione esista e appartenga al proprietario
+2. Aggiorna i campi (descrizione, stato, tipo, data, ecc.)
+3. Sincronizza planning_name con planning_desc
+4. Restituisce il record della pianificazione aggiornato
+
+---
+
+## Gestione delle attività della pianificazione
+
+### Aggiungere un'attività checklist alla pianificazione
+
+**Logica:**
+1. Recupera la pianificazione e il JSON della pianificazione corrente
+2. Esegue il parsing o inizializza l'array delle attività
+3. Recupera la checklist per ID
+4. Genera un nuovo ID attività (auto-incremento)
+5. Crea l'oggetto attività con la checklist
+6. Aggiunge all'array delle attività
+7. Aggiorna il record della pianificazione
+
+### Ottenere le attività della pianificazione
+
+**Logica:**
+1. Recupera la pianificazione con il JSON della pianificazione
+2. Controlla la presenza di attività di procedura dalla procedura LUC
+3. Se esistono attività di procedura:
+   - Estrae i codici delle checklist
+   - Recupera il JSON della checklist per ciascuna
+   - Unisce negli oggetti attività
+4. Se non esistono attività di procedura:
+   - Recupera la valutazione collegata
+   - Carica le attività di procedura dalla valutazione
+5. Calcola il flag di completamento (tutte le attività completate/saltate)
+
+### Spostare la pianificazione in Testing
+
+**Logica:**
+1. Recupera la pianificazione per ID e proprietario
+2. Controlla lo stato corrente
+3. Se già TESTING → genera un errore
+4. Aggiorna lo stato a TESTING
+5. Restituisce la conferma
+
+**Errore:** "Planning is already in TESTING status"
+
+---
+
+## Gestione dei registri di bordo della pianificazione
+
+### Aggiungere un registro di pianificazione della missione
+
+**Logica:**
+1. Crea il record del registro
+2. Memorizza i metadati del file (nome, dimensione, info S3)
+3. Memorizza i parametri dei limiti come JSON
+4. Collega a pianificazione, valutazione, cliente, strumento
+5. Restituisce l'ID del record creato
+
+**JSON dei limiti:** contiene i parametri di volo (limiti di altitudine, distanza, durata) per il controllo di conformità.
+
+### Eliminare un registro di pianificazione della missione
+
+**Logica:**
+1. Recupera la voce del registro
+2. Controlla le voci del registro dei test correlate
+3. Se esistono voci di test:
+   - Elimina i file S3 per ciascun test
+   - Elimina i record del registro dei test
+4. Elimina il file S3 del registro principale
+5. Elimina la voce del registro
+6. Restituisce la conferma con il flag delle voci di test
+
+**Pulizia S3:** il registro principale e tutti i file di test associati vengono eliminati. Gli errori vengono registrati ma non fanno fallire l'operazione.
+
+---
+
+## Gestione dei file del repository
+
+### Ottenere l'elenco del repository
+
+**Logica:**
+1. Interroga la tabella dei file del repository
+2. Filtra per proprietario e categoria del file
+3. Filtro facoltativo per pianificazione
+4. Ordina per ID file decrescente
+5. Restituisce l'elenco dei file
+
+**Tipi di repository:** mission_planning_logbook, mission_planning_test_logbook, evaluation_files, categorie personalizzate
+
+### Eliminare un file del repository
+
+**Logica:**
+1. Elimina il file S3 se è fornita la chiave
+2. Aggiorna il record del database per azzerare i campi del file
+3. Restituisce la conferma di successo
+
+**Azzeramento dei campi:** tutti i campi relativi al file vengono impostati a NULL. Il record viene conservato (eliminazione logica).
+
+---
+
+## Gestione delle comunicazioni
+
+### Aggiungere una comunicazione
+
+**Logica:**
+1. Crea il record della comunicazione
+2. Memorizza i destinatari come array JSON
+3. Collega a cliente, pianificazione, valutazione se forniti
+4. Memorizza i metadati degli allegati se forniti
+5. Restituisce l'ID della comunicazione
+
+### Ottenere le comunicazioni per pianificazione
+
+**Logica:**
+1. Interroga le comunicazioni collegate alla pianificazione
+2. Include i dettagli dell'utente mittente
+3. Ordina per sent_at decrescente
+4. Restituisce con il nome del mittente popolato
+
+---
+
+## Dipendenze dei parametri
+
+### Dipendenze dirette
+
+- Lo stato della pianificazione (planning_status) dipende da: completamento della valutazione, completamento delle attività, flusso di approvazione
+- Le attività della pianificazione dipendono da: procedura LUC (fk_luc_procedure_id), assegnazioni delle checklist
+- I limiti di pianificazione della missione dipendono da: requisiti normativi, specifiche del cliente
+- Lo stato della valutazione (evaluation_status) dipende da: completamento delle attività, caricamento dei documenti
+- Il collegamento alla valutazione dipende da: esistenza e stato della valutazione
+- L'assegnazione del PIC (assigned_to_user_id) dipende da: utente con il ruolo appropriato
+
+### Dipendenze tra moduli
+
+- **Modulo Operazioni:** una pianificazione con stato POSITIVE_RESULT sblocca la creazione della missione
+- **Modulo Manutenzione:** l'assegnazione dello strumento nel registro di bordo richiede un sistema operativo (System Status = OPERATIONAL)
+- **Modulo Utenti:** l'assegnazione del PIC richiede un utente attivo con il ruolo appropriato
+- **Modulo Clienti:** l'associazione al cliente è richiesta per fatturazione e rendicontazione
+- **Modulo Documenti:** i file caricati sono archiviati in S3 con tracciamento dei metadati
+- **Modulo Comunicazioni:** le comunicazioni sono collegate alla pianificazione per la pista di audit
+
+---
+
+
+## Regole di business principali
+
+1. **Flusso degli stati:** Valutazione (NEW → PROCESSING → DONE) → Pianificazione (NEW → PROCESSING → REQ_FEEDBACK → POSITIVE_RESULT)
+2. **Restrizione di eliminazione:** solo lo stato NEW può essere eliminato (sia valutazione sia pianificazione)
+3. **Integrazione delle procedure:** la procedura LUC (fk_luc_procedure_id) fornisce i modelli di attività
+4. **Gestione delle attività:** le attività sono memorizzate nel JSON della pianificazione, supportano le checklist
+5. **Tracciamento dei registri di bordo:** la pianificazione della missione e i risultati dei test sono tracciati separatamente
+6. **Audit delle comunicazioni:** tutte le comunicazioni sono collegate alla pianificazione per la tracciabilità
+7. **Gestione dei file:** integrazione S3 con tracciamento dei metadati
+8. **Tracciamento delle assegnazioni:** sia il creatore (created_by_user_id) sia il PIC (assigned_to_user_id) sono tracciati per l'audit
+9. **Fase di test:** la pianificazione può passare a TESTING prima dell'approvazione finale
+10. **Collegamento al cliente:** sia la valutazione sia la pianificazione sono collegate al cliente per la fatturazione
+11. **Sblocco della missione:** solo una pianificazione con stato POSITIVE_RESULT consente la creazione della missione
+12. **Requisito di sistema:** l'assegnazione dello strumento nel registro di bordo richiede un sistema operativo (System Status = OPERATIONAL)

@@ -1,5 +1,6 @@
 'use client';
 
+import { localizeText } from '@/lib/api-error-message';
 import { ClientStatusTag, isClientInactive } from '@/components/client/ClientStatusTag';
 import { useAuthorization } from '@/components/authorization/AuthorizationProvider';
 import {
@@ -334,7 +335,7 @@ export function UserForm({
       toast.success(action === 'grant' ? 'PIC-Technician sub-role granted' : 'PIC-Technician sub-role revoked');
     } catch (err: any) {
       const isBlockedByIntervention = err?.response?.status === 409;
-      const message = err?.response?.data?.error ?? 'Failed to update sub-role';
+      const message = err?.response?.data?.error ?? localizeText('Failed to update sub-role');
       if (isBlockedByIntervention) {
         toast.warning(message, { duration: 6000 });
       } else {
@@ -375,10 +376,10 @@ export function UserForm({
       await axios.delete('/api/team/user/control-center-token', {
         data: { user_id: userData.user_id, organization_id: org.id },
       });
-      toast.success(`Removed ${org.name}`);
+      toast.success(localizeText('Removed {{name}}', { name: org.name }));
       setCcOrgs((prev) => prev.filter((o) => o.id !== org.id));
     } catch (err: any) {
-      toast.error(err?.response?.data?.message ?? 'Failed to remove organization');
+      toast.error(err?.response?.data?.message ?? localizeText('Failed to remove organization'));
     } finally {
       setCcRemovingOrgId(null);
     }
@@ -389,8 +390,8 @@ export function UserForm({
   }, [ccExpanded, fetchCcStatus]);
 
   const handleCcVerify = async () => {
-    if (!ccTokenInput.trim()) { toast.error('Please enter the API token'); return; }
-    if (!ccOrgIdInput.trim()) { toast.error('Please enter the Organization ID'); return; }
+    if (!ccTokenInput.trim()) { toast.error(localizeText('Please enter the API token')); return; }
+    if (!ccOrgIdInput.trim()) { toast.error(localizeText('Please enter the Organization ID')); return; }
     setCcStep('verifying');
     setCcVerifiedUser(null);
     try {
@@ -398,7 +399,7 @@ export function UserForm({
       setCcVerifiedUser(res.data.flytbaseUser);
       setCcStep('confirmed');
     } catch (err: any) {
-      toast.error(err?.response?.data?.message ?? 'Token verification failed');
+      toast.error(err?.response?.data?.message ?? localizeText('Token verification failed'));
       setCcStep('idle');
     }
   };
@@ -413,13 +414,13 @@ export function UserForm({
         orgId: ccOrgIdInput.trim(),
         tokenName: ccNameInput.trim() || undefined,
       });
-      toast.success('Control Center token saved');
+      toast.success(localizeText('Control Center token saved'));
       setCcHasToken(true);
       setCcTokenName(ccNameInput.trim() || null);
       setCcTokenInput(''); setCcOrgIdInput(''); setCcNameInput('');
       setCcVerifiedUser(null); setCcStep('idle'); setCcShowForm(false);
     } catch (err: any) {
-      toast.error(err?.response?.data?.message ?? 'Failed to save token');
+      toast.error(err?.response?.data?.message ?? localizeText('Failed to save token'));
       setCcStep('confirmed');
     }
   };
@@ -441,10 +442,10 @@ export function UserForm({
     setCcRemoving(true);
     try {
       await axios.delete('/api/team/user/control-center-token', { data: { user_id: userData.user_id } });
-      toast.success('Control Center token removed');
+      toast.success(localizeText('Control Center token removed'));
       setCcHasToken(false); setCcTokenName(null);
     } catch (err: any) {
-      toast.error(err?.response?.data?.message ?? 'Failed to remove token');
+      toast.error(err?.response?.data?.message ?? localizeText('Failed to remove token'));
     } finally {
       setCcRemoving(false);
     }
@@ -462,7 +463,7 @@ export function UserForm({
       const res = await axios.get('/api/team/user/qualifications', { params: { user_id: userData.user_id } });
       setQualItems(res.data.data ?? []);
     } catch {
-      toast.error('Failed to load qualifications');
+      toast.error(localizeText('Failed to load qualifications'));
     } finally {
       setQualLoading(false);
     }
@@ -478,8 +479,8 @@ export function UserForm({
   };
 
   const handleQualStage = () => {
-    if (!qualNewName.trim()) { toast.error('Qualification name is required'); return; }
-    if (qualPendingNew.length >= 10) { toast.error('You can stage up to 10 qualifications at a time'); return; }
+    if (!qualNewName.trim()) { toast.error(localizeText('Qualification name is required')); return; }
+    if (qualPendingNew.length >= 10) { toast.error(localizeText('You can stage up to 10 qualifications at a time')); return; }
     setQualPendingNew((items) => [...items, {
       _key: `${Date.now()}-${Math.random()}`,
       qualification_name: qualNewName.trim(),
@@ -505,9 +506,9 @@ export function UserForm({
       });
       setQualItems((items) => [...items, ...(res.data.data ?? [])]);
       setQualPendingNew([]);
-      toast.success('Qualifications saved');
+      toast.success(localizeText('Qualifications saved'));
     } catch (err: any) {
-      toast.error(err?.response?.data?.error ?? 'Failed to save qualifications');
+      toast.error(err?.response?.data?.error ?? localizeText('Failed to save qualifications'));
     } finally {
       setQualSaving(false);
     }
@@ -518,9 +519,9 @@ export function UserForm({
     try {
       await axios.delete(`/api/team/user/qualifications/${id}`);
       setQualItems((items) => items.filter((q) => q.qualification_id !== id));
-      toast.success('Qualification removed');
+      toast.success(localizeText('Qualification removed'));
     } catch (err: any) {
-      toast.error(err?.response?.data?.error ?? 'Failed to remove qualification');
+      toast.error(err?.response?.data?.error ?? localizeText('Failed to remove qualification'));
     } finally {
       setQualDeletingId(null);
     }

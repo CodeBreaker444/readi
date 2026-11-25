@@ -1,5 +1,6 @@
 'use client';
 
+import { localizeText } from '@/lib/api-error-message';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -441,7 +442,7 @@ export default function ImportOperationDialog({ open, onClose, onSaved }: Import
                 formData.append('flytbase_flight_id', selectedFlightId);
                 formData.append('organization_id', organizationId);
             } else {
-                toast.error('Please select a log file or a flight');
+                toast.error(localizeText('Please select a log file or a flight'));
                 setSubmitting(false);
                 return;
             }

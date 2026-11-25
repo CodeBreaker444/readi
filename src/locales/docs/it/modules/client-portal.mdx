@@ -1,0 +1,75 @@
+---
+title: "Portale clienti"
+description: "Cosa vedono i clienti quando accedono: le loro missioni, le statistiche e un modulo per richiedere nuovi voli."
+---
+
+I clienti della tua azienda possono avere un proprio login. Un utente con il ruolo **Client** accede direttamente all'area clienti e vede solo le informazioni sulle proprie missioni.
+
+---
+
+## Dashboard
+
+La dashboard offre una panoramica del lavoro svolto per il cliente:
+
+- **Missioni totali**, **ore di volo**, **distanza percorsa (km)** e **sistemi utilizzati**
+- Missioni per stato
+- I sistemi e i droni utilizzati
+- Voli al giorno e al mese
+
+Una pagina **Analisi** separata mostra le stesse informazioni in modo più dettagliato nel tempo.
+
+---
+
+## Missioni
+
+La pagina Missioni elenca le missioni del cliente con codice, nome, stato, pilota, drone, orario programmato, durata e luogo. I clienti possono cercare e filtrare per stato (Pianificata, In corso, Completata, Annullata, Interrotta).
+
+Seleziona una missione per vederne i dettagli: inizio e fine effettivi, distanza percorsa e note.
+
+---
+
+## Eventi
+
+**Eventi** mostra gli incidenti e le anomalie segnalati sulle missioni del cliente, dal [Registro eventi](/docs/modules/logbooks). Apri un evento per vederne i dettagli, una mappa del luogo in cui è avvenuto e i relativi allegati. I clienti possono consultare gli eventi ma non possono modificarli o eliminarli, né aggiungere contenuti multimediali.
+
+---
+
+## Richiedere un volo
+
+I clienti possono richiedere un nuovo volo da **Richiedi volo**. Compilano:
+
+| Campo | Note |
+|---|---|
+| Tipo di missione oppure Obiettivo / Area | Almeno uno è obbligatorio |
+| Orario di inizio preferito | |
+| Priorità | Alta, Media o Bassa |
+| Operatore | Azienda o persona responsabile della richiesta |
+| Localizzazione | Posizione, direzione e punti di partenza e di arrivo |
+| Waypoint | Latitudine, longitudine e altitudine |
+| Note | Requisiti particolari |
+
+Dopo l'invio, il cliente vede una conferma. La richiesta compare per il tuo team in **Richieste di volo → Esterne**, dove un OPM può accettarla o rifiutarla (vedi [Integrazione DCC](/docs/business-logic/dcc-integration)).
+
+---
+
+## Permessi
+
+Il ruolo **CLIENT** ha accesso solo al Portale clienti. Non può aprire nessun altro modulo e vede sempre e solo i dati della propria azienda. Questi permessi sono fissi per il ruolo CLIENT e **non possono essere personalizzati** nell'editor dei permessi dei ruoli.
+
+| Area | Lettura | Scrittura / modifica | Eliminazione | Personalizzabile nell'editor dei permessi dei ruoli |
+|---|---|---|---|---|
+| Dashboard | Sì | No | No | No |
+| Missioni | Sì | No | No | No |
+| Eventi | Sì | No | No | No |
+| Analisi | Sì | No | No | No |
+| Richiedi volo | – | Sì (inviare una richiesta) | No | No |
+| Profilo | Sì | Sì (proprio profilo) | No | No |
+
+Per tutti gli altri ruoli, vedi il [riferimento ai permessi dei ruoli](/docs/business-logic/role-permissions).
+
+---
+
+## Correlati
+
+- [Glossario dei ruoli](/docs/business-logic/role-glossary)
+- [Operazioni](/docs/modules/operations)
