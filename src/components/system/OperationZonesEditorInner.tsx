@@ -49,6 +49,16 @@ export interface OperationZonesEditorProps {
 type DrawMode = { type: 'zone'; shape: ZoneShape } | { type: 'perimeter' } | null;
 type Basemap = 'satellite' | 'map';
 
+const PIN_ICON = L.divIcon({
+  html: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 36" width="26" height="39" style="filter:drop-shadow(0 1px 2px rgba(0,0,0,.6))">
+    <path d="M12 0C5.373 0 0 5.373 0 12c0 8.25 12 24 12 24s12-15.75 12-24C24 5.373 18.627 0 12 0z" fill="#8b5cf6" stroke="#fff" stroke-width="1.5"/>
+    <circle cx="12" cy="12" r="5" fill="white"/>
+  </svg>`,
+  className: '',
+  iconSize: [26, 39],
+  iconAnchor: [13, 39],
+});
+
 const DEFAULT_CENTER: [number, number] = [41.9, 12.5];
 const KINDS: ZoneKind[] = ['green', 'red', 'unsurveyed'];
 
@@ -61,6 +71,7 @@ export default function OperationZonesEditorInner({ value, onChange, isDark = fa
   const draftGroupRef = useRef<L.LayerGroup | null>(null);
   const vertexGroupRef = useRef<L.LayerGroup | null>(null);
   const rubberRef = useRef<L.Polyline | null>(null);
+  const locationMarkerRef = useRef<L.Marker | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const [basemap, setBasemap] = useState<Basemap>('satellite');
@@ -115,12 +126,25 @@ export default function OperationZonesEditorInner({ value, onChange, isDark = fa
     });
 
     mapRef.current = map;
-    if (b) map.fitBounds(b, { padding: [24, 24], maxZoom: 18 });
+    if (b) map.fitBounds(focus ? [[Math.min(b[0][0], focus.lat), Math.min(b[0][1], focus.lng)], [Math.max(b[1][0], focus.lat), Math.max(b[1][1], focus.lng)]] : b, { padding: [24, 24], maxZoom: 18 });
     // The editor usually mounts inside an animating dialog/tab.
     const timer = setTimeout(() => map.invalidateSize(), 250);
     return () => { clearTimeout(timer); map.remove(); mapRef.current = null; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // ── System location pin ──
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    locationMarkerRef.current?.remove();
+    locationMarkerRef.current = null;
+    if (!focus || !Number.isFinite(focus.lat) || !Number.isFinite(focus.lng)) return;
+    locationMarkerRef.current = L.marker([focus.lat, focus.lng], { icon: PIN_ICON, interactive: true, keyboard: false, bubblingMouseEvents: true, zIndexOffset: 1000 })
+      .bindTooltip(t('systems.zones.systemLocation', 'System location'), { direction: 'top', offset: [0, -36] })
+      .addTo(map);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focus?.lat, focus?.lng]);
 
   // ── Basemap (satellite by default) ──
   useEffect(() => {

@@ -4528,6 +4528,7 @@
   },
   "systems": {
     "zones": {
+      "systemLocation": "Standort des Systems",
       "perimeterReplaced": "Vorheriger Perimeter ersetzt (ein System hat einen Perimeter)",
       "replacesPerimeter": "ersetzt den vorhandenen Perimeter",
       "title": "Betriebszonen",

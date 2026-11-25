@@ -4610,6 +4610,7 @@
   },
   "systems": {
     "zones": {
+      "systemLocation": "Posizione del sistema",
       "perimeterReplaced": "Perimetro precedente sostituito (un sistema ha un solo perimetro)",
       "replacesPerimeter": "sostituisce il perimetro esistente",
       "title": "Zone operative",

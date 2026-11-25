@@ -4615,6 +4615,7 @@
   },
   "systems": {
     "zones": {
+      "systemLocation": "System location",
       "perimeterReplaced": "Previous perimeter replaced (a system has one perimeter)",
       "replacesPerimeter": "replaces the existing perimeter",
       "title": "Operation zones",
