@@ -152,6 +152,7 @@ export const ROUTE_PERMISSIONS: Record<string, RoutePermissionEntry> = {
   '/team/client': 'view_client',
   '/client/dashboard': 'view_client_portal',
   '/client/missions': 'view_client_portal',
+  '/client/scheduled-flights': 'view_client_portal',
   '/client/events': 'view_client_portal',
   '/client/request-flight': 'view_client_portal',
   '/client/analytics': 'view_client_portal',

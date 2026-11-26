@@ -271,7 +271,7 @@ export default function UserManagement({ session }: UserManagementProps) {
               <div key={cfg.key} className={`relative overflow-hidden rounded-2xl border bg-gradient-to-br p-5 shadow-sm   ${isDark ? cfg.accent.dark : cfg.accent.light}`}>
                 <div className="absolute -right-4 -bottom-4 w-20 h-20 rounded-full opacity-10 bg-current" />
                 <p className={`text-[10px] font-bold uppercase tracking-widest ${isDark ? 'text-gray-400' : 'text-gray-400'}`}>{t(`team.personnel.stats.${cfg.key}`)}</p>
-                <p className={`text-4xl font-black mt-2 tabular-nums leading-none ${isDark ? cfg.valueColor.dark : cfg.valueColor.light}`}>
+                <p className={`text-3xl font-bold tabular-nums tracking-tight ${isDark ? cfg.valueColor.dark : cfg.valueColor.light}`}>
                   {stats[cfg.key]}
                 </p>
               </div>

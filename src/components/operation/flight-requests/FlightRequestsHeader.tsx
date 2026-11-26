@@ -55,30 +55,6 @@ export function FlightRequestsHeader({
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <div className={cn('inline-flex rounded-full p-0.5 gap-0.5', isDark ? 'bg-slate-800' : 'bg-gray-100')} role="tablist">
-            {(['internal', 'external'] as const).filter((key) => key !== 'internal' || showInternal).map((key) => (
-              <button
-                key={key}
-                type="button"
-                role="tab"
-                aria-selected={tab === key}
-                onClick={() => onTabChange(key)}
-                className={cn(
-                  'flex items-center gap-1.5 rounded-full px-3.5 h-7 text-xs font-medium cursor-pointer transition-colors',
-                  tab === key
-                    ? 'bg-violet-600 text-white shadow-sm'
-                    : isDark ? 'text-slate-400 hover:text-slate-200' : 'text-gray-500 hover:text-gray-800',
-                )}
-              >
-                {t(`operations.opmApproval.requests.tabs.${key}`)}
-                {key === 'internal' && internalPending > 0 && (
-                  <span className={cn('rounded-full px-1.5 text-[10px] font-semibold', tab === key ? 'bg-white/25 text-white' : 'bg-amber-500 text-white')}>
-                    {internalPending}
-                  </span>
-                )}
-              </button>
-            ))}
-          </div>
           {!hideFilter && onClientChange && (
           <Select value={filterClient} onValueChange={onClientChange}>
             <SelectTrigger className={`h-8 text-xs w-44 ${isDark ? 'bg-slate-700 border-slate-600 text-slate-200' : 'bg-gray-50 border-gray-200'}`}>
@@ -109,6 +85,30 @@ export function FlightRequestsHeader({
             </SelectContent>
           </Select>
           )}
+          <div className={cn('inline-flex rounded-full p-0.5 gap-0.5', isDark ? 'bg-slate-800' : 'bg-gray-100')} role="tablist">
+            {(['internal', 'external'] as const).filter((key) => key !== 'internal' || showInternal).map((key) => (
+              <button
+                key={key}
+                type="button"
+                role="tab"
+                aria-selected={tab === key}
+                onClick={() => onTabChange(key)}
+                className={cn(
+                  'flex items-center gap-1.5 rounded-full px-3.5 h-7 text-xs font-medium cursor-pointer transition-colors',
+                  tab === key
+                    ? 'bg-violet-600 text-white shadow-sm'
+                    : isDark ? 'text-slate-400 hover:text-slate-200' : 'text-gray-500 hover:text-gray-800',
+                )}
+              >
+                {t(`operations.opmApproval.requests.tabs.${key}`)}
+                {key === 'internal' && internalPending > 0 && (
+                  <span className={cn('rounded-full px-1.5 text-[10px] font-semibold', tab === key ? 'bg-white/25 text-white' : 'bg-amber-500 text-white')}>
+                    {internalPending}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
           <Button
             variant="outline"
             size="sm"

@@ -5789,6 +5789,27 @@
     "dashboardSubtitle": "Panoramica delle tue missioni e sistemi",
     "missionsTitle": "Missioni Client",
     "missionsSubtitle": "Visualizza e monitora le tue missioni assegnate",
+    "scheduledFlights": {
+      "nav": "Voli programmati",
+      "title": "Voli programmati",
+      "subtitle": "Slot di volo approvati per la tua organizzazione e il pilota assegnato a ciascuno",
+      "pilot": "Pilota",
+      "system": "Sistema",
+      "missions": "Missioni",
+      "date": "Data",
+      "prevDay": "Giorno precedente",
+      "nextDay": "Giorno successivo",
+      "siteTime": "Orari nel fuso del sito ({{zone}})",
+      "kpiTotal": "Voli programmati",
+      "empty": "Nessun volo programmato per questo giorno.",
+      "emptyToday": "Nessun volo programmato per oggi.",
+      "loadError": "Impossibile caricare i voli programmati",
+      "phase": {
+        "upcoming": "In programma",
+        "live": "In corso",
+        "ended": "Terminato"
+      }
+    },
     "totalMissions": "Missioni totali",
     "flightHours": "Ore di volo",
     "distanceKm": "Distanza (km)",

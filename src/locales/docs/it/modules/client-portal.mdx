@@ -1,6 +1,6 @@
 ---
 title: "Portale clienti"
-description: "Cosa vedono i clienti quando accedono: le loro missioni, le statistiche e un modulo per richiedere nuovi voli."
+description: "Cosa vedono i clienti quando accedono: le loro missioni, i voli programmati, le statistiche e un modulo per richiedere nuovi voli."
 ---
 
 I clienti della tua azienda possono avere un proprio login. Un utente con il ruolo **Client** accede direttamente all'area clienti e vede solo le informazioni sulle proprie missioni.
@@ -25,6 +25,32 @@ Una pagina **Analisi** separata mostra le stesse informazioni in modo più detta
 La pagina Missioni elenca le missioni del cliente con codice, nome, stato, pilota, drone, orario programmato, durata e luogo. I clienti possono cercare e filtrare per stato (Pianificata, In corso, Completata, Annullata, Interrotta).
 
 Seleziona una missione per vederne i dettagli: inizio e fine effettivi, distanza percorsa e note.
+
+---
+
+## Voli programmati
+
+**Voli programmati** mostra i voli pianificati per il cliente tramite [Prenotazione slot](/docs/modules/slot-booking). Elenca gli slot approvati di tutti i gruppi di slot creati per questo cliente, un giorno alla volta. Si apre sul giorno corrente; usa le frecce, **Oggi** o il selettore di data per vedere un altro giorno.
+
+Per ogni volo vengono mostrati:
+
+| Elemento | Note |
+|---|---|
+| Orario | Inizio e fine dello slot, nel fuso orario del sito. Se è diverso da quello del cliente, il fuso viene indicato sotto l'orario |
+| Stato | **In programma**, **In corso** o **Terminato**, in base all'orario dello slot. Si aggiorna da solo mentre la pagina è aperta |
+| Pilota | Foto, nome, email e telefono del pilota assegnato allo slot |
+| Sistema | Il sistema scelto per il gruppo di slot, se presente |
+| Meteo | Calmo, moderato o difficile, quando il gruppo di slot ha un sistema con una posizione |
+| Missioni | Le missioni del cliente che il pilota ha collegato allo slot, con il loro avanzamento (Programmata, In corso, Completata, Interrotta) |
+
+I totali in alto contano i voli del giorno e quanti sono in programma, in corso o terminati. La pagina si aggiorna ogni minuto.
+
+Cosa i clienti **non** vedono:
+
+- Gli slot senza un pilota approvato e le richieste in attesa o rifiutate
+- I nomi dei gruppi di slot e le altre impostazioni della prenotazione slot
+- I gruppi di slot con una data di pubblicazione futura, finché non vengono pubblicati
+- Gli slot di altri clienti e le missioni di altri clienti collegate allo stesso slot
 
 ---
 
@@ -60,6 +86,7 @@ Il ruolo **CLIENT** ha accesso solo al Portale clienti. Non può aprire nessun a
 |---|---|---|---|---|
 | Dashboard | Sì | No | No | No |
 | Missioni | Sì | No | No | No |
+| Voli programmati | Sì | No | No | No |
 | Eventi | Sì | No | No | No |
 | Analisi | Sì | No | No | No |
 | Richiedi volo | – | Sì (inviare una richiesta) | No | No |

@@ -5782,6 +5782,27 @@
     "dashboardSubtitle": "Übersicht Ihrer Missionen und Systeme",
     "missionsTitle": "Client-Missionen",
     "missionsSubtitle": "Zugewiesene Missionen anzeigen und verfolgen",
+    "scheduledFlights": {
+      "nav": "Geplante Flüge",
+      "title": "Geplante Flüge",
+      "subtitle": "Genehmigte Flug-Slots für Ihre Organisation und der jeweils zugewiesene Pilot",
+      "pilot": "Pilot",
+      "system": "System",
+      "missions": "Missionen",
+      "date": "Datum",
+      "prevDay": "Vorheriger Tag",
+      "nextDay": "Nächster Tag",
+      "siteTime": "Zeiten in Standortzeit ({{zone}})",
+      "kpiTotal": "Geplante Flüge",
+      "empty": "Für diesen Tag sind keine Flüge geplant.",
+      "emptyToday": "Für heute sind keine Flüge geplant.",
+      "loadError": "Geplante Flüge konnten nicht geladen werden",
+      "phase": {
+        "upcoming": "Bevorstehend",
+        "live": "Läuft",
+        "ended": "Beendet"
+      }
+    },
     "totalMissions": "Missionen gesamt",
     "flightHours": "Flugstunden",
     "distanceKm": "Distanz (km)",

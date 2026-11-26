@@ -5797,6 +5797,27 @@
     "dashboardSubtitle": "Overview of your missions and systems",
     "missionsTitle": "Client Missions",
     "missionsSubtitle": "View and track your assigned missions",
+    "scheduledFlights": {
+      "nav": "Scheduled Flights",
+      "title": "Scheduled Flights",
+      "subtitle": "Approved flight slots for your organisation and the pilot assigned to each",
+      "pilot": "Pilot",
+      "system": "System",
+      "missions": "Missions",
+      "date": "Date",
+      "prevDay": "Previous day",
+      "nextDay": "Next day",
+      "siteTime": "Times in site time ({{zone}})",
+      "kpiTotal": "Scheduled flights",
+      "empty": "No flights scheduled for this day.",
+      "emptyToday": "No flights scheduled for today.",
+      "loadError": "Could not load scheduled flights",
+      "phase": {
+        "upcoming": "Upcoming",
+        "live": "In progress",
+        "ended": "Finished"
+      }
+    },
     "totalMissions": "Total Missions",
     "flightHours": "Flight Hours",
     "distanceKm": "Distance (km)",

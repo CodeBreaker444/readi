@@ -1,6 +1,6 @@
 ---
 title: "Client Portal"
-description: "What clients see when they log in: their missions, statistics, and a form to request new flights."
+description: "What clients see when they log in: their missions, scheduled flights, statistics, and a form to request new flights."
 ---
 
 Clients of your company can have their own login. A user with the **Client** role goes straight to the client area and sees only the information about their own missions.
@@ -25,6 +25,32 @@ A separate **Analytics** page shows the same information in more detail over tim
 The Missions page lists the client's missions with code, name, status, pilot, drone, scheduled time, duration and location. Clients can search and filter by status (Planned, In Progress, Completed, Cancelled, Aborted).
 
 Select a mission to see its details: actual start and end, distance flown and notes.
+
+---
+
+## Scheduled Flights
+
+**Scheduled Flights** shows the flights planned for the client through [Slot Booking](/docs/modules/slot-booking). It lists the approved slots of every slot group created for this client, one day at a time. It opens on today; use the arrows, **Today** or the date picker to see another day.
+
+Each flight shows:
+
+| Item | Notes |
+|---|---|
+| Time | Start and end of the slot, in the site's time zone. When that differs from the client's own time zone, the zone is shown under the time |
+| Status | **Upcoming**, **In progress** or **Finished**, based on the slot's time. It updates on its own while the page is open |
+| Pilot | Picture, name, email and phone of the pilot assigned to the slot |
+| System | The system chosen for the slot group, if any |
+| Weather | Calm, moderate or tough, when the slot group has a system with a location |
+| Missions | The client's own missions the pilot linked to the slot, with their progress (Scheduled, In progress, Done, Aborted) |
+
+Totals at the top count the day's flights and how many are upcoming, in progress or finished. The page refreshes every minute.
+
+What clients do **not** see:
+
+- Slots without an approved pilot, and pending or rejected requests
+- Slot group names and any other slot booking settings
+- Slot groups with a future publish date, until they are published
+- Slots of other clients, and missions of other clients linked to the same slot
 
 ---
 
@@ -60,6 +86,7 @@ The **CLIENT** role only has access to the Client Portal. It cannot open any oth
 |---|---|---|---|---|
 | Dashboard | Yes | No | No | No |
 | Missions | Yes | No | No | No |
+| Scheduled Flights | Yes | No | No | No |
 | Events | Yes | No | No | No |
 | Analytics | Yes | No | No | No |
 | Request Flight | – | Yes (submit a request) | No | No |
