@@ -8,10 +8,6 @@ import { buildS3Url, deleteFileFromS3, getPresignedDownloadUrl, REGION, uploadFi
 import { sendMissionCreatedModuleEmail, sendMissionAssignedModuleEmail } from '../settings/module-email-notification-service';
 import { dateConversionUtcToLocal } from '@/backend/utils/date-utils';
 
-// Keys must match the `status_name` values actually sent by callers
-// (the OperationStatus enum: PLANNED | IN_PROGRESS | COMPLETED | CANCELLED | ABORTED).
-// These previously used title-case keys ("Scheduled", "In Progress", ...) that never
-// matched, so fk_mission_status_id silently defaulted to 1 for every created mission.
 const STATUS_NAME_TO_ID: Record<string, number> = {
   PLANNED: 1,
   IN_PROGRESS: 2,
@@ -313,6 +309,11 @@ export async function createOperation(
   const recurringGroupId = isRecurrent ? generateRecurringGroupId() : null;
   const insertedIds: number[] = [];
 
+  // A mission awaiting OPM approval can never be created already started/finished:
+  // whatever status the client sent, it begins as PLANNED until an OPM approves it.
+  const awaitingApproval = !!approval?.opm_approval_status && approval.opm_approval_status !== 'APPROVED';
+  const initialStatusName = awaitingApproval ? 'PLANNED' : input.status_name;
+
   // Get planned_date from planning if available (do this once before the loop)
   let planningPlannedDate: Date | null = null;
   if (input.fk_planning_id && !input.scheduled_start) {
@@ -366,10 +367,10 @@ export async function createOperation(
       mission_code: missionCode,
       mission_name: input.mission_name,
       mission_description: input.mission_description ?? null,
-      status_name: input.status_name,
-      fk_mission_status_id: STATUS_NAME_TO_ID[input.status_name] ?? 1,
+      status_name: initialStatusName,
+      fk_mission_status_id: STATUS_NAME_TO_ID[initialStatusName] ?? 1,
       scheduled_start: scheduledStart,
-      actual_end: input.actual_end ? new Date(input.actual_end) : null,
+      actual_end: !awaitingApproval && input.actual_end ? new Date(input.actual_end) : null,
       location: input.location ?? null,
       notes: input.notes ?? null,
       fk_owner_id: ownerId,
@@ -522,9 +523,22 @@ export async function updateOperation(id: number, input: UpdateOperationSchema, 
       dflight_flight_clearance_status: true,
       dflight_skip_authorization: true,
       opm_approval_status: true,
+      fk_mission_status_id: true,
     },
   });
   assertMissionEditable(current?.status_name);
+
+  if (current?.opm_approval_status && current.opm_approval_status !== 'APPROVED') {
+    const requestedStatus = (input as any).status_name as string | undefined;
+    const isStopping = requestedStatus === 'CANCELLED' || requestedStatus === 'ABORTED' || requestedStatus === 'PLANNED';
+    const movesStatusName = requestedStatus !== undefined && requestedStatus !== current.status_name && !isStopping;
+    const movesStatusFk = input.fk_mission_status_id !== undefined
+      && input.fk_mission_status_id !== current.fk_mission_status_id
+      && !(isStopping && input.fk_mission_status_id === STATUS_NAME_TO_ID[requestedStatus!]);
+    if (movesStatusName || movesStatusFk || input.actual_start || input.actual_end) {
+      assertOpmApproved(current.opm_approval_status);
+    }
+  }
 
   if ((input as any).status_name === 'IN_PROGRESS' && current?.status_name !== 'IN_PROGRESS') {
     assertOpmApproved(current?.opm_approval_status);
@@ -1071,4 +1085,4 @@ export async function getLucProcedureOptions(ownerId: number) {
     orderBy: { procedure_name: 'asc' },
     select: { procedure_id: true, procedure_name: true, procedure_code: true, procedure_steps: true },
   });
-}
+}

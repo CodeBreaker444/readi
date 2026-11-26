@@ -16,9 +16,12 @@ const MISSIONS_URL = '/operations/table';
 
 type Requester = Pick<SessionUser, 'userId' | 'ownerId' | 'role' | 'isManager' | 'fullname'>;
 
-/** Only pilots need approval — OPMs and managers create missions freely. */
-export function missionNeedsOpmApproval(user: Pick<SessionUser, 'role' | 'isManager'>): boolean {
-  return user.role === 'PIC' && !user.isManager;
+/**
+ * Every pilot (PIC) needs OPM approval .
+ * Only OPM/admin roles create missions freely.
+ */
+export function missionNeedsOpmApproval(user: Pick<SessionUser, 'role'> & { isManager?: boolean }): boolean {
+  return user.role === 'PIC';
 }
 
 async function getUserDepartment(userId: number): Promise<string | null> {

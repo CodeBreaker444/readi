@@ -1,4 +1,5 @@
 import { createAndAttachMission } from '@/backend/services/operation/mission-service';
+import { buildInitialApproval, notifyApprovalRequested } from '@/backend/services/operation/mission-approval-service';
 import { requirePermission } from '@/lib/auth/api-auth';
 import { apiError, internalError } from '@/lib/api-error';
 import { canChangePilot } from '@/lib/auth/pilot-assignment';
@@ -45,6 +46,15 @@ export async function POST(req: NextRequest) {
     const userId = session!.user.userId;
     const ownerId = session!.user.ownerId;
 
+    // Pilots' missions need OPM approval; they cannot be created already started.
+    const approval = await buildInitialApproval(session!.user);
+    if (approval && status_name === 'IN_PROGRESS') {
+      return NextResponse.json(
+        { code: 0, message: 'This mission needs OPM approval before it can be started.', errorCode: 'OPM_APPROVAL_REQUIRED' },
+        { status: 422 }
+      );
+    }
+
     const result = await createAndAttachMission(
       {
         mission_code,
@@ -66,8 +76,17 @@ export async function POST(req: NextRequest) {
         op_type,
       },
       userId,
-      ownerId
+      ownerId,
+      approval
     );
+
+    if (approval) {
+      try {
+        await notifyApprovalRequested(session!.user, [{ pilot_mission_id: result.mission_id, mission_code: result.mission_code }]);
+      } catch (notifyErr) {
+        console.warn('[create-and-attach] approval notification failed (non-fatal):', notifyErr);
+      }
+    }
 
     return NextResponse.json({
       code: 1,

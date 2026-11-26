@@ -26,7 +26,8 @@ export interface CreateAndAttachMissionParams {
 export async function createAndAttachMission(
   params: CreateAndAttachMissionParams,
   userId: number,
-  ownerId: number
+  ownerId: number,
+  approval?: Record<string, unknown> | null,
 ) {
   const {
     mission_code,
@@ -69,6 +70,8 @@ export async function createAndAttachMission(
       fk_owner_id: ownerId,
       created_at: new Date(),
       updated_at: new Date(),
+      // Pilot-created missions are held for OPM approval (same as POST /api/operation).
+      ...(approval ?? {}),
     },
   });
 
