@@ -14,7 +14,6 @@ export interface OperationZone {
   kind: ZoneKind;
   shape: ZoneShape;
   points: LatLngTuple[];
-  /** Extra information carried over from an import (e.g. waypoint altitude, custom KML fields). */
   note?: string;
 }
 
@@ -211,15 +210,11 @@ export function boundsOf(zones: OperationZones): [[number, number], [number, num
 }
 
 // ── KML / KMZ import ────────────────────────────────────────────────────────
-// https://developers.google.com/kml/documentation/kmzarchives — a KMZ is a ZIP whose root holds a .kml
-// (conventionally doc.kml) plus referenced resources. Only Polygon / LineString / LinearRing geometry is imported.
-
+ 
 export interface KmlImportResult {
   zones: OperationZone[];
   perimeter: OperationPerimeter | null;
-  /** Placemarks without usable geometry (ground overlays, empty shapes, ...). */
   skipped: number;
-  /** Additional perimeter-looking shapes beyond the first one. */
   extraPerimeters: number;
 }
 
@@ -254,7 +249,7 @@ function classifyColor(rgb: [number, number, number] | null): ZoneKind | null {
 const RE_PERIMETER = /(perimeter|boundary|fence|geofence|operational\s*(area|limit)|operating\s*area|limite)/i;
 const RE_RED = /(\bred\b|no[\s-]?fly|(?<![a-z])restrict|prohibit|forbidden|danger|hazard|exclusion|rosso|vietat)/i;
 const RE_GREEN = /(\bgreen\b|\bsafe\b|allowed|approved|authori[sz]ed|permitted|cleared|verde)/i;
-const RE_GREY = /(unsurvey|unknown|\bgr[ae]y\b|unverified|unmapped|grigi)/i;
+const RE_GREY =/(unsurvey|unknown|\bgr[ae]y\b|unverified|unmapped|grigi)/i;
 
 function classifyByName(text: string): ZoneKind | 'perimeter' | null {
   if (RE_PERIMETER.test(text)) return 'perimeter';
@@ -284,8 +279,6 @@ const firstChild = (el: Element, name: string) => childrenNamed(el, name)[0] ?? 
 const descendants = (el: Element, name: string) => Array.from(el.getElementsByTagName('*')).filter((c) => localName(c) === name);
 const textOf = (el: Element | null) => el?.textContent?.trim() ?? '';
 
-// Custom fields added by external services: <ExtendedData><Data name=".."><value>..</value></Data>
-// and <SchemaData><SimpleData name="..">..</SimpleData>. Keys like type/zone/category decide the zone type.
 const TYPE_KEYS = /^(type|zone|zone[_\s-]?type|category|class|classification|kind|status|restriction|level|risk|color|colour)$/i;
 const NAME_KEYS = /^(name|title|label|zone[_\s-]?name)$/i;
 
@@ -393,7 +386,8 @@ export function parseKml(kmlText: string): KmlImportResult {
         const description = plainText(textOf(firstChild(child, 'description')));
         const geoms: { shape: ZoneShape; points: LatLngTuple[] }[] = [];
         collectGeometries(child, geoms);
-        const usable = geoms.filter((g) => g.points.length >= minPointsFor(g.shape));
+        const shapes = geoms.some((g) => g.shape !== 'point') ? geoms.filter((g) => g.shape !== 'point') : geoms;
+        const usable = shapes.filter((g) => g.points.length >= minPointsFor(g.shape));
         if (usable.length === 0) { result.skipped++; continue; }
 
         // DJI wayline files number their waypoint pins with wpml:index.
