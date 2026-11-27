@@ -1,9 +1,8 @@
-ALTER TABLE public.dcc_client_endpoints
-  ADD COLUMN IF NOT EXISTS mission_scope VARCHAR(10) NOT NULL DEFAULT 'ALL',
-  ADD COLUMN IF NOT EXISTS api_key_encrypted TEXT,
-  ADD COLUMN IF NOT EXISTS api_key_last6 VARCHAR(6);
+ALTER TABLE public.flight_requests
+  ADD COLUMN IF NOT EXISTS zone_validated boolean NULL,
+  ADD COLUMN IF NOT EXISTS fk_matched_tool_id integer NULL
+    REFERENCES public.tool(tool_id) ON DELETE SET NULL,
+  ADD COLUMN IF NOT EXISTS zone_check jsonb NULL;
 
-ALTER TABLE public.dcc_client_endpoints
-  DROP CONSTRAINT IF EXISTS dcc_client_endpoints_scope_chk;
-ALTER TABLE public.dcc_client_endpoints
-  ADD CONSTRAINT dcc_client_endpoints_scope_chk CHECK (mission_scope IN ('EXTERNAL', 'INTERNAL', 'ALL'));
+CREATE INDEX IF NOT EXISTS idx_flight_requests_matched_tool
+  ON public.flight_requests (fk_matched_tool_id);

@@ -5,7 +5,7 @@ import { usePermissions } from '@/components/permissions/PermissionsProvider';
 import type { DFlightTrajectoryCircle } from '@/config/types/operation';
 import GeneralCommunicationDialog from '@/components/operation/GeneralCommunicationDialog';
 import ImportOperationDialog from '@/components/operation/ImportOperationDialog';
-import { NewOperationModal } from '@/components/operation/NewOperationModal';
+import { NewOperationModal, type FlightRequestMissionContext } from '@/components/operation/NewOperationModal';
 import {
   AttachmentsDialog,
   DeleteDialog,
@@ -125,6 +125,23 @@ export default function OperationsPage() {
   const [operations, setOperations] = useState<Operation[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [createOpen, setCreateOpen] = useState(false);
+  // Set when arriving from Flight Requests → Link to Mission → Create new mission (?flightRequest=<id>).
+  const [flightRequestCtx, setFlightRequestCtx] = useState<FlightRequestMissionContext | null>(null);
+
+  useEffect(() => {
+    // window.location instead of useSearchParams: this page is not wrapped in a Suspense boundary.
+    const id = Number(new URLSearchParams(window.location.search).get('flightRequest'));
+    if (!Number.isInteger(id) || id <= 0) return;
+    axios.get(`/api/planning/flight-requests/${id}/context`)
+      .then(({ data }) => {
+        if (data?.context) {
+          setFlightRequestCtx(data.context);
+          setCreateOpen(true);
+        }
+      })
+      .catch((err) => toast.error(err?.response?.data?.error ?? t('operations.flightRequestMission.loadError')))
+      .finally(() => window.history.replaceState(null, '', window.location.pathname));
+  }, []);
   const [importOpen, setImportOpen] = useState(false);
   const [commOpen, setCommOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<Operation | null>(null);
@@ -499,10 +516,11 @@ const table = useReactTable({
 
       <NewOperationModal
         open={createOpen || !!editTarget}
-        onClose={() => { setCreateOpen(false); setEditTarget(null); }}
-        onSuccess={() => { setRefreshKey((k) => k + 1); setCreateOpen(false); setEditTarget(null); }}
+        onClose={() => { setCreateOpen(false); setEditTarget(null); setFlightRequestCtx(null); }}
+        onSuccess={() => { setRefreshKey((k) => k + 1); setCreateOpen(false); setEditTarget(null); setFlightRequestCtx(null); }}
         isDark={isDark}
         editOperation={editTarget}
+        flightRequest={editTarget ? null : flightRequestCtx}
         onSaved={handleSaved}
       />
       <DeleteDialog

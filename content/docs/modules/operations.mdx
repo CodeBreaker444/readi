@@ -236,18 +236,59 @@ The forecast is advisory only. Always check official aviation weather before you
 Has two tabs:
 
 - **Internal:** missions created by your pilots that need OPM approval. Approve, or deny with an optional reason. Filter by All, Pending, Approved or Denied.
-- **External:** requests from outside systems and clients (see [DCC Integration](/docs/business-logic/dcc-integration) and [Client Portal](/docs/modules/client-portal)). Requests are counted as New, Acknowledged or Assigned. An OPM can **Move to Planning** (assign it to a planning mission and a plan), or deny it.
+- **External:** requests from outside systems and clients (see [DCC Integration](/docs/business-logic/dcc-integration) and [Client Portal](/docs/modules/client-portal)). Requests are counted as New, Acknowledged or Assigned. After acknowledging a request, an OPM can **Link to Mission** (create a new mission or link an existing one), or deny it.
 
-### Operation zone warnings
+The table shows two extra columns: **Zone check** (the result of the check below, with the matched system) and **Mission** (the linked mission and its status).
 
-If the request has a waypoint, Readi checks it against the **operation zones** of the systems assigned to the request's client (see [Systems](/docs/modules/systems)). Open the request to see the result at the top of the **Details** and **Action** tabs: green when the waypoint is within the zones, amber when it is outside the perimeter, in an unsurveyed zone or in no green zone, and red when it is in a red zone or near a red line. The **Location** tab draws the zones and perimeter around the waypoint. A warning does not block the request, it tells you what to check before you acknowledge or plan it.
+### Zone check on arrival
+
+Every request from a client is checked against the **operation zones** of all the systems assigned to that client (see [Systems](/docs/modules/systems)). This happens as soon as the request arrives, from the Client Portal or from the client's DCC.
+
+- A location counts as **inside** a system's zones when it is inside the perimeter, inside a green zone (if the system has green zones), and clear of every red zone, red line and unsurveyed zone.
+- If several systems cover the location, Readi picks the **nearest** one. Distance is measured to the system's own coordinates, or to the centre of its zones if it has none. That system is shown as **In zone · *system code*** and is pre-selected when you create a mission for the request.
+- If **no system** covers the location, the request is **rejected automatically**. Its status becomes **Rejected**. The reason explains why: inside a red (no-fly) or unsurveyed zone of a system (with the zone name), inside a system's perimeter but in none of its green zones, or outside every system (with the nearest system and its distance). A rejected request cannot be acknowledged. The client's DCC receives a denial with that reason, and a Client Portal user sees the reason straight away.
+- The check is skipped, and the request stays **New** as usual, when the request has no waypoint coordinates, has no client, or the client has no system with operation zones. The badge then shows **Not checked**.
+
+Open the request to see the result. The **Details** tab shows the zone check and the nearest system. The warnings at the top of the **Details** and **Action** tabs show the result per system: green when the waypoint is within the zones, amber when it is outside the perimeter, in an unsurveyed zone or in no green zone, and red when it is in a red zone or near a red line. The **Location** tab draws the zones and perimeter around the waypoint.
+
+### Link to Mission
+
+Once a request is **Acknowledged**, the **Action** tab shows **Link to Mission**. It replaces the former *Move to Planning*. A request is linked to a scheduled mission, not to a planning. The dialog offers two choices:
+
+- **Create a new mission.** Opens the **Mission Table** with the **New Mission** form already open. A header at the top shows the request details: request ID, client, priority, location, nearest system and its distance, requested time and the time it was received. The form is pre-filled with the client, the matched system, the requested start time, the location and the target. The client cannot be changed. The system list shows only the client's systems that have operation zones. The ones whose zones cover the request location come first, nearest first. When you save, the mission is linked to the request. This header appears only for missions created from a flight request.
+- **Link an existing mission.** Lists the client's missions that are **Planned** or **In Progress** on one of the client's systems that have operation zones. Each mission shows how many flight requests are already linked to it (e.g. *2 requests linked*). Missions on a system whose zones cover the request location come first and are marked **No OPM authorization needed**. A mission still waiting for OPM approval shows **Awaiting OPM approval**, or **Pending OPM — will be approved on link** when its system covers the request. Readi refuses the link for a mission on any other system. Pick one and click **Link mission**.
+
+When the request is linked, its status becomes **Assigned**, and the client's DCC receives *Accepted* with the drone of the mission's system.
+
+### Status follows the mission
+
+The status of a linked request is **not changed by hand** any more. The In Progress, Completed and Issue buttons are gone. It follows the linked mission on the **Daily Board** (and in the Mission Table):
+
+| Mission | Flight request | Sent to the client's DCC |
+|---|---|---|
+| Planned | Assigned | — |
+| In Progress (started on the Daily Board) | In Progress | Started |
+| Completed (ended on the Daily Board) | Completed | Finished (success) |
+| Aborted or Cancelled | Issue | Finished (failure, with the abort reason) |
+
+If a linked mission is deleted, the request goes back to **Acknowledged** so it can be linked again.
+
+### No OPM authorization for zone-validated missions
+
+A pilot's mission normally needs an OPM's approval (see [Mission Approval](/docs/business-logic/mission-approval)). A mission for a flight request **does not**, when the request passed the zone check and its location is inside the operation zones of the **selected system**:
+
+- **New mission from a request:** no approval is requested. The last step of the form says so. If the pilot changes the system, the check is repeated for the new system.
+- **Existing mission waiting for approval:** linking it approves it automatically, when its system covers the request. The approval note records the request, and D-Flight authorization is then requested as usual.
+
+If the system's zones do **not** cover the request location, the normal approval rules apply, and so they do for a mission created in the usual way with **New Mission** on the Mission Table. If the request could not be checked, or the client has no system with operation zones, the normal approval rules apply too.
 
 ### What a pilot (PIC) can do here
 
 A PIC sees **Flight Requests** in the menu and can work on the **External** tab, according to the access given in the permission matrix (**Operation → Flight Requests**):
 
 - **Read-only (R):** the PIC can see the requests but has no action buttons.
-- **Read and write (R · W):** the PIC can **Acknowledge** a new request, **Move to Planning**, set it **In Progress**, **Completed** or **Issue**, and push the Control Center log.
+- **Read and write (R · W):** the PIC can **Acknowledge** a new request, **Link to Mission** (create or link a mission), and push the Control Center log. The request status then follows the mission on the Daily Board.
+- **Own missions only:** when a PIC creates a mission from a flight request, the pilot list shows only that PIC, who is selected already. This applies to every PIC, including PICs who are also managers. The server refuses any other pilot for such a mission. **Visual observers** can still be any pilot, here and on the Mission Table.
 - **Deny is not available to a PIC.** Only OPM-level roles can deny a request, and the Deny button is hidden for a PIC.
 - The **Internal** tab (approvals) stays with OPMs and admins. A PIC follows the approval of their own missions on the Mission Table.
 

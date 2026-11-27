@@ -5,6 +5,13 @@ import { authorizeMissionWithDFlight, isReportableDFlightFailure } from '@/backe
 import { notifyPilotAssignment } from '@/backend/services/notification/notification-service';
 import { createOperation, deleteOperation, listOperations } from '@/backend/services/operation/operation-service';
 import { buildInitialApproval, notifyApprovalRequested } from '@/backend/services/operation/mission-approval-service';
+import {
+  assertRequestLinkable,
+  assertToolAllowedForRequest,
+  requestSkipsOpmApproval,
+  FlightRequestLinkError,
+  linkFlightRequestToMission,
+} from '@/backend/services/mission/flight-request-mission-service';
 import { assertToolNotInMaintenance, assertToolNotNonOperational } from '@/backend/services/system/maintenance-ticket-guards';
 import { CreateOperationSchema, DFLIGHT_CIRCLE_MAX_RADIUS_M, ListOperationsQuerySchema } from '@/config/types/operation';
 import { apiError, internalError } from '@/lib/api-error';
@@ -115,7 +122,27 @@ export async function POST(req: NextRequest) {
 
     const validated = createOperationSchema.parse(body) as CreateOperationSchema;
 
+    // Mission created from the Flight Requests page ("Link to Mission" → create new).
+    const rawFlightRequestId = Number(body?.flight_request_id);
+    const flightRequestId = Number.isInteger(rawFlightRequestId) && rawFlightRequestId > 0 ? rawFlightRequestId : null;
+    if (flightRequestId) {
+      try {
+        const request = await assertRequestLinkable(flightRequestId, ownerId);
+        // Refuse before anything is created, so a failed link never leaves an orphan mission.
+        await assertToolAllowedForRequest(request, validated.fk_tool_id, ownerId);
+      } catch (linkErr) {
+        if (linkErr instanceof FlightRequestLinkError) {
+          return NextResponse.json({ error: linkErr.message }, { status: linkErr.status });
+        }
+        throw linkErr;
+      }
+    }
+
     if (!canChangePilot(session.user, validated.fk_pilot_user_id, null)) {
+      return apiError(E.PX007, 403);
+    }
+    // A mission for a flight request: a PIC (managers included) can only be its pilot themselves.
+    if (flightRequestId && session.user.role === 'PIC' && validated.fk_pilot_user_id !== session.user.userId) {
       return apiError(E.PX007, 403);
     }
 
@@ -148,7 +175,12 @@ export async function POST(req: NextRequest) {
     let allOperations: any[] = [];
     try {
       // Pilot-created missions are held for OPM approval; OPM/manager ones are not.
-      const approval = await buildInitialApproval(session.user);
+      // A mission for a flight request whose location is inside the zones of the
+      // chosen system is already validated, so it needs no OPM authorization.
+      const zoneValidated = flightRequestId
+        ? await requestSkipsOpmApproval(flightRequestId, ownerId, validated.fk_tool_id)
+        : false;
+      const approval = zoneValidated ? null : await buildInitialApproval(session.user);
       approvalRequired = !!approval;
       operation = await createOperation({ ...validated }, ownerId, session.user.userId, approval);
       
@@ -179,7 +211,28 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: appErr.message }, { status: 400 });
     }
 
-    const dcc = await notifyDccMissionCreation(ownerId, {
+    // A mission flying a client's flight request is linked to it; the client's
+    // DCC gets an acceptance for its own mission id instead of a new mission.
+    let flightRequestLink: Awaited<ReturnType<typeof linkFlightRequestToMission>> | null = null;
+    let flightRequestLinkError: string | null = null;
+    if (flightRequestId) {
+      try {
+        flightRequestLink = await linkFlightRequestToMission({
+          requestId: flightRequestId,
+          missionId: allOperations[0].pilot_mission_id,
+          ownerId,
+          userId: session.user.userId,
+          userName: session.user.fullname,
+          userEmail: session.user.email,
+          userRole: session.user.role,
+        });
+      } catch (linkErr: any) {
+        console.error('[POST /api/operation] flight request link failed:', linkErr);
+        flightRequestLinkError = linkErr?.message ?? 'Linking the flight request failed';
+      }
+    }
+
+    const dcc = flightRequestId ? (flightRequestLink?.dcc ?? { path: '', outcome: 'skipped' as const, message: 'Flight request mission' }) : await notifyDccMissionCreation(ownerId, {
       type: 'ON-DEMAND',
       target: validated.mission_name,
       missions: allOperations.map(op => ({
@@ -258,6 +311,14 @@ export async function POST(req: NextRequest) {
       created_missions: allOperations.length > 1 ? allOperations : undefined,
       dflight_errors: dflightErrors.length > 0 ? dflightErrors : undefined,
       approval_required: approvalRequired,
+      ...(flightRequestId && {
+        flight_request: {
+          request_id: flightRequestId,
+          linked: !!flightRequestLink,
+          dcc_status: flightRequestLink?.dcc_status ?? null,
+          error: flightRequestLinkError,
+        },
+      }),
     }, { status: 201 });
   } catch (err) {
     if (err instanceof ZodError) {

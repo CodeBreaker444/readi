@@ -1,5 +1,6 @@
 import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { notifyClientMissionStatus } from '@/backend/services/mission/dcc-client-status-service';
+import { syncFlightRequestsForMission } from '@/backend/services/mission/flight-request-mission-service';
 import { prisma } from '@/lib/prisma';
 
 const AUTO_ABORT_REASON = 'Automatically aborted: scheduled date passed without the mission being started';
@@ -53,6 +54,7 @@ export async function autoAbortStaleMissions(ownerId: number, now = new Date()):
 
   for (const mission of stale) {
     void notifyClientMissionStatus(mission.pilot_mission_id, 'ABORTED', AUTO_ABORT_REASON);
+    await syncFlightRequestsForMission(mission.pilot_mission_id);
     logEvent({
       eventType: 'UPDATE',
       entityType: 'operation',

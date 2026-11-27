@@ -86,8 +86,9 @@ Without a DCC Drone ID, the "Accepted" update is **not sent** to the DCC.
 ## Flow
 
 1. The DCC creates a request, which appears under **Flight Requests → External**.
-2. An OPM **assigns** it to a planning mission (accepts) or **denies** it.
-3. Readi informs the DCC at each step of the mission (below).
+2. Readi checks the waypoint against the operation zones of the client's systems. If it is outside the zones of every system, the request is **rejected automatically**: Readi sends *Denied* with the reason, and the API response returns `"dcc_status": "REJECTED"` and a `reason`. Waypoint coordinates must be in GeoJSON order `[longitude, latitude, altitude?]`, with latitude between -90 and 90 and longitude between -180 and 180. Anything else is refused with `400 Validation failed`.
+3. An OPM acknowledges the request, then **links it to a mission** (accepts) or **denies** it.
+4. Readi informs the DCC at each step of the linked mission (below). The steps follow the mission's status on the Daily Board.
 
 Missions created directly in Readi are also reported to the client's DCC when its integration includes **Internal** missions: **New mission** and **Cancelled**, and also **Started** and **Finished** (a mission that is aborted is reported as a failed finish, with the reason as the note). The mission code is used as the mission ID, the same one sent in the New mission update.
 
@@ -102,10 +103,10 @@ All updates are `POST` requests to the client's **Callback URL**, with the same 
 | Update | Sent when |
 |---|---|
 | New mission | A scheduled or on-demand mission is created in Readi |
-| Accepted | An OPM assigns the request (includes the drone) |
-| Denied | An OPM denies the request |
-| Started | The mission moves to **In Progress** (internal missions: when started on the Daily Board) |
-| Finished | The mission is **Done**, reported as success or failure with a note (internal missions: Done is success, Aborted is failure) |
+| Accepted | The request is linked to a mission (includes the drone of the mission's system) |
+| Denied | An OPM denies the request, or it is rejected automatically because its location is outside the client's operation zones |
+| Started | The linked mission is started on the **Daily Board** (internal missions: the same) |
+| Finished | The linked mission is completed (success) or aborted / cancelled (failure, with the abort reason as the note) |
 | Cancelled | A scheduled program is cancelled |
 | Flight log | A flight log is pushed from the Flight Requests page |
 

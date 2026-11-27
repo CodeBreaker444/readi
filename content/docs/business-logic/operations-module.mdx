@@ -253,10 +253,29 @@ For mission_assigned events, emails can be sent directly to specific users inste
 
 **Status Flow:**
 ```
-NEW → ACKNOWLEDGED → ASSIGNED → IN_PROGRESS → COMPLETED
-      ↓
-   CANCELLED
+NEW ──(zone check fails)──────────────▶ REJECTED (automatic)
+ │
+ ▼ acknowledge
+ACKNOWLEDGED ──link to mission──▶ ASSIGNED ──▶ IN_PROGRESS ──▶ COMPLETED
+      │                              └──────────┴──▶ ISSUE (mission aborted/cancelled)
+      ▼
+  REJECTED (denied) / CANCELLED (by the client)
 ```
+
+**Zone check on arrival** (`flight-request-zone-service`):
+- Runs for every client request (Client Portal and `POST /api/missions`), and again when the DCC re-sends a request that is still `NEW`.
+- The waypoint is checked against the zones of every active system whose `clientId` is the request's client. A point is operational for a system when the zone check returns no warning: inside the perimeter, inside a green zone (if any) and clear of red and unsurveyed zones.
+- The nearest operational system wins. Distance is measured to the system's `latitude`/`longitude`, or to the centre of its zones. It is stored in `flight_requests.fk_matched_tool_id`, `zone_validated = true` and `zone_check` (JSON).
+- No operational system: `zone_validated = false`, `dcc_status = REJECTED`, `deny_note` = reason, and a DCC denial is sent. The API response carries `dcc_status: "REJECTED"` and `reason`.
+- No coordinates, no client, or no zoned system: `zone_validated = null`, and the request stays `NEW`.
+
+**Link to Mission** (`flight-request-mission-service`):
+- Only `ACKNOWLEDGED` requests that are not yet linked can be linked, to a `PLANNED` or `IN_PROGRESS` mission (`flight_requests.fk_pilot_mission_id`). The request moves to `ASSIGNED`, and DCC acceptance is sent with the `dcc_drone_id` of the mission's system.
+- Creating a mission with `flight_request_id` (`POST /api/operation`) links it automatically and sends acceptance instead of the "new mission" DCC call.
+
+**Status sync:** after every mission status change (Daily Board start/end/revert, Mission Table edit, auto-abort), linked requests in `ASSIGNED`/`IN_PROGRESS` are moved to match. PLANNED → ASSIGNED, IN_PROGRESS → IN_PROGRESS (DCC execution), COMPLETED → COMPLETED (DCC termination, result 1), ABORTED/CANCELLED → ISSUE (DCC termination, result 0). There is no manual status endpoint. Deleting a mission returns its unfinished requests to `ACKNOWLEDGED`.
+
+**OPM approval:** a mission whose system's zones cover a zone-validated request skips OPM approval. A pending mission linked to such a request is approved automatically. If the system does not cover the request, or the mission is created normally from the Mission Table, the usual approval applies.
 
 **API Key Management:**
 - Keys generated as unique identifiers

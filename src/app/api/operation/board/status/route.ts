@@ -3,6 +3,7 @@ import { getToolName, getUserName } from "@/backend/services/shared/entity-names
 import type { DccCallbackResult } from "@/types/dcc-callback";
 import { isMissionRequestedByDcc, notifyDccExecution, notifyDccTermination } from "@/backend/services/mission/dcc-callback-service";
 import { notifyClientMissionStatus } from "@/backend/services/mission/dcc-client-status-service";
+import { syncFlightRequestsForMission } from "@/backend/services/mission/flight-request-mission-service";
 import { updateMissionStatus } from "@/backend/services/operation/operation-board-service";
 import { checkDailyDeclaration } from "@/backend/services/operation/pilot-declaration-service";
 import { hasOpenTicketForTool } from "@/backend/services/system/maintenance-ticket-guards";
@@ -90,6 +91,9 @@ export async function POST(req: NextRequest) {
         userRole: session!.user.role,
         ownerId: session!.user.ownerId,
       });
+
+      // Flight requests linked to this mission follow its status (and notify the client's DCC).
+      await syncFlightRequestsForMission(parsed.data.mission_id);
 
       // Per-client status URL (independent of whether DCC requested the mission).
       void notifyClientMissionStatus(

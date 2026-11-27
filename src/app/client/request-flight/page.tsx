@@ -121,7 +121,7 @@ export default function RequestFlightPage() {
 
     setSubmitting(true);
     try {
-      await axios.post('/api/client-portal/request-flight', {
+      const { data } = await axios.post('/api/client-portal/request-flight', {
         mission_type: form.mission_type.trim() || undefined,
         target: form.target.trim() || undefined,
         start_datetime: form.start_datetime || undefined,
@@ -131,6 +131,14 @@ export default function RequestFlightPage() {
         localization,
         waypoint,
       });
+      if (data?.status === 'REJECTED') {
+        // Outside the operation zones of every system assigned to this client.
+        toast.error(t('clientPortal.requestRejectedZone', 'Request rejected: the location is outside the operation zones of your systems.'), {
+          description: data.reason,
+          duration: 10000,
+        });
+        return;
+      }
       setSubmitted(true);
       setForm(EMPTY_FORM);
     } catch (err: any) {

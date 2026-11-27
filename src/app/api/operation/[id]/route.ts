@@ -1,6 +1,7 @@
 import { logEvent } from '@/backend/services/auditLog/audit-log';
 import { notifyDccAcceptance } from '@/backend/services/mission/dcc-callback-service';
 import { notifyClientMissionStatus, type MissionStatusName } from '@/backend/services/mission/dcc-client-status-service';
+import { syncFlightRequestsForMission } from '@/backend/services/mission/flight-request-mission-service';
 import { notifyPilotAssignment } from '@/backend/services/notification/notification-service';
 import { deleteOperation, getOperation, updateOperation } from '@/backend/services/operation/operation-service';
 import { prisma } from '@/lib/prisma';
@@ -150,6 +151,8 @@ export async function PUT(req: NextRequest, { params }: Params) {
 
     const newStatus = (validated as any).status_name as MissionStatusName | undefined;
     if (newStatus) {
+      // Linked flight requests follow the mission status.
+      await syncFlightRequestsForMission(id);
       void notifyClientMissionStatus(
         id,
         newStatus,

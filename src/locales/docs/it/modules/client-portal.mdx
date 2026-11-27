@@ -74,7 +74,9 @@ I clienti possono richiedere un nuovo volo da **Richiedi volo**. Compilano:
 | Waypoint | Latitudine, longitudine e altitudine |
 | Note | Requisiti particolari |
 
-Dopo l'invio, il cliente vede una conferma. La richiesta compare per il tuo team in **Richieste di volo → Esterne**, dove un OPM può accettarla o rifiutarla (vedi [Integrazione DCC](/docs/business-logic/dcc-integration)).
+Dopo l'invio, Readi confronta il waypoint con le zone operative dei sistemi assegnati al cliente. Se è dentro le zone di almeno un sistema, il cliente vede una conferma. La richiesta compare per il tuo team in **Richieste di volo → Esterne**, dove un OPM la collega a una missione o la rifiuta (vedi [Operazioni → Richieste di volo](/docs/modules/operations#richieste-di-volo)).
+
+Se il waypoint è fuori dalle zone di **tutti** i sistemi del cliente, la richiesta viene **rifiutata** subito. Il cliente vede un errore con il motivo, che indica il sistema più vicino e la sua distanza. Il modulo resta compilato, così può correggere la posizione e inviarla di nuovo. Le richieste senza waypoint non vengono verificate.
 
 ---
 

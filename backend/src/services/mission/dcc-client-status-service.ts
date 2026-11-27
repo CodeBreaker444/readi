@@ -164,14 +164,21 @@ export async function notifyClientMissionStatus(
     });
     if (!endpoint?.active || (!endpoint.status_url && !endpoint.callback_url)) return;
 
-    // External id is only present for missions requested by a third party.
-    const flightRequest = mission.fk_planning_id
-      ? await prisma.flight_requests.findFirst({
-          where: { fk_planning_id: mission.fk_planning_id },
-          orderBy: { created_at: 'desc' },
-          select: { external_mission_id: true },
-        })
-      : null;
+    // External id is only present for missions requested by a third party:
+    // linked directly ("Link to Mission"), or via the legacy planning link.
+    const flightRequest =
+      (await prisma.flight_requests.findFirst({
+        where: { fk_pilot_mission_id: missionId },
+        orderBy: { created_at: 'desc' },
+        select: { external_mission_id: true },
+      })) ??
+      (mission.fk_planning_id
+        ? await prisma.flight_requests.findFirst({
+            where: { fk_planning_id: mission.fk_planning_id },
+            orderBy: { created_at: 'desc' },
+            select: { external_mission_id: true },
+          })
+        : null);
 
     // The integration decides which missions it receives: requested externally vs created in Readi.
     if (!scopeAllows(endpoint.mission_scope, flightRequest ? 'EXTERNAL' : 'INTERNAL')) return;

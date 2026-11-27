@@ -1,4 +1,5 @@
 import { createClientPortalFlightRequest } from '@/backend/services/client/client-portal-service';
+import { readWaypointLatLng } from '@/backend/services/mission/flight-request-zone-service';
 import { requireAuth } from '@/lib/auth/api-auth';
 import { internalError } from '@/lib/api-error';
 import { E } from '@/lib/error-codes';
@@ -21,6 +22,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Mission type or target is required' }, { status: 400 });
     }
 
+    if (waypoint != null && !readWaypointLatLng(waypoint)) {
+      return NextResponse.json({ error: 'Invalid waypoint: latitude must be between -90 and 90 and longitude between -180 and 180' }, { status: 400 });
+    }
+
     const result = await createClientPortalFlightRequest({
       owner_id: ownerId,
       client_id: clientId,
@@ -34,7 +39,13 @@ export async function POST(req: NextRequest) {
       waypoint,
     });
 
-    return NextResponse.json({ code: 1, request_id: result.request_id });
+    // Stored as REJECTED when the location is outside every operation zone of the client's systems.
+    return NextResponse.json({
+      code: 1,
+      request_id: result.request_id,
+      status: result.dcc_status,
+      ...(result.reason ? { reason: result.reason } : {}),
+    });
   } catch (err) {
     return internalError(E.SV001, err);
   }

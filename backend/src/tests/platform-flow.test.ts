@@ -475,10 +475,9 @@ import {
 import { POST as ownerCreatePOST } from '@/app/api/owner/route';
 
 import { GET as flightRequestLogStatusGET } from '@/app/api/planning/flight-requests/[id]/log-status/route';
-import {
-  DELETE as flightRequestByIdDEL,
-  PATCH as flightRequestByIdPATCH,
-} from '@/app/api/planning/flight-requests/[id]/route';
+import { DELETE as flightRequestByIdDEL } from '@/app/api/planning/flight-requests/[id]/route';
+import { GET as flightRequestLinkableMissionsGET } from '@/app/api/planning/flight-requests/[id]/linkable-missions/route';
+import { GET as flightRequestContextGET } from '@/app/api/planning/flight-requests/[id]/context/route';
 import { POST as flightRequestAssignPOST } from '@/app/api/planning/flight-requests/assign/route';
 import { POST as flightRequestDenyPOST } from '@/app/api/planning/flight-requests/deny/route';
 import { POST as flightRequestLogsPOST } from '@/app/api/planning/flight-requests/logs/route';
@@ -3038,13 +3037,17 @@ describeIntegration('Full Platform Integration Flow', () => {
     expect(res.status).not.toBe(401);
   });
 
-  it('Planning — flight-requests/[id] PATCH', async () => {
+  it('Planning — flight-requests/[id]/linkable-missions GET', async () => {
     const id = createdFlightRequestId ?? 1;
-    const req = makeRequest(`/api/planning/flight-requests/${id}`, {
-      method: 'PATCH',
-      body: { status: 'PENDING' },
-    });
-    const res = await flightRequestByIdPATCH(req, { params: Promise.resolve({ id: String(id) }) });
+    const req = makeRequest(`/api/planning/flight-requests/${id}/linkable-missions`, { method: 'GET' });
+    const res = await flightRequestLinkableMissionsGET(req, { params: Promise.resolve({ id: String(id) }) });
+    expect(res.status).not.toBe(401);
+  });
+
+  it('Planning — flight-requests/[id]/context GET', async () => {
+    const id = createdFlightRequestId ?? 1;
+    const req = makeRequest(`/api/planning/flight-requests/${id}/context`, { method: 'GET' });
+    const res = await flightRequestContextGET(req, { params: Promise.resolve({ id: String(id) }) });
     expect(res.status).not.toBe(401);
   });
 

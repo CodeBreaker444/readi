@@ -261,6 +261,7 @@ export const API_ROUTE_PERMISSIONS: Array<{ prefix: string; permission: ApiPermi
   { prefix: '/api/system/maintenance/dashboard', permission: ['view_config', 'view_maintenance_tickets'] },
   { prefix: '/api/system/maintenance/lookups', permission: ['view_config', 'view_maintenance_tickets'] },
   { prefix: '/api/system/component/list', permission: ['view_config', 'view_operations'] },
+  { prefix: '/api/system/zones', permission: null },
   { prefix: '/api/system', permission: 'view_config' },
   { prefix: '/api/team/shift', permission: 'manage_users' },
   { prefix: '/api/team/user/list', permission: ['manage_users', 'view_logs'] },

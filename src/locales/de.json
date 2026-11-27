@@ -1058,6 +1058,31 @@
       "open": "Öffnen"
     },
     "flightRequests": {
+      "zone": {
+        "label": "Zonenprüfung",
+        "validated": "In Zone",
+        "validatedTitle": "Der Standort liegt in den Einsatzzonen dieses Systems",
+        "outside": "Außerhalb",
+        "notChecked": "Nicht geprüft",
+        "nearestSystem": "Nächstes System: {{system}} ({{km}} km)"
+      },
+      "link": {
+        "title": "Mit Mission verknüpfen",
+        "button": "Mit Mission verknüpfen",
+        "createNew": "Neue Mission erstellen",
+        "createNewHint": "Öffnet die Missionstabelle mit dem vorausgefüllten Formular „Neue Mission“.",
+        "orExisting": "oder bestehende Mission verknüpfen",
+        "noMissions": "Keine geplanten oder laufenden Missionen auf den Systemen des Kunden mit Einsatzzonen.",
+        "linkSelected": "Mission verknüpfen",
+        "success": "Fluganfrage mit Mission verknüpft",
+        "error": "Verknüpfung fehlgeschlagen",
+        "loadError": "Missionen konnten nicht geladen werden",
+        "noOpmNeeded": "Keine OPM-Genehmigung nötig",
+        "willAutoApprove": "OPM ausstehend — wird beim Verknüpfen genehmigt",
+        "successAutoApproved": "Fluganfrage verknüpft — Mission durch Zonenprüfung genehmigt",
+        "awaitingOpm": "Wartet auf OPM-Genehmigung",
+        "autoStatusHint": "Mit Mission {{mission}} verknüpft. Der Status wird automatisch vom Daily Board übernommen."
+      },
       "title": "Fluganfragen",
       "subtitle": "Eingehende Missionsanfragen von externen Diensten",
       "refresh": "Aktualisieren",
@@ -1067,6 +1092,10 @@
       "assigned": "Zugewiesen",
       "noRequests": "Keine Fluganfragen gefunden.",
       "allClients": "Alle Kunden",
+      "linkedRequests_one": "1 Anfrage verknüpft",
+      "linkedRequests_other": "{{count}} Anfragen verknüpft",
+      "linkedRequestsTitle_one": "1 Fluganfrage ist mit dieser Mission verknüpft",
+      "linkedRequestsTitle_other": "{{count}} Fluganfragen sind mit dieser Mission verknüpft",
       "noClientFilter": "Kein Kunde",
       "deleteTitle": "Fluganfrage löschen?",
       "deleteDesc": "Die Anfrage wird dauerhaft aus Readi entfernt. Diese Aktion kann nicht rückgängig gemacht werden.",
@@ -1125,6 +1154,8 @@
         "CANCELLED": "Storniert"
       },
       "columns": {
+        "zone": "Zonenprüfung",
+        "mission": "Mission",
         "missionId": "Missions-ID",
         "client": "Kunde",
         "type": "Typ",
@@ -2492,6 +2523,16 @@
         "savePostFlight": "Nach-Flug speichern",
         "saveMaintenance": "Wartung speichern"
       }
+    },
+    "flightRequestMission": {
+      "header": "Mission für Fluganfrage",
+      "nearestSystem": "Nächstes System",
+      "requestedFor": "Angefragt für",
+      "receivedAt": "Empfangen",
+      "noOpmNeeded": "Der Standort der Anfrage liegt in den Einsatzzonen des gewählten Systems — keine OPM-Genehmigung nötig.",
+      "createdLinked": "Mission erstellt und mit Fluganfrage {{request}} verknüpft",
+      "linkFailed": "Mission erstellt, aber die Verknüpfung mit der Fluganfrage ist fehlgeschlagen: {{error}}",
+      "loadError": "Fluganfrage konnte nicht geladen werden"
     },
     "opmApproval": {
       "badge": {
@@ -5862,6 +5903,7 @@
     "requestAnother": "Weiteren Flug anfragen",
     "requestFailed": "Anfrage fehlgeschlagen",
     "requestValidation": "Bitte mindestens Missionstyp oder Ziel angeben.",
+    "requestRejectedZone": "Anfrage abgelehnt: Der Standort liegt außerhalb der Einsatzzonen Ihrer Systeme.",
     "operatorSection": "Betreiber",
     "fieldOperator": "Betreibername",
     "operatorPlaceholder": "Unternehmen oder Person, die für diese Anfrage verantwortlich ist",

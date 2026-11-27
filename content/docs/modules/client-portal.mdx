@@ -74,7 +74,9 @@ Clients can ask for a new flight from **Request Flight**. They fill in:
 | Waypoint | Latitude, longitude and altitude |
 | Notes | Special requirements |
 
-After sending, the client sees a confirmation. The request appears for your team under **Flight Requests → External**, where an OPM can accept or deny it (see [DCC Integration](/docs/business-logic/dcc-integration)).
+After sending, Readi checks the waypoint against the operation zones of the systems assigned to the client. If it is inside the zones of at least one system, the client sees a confirmation. The request appears for your team under **Flight Requests → External**, where an OPM links it to a mission or denies it (see [Operations → Flight Requests](/docs/modules/operations#flight-requests)).
+
+If the waypoint is outside the zones of **every** system of the client, the request is **rejected** straight away. The client sees an error with the reason, which names the nearest system and its distance. The form is kept, so they can correct the location and send it again. Requests without a waypoint are not checked.
 
 ---
 

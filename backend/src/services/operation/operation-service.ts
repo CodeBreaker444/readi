@@ -3,6 +3,7 @@ import { seedLucProcedureProgressFromSteps } from '@/backend/services/operation/
 import { assertMissionEditable, assertDFlightAuthorized, assertOpmApproved } from '@/backend/services/operation/mission-lock';
 import { AttachmentUploadResponse, CreateOperationSchema, ListOperationsQuerySchema, Operation, OperationAttachment, OperationsListResponse, UpdateOperationSchema } from '@/config/types/operation';
 import { getAdminDecidedMissionIds } from '@/backend/services/operation/mission-approval-service';
+import { unlinkFlightRequestsForMission } from '@/backend/services/mission/flight-request-mission-service';
 import { prisma } from '@/lib/prisma';
 import { buildS3Url, deleteFileFromS3, getPresignedDownloadUrl, REGION, uploadFileToS3 } from '@/lib/s3Client';
 import { sendMissionCreatedModuleEmail, sendMissionAssignedModuleEmail } from '../settings/module-email-notification-service';
@@ -702,6 +703,9 @@ export async function updateOperation(id: number, input: UpdateOperationSchema, 
 
 
 export async function deleteOperation(id: number): Promise<void> {
+  // Flight requests linked to this mission go back to ACKNOWLEDGED so they can be linked again.
+  await unlinkFlightRequestsForMission(id);
+
   const attachments = await prisma.operation_attachment.findMany({
     where: { fk_operation_id: id },
     select: { file_key: true },

@@ -2,6 +2,9 @@ import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
 import { createHash, randomUUID } from 'crypto';
 import { logEvent } from '@/backend/services/auditLog/audit-log';
+import { applyIntakeZoneCheck } from '@/backend/services/mission/flight-request-mission-service';
+import type { FlightRequestZoneCheck } from '@/backend/services/mission/flight-request-zone-service';
+import type { DccCallbackResult } from '@/types/dcc-callback';
 
 export function hashApiKey(rawKey: string): string {
   return createHash('sha256').update(rawKey).digest('hex');
@@ -43,7 +46,18 @@ export interface FlightRequest {
   fk_client_id: number | null;
   client_name: string | null;
   deny_note: string | null;
+  /** true = inside a client system's zones, false = outside (auto-rejected), null = not checked. */
+  zone_validated: boolean | null;
+  matched_tool_id: number | null;
+  matched_tool_code: string | null;
+  zone_check: FlightRequestZoneCheck | null;
+  /** Scheduled mission the request is linked to. */
+  fk_pilot_mission_id: number | null;
+  mission_code: string | null;
+  mission_status: string | null;
 }
+
+type MissionInfo = { pilot_mission_id: number; mission_code: string | null; status_name: string | null };
 
 function mapFlightRequest(row: {
   request_id: number;
@@ -64,7 +78,13 @@ function mapFlightRequest(row: {
   created_at: Date;
   fk_client_id: number | null;
   deny_note: string | null;
-}, clientNames?: Map<number, string>): FlightRequest {
+  zone_validated?: boolean | null;
+  fk_matched_tool_id?: number | null;
+  zone_check?: Prisma.JsonValue | null;
+  fk_pilot_mission_id?: number | null;
+}, clientNames?: Map<number, string>, missions?: Map<number, MissionInfo>): FlightRequest {
+  const check = (row.zone_check ?? null) as unknown as FlightRequestZoneCheck | null;
+  const mission = row.fk_pilot_mission_id ? missions?.get(row.fk_pilot_mission_id) : undefined;
   return {
     request_id: row.request_id,
     fk_owner_id: row.fk_owner_id,
@@ -85,7 +105,24 @@ function mapFlightRequest(row: {
     fk_client_id: row.fk_client_id,
     client_name: row.fk_client_id ? clientNames?.get(row.fk_client_id) ?? null : null,
     deny_note: row.deny_note,
+    zone_validated: row.zone_validated ?? null,
+    matched_tool_id: row.fk_matched_tool_id ?? null,
+    matched_tool_code: check?.matchedToolCode ?? null,
+    zone_check: check,
+    fk_pilot_mission_id: row.fk_pilot_mission_id ?? null,
+    mission_code: mission?.mission_code ?? null,
+    mission_status: mission?.status_name ?? null,
   };
+}
+
+async function missionMap(ownerId: number, missionIds: Array<number | null>): Promise<Map<number, MissionInfo>> {
+  const ids = [...new Set(missionIds.filter((id): id is number => id != null))];
+  if (ids.length === 0) return new Map();
+  const rows = await prisma.pilot_mission.findMany({
+    where: { pilot_mission_id: { in: ids }, fk_owner_id: ownerId },
+    select: { pilot_mission_id: true, mission_code: true, status_name: true },
+  });
+  return new Map(rows.map((m) => [m.pilot_mission_id, m]));
 }
 
 async function clientNameMap(ownerId: number, clientIds: Array<number | null>): Promise<Map<number, string>> {
@@ -108,7 +145,7 @@ async function clientNameMap(ownerId: number, clientIds: Array<number | null>): 
  */
 export async function upsertFlightRequestByExternalId(
   input: CreateFlightRequestInput,
-): Promise<{ request_id: number; created: boolean; dcc_status: string }> {
+): Promise<{ request_id: number; created: boolean; dcc_status: string; reason?: string | null; dcc?: DccCallbackResult }> {
   const existing = await prisma.flight_requests.findFirst({
     // missionIds are only unique per client: two clients may both send "1".
     where: {
@@ -135,6 +172,17 @@ export async function upsertFlightRequestByExternalId(
       where: { request_id: existing.request_id },
       data: { ...sharedData, fk_api_key_id: input.api_key_id, updated_at: new Date() },
     });
+    // The location may have changed: re-check while nobody has picked the request up yet.
+    if (existing.dcc_status === 'NEW') {
+      const intake = await applyIntakeZoneCheck(existing.request_id, input.owner_id, input.client_id, input.waypoint, input.external_mission_id);
+      return {
+        request_id: existing.request_id,
+        created: false,
+        dcc_status: intake.dcc_status,
+        reason: intake.zone_check.validated === false ? intake.zone_check.reason : null,
+        dcc: intake.dcc,
+      };
+    }
     return { request_id: existing.request_id, created: false, dcc_status: existing.dcc_status };
   }
 
@@ -149,7 +197,14 @@ export async function upsertFlightRequestByExternalId(
     },
     select: { request_id: true },
   });
-  return { request_id: row.request_id, created: true, dcc_status: 'NEW' };
+  const intake = await applyIntakeZoneCheck(row.request_id, input.owner_id, input.client_id, input.waypoint, input.external_mission_id);
+  return {
+    request_id: row.request_id,
+    created: true,
+    dcc_status: intake.dcc_status,
+    reason: intake.zone_check.validated === false ? intake.zone_check.reason : null,
+    dcc: intake.dcc,
+  };
 }
 
 export async function listFlightRequests(owner_id: number, status?: string): Promise<FlightRequest[]> {
@@ -160,18 +215,24 @@ export async function listFlightRequests(owner_id: number, status?: string): Pro
     },
     orderBy: { created_at: 'desc' },
   });
-  const names = await clientNameMap(owner_id, rows.map((r) => r.fk_client_id));
-  return rows.map((r) => mapFlightRequest(r, names));
+  const [names, missions] = await Promise.all([
+    clientNameMap(owner_id, rows.map((r) => r.fk_client_id)),
+    missionMap(owner_id, rows.map((r) => r.fk_pilot_mission_id)),
+  ]);
+  return rows.map((r) => mapFlightRequest(r, names, missions));
 }
 
+/** Acknowledges a NEW request (the planning variant is kept for the legacy DCC API). */
 export async function assignFlightRequest(
   request_id: number,
   owner_id: number,
   assigned_by_user_id: number,
   planning_id?: number,
-): Promise<void> {
-  await prisma.flight_requests.updateMany({
-    where: { request_id, fk_owner_id: owner_id },
+): Promise<boolean> {
+  // Acknowledge only a NEW request; the legacy planning assignment also accepts ACKNOWLEDGED.
+  // A rejected, cancelled or already progressed request can never be revived this way.
+  const updated = await prisma.flight_requests.updateMany({
+    where: { request_id, fk_owner_id: owner_id, dcc_status: { in: planning_id ? ['NEW', 'ACKNOWLEDGED'] : ['NEW'] } },
     data: {
       dcc_status:     planning_id ? 'ASSIGNED' : 'ACKNOWLEDGED',
       fk_planning_id: planning_id ?? null,
@@ -180,6 +241,7 @@ export async function assignFlightRequest(
       updated_at:     new Date(),
     },
   });
+  return updated.count > 0;
 }
 
 export async function updateFlightRequestStatus(
@@ -443,6 +505,7 @@ export async function listPlansForPlanning(planning_id: number, owner_id: number
 
 export interface FlightRequestWithPlanning {
   fk_planning_id: number | null;
+  fk_pilot_mission_id: number | null;
   dcc_status: string;
   external_mission_id: string | null;
   fk_client_id: number | null;
@@ -454,9 +517,19 @@ export async function getFlightRequestById(
 ): Promise<FlightRequestWithPlanning | null> {
   const row = await prisma.flight_requests.findFirst({
     where: { request_id, fk_owner_id: owner_id },
-    select: { fk_planning_id: true, dcc_status: true, external_mission_id: true, fk_client_id: true },
+    select: { fk_planning_id: true, fk_pilot_mission_id: true, dcc_status: true, external_mission_id: true, fk_client_id: true },
   });
   return row ?? null;
+}
+
+/**
+ * Mission that flies a request: the mission linked directly via "Link to
+ * Mission", else (legacy) the first mission of the planning it was moved to.
+ */
+export async function resolveMissionIdForRequest(fr: FlightRequestWithPlanning): Promise<number | null> {
+  if (fr.fk_pilot_mission_id) return fr.fk_pilot_mission_id;
+  if (!fr.fk_planning_id) return null;
+  return (await getPilotMissionByPlanningId(fr.fk_planning_id))?.pilot_mission_id ?? null;
 }
 
 export async function getPilotMissionByPlanningId(

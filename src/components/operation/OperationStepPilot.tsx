@@ -44,6 +44,8 @@ interface SummaryData {
 
 interface Props {
     pilots: PilotOption[]
+    /** Pilots offered as visual observers; defaults to `pilots`. */
+    observerOptions?: PilotOption[]
     pilotId: string
     onPilotChange: (id: string) => void
     visualObserverIds?: string[]
@@ -67,7 +69,7 @@ interface Props {
     isDark: boolean
 }
 
-export function OperationStepPilot({ pilots, pilotId, onPilotChange, visualObserverIds = [], onVisualObserverChange, loadingOptions = false, uspaces = [], uspaceId = '', onUspaceChange, loadingUspaces = false, dFlightEnabled = false, showSkipDFlight = false, skipDFlight = false, onSkipDFlightChange, uspaceError = '', circle = null, onCircleChange, circleMaxRadiusM = 250, circleFocusCenter = null, uspaceBoundary = null, summary, isDark }: Props) {
+export function OperationStepPilot({ pilots, observerOptions, pilotId, onPilotChange, visualObserverIds = [], onVisualObserverChange, loadingOptions = false, uspaces = [], uspaceId = '', onUspaceChange, loadingUspaces = false, dFlightEnabled = false, showSkipDFlight = false, skipDFlight = false, onSkipDFlightChange, uspaceError = '', circle = null, onCircleChange, circleMaxRadiusM = 250, circleFocusCenter = null, uspaceBoundary = null, summary, isDark }: Props) {
     const { t } = useTranslation()
     const [qualTarget, setQualTarget] = useState<{ id: number; name: string } | null>(null)
     const pilotsPaging = usePagedItems(pilots)
@@ -163,12 +165,12 @@ export function OperationStepPilot({ pilots, pilotId, onPilotChange, visualObser
                     </p>
                 ) : (
                     <div className={`mt-1 rounded-md border max-h-36 overflow-y-auto ${isDark ? 'border-slate-600 bg-slate-800/40' : 'border-slate-200 bg-white'}`}>
-                        {pilots.length === 0 && (
+                        {(observerOptions ?? pilots).length === 0 && (
                             <p className={`text-xs px-3 py-2 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
                                 {t('operations.newOperation.pilot.noPilots')}
                             </p>
                         )}
-                        {pilots.map(p => {
+                        {(observerOptions ?? pilots).map(p => {
                             const id = String(p.user_id)
                             const isPrimary = id === pilotId
                             const isChecked = visualObserverIds.includes(id)

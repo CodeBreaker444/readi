@@ -1058,6 +1058,31 @@
       "open": "Apri"
     },
     "flightRequests": {
+      "zone": {
+        "label": "Verifica zona",
+        "validated": "In zona",
+        "validatedTitle": "La posizione è nelle zone operative di questo sistema",
+        "outside": "Fuori zona",
+        "notChecked": "Non verificata",
+        "nearestSystem": "Sistema più vicino: {{system}} ({{km}} km)"
+      },
+      "link": {
+        "title": "Collega a missione",
+        "button": "Collega a missione",
+        "createNew": "Crea una nuova missione",
+        "createNewHint": "Apre la Tabella missioni con il modulo Nuova missione precompilato da questa richiesta.",
+        "orExisting": "oppure collega una missione esistente",
+        "noMissions": "Nessuna missione pianificata o in corso sui sistemi del cliente con zone operative.",
+        "linkSelected": "Collega missione",
+        "success": "Richiesta di volo collegata alla missione",
+        "error": "Collegamento non riuscito",
+        "loadError": "Impossibile caricare le missioni",
+        "noOpmNeeded": "Nessuna autorizzazione OPM necessaria",
+        "willAutoApprove": "In attesa OPM — verrà approvata al collegamento",
+        "successAutoApproved": "Richiesta collegata — missione approvata dalla verifica zona",
+        "awaitingOpm": "In attesa di approvazione OPM",
+        "autoStatusHint": "Collegata alla missione {{mission}}. Lo stato si aggiorna automaticamente dalla Daily Board."
+      },
       "title": "Richieste di Volo",
       "subtitle": "Richieste di missione in arrivo da servizi esterni",
       "refresh": "Aggiorna",
@@ -1067,6 +1092,10 @@
       "assigned": "Assegnate",
       "noRequests": "Nessuna richiesta di volo trovata.",
       "allClients": "Tutti i clienti",
+      "linkedRequests_one": "1 richiesta collegata",
+      "linkedRequests_other": "{{count}} richieste collegate",
+      "linkedRequestsTitle_one": "1 richiesta di volo è collegata a questa missione",
+      "linkedRequestsTitle_other": "{{count}} richieste di volo sono collegate a questa missione",
       "noClientFilter": "Nessun cliente",
       "deleteTitle": "Eliminare la richiesta di volo?",
       "deleteDesc": "Questa operazione rimuoverà definitivamente la richiesta da Readi. Non può essere annullata.",
@@ -1125,6 +1154,8 @@
         "CANCELLED": "Annullate"
       },
       "columns": {
+        "zone": "Verifica zona",
+        "mission": "Missione",
         "missionId": "ID Missione",
         "client": "Cliente",
         "type": "Tipo",
@@ -2496,6 +2527,16 @@
         "savePostFlight": "Salva Post-Volo",
         "saveMaintenance": "Salva Manutenzione"
       }
+    },
+    "flightRequestMission": {
+      "header": "Missione per richiesta di volo",
+      "nearestSystem": "Sistema più vicino",
+      "requestedFor": "Richiesta per",
+      "receivedAt": "Ricevuta",
+      "noOpmNeeded": "La posizione della richiesta è nelle zone operative del sistema selezionato — non serve l’autorizzazione OPM.",
+      "createdLinked": "Missione creata e collegata alla richiesta {{request}}",
+      "linkFailed": "Missione creata, ma il collegamento alla richiesta non è riuscito: {{error}}",
+      "loadError": "Impossibile caricare la richiesta di volo"
     },
     "opmApproval": {
       "badge": {
@@ -5869,6 +5910,7 @@
     "requestAnother": "Richiedi un altro volo",
     "requestFailed": "Invio richiesta fallito",
     "requestValidation": "Inserisci almeno il tipo di missione o l'obiettivo.",
+    "requestRejectedZone": "Richiesta rifiutata: la posizione è fuori dalle zone operative dei tuoi sistemi.",
     "operatorSection": "Operatore",
     "fieldOperator": "Nome operatore",
     "operatorPlaceholder": "Azienda o persona responsabile di questa richiesta",

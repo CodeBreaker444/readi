@@ -86,8 +86,9 @@ Senza un ID drone DCC, l'aggiornamento "Accepted" **non viene inviato** al DCC.
 ## Flusso
 
 1. Il DCC crea una richiesta, che compare in **Richieste di volo → Esterne**.
-2. Un OPM la **assegna** a una missione di pianificazione (accetta) oppure la **rifiuta**.
-3. Readi informa il DCC a ogni passaggio della missione (sotto).
+2. Readi confronta il waypoint con le zone operative dei sistemi del cliente. Se è fuori dalle zone di tutti i sistemi, la richiesta viene **rifiutata automaticamente**: Readi invia *Rifiutata* con il motivo, e la risposta dell'API restituisce `"dcc_status": "REJECTED"` e un `reason`. Le coordinate del waypoint devono essere in ordine GeoJSON `[longitudine, latitudine, altitudine?]`, con latitudine tra -90 e 90 e longitudine tra -180 e 180. Altrimenti la richiesta viene rifiutata con `400 Validation failed`.
+3. Un OPM riconosce la richiesta, poi la **collega a una missione** (accetta) oppure la **rifiuta**.
+4. Readi informa il DCC a ogni passaggio della missione collegata (sotto), seguendo lo stato della missione sulla Bacheca giornaliera.
 
 Le missioni create direttamente in Readi vengono comunicate anche al DCC del cliente quando la sua integrazione include le missioni **interne**: **Nuova missione** e **Annullata**, e anche **Avviata** e **Terminata** (una missione interrotta viene comunicata come fine non riuscita, con il motivo come nota). Il codice della missione viene usato come ID missione, lo stesso inviato nell'aggiornamento Nuova missione.
 
@@ -102,10 +103,10 @@ Tutti gli aggiornamenti sono richieste `POST` all'**URL di callback** del client
 | Aggiornamento | Inviato quando |
 |---|---|
 | Nuova missione | Una missione pianificata o su richiesta viene creata in Readi |
-| Accettata | Un OPM assegna la richiesta (include il drone) |
-| Rifiutata | Un OPM rifiuta la richiesta |
-| Avviata | La missione passa a **In corso** (missioni interne: quando viene avviata dalla Bacheca giornaliera) |
-| Terminata | La missione è **Completata**, comunicata come successo o fallimento con una nota (missioni interne: Completata è successo, Interrotta è fallimento) |
+| Accettata | La richiesta viene collegata a una missione (include il drone del sistema della missione) |
+| Rifiutata | Un OPM rifiuta la richiesta, oppure viene rifiutata automaticamente perché la posizione è fuori dalle zone operative del cliente |
+| Avviata | La missione collegata viene avviata dalla **Bacheca giornaliera** (missioni interne: lo stesso) |
+| Terminata | La missione collegata è completata (successo) oppure interrotta / annullata (fallimento, con il motivo come nota) |
 | Annullata | Un programma pianificato viene annullato |
 | Registro di volo | Un registro di volo viene inviato dalla pagina Richieste di volo |
 
