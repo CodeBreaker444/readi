@@ -1,5 +1,5 @@
 import type * as Leaflet from 'leaflet';
-import { OperationZones, PERIMETER_COLOR, ZONE_COLORS } from '@/lib/operation-zones';
+import { OperationZones, PERIMETER_COLOR, zoneColor } from '@/lib/operation-zones';
 
 interface RenderOptions {
   interactive?: boolean;
@@ -39,6 +39,33 @@ export function renderZoneLayers(L: typeof Leaflet, group: Leaflet.LayerGroup, z
     return el;
   };
 
+  /** Always-visible name label (hover tooltips only show on mouse-over, so imported names would be hidden). */
+  const addLabel = (text: string, at: Leaflet.LatLngExpression, color: string, offsetY = 0) => {
+    if (!text) return;
+    const label = L.circleMarker(at, { radius: 0, opacity: 0, fillOpacity: 0, interactive: false });
+    label.bindTooltip(text, {
+      permanent: true,
+      direction: 'center',
+      offset: [0, offsetY],
+      className: 'zone-name-label',
+      opacity: 1,
+    });
+    // The tooltip element only exists once opened on the map, so style it then.
+    label.on('tooltipopen', (e: Leaflet.TooltipEvent) => {
+      const el = e.tooltip.getElement();
+      if (el) el.style.cssText += `;background:rgba(0,0,0,.65);color:#fff;border:1px solid ${color};border-radius:4px;padding:1px 5px;font-size:11px;font-weight:600;white-space:nowrap;box-shadow:none;pointer-events:none`;
+    });
+    label.addTo(group);
+  };
+  const centerOf = (pts: [number, number][]): [number, number] => {
+    let minLat = 90, maxLat = -90, minLng = 180, maxLng = -180;
+    for (const [la, ln] of pts) {
+      minLat = Math.min(minLat, la); maxLat = Math.max(maxLat, la);
+      minLng = Math.min(minLng, ln); maxLng = Math.max(maxLng, ln);
+    }
+    return [(minLat + maxLat) / 2, (minLng + maxLng) / 2];
+  };
+
   if (zones.perimeter) {
     const selected = selectedId === 'perimeter';
     const layer = L.polygon(zones.perimeter.points, {
@@ -51,10 +78,12 @@ export function renderZoneLayers(L: typeof Leaflet, group: Leaflet.LayerGroup, z
     if (interactive) layer.on('click', () => onSelect?.('perimeter'));
     layer.bindTooltip(tip(zones.perimeter.name || 'Perimeter'), { sticky: true });
     layer.addTo(group);
+    const pName = zones.perimeter.name || 'Perimeter';
+    addLabel(labelPrefix ? `${labelPrefix} · ${pName}` : pName, centerOf(zones.perimeter.points), PERIMETER_COLOR, -14);
   }
 
   for (const z of zones.zones) {
-    const color = ZONE_COLORS[z.kind];
+    const color = zoneColor(z);
     const selected = selectedId === z.id;
     const layer: Leaflet.Layer = z.shape === 'point'
       ? L.marker(z.points[0], { icon: pinIcon(L, color, selected), interactive, keyboard: false, bubblingMouseEvents: true })
@@ -64,5 +93,9 @@ export function renderZoneLayers(L: typeof Leaflet, group: Leaflet.LayerGroup, z
     if (interactive) layer.on('click', () => onSelect?.(z.id));
     layer.bindTooltip(tip(z.name || z.kind, z.note), z.shape === 'point' ? { direction: 'top', offset: [0, -24] } : { sticky: true });
     layer.addTo(group);
+    const labelText = labelPrefix ? `${labelPrefix} · ${z.name}` : z.name;
+    if (z.shape === 'point') addLabel(labelText, z.points[0], color, -40);
+    else if (z.shape === 'line') addLabel(labelText, z.points[Math.floor(z.points.length / 2)], color);
+    else addLabel(labelText, centerOf(z.points), color);
   }
 }

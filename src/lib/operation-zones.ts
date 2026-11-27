@@ -4,7 +4,8 @@ import { z } from 'zod';
  * Operation zones of a system (stored in tool.tool_metadata.operationZones).
  * All points are [lat, lng] (WGS84). KML uses lng,lat — conversion happens in the parser only.
  */
-export type ZoneKind = 'green' | 'red' | 'unsurveyed';
+/** 'mission' = planned mission geometry (route, waypoints, survey area): informational only, never a warning. */
+export type ZoneKind = 'green' | 'red' | 'unsurveyed' | 'mission';
 export type ZoneShape = 'polygon' | 'line' | 'point';
 export type LatLngTuple = [number, number];
 
@@ -14,8 +15,9 @@ export interface OperationZone {
   kind: ZoneKind;
   shape: ZoneShape;
   points: LatLngTuple[];
-  /** Extra information carried over from an import (e.g. waypoint altitude, custom KML fields). */
   note?: string;
+  /** Colour (#rrggbb) taken from the imported file; when set it is drawn instead of the zone type's colour. */
+  color?: string;
 }
 
 export interface OperationPerimeter {
@@ -34,8 +36,27 @@ export const ZONE_COLORS: Record<ZoneKind, string> = {
   green: '#22c55e',
   red: '#ef4444',
   unsurveyed: '#9ca3af',
+  mission: '#f59e0b',
 };
 export const PERIMETER_COLOR = '#06b6d4';
+
+/** Colour a zone is drawn with: the colour from an imported file, else its type's colour. */
+export function zoneColor(z: Pick<OperationZone, 'kind' | 'color'>): string {
+  return z.color ?? ZONE_COLORS[z.kind];
+}
+
+/** Imported-file colours that differ from the type colour, with the zones using each (for the legend). */
+export function importedColorGroups(zones: OperationZones): { color: string; names: string[] }[] {
+  const map = new Map<string, string[]>();
+  for (const z of zones.zones) {
+    if (!z.color || z.color.toLowerCase() === ZONE_COLORS[z.kind].toLowerCase()) continue;
+    const key = z.color.toLowerCase();
+    const list = map.get(key) ?? [];
+    if (z.name && !list.includes(z.name)) list.push(z.name);
+    map.set(key, list);
+  }
+  return Array.from(map, ([color, names]) => ({ color, names }));
+}
 
 export const MAX_ZONES = 500;
 export const MAX_POINTS = 5000;
@@ -69,9 +90,10 @@ export const operationZonesSchema = z.object({
   zones: z.array(z.object({
     id: z.string().min(1).max(64),
     name: z.string().trim().max(120),
-    kind: z.enum(['green', 'red', 'unsurveyed']),
+    kind: z.enum(['green', 'red', 'unsurveyed', 'mission']),
     shape: z.enum(['polygon', 'line', 'point']),
     note: z.string().trim().max(MAX_NOTE).optional(),
+    color: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
     points: z.array(pointSchema).min(1).max(MAX_POINTS),
   }).refine((z) => z.points.length >= minPointsFor(z.shape) && (z.shape !== 'point' || z.points.length === 1), { message: 'Not enough points for this shape' }))
     .max(MAX_ZONES),
@@ -109,6 +131,7 @@ export const KIND_LABEL: Record<ZoneKind, string> = {
   green: 'Green zone',
   red: 'Red zone',
   unsurveyed: 'Unsurveyed zone',
+  mission: 'Planned mission',
 };
 
 /** Next free default name, e.g. "Red zone 3". */
@@ -176,6 +199,7 @@ export function checkPointAgainstZones(lat: number, lng: number, zones: Operatio
   let inGreen = false;
 
   for (const z of zones.zones) {
+    if (z.kind === 'mission') continue; // planned missions are informational only
     const hit = z.shape === 'polygon'
       ? pointInPolygon(lat, lng, z.points)
       : z.shape === 'point'
@@ -211,15 +235,11 @@ export function boundsOf(zones: OperationZones): [[number, number], [number, num
 }
 
 // ── KML / KMZ import ────────────────────────────────────────────────────────
-// https://developers.google.com/kml/documentation/kmzarchives — a KMZ is a ZIP whose root holds a .kml
-// (conventionally doc.kml) plus referenced resources. Only Polygon / LineString / LinearRing geometry is imported.
-
+ 
 export interface KmlImportResult {
   zones: OperationZone[];
   perimeter: OperationPerimeter | null;
-  /** Placemarks without usable geometry (ground overlays, empty shapes, ...). */
   skipped: number;
-  /** Additional perimeter-looking shapes beyond the first one. */
   extraPerimeters: number;
 }
 
@@ -247,14 +267,15 @@ function classifyColor(rgb: [number, number, number] | null): ZoneKind | null {
     if (h < 0) h += 360;
   }
   if (h >= 75 && h <= 170) return 'green';
-  if (h <= 45 || h >= 320) return 'red';
+  if (h <= 20 || h >= 335) return 'red';
   return null; // blue/yellow/etc: ambiguous, let names decide
 }
 
 const RE_PERIMETER = /(perimeter|boundary|fence|geofence|operational\s*(area|limit)|operating\s*area|limite)/i;
 const RE_RED = /(\bred\b|no[\s-]?fly|(?<![a-z])restrict|prohibit|forbidden|danger|hazard|exclusion|rosso|vietat)/i;
 const RE_GREEN = /(\bgreen\b|\bsafe\b|allowed|approved|authori[sz]ed|permitted|cleared|verde)/i;
-const RE_GREY = /(unsurvey|unknown|\bgr[ae]y\b|unverified|unmapped|grigi)/i;
+const RE_MISSION_FOLDER = /(mission|waypoint|survey|\bgrid\b)/i;
+const RE_GREY =/(unsurvey|unknown|\bgr[ae]y\b|unverified|unmapped|grigi)/i;
 
 function classifyByName(text: string): ZoneKind | 'perimeter' | null {
   if (RE_PERIMETER.test(text)) return 'perimeter';
@@ -284,8 +305,6 @@ const firstChild = (el: Element, name: string) => childrenNamed(el, name)[0] ?? 
 const descendants = (el: Element, name: string) => Array.from(el.getElementsByTagName('*')).filter((c) => localName(c) === name);
 const textOf = (el: Element | null) => el?.textContent?.trim() ?? '';
 
-// Custom fields added by external services: <ExtendedData><Data name=".."><value>..</value></Data>
-// and <SchemaData><SimpleData name="..">..</SimpleData>. Keys like type/zone/category decide the zone type.
 const TYPE_KEYS = /^(type|zone|zone[_\s-]?type|category|class|classification|kind|status|restriction|level|risk|color|colour)$/i;
 const NAME_KEYS = /^(name|title|label|zone[_\s-]?name)$/i;
 
@@ -393,7 +412,8 @@ export function parseKml(kmlText: string): KmlImportResult {
         const description = plainText(textOf(firstChild(child, 'description')));
         const geoms: { shape: ZoneShape; points: LatLngTuple[] }[] = [];
         collectGeometries(child, geoms);
-        const usable = geoms.filter((g) => g.points.length >= minPointsFor(g.shape));
+        const shapes = geoms.some((g) => g.shape !== 'point') ? geoms.filter((g) => g.shape !== 'point') : geoms;
+        const usable = shapes.filter((g) => g.points.length >= minPointsFor(g.shape));
         if (usable.length === 0) { result.skipped++; continue; }
 
         // DJI wayline files number their waypoint pins with wpml:index.
@@ -403,7 +423,8 @@ export function parseKml(kmlText: string): KmlImportResult {
         const styleUrl = textOf(firstChild(child, 'styleUrl'));
         const inline = firstChild(child, 'Style');
         const color = (inline && styleOf(inline)) || styleColors.get(styleUrl) || null;
-        const kind =
+        const kind: ZoneKind | 'perimeter' =
+          (folders.some((f) => RE_MISSION_FOLDER.test(f)) ? 'mission' : null) ??
           classifyAttributes(attrs) ??
           classifyByName(name) ??
           classifyColor(kmlColorToRgb(color)) ??
@@ -444,7 +465,9 @@ export function parseKml(kmlText: string): KmlImportResult {
             else result.perimeter = { name: label, points };
             return;
           }
-          result.zones.push({ id: newZoneId(), name: label.slice(0, 120), kind, shape: g.shape, points, ...(note ? { note } : {}) });
+          const rgb = kmlColorToRgb(color);
+          const hex = rgb ? `#${rgb.map((v) => v.toString(16).padStart(2, '0')).join('')}` : null;
+          result.zones.push({ id: newZoneId(), name: label.slice(0, 120), kind, shape: g.shape, points, ...(note ? { note } : {}), ...(hex ? { color: hex } : {}) });
         });
       }
     }

@@ -41,7 +41,29 @@ export async function autoAbortStaleMissions(ownerId: number, now = new Date()):
     select: { pilot_mission_id: true, mission_code: true, mission_name: true },
   });
 
-  if (stale.length === 0) return { aborted: 0 };
+  // Missions left IN_PROGRESS past their scheduled day were never completed — abort them the next day too.
+  // The mission's day is its scheduled start (or actual start when unscheduled).
+  const inProgressIds = await getInProgressStatusIds(ownerId);
+  const staleInProgress = await prisma.pilot_mission.findMany({
+    where: {
+      fk_owner_id: ownerId,
+      fk_mission_status_id: { in: inProgressIds },
+      actual_end: null,
+      OR: [
+        { scheduled_start: { lt: staleBefore } },
+        { scheduled_start: null, actual_start: { lt: staleBefore } },
+      ],
+    },
+    select: { pilot_mission_id: true, mission_code: true, mission_name: true },
+  });
+
+  const staleInProgressReason = 'Automatically aborted: mission was still in progress after its scheduled date';
+  const reasonById = new Map<number, string>();
+  for (const m of stale) reasonById.set(m.pilot_mission_id, AUTO_ABORT_REASON);
+  for (const m of staleInProgress) reasonById.set(m.pilot_mission_id, staleInProgressReason);
+  const all = [...stale, ...staleInProgress];
+
+  if (all.length === 0) return { aborted: 0 };
 
   await prisma.pilot_mission.updateMany({
     where: { pilot_mission_id: { in: stale.map((m) => m.pilot_mission_id) } },
@@ -51,9 +73,20 @@ export async function autoAbortStaleMissions(ownerId: number, now = new Date()):
       abort_reason: AUTO_ABORT_REASON,
     },
   });
+  if (staleInProgress.length > 0) {
+    await prisma.pilot_mission.updateMany({
+      where: { pilot_mission_id: { in: staleInProgress.map((m) => m.pilot_mission_id) } },
+      data: {
+        status_name: 'ABORTED',
+        fk_mission_status_id: ABORTED_STATUS_ID,
+        abort_reason: staleInProgressReason,
+      },
+    });
+  }
 
-  for (const mission of stale) {
-    void notifyClientMissionStatus(mission.pilot_mission_id, 'ABORTED', AUTO_ABORT_REASON);
+  for (const mission of all) {
+    const reason = reasonById.get(mission.pilot_mission_id) ?? AUTO_ABORT_REASON;
+    void notifyClientMissionStatus(mission.pilot_mission_id, 'ABORTED', reason);
     await syncFlightRequestsForMission(mission.pilot_mission_id);
     logEvent({
       eventType: 'UPDATE',
@@ -65,5 +98,18 @@ export async function autoAbortStaleMissions(ownerId: number, now = new Date()):
     });
   }
 
-  return { aborted: stale.length };
+  return { aborted: all.length };
+}
+
+// pilot_mission_status ids are per-owner, so resolve the owner's real in-progress id (plus the legacy 2).
+async function getInProgressStatusIds(ownerId: number): Promise<number[]> {
+  const match = await prisma.pilot_mission_status.findFirst({
+    where: {
+      fk_owner_id: ownerId,
+      is_active: true,
+      status_code: { in: ['IN_PROGRESS', 'IN_FLIGHT', 'IN ESECUZIONE'], mode: 'insensitive' },
+    },
+    select: { status_id: true },
+  });
+  return [...new Set([2, match?.status_id ?? 2])];
 }

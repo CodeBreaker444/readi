@@ -311,7 +311,7 @@ export function FlightRequestDetailModal({
             <>
               <ZoneWarnings systems={zoneSystems} waypoint={request.waypoint} isDark={isDark} />
               <WaypointMap waypoint={request.waypoint} isDark={isDark} zoneSystems={zoneSystems} />
-              {request.waypoint?.coordinates && <ZoneLegend isDark={isDark} showWaypoint />}
+              {request.waypoint?.coordinates && <ZoneLegend isDark={isDark} showWaypoint zones={zoneSystems.map((s) => s.operationZones)} />}
             </>
           )}
 
