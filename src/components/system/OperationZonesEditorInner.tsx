@@ -38,6 +38,7 @@ import { Check, Eraser, Fence, Layers, Maximize2, MapPin, Pentagon, Route, Trash
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
+import { ZoneLegend } from './ZoneLegend';
 
 export interface OperationZonesEditorProps {
   value: OperationZones;
@@ -466,6 +467,8 @@ export default function OperationZonesEditorInner({ value, onChange, isDark = fa
           </div>
         )}
       </div>
+
+      <ZoneLegend isDark={isDark} />
 
       <div className={`h-44 overflow-y-auto rounded-lg border ${border}`}>
         {!value.perimeter && value.zones.length === 0 ? (

@@ -316,7 +316,7 @@ export default function FlightRequestsTable() {
               </thead>
               <tbody className={`divide-y ${isDark ? 'divide-slate-700/40' : 'divide-gray-50'}`}>
                 {loading ? (
-                  Array.from({ length: 5 }).map((_, i) => (
+                  Array.from({ length: 8 }).map((_, i) => (
                     <tr key={i}>
                       {Array.from({ length: columns.length }).map((_, j) => (
                         <td key={j} className="px-4 py-3"><Skeleton className="h-4 w-full rounded" /></td>

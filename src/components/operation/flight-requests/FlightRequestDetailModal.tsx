@@ -10,6 +10,7 @@ import { format } from 'date-fns';
 import { AlertTriangle, CheckCircle2, FileUp, Link2, Loader2, MapPin, RefreshCw, ShieldAlert, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { ZoneLegend } from '@/components/system/ZoneLegend';
 
 interface Props {
   request: FlightRequest | null;
@@ -310,6 +311,7 @@ export function FlightRequestDetailModal({
             <>
               <ZoneWarnings systems={zoneSystems} waypoint={request.waypoint} isDark={isDark} />
               <WaypointMap waypoint={request.waypoint} isDark={isDark} zoneSystems={zoneSystems} />
+              {request.waypoint?.coordinates && <ZoneLegend isDark={isDark} showWaypoint />}
             </>
           )}
 
