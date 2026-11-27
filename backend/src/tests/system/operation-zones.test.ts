@@ -66,6 +66,19 @@ describe('operation zones geometry', () => {
   });
 });
 
+describe('point zones', () => {
+  const pins: OperationZones = { perimeter: null, zones: [{ id: 'p', name: 'Mast', kind: 'red', shape: 'point', points: [[45, 9]] }] };
+  it('warns within ~30 m of a red pin, not beyond', () => {
+    expect(checkPointAgainstZones(45.0001, 9, pins).warnings.some((w) => w.type === 'red')).toBe(true);
+    expect(checkPointAgainstZones(45.001, 9, pins).clear).toBe(true);
+  });
+  it('validates exactly one point', () => {
+    expect(operationZonesSchema.safeParse(pins).success).toBe(true);
+    const two = { perimeter: null, zones: [{ ...pins.zones[0], points: [[45, 9], [45, 9.1]] }] };
+    expect(operationZonesSchema.safeParse(two).success).toBe(false);
+  });
+});
+
 describe('operation zones validation', () => {
   it('accepts valid data and rejects bad coordinates / short polygons', () => {
     expect(operationZonesSchema.safeParse(zones).success).toBe(true);

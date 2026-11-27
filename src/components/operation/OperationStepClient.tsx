@@ -14,9 +14,10 @@ interface Props {
     onClientChange: (id: string) => void
     loadingClients: boolean
     isDark: boolean
+    disabled?: boolean
 }
 
-export function OperationStepClient({ clients, clientId, onClientChange, loadingClients, isDark }: Props) {
+export function OperationStepClient({ clients, clientId, onClientChange, loadingClients, isDark, disabled }: Props) {
     const { t } = useTranslation()
     const selectedClient = clients.find(c => String(c.client_id) === clientId)
     const { page, setPage, totalPages, paged: pagedClients, showPagination } = usePagedItems(clients)
@@ -31,7 +32,7 @@ export function OperationStepClient({ clients, clientId, onClientChange, loading
             ) : (
                 <div className="max-w-xs">
                     <Label className={labelCls(isDark)}>{t('operations.newOperation.client.label')} <span className="text-red-500">*</span></Label>
-                    <Select value={clientId} onValueChange={onClientChange}>
+                    <Select value={clientId} onValueChange={onClientChange} disabled={disabled}>
                         <SelectTrigger className={inputCls(isDark)}>
                             <SelectValue placeholder={t('operations.newOperation.client.placeholder')} />
                         </SelectTrigger>

@@ -24,12 +24,18 @@ export async function POST(req: NextRequest) {
       return zodError(E.VL001, parsed.error);
     }
 
-    await assignFlightRequest(
+    const assigned = await assignFlightRequest(
       parsed.data.request_id,
       session!.user.ownerId,
       session!.user.userId,
       parsed.data.planning_id,
     );
+    if (!assigned) {
+      return NextResponse.json(
+        { code: 0, error: parsed.data.planning_id ? 'Only new or acknowledged flight requests can be assigned.' : 'Only new flight requests can be acknowledged.' },
+        { status: 409 },
+      );
+    }
 
     let dcc: DccCallbackResult | undefined;
     if (parsed.data.planning_id) {

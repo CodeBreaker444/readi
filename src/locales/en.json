@@ -1061,6 +1061,31 @@
       "open": "Open"
     },
     "flightRequests": {
+      "zone": {
+        "label": "Zone check",
+        "validated": "In zone",
+        "validatedTitle": "Location is inside the operation zones of this system",
+        "outside": "Outside zones",
+        "notChecked": "Not checked",
+        "nearestSystem": "Nearest system: {{system}} ({{km}} km)"
+      },
+      "link": {
+        "title": "Link to Mission",
+        "button": "Link to Mission",
+        "createNew": "Create a new mission",
+        "createNewHint": "Opens the Mission Table with the New Mission form pre-filled from this request.",
+        "orExisting": "or link an existing mission",
+        "noMissions": "No planned or in-progress missions on this client's systems with operation zones.",
+        "linkSelected": "Link mission",
+        "success": "Flight request linked to mission",
+        "error": "Linking failed",
+        "loadError": "Failed to load missions",
+        "noOpmNeeded": "No OPM authorization needed",
+        "willAutoApprove": "Pending OPM — will be approved on link",
+        "successAutoApproved": "Flight request linked — mission approved by zone validation",
+        "awaitingOpm": "Awaiting OPM approval",
+        "autoStatusHint": "Linked to mission {{mission}}. The status updates automatically from the Daily Board."
+      },
       "title": "Flight Requests",
       "subtitle": "Incoming mission requests from external services",
       "refresh": "Refresh",
@@ -1070,6 +1095,10 @@
       "assigned": "Assigned",
       "noRequests": "No flight requests found.",
       "allClients": "All clients",
+      "linkedRequests_one": "1 request linked",
+      "linkedRequests_other": "{{count}} requests linked",
+      "linkedRequestsTitle_one": "1 flight request is linked to this mission",
+      "linkedRequestsTitle_other": "{{count}} flight requests are linked to this mission",
       "noClientFilter": "No client",
       "deleteTitle": "Delete flight request?",
       "deleteDesc": "This action will permanently remove the request from Readi. It cannot be undone.",
@@ -1128,6 +1157,8 @@
         "CANCELLED": "Cancelled"
       },
       "columns": {
+        "zone": "Zone check",
+        "mission": "Mission",
         "missionId": "Mission ID",
         "client": "Client",
         "type": "Type",
@@ -2502,6 +2533,16 @@
         "savePostFlight": "Save Post-Flight",
         "saveMaintenance": "Save Maintenance"
       }
+    },
+    "flightRequestMission": {
+      "header": "Mission for flight request",
+      "nearestSystem": "Nearest system",
+      "requestedFor": "Requested for",
+      "receivedAt": "Received",
+      "noOpmNeeded": "The flight request location is inside the operation zones of the selected system — no OPM authorization is needed.",
+      "createdLinked": "Mission created and linked to flight request {{request}}",
+      "linkFailed": "Mission created, but linking the flight request failed: {{error}}",
+      "loadError": "Could not load the flight request"
     },
     "opmApproval": {
       "badge": {
@@ -4615,6 +4656,15 @@
   },
   "systems": {
     "zones": {
+      "importBreakdown": "{{areas}} areas · {{lines}} lines · {{pins}} pins",
+      "clear": "Clear all",
+      "clearConfirm": "Click again to confirm",
+      "clearAll": "Clear all zones from the map",
+      "cleared": "All zones cleared",
+      "changeType": "Change zone type",
+      "drawPin": "Add pin",
+      "pin": "Pin",
+      "systemLocation": "System location",
       "perimeterReplaced": "Previous perimeter replaced (a system has one perimeter)",
       "replacesPerimeter": "replaces the existing perimeter",
       "title": "Operation zones",
@@ -4637,6 +4687,19 @@
       "empty": "No zones yet. Draw on the map or import a KMZ/KML file. Everything here is optional.",
       "perimeter": "Operational perimeter",
       "perimeterTag": "Perimeter",
+      "legend": {
+        "title": "Map legend",
+        "green": "Green zone",
+        "greenDesc": "Surveyed area where flying is allowed.",
+        "red": "Red zone",
+        "redDesc": "No-fly area (also red lines and pins, within {{meters}} m). A location here is not allowed.",
+        "gray": "Gray zone (unsurveyed)",
+        "grayDesc": "Area that has not been surveyed. Not cleared for flying.",
+        "perimeter": "Perimeter (dashed line)",
+        "perimeterDesc": "Outer operating boundary of the system. Outside it a location is not covered.",
+        "waypoint": "Requested location",
+        "waypointDesc": "The waypoint sent in the flight request."
+      },
       "line": "Line",
       "polygon": "Area",
       "delete": "Delete",
@@ -5788,6 +5851,27 @@
     "dashboardSubtitle": "Overview of your missions and systems",
     "missionsTitle": "Client Missions",
     "missionsSubtitle": "View and track your assigned missions",
+    "scheduledFlights": {
+      "nav": "Scheduled Flights",
+      "title": "Scheduled Flights",
+      "subtitle": "Approved flight slots for your organisation and the pilot assigned to each",
+      "pilot": "Pilot",
+      "system": "System",
+      "missions": "Missions",
+      "date": "Date",
+      "prevDay": "Previous day",
+      "nextDay": "Next day",
+      "siteTime": "Times in site time ({{zone}})",
+      "kpiTotal": "Scheduled flights",
+      "empty": "No flights scheduled for this day.",
+      "emptyToday": "No flights scheduled for today.",
+      "loadError": "Could not load scheduled flights",
+      "phase": {
+        "upcoming": "Upcoming",
+        "live": "In progress",
+        "ended": "Finished"
+      }
+    },
     "totalMissions": "Total Missions",
     "flightHours": "Flight Hours",
     "distanceKm": "Distance (km)",
@@ -5849,6 +5933,7 @@
     "requestAnother": "Request Another Flight",
     "requestFailed": "Failed to submit request",
     "requestValidation": "Please fill in at least Mission Type or Target.",
+    "requestRejectedZone": "Request rejected: the location is outside the operation zones of your systems.",
     "operatorSection": "Operator",
     "fieldOperator": "Operator Name",
     "operatorPlaceholder": "Company or person responsible for this request",

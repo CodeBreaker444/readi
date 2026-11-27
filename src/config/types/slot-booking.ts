@@ -511,3 +511,33 @@ export interface SlotMissionCandidates {
   slot: Pick<TodaySlot, 'slotId' | 'date' | 'start' | 'end' | 'startAt' | 'endAt' | 'groupName' | 'clientId' | 'clientName'>;
   missions: TodayMission[];
 }
+
+// ───────────────────────── Client portal: scheduled flights ─────────────────────────
+
+/**
+ * One approved slot of the signed-in client, as the client portal shows it. Deliberately leaves out the slot group
+ * and anything else of the slot-booking workflow: the client only sees when a flight is planned and who flies it.
+ */
+export interface ClientScheduledFlight {
+  slotId: number;
+  /** yyyy-MM-dd, site date */
+  date: string;
+  /** HH:mm, wall-clock at the site */
+  start: string;
+  end: string;
+  /** Real instants of the slot window, so the browser can tell upcoming / in progress / done in any zone. */
+  startAt: string;
+  endAt: string;
+  timezone: string;
+  pilot: { userId: number; name: string; email: string | null; phone: string | null; avatarUrl: string | null };
+  systemName: string | null;
+  /** The client's own missions linked to the slot by the pilot. */
+  missions: Array<{ id: number; code: string | null; name: string | null; progress: MissionProgress }>;
+  weather: SlotWeather | null;
+}
+
+export interface ClientScheduledFlights {
+  date: string;
+  serverNow: string;
+  flights: ClientScheduledFlight[];
+}

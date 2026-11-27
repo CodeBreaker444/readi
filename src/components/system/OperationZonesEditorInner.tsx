@@ -17,6 +17,7 @@ import {
   KIND_LABEL,
   LatLngTuple,
   MAX_TOTAL_POINTS,
+  minPointsFor,
   MAX_ZONES,
   countPoints,
   newZoneId,
@@ -30,12 +31,14 @@ import {
   ZoneShape,
 } from '@/lib/operation-zones';
 import { renderZoneLayers } from '@/lib/operation-zones-leaflet';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { Check, Fence, Layers, Maximize2, Pentagon, Route, Trash2, Undo2, Upload, X } from 'lucide-react';
+import { Check, Eraser, Fence, Layers, Maximize2, MapPin, Pentagon, Route, Trash2, Undo2, Upload, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
+import { ZoneLegend } from './ZoneLegend';
 
 export interface OperationZonesEditorProps {
   value: OperationZones;
@@ -49,8 +52,29 @@ export interface OperationZonesEditorProps {
 type DrawMode = { type: 'zone'; shape: ZoneShape } | { type: 'perimeter' } | null;
 type Basemap = 'satellite' | 'map';
 
+const PIN_ICON = L.divIcon({
+  html: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 36" width="26" height="39" style="filter:drop-shadow(0 1px 2px rgba(0,0,0,.6))">
+    <path d="M12 0C5.373 0 0 5.373 0 12c0 8.25 12 24 12 24s12-15.75 12-24C24 5.373 18.627 0 12 0z" fill="#8b5cf6" stroke="#fff" stroke-width="1.5"/>
+    <circle cx="12" cy="12" r="5" fill="white"/>
+  </svg>`,
+  className: '',
+  iconSize: [26, 39],
+  iconAnchor: [13, 39],
+});
+
 const DEFAULT_CENTER: [number, number] = [41.9, 12.5];
 const KINDS: ZoneKind[] = ['green', 'red', 'unsurveyed'];
+
+/** Icon badge showing a zone's shape (area / line / pin), tinted with the zone's colour. */
+function ShapeBadge({ shape, color, label }: { shape: ZoneShape | 'perimeter'; color: string; label: string }) {
+  const Icon = shape === 'line' ? Route : shape === 'point' ? MapPin : shape === 'perimeter' ? Fence : Pentagon;
+  return (
+    <span title={label} aria-label={label} className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border"
+      style={{ color, background: `${color}22`, borderColor: `${color}66` }}>
+      <Icon className="h-4 w-4" />
+    </span>
+  );
+}
 
 export default function OperationZonesEditorInner({ value, onChange, isDark = false, focus = null, height = 460 }: OperationZonesEditorProps) {
   const { t } = useTranslation();
@@ -61,6 +85,7 @@ export default function OperationZonesEditorInner({ value, onChange, isDark = fa
   const draftGroupRef = useRef<L.LayerGroup | null>(null);
   const vertexGroupRef = useRef<L.LayerGroup | null>(null);
   const rubberRef = useRef<L.Polyline | null>(null);
+  const locationMarkerRef = useRef<L.Marker | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const [basemap, setBasemap] = useState<Basemap>('satellite');
@@ -68,6 +93,7 @@ export default function OperationZonesEditorInner({ value, onChange, isDark = fa
   const [kind, setKind] = useState<ZoneKind>('green');
   const [draft, setDraft] = useState<LatLngTuple[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [confirmClear, setConfirmClear] = useState(false);
 
   // Map event handlers are bound once, so they read the latest state through refs.
   const modeRef = useRef(mode);
@@ -79,7 +105,7 @@ export default function OperationZonesEditorInner({ value, onChange, isDark = fa
   valueRef.current = value;
   kindRef.current = kind;
 
-  const minPoints = mode?.type === 'zone' && mode.shape === 'line' ? 2 : 3;
+  const minPoints = mode?.type === 'zone' ? minPointsFor(mode.shape) : 3;
 
   // ── Map init ──
   useEffect(() => {
@@ -100,6 +126,8 @@ export default function OperationZonesEditorInner({ value, onChange, isDark = fa
       if (!modeRef.current) return;
       const { lat, lng } = e.latlng.wrap();
       const p: LatLngTuple = [Number(lat.toFixed(6)), Number(lng.toFixed(6))];
+      const m = modeRef.current;
+      if (m.type === 'zone' && m.shape === 'point') { addPinRef.current(p); return; }
       // A double-click fires two clicks on the same spot; keep one point.
       setDraft((prev) => (prev.length && prev[prev.length - 1][0] === p[0] && prev[prev.length - 1][1] === p[1] ? prev : [...prev, p]));
     });
@@ -115,12 +143,25 @@ export default function OperationZonesEditorInner({ value, onChange, isDark = fa
     });
 
     mapRef.current = map;
-    if (b) map.fitBounds(b, { padding: [24, 24], maxZoom: 18 });
+    if (b) map.fitBounds(focus ? [[Math.min(b[0][0], focus.lat), Math.min(b[0][1], focus.lng)], [Math.max(b[1][0], focus.lat), Math.max(b[1][1], focus.lng)]] : b, { padding: [24, 24], maxZoom: 18 });
     // The editor usually mounts inside an animating dialog/tab.
     const timer = setTimeout(() => map.invalidateSize(), 250);
     return () => { clearTimeout(timer); map.remove(); mapRef.current = null; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // ── System location pin ──
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    locationMarkerRef.current?.remove();
+    locationMarkerRef.current = null;
+    if (!focus || !Number.isFinite(focus.lat) || !Number.isFinite(focus.lng)) return;
+    locationMarkerRef.current = L.marker([focus.lat, focus.lng], { icon: PIN_ICON, interactive: true, keyboard: false, bubblingMouseEvents: true, zIndexOffset: 1000 })
+      .bindTooltip(t('systems.zones.systemLocation', 'System location'), { direction: 'top', offset: [0, -36] })
+      .addTo(map);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focus?.lat, focus?.lng]);
 
   // ── Basemap (satellite by default) ──
   useEffect(() => {
@@ -162,7 +203,7 @@ export default function OperationZonesEditorInner({ value, onChange, isDark = fa
     const pts = isPerimeter ? value.perimeter?.points : zone?.points;
     if (!pts) return;
     const color = isPerimeter ? PERIMETER_COLOR : ZONE_COLORS[zone!.kind];
-    const min = isPerimeter || zone!.shape === 'polygon' ? 3 : 2;
+    const min = isPerimeter ? 3 : minPointsFor(zone!.shape);
 
     pts.forEach((p, i) => {
       const m = L.marker(p, {
@@ -235,6 +276,18 @@ export default function OperationZonesEditorInner({ value, onChange, isDark = fa
   };
 
   // Enter finishes, Escape cancels. Captured on window so Escape doesn't also close the surrounding dialog.
+  const addPin = (p: LatLngTuple) => {
+    const v = valueRef.current;
+    if (v.zones.length >= MAX_ZONES) { toast.error(t('systems.zones.tooMany', 'Too many zones')); return; }
+    const zone: OperationZone = { id: newZoneId(), name: nextZoneName(v.zones, kindRef.current), kind: kindRef.current, shape: 'point', points: [p] };
+    onChange({ ...v, zones: [...v.zones, zone] });
+    setSelectedId(zone.id);
+    setMode(null);
+    setDraft([]);
+  };
+  const addPinRef = useRef(addPin);
+  addPinRef.current = addPin;
+
   const finishRef = useRef(finishDraw);
   finishRef.current = finishDraw;
   useEffect(() => {
@@ -247,6 +300,22 @@ export default function OperationZonesEditorInner({ value, onChange, isDark = fa
     window.addEventListener('keydown', onKey, true);
     return () => window.removeEventListener('keydown', onKey, true);
   }, [mode]);
+
+  // Two-step clear: the first click arms the button for a few seconds, the second one clears everything.
+  useEffect(() => {
+    if (!confirmClear) return;
+    const timer = setTimeout(() => setConfirmClear(false), 3000);
+    return () => clearTimeout(timer);
+  }, [confirmClear]);
+
+  const clearAll = () => {
+    if (!confirmClear) { setConfirmClear(true); return; }
+    setConfirmClear(false);
+    cancelDraw();
+    setSelectedId(null);
+    onChange({ zones: [], perimeter: null });
+    toast.success(t('systems.zones.cleared', 'All zones cleared'));
+  };
 
   const fitAll = () => {
     const b = boundsOf(value);
@@ -293,6 +362,7 @@ export default function OperationZonesEditorInner({ value, onChange, isDark = fa
       if (b && mapRef.current) mapRef.current.fitBounds(b, { padding: [24, 24], maxZoom: 18 });
       toast.success(
         t('systems.zones.importDone', '{{count}} zones imported', { count: zones.length }) +
+        ` (${t('systems.zones.importBreakdown', '{{areas}} areas · {{lines}} lines · {{pins}} pins', { areas: zones.filter((z) => z.shape === 'polygon').length, lines: zones.filter((z) => z.shape === 'line').length, pins: zones.filter((z) => z.shape === 'point').length })})` +
         (res.perimeter ? t('systems.zones.importPerimeter', ' + perimeter') : '') +
         (res.skipped ? ` · ${t('systems.zones.importSkipped', '{{count}} skipped (no line/polygon)', { count: res.skipped })}` : ''),
       );
@@ -328,6 +398,10 @@ export default function OperationZonesEditorInner({ value, onChange, isDark = fa
           className={`${btn} ${mode?.type === 'zone' && mode.shape === 'line' ? btnOn : ''}`} onClick={() => startDraw({ type: 'zone', shape: 'line' })}>
           <Route className="h-4 w-4" />
         </button>
+        <button type="button" title={t('systems.zones.drawPin', 'Add pin')} aria-label={t('systems.zones.drawPin', 'Add pin')}
+          className={`${btn} ${mode?.type === 'zone' && mode.shape === 'point' ? btnOn : ''}`} onClick={() => startDraw({ type: 'zone', shape: 'point' })}>
+          <MapPin className="h-4 w-4" />
+        </button>
         <button type="button" title={t('systems.zones.drawPerimeter', 'Draw operational perimeter')} aria-label={t('systems.zones.drawPerimeter', 'Draw operational perimeter')}
           className={`${btn} ${mode?.type === 'perimeter' ? btnOn : ''}`} onClick={() => startDraw({ type: 'perimeter' })}>
           <Fence className="h-4 w-4" />
@@ -359,6 +433,12 @@ export default function OperationZonesEditorInner({ value, onChange, isDark = fa
 
         <span className="flex-1" />
 
+        <button type="button" disabled={value.zones.length === 0 && !value.perimeter} onClick={clearAll}
+          title={t('systems.zones.clearAll', 'Clear all zones from the map')}
+          className={`${btn} w-auto gap-1.5 px-2.5 ${confirmClear ? 'border-red-500! bg-red-600! text-white! hover:bg-red-500!' : 'text-red-500!'}`}>
+          <Eraser className="h-4 w-4" />
+          <span>{confirmClear ? t('systems.zones.clearConfirm', 'Click again to confirm') : t('systems.zones.clear', 'Clear all')}</span>
+        </button>
         <input ref={fileRef} type="file" accept=".kmz,.kml" className="hidden" onChange={(e) => handleImport(e.target.files?.[0])} />
         <button type="button" className={`${btn} w-auto gap-1.5 px-2.5`} onClick={() => fileRef.current?.click()}
           title={t('systems.zones.importTitle', 'Import zones from a KMZ/KML file')}>
@@ -388,6 +468,8 @@ export default function OperationZonesEditorInner({ value, onChange, isDark = fa
         )}
       </div>
 
+      <ZoneLegend isDark={isDark} />
+
       <div className={`h-44 overflow-y-auto rounded-lg border ${border}`}>
         {!value.perimeter && value.zones.length === 0 ? (
           <p className={`flex h-full items-center justify-center px-3 text-center text-xs ${muted}`}>
@@ -397,11 +479,11 @@ export default function OperationZonesEditorInner({ value, onChange, isDark = fa
           <ul className={`divide-y ${isDark ? 'divide-slate-700' : 'divide-gray-100'}`}>
             {value.perimeter && (
               <li className={`flex items-center gap-2 px-3 py-1.5 ${selectedId === 'perimeter' ? (isDark ? 'bg-slate-700/60' : 'bg-violet-50') : ''}`}>
-                <Fence className="h-4 w-4 shrink-0" style={{ color: PERIMETER_COLOR }} />
+                <ShapeBadge shape="perimeter" color={PERIMETER_COLOR} label={t('systems.zones.perimeterTag', 'Perimeter')} />
                 <input className={`${fieldCls} min-w-0 flex-1`} value={value.perimeter.name} onKeyDown={stopEnter}
                   onFocus={() => focusItem('perimeter')}
                   onChange={(e) => onChange({ ...value, perimeter: { ...value.perimeter!, name: e.target.value } })} />
-                <span className={`w-20 shrink-0 text-[10px] uppercase ${muted}`}>{t('systems.zones.perimeterTag', 'Perimeter')}</span>
+                <span className={`w-36 shrink-0 px-2 text-xs ${muted}`}>{t('systems.zones.perimeterTag', 'Perimeter')}</span>
                 <button type="button" className="cursor-pointer p-1 text-red-500 hover:text-red-400" onClick={() => removeItem('perimeter')}
                   aria-label={t('systems.zones.delete', 'Delete')} title={t('systems.zones.delete', 'Delete')}>
                   <Trash2 className="h-4 w-4" />
@@ -410,14 +492,25 @@ export default function OperationZonesEditorInner({ value, onChange, isDark = fa
             )}
             {value.zones.map((z) => (
               <li key={z.id} className={`flex items-center gap-2 px-3 py-1.5 ${selectedId === z.id ? (isDark ? 'bg-slate-700/60' : 'bg-violet-50') : ''}`}>
-                <span className="h-3 w-3 shrink-0 rounded-full" style={{ background: ZONE_COLORS[z.kind] }} />
-                <input className={`${fieldCls} min-w-0 flex-1`} value={z.name} onKeyDown={stopEnter} placeholder={KIND_LABEL[z.kind]}
+                <ShapeBadge shape={z.shape} color={ZONE_COLORS[z.kind]} label={z.shape === 'line' ? t('systems.zones.line', 'Line') : z.shape === 'point' ? t('systems.zones.pin', 'Pin') : t('systems.zones.polygon', 'Area')} />
+                <input className={`${fieldCls} min-w-0 flex-1`} value={z.name} onKeyDown={stopEnter} title={z.note} placeholder={KIND_LABEL[z.kind]}
                   onFocus={() => focusItem(z.id)}
                   onChange={(e) => patchZone(z.id, { name: e.target.value })} />
-                <select className={`${fieldCls} w-28 shrink-0`} value={z.kind} onChange={(e) => patchZone(z.id, { kind: e.target.value as ZoneKind })}>
-                  {KINDS.map((k) => <option key={k} value={k}>{KIND_LABEL[k]}</option>)}
-                </select>
-                <span className={`w-12 shrink-0 text-[10px] uppercase ${muted}`}>{z.shape === 'line' ? t('systems.zones.line', 'Line') : t('systems.zones.polygon', 'Area')}</span>
+                <Select value={z.kind} onValueChange={(v) => patchZone(z.id, { kind: v as ZoneKind })}>
+                  <SelectTrigger size="sm" aria-label={t('systems.zones.changeType', 'Change zone type')}
+                    className="h-7! w-36 shrink-0 gap-1.5 px-2 text-xs font-medium"
+                    style={{ color: ZONE_COLORS[z.kind], background: `${ZONE_COLORS[z.kind]}1f`, borderColor: `${ZONE_COLORS[z.kind]}80` }}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className={isDark ? 'bg-slate-800 border-slate-700 text-slate-200' : ''}>
+                    {KINDS.map((k) => (
+                      <SelectItem key={k} value={k}>
+                        <span className="h-2.5 w-2.5 rounded-full" style={{ background: ZONE_COLORS[k] }} />
+                        {KIND_LABEL[k]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <button type="button" className="cursor-pointer p-1 text-red-500 hover:text-red-400" onClick={() => removeItem(z.id)}
                   aria-label={t('systems.zones.delete', 'Delete')} title={t('systems.zones.delete', 'Delete')}>
                   <Trash2 className="h-4 w-4" />

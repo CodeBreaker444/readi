@@ -37,7 +37,7 @@ Un sistema può avere delle **zone operative**: una sovrapposizione facoltativa 
 | **Zona non rilevata** | Grigio | Non ancora verificata, vola solo dopo un sopralluogo |
 | **Perimetro** | Linea azzurra tratteggiata | Il limite operativo di questo sistema. Un sistema ha un solo perimetro |
 
-Le zone possono essere **poligoni** (aree) o **linee** (ad esempio una linea elettrica). Una linea rossa blocca tutto ciò che si trova entro circa 30 m. Ogni zona ha un nome che puoi modificare.
+Le zone possono essere **poligoni** (aree), **linee** (ad esempio una linea elettrica) o **segnaposto** (un singolo punto, ad esempio un traliccio). Una linea rossa o un segnaposto rosso blocca tutto ciò che si trova entro circa 30 m. Ogni zona ha un nome che puoi modificare.
 
 ### Aggiungere o modificare le zone
 
@@ -50,6 +50,7 @@ La mappa si apre in vista **satellite**. Il pulsante dei livelli passa alla mapp
 |---|---|
 | Poligono | Clicca sulla mappa per posizionare gli angoli di un'area, poi premi **Invio** o il pulsante di conferma |
 | Linea | Come sopra, per una zona lineare |
+| Segnaposto | Clicca una volta sulla mappa per posizionare un segnaposto |
 | Recinzione | Disegna il perimetro operativo. Disegnarne uno nuovo sostituisce il precedente (un messaggio ti avvisa). **Esc** mantiene il precedente |
 | Punti verde, rosso, grigio | Il tipo della prossima zona che disegni. Con una zona selezionata, ne cambiano il tipo |
 | Annulla, conferma, croce | Rimuovono l'ultimo punto, terminano la forma, la annullano (**Esc**) |
@@ -59,16 +60,20 @@ Clicca una zona sulla mappa o nell'elenco per selezionarla. Trascina i suoi punt
 
 ### Importare un file KMZ o KML
 
-Clicca **Importa KMZ** e scegli un file `.kmz` o `.kml`, ad esempio esportato da Google Earth. Ogni poligono e ogni linea al suo interno viene aggiunto come zona. Un KMZ è un KML compresso.
+Clicca **Importa KMZ** e scegli un file `.kmz` o `.kml`, ad esempio esportato da Google Earth. Ogni poligono, linea e segnaposto al suo interno viene aggiunto come zona. Un KMZ è un KML compresso.
 
 Il tipo di ogni forma viene deciso in quest'ordine:
 
-1. **Il suo nome:** parole come *red*, *no-fly*, *restricted*, *rosso*, *vietato* la rendono rossa. *green*, *safe*, *approved*, *verde* la rendono verde. *unsurveyed*, *unknown*, *grey*, *grigia* la rendono grigia. *perimeter*, *boundary*, *fence*, *limite* la rendono il perimetro.
-2. **Il suo colore** nel file (verde, rosso o grigio).
-3. **Il nome della sua cartella**, con le stesse parole.
-4. Se nulla corrisponde, viene importata come **non rilevata** (grigia). Controllala e modificala nell'elenco.
+1. **I campi personalizzati nel file:** i campi che un servizio esterno ha aggiunto a una forma (`ExtendedData` o `SimpleData` di KML) chiamati *type*, *zone*, *category*, *class*, *status*, *restriction*, *level*, *risk*, *kind* o *color*. Un valore come *restricted*, *no-fly*, *approved* o un colore come `#00cc00` decide il tipo.
+2. **Il suo nome** (o un campo *name*, *title* o *label* quando la forma non ha un nome): parole come *red*, *no-fly*, *restricted*, *rosso*, *vietato* la rendono rossa. *green*, *safe*, *approved*, *verde* la rendono verde. *unsurveyed*, *unknown*, *grey*, *grigia* la rendono grigia. *perimeter*, *boundary*, *fence*, *limite* la rendono il perimetro.
+3. **Il suo colore** nel file (colore di riempimento, linea o segnaposto: verde, rosso o grigio).
+4. **La sua descrizione**, se è breve, con le stesse parole.
+5. **Il nome della sua cartella**, con le stesse parole.
+6. Se nulla corrisponde, viene importata come **non rilevata** (grigia). Controllala e modificala nell'elenco.
 
-I punti e le sovrapposizioni di immagini vengono ignorati e il messaggio indica quanti. Se il file contiene più perimetri, viene usato solo il primo. Importare in un sistema che ha già delle zone le aggiunge a quelle esistenti. I fori all'interno dei poligoni vengono ignorati. Dopo l'importazione, controlla l'elenco e usa **Salva zone**.
+I segnaposto senza un nome o un colore che indichi un tipo vengono aggiunti come non rilevati. I **file wayline DJI** (un KMZ creato con DJI Pilot o FlightHub) vengono importati come un segnaposto per ogni waypoint, chiamati "Waypoint 1", "Waypoint 2" e così via, esattamente come li mostra Google Earth. Le sovrapposizioni di immagini e le forme vuote vengono ignorate e il messaggio indica quanti. Dopo l'importazione, un messaggio mostra quante aree, linee e segnaposto sono stati aggiunti.
+
+Le altre informazioni nel file vengono conservate come **nota** sulla zona: altitudine e velocità di un waypoint DJI ed eventuali altri campi personalizzati. Passa il mouse sulla zona nella mappa, o sul suo nome nell'elenco, per leggerla. Le tracce (`gx:Track`) vengono importate come linee e funziona anche un archivio DJI che contiene solo `waylines.wpml`. Se il file contiene più perimetri, viene usato solo il primo. Importare in un sistema che ha già delle zone le aggiunge a quelle esistenti. I fori all'interno dei poligoni vengono ignorati. Dopo l'importazione, controlla l'elenco e usa **Salva zone**.
 
 ### Limiti e cose da sapere
 
@@ -76,7 +81,7 @@ I punti e le sovrapposizioni di immagini vengono ignorati e il messaggio indica 
 - **I fori vengono ignorati.** Un poligono con un anello interno (ad esempio un'area verde con un edificio escluso) viene importato come area piena. Disegna il foro come zona rossa separata.
 - **Contorni che si incrociano:** se una forma si interseca, la parte incrociata conta come esterna. Ridisegnala senza incroci.
 - **Linea di cambio data:** le forme che attraversano il meridiano 180° non sono supportate.
-- **Le linee rosse** bloccano circa 30 m per lato. Le linee **verdi** e **non rilevate** sono mostrate sulla mappa, ma vengono controllate solo le linee rosse.
+- **Le linee rosse e i segnaposto rossi** bloccano circa 30 m attorno a sé. Le linee e i segnaposto **non rilevati** avvisano alla stessa distanza. Le linee e i segnaposto **verdi** sono mostrati sulla mappa ma non vengono controllati.
 - **Duplica:** **Duplica sistema** copia le zone sul nuovo sistema.
 - **Un solo perimetro per sistema.** Per coprire più siti, usa zone verdi per ciascuno oppure crea un sistema per sito.
 - **Gli avvisi sono consigli.** Non bloccano mai una richiesta e il testo dell'avviso sulla richiesta di volo è in inglese.

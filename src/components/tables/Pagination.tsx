@@ -11,9 +11,10 @@ import { useTheme } from '../useTheme';
 
 interface Props {
   table: Table<any>;
+  pageSizeOptions?: number[];
 }
 
-export const TablePagination: FC<Props> = ({ table }) => {
+export const TablePagination: FC<Props> = ({ table, pageSizeOptions = [8, 16, 24, 32, 48, 56] }) => {
   const { isDark } = useTheme();
   const { t } = useTranslation();
 
@@ -56,7 +57,7 @@ export const TablePagination: FC<Props> = ({ table }) => {
               <SelectValue placeholder={table.getState().pagination.pageSize} />
             </SelectTrigger>
             <SelectContent side="top" className={selectContentCls}>
-              {[8, 16, 24, 32, 48, 56].map((pageSize) => (
+              {pageSizeOptions.map((pageSize) => (
                 <SelectItem key={pageSize} value={`${pageSize}`} className="text-xs">
                   {pageSize}
                 </SelectItem>

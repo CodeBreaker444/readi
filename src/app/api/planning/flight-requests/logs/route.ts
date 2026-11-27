@@ -3,7 +3,7 @@ import { notifyDccLogging } from '@/backend/services/mission/dcc-callback-servic
 import {
   getFlightRequestById,
   getLatestFlightLogForMission,
-  getPilotMissionByPlanningId,
+  resolveMissionIdForRequest,
 } from '@/backend/services/mission/flight-request-service';
 import { attachFlytbaseFlightLog } from '@/backend/services/operation/flight-log-service';
 import { apiError, internalError, zodError } from '@/lib/api-error';
@@ -40,13 +40,11 @@ export async function POST(req: NextRequest) {
     const fr = await getFlightRequestById(parsed.data.request_id, session!.user.ownerId);
 
     if (!fr) return apiError(E.NF021, 404);
-    if (!fr.fk_planning_id) return apiError(E.BL003, 422);
+    if (!fr.fk_pilot_mission_id && !fr.fk_planning_id) return apiError(E.BL003, 422);
 
-    const pm = await getPilotMissionByPlanningId(fr.fk_planning_id);
-
-    if (!pm) return apiError(E.NF003, 404);
-
-    const missionId = pm.pilot_mission_id;
+    // The linked mission ("Link to Mission"), or the legacy planning's mission.
+    const missionId = await resolveMissionIdForRequest(fr);
+    if (!missionId) return apiError(E.NF003, 404);
 
     // LINK: archive GUTMA to S3, record in mission_flight_logs
     if (parsed.data.action === 'link') {

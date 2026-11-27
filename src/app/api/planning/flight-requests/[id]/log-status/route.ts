@@ -1,7 +1,7 @@
 import {
   getFlightRequestById,
   getMissionFlightLogs,
-  getPilotMissionByPlanningId,
+  resolveMissionIdForRequest,
 } from '@/backend/services/mission/flight-request-service';
 import { apiError, internalError } from '@/lib/api-error';
 import { requireFeatureView } from '@/lib/auth/api-auth';
@@ -27,26 +27,26 @@ export async function GET(
     if (!fr) {
      return apiError(E.NF021, 404);
     }
-    if (!fr.fk_planning_id) {
+    if (!fr.fk_pilot_mission_id && !fr.fk_planning_id) {
       return NextResponse.json({ code: 1, has_log: false, logs: [], reason: 'not_assigned' });
     }
 
-    // Resolve planning_id → pilot_mission_id
-    const pm = await getPilotMissionByPlanningId(fr.fk_planning_id);
+    // Linked mission, or (legacy) the planning's first mission
+    const missionId = await resolveMissionIdForRequest(fr);
 
-    if (!pm) {
+    if (!missionId) {
       return NextResponse.json({ code: 1, has_log: false, logs: [], reason: 'no_mission' });
     }
 
     // Get linked logs
-    const logs = await getMissionFlightLogs(pm.pilot_mission_id);
+    const logs = await getMissionFlightLogs(missionId);
     const hasFlytbaseLog = logs.some((l) => !!l.flytbase_flight_id);
 
     return NextResponse.json({
       code: 1,
       has_log: hasFlytbaseLog,
       logs,
-      mission_id: pm.pilot_mission_id,
+      mission_id: missionId,
     });
   } catch (err) {
     return internalError(E.SV001, err);

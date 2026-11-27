@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2" xmlns:gx="http://www.google.com/kml/ext/2.2">
+<Document>
+  <name>Readi import test - custom fields</name>
+  <Style id="redLine"><LineStyle><color>ff0000ff</color><width>4</width></LineStyle></Style>
+  <StyleMap id="redLineMap"><Pair><key>normal</key><styleUrl>#redLine</styleUrl></Pair></StyleMap>
+  <Style id="redIcon"><IconStyle><color>ff0000ff</color></IconStyle></Style>
+
+  <!-- 1. Perimeter: recognised by its name -->
+  <Placemark><name>Site perimeter</name><Polygon><outerBoundaryIs><LinearRing><coordinates>-3.68,40.598,0 -3.64,40.598,0 -3.64,40.622,0 -3.68,40.622,0 -3.68,40.598,0</coordinates></LinearRing></outerBoundaryIs></Polygon></Placemark>
+
+  <!-- 2. RED by a custom field (zone_type); other fields become the note -->
+  <Placemark><name>Substation</name><ExtendedData><Data name="zone_type"><value>No-Fly</value></Data><Data name="max_altitude_m"><value>0</value></Data></ExtendedData><Polygon><outerBoundaryIs><LinearRing><coordinates>-3.6725,40.6145,0 -3.6675,40.6145,0 -3.6675,40.6175,0 -3.6725,40.6175,0 -3.6725,40.6145,0</coordinates></LinearRing></outerBoundaryIs></Polygon></Placemark>
+
+  <!-- 3. GREEN by a custom field (category) -->
+  <Placemark><name>Landing pad</name><ExtendedData><Data name="category"><value>approved</value></Data><Data name="owner"><value>ACME Energy</value></Data></ExtendedData><Polygon><outerBoundaryIs><LinearRing><coordinates>-3.6675,40.605999999999995,0 -3.6605000000000003,40.605999999999995,0 -3.6605000000000003,40.61,0 -3.6675,40.61,0 -3.6675,40.605999999999995,0</coordinates></LinearRing></outerBoundaryIs></Polygon></Placemark>
+
+  <!-- 4. No <name>: name and type come from SchemaData fields -> "Quarry", GREY -->
+  <Placemark><ExtendedData><SchemaData schemaUrl="#zones"><SimpleData name="Name">Quarry</SimpleData><SimpleData name="type">unsurveyed</SimpleData><SimpleData name="survey_due">2027-03-01</SimpleData></SchemaData></ExtendedData><Polygon><outerBoundaryIs><LinearRing><coordinates>-3.6525000000000003,40.5995,0 -3.6435,40.5995,0 -3.6435,40.604499999999994,0 -3.6525000000000003,40.604499999999994,0 -3.6525000000000003,40.5995,0</coordinates></LinearRing></outerBoundaryIs></Polygon></Placemark>
+
+  <!-- 5. RED line by StyleMap -> style colour -->
+  <Placemark><name>HV power line</name><styleUrl>#redLineMap</styleUrl><LineString><coordinates>-3.678,40.612,0 -3.66,40.614,0 -3.6420000000000003,40.611,0</coordinates></LineString></Placemark>
+
+  <!-- 6. gx:Track -> line; RED from its short description -->
+  <Placemark><name>Access road</name><description>Restricted corridor</description><gx:Track><gx:coord>-3.6580000000000004 40.6 0</gx:coord><gx:coord>-3.6540000000000004 40.606 0</gx:coord><gx:coord>-3.6500000000000004 40.61 0</gx:coord></gx:Track></Placemark>
+
+  <!-- 7. Pin, RED from its icon colour; the description says "Unrestricted" and must NOT matter -->
+  <Placemark><name>Radio mast</name><styleUrl>#redIcon</styleUrl><description><![CDATA[<b>Unrestricted</b> airspace below 50 m]]></description><Point><coordinates>-3.656,40.613,0</coordinates></Point></Placemark>
+
+  <!-- 8. Pin, GREEN from a colour field (hex) -->
+  <Placemark><name>Helipad</name><ExtendedData><Data name="Colour"><value>#00cc00</value></Data></ExtendedData><Point><coordinates>-3.672,40.606,0</coordinates></Point></Placemark>
+
+  <!-- 9. Plain pin, GREY by default, custom field kept as note -->
+  <Placemark><name>Survey point</name><ExtendedData><Data name="max_alt"><value>120</value></Data></ExtendedData><Point><coordinates>-3.652,40.618,0</coordinates></Point></Placemark>
+
+  <!-- 10. Type comes from the FOLDER name -> GREEN -->
+  <Folder><name>Green zones (cleared)</name>
+    <Placemark><name>Area 51B</name><Polygon><outerBoundaryIs><LinearRing><coordinates>-3.6510000000000002,40.608999999999995,0 -3.645,40.608999999999995,0 -3.645,40.613,0 -3.6510000000000002,40.613,0 -3.6510000000000002,40.608999999999995,0</coordinates></LinearRing></outerBoundaryIs></Polygon></Placemark>
+  </Folder>
+
+  <!-- 11. No geometry -> skipped -->
+  <Placemark><name>Info only</name><description>No shape here</description></Placemark>
+
+  <!-- 12. Polygon with a hole (ignored, imported solid), GREEN by name -->
+  <Placemark><name>Green field with building</name><Polygon><outerBoundaryIs><LinearRing><coordinates>-3.677,40.6,0 -3.6670000000000003,40.6,0 -3.6670000000000003,40.606,0 -3.677,40.606,0 -3.677,40.6,0</coordinates></LinearRing></outerBoundaryIs><innerBoundaryIs><LinearRing><coordinates>-3.6732,40.6022,0 -3.6708000000000003,40.6022,0 -3.6708000000000003,40.6038,0 -3.6732,40.6038,0 -3.6732,40.6022,0</coordinates></LinearRing></innerBoundaryIs></Polygon></Placemark>
+
+  <!-- 13. MultiGeometry with two polygons -> two zones, RED by name -->
+  <Placemark><name>Red twins</name><MultiGeometry><Polygon><outerBoundaryIs><LinearRing><coordinates>-3.666,40.6178,0 -3.6620000000000004,40.6178,0 -3.6620000000000004,40.6202,0 -3.666,40.6202,0 -3.666,40.6178,0</coordinates></LinearRing></outerBoundaryIs></Polygon><Polygon><outerBoundaryIs><LinearRing><coordinates>-3.66,40.6178,0 -3.6560000000000006,40.6178,0 -3.6560000000000006,40.6202,0 -3.66,40.6202,0 -3.66,40.6178,0</coordinates></LinearRing></outerBoundaryIs></Polygon></MultiGeometry></Placemark>
+</Document>
+</kml>

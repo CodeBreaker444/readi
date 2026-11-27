@@ -137,7 +137,7 @@ export function InternalFlightRequests({ isDark, filter, onFilterChange, refresh
             </thead>
             <tbody className={`divide-y ${isDark ? 'divide-slate-700/40' : 'divide-gray-50'}`}>
               {loading ? (
-                Array.from({ length: 4 }).map((_, i) => (
+                Array.from({ length: 8 }).map((_, i) => (
                   <tr key={i}>
                     {COLUMNS.map((c) => <td key={c} className="px-4 py-3"><Skeleton className="h-4 w-full rounded" /></td>)}
                   </tr>

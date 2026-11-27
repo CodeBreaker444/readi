@@ -1,0 +1,40 @@
+meta {
+  name: Link Flight Request to Mission
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{base_url}}/api/planning/flight-requests/link
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "request_id": {{request_id}},
+    "mission_id": 123
+  }
+}
+
+settings {
+  encodeUrl: true
+}
+
+docs {
+  Links an ACKNOWLEDGED flight request to a PLANNED or IN_PROGRESS mission (pilot_mission).
+  The request becomes ASSIGNED and the client's DCC receives /acceptance with the drone of the mission's system.
+
+  From then on the request status follows the mission on the Daily Board — there is no manual status endpoint:
+  PLANNED → ASSIGNED, IN_PROGRESS → IN_PROGRESS (/execution), COMPLETED → COMPLETED (/termination result 1),
+  ABORTED/CANCELLED → ISSUE (/termination result 0).
+
+  If the mission is waiting for OPM approval and the request's location is inside the mission system's
+  operation zones, the mission is approved automatically (autoApproved: true).
+
+  Errors: 404 request/mission not found, 409 request not ACKNOWLEDGED / already linked / mission closed.
+}

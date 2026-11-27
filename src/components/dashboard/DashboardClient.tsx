@@ -463,16 +463,6 @@ export default function DashboardClient({ ownerId, userProfileCode, userId, init
               <div className={cn('text-3xl font-bold tabular-nums tracking-tight', isDark ? 'text-white' : 'text-gray-900')}>
                 <CountUp value={s.value} />
               </div>
-
-              {/* <div className="flex items-center gap-1.5">
-                {s.trend === 'up'
-                  ? <TrendingUp className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
-                  : <TrendingDown className="h-3.5 w-3.5 text-red-400 shrink-0" />}
-                <span className={cn('text-xs font-medium', s.footerColor)}>
-                  {s.pct ? `${s.pct} ${s.footer}` : s.footer}
-                </span>
-              </div> */}
-              {/* TODO  */}
             </div>
           );
         })}

@@ -236,18 +236,59 @@ La previsione è solo indicativa. Controlla sempre il meteo aeronautico ufficial
 Ha due schede:
 
 - **Interne:** missioni create dai tuoi piloti che richiedono l'approvazione dell'OPM. Approva, oppure rifiuta con un motivo facoltativo. Filtra per Tutte, In attesa, Approvate o Rifiutate.
-- **Esterne:** richieste da sistemi e clienti esterni (vedi [Integrazione DCC](/docs/business-logic/dcc-integration) e [Portale clienti](/docs/modules/client-portal)). Le richieste sono conteggiate come Nuove, Riconosciute o Assegnate. Un OPM può **Passare alla pianificazione** (assegnarla a una missione di pianificazione e a un piano), oppure rifiutarla.
+- **Esterne:** richieste da sistemi e clienti esterni (vedi [Integrazione DCC](/docs/business-logic/dcc-integration) e [Portale clienti](/docs/modules/client-portal)). Le richieste sono conteggiate come Nuove, Riconosciute o Assegnate. Dopo aver riconosciuto una richiesta, un OPM può **Collegarla a una missione** (crearne una nuova o collegarne una esistente), oppure rifiutarla.
 
-### Avvisi delle zone operative
+La tabella mostra due colonne in più: **Verifica zona** (l'esito della verifica qui sotto, con il sistema associato) e **Missione** (la missione collegata e il suo stato).
 
-Se la richiesta ha un waypoint, Readi lo controlla rispetto alle **zone operative** dei sistemi assegnati al cliente della richiesta (vedi [Sistemi](/docs/modules/systems)). Apri la richiesta per vedere il risultato in cima alle schede **Dettagli** e **Azione**: verde quando il waypoint è entro le zone, ambra quando è fuori dal perimetro, in una zona non rilevata o in nessuna zona verde, e rosso quando è in una zona rossa o vicino a una linea rossa. La scheda **Posizione** disegna le zone e il perimetro attorno al waypoint. Un avviso non blocca la richiesta, indica cosa controllare prima di riconoscerla o pianificarla.
+### Verifica della zona all'arrivo
+
+Ogni richiesta di un cliente viene confrontata con le **zone operative** di tutti i sistemi assegnati a quel cliente (vedi [Sistemi](/docs/modules/systems)). La verifica avviene appena la richiesta arriva, dal Portale clienti o dal DCC del cliente.
+
+- Una posizione è **dentro** le zone di un sistema quando è dentro il perimetro, dentro una zona verde (se il sistema ne ha) e lontana da ogni zona rossa, linea rossa e zona non rilevata.
+- Se più sistemi coprono la posizione, Readi sceglie il **più vicino**. La distanza è misurata dalle coordinate del sistema, oppure dal centro delle sue zone se il sistema non ha coordinate. Quel sistema è mostrato come **In zona · *codice sistema*** ed è preselezionato quando crei una missione per la richiesta.
+- Se **nessun sistema** copre la posizione, la richiesta viene **rifiutata automaticamente**. Il suo stato diventa **Rifiutata**. Il motivo spiega perché: dentro una zona rossa (no-fly) o non rilevata di un sistema (con il nome della zona), dentro il perimetro di un sistema ma in nessuna delle sue zone verdi, oppure fuori da tutti i sistemi (con il sistema più vicino e la sua distanza). Una richiesta rifiutata non può essere riconosciuta. Il DCC del cliente riceve un rifiuto con quel motivo, e un utente del Portale clienti vede subito il motivo.
+- La verifica non viene eseguita, e la richiesta resta **Nuova** come sempre, quando la richiesta non ha coordinate del waypoint, non ha un cliente, oppure il cliente non ha sistemi con zone operative. Il badge mostra allora **Non verificata**.
+
+Apri la richiesta per vedere l'esito. La scheda **Dettagli** mostra la verifica della zona e il sistema più vicino. Gli avvisi in cima alle schede **Dettagli** e **Azione** mostrano l'esito per ogni sistema: verde quando il waypoint è entro le zone, ambra quando è fuori dal perimetro, in una zona non rilevata o in nessuna zona verde, e rosso quando è in una zona rossa o vicino a una linea rossa. La scheda **Posizione** disegna le zone e il perimetro attorno al waypoint.
+
+### Collega a missione
+
+Quando una richiesta è **Riconosciuta**, la scheda **Azione** mostra **Collega a missione**, che sostituisce *Passa alla pianificazione*. Una richiesta viene collegata a una missione pianificata, non a una pianificazione. La finestra offre due scelte:
+
+- **Crea una nuova missione.** Apre la **Tabella missione** con il modulo **Nuova missione** già aperto. Un'intestazione in alto mostra i dettagli della richiesta: ID richiesta, cliente, priorità, posizione, sistema più vicino e la sua distanza, orario richiesto e orario di ricezione. Il modulo è precompilato con il cliente, il sistema associato, l'orario di inizio richiesto, la posizione e l'obiettivo. Il cliente non può essere cambiato. L'elenco dei sistemi mostra solo i sistemi del cliente che hanno zone operative. Quelli le cui zone coprono la posizione della richiesta compaiono per primi, dal più vicino. Al salvataggio la missione viene collegata alla richiesta. Questa intestazione compare solo per le missioni create da una richiesta di volo.
+- **Collega una missione esistente.** Elenca le missioni del cliente **Pianificate** o **In corso** su uno dei sistemi del cliente che hanno zone operative. Ogni missione mostra quante richieste di volo sono già collegate (ad es. *2 richieste collegate*). Le missioni su un sistema le cui zone coprono la posizione della richiesta compaiono per prime e sono indicate con **Nessuna autorizzazione OPM necessaria**. Una missione ancora in attesa di approvazione OPM mostra **In attesa di approvazione OPM**, oppure **In attesa OPM — verrà approvata al collegamento** quando il suo sistema copre la richiesta. Readi rifiuta il collegamento con una missione su qualsiasi altro sistema. Scegline una e fai clic su **Collega missione**.
+
+Quando la richiesta viene collegata, il suo stato diventa **Assegnata** e il DCC del cliente riceve *Accettata* con il drone del sistema della missione.
+
+### Lo stato segue la missione
+
+Lo stato di una richiesta collegata **non si cambia più a mano**. I pulsanti In corso, Completata e Problema sono stati rimossi. Lo stato segue la missione collegata sulla **Bacheca giornaliera** (e nella Tabella missione):
+
+| Missione | Richiesta di volo | Inviato al DCC del cliente |
+|---|---|---|
+| Pianificata | Assegnata | — |
+| In corso (avviata dalla Bacheca giornaliera) | In corso | Avviata |
+| Completata (terminata dalla Bacheca giornaliera) | Completata | Terminata (successo) |
+| Interrotta o Annullata | Problema | Terminata (fallimento, con il motivo dell'interruzione) |
+
+Se una missione collegata viene eliminata, la richiesta torna **Riconosciuta** e può essere collegata di nuovo.
+
+### Nessuna autorizzazione OPM per le missioni con zona verificata
+
+La missione di un pilota normalmente richiede l'approvazione di un OPM (vedi [Approvazione missioni](/docs/business-logic/mission-approval)). Una missione per una richiesta di volo **non** la richiede quando la richiesta ha superato la verifica della zona e la sua posizione è dentro le zone operative del **sistema selezionato**:
+
+- **Nuova missione da una richiesta:** non viene chiesta alcuna approvazione. L'ultimo passo del modulo lo indica. Se il pilota cambia sistema, la verifica viene ripetuta per il nuovo sistema.
+- **Missione esistente in attesa di approvazione:** collegandola viene approvata automaticamente, se il suo sistema copre la richiesta. La nota di approvazione riporta la richiesta, e poi l'autorizzazione D-Flight viene richiesta come sempre.
+
+Se le zone del sistema **non** coprono la posizione della richiesta, valgono le normali regole di approvazione, così come per una missione creata nel modo consueto con **Nuova missione** nella Tabella missione. Valgono le normali regole anche se la richiesta non è stata verificata o il cliente non ha sistemi con zone operative.
 
 ### Cosa può fare un pilota (PIC)
 
 Un PIC vede **Richieste di volo** nel menu e può lavorare nella scheda **Esterne**, in base all'accesso assegnato nella matrice dei permessi (**Operazioni → Richieste di volo**):
 
 - **Sola lettura (R):** il PIC vede le richieste ma non ha pulsanti di azione.
-- **Lettura e scrittura (R · W):** il PIC può **Riconoscere** una nuova richiesta, **Passare alla pianificazione**, impostarla su **In corso**, **Completata** o **Problema**, e inviare il log del Centro di controllo.
+- **Lettura e scrittura (R · W):** il PIC può **Riconoscere** una nuova richiesta, **Collegarla a una missione** (crearne o collegarne una) e inviare il log del Centro di controllo. Lo stato della richiesta segue poi la missione sulla Bacheca giornaliera.
+- **Solo le proprie missioni:** quando un PIC crea una missione da una richiesta di volo, l'elenco dei piloti mostra solo quel PIC, già selezionato. Vale per ogni PIC, anche per i PIC che sono anche responsabili. Il server rifiuta qualsiasi altro pilota per tale missione. Gli **osservatori visivi** possono invece essere qualsiasi pilota, qui e nella Tabella missione.
 - **Il rifiuto non è disponibile per un PIC.** Solo i ruoli di livello OPM possono rifiutare una richiesta e il pulsante Rifiuta è nascosto per il PIC.
 - La scheda **Interne** (approvazioni) resta agli OPM e agli admin. Un PIC segue l'approvazione delle proprie missioni dalla Tabella missione.
 

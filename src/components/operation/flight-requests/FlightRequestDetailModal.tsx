@@ -1,22 +1,16 @@
 'use client';
 
 import { usePermissions } from '@/components/permissions/PermissionsProvider';
-import { FlightRequest } from '@/components/tables/flightRequestsColumns';
+import { FlightRequest, ZoneBadge } from '@/components/tables/flightRequestsColumns';
 import { Button } from '@/components/ui/button';
 import { LEAFLET_TILE_BASE_MAX_NATIVE_ZOOM, LEAFLET_TILE_DARK, LEAFLET_TILE_DARK_LABELS, LEAFLET_TILE_LIGHT, LEAFLET_TILE_LIGHT_LABELS } from '@/lib/leaflet-tiles';
 import { boundsOf, checkPointAgainstZones, OperationZones, ZoneWarning } from '@/lib/operation-zones';
 import { renderZoneLayers } from '@/lib/operation-zones-leaflet';
 import { format } from 'date-fns';
-import { AlertTriangle, CheckCircle2, FileUp, Loader2, MapPin, Send, ShieldAlert, X } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, FileUp, Link2, Loader2, MapPin, RefreshCw, ShieldAlert, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-
-interface Evaluation {
-  evaluation_id: number;
-  evaluation_year: string | number | null;
-  client_name: string;
-  evaluation_desc: string;
-  evaluation_status: string;
-}
+import { useTranslation } from 'react-i18next';
+import { ZoneLegend } from '@/components/system/ZoneLegend';
 
 interface Props {
   request: FlightRequest | null;
@@ -26,7 +20,7 @@ interface Props {
   onClose: () => void;
   onAcknowledge: (request_id: number) => void;
   onDeny: (request_id: number) => void;
-  onOpenPlanModal: (request_id: number, mission_id: string) => void;
+  onOpenLinkModal: (request: FlightRequest) => void;
   onOpenLogModal: (request_id: number, mission_id: string) => void;
 }
 
@@ -57,14 +51,15 @@ const WARNING_TEXT: Record<ZoneWarning['type'], (w: ZoneWarning) => string> = {
   not_in_green: () => 'Waypoint is not covered by any green zone',
 };
 
-function ZoneWarnings({ systems, waypoint, isDark }: { systems: ZoneSystem[]; waypoint: any; isDark: boolean }) {
+function ZoneWarnings({ systems, waypoint, isDark, scrollable }: { systems: ZoneSystem[]; waypoint: any; isDark: boolean; scrollable?: boolean }) {
   const coords = waypoint?.coordinates as number[] | undefined;
   if (!coords || systems.length === 0) return null;
   const [lng, lat] = coords;
   if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) return null;
   const rows = systems.map((s) => ({ s, r: checkPointAgainstZones(lat, lng, s.operationZones) }));
   return (
-    <div className="space-y-1.5 mb-4">
+    // Beyond 7 systems, cap the list height (~7 single-line rows) and scroll inside it.
+    <div className={`space-y-1.5 mb-4 ${scrollable && rows.length > 7 ? 'max-h-[19rem] overflow-y-auto pr-1' : ''}`}>
       {rows.map(({ s, r }) => {
         const danger = r.warnings.some((w) => w.severity === 'danger');
         const tone = r.clear
@@ -187,8 +182,9 @@ function DetailRow({ label, value, isDark }: { label: string; value: React.React
 
 export function FlightRequestDetailModal({
   request, isDark, assigning, denying, onClose,
-  onAcknowledge, onDeny, onOpenPlanModal, onOpenLogModal,
+  onAcknowledge, onDeny, onOpenLinkModal, onOpenLogModal,
 }: Props) {
+  const { t } = useTranslation();
   const [tab, setTab] = useState<Tab>('details');
   const { canEdit, role } = usePermissions();
   const canAct = canEdit('operation_flight_requests');
@@ -232,7 +228,7 @@ export function FlightRequestDetailModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={onClose}>
       <div
-        className={`w-full max-w-lg rounded-2xl border shadow-2xl flex flex-col max-h-[90vh] ${bg}`}
+        className={`w-full max-w-lg rounded-2xl border shadow-2xl flex flex-col h-[640px] max-h-[90vh] ${bg}`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -266,7 +262,7 @@ export function FlightRequestDetailModal({
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto px-6 py-4">
-          {tab !== 'location' && <ZoneWarnings systems={zoneSystems} waypoint={request.waypoint} isDark={isDark} />}
+          {tab !== 'location' && <ZoneWarnings systems={zoneSystems} waypoint={request.waypoint} isDark={isDark} scrollable />}
 
           {tab === 'details' && (
             <div className={`divide-y ${divider}`}>
@@ -282,6 +278,24 @@ export function FlightRequestDetailModal({
               <DetailRow label="Notes" value={request.notes} isDark={isDark} />
               <DetailRow label="Received" value={format(new Date(request.created_at), 'dd MMM yyyy HH:mm')} isDark={isDark} />
               <DetailRow label="Start Date" value={request.start_datetime ? format(new Date(request.start_datetime), 'dd MMM yyyy HH:mm') : null} isDark={isDark} />
+              <DetailRow label={t('planning.flightRequests.zone.label')} value={
+                <div className="space-y-1">
+                  <ZoneBadge r={request} t={t} />
+                  {request.zone_validated === true && request.zone_check?.distanceM != null && (
+                    <div className={isDark ? 'text-slate-400' : 'text-gray-500'}>
+                      {t('planning.flightRequests.zone.nearestSystem', { system: request.matched_tool_code ?? '—', km: (request.zone_check.distanceM / 1000).toFixed(1) })}
+                    </div>
+                  )}
+                  {request.zone_validated !== true && request.zone_check?.reason && (
+                    <div className={isDark ? 'text-slate-400' : 'text-gray-500'}>{request.zone_check.reason}</div>
+                  )}
+                </div>
+              } isDark={isDark} />
+              <DetailRow label={t('planning.flightRequests.columns.mission')} value={
+                request.fk_pilot_mission_id
+                  ? <span className="font-mono">{request.mission_code ?? `#${request.fk_pilot_mission_id}`}{request.mission_status ? ` · ${request.mission_status.replace(/_/g, ' ')}` : ''}</span>
+                  : null
+              } isDark={isDark} />
               {request.localization && (
                 <DetailRow label="Localization" value={
                   <div className="space-y-0.5">
@@ -297,6 +311,7 @@ export function FlightRequestDetailModal({
             <>
               <ZoneWarnings systems={zoneSystems} waypoint={request.waypoint} isDark={isDark} />
               <WaypointMap waypoint={request.waypoint} isDark={isDark} zoneSystems={zoneSystems} />
+              {request.waypoint?.coordinates && <ZoneLegend isDark={isDark} showWaypoint />}
             </>
           )}
 
@@ -322,11 +337,11 @@ export function FlightRequestDetailModal({
                       <Button
                         size="sm"
                         disabled={busy}
-                        onClick={() => { onOpenPlanModal(request.request_id, request.external_mission_id); onClose(); }}
+                        onClick={() => { onOpenLinkModal(request); onClose(); }}
                         className="w-full h-9 cursor-pointer text-xs bg-violet-600 hover:bg-violet-500 text-white gap-2"
                       >
-                        <Send className="h-3.5 w-3.5" />
-                        Move to Planning
+                        <Link2 className="h-3.5 w-3.5" />
+                        {t('planning.flightRequests.link.button')}
                       </Button>
                     )}
                     {canDeny && (
@@ -346,7 +361,14 @@ export function FlightRequestDetailModal({
                 </div>
               )}
 
-              {canAct && request.dcc_status === 'ASSIGNED' && (
+              {['ASSIGNED', 'IN_PROGRESS'].includes(request.dcc_status) && (
+                <div className={`flex items-start gap-2 rounded-xl border p-3 text-xs ${isDark ? 'border-slate-700 bg-slate-800/40 text-slate-300' : 'border-gray-200 bg-gray-50 text-gray-600'}`}>
+                  <RefreshCw className="h-3.5 w-3.5 shrink-0 mt-px" />
+                  <span>{t('planning.flightRequests.link.autoStatusHint', { mission: request.mission_code ?? (request.fk_pilot_mission_id ? `#${request.fk_pilot_mission_id}` : '—') })}</span>
+                </div>
+              )}
+
+              {canAct && ['ASSIGNED', 'IN_PROGRESS', 'COMPLETED'].includes(request.dcc_status) && (
                 <div className={`rounded-xl border p-4 space-y-2 ${isDark ? 'border-slate-700 bg-slate-800/40' : 'border-gray-200 bg-gray-50'}`}>
                   <p className={`text-[11px] font-semibold uppercase tracking-wide ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>Log</p>
                   <Button
@@ -361,7 +383,7 @@ export function FlightRequestDetailModal({
                 </div>
               )}
 
-              {!['NEW', 'ACKNOWLEDGED', 'ASSIGNED'].includes(request.dcc_status) && (
+              {!['NEW', 'ACKNOWLEDGED', 'ASSIGNED', 'IN_PROGRESS', 'COMPLETED'].includes(request.dcc_status) && (
                 <div className={`flex flex-col items-center justify-center py-8 gap-2 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
                   <CheckCircle2 className="h-8 w-8 opacity-30" />
                   <p className="text-sm">No actions available for this status.</p>

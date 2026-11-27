@@ -1434,6 +1434,9 @@ model flight_requests {
   fk_pilot_mission_id Int?
   fk_client_id        Int?
   deny_note           String?
+  zone_validated      Boolean?
+  fk_matched_tool_id  Int?
+  zone_check          Json?
   users               public_users?  @relation(fields: [assigned_by_user_id], references: [user_id], onUpdate: NoAction)
   api_keys            api_keys?      @relation(fields: [fk_api_key_id], references: [api_key_id], onDelete: NoAction, onUpdate: NoAction)
   owner               owner          @relation(fields: [fk_owner_id], references: [owner_id], onDelete: NoAction, onUpdate: NoAction)

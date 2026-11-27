@@ -253,10 +253,29 @@ Per gli eventi mission_assigned, le email possono essere inviate direttamente a 
 
 **Flusso degli stati:**
 ```
-NEW → ACKNOWLEDGED → ASSIGNED → IN_PROGRESS → COMPLETED
-      ↓
-   CANCELLED
+NEW ──(verifica zona non superata)──────▶ REJECTED (automatico)
+ │
+ ▼ riconoscimento
+ACKNOWLEDGED ──collega a missione──▶ ASSIGNED ──▶ IN_PROGRESS ──▶ COMPLETED
+      │                                 └──────────┴──▶ ISSUE (missione interrotta/annullata)
+      ▼
+  REJECTED (rifiutata) / CANCELLED (dal cliente)
 ```
+
+**Verifica della zona all'arrivo** (`flight-request-zone-service`):
+- Eseguita per ogni richiesta di un cliente (Portale clienti e `POST /api/missions`), e di nuovo quando il DCC reinvia una richiesta ancora `NEW`.
+- Il waypoint viene confrontato con le zone di ogni sistema attivo il cui `clientId` è il cliente della richiesta. Un punto è operativo per un sistema quando la verifica non restituisce avvisi: dentro il perimetro, dentro una zona verde (se presente) e fuori dalle zone rosse e non rilevate.
+- Vince il sistema operativo più vicino. La distanza è misurata da `latitude`/`longitude` del sistema, oppure dal centro delle sue zone. Viene salvato in `flight_requests.fk_matched_tool_id`, con `zone_validated = true` e `zone_check` (JSON).
+- Nessun sistema operativo: `zone_validated = false`, `dcc_status = REJECTED`, `deny_note` = motivo, e viene inviato un rifiuto al DCC.
+- Nessuna coordinata, nessun cliente o nessun sistema con zone: `zone_validated = null`, e la richiesta resta `NEW`.
+
+**Collega a missione** (`flight-request-mission-service`):
+- Solo le richieste `ACKNOWLEDGED` non ancora collegate possono essere collegate, a una missione `PLANNED` o `IN_PROGRESS` (`flight_requests.fk_pilot_mission_id`). La richiesta passa ad `ASSIGNED`, e al DCC viene inviata l'accettazione con il `dcc_drone_id` del sistema della missione.
+- Creare una missione con `flight_request_id` (`POST /api/operation`) la collega automaticamente e invia l'accettazione al posto della chiamata DCC "nuova missione".
+
+**Sincronizzazione dello stato:** dopo ogni cambio di stato della missione (avvio/fine/ripristino dalla Bacheca giornaliera, modifica dalla Tabella missione, interruzione automatica), le richieste collegate in `ASSIGNED`/`IN_PROGRESS` vengono allineate. PLANNED → ASSIGNED, IN_PROGRESS → IN_PROGRESS (esecuzione DCC), COMPLETED → COMPLETED (terminazione DCC, risultato 1), ABORTED/CANCELLED → ISSUE (terminazione DCC, risultato 0). Non esiste un endpoint per cambiare lo stato a mano. Eliminando una missione, le sue richieste non concluse tornano `ACKNOWLEDGED`.
+
+**Approvazione OPM:** una missione il cui sistema copre con le sue zone una richiesta verificata non richiede l'approvazione OPM. Una missione in attesa collegata a tale richiesta viene approvata automaticamente. Se il sistema non copre la richiesta, o la missione è creata normalmente dalla Tabella missione, si applica l'approvazione consueta.
 
 **Gestione delle chiavi API:**
 - Le chiavi vengono generate come identificatori univoci

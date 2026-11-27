@@ -24,6 +24,8 @@ export async function GET() {
         ]);
 
         return NextResponse.json({
+            // Lets the New Mission form limit a PIC to themselves for flight-request missions.
+            current_user: { id: session!.user.userId, role: session!.user.role },
             pilots,
             tools,
             types,

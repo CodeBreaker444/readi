@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import { randomUUID } from 'crypto';
+import { applyIntakeZoneCheck } from '@/backend/services/mission/flight-request-mission-service';
 
 export interface ClientInfo {
   client_name: string;
@@ -262,13 +263,15 @@ export interface CreateClientPortalRequestInput {
 
 export async function createClientPortalFlightRequest(
   input: CreateClientPortalRequestInput,
-): Promise<{ request_id: number }> {
+): Promise<{ request_id: number; dcc_status: string; reason: string | null }> {
   const external_mission_id = `CLIENT-${input.client_id}-${randomUUID().slice(0, 8).toUpperCase()}`;
 
   const record = await prisma.flight_requests.create({
     data: {
       fk_owner_id: input.owner_id,
       fk_api_key_id: null,
+      // Needed to check the location against this client's systems (and to show the client on the request).
+      fk_client_id: input.client_id,
       external_mission_id,
       mission_type: input.mission_type ?? null,
       target: input.target ?? null,
@@ -283,7 +286,12 @@ export async function createClientPortalFlightRequest(
     select: { request_id: true },
   });
 
-  return { request_id: record.request_id };
+  const intake = await applyIntakeZoneCheck(record.request_id, input.owner_id, input.client_id, input.waypoint, external_mission_id);
+  return {
+    request_id: record.request_id,
+    dcc_status: intake.dcc_status,
+    reason: intake.zone_check.validated === false ? intake.zone_check.reason : null,
+  };
 }
 
 export async function listClientPortalMissions(

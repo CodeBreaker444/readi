@@ -28,8 +28,22 @@ async function getFlightRequestForPlanning(planningId: number): Promise<LinkedRe
   });
 }
 
-/** Flight request linked to a mission via its planning (null if never requested externally). */
+/** Flight request linked directly to a mission via "Link to Mission". */
+async function getDirectFlightRequestForMission(missionId: number): Promise<LinkedRequest | null> {
+  return prisma.flight_requests.findFirst({
+    where: { fk_pilot_mission_id: missionId },
+    orderBy: { created_at: 'desc' },
+    select: { external_mission_id: true, fk_client_id: true },
+  });
+}
+
+/**
+ * Flight request linked to a mission (null if never requested externally).
+ * A direct link wins over the legacy planning-based link.
+ */
 async function getFlightRequestForMission(missionId: number): Promise<LinkedRequest | null> {
+  const direct = await getDirectFlightRequestForMission(missionId);
+  if (direct) return direct;
   const row = await prisma.pilot_mission.findUnique({
     where: { pilot_mission_id: missionId },
     select: { fk_planning_id: true },
@@ -63,6 +77,11 @@ async function resolveMissionTarget(
   });
 
   if (!row) return { externalId: null, clientId: null, strict: false };
+
+  const direct = await getDirectFlightRequestForMission(missionId);
+  if (direct) {
+    return { externalId: direct.external_mission_id, clientId: direct.fk_client_id, strict: direct.fk_client_id != null };
+  }
 
   if (row.fk_planning_id) {
     const request = await getFlightRequestForPlanning(row.fk_planning_id);
@@ -257,6 +276,50 @@ export async function notifyDccAcceptance(
       outcome: 'network_error',
       message: err?.message ?? String(err),
     };
+  }
+}
+
+/** dcc_drone_id of the active DRONE component of one system (tool). */
+async function getDccDroneIdForTool(toolId: number): Promise<string | null> {
+  try {
+    const component = await prisma.tool_component.findFirst({
+      where: { fk_tool_id: toolId, component_type: 'DRONE', component_active: 'Y', dcc_drone_id: { not: null } },
+      orderBy: [{ installation_date: 'desc' }, { created_at: 'desc' }],
+      select: { dcc_drone_id: true },
+    });
+    return component?.dcc_drone_id ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * POST /dcc/missions/{missionId}/acceptance
+ * Called when a flight request is linked to a scheduled mission: the droneId
+ * comes from the mission's system.
+ */
+export async function notifyDccAcceptanceForMission(
+  ownerId: number,
+  requestId: number,
+  toolId: number | null,
+): Promise<DccCallbackResult> {
+  const request = await prisma.flight_requests.findFirst({
+    where: { request_id: requestId, fk_owner_id: ownerId },
+    select: { external_mission_id: true, fk_client_id: true },
+  });
+  const path = `/dcc/missions/${request?.external_mission_id ?? 'unknown'}/acceptance`;
+  if (!request?.external_mission_id) {
+    return { path, outcome: 'skipped', message: 'Flight request has no external mission id' };
+  }
+  const droneId = toolId ? await getDccDroneIdForTool(toolId) : null;
+  if (!droneId) {
+    return { path, outcome: 'skipped', message: 'No dcc_drone_id on the mission system DRONE component — DCC acceptance not sent' };
+  }
+  try {
+    return await dccPost(ownerId, path, { droneId }, { clientId: request.fk_client_id, strict: request.fk_client_id != null });
+  } catch (err: any) {
+    console.error('[DCC] notifyDccAcceptanceForMission error:', err?.message ?? err);
+    return { path, outcome: 'network_error', message: err?.message ?? String(err) };
   }
 }
 

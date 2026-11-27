@@ -19,9 +19,12 @@ const LocalizationSchema = z.object({
   kmEnd:       z.number().optional(),
 }).catchall(z.unknown());
 
+// GeoJSON order: [longitude, latitude, altitude?]
 const WaypointSchema = z.object({
   type: z.literal('Point'),
-  coordinates: z.array(z.number()).min(2).max(3),
+  coordinates: z.array(z.number()).min(2).max(3)
+    .refine((c) => c[0] >= -180 && c[0] <= 180, { message: 'longitude (coordinates[0]) must be between -180 and 180' })
+    .refine((c) => c[1] >= -90 && c[1] <= 90, { message: 'latitude (coordinates[1]) must be between -90 and 90' }),
 });
 
 const MissionItemSchema = z.object({
@@ -71,7 +74,7 @@ export async function POST(req: NextRequest) {
       const { type, target, localization, priority, notes, operator } = parsed.data;
       const missionItems = parsed.data.missions;
 
-      const created: Array<{ missionId: string; dcc_status: string }> = [];
+      const created: Array<{ missionId: string; dcc_status: string; reason?: string }> = [];
       const createdIds: number[] = [];
 
       for (const item of missionItems) {
@@ -91,7 +94,8 @@ export async function POST(req: NextRequest) {
             operator,
           });
           if (result.created) createdIds.push(result.request_id);
-          created.push({ missionId: item.missionId, dcc_status: result.dcc_status });
+          // REJECTED = waypoint outside the operation zones of every system assigned to this client.
+          created.push({ missionId: item.missionId, dcc_status: result.dcc_status, ...(result.reason ? { reason: result.reason } : {}) });
         } catch (err: any) {
           // Rollback all newly-created missions in this batch (updates to
           // pre-existing requests are left as-is — nothing to roll back to)
@@ -150,6 +154,7 @@ export async function POST(req: NextRequest) {
       message:    result.created ? 'Mission request received' : 'Mission request updated',
       missionId,
       dcc_status: result.dcc_status,
+      ...(result.reason ? { reason: result.reason } : {}),
       timestamp:  Math.floor(Date.now() / 1000),
       dataRows:   1,
     });

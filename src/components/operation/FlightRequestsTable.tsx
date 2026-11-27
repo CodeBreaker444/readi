@@ -5,7 +5,7 @@ import { usePermissions } from '@/components/permissions/PermissionsProvider';
 import { FlightRequestDetailModal } from '@/components/operation/flight-requests/FlightRequestDetailModal';
 import { FlightRequestsHeader } from '@/components/operation/flight-requests/FlightRequestsHeader';
 import { FlightRequestsLogModal } from '@/components/operation/flight-requests/FlightRequestsLogModal';
-import { AssignablePlan, FlightRequestsPlanModal } from '@/components/operation/flight-requests/FlightRequestsPlanModal';
+import { FlightRequestLinkMissionModal } from '@/components/operation/flight-requests/FlightRequestLinkMissionModal';
 import { FlightRequestsStats } from '@/components/operation/flight-requests/FlightRequestsStats';
 import { InternalFlightRequests } from '@/components/operation/flight-requests/InternalFlightRequests';
 import { FlightRequest, createFlightRequestColumns } from '@/components/tables/flightRequestsColumns';
@@ -23,15 +23,6 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { TablePagination } from '../tables/Pagination';
 import { useTheme } from '../useTheme';
-
-interface Planning {
-  planning_id: number;
-  planning_code: string;
-  planning_desc: string;
-  client_name: string;
-  planning_status: string;
-  has_valid_drone: boolean;
-}
 
 const INTERNAL_FILTERS = ['PENDING', 'APPROVED', 'DENIED', 'ALL'];
 
@@ -55,7 +46,6 @@ export default function FlightRequestsTable() {
   const [denyNote, setDenyNote] = useState('');
   const [deleting, setDeleting] = useState<number | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
-  const [updatingStatus, setUpdatingStatus] = useState<{ id: number; status: string } | null>(null);
 
   const [selectedRequest, setSelectedRequest] = useState<FlightRequest | null>(null);
 
@@ -74,16 +64,9 @@ export default function FlightRequestsTable() {
   const [pushingLog, setPushingLog] = useState(false);
 
   const [filterClient, setFilterClient] = useState('ALL');
-  const [planModal, setPlanModal] = useState<{ request_id: number; mission_id: string } | null>(null);
-  const [plannings, setPlannings] = useState<Planning[]>([]);
-  const [evalLoading, setEvalLoading] = useState(false);
-  const [selectedEvalId, setSelectedEvalId] = useState('');
-  const [selectedPlanId, setSelectedPlanId] = useState('');
-  const [expandedPlanningId, setExpandedPlanningId] = useState<number | null>(null);
-  const [plansByPlanning, setPlansByPlanning] = useState<Record<number, AssignablePlan[] | undefined>>({});
-  const [plansLoadingId, setPlansLoadingId] = useState<number | null>(null);
-  const [submitting, setSubmitting] = useState(false);
-  const statusOptions = ['ALL', 'NEW', 'ACKNOWLEDGED', 'ASSIGNED', 'IN_PROGRESS', 'COMPLETED', 'ISSUE', 'REJECTED'];
+  // Request picked for "Link to Mission".
+  const [linkTarget, setLinkTarget] = useState<FlightRequest | null>(null);
+  const statusOptions = ['ALL', 'NEW', 'ACKNOWLEDGED', 'ASSIGNED', 'IN_PROGRESS', 'COMPLETED', 'ISSUE', 'REJECTED', 'CANCELLED'];
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -181,27 +164,6 @@ export default function FlightRequestsTable() {
     }
   }
 
-  async function handleUpdateStatus(request_id: number, status: string) {
-    setUpdatingStatus({ id: request_id, status });
-    try {
-      const { data } = await axios.patch<{ code: number; dcc?: DccCallbackResult }>(
-        `/api/planning/flight-requests/${request_id}`,
-        { dcc_status: status },
-      );
-      toastAfterDccAction(`Status updated to ${status}`, data.dcc);
-      setRequests((prev) =>
-        prev.map((r) => r.request_id === request_id ? { ...r, dcc_status: status } : r),
-      );
-      if (selectedRequest?.request_id === request_id) {
-        setSelectedRequest((prev) => prev ? { ...prev, dcc_status: status } : prev);
-      }
-    } catch (err: any) {
-      toast.error(err?.response?.data?.error ?? t('common.error'));
-    } finally {
-      setUpdatingStatus(null);
-    }
-  }
-
   async function openLogModal(request_id: number, mission_id: string) {
     setLogModal({ request_id, mission_id });
     setLogStatus(null);
@@ -268,84 +230,13 @@ export default function FlightRequestsTable() {
     }
   }
 
-  async function openPlanModal(request_id: number, mission_id: string) {
-    setPlanModal({ request_id, mission_id });
-    setSelectedEvalId('');
-    setSelectedPlanId('');
-    setExpandedPlanningId(null);
-    setPlansByPlanning({});
-    setEvalLoading(true);
-    try {
-      const { data } = await axios.get('/api/planning/flight-requests/assignable-plannings');
-      setPlannings(data.items ?? []);
-    } catch {
-      toast.error(t('planning.flightRequests.loadPlanningsError'));
-    } finally {
-      setEvalLoading(false);
-    }
-  }
-
-  async function handleSelectPlanning(planningId: string) {
-    setSelectedEvalId(planningId);
-    setSelectedPlanId('');
-    const pId = Number(planningId);
-    setExpandedPlanningId(pId);
-
-    const cached = plansByPlanning[pId];
-    if (cached) {
-      if (cached.length === 1) setSelectedPlanId(String(cached[0].mission_planning_id));
-      return;
-    }
-
-    setPlansLoadingId(pId);
-    try {
-      const { data } = await axios.get(`/api/planning/flight-requests/assignable-plannings/${pId}/plans`);
-      const items: AssignablePlan[] = data.items ?? [];
-      setPlansByPlanning((prev) => ({ ...prev, [pId]: items }));
-      if (items.length === 1) setSelectedPlanId(String(items[0].mission_planning_id));
-    } catch {
-      toast.error(t('planning.flightRequests.loadPlansError'));
-    } finally {
-      setPlansLoadingId(null);
-    }
-  }
-
-  function handleSelectPlan(planningId: string, missionPlanningId: string) {
-    setSelectedEvalId(planningId);
-    setSelectedPlanId(missionPlanningId);
-  }
-
-  async function handleMoveToPlan() {
-    if (!planModal || !selectedEvalId) return;
-    setSubmitting(true);
-    try {
-      const { data } = await axios.post<{ code: number; dcc?: DccCallbackResult }>(
-        '/api/planning/flight-requests/assign',
-        {
-          request_id: planModal.request_id,
-          planning_id: Number(selectedEvalId),
-          ...(selectedPlanId ? { mission_planning_id: Number(selectedPlanId) } : {}),
-        },
-      );
-      toastAfterDccAction(t('planning.flightRequests.linkSuccess'), data.dcc);
-      setPlanModal(null);
-      await load();
-    } catch (err: any) {
-      toast.error(err?.response?.data?.error ?? t('planning.flightRequests.linkError'));
-    } finally {
-      setSubmitting(false);
-    }
-  }
-
   const columns = useMemo(() => createFlightRequestColumns({
     deleting,
-    updatingStatus,
     isDark,
     t,
     onView: setSelectedRequest,
     onDelete: (id) => setDeleteConfirm(id),
-    onUpdateStatus: handleUpdateStatus,
-  }), [deleting, updatingStatus, isDark, t]);
+  }), [deleting, isDark, t]);
 
   const clientOptions = useMemo(
     () => [...new Set(requests.map((r) => r.client_name).filter((n): n is string => !!n))].sort((a, b) => a.localeCompare(b)),
@@ -367,8 +258,11 @@ export default function FlightRequestsTable() {
   });
 
   const card = isDark ? 'bg-slate-800/80 border-slate-700/60' : 'bg-white border-gray-200';
-  const thCls = `px-4 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider ${isDark ? 'text-slate-500' : 'text-gray-400'}`;
-  const tdCls = `px-4 py-3 text-xs ${isDark ? 'text-slate-300' : 'text-gray-700'}`;
+  const thCls = `px-2.5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider ${isDark ? 'text-slate-500' : 'text-gray-400'}`;
+  const tdCls = `px-2.5 py-3 text-xs ${isDark ? 'text-slate-300' : 'text-gray-700'}`;
+  // The Actions column stays pinned to the right edge, so it is never scrolled out of view.
+  const stickyBg = isDark ? 'bg-slate-800' : 'bg-white';
+  const stickyCls = `sticky right-0 z-10 shadow-[-8px_0_8px_-8px_rgba(0,0,0,0.25)] ${stickyBg}`;
 
   return (
     <div className={`flex flex-col min-h-screen w-full ${isDark ? 'bg-slate-950' : 'bg-gray-50'}`}>
@@ -413,7 +307,7 @@ export default function FlightRequestsTable() {
                 {table.getHeaderGroups().map((hg) => (
                   <tr key={hg.id}>
                     {hg.headers.map((header) => (
-                      <th key={header.id} className={thCls}>
+                      <th key={header.id} className={`${thCls} ${header.column.id === 'actions' ? `${stickyCls} ${isDark ? 'bg-slate-700' : 'bg-gray-50'}` : ''}`}>
                         {flexRender(header.column.columnDef.header, header.getContext())}
                       </th>
                     ))}
@@ -422,7 +316,7 @@ export default function FlightRequestsTable() {
               </thead>
               <tbody className={`divide-y ${isDark ? 'divide-slate-700/40' : 'divide-gray-50'}`}>
                 {loading ? (
-                  Array.from({ length: 5 }).map((_, i) => (
+                  Array.from({ length: 8 }).map((_, i) => (
                     <tr key={i}>
                       {Array.from({ length: columns.length }).map((_, j) => (
                         <td key={j} className="px-4 py-3"><Skeleton className="h-4 w-full rounded" /></td>
@@ -440,7 +334,7 @@ export default function FlightRequestsTable() {
                   table.getRowModel().rows.map((row) => (
                     <tr key={row.id} className={isDark ? 'hover:bg-slate-700/20' : 'hover:bg-gray-50/80'}>
                       {row.getVisibleCells().map((cell) => (
-                        <td key={cell.id} className={tdCls}>
+                        <td key={cell.id} className={`${tdCls} ${cell.column.id === 'actions' ? stickyCls : ''}`}>
                           {flexRender(cell.column.columnDef.cell, cell.getContext())}
                         </td>
                       ))}
@@ -464,7 +358,7 @@ export default function FlightRequestsTable() {
         onClose={() => setSelectedRequest(null)}
         onAcknowledge={handleAcknowledge}
         onDeny={handleDeny}
-        onOpenPlanModal={openPlanModal}
+        onOpenLinkModal={(r) => setLinkTarget(r)}
         onOpenLogModal={openLogModal}
       />
 
@@ -530,21 +424,11 @@ export default function FlightRequestsTable() {
         onClose={() => setLogModal(null)}
       />
 
-      <FlightRequestsPlanModal
+      <FlightRequestLinkMissionModal
+        request={linkTarget}
         isDark={isDark}
-        planModal={planModal}
-        plannings={plannings}
-        evalLoading={evalLoading}
-        selectedEvalId={selectedEvalId}
-        selectedPlanId={selectedPlanId}
-        expandedPlanningId={expandedPlanningId}
-        plansByPlanning={plansByPlanning}
-        plansLoadingId={plansLoadingId}
-        submitting={submitting}
-        onSelectPlanning={handleSelectPlanning}
-        onSelectPlan={handleSelectPlan}
-        onConfirm={handleMoveToPlan}
-        onClose={() => setPlanModal(null)}
+        onClose={() => setLinkTarget(null)}
+        onLinked={load}
       />
     </div>
   );

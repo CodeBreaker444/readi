@@ -17,6 +17,10 @@ import {
     ChevronLeft,
     ChevronRight,
     AlertTriangle,
+    Clock,
+    MapPin,
+    Plane,
+    ShieldCheck,
     ClipboardList,
     FileUp,
     Loader2,
@@ -61,6 +65,32 @@ export interface NewOperationCreatePrefill {
     distanceFlown?: number | null
 }
 
+/** Flight request a new mission is created for (Flight Requests → Link to Mission → Create new). */
+export interface FlightRequestMissionContext {
+    request_id: number
+    external_mission_id: string
+    client_id: number | null
+    client_name: string | null
+    mission_type: string | null
+    target: string | null
+    priority: string | null
+    notes: string | null
+    operator: string | null
+    start_datetime: string | null
+    received_at: string
+    latitude: number | null
+    longitude: number | null
+    localization: Record<string, any> | null
+    zone_validated: boolean | null
+    matched_tool_id: number | null
+    matched_tool_code: string | null
+    distance_m: number | null
+    /** Client systems with operation zones: covering ones first (nearest first), then the rest. */
+    zoned_tool_ids?: number[]
+    /** Systems whose zones cover the request location (no OPM approval needed). */
+    covering_tool_ids?: number[]
+}
+
 export interface NewOperationModalProps {
     open: boolean
     onClose: () => void
@@ -70,6 +100,8 @@ export interface NewOperationModalProps {
     onSaved?: (op: Operation) => void
     logSerialNumber?: string | null
     createPrefill?: NewOperationCreatePrefill | null
+    /** Creating a mission for a flight request: prefills the form, shows its details and links it on save. */
+    flightRequest?: FlightRequestMissionContext | null
 }
 
 type EditTab = 'data' | 'execution' | 'log' | 'postFlight' | 'maintenance'
@@ -82,8 +114,11 @@ const EDIT_TABS = [
     { id: 'maintenance' as const, labelKey: 'operations.newOperation.tabs.maintenance',         icon: Wrench },
 ]
 
-export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperation, onSaved, logSerialNumber, createPrefill }: NewOperationModalProps) {
+export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperation, onSaved, logSerialNumber, createPrefill, flightRequest }: NewOperationModalProps) {
     const isEdit = !!editOperation
+    const fr = !isEdit ? flightRequest ?? null : null
+    // The matched system is pre-selected once, after the client's drones load.
+    const frToolPicked = useRef(false)
     const { timezone } = useTimezone()
     const { t } = useTranslation()
 
@@ -93,7 +128,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
     const [step, setStep] = useState(1)
     const [isSubmitting, setIsSubmitting] = useState(false)
     // Pilot-created missions need OPM approval; null until the final step loads it.
-    const [approval, setApproval] = useState<{ required: boolean; department: string | null; opmCount: number } | null>(null)
+    const [approval, setApproval] = useState<{ required: boolean; department: string | null; opmCount: number; zoneValidated?: boolean } | null>(null)
     const [submittingMaint, setSubmittingMaint] = useState(false)
     const [editTab, setEditTab] = useState<EditTab>('data')
 
@@ -130,6 +165,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
     const [conflictChecked, setConflictChecked] = useState(false)
 
     const [pilots, setPilots] = useState<PilotOption[]>([])
+    const [currentUser, setCurrentUser] = useState<{ id: number; role: string } | null>(null)
     const [pilotId, setPilotId] = useState('')
     const [visualObserverIds, setVisualObserverIds] = useState<string[]>([])
 
@@ -220,6 +256,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                     label: `${p.procedure_code} — ${p.procedure_name}`,
                     steps: p.procedure_steps,
                 })))
+                setCurrentUser(res.data.current_user ?? null)
                 setPilots((res.data.pilots ?? []).map((p: any) => ({
                     user_id: p.user_id,
                     first_name: p.first_name ?? '',
@@ -318,6 +355,39 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
         }))
     }, [open, isEdit, createPrefill])
 
+    // OPM approval may depend on the system (zone-validated flight requests skip it).
+    useEffect(() => { if (fr) setApproval(null) }, [droneId])
+
+    // Pre-select the PIC themselves (they are the only pilot they can choose).
+    useEffect(() => {
+        if (!open || isEdit || !fr || currentUser?.role !== 'PIC' || pilotId) return
+        if (pilots.some(p => p.user_id === currentUser.id)) setPilotId(String(currentUser.id))
+    }, [open, isEdit, fr?.request_id, currentUser, pilots, pilotId])
+
+    // Prefill from the flight request: client, start time, location and target.
+    useEffect(() => {
+        if (!open || !fr) return
+        frToolPicked.current = false
+        if (fr.client_id) setClientId(String(fr.client_id))
+        setSchedulerForm(prev => ({
+            ...prev,
+            missionName: prev.missionName || fr.target || fr.mission_type || fr.external_mission_id,
+            scheduledStart: fr.start_datetime ? utcToLocalInput(fr.start_datetime, timezone) : prev.scheduledStart,
+            locationLat: fr.latitude != null ? String(fr.latitude) : prev.locationLat,
+            locationLng: fr.longitude != null ? String(fr.longitude) : prev.locationLng,
+            locationPseudoName: prev.locationPseudoName || fr.external_mission_id,
+            notes: prev.notes || [`Flight request ${fr.external_mission_id}`, fr.notes].filter(Boolean).join(' — '),
+        }))
+    }, [open, fr?.request_id])
+
+    useEffect(() => {
+        if (!fr?.matched_tool_id || frToolPicked.current || droneId) return
+        if (drones.some(d => d.tool_id === fr.matched_tool_id)) {
+            frToolPicked.current = true
+            setDroneId(String(fr.matched_tool_id))
+        }
+    }, [drones, fr?.matched_tool_id, droneId])
+
     useEffect(() => {
         if (!clientId) {
             setDrones([]); setDroneId(''); setPlanId(''); setMissionPlanningId('')
@@ -329,7 +399,14 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
         if (!keepSelections) { setDroneId(''); setPlanId('') }
         setLoadingDrones(true)
         axios.get(`/api/operation/import/options?type=drones&client_id=${clientId}`)
-            .then(r => setDrones(r.data.drones ?? []))
+            .then(r => {
+                const all: Drone[] = r.data.drones ?? []
+                // For a flight request, only the client's systems with operation zones (covering ones first).
+                const zoned = fr?.zoned_tool_ids ?? []
+                setDrones(zoned.length
+                    ? zoned.map(id => all.find(d => d.tool_id === id)).filter((d): d is Drone => !!d)
+                    : all)
+            })
             .catch(() => toast.error(t('operations.newOperation.toast.loadOptionsError')))
             .finally(() => setLoadingDrones(false))
     }, [clientId])
@@ -358,8 +435,10 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
 
     useEffect(() => {
         if (step !== 4 || isEdit || approval) return
-        axios.get('/api/operation/approvals/eligibility')
-            .then(({ data }) => setApproval({ required: !!data.required, department: data.department ?? null, opmCount: data.opmCount ?? 0 }))
+        axios.get('/api/operation/approvals/eligibility', {
+            params: fr && droneId ? { flight_request_id: fr.request_id, tool_id: droneId } : undefined,
+        })
+            .then(({ data }) => setApproval({ required: !!data.required, department: data.department ?? null, opmCount: data.opmCount ?? 0, zoneValidated: !!data.zone_validated }))
             .catch(() => {})
     }, [step, isEdit, approval])
 
@@ -626,6 +705,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                 // completed, not scheduled for the future.
                 status_name: createPrefill ? 'COMPLETED' : 'PLANNED',
                 ...(visualObserverIds.length > 0 && { visual_observer_ids: visualObserverIds.map(Number) }),
+                ...(fr && { flight_request_id: fr.request_id }),
                 ...(isRecurrent && {
                     is_recurrent: true,
                     recurrent_days_of_week: recurrentDays,
@@ -636,6 +716,10 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
             if (!res.data.success) throw new Error(res.data.error ?? t('operations.newOperation.toast.createError'))
             
             // Show appropriate success message for recurrent missions
+            if (fr) {
+                if (res.data.flight_request?.linked) toast.success(t('operations.flightRequestMission.createdLinked', { request: fr.external_mission_id }))
+                else toast.warning(t('operations.flightRequestMission.linkFailed', { error: res.data.flight_request?.error ?? '' }))
+            }
             if (res.data.approval_required) {
                 toast.success(t('operations.opmApproval.submittedToast'))
             } else if (res.data.created_missions && res.data.created_missions.length > 1) {
@@ -719,6 +803,9 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
     const selectedClient = clientsForSelect.find(c => String(c.client_id) === clientId)
     const selectedDrone = drones.find(d => String(d.tool_id) === droneId)
     const selectedPlan = clientPlannings.find(p => String(p.planning_id) === planId)
+    // A PIC creating a mission for a flight request can only fly it themselves (managers included).
+    const pilotSelfOnly = !!fr && currentUser?.role === 'PIC'
+    const pilotOptions = pilotSelfOnly ? pilots.filter(p => p.user_id === currentUser!.id) : pilots
     const selectedPilot = pilots.find(p => String(p.user_id) === pilotId)
     const selectedLuc = lucProcedures.find(p => String(p.id) === schedulerForm.lucId)
 
@@ -731,6 +818,50 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                         {isEdit ? t('operations.newOperation.editTitle') : t('operations.newOperation.title')}
                     </DialogTitle>
                 </DialogHeader>
+
+                {fr && (
+                    <div className={cn('px-4 sm:px-6 py-3 border-b shrink-0 text-xs', isDark ? 'border-slate-700 bg-violet-500/10' : 'border-gray-100 bg-violet-50')}>
+                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                            <Plane className="h-3.5 w-3.5 text-violet-500" />
+                            <span className={cn('font-semibold', isDark ? 'text-violet-300' : 'text-violet-700')}>{t('operations.flightRequestMission.header')}</span>
+                            <span className="font-mono font-semibold">{fr.external_mission_id}</span>
+                            {fr.client_name && <span className={isDark ? 'text-slate-400' : 'text-gray-500'}>· {fr.client_name}</span>}
+                            {fr.priority && <span className="rounded-full px-2 py-0.5 text-[10px] font-semibold bg-amber-500/15 text-amber-600">{fr.priority}</span>}
+                        </div>
+                        <div className={cn('mt-2 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-1', isDark ? 'text-slate-300' : 'text-gray-600')}>
+                            <div className="flex items-center gap-1.5 min-w-0">
+                                <MapPin className="h-3.5 w-3.5 shrink-0" />
+                                <span className="truncate">
+                                    {fr.latitude != null && fr.longitude != null
+                                        ? `${fr.latitude.toFixed(6)}, ${fr.longitude.toFixed(6)}`
+                                        : fr.localization?.highway
+                                            ? `${fr.localization.highway}${fr.localization.kmStart !== undefined ? ` km ${fr.localization.kmStart}–${fr.localization.kmEnd ?? ''}` : ''}`
+                                            : '—'}
+                                </span>
+                            </div>
+                            <div className="flex items-center gap-1.5 min-w-0">
+                                <ShieldCheck className={cn('h-3.5 w-3.5 shrink-0', fr.zone_validated ? 'text-green-500' : 'text-slate-400')} />
+                                <span className="truncate">
+                                    {t('operations.flightRequestMission.nearestSystem')}: {fr.matched_tool_code ?? '—'}
+                                    {fr.distance_m != null && ` (${(fr.distance_m / 1000).toFixed(1)} km)`}
+                                </span>
+                            </div>
+                            <div className="flex items-center gap-1.5 min-w-0">
+                                <Clock className="h-3.5 w-3.5 shrink-0" />
+                                <span className="truncate">{t('operations.flightRequestMission.requestedFor')}: {fr.start_datetime ? utcToLocalInput(fr.start_datetime, timezone).replace('T', ' ') : '—'}</span>
+                            </div>
+                            <div className="flex items-center gap-1.5 min-w-0">
+                                <Clock className="h-3.5 w-3.5 shrink-0 opacity-60" />
+                                <span className="truncate">{t('operations.flightRequestMission.receivedAt')}: {utcToLocalInput(fr.received_at, timezone).replace('T', ' ')}</span>
+                            </div>
+                        </div>
+                        {(fr.target || fr.mission_type) && (
+                            <div className={cn('mt-1', isDark ? 'text-slate-400' : 'text-gray-500')}>
+                                {[fr.mission_type, fr.target, fr.operator].filter(Boolean).join(' · ')}
+                            </div>
+                        )}
+                    </div>
+                )}
 
                 {/* Edit tab bar */}
                 {isEdit && (
@@ -805,6 +936,7 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                             onClientChange={setClientId}
                             loadingClients={loadingClients}
                             isDark={isDark}
+                            disabled={!!fr?.client_id}
                         />
                     )}
 
@@ -875,7 +1007,8 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
 
                     {(!isEdit || editTab === 'data') && step === 4 && (
                         <OperationStepPilot
-                            pilots={pilots}
+                            pilots={pilotOptions}
+                            observerOptions={pilots}
                             pilotId={pilotId}
                             onPilotChange={setPilotId}
                             visualObserverIds={visualObserverIds}
@@ -919,6 +1052,12 @@ export function NewOperationModal({ open, onClose, onSuccess, isDark, editOperat
                         />
                     )}
 
+                    {!isEdit && step === 4 && fr && approval?.zoneValidated && (
+                        <div className={cn('mx-4 my-2 sm:mx-6 mb-2 flex items-start gap-2 rounded-lg border px-3 py-2 text-xs', isDark ? 'border-green-500/30 bg-green-500/10 text-green-300' : 'border-green-200 bg-green-50 text-green-700')}>
+                            <ShieldCheck className="h-4 w-4 shrink-0 mt-px" />
+                            <span>{t('operations.flightRequestMission.noOpmNeeded')}</span>
+                        </div>
+                    )}
                     {!isEdit && step === 4 && approval?.required && (
                         <div
                             className={cn(

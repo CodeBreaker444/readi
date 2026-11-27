@@ -1802,6 +1802,17 @@ export async function listClientSystemZones(ownerId: number, clientId: number) {
       const m = t.tool_metadata as Record<string, any> | null;
       return m?.deleted !== true && m?.is_warehouse !== true && Number(m?.clientId) === clientId && m?.operationZones;
     })
-    .map((t) => ({ toolId: t.tool_id, toolCode: t.tool_code, operationZones: readOperationZones(t.tool_metadata) }))
+    .map((t) => {
+      const m = t.tool_metadata as Record<string, any> | null;
+      const lat = Number(m?.latitude);
+      const lng = Number(m?.longitude);
+      return {
+        toolId: t.tool_id,
+        toolCode: t.tool_code,
+        latitude: m?.latitude != null && Number.isFinite(lat) ? lat : null,
+        longitude: m?.longitude != null && Number.isFinite(lng) ? lng : null,
+        operationZones: readOperationZones(t.tool_metadata),
+      };
+    })
     .filter((t) => t.operationZones.zones.length > 0 || t.operationZones.perimeter);
 }

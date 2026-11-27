@@ -2,7 +2,7 @@ import { FeatureGate } from '@/components/permissions/FeatureGate';
 import { Button } from '@/components/ui/button';
 import { ColumnDef } from '@tanstack/react-table';
 import { format } from 'date-fns';
-import { AlertCircle, CheckCircle2, ExternalLink, Loader2, Trash2 } from 'lucide-react';
+import { ExternalLink, Link2, Loader2, ShieldAlert, ShieldCheck, Trash2 } from 'lucide-react';
 
 export interface FlightRequest {
   request_id: number;
@@ -22,6 +22,20 @@ export interface FlightRequest {
   fk_planning_id: number | null;
   assigned_at: string | null;
   created_at: string;
+  /** true = inside a client system's zones, false = outside (auto-rejected), null = not checked. */
+  zone_validated?: boolean | null;
+  matched_tool_id?: number | null;
+  matched_tool_code?: string | null;
+  zone_check?: {
+    reason?: string | null;
+    distanceM?: number | null;
+    nearestToolCode?: string | null;
+    matchedToolCode?: string | null;
+  } | null;
+  /** Scheduled mission the request is linked to. */
+  fk_pilot_mission_id?: number | null;
+  mission_code?: string | null;
+  mission_status?: string | null;
 }
 
 export interface Evaluation {
@@ -34,12 +48,31 @@ export interface Evaluation {
 
 export interface FlightRequestColumnHandlers {
   deleting: number | null;
-  updatingStatus: { id: number; status: string } | null;
   isDark: boolean;
-  t: (key: string) => string;
+  t: (key: string, opts?: Record<string, unknown>) => string;
   onView: (request: FlightRequest) => void;
   onDelete: (request_id: number) => void;
-  onUpdateStatus: (request_id: number, status: string) => void;
+}
+
+/** Zone check result of a client request: green = inside a system's zones, red = outside. */
+export function ZoneBadge({ r, t }: { r: FlightRequest; t: FlightRequestColumnHandlers['t'] }) {
+  if (r.zone_validated === true) {
+    return (
+      <span title={t('planning.flightRequests.zone.validatedTitle')} className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold border bg-green-500/10 text-green-600 border-green-500/30">
+        <ShieldCheck className="h-3 w-3" />
+        {r.matched_tool_code ?? t('planning.flightRequests.zone.validated')}
+      </span>
+    );
+  }
+  if (r.zone_validated === false) {
+    return (
+      <span title={r.zone_check?.reason ?? ''} className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold border bg-red-500/10 text-red-500 border-red-500/30">
+        <ShieldAlert className="h-3 w-3" />
+        {t('planning.flightRequests.zone.outside')}
+      </span>
+    );
+  }
+  return <span title={r.zone_check?.reason ?? ''} className="text-[11px] text-slate-400">{t('planning.flightRequests.zone.notChecked')}</span>;
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -89,7 +122,7 @@ function WaypointCell({ wp }: { wp: any }) {
 }
 
 export function createFlightRequestColumns(handlers: FlightRequestColumnHandlers): ColumnDef<FlightRequest>[] {
-  const { deleting, updatingStatus, isDark, t, onView, onDelete, onUpdateStatus } = handlers;
+  const { deleting, isDark, t, onView, onDelete } = handlers;
 
   return [
     {
@@ -153,6 +186,28 @@ export function createFlightRequestColumns(handlers: FlightRequestColumnHandlers
       },
     },
     {
+      id: 'zone',
+      header: t('planning.flightRequests.columns.zone'),
+      cell: ({ row }) => <ZoneBadge r={row.original} t={t} />,
+    },
+    {
+      id: 'mission',
+      header: t('planning.flightRequests.columns.mission'),
+      cell: ({ row }) => {
+        const r = row.original;
+        if (!r.fk_pilot_mission_id) return <span className="text-slate-400">—</span>;
+        return (
+          <div className="text-[11px] space-y-0.5">
+            <div className="inline-flex items-center gap-1 font-mono font-semibold">
+              <Link2 className="h-3 w-3 text-violet-400" />
+              {r.mission_code ?? `#${r.fk_pilot_mission_id}`}
+            </div>
+            {r.mission_status && <div className="text-slate-400">{r.mission_status.replace(/_/g, ' ')}</div>}
+          </div>
+        );
+      },
+    },
+    {
       id: 'dcc_status',
       header: t('planning.flightRequests.columns.status'),
       accessorKey: 'dcc_status',
@@ -172,10 +227,7 @@ export function createFlightRequestColumns(handlers: FlightRequestColumnHandlers
       cell: ({ row }) => {
         const r = row.original;
         const isDeleting = deleting === r.request_id;
-        const anyUpdating = updatingStatus?.id === r.request_id;
-        const isUpdating  = (status: string) => anyUpdating && updatingStatus?.status === status;
-
-        const showStateButtons = ['ASSIGNED', 'IN_PROGRESS'].includes(r.dcc_status);
+        // No manual status buttons: the status follows the linked mission on the Daily Board.
 
         return (
           <div className="flex items-center gap-1.5 flex-wrap">
@@ -189,46 +241,6 @@ export function createFlightRequestColumns(handlers: FlightRequestColumnHandlers
               <ExternalLink className="h-3 w-3" />
               {t('planning.flightRequests.actions.view')}
             </Button>
-
-            {/* State progression buttons */}
-            {showStateButtons && (
-              <FeatureGate feature="operation_flight_requests" require="edit">
-              <>
-                {r.dcc_status !== 'IN_PROGRESS' && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    disabled={anyUpdating}
-                    onClick={() => onUpdateStatus(r.request_id, 'IN_PROGRESS')}
-                    className={`h-7 text-xs gap-1 border-orange-500/40 text-orange-500 hover:bg-orange-500/10 ${isDark ? 'hover:border-orange-500/60' : ''}`}
-                  >
-                    {isUpdating('IN_PROGRESS') ? <Loader2 className="h-3 w-3 animate-spin" /> : <AlertCircle className="h-3 w-3" />}
-                    {t('planning.flightRequests.statuses.IN_PROGRESS')}
-                  </Button>
-                )}
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={anyUpdating}
-                  onClick={() => onUpdateStatus(r.request_id, 'COMPLETED')}
-                  className={`h-7 text-xs gap-1 border-green-500/40 text-green-600 hover:bg-green-500/10 ${isDark ? 'hover:border-green-500/60' : ''}`}
-                >
-                  {isUpdating('COMPLETED') ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle2 className="h-3 w-3" />}
-                  {t('planning.flightRequests.statuses.COMPLETED')}
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={anyUpdating}
-                  onClick={() => onUpdateStatus(r.request_id, 'ISSUE')}
-                  className={`h-7 text-xs gap-1 border-red-500/40 text-red-500 hover:bg-red-500/10 ${isDark ? 'hover:border-red-500/60' : ''}`}
-                >
-                  {isUpdating('ISSUE') ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
-                  {t('planning.flightRequests.statuses.ISSUE')}
-                </Button>
-              </>
-              </FeatureGate>
-            )}
 
             {/* Delete */}
             <FeatureGate feature="operation_flight_requests" require="delete">
