@@ -197,6 +197,11 @@ export async function getMissionBoard(
           }
         },
         ...(pilotFilter && { fk_pilot_user_id: pilotFilter }),
+        // Only today's missions: scheduled today, or (when unscheduled) started today.
+        OR: [
+          { scheduled_start: { gte: todayStart, lte: todayEnd } },
+          { scheduled_start: null, actual_start: { gte: todayStart, lte: todayEnd } },
+        ],
       },
       orderBy: { actual_start: { sort: 'desc', nulls: 'first' } },
       take: 100,
