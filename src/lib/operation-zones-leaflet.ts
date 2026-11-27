@@ -1,5 +1,5 @@
 import type * as Leaflet from 'leaflet';
-import { OperationZones, PERIMETER_COLOR, ZONE_COLORS } from '@/lib/operation-zones';
+import { OperationZones, PERIMETER_COLOR, zoneColor } from '@/lib/operation-zones';
 
 interface RenderOptions {
   interactive?: boolean;
@@ -83,7 +83,7 @@ export function renderZoneLayers(L: typeof Leaflet, group: Leaflet.LayerGroup, z
   }
 
   for (const z of zones.zones) {
-    const color = ZONE_COLORS[z.kind];
+    const color = zoneColor(z);
     const selected = selectedId === z.id;
     const layer: Leaflet.Layer = z.shape === 'point'
       ? L.marker(z.points[0], { icon: pinIcon(L, color, selected), interactive, keyboard: false, bubblingMouseEvents: true })

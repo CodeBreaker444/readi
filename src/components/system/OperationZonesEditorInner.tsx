@@ -27,6 +27,7 @@ import {
   parseKmlOrKmzFile,
   PERIMETER_COLOR,
   ZONE_COLORS,
+  zoneColor,
   ZoneKind,
   ZoneShape,
 } from '@/lib/operation-zones';
@@ -63,7 +64,7 @@ const PIN_ICON = L.divIcon({
 });
 
 const DEFAULT_CENTER: [number, number] = [41.9, 12.5];
-const KINDS: ZoneKind[] = ['green', 'red', 'unsurveyed'];
+const KINDS: ZoneKind[] = ['green', 'red', 'unsurveyed', 'mission'];
 
 /** Icon badge showing a zone's shape (area / line / pin), tinted with the zone's colour. */
 function ShapeBadge({ shape, color, label }: { shape: ZoneShape | 'perimeter'; color: string; label: string }) {
@@ -91,6 +92,8 @@ export default function OperationZonesEditorInner({ value, onChange, isDark = fa
   const [basemap, setBasemap] = useState<Basemap>('satellite');
   const [mode, setMode] = useState<DrawMode>(null);
   const [kind, setKind] = useState<ZoneKind>('green');
+  /** Colour taken from an imported file; when set it overrides the type's colour for new/changed zones. */
+  const [fileColor, setFileColor] = useState<string | undefined>(undefined);
   const [draft, setDraft] = useState<LatLngTuple[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [confirmClear, setConfirmClear] = useState(false);
@@ -100,11 +103,23 @@ export default function OperationZonesEditorInner({ value, onChange, isDark = fa
   const draftRef = useRef(draft);
   const valueRef = useRef(value);
   const kindRef = useRef(kind);
+  const fileColorRef = useRef(fileColor);
   modeRef.current = mode;
   draftRef.current = draft;
   valueRef.current = value;
   kindRef.current = kind;
+  fileColorRef.current = fileColor;
 
+  // Distinct colours that came from imported files (differing from the type colours), offered as extra choices.
+  const fileColors: { color: string; kind: ZoneKind; names: string[] }[] = [];
+  for (const z of value.zones) {
+    if (!z.color || z.color.toLowerCase() === ZONE_COLORS[z.kind].toLowerCase()) continue;
+    const hit = fileColors.find((c) => c.color.toLowerCase() === z.color!.toLowerCase());
+    if (hit) { if (z.name && !hit.names.includes(z.name)) hit.names.push(z.name); }
+    else fileColors.push({ color: z.color, kind: z.kind, names: z.name ? [z.name] : [] });
+  }
+  const pickKind = (k: ZoneKind) => { setKind(k); setFileColor(undefined); if (selectedId && selectedId !== 'perimeter' && !drawing) patchZone(selectedId, { kind: k, color: undefined }); };
+  const pickFileColor = (c: { color: string; kind: ZoneKind }) => { setKind(c.kind); setFileColor(c.color); if (selectedId && selectedId !== 'perimeter' && !drawing) patchZone(selectedId, { kind: c.kind, color: c.color }); };
   const minPoints = mode?.type === 'zone' ? minPointsFor(mode.shape) : 3;
 
   // ── Map init ──
@@ -202,7 +217,7 @@ export default function OperationZonesEditorInner({ value, onChange, isDark = fa
     const zone = isPerimeter ? null : value.zones.find((z) => z.id === selectedId);
     const pts = isPerimeter ? value.perimeter?.points : zone?.points;
     if (!pts) return;
-    const color = isPerimeter ? PERIMETER_COLOR : ZONE_COLORS[zone!.kind];
+    const color = isPerimeter ? PERIMETER_COLOR : zoneColor(zone!);
     const min = isPerimeter ? 3 : minPointsFor(zone!.shape);
 
     pts.forEach((p, i) => {
@@ -238,12 +253,12 @@ export default function OperationZonesEditorInner({ value, onChange, isDark = fa
     group.clearLayers();
     rubberRef.current = null;
     if (!mode || draft.length === 0) return;
-    const color = mode.type === 'perimeter' ? PERIMETER_COLOR : ZONE_COLORS[kind];
+    const color = mode.type === 'perimeter' ? PERIMETER_COLOR : (fileColor ?? ZONE_COLORS[kind]);
     const style: L.PathOptions = { color, weight: 3, fillColor: color, fillOpacity: 0.2, interactive: false, dashArray: mode.type === 'perimeter' ? '10 6' : undefined };
     const closed = mode.type === 'perimeter' || mode.shape === 'polygon';
     (closed && draft.length >= 3 ? L.polygon(draft, style) : L.polyline(draft, style)).addTo(group);
     draft.forEach((p) => L.circleMarker(p, { radius: 5, color, fillColor: '#fff', fillOpacity: 1, weight: 2, interactive: false }).addTo(group));
-  }, [draft, mode, kind]);
+  }, [draft, mode, kind, fileColor]);
 
   // Crosshair + no double-click zoom while drawing.
   useEffect(() => {
@@ -268,7 +283,7 @@ export default function OperationZonesEditorInner({ value, onChange, isDark = fa
       setSelectedId('perimeter');
     } else {
       if (value.zones.length >= MAX_ZONES) { toast.error(t('systems.zones.tooMany', 'Too many zones')); return; }
-      const zone: OperationZone = { id: newZoneId(), name: nextZoneName(value.zones, kind), kind, shape: mode.shape, points: draft };
+      const zone: OperationZone = { id: newZoneId(), name: nextZoneName(value.zones, kind), kind, shape: mode.shape, points: draft, ...(fileColor ? { color: fileColor } : {}) };
       onChange({ ...value, zones: [...value.zones, zone] });
       setSelectedId(zone.id);
     }
@@ -279,7 +294,7 @@ export default function OperationZonesEditorInner({ value, onChange, isDark = fa
   const addPin = (p: LatLngTuple) => {
     const v = valueRef.current;
     if (v.zones.length >= MAX_ZONES) { toast.error(t('systems.zones.tooMany', 'Too many zones')); return; }
-    const zone: OperationZone = { id: newZoneId(), name: nextZoneName(v.zones, kindRef.current), kind: kindRef.current, shape: 'point', points: [p] };
+    const zone: OperationZone = { id: newZoneId(), name: nextZoneName(v.zones, kindRef.current), kind: kindRef.current, shape: 'point', points: [p], ...(fileColorRef.current ? { color: fileColorRef.current } : {}) };
     onChange({ ...v, zones: [...v.zones, zone] });
     setSelectedId(zone.id);
     setMode(null);
@@ -329,7 +344,8 @@ export default function OperationZonesEditorInner({ value, onChange, isDark = fa
   };
 
   const patchZone = (id: string, patch: Partial<OperationZone>) =>
-    onChange({ ...value, zones: value.zones.map((z) => (z.id === id ? { ...z, ...patch } : z)) });
+    // Changing the type drops the colour that came from an imported file, so the new type's colour shows.
+    onChange({ ...value, zones: value.zones.map((z) => (z.id === id ? { ...z, ...patch, ...(patch.kind && patch.kind !== z.kind && !('color' in patch) ? { color: undefined } : {}) } : z)) });
 
   const removeItem = (id: string) => {
     if (id === 'perimeter') onChange({ ...value, perimeter: null });
@@ -410,11 +426,28 @@ export default function OperationZonesEditorInner({ value, onChange, isDark = fa
         <span className={`mx-1 h-5 w-px ${isDark ? 'bg-slate-600' : 'bg-gray-300'}`} />
 
         {KINDS.map((k) => (
-          <button key={k} type="button" title={KIND_LABEL[k]} aria-label={KIND_LABEL[k]} aria-pressed={kind === k}
-            onClick={() => { setKind(k); if (selectedId && selectedId !== 'perimeter' && !drawing) patchZone(selectedId, { kind: k }); }}
-            className={`h-6 w-6 cursor-pointer rounded-full border-2 transition-transform ${kind === k ? 'scale-110 ring-2 ring-violet-500 ring-offset-1' : 'opacity-70 hover:opacity-100'} ${isDark ? 'ring-offset-slate-800 border-slate-800' : 'border-white'}`}
+          <button key={k} type="button" title={KIND_LABEL[k]} aria-label={KIND_LABEL[k]} aria-pressed={kind === k && !fileColor}
+            onClick={() => pickKind(k)}
+            className={`h-6 w-6 cursor-pointer rounded-full border-2 transition-transform ${kind === k && !fileColor ? 'scale-110 ring-2 ring-violet-500 ring-offset-1' : 'opacity-70 hover:opacity-100'} ${isDark ? 'ring-offset-slate-800 border-slate-800' : 'border-white'}`}
             style={{ background: ZONE_COLORS[k] }} />
         ))}
+        {fileColors.length > 0 && (
+          <>
+            <span className={`mx-0.5 h-5 w-px ${isDark ? 'bg-slate-600' : 'bg-gray-300'}`} />
+            <span className={`flex items-center gap-1 rounded-full border px-1.5 py-0.5 ${isDark ? 'border-slate-600 bg-slate-700/40' : 'border-gray-200 bg-white'}`}
+              title={t('systems.zones.fileColors', 'Colours from the imported file')}>
+              {fileColors.map((c) => {
+                const label = `${t('systems.zones.fileColor', 'Imported colour')}: ${c.names.slice(0, 4).join(', ')}`;
+                return (
+                  <button key={c.color} type="button" title={label} aria-label={label} aria-pressed={fileColor === c.color}
+                    onClick={() => pickFileColor(c)}
+                    className={`h-5 w-5 cursor-pointer rounded-full border-2 transition-transform ${fileColor === c.color ? 'scale-110 ring-2 ring-violet-500 ring-offset-1' : 'opacity-80 hover:opacity-100'} ${isDark ? 'ring-offset-slate-800 border-slate-800' : 'border-white shadow-sm'}`}
+                    style={{ background: c.color }} />
+                );
+              })}
+            </span>
+          </>
+        )}
 
         <span className={`mx-1 h-5 w-px ${isDark ? 'bg-slate-600' : 'bg-gray-300'}`} />
 
@@ -468,7 +501,7 @@ export default function OperationZonesEditorInner({ value, onChange, isDark = fa
         )}
       </div>
 
-      <ZoneLegend isDark={isDark} />
+      <ZoneLegend isDark={isDark} zones={[value]} />
 
       <div className={`h-44 overflow-y-auto rounded-lg border ${border}`}>
         {!value.perimeter && value.zones.length === 0 ? (
@@ -492,14 +525,20 @@ export default function OperationZonesEditorInner({ value, onChange, isDark = fa
             )}
             {value.zones.map((z) => (
               <li key={z.id} className={`flex items-center gap-2 px-3 py-1.5 ${selectedId === z.id ? (isDark ? 'bg-slate-700/60' : 'bg-violet-50') : ''}`}>
-                <ShapeBadge shape={z.shape} color={ZONE_COLORS[z.kind]} label={z.shape === 'line' ? t('systems.zones.line', 'Line') : z.shape === 'point' ? t('systems.zones.pin', 'Pin') : t('systems.zones.polygon', 'Area')} />
+                <ShapeBadge shape={z.shape} color={zoneColor(z)} label={z.shape === 'line' ? t('systems.zones.line', 'Line') : z.shape === 'point' ? t('systems.zones.pin', 'Pin') : t('systems.zones.polygon', 'Area')} />
                 <input className={`${fieldCls} min-w-0 flex-1`} value={z.name} onKeyDown={stopEnter} title={z.note} placeholder={KIND_LABEL[z.kind]}
                   onFocus={() => focusItem(z.id)}
                   onChange={(e) => patchZone(z.id, { name: e.target.value })} />
-                <Select value={z.kind} onValueChange={(v) => patchZone(z.id, { kind: v as ZoneKind })}>
+                <Select value={z.color && fileColors.some((c) => c.color.toLowerCase() === z.color!.toLowerCase()) ? `file:${z.color.toLowerCase()}` : z.kind}
+                  onValueChange={(v) => {
+                    if (v.startsWith('file:')) {
+                      const c = fileColors.find((x) => x.color.toLowerCase() === v.slice(5));
+                      if (c) patchZone(z.id, { kind: c.kind, color: c.color });
+                    } else patchZone(z.id, { kind: v as ZoneKind, color: undefined });
+                  }}>
                   <SelectTrigger size="sm" aria-label={t('systems.zones.changeType', 'Change zone type')}
                     className="h-7! w-36 shrink-0 gap-1.5 px-2 text-xs font-medium"
-                    style={{ color: ZONE_COLORS[z.kind], background: `${ZONE_COLORS[z.kind]}1f`, borderColor: `${ZONE_COLORS[z.kind]}80` }}>
+                    style={{ color: zoneColor(z), background: `${zoneColor(z)}1f`, borderColor: `${zoneColor(z)}80` }}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className={isDark ? 'bg-slate-800 border-slate-700 text-slate-200' : ''}>
@@ -509,6 +548,19 @@ export default function OperationZonesEditorInner({ value, onChange, isDark = fa
                         {KIND_LABEL[k]}
                       </SelectItem>
                     ))}
+                    {fileColors.length > 0 && (
+                      <>
+                        <div className={`mx-2 mt-1 border-t px-0 pb-0.5 pt-1.5 text-[10px] font-semibold uppercase tracking-wide ${isDark ? 'border-slate-700 text-slate-400' : 'border-gray-200 text-gray-500'}`}>
+                          {t('systems.zones.fileColors', 'Colours from the imported file')}
+                        </div>
+                        {fileColors.map((c) => (
+                          <SelectItem key={c.color} value={`file:${c.color.toLowerCase()}`}>
+                            <span className="h-2.5 w-2.5 rounded-full border border-black/10" style={{ background: c.color }} />
+                            <span className="max-w-40 truncate">{c.names.slice(0, 2).join(', ') || c.color}</span>
+                          </SelectItem>
+                        ))}
+                      </>
+                    )}
                   </SelectContent>
                 </Select>
                 <button type="button" className="cursor-pointer p-1 text-red-500 hover:text-red-400" onClick={() => removeItem(z.id)}
